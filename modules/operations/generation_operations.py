@@ -9,8 +9,8 @@ def add_model_components(m):
     m.Upward_Reserve = Var(m.RESERVE_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
     def max_power_rule(m, g, t):
-        return m.Power[g, t] + \
-               (m.Upward_Reserve[g, t] if g in m.RESERVE_GENERATORS else 0) \
+        return sum(getattr(m, component)[g, t]
+                   for component in m.generator_capabilities[g]) \
                <= m.capacity[g]
 
     m.Max_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_power_rule)
