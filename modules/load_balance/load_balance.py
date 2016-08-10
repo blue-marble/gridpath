@@ -54,3 +54,17 @@ def add_model_components(m):
                    for z in m.LOAD_ZONES for tmp in m.TIMEPOINTS)
     m.Penalty_Costs = Expression(rule=penalty_costs_rule)
     m.total_cost_components.append("Penalty_Costs")
+
+
+def export_results(m):
+    for z in getattr(m, "LOAD_ZONES"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print("Overgeneration[" + str(z) + ", " + str(tmp) + "]: "
+                  + str(m.Overgeneration[z, tmp].value)
+                  )
+
+    for z in getattr(m, "LOAD_ZONES"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print("Unserved_Energy[" + str(z) + ", " + str(tmp) + "]: "
+                  + str(m.Unserved_Energy[z, tmp].value)
+                  )
