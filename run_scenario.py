@@ -45,7 +45,7 @@ def make_dynamic_component_objects(model):
     :return:
     """
     # Generator capabilities
-    model.generator_capabilities = dict()
+    model.headroom_variables = dict()
 
     # Load balance
     # TODO: these may have to vary by load area
@@ -92,7 +92,6 @@ def populate_dynamic_component_lists(model, loaded_modules, scenario):
             m.determine_dynamic_components(model, os.path.join(os.getcwd(), "runs", scenario, "inputs"))
         else:
             pass
-    print model.generator_capabilities
 
 
 def create_abstract_model(model, loaded_modules):

@@ -1,3 +1,5 @@
 generator	capacity	variable_cost
-Gen1	11	1
-Gen2	11	2
+Gen1	6	1
+Gen2	6	2
+Gen3	5	1
+Gen4	5	2

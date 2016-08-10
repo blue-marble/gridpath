@@ -6,14 +6,30 @@ from pyomo.environ import *
 def add_model_components(m):
 
     m.Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+
+    # Services
     m.Upward_Reserve = Var(m.RESERVE_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
-    def max_power_rule(m, g, t):
-        return sum(getattr(m, component)[g, t]
-                   for component in m.generator_capabilities[g]) \
-               <= m.capacity[g]
+    def headroom_rule(m, g, tmp):
+        if g in m.BASELOAD_GENERATORS:
+            return 0
+        else:
+            return m.capacity[g] - m.Power[g, tmp]
+
+    m.Headroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=headroom_rule)
+    m.Footroom = Expression(m.GENERATORS, m.TIMEPOINTS)
+
+    def max_power_rule(m, g, tmp):
+        return m.Power[g, tmp] + m.Headroom[g, tmp]\
+               == m.capacity[g]
 
     m.Max_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_power_rule)
+
+    def max_headroom_rule(m, g, tmp):
+        return sum(getattr(m, component)[g, tmp]
+                   for component in m.headroom_variables[g]) \
+               <= m.Headroom[g, tmp]
+    m.Max_Headroom_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_headroom_rule)
 
     # TODO: make this generators in the zone only when multiple zones actually are implemented
     def total_generation_power_rule(m, z, tmp):
