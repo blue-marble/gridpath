@@ -7,44 +7,55 @@ from pyomo.environ import *
 
 def determine_dynamic_components(m, inputs_directory):
     """
-    Populate the lists of dynamic components
+    Populate the lists of dynamic components.
+    Depending on its operational characteristics, different model components get assigned to different generators.
     :param m:
     :param inputs_directory:
     :return:
     """
-    with open(os.path.join(inputs_directory, "generation_capacity.tab"), "rb") as generation_capacity_file:
+
+    # TODO: make more robust than relying on column order
+    with open(os.path.join(inputs_directory, "generators.tab"), "rb") as generation_capacity_file:
         generation_capacity_reader = csv.reader(generation_capacity_file, delimiter="\t")
         generation_capacity_reader.next()  # skip header
         for row in generation_capacity_reader:
             generator = row[0]
-            print generator
+            # All generators get the following variables
             m.headroom_variables[generator] = list()
-
-    with open(os.path.join(inputs_directory, "reserve_generators.tab"), "rb") as reserve_generators_file:
-        reserve_generators_reader = csv.reader(reserve_generators_file, delimiter="\t")
-        reserve_generators_reader.next()  # skip header
-        for row in reserve_generators_reader:
-            generator = row[0]
-            m.headroom_variables[generator].append("Upward_Reserve")
-
-    with open(os.path.join(inputs_directory, "regulation_generators.tab"), "rb") as regulation_generators_file:
-        regulation_generators_reader = csv.reader(regulation_generators_file, delimiter="\t")
-        regulation_generators_reader.next()  # skip header
-        for row in regulation_generators_reader:
-            generator = row[0]
-            m.headroom_variables[generator].append("Provide_Regulation")
+            # Generators that can provide upward reserves
+            if row[4] == 1:
+                m.headroom_variables[generator].append("Upward_Reserve")
+            # Generators that can provide regulation
+            if row[5] == 1:
+                m.headroom_variables[generator].append("Provide_Regulation")
 
 
 def add_model_components(m):
 
-    # Operational types
-    m.RESERVE_GENERATORS = Set(within=m.GENERATORS)
-    m.REGULATION_GENERATORS = Set(within=m.GENERATORS)
-    m.BASELOAD_GENERATORS = Set(within=m.GENERATORS)
+    # Operational type flags
+    m.baseload = Param(m.GENERATORS, within=Boolean)
+    m.reserves_up = Param(m.GENERATORS, within=Boolean)
+    m.regulation_up = Param(m.GENERATORS, within=Boolean)
 
+    def operational_type_set_init(operational_type):
+        """
+        Initialize subsets of generators by operational type based on operational type flags.
+        Need to return a function with the model as argument, i.e. 'lambda mod' because we can only iterate over the
+        generators after data is loaded; then we can pass the abstract model to the initialization function.
+        :param operational_type:
+        :return:
+        """
+        return lambda mod: list(g for g in mod.GENERATORS if getattr(mod, operational_type)[g] == 1)
+
+    # Sets by operational types
+    m.BASELOAD_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("baseload"))
+    m.RESERVE_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("reserves_up"))
+    m.REGULATION_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_up"))
+
+    # All generators have a power variable for now
     m.Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
-    # Services
+    # Variables by operational type
     m.Upward_Reserve = Var(m.RESERVE_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
     m.Provide_Regulation = Var(m.REGULATION_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
@@ -99,16 +110,11 @@ def add_model_components(m):
 
 
 def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "reserve_generators.tab"),
-                     set=m.RESERVE_GENERATORS
-                     )
-
-    data_portal.load(filename=os.path.join(inputs_directory, "regulation_generators.tab"),
-                     set=m.REGULATION_GENERATORS
-                     )
-
-    data_portal.load(filename=os.path.join(inputs_directory, "baseload_generators.tab"),
-                     set=m.BASELOAD_GENERATORS
+    print("...loading generation operations data...")
+    data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
+                     index=m.GENERATORS,
+                     select=("GENERATORS", "baseload", "reserves_up", "regulation_up"),
+                     param=(m.baseload, m.reserves_up, m.regulation_up)
                      )
 
 

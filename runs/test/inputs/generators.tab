@@ -1,0 +1,5 @@
+GENERATORS	capacity	variable_cost	baseload	reserves_up	regulation_up
+Gen1	6	1	0	0	0
+Gen2	6	2	0	1	1
+Gen3	6	1	0	0	1
+Gen4	6	2	0	0	0

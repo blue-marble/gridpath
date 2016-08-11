@@ -57,7 +57,7 @@ def make_dynamic_component_objects(model):
 
 
 def get_modules():
-    # Modules
+    # Modules/
     # TODO: read from file
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints', 'capacity.generation_capacity',
                       'operations.generation_operations',
@@ -91,6 +91,7 @@ def populate_dynamic_component_lists(model, loaded_modules, scenario):
 
 
 def create_abstract_model(model, loaded_modules):
+    print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
             m.add_model_components(model)
@@ -100,6 +101,7 @@ def create_abstract_model(model, loaded_modules):
 
 
 def load_scenario_data(model, loaded_modules, scenario):
+    print("Loading data...")
     # Load data
     data_portal = DataPortal()
     for m in loaded_modules:
@@ -111,6 +113,7 @@ def load_scenario_data(model, loaded_modules, scenario):
 
 
 def create_problem_instance(model, loaded_data):
+    print("Creating problem instance...")
     # Create instance
     instance = model.create_instance(loaded_data)
     return instance

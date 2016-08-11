@@ -22,6 +22,7 @@ def add_model_components(m):
 def load_model_data(m, data_portal, inputs_directory):
     data_portal.load(filename=os.path.join(inputs_directory, "regulation_requirement.tab"),
                      param=m.regulation_up_requirement
+
                      )
 
 
