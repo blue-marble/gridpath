@@ -9,6 +9,7 @@ def add_model_components(m):
 
     # Services
     m.Upward_Reserve = Var(m.RESERVE_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_Regulation = Var(m.REGULATION_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
     def headroom_rule(m, g, tmp):
         if g in m.BASELOAD_GENERATORS:
@@ -26,9 +27,16 @@ def add_model_components(m):
     m.Max_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_power_rule)
 
     def max_headroom_rule(m, g, tmp):
+        """
+        Components can include upward reserves, regulation
+        :param m:
+        :param g:
+        :param tmp:
+        :return:
+        """
         return sum(getattr(m, component)[g, tmp]
                    for component in m.headroom_variables[g]) \
-               <= m.Headroom[g, tmp]
+            <= m.Headroom[g, tmp]
     m.Max_Headroom_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_headroom_rule)
 
     # TODO: make this generators in the zone only when multiple zones actually are implemented
@@ -37,13 +45,6 @@ def add_model_components(m):
     m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_generation_power_rule)
 
     m.energy_generation_components.append("Generation_Power")
-
-    def total_upward_reserve_rule(m, z, tmp):
-        return sum(m.Upward_Reserve[g, tmp] for g in m.RESERVE_GENERATORS)
-    m.Upward_Reserve_Provision = Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_upward_reserve_rule)
-
-    m.upward_reserve_components.append("Upward_Reserve_Provision")
-
 
     # Add cost to objective function
     # TODO: fix this when periods added, etc.
@@ -70,4 +71,10 @@ def export_results(m):
         for tmp in getattr(m, "TIMEPOINTS"):
             print("Upward_Reserve[" + str(g) + ", " + str(tmp) + "]: "
                   + str(m.Upward_Reserve[g, tmp].value)
+                  )
+
+    for g in getattr(m, "REGULATION_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print("Regulation[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_Regulation[g, tmp].value)
                   )

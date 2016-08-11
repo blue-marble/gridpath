@@ -3,45 +3,62 @@
 from pyomo.environ import *
 
 
-def add_model_components(m):
+def add_generic_reserve_components(m,
+                                   reserve_violation_variable,
+                                   reserve_violation_penalty_param,
+                                   reserve_requirement_param,
+                                   reserve_generator_set,
+                                   generator_reserve_provision_variable,
+                                   total_reserve_provision_variable,
+                                   meet_reserve_constraint,
+                                   objective_function_reserve_penalty_cost_component):
+    """
+    Generic treatment of reserves. This function creates the model components related to a particular reserve
+    requirement, including
+    1) a variable for violating the requirement and a penalty for violation
+    2) the reserve requirement (currently by zone and timepoint)
+    3) the set of generators that can provide reserves
+    4) the name of the generator-level reserve provision variable
+    5) an expression aggregating generator-level provision to total provision
+    6) the constraint ensuring total provision exceeds the requirement
+    7) an expression for total penalty costs that may have been incurred to add to the objective function
+    :param m:
+    :param reserve_violation_variable:
+    :param reserve_violation_penalty_param:
+    :param reserve_requirement_param:
+    :param reserve_generator_set:
+    :param generator_reserve_provision_variable:
+    :param total_reserve_provision_variable:
+    :param meet_reserve_constraint:
+    :param objective_function_reserve_penalty_cost_component:
+    :return:
+    """
 
-    # Penalty variables
-    m.Upward_Reserve_Violation = Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
-    m.upward_reserve_violation_penalty = Param(initialize=99999999)
+    # Penalty for violation
+    setattr(m, reserve_violation_variable, Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals))
+    setattr(m, reserve_violation_penalty_param, Param(initialize=999999999))
 
-    m.upward_reserve_components.append("Upward_Reserve_Violation")
+    # Magnitude of the requirement
+    setattr(m, reserve_requirement_param, Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals,
+                                                initialize={("Zone1", 1): 1, ("Zone1", 2): 2}))
 
-    # TODO: figure out which module adds this to the load balance 'energy generation' components
-    m.upward_reserve_requirement_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS, initialize={("Zone1", 1): 1, ("Zone1", 2): 2})
+    # TODO: by zone eventually, not all generators
+    # Reserve provision
+    def total_reserve_rule(m, z, tmp):
+        return sum(getattr(m, generator_reserve_provision_variable)[g, tmp] for g in getattr(m, reserve_generator_set))
+    setattr(m, total_reserve_provision_variable, Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_reserve_rule))
 
-    def total_upward_reserve_provision_rule(m, z, tmp):
-        """
-        Sum across all energy generation components added by other modules for each zone and timepoint.
-        :param m:
-        :param z:
-        :param tmp:
-        :return:
-        """
-        return sum(getattr(m, component)[z, tmp]
-                   for component in m.upward_reserve_components)
-    m.Total_Upward_Reserve = Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_upward_reserve_provision_rule)
+    # Reserve constraints
+    def meet_reserve_rule(m, z, tmp):
+        return getattr(m, total_reserve_provision_variable)[z, tmp] >= getattr(m, reserve_requirement_param)[z, tmp]
 
+    setattr(m, meet_reserve_constraint, Constraint(m.LOAD_ZONES, m.TIMEPOINTS, rule=meet_reserve_rule))
 
-    def meet_upward_reserve_rule(m, z, tmp):
-        return m.Total_Upward_Reserve[z, tmp] >= m.upward_reserve_requirement_mw[z, tmp]
-
-    m.Meet_Upward_Reserve_Constraint = Constraint(m.LOAD_ZONES, m.TIMEPOINTS, rule=meet_upward_reserve_rule)
-
+    # Add violation penalty costs incurred to objective function
     def penalty_costs_rule(m):
-        return sum(m.Upward_Reserve_Violation[z, tmp] * m.upward_reserve_violation_penalty
+        return sum(getattr(m, reserve_violation_variable)[z, tmp] * getattr(m, reserve_violation_penalty_param)
                    for z in m.LOAD_ZONES for tmp in m.TIMEPOINTS)
-    m.Reserve_Penalty_Costs = Expression(rule=penalty_costs_rule)
-    m.total_cost_components.append("Reserve_Penalty_Costs")
+    setattr(m, objective_function_reserve_penalty_cost_component, Expression(rule=penalty_costs_rule))
 
+    m.total_cost_components.append(objective_function_reserve_penalty_cost_component)
 
-def export_results(m):
-    for z in getattr(m, "LOAD_ZONES"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Upward_Reserve_Violation[" + str(z) + ", " + str(tmp) + "]: "
-                  + str(m.Upward_Reserve_Violation[z, tmp].value)
-                  )

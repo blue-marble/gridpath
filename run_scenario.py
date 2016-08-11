@@ -52,10 +52,6 @@ def make_dynamic_component_objects(model):
     model.energy_generation_components = list()
     model.energy_consumption_components = list()
 
-    # Reserves
-    model.upward_reserve_components = list()
-    model.downward_reserve_components = list()
-
     # Objective function
     model.total_cost_components = list()
 
@@ -66,7 +62,7 @@ def get_modules():
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints', 'capacity.generation_capacity',
                       'operations.generation_operations',
                       'load_balance.load_balance',
-                      'reserves.reserve_requirements',
+                      'reserves.upward_reserve', 'reserves.regulation_up',
                       'costs.costs']
 
     return modules_to_use
