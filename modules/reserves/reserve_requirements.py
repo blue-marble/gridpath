@@ -39,8 +39,7 @@ def add_generic_reserve_components(m,
     setattr(m, reserve_violation_penalty_param, Param(initialize=999999999))
 
     # Magnitude of the requirement
-    setattr(m, reserve_requirement_param, Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals,
-                                                initialize={("Zone1", 1): 1, ("Zone1", 2): 2}))
+    setattr(m, reserve_requirement_param, Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals))
 
     # TODO: by zone eventually, not all generators
     # Reserve provision

@@ -1,4 +1,7 @@
-from pyomo.environ import *
+#!/usr/bin/env python
+
+import os
+
 from reserve_requirements import add_generic_reserve_components
 
 
@@ -14,6 +17,12 @@ def add_model_components(m):
         meet_reserve_constraint="Meet_Regulation_Up_Constraint",
         objective_function_reserve_penalty_cost_component="Regulation_Up_Penalty_Cost"
         )
+
+
+def load_model_data(m, data_portal, inputs_directory):
+    data_portal.load(filename=os.path.join(inputs_directory, "regulation_requirement.tab"),
+                     param=m.regulation_up_requirement
+                     )
 
 
 def export_results(m):

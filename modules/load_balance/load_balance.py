@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 
 from pyomo.environ import *
 
@@ -9,6 +10,7 @@ def add_model_components(m):
     m.Overgeneration = Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
     m.Unserved_Energy = Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
 
+    # TODO: load from file
     m.overgeneration_penalty = Param(initialize=99999999)
     m.unserved_energy_penalty = Param(initialize=99999999)
 
@@ -16,7 +18,7 @@ def add_model_components(m):
     m.energy_consumption_components.append("Overgeneration")
 
     # TODO: figure out which module adds this to the load balance 'energy generation' components
-    m.load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS, initialize={("Zone1", 1): 10, ("Zone1", 2): 20})
+    m.load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
     m.energy_consumption_components.append("load_mw")
 
     def total_energy_generation_rule(m, z, tmp):
@@ -54,6 +56,12 @@ def add_model_components(m):
                    for z in m.LOAD_ZONES for tmp in m.TIMEPOINTS)
     m.Penalty_Costs = Expression(rule=penalty_costs_rule)
     m.total_cost_components.append("Penalty_Costs")
+
+
+def load_model_data(m, data_portal, inputs_directory):
+    data_portal.load(filename=os.path.join(inputs_directory, "load_mw.tab"),
+                     param=m.load_mw
+                     )
 
 
 def export_results(m):

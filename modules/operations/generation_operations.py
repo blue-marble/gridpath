@@ -111,6 +111,7 @@ def load_model_data(m, data_portal, inputs_directory):
                      set=m.BASELOAD_GENERATORS
                      )
 
+
 def export_results(m):
     for g in getattr(m, "GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
