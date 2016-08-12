@@ -49,7 +49,7 @@ def add_model_components(m):
 
     # #### Operational types #### #
     # Operational type flags
-    m.baseload = Param(m.GENERATORS, within=Boolean)
+    m.must_run = Param(m.GENERATORS, within=Boolean)
     m.variable = Param(m.GENERATORS, within=Boolean)
     m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
     m.regulation_up = Param(m.GENERATORS, within=Boolean)
@@ -67,7 +67,7 @@ def add_model_components(m):
         return lambda mod: list(g for g in mod.GENERATORS if getattr(mod, operational_type)[g] == 1)
 
     # Sets by operational types
-    m.BASELOAD_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("baseload"))
+    m.MUST_RUN_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("must_run"))
     m.VARIABLE_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("variable"))
     m.LF_RESERVES_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("lf_reserves_up"))
     m.REGULATION_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_up"))
@@ -80,6 +80,14 @@ def add_model_components(m):
     # #### Operational variables #### #
     # All generators have a power variable for now
     m.Provide_Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+
+    # Keep track of curtailment for some generators
+    # TODO: change this from variable to variable and RPS eligible (doesn't matter otherwise)
+    # TODO: this will be used if renewables are allowed to provide reserves explicitly
+    # TODO: this should probably go in the RPS module, e.g. if we wanted to model curtailment by plant
+    def curtailment_rule(mod, g, tmp):
+        return mod.capacity[g] * mod.cap_factor[g, tmp] - mod.Provide_Power[g, tmp]
+    m.Curtailment = Expression(m.VARIABLE_GENERATORS, m.TIMEPOINTS, rule=curtailment_rule)
 
     # Headroom and footroom are derived variables (expressions) that will be used to limit up and down reserves
     # respectively
@@ -108,7 +116,7 @@ def add_model_components(m):
     # Power
     # TODO: Change for variable renewables, hydro, etc.
     def max_power_rule(mod, g, tmp):
-        if g in mod.BASELOAD_GENERATORS:
+        if g in mod.MUST_RUN_GENERATORS:
             return mod.Provide_Power[g, tmp] \
                    == mod.capacity[g]
         if g in mod.VARIABLE_GENERATORS:
@@ -151,9 +159,9 @@ def add_model_components(m):
 def load_model_data(m, data_portal, inputs_directory):
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
                      index=m.GENERATORS,
-                     select=("GENERATORS", "baseload", "variable",
+                     select=("GENERATORS", "must_run", "variable",
                              "lf_reserves_up", "regulation_up", "lf_reserves_down", "regulation_down"),
-                     param=(m.baseload, m.variable,
+                     param=(m.must_run, m.variable,
                             m.lf_reserves_up, m.regulation_up, m.lf_reserves_down, m.regulation_down)
                      )
 

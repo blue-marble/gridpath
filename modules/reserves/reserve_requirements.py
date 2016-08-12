@@ -49,7 +49,7 @@ def add_generic_reserve_components(m,
 
     # Reserve constraints
     def meet_reserve_rule(m, z, tmp):
-        return getattr(m, total_reserve_provision_variable)[z, tmp] >= getattr(m, reserve_requirement_param)[z, tmp]
+        return getattr(m, total_reserve_provision_variable)[z, tmp] == getattr(m, reserve_requirement_param)[z, tmp]
 
     setattr(m, meet_reserve_constraint, Constraint(m.LOAD_ZONES, m.TIMEPOINTS, rule=meet_reserve_rule))
 

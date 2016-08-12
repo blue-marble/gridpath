@@ -1,4 +1,4 @@
-GENERATORS	capacity	variable_cost	baseload	variable	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down
+GENERATORS	capacity	variable_cost	must_run	variable	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down
 Gen1	6	1	0	0	0	0	0	0
 Gen2	6	2	0	0	1	1	1	1
 Gen3	6	1	0	0	0	1	0	1
