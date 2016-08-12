@@ -147,28 +147,6 @@ def add_model_components(m):
             <= mod.Footroom[g, tmp]
     m.Max_Footroom_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_headroom_rule)
 
-    # TODO: move this to the load_balance module?
-    # TODO: make this generators in the zone only when multiple zones actually are implemented
-    def total_generation_power_rule(m, z, tmp):
-        return sum(m.Provide_Power[g, tmp] for g in m.GENERATORS)
-    m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_generation_power_rule)
-
-    m.energy_generation_components.append("Generation_Power")
-
-    # Add cost to objective function
-    # TODO: fix this when periods added, etc.
-    def generation_cost_rule(m):
-        """
-        Power production cost for all generators across all timepoints
-        :param m:
-        :return:
-        """
-        return sum(m.Provide_Power[g, tmp] * m.variable_cost[g] for g in m.GENERATORS for tmp in m.TIMEPOINTS)
-
-    m.Total_Generation_Cost = Expression(rule=generation_cost_rule)
-
-    m.total_cost_components.append("Total_Generation_Cost")
-
 
 def load_model_data(m, data_portal, inputs_directory):
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
