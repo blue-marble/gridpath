@@ -50,6 +50,7 @@ def add_model_components(m):
     # #### Operational types #### #
     # Operational type flags
     m.baseload = Param(m.GENERATORS, within=Boolean)
+    m.variable = Param(m.GENERATORS, within=Boolean)
     m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
     m.regulation_up = Param(m.GENERATORS, within=Boolean)
     m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
@@ -67,14 +68,33 @@ def add_model_components(m):
 
     # Sets by operational types
     m.BASELOAD_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("baseload"))
+    m.VARIABLE_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("variable"))
     m.LF_RESERVES_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("lf_reserves_up"))
     m.REGULATION_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_up"))
     m.LF_RESERVES_DOWN_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("lf_reserves_down"))
     m.REGULATION_DOWN_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_down"))
 
+    # #### Parameters by operational type #### #
+    m.cap_factor = Param(m.VARIABLE_GENERATORS, m.TIMEPOINTS, within=PercentFraction)
+
     # #### Operational variables #### #
     # All generators have a power variable for now
     m.Provide_Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+
+    # Headroom and footroom are derived variables (expressions) that will be used to limit up and down reserves
+    # respectively
+    # TODO: Change for variable renewables, hydro, etc.
+    def headroom_rule(mod, g, tmp):
+        if g in mod.VARIABLE_GENERATORS:
+            return mod.capacity[g] * mod.cap_factor[g, tmp] - mod.Provide_Power[g, tmp]
+        else:
+            return mod.capacity[g] - mod.Provide_Power[g, tmp]
+    m.Headroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=headroom_rule)
+
+    # TODO: change for min stable level
+    def footroom_rule(mod, g, tmp):
+        return mod.Provide_Power[g, tmp]
+    m.Footroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=footroom_rule)
 
     # Variables by operational type
     m.Provide_LF_Reserves_Up = Var(m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
@@ -82,17 +102,6 @@ def add_model_components(m):
     m.Provide_LF_Reserves_Down = Var(m.LF_RESERVES_DOWN_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
     m.Provide_Regulation_Down = Var(m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
-    # Headroom and footroom are derived variables (expressions) that will be used to limit up and down reserves
-    # respectively
-    # TODO: Change for variable renewables, hydro, etc.
-    def headroom_rule(mod, g, tmp):
-        return mod.capacity[g] - mod.Provide_Power[g, tmp]
-    m.Headroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=headroom_rule)
-
-    # TODO: change for min stable level
-    def footroom_rule(mod, g, tmp):
-        return mod.Provide_Power[g, tmp]
-    m.Footroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=footroom_rule)
 
     # #### Operational constraints #### #
 
@@ -102,6 +111,9 @@ def add_model_components(m):
         if g in mod.BASELOAD_GENERATORS:
             return mod.Provide_Power[g, tmp] \
                    == mod.capacity[g]
+        if g in mod.VARIABLE_GENERATORS:
+            return mod.Provide_Power[g, tmp] \
+                   == mod.capacity[g] * mod.cap_factor[g, tmp]
         else:
             return mod.Provide_Power[g, tmp] \
                     <= mod.capacity[g]
@@ -159,12 +171,17 @@ def add_model_components(m):
 
 
 def load_model_data(m, data_portal, inputs_directory):
-    print("...loading generation operations data...")
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
                      index=m.GENERATORS,
-                     select=("GENERATORS", "baseload",
+                     select=("GENERATORS", "baseload", "variable",
                              "lf_reserves_up", "regulation_up", "lf_reserves_down", "regulation_down"),
-                     param=(m.baseload, m.lf_reserves_up, m.regulation_up, m.lf_reserves_down, m.regulation_down)
+                     param=(m.baseload, m.variable,
+                            m.lf_reserves_up, m.regulation_up, m.lf_reserves_down, m.regulation_down)
+                     )
+
+    data_portal.load(filename=os.path.join(inputs_directory, "variable_generator_profiles.tab"),
+                     index=(m.VARIABLE_GENERATORS, m.TIMEPOINTS),
+                     param=m.cap_factor
                      )
 
 
