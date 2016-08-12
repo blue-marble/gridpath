@@ -13,6 +13,9 @@ def determine_dynamic_components(m, inputs_directory):
     :param inputs_directory:
     :return:
     """
+    # Generator capabilities
+    m.headroom_variables = dict()
+    m.footroom_variables = dict()
 
     # TODO: make more robust than relying on column order
     with open(os.path.join(inputs_directory, "generators.tab"), "rb") as generation_capacity_file:
@@ -22,20 +25,35 @@ def determine_dynamic_components(m, inputs_directory):
             generator = row[0]
             # All generators get the following variables
             m.headroom_variables[generator] = list()
-            # Generators that can provide upward reserves
+            m.footroom_variables[generator] = list()
+            # Generators that can provide upward load-following reserves
             if row[4] == 1:
-                m.headroom_variables[generator].append("Upward_Reserve")
-            # Generators that can provide regulation
+                m.headroom_variables[generator].append("Provide_LF_Reserves_Up")
+            # Generators that can provide upward regulation
             if row[5] == 1:
-                m.headroom_variables[generator].append("Provide_Regulation")
+                m.headroom_variables[generator].append("Provide_Regulation_Up")
+            # Generators that can provide downward load-following reserves
+            if row[6] == 1:
+                m.headroom_variables[generator].append("Provide_LF_Reserves_Down")
+            # Generators that can provide downwar dregulation
+            if row[7] == 1:
+                m.headroom_variables[generator].append("Provide_Regulation_Down")
 
 
 def add_model_components(m):
+    """
 
+    :param m:
+    :return:
+    """
+
+    # #### Operational types #### #
     # Operational type flags
     m.baseload = Param(m.GENERATORS, within=Boolean)
-    m.reserves_up = Param(m.GENERATORS, within=Boolean)
+    m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
     m.regulation_up = Param(m.GENERATORS, within=Boolean)
+    m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
+    m.regulation_down = Param(m.GENERATORS, within=Boolean)
 
     def operational_type_set_init(operational_type):
         """
@@ -49,32 +67,48 @@ def add_model_components(m):
 
     # Sets by operational types
     m.BASELOAD_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("baseload"))
-    m.RESERVE_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("reserves_up"))
-    m.REGULATION_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_up"))
+    m.LF_RESERVES_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("lf_reserves_up"))
+    m.REGULATION_UP_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_up"))
+    m.LF_RESERVES_DOWN_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("lf_reserves_down"))
+    m.REGULATION_DOWN_GENERATORS = Set(within=m.GENERATORS, initialize=operational_type_set_init("regulation_down"))
 
+    # #### Operational variables #### #
     # All generators have a power variable for now
-    m.Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_Power = Var(m.GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
     # Variables by operational type
-    m.Upward_Reserve = Var(m.RESERVE_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
-    m.Provide_Regulation = Var(m.REGULATION_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_LF_Reserves_Up = Var(m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_Regulation_Up = Var(m.REGULATION_UP_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_LF_Reserves_Down = Var(m.LF_RESERVES_DOWN_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
+    m.Provide_Regulation_Down = Var(m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS, within=NonNegativeReals)
 
-    def headroom_rule(m, g, tmp):
-        if g in m.BASELOAD_GENERATORS:
-            return 0
-        else:
-            return m.capacity[g] - m.Power[g, tmp]
-
+    # Headroom and footroom are derived variables (expressions) that will be used to limit up and down reserves
+    # respectively
+    # TODO: Change for variable renewables, hydro, etc.
+    def headroom_rule(mod, g, tmp):
+        return mod.capacity[g] - mod.Provide_Power[g, tmp]
     m.Headroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=headroom_rule)
-    m.Footroom = Expression(m.GENERATORS, m.TIMEPOINTS)
 
-    def max_power_rule(m, g, tmp):
-        return m.Power[g, tmp] + m.Headroom[g, tmp]\
-               == m.capacity[g]
+    # TODO: change for min stable level
+    def footroom_rule(mod, g, tmp):
+        return mod.Provide_Power[g, tmp]
+    m.Footroom = Expression(m.GENERATORS, m.TIMEPOINTS, rule=footroom_rule)
 
+    # #### Operational constraints #### #
+
+    # Power
+    # TODO: Change for variable renewables, hydro, etc.
+    def max_power_rule(mod, g, tmp):
+        if g in mod.BASELOAD_GENERATORS:
+            return mod.Provide_Power[g, tmp] \
+                   == mod.capacity[g]
+        else:
+            return mod.Provide_Power[g, tmp] \
+                    <= mod.capacity[g]
     m.Max_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_power_rule)
 
-    def max_headroom_rule(m, g, tmp):
+    # Up reserves
+    def max_headroom_rule(mod, g, tmp):
         """
         Components can include upward reserves, regulation
         :param m:
@@ -82,14 +116,29 @@ def add_model_components(m):
         :param tmp:
         :return:
         """
-        return sum(getattr(m, component)[g, tmp]
-                   for component in m.headroom_variables[g]) \
-            <= m.Headroom[g, tmp]
+        return sum(getattr(mod, component)[g, tmp]
+                   for component in mod.headroom_variables[g]) \
+            <= mod.Headroom[g, tmp]
     m.Max_Headroom_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_headroom_rule)
 
+    # Down reserves
+    def max_footroom_rule(mod, g, tmp):
+        """
+        Components can include upward reserves, regulation
+        :param m:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return sum(getattr(mod, component)[g, tmp]
+                   for component in mod.footroom_variables[g]) \
+            <= mod.Footroom[g, tmp]
+    m.Max_Footroom_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS, rule=max_headroom_rule)
+
+    # TODO: move this to the load_balance module?
     # TODO: make this generators in the zone only when multiple zones actually are implemented
     def total_generation_power_rule(m, z, tmp):
-        return sum(m.Power[g, tmp] for g in m.GENERATORS)
+        return sum(m.Provide_Power[g, tmp] for g in m.GENERATORS)
     m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_generation_power_rule)
 
     m.energy_generation_components.append("Generation_Power")
@@ -102,7 +151,7 @@ def add_model_components(m):
         :param m:
         :return:
         """
-        return sum(m.Power[g, tmp] * m.variable_cost[g] for g in m.GENERATORS for tmp in m.TIMEPOINTS)
+        return sum(m.Provide_Power[g, tmp] * m.variable_cost[g] for g in m.GENERATORS for tmp in m.TIMEPOINTS)
 
     m.Total_Generation_Cost = Expression(rule=generation_cost_rule)
 
@@ -113,25 +162,38 @@ def load_model_data(m, data_portal, inputs_directory):
     print("...loading generation operations data...")
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
                      index=m.GENERATORS,
-                     select=("GENERATORS", "baseload", "reserves_up", "regulation_up"),
-                     param=(m.baseload, m.reserves_up, m.regulation_up)
+                     select=("GENERATORS", "baseload",
+                             "lf_reserves_up", "regulation_up", "lf_reserves_down", "regulation_down"),
+                     param=(m.baseload, m.lf_reserves_up, m.regulation_up, m.lf_reserves_down, m.regulation_down)
                      )
 
 
 def export_results(m):
     for g in getattr(m, "GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
-            print("Power[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Power[g, tmp].value)
+            print("Provide_Power[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_Power[g, tmp].value)
                   )
-    for g in getattr(m, "RESERVE_GENERATORS"):
+    for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
-            print("Upward_Reserve[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Upward_Reserve[g, tmp].value)
+            print("Provide_LF_Reserves_Up[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_LF_Reserves_Up[g, tmp].value)
                   )
 
-    for g in getattr(m, "REGULATION_GENERATORS"):
+    for g in getattr(m, "REGULATION_UP_GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
-            print("Regulation[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Regulation[g, tmp].value)
+            print("Provide_Regulation_Up[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_Regulation_Up[g, tmp].value)
+                  )
+
+    for g in getattr(m, "LF_RESERVES_DOWN_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print("Provide_LF_Reserves_Down[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_LF_Reserves_Down[g, tmp].value)
+                  )
+
+    for g in getattr(m, "REGULATION_DOWN_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print("Provide_Regulation_Down[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Provide_Regulation_Down[g, tmp].value)
                   )

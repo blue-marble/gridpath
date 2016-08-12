@@ -44,9 +44,6 @@ def make_dynamic_component_objects(model):
     :param model:
     :return:
     """
-    # Generator capabilities
-    model.headroom_variables = dict()
-
     # Load balance
     # TODO: these may have to vary by load area
     model.energy_generation_components = list()
@@ -62,7 +59,8 @@ def get_modules():
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints', 'capacity.generation_capacity',
                       'operations.generation_operations',
                       'load_balance.load_balance',
-                      'reserves.upward_reserve', 'reserves.regulation_up',
+                      'reserves.lf_reserves_up', 'reserves.regulation_up',
+                      'reserves.lf_reserves_down', 'reserves.regulation_down',
                       'costs.costs']
 
     return modules_to_use
