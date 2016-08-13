@@ -10,12 +10,16 @@ import os
 
 # Pyomo
 from pyomo.environ import *
+from pyutilib.services import TempfileManager
 
 # Scenario name
 scenario_name = "test"
 
 
 def run_scenario(scenario):
+
+    TempfileManager.tempdir = os.path.join(os.getcwd(), "logs")
+
     # Create pyomo abstract model class
     model = AbstractModel()
 
@@ -57,11 +61,10 @@ def get_modules():
     # Modules/
     # TODO: read from file
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints', 'capacity.generation_capacity',
-                      'operations.services',
-                      'operations.operational_types.must_run',
-                      'operations.operational_types.variable',
-                      'operations.operational_types.unconstrained',
-                      'operations.availability',
+                      'operations.generation_services',
+                      'operations.must_run',
+                      'operations.variable',
+                      'operations.unconstrained',
                       'operations.operations',
                       'load_balance.load_balance',
                       'reserves.lf_reserves_up', 'reserves.regulation_up',
@@ -139,7 +142,7 @@ def solve(instance):
     solver = SolverFactory("cbc")
 
     print("Solving...")
-    solver.solve(instance, tee=True)
+    solver.solve(instance, tee=True, keepfiles=True, symbolic_solver_labels=True)
 
 
 def export_results(instance, loaded_modules):
