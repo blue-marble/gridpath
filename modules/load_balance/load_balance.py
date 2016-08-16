@@ -9,7 +9,7 @@ def add_model_components(m):
     # TODO: make this generators in the zone only when multiple zones actually
     # are implemented
     def total_generation_power_rule(m, z, tmp):
-        return sum(m.Provide_Power[g, tmp] for g in m.GENERATORS)
+        return sum(m.Power_Provision[g, tmp] for g in m.GENERATORS)
     m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                     rule=total_generation_power_rule)
 
@@ -23,7 +23,7 @@ def add_model_components(m):
         :param m:
         :return:
         """
-        return sum(m.Provide_Power[g, tmp] * m.variable_cost[g]
+        return sum(m.Power_Provision[g, tmp] * m.variable_cost[g]
                    for g in m.GENERATORS for tmp in m.TIMEPOINTS)
 
     m.Total_Generation_Cost = Expression(rule=generation_cost_rule)

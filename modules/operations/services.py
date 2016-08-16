@@ -5,46 +5,12 @@ import csv
 from pyomo.environ import *
 
 
-def check_list_has_single_item(l, error_msg):
-    if len(l) > 1:
-        raise ValueError(error_msg)
-    else:
-        pass
-
-
-def find_list_item_position(l, item):
-    """
-
-    :param l:
-    :param item:
-    :return:
-    """
-    return [i for i, element in enumerate(l) if element == item]
-
-
-def check_list_items_are_unique(l):
-    """
-
-    :param l:
-    :return:
-    """
-    for item in l:
-        positions = find_list_item_position(l, item)
-        check_list_has_single_item(
-            l=positions,
-            error_msg="Service " + str(item) + " is specified more than once" +
-            " in generators.tab.")
-
-
 def determine_dynamic_components(m, inputs_directory):
     """
-    Populate the lists of dynamic components.
-    All generators get a Provide_Power variable. Model then keeps track of
-    headroom and footroom for each generator.
-    Other services can be provided and are constrained by the amount of
-    headroom and footroom.
-    Generators get assigned other service variables (e.g. reserves, regulation,
-    etc.) if flagged appropriately.
+    Populate the lists of dynamic components, i.e which generators can provide
+    which services. Generators that can vary power output will get the
+    Provide_Power variable; generators that can provide reserves will get the
+    various reserve variables.
     The operational constraints are then built depending on which services a
     generator can provide.
     :param m:
@@ -69,6 +35,8 @@ def determine_dynamic_components(m, inputs_directory):
             # All generators get the following variables
             m.headroom_variables[generator] = list()
             m.footroom_variables[generator] = list()
+            # In addition, some generators get the variables associated with
+            # provision of other services (e.g. reserves) if flagged
             # Generators that can provide upward load-following reserves
             if int(row[find_list_item_position(headers,
                                                "lf_reserves_up")[0]]
@@ -99,16 +67,8 @@ def add_model_components(m):
     :return:
     """
 
-    # #### Operational variables #### #
-
-    # Power & available headroom and footroom variables
-    m.Provide_Power = Var(m.GENERATORS, m.TIMEPOINTS,
-                          within=NonNegativeReals)
-    m.Provide_Headroom = Var(m.GENERATORS, m.TIMEPOINTS,
-                             within=NonNegativeReals)
-    m.Provide_Footroom = Var(m.GENERATORS, m.TIMEPOINTS,
-                             within=NonNegativeReals)
-
+    # TODO: add data check ensuring only a one operational type is assigned to
+    # each generator
     # The variables above will be constrained differently depending on
     # generator types
     m.must_run = Param(m.GENERATORS, within=Boolean)
@@ -123,13 +83,16 @@ def add_model_components(m):
                                     "variable")
                                 )
 
-    m.unconstrained = Param(m.GENERATORS, within=Boolean)
-    m.UNCONSTRAINED_GENERATORS = Set(within=m.GENERATORS,
+    m.dispatchable = Param(m.GENERATORS, within=Boolean)
+    m.DISPATCHABLE_GENERATORS = Set(within=m.GENERATORS,
                                      initialize=operational_type_set_init(
-                                         "unconstrained")
+                                         "dispatchable")
                                      )
 
-
+    # TODO: figure out how to flag which generators get this variable
+    # Generators that can vary power output
+    m.Provide_Power = Var(m.DISPATCHABLE_GENERATORS, m.TIMEPOINTS,
+                          within=NonNegativeReals)
 
     # Headroom services flags
     m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
@@ -171,26 +134,21 @@ def load_model_data(m, data_portal, inputs_directory):
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
                      index=m.GENERATORS,
                      select=("GENERATORS", "must_run", "variable",
-                             "unconstrained",
+                             "dispatchable",
                              "lf_reserves_up", "regulation_up",
                              "lf_reserves_down", "regulation_down"),
-                     param=(m.must_run, m.variable, m.unconstrained,
+                     param=(m.must_run, m.variable, m.dispatchable,
                             m.lf_reserves_up, m.regulation_up,
                             m.lf_reserves_down, m.regulation_down)
                      )
 
 
+# TODO: figure out what the best place is to export these results
 def export_results(m):
     for g in getattr(m, "GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
-            print("Provide_Power[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Power[g, tmp].value)
-                  )
-            print("Provide_Headroom[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Headroom[g, tmp].value)
-                  )
-            print("Provide_Footroom[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Footroom[g, tmp].value)
+            print("Power_Provision[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(m.Power_Provision[g, tmp].expr.expr.value)
                   )
     for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
@@ -231,3 +189,33 @@ def operational_type_set_init(operational_type):
     return lambda mod: \
         list(g for g in mod.GENERATORS if getattr(mod, operational_type)[g]
              == 1)
+
+def check_list_has_single_item(l, error_msg):
+    if len(l) > 1:
+        raise ValueError(error_msg)
+    else:
+        pass
+
+
+def find_list_item_position(l, item):
+    """
+
+    :param l:
+    :param item:
+    :return:
+    """
+    return [i for i, element in enumerate(l) if element == item]
+
+
+def check_list_items_are_unique(l):
+    """
+
+    :param l:
+    :return:
+    """
+    for item in l:
+        positions = find_list_item_position(l, item)
+        check_list_has_single_item(
+            l=positions,
+            error_msg="Service " + str(item) + " is specified more than once" +
+            " in generators.tab.")

@@ -65,7 +65,7 @@ def get_modules():
                       'operations.services',
                       'operations.operational_types.must_run',
                       'operations.operational_types.variable',
-                      'operations.operational_types.unconstrained',
+                      'operations.operational_types.dispatchable',
                       'operations.availability',
                       'operations.operations',
                       'load_balance.load_balance',
