@@ -5,15 +5,27 @@ import sys
 
 from pyomo.environ import *
 from importlib import import_module
-
-# from operational_types import must_run, variable, dispatchable
+import pandas
 
 
 def determine_dynamic_components(m, inputs_directory):
-    m.required_operational_modules = list()
+    """
+    Determine which operational type modules will be needed based on the
+    operational types in the input data.
+    :param m:
+    :param inputs_directory:
+    :return:
+    """
 
-    # TODO: get operational types from data
-    m.required_operational_modules = ["must_run", "dispatchable", "variable"]
+    # Get the operational type of each generator
+    generator_operational_types = \
+        pandas.read_csv(os.path.join(inputs_directory, "generators.tab"),
+                        sep="\t", usecols=["operational_type"]
+                        )
+
+    # Required modules are the unique set of generator operational types
+    m.required_operational_modules = \
+        generator_operational_types.operational_type.unique()
 
 
 def load_operational_modules(required_modules):
@@ -110,7 +122,6 @@ def load_model_data(m, data_portal, inputs_directory):
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)
     for op_m in m.required_operational_modules:
-        print op_m
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
