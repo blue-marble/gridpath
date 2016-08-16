@@ -71,22 +71,20 @@ def add_model_components(m):
     # each generator
     # The variables above will be constrained differently depending on
     # generator types
-    m.must_run = Param(m.GENERATORS, within=Boolean)
+    m.operational_type = Param(m.GENERATORS)
     m.MUST_RUN_GENERATORS = Set(within=m.GENERATORS,
-                                initialize=operational_type_set_init(
-                                    "must_run")
+                                initialize=generator_subset_init(
+                                    "operational_type", "must_run")
                                 )
 
-    m.variable = Param(m.GENERATORS, within=Boolean)
     m.VARIABLE_GENERATORS = Set(within=m.GENERATORS,
-                                initialize=operational_type_set_init(
-                                    "variable")
+                                initialize=generator_subset_init(
+                                    "operational_type", "variable")
                                 )
 
-    m.dispatchable = Param(m.GENERATORS, within=Boolean)
     m.DISPATCHABLE_GENERATORS = Set(within=m.GENERATORS,
-                                     initialize=operational_type_set_init(
-                                         "dispatchable")
+                                    initialize=generator_subset_init(
+                                        "operational_type", "dispatchable")
                                      )
 
     # TODO: figure out how to flag which generators get this variable
@@ -105,18 +103,18 @@ def add_model_components(m):
     # Sets of generators that can provide headroom services
     m.LF_RESERVES_UP_GENERATORS = Set(
         within=m.GENERATORS,
-        initialize=operational_type_set_init("lf_reserves_up"))
+        initialize=generator_subset_init("lf_reserves_up", 1))
     m.REGULATION_UP_GENERATORS = Set(
         within=m.GENERATORS,
-        initialize=operational_type_set_init("regulation_up"))
+        initialize=generator_subset_init("regulation_up", 1))
 
     # Sets of generators that can provide footroom services
     m.LF_RESERVES_DOWN_GENERATORS = Set(
         within=m.GENERATORS,
-        initialize=operational_type_set_init("lf_reserves_down"))
+        initialize=generator_subset_init("lf_reserves_down", 1))
     m.REGULATION_DOWN_GENERATORS = Set(
         within=m.GENERATORS,
-        initialize=operational_type_set_init("regulation_down"))
+        initialize=generator_subset_init("regulation_down", 1))
 
     # Headroom and footroom services
     m.Provide_LF_Reserves_Up = Var(m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS,
@@ -133,11 +131,10 @@ def add_model_components(m):
 def load_model_data(m, data_portal, inputs_directory):
     data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
                      index=m.GENERATORS,
-                     select=("GENERATORS", "must_run", "variable",
-                             "dispatchable",
+                     select=("GENERATORS", "operational_type",
                              "lf_reserves_up", "regulation_up",
                              "lf_reserves_down", "regulation_down"),
-                     param=(m.must_run, m.variable, m.dispatchable,
+                     param=(m.operational_type,
                             m.lf_reserves_up, m.regulation_up,
                             m.lf_reserves_down, m.regulation_down)
                      )
@@ -145,11 +142,6 @@ def load_model_data(m, data_portal, inputs_directory):
 
 # TODO: figure out what the best place is to export these results
 def export_results(m):
-    for g in getattr(m, "GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Power_Provision[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Power_Provision[g, tmp].expr.expr.value)
-                  )
     for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
         for tmp in getattr(m, "TIMEPOINTS"):
             print("Provide_LF_Reserves_Up[" + str(g) + ", " + str(tmp) + "]: "
@@ -175,7 +167,7 @@ def export_results(m):
                   )
 
 
-def operational_type_set_init(operational_type):
+def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by operational type based on operational
     type flags.
@@ -183,12 +175,14 @@ def operational_type_set_init(operational_type):
     because we can only iterate over the
     generators after data is loaded; then we can pass the abstract model to the
     initialization function.
-    :param operational_type:
+    :param generator_parameter:
+    :param expected_type:
     :return:
     """
     return lambda mod: \
-        list(g for g in mod.GENERATORS if getattr(mod, operational_type)[g]
-             == 1)
+        list(g for g in mod.GENERATORS if getattr(mod, generator_parameter)[g]
+             == expected_type)
+
 
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:

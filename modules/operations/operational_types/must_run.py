@@ -9,35 +9,34 @@ import os
 from pyomo.environ import *
 
 
-def add_model_components(m):
+def power_provision_rule(mod, g, tmp):
     """
-
-    :param m:
+    Power provision for must run generators is their capacity.
+    :param mod:
+    :param g:
+    :param tmp:
     :return:
     """
-    def power_provision_rule(mod, g, tmp):
-        return mod.capacity[g]
-    m.Must_Run_Power = Expression(m.MUST_RUN_GENERATORS,
-                                  m.TIMEPOINTS,
-                                  rule=power_provision_rule
-                                  )
+    return mod.capacity[g]
 
-    def max_power_rule(mod, g, tmp):
-        """
-        No variables to constraint for must-run generators.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return Constraint.Skip
 
-    def min_power_rule(mod, g, tmp):
-        """
-        No variables to constraint for must-run generators.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return Constraint.Skip
+def max_power_rule(mod, g, tmp):
+    """
+    No variables to constrain for must-run generators.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return Constraint.Skip
+
+
+def min_power_rule(mod, g, tmp):
+    """
+    No variables to constrain for must-run generators.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return Constraint.Skip

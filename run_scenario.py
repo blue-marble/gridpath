@@ -63,10 +63,6 @@ def get_modules():
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints',
                       'capacity.generation_capacity',
                       'operations.services',
-                      'operations.operational_types.must_run',
-                      'operations.operational_types.variable',
-                      'operations.operational_types.dispatchable',
-                      'operations.availability',
                       'operations.operations',
                       'load_balance.load_balance',
                       'reserves.lf_reserves_up', 'reserves.regulation_up',
@@ -109,7 +105,7 @@ def create_abstract_model(model, loaded_modules):
         if hasattr(m, 'add_model_components'):
             m.add_model_components(model)
         else:
-            print("ERROR! Module does not contain model components.")
+            print("ERROR! Module " + m + " does not contain model components.")
             sys.exit()
 
 
