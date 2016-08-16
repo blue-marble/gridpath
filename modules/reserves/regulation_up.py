@@ -15,12 +15,14 @@ def add_model_components(m):
         generator_reserve_provision_variable="Provide_Regulation_Up",
         total_reserve_provision_variable="Regulation_Up_Provision",
         meet_reserve_constraint="Meet_Regulation_Up_Constraint",
-        objective_function_reserve_penalty_cost_component="Regulation_Up_Penalty_Cost"
+        objective_function_reserve_penalty_cost_component=
+        "Regulation_Up_Penalty_Cost"
         )
 
 
 def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "regulation_up_requirement.tab"),
+    data_portal.load(filename=os.path.join(inputs_directory,
+                                           "regulation_up_requirement.tab"),
                      param=m.regulation_up_requirement
 
                      )

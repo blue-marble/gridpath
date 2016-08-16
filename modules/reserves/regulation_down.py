@@ -15,12 +15,14 @@ def add_model_components(m):
         generator_reserve_provision_variable="Provide_Regulation_Down",
         total_reserve_provision_variable="Regulation_Down_Provision",
         meet_reserve_constraint="Meet_Regulation_Down_Constraint",
-        objective_function_reserve_penalty_cost_component="Regulation_Down_Penalty_Cost"
+        objective_function_reserve_penalty_cost_component=
+        "Regulation_Down_Penalty_Cost"
         )
 
 
 def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "regulation_down_requirement.tab"),
+    data_portal.load(filename=os.path.join(inputs_directory,
+                                           "regulation_down_requirement.tab"),
                      param=m.regulation_down_requirement
 
                      )
@@ -29,6 +31,7 @@ def load_model_data(m, data_portal, inputs_directory):
 def export_results(m):
     for z in getattr(m, "LOAD_ZONES"):
         for tmp in getattr(m, "TIMEPOINTS"):
-            print("Regulation_Down_Violation[" + str(z) + ", " + str(tmp) + "]: "
+            print("Regulation_Down_Violation[" + str(z) + ", "
+                  + str(tmp) + "]: "
                   + str(m.Regulation_Down_Violation[z, tmp].value)
                   )

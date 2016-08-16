@@ -15,12 +15,14 @@ def add_model_components(m):
         generator_reserve_provision_variable="Provide_LF_Reserves_Up",
         total_reserve_provision_variable="LF_Reserves_Up_Provision",
         meet_reserve_constraint="Meet_LF_Reserves_Up_Constraint",
-        objective_function_reserve_penalty_cost_component="LF_Reserve_Up_Penalty_Costs"
+        objective_function_reserve_penalty_cost_component=
+        "LF_Reserve_Up_Penalty_Costs"
         )
 
 
 def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "lf_reserves_up_requirement.tab"),
+    data_portal.load(filename=os.path.join(inputs_directory,
+                                           "lf_reserves_up_requirement.tab"),
                      param=m.lf_reserves_up_requirement_mw
                      )
 

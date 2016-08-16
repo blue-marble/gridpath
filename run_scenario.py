@@ -56,7 +56,8 @@ def make_dynamic_component_objects(model):
 def get_modules():
     # Modules/
     # TODO: read from file
-    modules_to_use = ['geography.zones', 'time.dispatch_timepoints', 'capacity.generation_capacity',
+    modules_to_use = ['geography.zones', 'time.dispatch_timepoints',
+                      'capacity.generation_capacity',
                       'operations.services',
                       'operations.operational_types.must_run',
                       'operations.operational_types.variable',
@@ -88,7 +89,12 @@ def load_modules(modules_to_use):
 def populate_dynamic_component_lists(model, loaded_modules, scenario):
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(model, os.path.join(os.getcwd(), "runs", scenario, "inputs"))
+            m.determine_dynamic_components(model,
+                                           os.path.join(os.getcwd(),
+                                                        "runs",
+                                                        scenario,
+                                                        "inputs")
+                                           )
         else:
             pass
 
@@ -109,7 +115,12 @@ def load_scenario_data(model, loaded_modules, scenario):
     data_portal = DataPortal()
     for m in loaded_modules:
         if hasattr(m, "load_model_data"):
-            m.load_model_data(model, data_portal, os.path.join(os.getcwd(), "runs", scenario, "inputs"))
+            m.load_model_data(model, data_portal,
+                              os.path.join(os.getcwd(),
+                                           "runs",
+                                           scenario,
+                                           "inputs")
+                              )
         else:
             pass
     return data_portal

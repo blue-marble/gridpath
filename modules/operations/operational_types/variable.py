@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 """
-Operations of variable generators. Can't provide reserves. No curtailment variable by individual generator.
+Operations of variable generators. Can't provide reserves.
+No curtailment variable by individual generator.
 """
 
 import os
@@ -35,7 +36,8 @@ def add_model_components(m):
 
     m.Variable_Min_Power_in_Timepoint = Expression(m.VARIABLE_GENERATORS,
                                                    m.TIMEPOINTS,
-                                                   rule=min_power_provision_rule)
+                                                   rule=
+                                                   min_power_provision_rule)
 
     def max_headroom_rule(mod, g, tmp):
         """
