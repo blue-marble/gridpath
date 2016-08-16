@@ -82,14 +82,30 @@ def add_model_components(m):
                                     "operational_type", "variable")
                                 )
 
-    m.DISPATCHABLE_GENERATORS = Set(within=m.GENERATORS,
-                                    initialize=generator_subset_init(
-                                        "operational_type", "dispatchable")
-                                     )
+    m.DISPATCHABLE_NO_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type", "dispatchable_no_commit")
+        )
+
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type", "dispatchable_binary_commit")
+        )
+
+    m.DISPATCHABLE_FLEET_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type", "dispatchable_fleet_commit")
+        )
 
     # TODO: figure out how to flag which generators get this variable
     # Generators that can vary power output
-    m.Provide_Power = Var(m.DISPATCHABLE_GENERATORS, m.TIMEPOINTS,
+    m.Provide_Power = Var(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
+                          m.DISPATCHABLE_NO_COMMIT_GENERATORS |
+                          m.DISPATCHABLE_FLEET_COMMIT_GENERATORS,
+                          m.TIMEPOINTS,
                           within=NonNegativeReals)
 
     # Headroom services flags

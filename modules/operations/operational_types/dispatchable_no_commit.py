@@ -35,10 +35,9 @@ def max_power_rule(mod, g, tmp):
         <= mod.capacity[g]
 
 
-# TODO: add min stable level
 def min_power_rule(mod, g, tmp):
     """
-    Power minus downward services cannot be below a minimum stable level.
+    Power minus downward services cannot be below 0 (no commitment variable).
     :param mod:
     :param g:
     :param tmp:

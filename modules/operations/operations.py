@@ -136,3 +136,13 @@ def export_results(m):
             print("Power_Provision[" + str(g) + ", " + str(tmp) + "]: "
                   + str(m.Power_Provision[g, tmp].expr.value)
                   )
+
+    imported_operational_modules = \
+        load_operational_modules(m.required_operational_modules)
+    for op_m in m.required_operational_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "export_module_specific_results"):
+            imported_operational_modules[op_m].export_module_specific_results(
+                m)
+        else:
+            pass
