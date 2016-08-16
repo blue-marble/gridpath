@@ -48,7 +48,6 @@ def max_power_rule(mod, g, tmp):
         <= mod.capacity[g] * mod.Commit_Binary[g, tmp]
 
 
-# TODO: add min stable level
 def min_power_rule(mod, g, tmp):
     """
     Power minus downward services cannot be below a minimum stable level.
@@ -60,7 +59,8 @@ def min_power_rule(mod, g, tmp):
     return mod.Provide_Power[g, tmp] - \
         sum(getattr(mod, c)[g, tmp]
             for c in mod.footroom_variables[g]) \
-        >= 0.4 * mod.Commit_Binary[g, tmp] * mod.capacity[g]
+        >= mod.Commit_Binary[g, tmp] * mod.capacity[g] \
+        * mod.min_stable_level[g]
 
 
 def export_module_specific_results(mod):

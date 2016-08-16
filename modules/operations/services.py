@@ -100,11 +100,16 @@ def add_model_components(m):
         generator_subset_init("operational_type", "dispatchable_fleet_commit")
         )
 
+    m.DISPATCHABLE_GENERATORS = Set(initialize=
+                                    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
+                                    m.DISPATCHABLE_NO_COMMIT_GENERATORS |
+                                    m.DISPATCHABLE_FLEET_COMMIT_GENERATORS)
+
+    m.min_stable_level = Param(m.DISPATCHABLE_GENERATORS,
+                               within=PercentFraction)
     # TODO: figure out how to flag which generators get this variable
     # Generators that can vary power output
-    m.Provide_Power = Var(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
-                          m.DISPATCHABLE_NO_COMMIT_GENERATORS |
-                          m.DISPATCHABLE_FLEET_COMMIT_GENERATORS,
+    m.Provide_Power = Var(m.DISPATCHABLE_GENERATORS,
                           m.TIMEPOINTS,
                           within=NonNegativeReals)
 
@@ -149,10 +154,12 @@ def load_model_data(m, data_portal, inputs_directory):
                      index=m.GENERATORS,
                      select=("GENERATORS", "operational_type",
                              "lf_reserves_up", "regulation_up",
-                             "lf_reserves_down", "regulation_down"),
+                             "lf_reserves_down", "regulation_down",
+                             "min_stable_level"),
                      param=(m.operational_type,
                             m.lf_reserves_up, m.regulation_up,
-                            m.lf_reserves_down, m.regulation_down)
+                            m.lf_reserves_down, m.regulation_down,
+                            m.min_stable_level)
                      )
 
 
