@@ -10,12 +10,16 @@ import os
 
 # Pyomo
 from pyomo.environ import *
+from pyutilib.services import TempfileManager
 
 # Scenario name
 scenario_name = "test"
 
 
 def run_scenario(scenario):
+
+    TempfileManager.tempdir = os.path.join(os.getcwd(), "logs")
+
     # Create pyomo abstract model class
     model = AbstractModel()
 
@@ -150,7 +154,11 @@ def solve(instance):
     solver = SolverFactory("cbc")
 
     print("Solving...")
-    solver.solve(instance, tee=True)
+    solver.solve(instance,
+                 tee=True,
+                 keepfiles=False,
+                 symbolic_solver_labels=False
+                 )
 
 
 def export_results(instance, loaded_modules):
