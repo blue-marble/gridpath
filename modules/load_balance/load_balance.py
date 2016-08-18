@@ -83,3 +83,8 @@ def export_results(m):
             print("Unserved_Energy[" + str(z) + ", " + str(tmp) + "]: "
                   + str(m.Unserved_Energy[z, tmp].value)
                   )
+
+
+def save_duals(m):
+    m.constraint_indices["Meet_Load_Constraint"] = \
+        ["zone", "timepoint", "dual"]

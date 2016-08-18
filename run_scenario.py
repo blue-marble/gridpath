@@ -7,6 +7,7 @@ Run model.
 from importlib import import_module
 import sys
 import os
+import csv
 
 # Pyomo
 from pyomo.environ import *
@@ -33,13 +34,21 @@ def run_scenario(scenario):
 
     create_abstract_model(model, loaded_modules)
 
+    # Create a dual suffix component
+    # TODO: maybe this shouldn't always be needed
+    model.dual = Suffix(direction=Suffix.IMPORT)
+
     scenario_data = load_scenario_data(model, loaded_modules, scenario)
 
     instance = create_problem_instance(model, scenario_data)
 
-    solve(instance)
+    results = solve(instance)
+
+    instance.solutions.load_from(results)
 
     save_objective_function_value(scenario, instance)
+
+    save_duals(scenario, instance, loaded_modules)
 
     export_results(instance, loaded_modules)
 
@@ -152,11 +161,12 @@ def solve(instance):
     solver = SolverFactory("cbc")
 
     print("Solving...")
-    solver.solve(instance,
-                 tee=True,
-                 keepfiles=False,
-                 symbolic_solver_labels=False
-                 )
+    results = solver.solve(instance,
+                           tee=True,
+                           keepfiles=False,
+                           symbolic_solver_labels=False
+                           )
+    return results
 
 
 def export_results(instance, loaded_modules):
@@ -182,6 +192,33 @@ def save_objective_function_value(scenario, instance):
             "Objective function: " + str(instance.Total_Cost())
         )
 
+
+def save_duals(scenario, instance, loaded_modules):
+    """
+    Save the duals of various constraints.
+    :param scenario:
+    :param instance:
+    :param loaded_modules:
+    :return:
+    """
+
+    instance.constraint_indices = {}
+    for m in loaded_modules:
+        if hasattr(m, "save_duals"):
+            m.save_duals(instance)
+        else:
+            pass
+
+    for c in instance.constraint_indices.keys():
+        print c
+        constraint_object = getattr(instance, c)
+        print constraint_object
+        writer = csv.writer(open(os.path.join(
+            os.getcwd(), "runs", scenario, "results", str(c) + ".csv"), "wb"))
+        writer.writerow(instance.constraint_indices[c])
+        for index in constraint_object:
+            writer.writerow(list(index) +
+                            [instance.dual[constraint_object[index]]])
 
 if __name__ == "__main__":
     run_scenario(scenario_name)
