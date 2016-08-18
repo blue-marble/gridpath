@@ -5,30 +5,6 @@ from pyomo.environ import *
 
 
 def add_model_components(m):
-    
-    # TODO: make this generators in the zone only when multiple zones actually
-    # are implemented
-    def total_generation_power_rule(m, z, tmp):
-        return sum(m.Power_Provision[g, tmp] for g in m.GENERATORS)
-    m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
-                                    rule=total_generation_power_rule)
-
-    m.energy_generation_components.append("Generation_Power")
-
-    # Add cost to objective function
-    # TODO: fix this when periods added, etc.
-    def generation_cost_rule(m):
-        """
-        Power production cost for all generators across all timepoints
-        :param m:
-        :return:
-        """
-        return sum(m.Power_Provision[g, tmp] * m.variable_cost[g]
-                   for g in m.GENERATORS for tmp in m.TIMEPOINTS)
-
-    m.Total_Generation_Cost = Expression(rule=generation_cost_rule)
-
-    m.total_cost_components.append("Total_Generation_Cost")
 
     # Penalty variables
     m.Overgeneration = Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)

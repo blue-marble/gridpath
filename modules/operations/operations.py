@@ -146,6 +146,32 @@ def add_model_components(m):
     m.Min_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS,
                                         rule=min_power_rule)
 
+    # ### Aggregate power for load balance ### #
+    # TODO: make this generators in the zone only when multiple zones actually
+    # are implemented
+    def total_generation_power_rule(m, z, tmp):
+        return sum(m.Power_Provision[g, tmp] for g in m.GENERATORS)
+    m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+                                    rule=total_generation_power_rule)
+
+    m.energy_generation_components.append("Generation_Power")
+
+    # ### Aggregate power costs for objective function ### #
+    # Add cost to objective function
+    # TODO: fix this when periods added, etc.
+    def generation_cost_rule(m):
+        """
+        Power production cost for all generators across all timepoints
+        :param m:
+        :return:
+        """
+        return sum(m.Power_Provision[g, tmp] * m.variable_cost[g]
+                   for g in m.GENERATORS for tmp in m.TIMEPOINTS)
+
+    m.Total_Generation_Cost = Expression(rule=generation_cost_rule)
+    m.total_cost_components.append("Total_Generation_Cost")
+
+    # ### Startup and shutdown costs ### #
     m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS,
                                     initialize=m.startup_cost_generators)
     m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS,
@@ -226,6 +252,7 @@ def add_model_components(m):
                                             m.TIMEPOINTS,
                                             rule=shutdown_cost_rule)
 
+    # Add to objective function
     def total_startup_cost_rule(mod):
         """
         Sum startup costs for the objective function term.
@@ -236,10 +263,9 @@ def add_model_components(m):
                    for g in mod.STARTUP_COST_GENERATORS
                    for tmp in mod.TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
-
-    # Add to objective function
     m.total_cost_components.append("Total_Startup_Cost")
 
+    # Add to objective function
     def total_shutdown_cost_rule(mod):
         """
         Sum shutdown costs for the objective function term.
@@ -250,8 +276,6 @@ def add_model_components(m):
                    for g in mod.SHUTDOWN_COST_GENERATORS
                    for tmp in mod.TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
-
-    # Add to objective function
     m.total_cost_components.append("Total_Shutdown_Cost")
 
 
