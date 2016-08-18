@@ -39,6 +39,8 @@ def run_scenario(scenario):
 
     solve(instance)
 
+    save_objective_function_value(scenario, instance)
+
     export_results(instance, loaded_modules)
 
 
@@ -163,6 +165,23 @@ def export_results(instance, loaded_modules):
             m.export_results(instance)
     else:
         pass
+
+
+def save_objective_function_value(scenario, instance):
+    """
+    Save the objective function value.
+    :param scenario:
+    :param instance:
+    :return:
+    """
+    with open(os.path.join(
+            os.path.join(os.getcwd(), "runs", scenario, "results"),
+            "objective_function_value.txt"), "w"
+    ) as objective_file:
+        objective_file.write(
+            "Objective function: " + str(instance.Total_Cost())
+        )
+
 
 if __name__ == "__main__":
     run_scenario(scenario_name)
