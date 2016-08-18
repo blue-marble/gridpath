@@ -22,6 +22,16 @@ def add_model_components(m):
     m.load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
     m.energy_consumption_components.append("load_mw")
 
+    # ### Aggregate generation for load balance ### #
+    # TODO: make this generators in the zone only when multiple zones actually
+    # are implemented
+    def total_generation_power_rule(m, z, tmp):
+        return sum(m.Power_Provision[g, tmp] for g in m.GENERATORS)
+    m.Generation_Power = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+                                    rule=total_generation_power_rule)
+
+    m.energy_generation_components.append("Generation_Power")
+
     def total_energy_generation_rule(m, z, tmp):
         """
         Sum across all energy generation components added by other modules for
