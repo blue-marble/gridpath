@@ -72,13 +72,15 @@ def get_modules():
     # Modules/
     # TODO: read from file
     modules_to_use = ['geography.zones', 'time.dispatch_timepoints',
-                      'capacity.generation_capacity',
-                      'operations.services',
-                      'operations.operations',
-                      'load_balance.load_balance',
-                      'reserves.lf_reserves_up', 'reserves.regulation_up',
-                      'reserves.lf_reserves_down', 'reserves.regulation_down',
-                      'costs.costs']
+                      'generation.capacity.generation_capacity',
+                      'generation.operations.services',
+                      'generation.operations.operations',
+                      'system.load_balance.load_balance',
+                      'system.reserves.lf_reserves_up',
+                      'system.reserves.regulation_up',
+                      'system.reserves.lf_reserves_down',
+                      'system.reserves.regulation_down',
+                      'objective.min_total_cost']
 
     return modules_to_use
 
