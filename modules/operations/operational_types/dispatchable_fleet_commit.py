@@ -64,6 +64,32 @@ def min_power_rule(mod, g, tmp):
         * mod.min_stable_level[g]
 
 
+def startup_rule(mod, g, tmp):
+    """
+    Will be positive when there are more generators committed in the current
+    timepoint that there were in the previous timepoint.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Commit_Fleet_Fraction[g, tmp] \
+        - mod.Commit_Fleet_Fraction[g, mod.previous_timepoint[tmp]]
+
+
+def shutdown_rule(mod, g, tmp):
+    """
+    Will be positive when there were more generators committed in the previous
+    timepoint that there are in the current timepoint.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Commit_Fleet_Fraction[g, mod.previous_timepoint[tmp]] \
+        - mod.Commit_Fleet_Fraction[g, tmp]
+
+
 def export_module_specific_results(mod):
     for g in getattr(mod, "DISPATCHABLE_FLEET_COMMIT_GENERATORS"):
         for tmp in getattr(mod, "TIMEPOINTS"):

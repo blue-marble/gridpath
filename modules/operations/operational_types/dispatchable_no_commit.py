@@ -47,3 +47,11 @@ def min_power_rule(mod, g, tmp):
         sum(getattr(mod, c)[g, tmp]
             for c in mod.footroom_variables[g]) \
         >= 0
+
+
+def startup_rule(mod, g, tmp):
+    return None
+
+
+def shutdown_rule(mod, g, tmp):
+    return None

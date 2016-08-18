@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+
+"""
+Describe the services that the generation infrastructure can provide, e.g.
+power, reserves, ancillary services, etc.
+"""
 import os
 import csv
 
