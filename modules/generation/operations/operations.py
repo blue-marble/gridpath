@@ -236,6 +236,34 @@ def export_results(m):
                   + str(m.Power_Provision[g, tmp].expr.value)
                   )
 
+    for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print(
+            "Provide_LF_Reserves_Up[" + str(g) + ", " + str(tmp) + "]: "
+            + str(m.Provide_LF_Reserves_Up[g, tmp].value)
+            )
+
+    for g in getattr(m, "REGULATION_UP_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print(
+            "Provide_Regulation_Up[" + str(g) + ", " + str(tmp) + "]: "
+            + str(m.Provide_Regulation_Up[g, tmp].value)
+            )
+
+    for g in getattr(m, "LF_RESERVES_DOWN_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print(
+            "Provide_LF_Reserves_Down[" + str(g) + ", " + str(tmp) + "]: "
+            + str(m.Provide_LF_Reserves_Down[g, tmp].value)
+            )
+
+    for g in getattr(m, "REGULATION_DOWN_GENERATORS"):
+        for tmp in getattr(m, "TIMEPOINTS"):
+            print(
+            "Provide_Regulation_Down[" + str(g) + ", " + str(tmp) + "]: "
+            + str(m.Provide_Regulation_Down[g, tmp].value)
+            )
+            
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)
     for op_m in m.required_operational_modules:

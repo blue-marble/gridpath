@@ -151,33 +151,6 @@ def load_model_data(m, data_portal, inputs_directory):
                      )
 
 
-# TODO: figure out what the best place is to export these results
-def export_results(m):
-    for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Provide_LF_Reserves_Up[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_LF_Reserves_Up[g, tmp].value)
-                  )
-
-    for g in getattr(m, "REGULATION_UP_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Provide_Regulation_Up[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Regulation_Up[g, tmp].value)
-                  )
-
-    for g in getattr(m, "LF_RESERVES_DOWN_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Provide_LF_Reserves_Down[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_LF_Reserves_Down[g, tmp].value)
-                  )
-
-    for g in getattr(m, "REGULATION_DOWN_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Provide_Regulation_Down[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Provide_Regulation_Down[g, tmp].value)
-                  )
-
-
 def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by operational type based on operational
