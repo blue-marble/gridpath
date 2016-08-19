@@ -4,9 +4,7 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-import os
-
-from pyomo.environ import *
+from pyomo.environ import Constraint
 
 
 def power_provision_rule(mod, g, tmp):

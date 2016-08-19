@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from pyomo.environ import *
+from pyomo.environ import Expression, Objective, minimize
 
 
 def add_model_components(m):

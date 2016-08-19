@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import os
 
-from pyomo.environ import *
+import os.path
+from pyomo.environ import Set
 
 
 def add_model_components(m):

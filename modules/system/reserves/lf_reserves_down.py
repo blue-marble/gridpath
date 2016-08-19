@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import os.path
 
 from reserve_requirements import add_generic_reserve_components
 

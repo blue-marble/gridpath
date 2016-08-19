@@ -5,9 +5,8 @@ Operations of variable generators. Can't provide reserves.
 No curtailment variable by individual generator.
 """
 
-import os
-
-from pyomo.environ import *
+import os.path
+from pyomo.environ import Param, PercentFraction, Constraint
 
 
 def add_module_specific_components(m):

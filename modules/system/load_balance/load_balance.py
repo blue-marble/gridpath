@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import os
 
-from pyomo.environ import *
+import os.path
+from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals
 
 
 def add_model_components(m):

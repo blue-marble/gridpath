@@ -4,11 +4,10 @@
 Describe the services that the generation infrastructure can provide, e.g.
 power, reserves, ancillary services, etc.
 """
-import os
-import csv
-import pandas
+import os.path
+from pandas import read_csv
 
-from pyomo.environ import *
+from pyomo.environ import Param, Set, PercentFraction, Boolean, PositiveReals
 
 
 def determine_dynamic_components(m, inputs_directory):
@@ -24,11 +23,11 @@ def determine_dynamic_components(m, inputs_directory):
     :return:
     """
     dynamic_components = \
-        pandas.read_csv(os.path.join(inputs_directory, "generators.tab"),
-                        sep="\t", usecols=["GENERATORS",
-                                           "startup_cost",
-                                           "shutdown_cost"]
-                        )
+        read_csv(os.path.join(inputs_directory, "generators.tab"),
+                 sep="\t", usecols=["GENERATORS",
+                                    "startup_cost",
+                                    "shutdown_cost"]
+                 )
 
     # If numeric values greater than for startup/shutdown costs are specified
     # for some generators, add those generators to lists that will be used to
