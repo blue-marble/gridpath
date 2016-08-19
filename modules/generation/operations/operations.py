@@ -3,13 +3,15 @@
 """
 Describe operational constraints on the generation infrastructure.
 """
-import os
-import csv
-import sys
+import os.path
+from csv import reader
+from pandas import read_csv
 
-from pyomo.environ import *
+from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 from importlib import import_module
-import pandas
+
+from auxiliary import check_list_items_are_unique, \
+    find_list_item_position, make_gen_tmp_var_df
 
 
 def determine_dynamic_components(m, inputs_directory):
@@ -27,8 +29,8 @@ def determine_dynamic_components(m, inputs_directory):
 
     with open(os.path.join(inputs_directory, "generators.tab"), "rb") \
             as generation_capacity_file:
-        generation_capacity_reader = csv.reader(generation_capacity_file,
-                                                delimiter="\t")
+        generation_capacity_reader = reader(generation_capacity_file,
+                                            delimiter="\t")
         headers = generation_capacity_reader.next()
         # Check that columns are not repeated
         check_list_items_are_unique(headers)
@@ -67,10 +69,9 @@ def determine_dynamic_components(m, inputs_directory):
     # than having two separate methods
     # Get the operational type of each generator
     dynamic_components = \
-        pandas.read_csv(os.path.join(inputs_directory, "generators.tab"),
-                        sep="\t", usecols=["GENERATORS",
-                                           "operational_type"]
-                        )
+        read_csv(os.path.join(inputs_directory, "generators.tab"),
+                 sep="\t", usecols=["GENERATORS", "operational_type"]
+                 )
 
     # Required modules are the unique set of generator operational types
     # This list will be used to know which operational modules to load
@@ -98,7 +99,6 @@ def load_operational_modules(required_modules):
                           + imp_op_m + ".")
         except ImportError:
             print("ERROR! Operational module " + op_m + " not found.")
-            sys.exit()
 
     return imported_operational_modules
 
@@ -229,41 +229,16 @@ def load_model_data(m, data_portal, inputs_directory):
             pass
 
 
-def export_results(m):
-    for g in getattr(m, "GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print("Power_Provision[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(m.Power_Provision[g, tmp].expr.value)
-                  )
+def export_results(scenario, m):
+    """
+    Export operations results.
+    :param scenario:
+    :param m:
+    :return:
+    """
 
-    for g in getattr(m, "LF_RESERVES_UP_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print(
-            "Provide_LF_Reserves_Up[" + str(g) + ", " + str(tmp) + "]: "
-            + str(m.Provide_LF_Reserves_Up[g, tmp].value)
-            )
+    m.module_specific_df = []
 
-    for g in getattr(m, "REGULATION_UP_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print(
-            "Provide_Regulation_Up[" + str(g) + ", " + str(tmp) + "]: "
-            + str(m.Provide_Regulation_Up[g, tmp].value)
-            )
-
-    for g in getattr(m, "LF_RESERVES_DOWN_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print(
-            "Provide_LF_Reserves_Down[" + str(g) + ", " + str(tmp) + "]: "
-            + str(m.Provide_LF_Reserves_Down[g, tmp].value)
-            )
-
-    for g in getattr(m, "REGULATION_DOWN_GENERATORS"):
-        for tmp in getattr(m, "TIMEPOINTS"):
-            print(
-            "Provide_Regulation_Down[" + str(g) + ", " + str(tmp) + "]: "
-            + str(m.Provide_Regulation_Down[g, tmp].value)
-            )
-            
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)
     for op_m in m.required_operational_modules:
@@ -274,33 +249,42 @@ def export_results(m):
         else:
             pass
 
+    # Make pandas dataframes for the various operations variables results
+    power_df = make_gen_tmp_var_df(m,
+                                   "GENERATORS",
+                                   "TIMEPOINTS",
+                                   "Power_Provision",
+                                   "power")
+    lf_reserves_up_df = make_gen_tmp_var_df(m,
+                                            "LF_RESERVES_UP_GENERATORS",
+                                            "TIMEPOINTS",
+                                            "Provide_LF_Reserves_Up",
+                                            "lf_reserves_up")
+    lf_reserves_down_df = make_gen_tmp_var_df(m,
+                                              "LF_RESERVES_DOWN_GENERATORS",
+                                              "TIMEPOINTS",
+                                              "Provide_LF_Reserves_Down",
+                                              "lf_reserves_down")
+    regulation_up_df = make_gen_tmp_var_df(m,
+                                           "REGULATION_UP_GENERATORS",
+                                           "TIMEPOINTS",
+                                           "Provide_Regulation_Up",
+                                           "regulation_up")
+    regulation_down_df = make_gen_tmp_var_df(m,
+                                             "REGULATION_DOWN_GENERATORS",
+                                             "TIMEPOINTS",
+                                             "Provide_Regulation_Down",
+                                             "regulation_down")
 
-def check_list_has_single_item(l, error_msg):
-    if len(l) > 1:
-        raise ValueError(error_msg)
-    else:
-        pass
+    dfs_to_merge = [power_df] + m.module_specific_df + \
+                   [lf_reserves_up_df, lf_reserves_down_df,
+                    regulation_up_df, regulation_down_df]
 
+    df_for_export = reduce(lambda left, right:
+                           left.join(right, how="outer"),
+                           dfs_to_merge)
+    df_for_export.to_csv(
+        os.path.join(
+            os.getcwd(), "runs", scenario, "results", "operations.csv"),
+        header=True, index=True)
 
-def find_list_item_position(l, item):
-    """
-
-    :param l:
-    :param item:
-    :return:
-    """
-    return [i for i, element in enumerate(l) if element == item]
-
-
-def check_list_items_are_unique(l):
-    """
-
-    :param l:
-    :return:
-    """
-    for item in l:
-        positions = find_list_item_position(l, item)
-        check_list_has_single_item(
-            l=positions,
-            error_msg="Service " + str(item) + " is specified more than once" +
-            " in generators.tab.")

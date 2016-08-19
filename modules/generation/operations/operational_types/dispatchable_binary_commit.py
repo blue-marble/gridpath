@@ -4,10 +4,9 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-import os
-import csv
-
 from pyomo.environ import *
+
+from ..auxiliary import make_gen_tmp_var_df
 
 
 def add_module_specific_components(m):
@@ -90,8 +89,14 @@ def shutdown_rule(mod, g, tmp):
 
 
 def export_module_specific_results(mod):
-    for g in getattr(mod, "DISPATCHABLE_BINARY_COMMIT_GENERATORS"):
-        for tmp in getattr(mod, "TIMEPOINTS"):
-            print("Commit_Binary[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(mod.Commit_Binary[g, tmp].value)
-                  )
+    """
+    Export commitment decisions.
+    """
+    continuous_commit_df = \
+        make_gen_tmp_var_df(mod,
+                            "DISPATCHABLE_BINARY_COMMIT_GENERATORS",
+                            "TIMEPOINTS",
+                            "Commit_Binary",
+                            "commit_binary")
+
+    mod.module_specific_df.append(continuous_commit_df)

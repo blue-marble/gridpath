@@ -4,10 +4,9 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-import os
-import csv
-
 from pyomo.environ import *
+
+from ..auxiliary import make_gen_tmp_var_df
 
 
 def add_module_specific_components(m):
@@ -19,9 +18,9 @@ def add_module_specific_components(m):
     """
 
     m.Commit_Continuous = Var(m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS,
-                             m.TIMEPOINTS,
-                             bounds=(0, 1)
-                             )
+                              m.TIMEPOINTS,
+                              bounds=(0, 1)
+                              )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -91,8 +90,17 @@ def shutdown_rule(mod, g, tmp):
 
 
 def export_module_specific_results(mod):
-    for g in getattr(mod, "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS"):
-        for tmp in getattr(mod, "TIMEPOINTS"):
-            print("Commit_Continuous[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(mod.Commit_Continuous[g, tmp].value)
-                  )
+    """
+    Export commitment decisions.
+    :param mod:
+    :return:
+    """
+
+    continuous_commit_df = \
+        make_gen_tmp_var_df(mod,
+                            "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS",
+                            "TIMEPOINTS",
+                            "Commit_Continuous",
+                            "commit_continuous")
+
+    mod.module_specific_df.append(continuous_commit_df)

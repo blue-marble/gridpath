@@ -50,7 +50,7 @@ def run_scenario(scenario):
 
     save_duals(scenario, instance, loaded_modules)
 
-    export_results(instance, loaded_modules)
+    export_results(scenario, instance, loaded_modules)
 
 
 def make_dynamic_component_objects(model):
@@ -172,10 +172,10 @@ def solve(instance):
     return results
 
 
-def export_results(instance, loaded_modules):
+def export_results(scenario, instance, loaded_modules):
     for m in loaded_modules:
         if hasattr(m, "export_results"):
-            m.export_results(instance)
+            m.export_results(scenario, instance)
     else:
         pass
 

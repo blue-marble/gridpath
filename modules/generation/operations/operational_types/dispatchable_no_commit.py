@@ -49,7 +49,15 @@ def min_power_rule(mod, g, tmp):
         >= 0
 
 
+# TODO: should these return 'None' -- what is the no-commit modeling?
 def startup_rule(mod, g, tmp):
+    """
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
     return None
 
 
