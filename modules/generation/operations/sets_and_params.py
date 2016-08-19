@@ -86,16 +86,17 @@ def add_model_components(m):
         generator_subset_init("operational_type", "dispatchable_binary_commit")
         )
 
-    m.DISPATCHABLE_FLEET_COMMIT_GENERATORS = Set(
+    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS = Set(
         within=m.GENERATORS,
         initialize=
-        generator_subset_init("operational_type", "dispatchable_fleet_commit")
+        generator_subset_init("operational_type",
+                              "dispatchable_continuous_commit")
         )
 
     m.DISPATCHABLE_GENERATORS = Set(initialize=
                                     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
                                     m.DISPATCHABLE_NO_COMMIT_GENERATORS |
-                                    m.DISPATCHABLE_FLEET_COMMIT_GENERATORS)
+                                    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
 
     m.min_stable_level = Param(m.DISPATCHABLE_GENERATORS,
                                within=PercentFraction)

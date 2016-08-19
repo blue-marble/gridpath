@@ -18,10 +18,10 @@ def add_module_specific_components(m):
     :return:
     """
 
-    m.Commit_Fleet_Fraction = Var(m.DISPATCHABLE_FLEET_COMMIT_GENERATORS,
-                                  m.TIMEPOINTS,
-                                  bounds=(0, 1)
-                                  )
+    m.Commit_Continuous = Var(m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS,
+                             m.TIMEPOINTS,
+                             bounds=(0, 1)
+                             )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -46,7 +46,7 @@ def max_power_rule(mod, g, tmp):
     return mod.Provide_Power[g, tmp] + \
         sum(getattr(mod, c)[g, tmp]
             for c in mod.headroom_variables[g]) \
-        <= mod.capacity[g] * mod.Commit_Fleet_Fraction[g, tmp]
+        <= mod.capacity[g] * mod.Commit_Continuous[g, tmp]
 
 
 def min_power_rule(mod, g, tmp):
@@ -60,7 +60,7 @@ def min_power_rule(mod, g, tmp):
     return mod.Provide_Power[g, tmp] - \
         sum(getattr(mod, c)[g, tmp]
             for c in mod.footroom_variables[g]) \
-        >= mod.Commit_Fleet_Fraction[g, tmp] * mod.capacity[g] \
+        >= mod.Commit_Continuous[g, tmp] * mod.capacity[g] \
         * mod.min_stable_level[g]
 
 
@@ -73,8 +73,8 @@ def startup_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Commit_Fleet_Fraction[g, tmp] \
-        - mod.Commit_Fleet_Fraction[g, mod.previous_timepoint[tmp]]
+    return mod.Commit_Continuous[g, tmp] \
+        - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]
 
 
 def shutdown_rule(mod, g, tmp):
@@ -86,13 +86,13 @@ def shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Commit_Fleet_Fraction[g, mod.previous_timepoint[tmp]] \
-        - mod.Commit_Fleet_Fraction[g, tmp]
+    return mod.Commit_Continuous[g, mod.previous_timepoint[tmp]] \
+        - mod.Commit_Continuous[g, tmp]
 
 
 def export_module_specific_results(mod):
-    for g in getattr(mod, "DISPATCHABLE_FLEET_COMMIT_GENERATORS"):
+    for g in getattr(mod, "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS"):
         for tmp in getattr(mod, "TIMEPOINTS"):
-            print("Commit_Fleet_Fraction[" + str(g) + ", " + str(tmp) + "]: "
-                  + str(mod.Commit_Fleet_Fraction[g, tmp].value)
+            print("Commit_Continuous[" + str(g) + ", " + str(tmp) + "]: "
+                  + str(mod.Commit_Continuous[g, tmp].value)
                   )
