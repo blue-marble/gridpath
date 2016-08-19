@@ -16,17 +16,16 @@ def add_model_components(m):
     # ### Aggregate power costs for objective function ### #
     # Add cost to objective function
     # TODO: fix this when periods added, etc.
-    def generation_cost_rule(m):
+    def generation_cost_rule(m, g, tmp):
         """
-        Power production cost for all generators across all timepoints
+        Power production cost for each generator.
         :param m:
         :return:
         """
-        return sum(m.Power_Provision[g, tmp] * m.variable_cost[g]
-                   for g in m.GENERATORS for tmp in m.TIMEPOINTS)
+        return m.Power_Provision[g, tmp] * m.variable_cost[g]
 
-    m.Total_Generation_Cost = Expression(rule=generation_cost_rule)
-    m.total_cost_components.append("Total_Generation_Cost")
+    m.Generation_Cost = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                   rule=generation_cost_rule)
 
     # ### Startup and shutdown costs ### #
     m.Startup_Cost = Var(m.STARTUP_COST_GENERATORS, m.TIMEPOINTS,
@@ -69,29 +68,3 @@ def add_model_components(m):
     m.Shutdown_Cost_Constraint = Constraint(m.SHUTDOWN_COST_GENERATORS,
                                             m.TIMEPOINTS,
                                             rule=shutdown_cost_rule)
-
-    # Add to objective function
-    def total_startup_cost_rule(mod):
-        """
-        Sum startup costs for the objective function term.
-        :param mod:
-        :return:
-        """
-        return sum(mod.Startup_Cost[g, tmp]
-                   for g in mod.STARTUP_COST_GENERATORS
-                   for tmp in mod.TIMEPOINTS)
-    m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
-    m.total_cost_components.append("Total_Startup_Cost")
-
-    # Add to objective function
-    def total_shutdown_cost_rule(mod):
-        """
-        Sum shutdown costs for the objective function term.
-        :param mod:
-        :return:
-        """
-        return sum(mod.Shutdown_Cost[g, tmp]
-                   for g in mod.SHUTDOWN_COST_GENERATORS
-                   for tmp in mod.TIMEPOINTS)
-    m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
-    m.total_cost_components.append("Total_Shutdown_Cost")
