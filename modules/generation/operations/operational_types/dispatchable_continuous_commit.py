@@ -67,26 +67,42 @@ def startup_rule(mod, g, tmp):
     """
     Will be positive when there are more generators committed in the current
     timepoint that there were in the previous timepoint.
+    If horizon is circular, the last timepoint of the horizon is the
+    previous_timepoint for the first timepoint if the horizon;
+    if the horizon is linear, no previous_timepoint is defined for the first
+    timepoint of the horizon, so return 'None' here
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
-    return mod.Commit_Continuous[g, tmp] \
-        - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        return None
+    else:
+        return mod.Commit_Continuous[g, tmp] \
+            - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]
 
 
 def shutdown_rule(mod, g, tmp):
     """
     Will be positive when there were more generators committed in the previous
     timepoint that there are in the current timepoint.
+    If horizon is circular, the last timepoint of the horizon is the
+    previous_timepoint for the first timepoint if the horizon;
+    if the horizon is linear, no previous_timepoint is defined for the first
+    timepoint of the horizon, so return 'None' here
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
-    return mod.Commit_Continuous[g, mod.previous_timepoint[tmp]] \
-        - mod.Commit_Continuous[g, tmp]
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        return None
+    else:
+        return mod.Commit_Continuous[g, mod.previous_timepoint[tmp]] \
+            - mod.Commit_Continuous[g, tmp]
 
 
 def export_module_specific_results(mod):

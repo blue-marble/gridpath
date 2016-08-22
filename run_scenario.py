@@ -53,6 +53,7 @@ def run_scenario(scenario):
     export_results(scenario, instance, loaded_modules)
 
 
+# TODO: move these to load_balance and objective_function modules respectively
 def make_dynamic_component_objects(model):
     """
     Lists of model components that modules will populate
@@ -71,7 +72,9 @@ def make_dynamic_component_objects(model):
 def get_modules():
     # Modules/
     # TODO: read from file
-    modules_to_use = ['geography.zones', 'time.dispatch_timepoints',
+    modules_to_use = ['geography.zones',
+                      'time.operations.timepoints',
+                      'time.operations.horizons',
                       'generation.capacity.generation_capacity',
                       'generation.operations.sets_and_params',
                       'generation.operations.operations',

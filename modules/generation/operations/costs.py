@@ -40,13 +40,21 @@ def add_model_components(m):
         defined to be non-negative, so if Startup_Expression is 0 or negative
         (i.e. no units started or units shut down since the previous timepoint),
         Startup_Cost will be 0.
+        If horizon is circular, the last timepoint of the horizon is the
+        previous_timepoint for the first timepoint if the horizon;
+        if the horizon is linear, no previous_timepoint is defined for the first
+        timepoint of the horizon, so skip constraint.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Startup_Cost[g, tmp] \
-            >= mod.Startup_Expression[g, tmp] * mod.startup_cost[g]
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.Startup_Cost[g, tmp] \
+                >= mod.Startup_Expression[g, tmp] * mod.startup_cost[g]
     m.Startup_Cost_Constraint = Constraint(m.STARTUP_COST_GENERATORS,
                                            m.TIMEPOINTS,
                                            rule=startup_cost_rule)
@@ -58,13 +66,21 @@ def add_model_components(m):
         defined to be non-negative, so if Shutdown_Expression is 0 or negative
         (i.e. no units shut down or units started since the previous timepoint),
         Shutdown_Cost will be 0.
+        If horizon is circular, the last timepoint of the horizon is the
+        previous_timepoint for the first timepoint if the horizon;
+        if the horizon is linear, no previous_timepoint is defined for the first
+        timepoint of the horizon, so skip constraint.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Shutdown_Cost[g, tmp] \
-            >= mod.Shutdown_Expression[g, tmp] * mod.shutdown_cost[g]
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.Shutdown_Cost[g, tmp] \
+                >= mod.Shutdown_Expression[g, tmp] * mod.shutdown_cost[g]
     m.Shutdown_Cost_Constraint = Constraint(m.SHUTDOWN_COST_GENERATORS,
                                             m.TIMEPOINTS,
                                             rule=shutdown_cost_rule)

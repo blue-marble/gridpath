@@ -124,7 +124,7 @@ def add_model_components(m):
         within=m.GENERATORS,
         initialize=generator_subset_init("regulation_down", 1))
 
-    # Generatos that incur startup/shutdown costs
+    # Generators that incur startup/shutdown costs
     m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS,
                                     initialize=m.startup_cost_generators)
     m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS,
