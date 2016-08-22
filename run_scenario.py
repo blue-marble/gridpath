@@ -5,9 +5,10 @@ Run model.
 """
 # General
 from importlib import import_module
+import os.path
 import sys
-import os
-import csv
+from csv import writer
+from pandas import read_csv
 
 # Pyomo
 from pyomo.environ import *
@@ -26,7 +27,7 @@ def run_scenario(scenario):
 
     make_dynamic_component_objects(model)
 
-    modules_to_use = get_modules()
+    modules_to_use = get_modules(scenario)
 
     loaded_modules = load_modules(modules_to_use)
 
@@ -69,24 +70,20 @@ def make_dynamic_component_objects(model):
     model.total_cost_components = list()
 
 
-def get_modules():
-    # Modules/
-    # TODO: read from file
-    modules_to_use = ['geography.zones',
-                      'time.operations.timepoints',
-                      'time.operations.horizons',
-                      'generation.capacity.generation_capacity',
-                      'generation.operations.sets_and_params',
-                      'generation.operations.operations',
-                      'generation.operations.costs',
-                      'system.load_balance.load_balance',
-                      'system.reserves.lf_reserves_up',
-                      'system.reserves.regulation_up',
-                      'system.reserves.lf_reserves_down',
-                      'system.reserves.regulation_down',
-                      'objective.min_total_cost']
-
-    return modules_to_use
+def get_modules(scenario):
+    """
+    Modules needed for scenario
+    :param scenario:
+    :return:
+    """
+    modules_file = os.path.join(os.getcwd(), "runs", scenario, "modules.csv")
+    try:
+        modules_to_use = read_csv(modules_file)["modules"].tolist()
+        return modules_to_use
+    except IOError:
+        print "ERROR! Modules file {} not found for scenario '{}'"\
+            .format(modules_file, scenario)
+        sys.exit(1)
 
 
 def load_modules(modules_to_use):
@@ -98,7 +95,7 @@ def load_modules(modules_to_use):
             loaded_modules.append(imported_module)
         except ImportError:
             print("ERROR! Module " + m + " not found.")
-            sys.exit()
+            sys.exit(1)
 
     return loaded_modules
 
@@ -123,7 +120,7 @@ def create_abstract_model(model, loaded_modules):
             m.add_model_components(model)
         else:
             print("ERROR! Module " + m + " does not contain model components.")
-            sys.exit()
+            sys.exit(1)
 
 
 def load_scenario_data(model, loaded_modules, scenario):
@@ -219,11 +216,11 @@ def save_duals(scenario, instance, loaded_modules):
         print c
         constraint_object = getattr(instance, c)
         print constraint_object
-        writer = csv.writer(open(os.path.join(
+        duals_writer = writer(open(os.path.join(
             os.getcwd(), "runs", scenario, "results", str(c) + ".csv"), "wb"))
-        writer.writerow(instance.constraint_indices[c])
+        duals_writer.writerow(instance.constraint_indices[c])
         for index in constraint_object:
-            writer.writerow(list(index) +
+            duals_writer.writerow(list(index) +
                             [instance.dual[constraint_object[index]]])
 
 if __name__ == "__main__":
