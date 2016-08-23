@@ -229,10 +229,10 @@ def load_model_data(m, data_portal, inputs_directory):
             pass
 
 
-def export_results(scenario, m):
+def export_results(problem_directory, m):
     """
     Export operations results.
-    :param scenario:
+    :param problem_directory:
     :param m:
     :return:
     """
@@ -284,7 +284,5 @@ def export_results(scenario, m):
                            left.join(right, how="outer"),
                            dfs_to_merge)
     df_for_export.to_csv(
-        os.path.join(
-            os.getcwd(), "runs", scenario, "results", "operations.csv"),
+        os.path.join(problem_directory, "results", "operations.csv"),
         header=True, index=True)
-

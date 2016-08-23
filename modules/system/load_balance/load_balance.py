@@ -81,7 +81,7 @@ def load_model_data(m, data_portal, inputs_directory):
                      )
 
 
-def export_results(scenario, m):
+def export_results(problem_directory, m):
     for z in getattr(m, "LOAD_ZONES"):
         for tmp in getattr(m, "TIMEPOINTS"):
             print("Overgeneration[" + str(z) + ", " + str(tmp) + "]: "
