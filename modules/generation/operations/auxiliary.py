@@ -6,6 +6,31 @@ Various auxiliary functions used in operations module
 
 
 import pandas
+from importlib import import_module
+
+
+def load_operational_modules(required_modules):
+    imported_operational_modules = dict()
+    for op_m in required_modules:
+        try:
+            imp_op_m = \
+                import_module(
+                    "." + op_m,
+                    package="modules.generation.operations.operational_types"
+                )
+            imported_operational_modules[op_m] = imp_op_m
+            required_attributes = ["power_provision_rule",
+                                   "max_power_rule", "min_power_rule"]
+            for a in required_attributes:
+                if hasattr(imp_op_m, a):
+                    pass
+                else:
+                    raise("ERROR! No " + a + " function in module "
+                          + imp_op_m + ".")
+        except ImportError:
+            print("ERROR! Operational module " + op_m + " not found.")
+
+    return imported_operational_modules
 
 
 def check_list_has_single_item(l, error_msg):

@@ -4,7 +4,7 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-from pyomo.environ import Var, Binary
+from pyomo.environ import Var, Set, Param, Binary
 
 from ..auxiliary import make_gen_tmp_var_df
 
@@ -31,6 +31,10 @@ def power_provision_rule(mod, g, tmp):
     :return:
     """
     return mod.Provide_Power[g, tmp]
+
+
+def commitment_rule(mod, g, tmp):
+    return mod.Commit_Binary[g, tmp]
 
 
 def max_power_rule(mod, g, tmp):
@@ -102,6 +106,18 @@ def shutdown_rule(mod, g, tmp):
     else:
         return mod.Commit_Binary[g, mod.previous_timepoint[tmp]] \
             - mod.Commit_Binary[g, tmp]
+
+
+def fix_commitment(mod, g, tmp):
+    """
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    mod.Commit_Binary[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Binary[g, tmp].fixed = True
 
 
 def export_module_specific_results(mod):

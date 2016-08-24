@@ -15,7 +15,7 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 # Scenario name
-scenario_name = "test"
+scenario_name = "multi_stage_prod_cost"
 
 
 class ScenarioStructure(object):
@@ -57,6 +57,20 @@ class ScenarioStructure(object):
                         {s: os.path.join(
                             self.horizon_subproblem_directories[h], s)
                          for s in self.stage_subproblems[h]}
+                    # Create the commitment pass-through file (also deletes any
+                    # prior results)
+                    # TODO: need better handling of deleting prior results?
+                    with open(
+                            os.path.join(
+                                self.horizon_subproblem_directories[h],
+                            "pass_through_inputs",
+                                "fixed_commitment.csv"), "wb") \
+                            as fixed_commitment_file:
+                        fixed_commitment_writer = writer(fixed_commitment_file)
+                        fixed_commitment_writer.writerow(
+                            ["generator", "timepoint", "final_stage",
+                             "commitment"])
+
                     # Since there were subproblems in this horizon, empty the
                     # horizon subproblems list -- problems are actually by
                     # stage one level down
@@ -68,7 +82,6 @@ class ScenarioStructure(object):
         # If main scenario has no horizon subproblems, horizons list is empty
         else:
             self.horizon_subproblems = []
-
 
     def make_directories(self):
         pass
@@ -100,6 +113,8 @@ def run_optimization(problem_directory):
     scenario_data = load_scenario_data(model, loaded_modules, problem_directory)
 
     instance = create_problem_instance(model, scenario_data)
+
+    instance = fix_variables(instance, loaded_modules)
 
     results = solve(instance)
 
@@ -194,6 +209,22 @@ def create_problem_instance(model, loaded_data):
     print("Creating problem instance...")
     # Create instance
     instance = model.create_instance(loaded_data)
+    return instance
+
+
+def fix_variables(instance, loaded_modules):
+    """
+    Fix any variables modules want fixed and return the modified instance
+    :param instance:
+    :param loaded_modules:
+    :return:
+    """
+    for m in loaded_modules:
+        if hasattr(m, "fix_variables"):
+            m.fix_variables(instance)
+        else:
+            pass
+
     return instance
 
 

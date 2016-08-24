@@ -34,6 +34,10 @@ def power_provision_rule(mod, g, tmp):
     return mod.Provide_Power[g, tmp]
 
 
+def commitment_rule(mod, g, tmp):
+    return mod.Commit_Continuous[g, tmp]
+
+
 def max_power_rule(mod, g, tmp):
     """
     Power plus upward services cannot exceed capacity.
@@ -103,6 +107,18 @@ def shutdown_rule(mod, g, tmp):
     else:
         return mod.Commit_Continuous[g, mod.previous_timepoint[tmp]] \
             - mod.Commit_Continuous[g, tmp]
+
+
+def fix_commitment(mod, g, tmp):
+    """
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    mod.Commit_Continuous[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Continuous[g, tmp].fixed = True
 
 
 def export_module_specific_results(mod):
