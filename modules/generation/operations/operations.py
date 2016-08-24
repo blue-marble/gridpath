@@ -14,12 +14,14 @@ from auxiliary import check_list_items_are_unique, \
     load_operational_modules
 
 
-def determine_dynamic_components(m, inputs_directory):
+def determine_dynamic_components(m, scenario_directory, horizon, stage):
     """
     Determine which operational type modules will be needed based on the
     operational types in the input data.
     :param m:
-    :param inputs_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 
@@ -27,8 +29,8 @@ def determine_dynamic_components(m, inputs_directory):
     m.headroom_variables = dict()
     m.footroom_variables = dict()
 
-    with open(os.path.join(inputs_directory, "generators.tab"), "rb") \
-            as generation_capacity_file:
+    with open(os.path.join(scenario_directory, "inputs", "generators.tab"),
+              "rb") as generation_capacity_file:
         generation_capacity_reader = reader(generation_capacity_file,
                                             delimiter="\t")
         headers = generation_capacity_reader.next()
@@ -69,7 +71,7 @@ def determine_dynamic_components(m, inputs_directory):
     # than having two separate methods
     # Get the operational type of each generator
     dynamic_components = \
-        read_csv(os.path.join(inputs_directory, "generators.tab"),
+        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
                  sep="\t", usecols=["GENERATORS", "operational_type"]
                  )
 
@@ -186,12 +188,14 @@ def add_model_components(m):
         rule=shutdown_rule)
 
 
-def load_model_data(m, data_portal, inputs_directory):
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
     Traverse required operational modules and load any module-specific data.
     :param m:
     :param data_portal:
-    :param inputs_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
     imported_operational_modules = \
@@ -199,16 +203,19 @@ def load_model_data(m, data_portal, inputs_directory):
     for op_m in m.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
+            print op_m
             imported_operational_modules[op_m].load_module_specific_data(
-                m, data_portal, inputs_directory)
+                m, data_portal, scenario_directory, horizon, stage)
         else:
             pass
 
 
-def export_results(problem_directory, m):
+def export_results(scenario_directory, horizon, stage, m):
     """
     Export operations results.
-    :param problem_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param m:
     :return:
     """
@@ -260,5 +267,6 @@ def export_results(problem_directory, m):
                            left.join(right, how="outer"),
                            dfs_to_merge)
     df_for_export.to_csv(
-        os.path.join(problem_directory, "results", "operations.csv"),
+        os.path.join(scenario_directory, horizon, stage, "results",
+                     "operations.csv"),
         header=True, index=True)

@@ -12,11 +12,13 @@ from pyomo.environ import Set, Param, PercentFraction, Expression
 from auxiliary import load_operational_modules
 
 
-def determine_dynamic_components(m, inputs_directory):
+def determine_dynamic_components(m, scenario_directory, horizon, stage):
     """
 
     :param m:
-    :param inputs_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 
@@ -24,11 +26,12 @@ def determine_dynamic_components(m, inputs_directory):
     # which is one level up from the inputs directory
     # TODO: pass the problem directory and figure out the inputs directory from
     # there instead
-    m.current_stage = \
-        os.path.basename(os.path.normpath(os.path.join(inputs_directory, "..")))
+    # m.current_stage = \
+    #     os.path.basename(os.path.normpath(scenario_directory))
+    m.current_stage = stage
 
     dynamic_components = \
-        read_csv(os.path.join(inputs_directory, "generators.tab"),
+        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
                  sep="\t", usecols=["GENERATORS",
                                     "last_commitment_stage"]
                  )
@@ -46,8 +49,8 @@ def determine_dynamic_components(m, inputs_directory):
     # Get the list of generators whose commitment has already been fixed and
     # the fixed commitment
     fixed_commitment_df = \
-        read_csv(os.path.join(inputs_directory,
-                              "../../pass_through_inputs/fixed_commitment.csv"))
+        read_csv(os.path.join(scenario_directory, horizon,
+                              "pass_through_inputs", "fixed_commitment.csv"))
 
     m.fixed_commitment_generators =\
         set(fixed_commitment_df["generator"].tolist())
@@ -121,16 +124,18 @@ def fix_variables(m):
                 imp_op_m.fix_commitment(m, g, tmp)
 
 
-def export_results(problem_directory, m):
+def export_results(scenario_directory, horizon, stage, m):
     """
-    Export operations results.
-    :param problem_directory:
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param m:
     :return:
     """
     with open(os.path.join(
-            problem_directory,
-            "../pass_through_inputs/fixed_commitment.csv"), "ab") \
+            scenario_directory, horizon,
+            "pass_through_inputs", "fixed_commitment.csv"), "ab") \
             as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file)
         for g in m.FINAL_COMMITMENT_GENERATORS:

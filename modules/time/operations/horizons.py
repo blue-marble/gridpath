@@ -52,21 +52,18 @@ def add_model_components(m):
               initialize=previous_timepoint_init)
 
 
-def load_model_data(m, data_portal, inputs_directory):
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
-
-    :param m:
-    :param data_portal:
-    :param inputs_directory:
-    :return:
     """
-    data_portal.load(filename=os.path.join(inputs_directory, "horizons.tab"),
+    data_portal.load(filename=os.path.join(scenario_directory, horizon,
+                                           "inputs", "horizons.tab"),
                      select=("HORIZONS", "boundary"),
                      index=m.HORIZONS,
                      param=(m.boundary,)
                      )
 
-    data_portal.load(filename=os.path.join(inputs_directory, "timepoints.tab"),
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs", "timepoints.tab"),
                      select=("TIMEPOINTS","horizon"),
                      index=m.TIMEPOINTS,
                      param=m.horizon

@@ -1,6 +1,0 @@
-GENERATORS	capacity	variable_cost	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level	startup_cost	shutdown_cost
-Gen1	6	1	must_run	0	0	0	0	.	.	.
-Gen2	6	2	dispatchable_continuous_commit	1	1	1	1	0.0	1.0	2.0
-Gen3	6	1	dispatchable_continuous_commit	0	1	0	1	0.4	1.0	0.0
-Gen4	6	2	dispatchable_continuous_commit	0	0	0	0	0.4	0.0	1.0
-Gen5	2	0	variable	0	0	0	0	.	.	.

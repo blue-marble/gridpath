@@ -15,7 +15,7 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 # Scenario name
-scenario_name = "multi_stage_prod_cost"
+scenario_name = "test"
 
 
 class ScenarioStructure(object):
@@ -35,7 +35,9 @@ class ScenarioStructure(object):
         # If yes, make list of horizon subproblem names and
         # make a dictionary with the horizon subproblem name as key and
         # the horizon subproblem directory as value
+        # TODO: are the subproblem directory dicts still needed?
         if check_for_subproblems(self.main_scenario_directory):
+            self.horizons_flag = True
             self.horizon_subproblems = \
                 get_subproblems(self.main_scenario_directory)
             self.horizon_subproblem_directories = \
@@ -50,6 +52,7 @@ class ScenarioStructure(object):
                 # horizon and of stage directories by horizon and stage
                 if check_for_subproblems(
                         self.horizon_subproblem_directories[h]):
+                    self.stages_flag = True
                     self.stage_subproblems[h] = \
                         get_subproblems(
                             self.horizon_subproblem_directories[h])
@@ -77,17 +80,19 @@ class ScenarioStructure(object):
                     self.horizon_subproblem_directories[h] = []
                 # If horizon has no stage subproblems, stages list is empty
                 else:
+                    self.stages_flag = False
                     self.stage_subproblems[h] = []
 
         # If main scenario has no horizon subproblems, horizons list is empty
         else:
+            self.horizons_flag = False
             self.horizon_subproblems = []
 
     def make_directories(self):
         pass
 
 
-def run_optimization(problem_directory):
+def run_optimization(scenario_directory, horizon, stage):
 
     # TODO: move to each problem's directory
     TempfileManager.tempdir = os.path.join(os.getcwd(), "logs")
@@ -97,12 +102,12 @@ def run_optimization(problem_directory):
 
     make_dynamic_component_objects(model)
 
-    modules_to_use = get_modules(problem_directory)
+    modules_to_use = get_modules(scenario_directory)
 
     loaded_modules = load_modules(modules_to_use)
 
     populate_dynamic_component_lists(model, loaded_modules,
-                                     problem_directory)
+                                     scenario_directory, horizon, stage)
 
     create_abstract_model(model, loaded_modules)
 
@@ -110,7 +115,8 @@ def run_optimization(problem_directory):
     # TODO: maybe this shouldn't always be needed
     model.dual = Suffix(direction=Suffix.IMPORT)
 
-    scenario_data = load_scenario_data(model, loaded_modules, problem_directory)
+    scenario_data = load_scenario_data(model, loaded_modules,
+                                       scenario_directory, horizon, stage)
 
     instance = create_problem_instance(model, scenario_data)
 
@@ -120,11 +126,11 @@ def run_optimization(problem_directory):
 
     instance.solutions.load_from(results)
 
-    save_objective_function_value(problem_directory, instance)
+    save_objective_function_value(scenario_directory, horizon, stage, instance)
 
-    save_duals(problem_directory, instance, loaded_modules)
+    save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
 
-    export_results(problem_directory, instance, loaded_modules)
+    export_results(scenario_directory, horizon, stage, instance, loaded_modules)
 
 
 # TODO: move these to load_balance and objective_function modules respectively
@@ -172,11 +178,12 @@ def load_modules(modules_to_use):
     return loaded_modules
 
 
-def populate_dynamic_component_lists(model, loaded_modules, problem_directory):
-    inputs_directory = os.path.join(problem_directory, "inputs")
+def populate_dynamic_component_lists(model, loaded_modules, scenario_directory,
+                                     horizon, stage):
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(model, inputs_directory)
+            m.determine_dynamic_components(model, scenario_directory, horizon,
+                                           stage)
         else:
             pass
 
@@ -191,15 +198,15 @@ def create_abstract_model(model, loaded_modules):
             sys.exit(1)
 
 
-def load_scenario_data(model, loaded_modules, problem_directory):
+def load_scenario_data(model, loaded_modules, scenario_directory,
+                       horizon, stage):
     print("Loading data...")
     # Load data
     data_portal = DataPortal()
     for m in loaded_modules:
         if hasattr(m, "load_model_data"):
-            m.load_model_data(model, data_portal,
-                              os.path.join(problem_directory, "inputs")
-                              )
+            m.load_model_data(model, data_portal, scenario_directory,
+                              horizon, stage)
         else:
             pass
     return data_portal
@@ -253,33 +260,38 @@ def solve(instance):
     return results
 
 
-def export_results(problem_directory, instance, loaded_modules):
+def export_results(problem_directory, horizon, stage, instance, loaded_modules):
     for m in loaded_modules:
         if hasattr(m, "export_results"):
-            m.export_results(problem_directory, instance)
+            m.export_results(problem_directory, horizon, stage, instance)
     else:
         pass
 
 
-def save_objective_function_value(problem_directory, instance):
+def save_objective_function_value(scenario_directory, horizon, stage, instance):
     """
     Save the objective function value.
-    :param problem_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param instance:
     :return:
     """
     with open(os.path.join(
-            problem_directory, "results", "objective_function_value.txt"),
+            scenario_directory, horizon, stage, "results",
+            "objective_function_value.txt"),
             "w") as objective_file:
         objective_file.write(
             "Objective function: " + str(instance.Total_Cost())
         )
 
 
-def save_duals(problem_directory, instance, loaded_modules):
+def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
     """
     Save the duals of various constraints.
-    :param problem_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param instance:
     :param loaded_modules:
     :return:
@@ -295,7 +307,7 @@ def save_duals(problem_directory, instance, loaded_modules):
     for c in instance.constraint_indices.keys():
         constraint_object = getattr(instance, c)
         duals_writer = writer(open(os.path.join(
-            problem_directory, "results", str(c) + ".csv"),
+            scenario_directory, horizon, stage, "results", str(c) + ".csv"),
             "wb"))
         duals_writer.writerow(instance.constraint_indices[c])
         for index in constraint_object:
@@ -303,6 +315,31 @@ def save_duals(problem_directory, instance, loaded_modules):
                             [instance.dual[constraint_object[index]]])
 
 
+def run_scenario(structure):
+    """
+    Check if there are scenario subproblems and solve each problem
+    :param structure:
+    :return:
+    """
+    # If no horizon subproblems (empty list), run main problem
+    if not structure.horizon_subproblems:
+        run_optimization(structure.main_scenario_directory, "", "")
+    else:
+        for h in structure.horizon_subproblems:
+            # If no stage subproblems (empty list), run horizon problem
+            if not structure.stage_subproblems[h]:
+                print("Running horizon {}".format(h))
+                run_optimization(
+                    structure.main_scenario_directory, h, "")
+            else:
+                for s in structure.stage_subproblems[h]:
+                    print("Running horizon {}, stage {}".format(h, s))
+                    run_optimization(
+                        structure.main_scenario_directory,
+                        h, s)
+
+
+# Auxiliary functions
 def check_for_subproblems(directory):
     """
     Check if more subproblems
@@ -335,28 +372,6 @@ def get_subproblems(directory):
         print """ERROR! Subproblems file {} not found""" \
             .format(subproblems_file)
         sys.exit(1)
-
-
-def run_scenario(structure):
-    """
-
-    :param structure:
-    :return:
-    """
-    # If no horizon subproblems (empty list), run main problem
-    if not structure.horizon_subproblems:
-        run_optimization(structure.main_scenario_directory)
-    else:
-        for h in structure.horizon_subproblems:
-            # If no stage subproblems (empty list), run horizon problem
-            if not structure.stage_subproblems[h]:
-                print("Running horizon {}".format(h))
-                run_optimization(structure.horizon_subproblem_directories[h])
-            else:
-                for s in structure.stage_subproblems[h]:
-                    print("Running horizon {}, stage {}".format(h, s))
-                    run_optimization(
-                        structure.stage_subproblem_directories[h][s])
 
 
 if __name__ == "__main__":

@@ -85,8 +85,20 @@ def shutdown_rule(mod, g, tmp):
     )
 
 
-def load_module_specific_data(mod, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory,
+def load_module_specific_data(mod, data_portal, scenario_directory,
+                              horizon, stage):
+    """
+    Capacity factors vary by horizon and stage, so get inputs from appropriate
+    directory
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs",
                                            "variable_generator_profiles.tab"),
                      index=(mod.VARIABLE_GENERATORS, mod.TIMEPOINTS),
                      param=mod.cap_factor

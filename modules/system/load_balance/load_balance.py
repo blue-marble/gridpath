@@ -75,13 +75,14 @@ def add_model_components(m):
     m.total_cost_components.append("Penalty_Costs")
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "load_mw.tab"),
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs", "load_mw.tab"),
                      param=m.load_mw
                      )
 
 
-def export_results(problem_directory, m):
+def export_results(scenario_directory, horizon, stage, m):
     for z in getattr(m, "LOAD_ZONES"):
         for tmp in getattr(m, "TIMEPOINTS"):
             print("Overgeneration[" + str(z) + ", " + str(tmp) + "]: "

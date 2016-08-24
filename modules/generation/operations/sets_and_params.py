@@ -10,7 +10,7 @@ from pandas import read_csv
 from pyomo.environ import Param, Set, PercentFraction, Boolean, PositiveReals
 
 
-def determine_dynamic_components(m, inputs_directory):
+def determine_dynamic_components(m, scenario_directory, horizon, stage):
     """
     Populate the lists of dynamic components, i.e which generators can provide
     which services. Generators that can vary power output will get the
@@ -19,11 +19,13 @@ def determine_dynamic_components(m, inputs_directory):
     The operational constraints are then built depending on which services a
     generator can provide.
     :param m:
-    :param inputs_directory:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
     dynamic_components = \
-        read_csv(os.path.join(inputs_directory, "generators.tab"),
+        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
                  sep="\t", usecols=["GENERATORS",
                                     "startup_cost",
                                     "shutdown_cost"]
@@ -140,8 +142,18 @@ def add_model_components(m):
                             initialize=m.shutdown_cost_by_generator)
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "generators.tab"),
                      index=m.GENERATORS,
                      select=("GENERATORS", "operational_type",
                              "lf_reserves_up", "regulation_up",

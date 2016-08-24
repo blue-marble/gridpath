@@ -8,8 +8,9 @@ def add_model_components(m):
     m.LOAD_ZONES = Set()
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "load_zones.tab"),
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory, "inputs",
+                                           "load_zones.tab"),
                      set=m.LOAD_ZONES
                      )
 

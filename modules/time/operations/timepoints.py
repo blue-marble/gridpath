@@ -13,8 +13,9 @@ def add_model_components(m):
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "timepoints.tab"),
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
                      param=(),
                      select=("TIMEPOINTS",)

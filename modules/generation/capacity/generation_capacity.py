@@ -11,8 +11,9 @@ def add_model_components(m):
     m.variable_cost = Param(m.GENERATORS, within=NonNegativeReals)
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory, "generators.tab"),
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "generators.tab"),
                      index=m.GENERATORS,
                      select=("GENERATORS", "capacity", "variable_cost"),
                      param=(m.capacity, m.variable_cost)

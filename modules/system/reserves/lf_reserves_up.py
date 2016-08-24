@@ -20,14 +20,15 @@ def add_model_components(m):
         )
 
 
-def load_model_data(m, data_portal, inputs_directory):
-    data_portal.load(filename=os.path.join(inputs_directory,
+def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs",
                                            "lf_reserves_up_requirement.tab"),
                      param=m.lf_reserves_up_requirement_mw
                      )
 
 
-def export_results(problem_directory, m):
+def export_results(scenario_directory, horizon, stage, m):
     for z in getattr(m, "LOAD_ZONES"):
         for tmp in getattr(m, "TIMEPOINTS"):
             print("LF_Reserves_Up_Violation[" + str(z) + ", " + str(tmp) + "]: "
