@@ -27,7 +27,6 @@ class ScenarioStructure(object):
 
     """
     def __init__(self, scenario):
-        self.scenario_name = scenario
         self.main_scenario_directory = \
             os.path.join(os.getcwd(), "runs", scenario)
 
@@ -35,7 +34,6 @@ class ScenarioStructure(object):
         # If yes, make list of horizon subproblem names and
         # make a dictionary with the horizon subproblem name as key and
         # the horizon subproblem directory as value
-        # TODO: are the subproblem directory dicts still needed?
         if check_for_subproblems(self.main_scenario_directory):
             self.horizons_flag = True
             self.horizon_subproblems = \
@@ -121,7 +119,7 @@ def run_optimization(scenario_directory, horizon, stage):
 
     loaded_modules = load_modules(modules_to_use)
 
-    #
+    # Set dynamic inputs as attributes to inputs class
     populate_dynamic_inputs(inputs, loaded_modules,
                             scenario_directory, horizon, stage)
 
@@ -132,7 +130,8 @@ def run_optimization(scenario_directory, horizon, stage):
     # TODO: maybe this shouldn't always be needed
     model.dual = Suffix(direction=Suffix.IMPORT)
 
-    # Load the 'static' scenario data, not populated by the dynamic input functions
+    # Load the 'static' scenario data, not populated by the dynamic input
+    # functions
     scenario_data = load_scenario_data(model, loaded_modules,
                                        scenario_directory, horizon, stage)
 
@@ -151,7 +150,6 @@ def run_optimization(scenario_directory, horizon, stage):
     export_results(scenario_directory, horizon, stage, instance, loaded_modules)
 
 
-# TODO: move these to load_balance and objective_function modules respectively
 def make_dynamic_component_objects(model):
     """
     Lists of model components that modules will populate
