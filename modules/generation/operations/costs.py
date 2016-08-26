@@ -6,10 +6,11 @@ Describe operational costs.
 from pyomo.environ import *
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     """
     Sum up all operational costs and add to the objective function.
     :param m:
+    :param d:
     :return:
     """
 

@@ -10,7 +10,7 @@ from pandas import read_csv
 from pyomo.environ import Param, Set, PercentFraction, Boolean, PositiveReals
 
 
-def determine_dynamic_components(m, scenario_directory, horizon, stage):
+def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
     """
     Populate the lists of dynamic components, i.e which generators can provide
     which services. Generators that can vary power output will get the
@@ -18,7 +18,7 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
     various reserve variables.
     The operational constraints are then built depending on which services a
     generator can provide.
-    :param m:
+    :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
@@ -36,31 +36,32 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
     # initialize generators subsets for which startup/shutdown costs will be
     # tracked as well as dictionaries that will be used to initialize the
     # startup_cost and shutdown_cost params
-    m.startup_cost_generators = list()  # to init STARTUP_COST_GENERATORS set
-    m.startup_cost_by_generator = dict()  # to init startup_cost param
+    d.startup_cost_generators = list()  # to init STARTUP_COST_GENERATORS set
+    d.startup_cost_by_generator = dict()  # to init startup_cost param
     for row in zip(dynamic_components["GENERATORS"],
                    dynamic_components["startup_cost"]):
         if is_number(row[1]) and float(row[1]) > 0:
-            m.startup_cost_generators.append(row[0])
-            m.startup_cost_by_generator[row[0]] = float(row[1])
+            d.startup_cost_generators.append(row[0])
+            d.startup_cost_by_generator[row[0]] = float(row[1])
         else:
             pass
 
-    m.shutdown_cost_generators = list()  # to init SHUTDOWN_COST_GENERATORS set
-    m.shutdown_cost_by_generator = dict()  # to init shutdown_cost param
+    d.shutdown_cost_generators = list()  # to init SHUTDOWN_COST_GENERATORS set
+    d.shutdown_cost_by_generator = dict()  # to init shutdown_cost param
     for row in zip(dynamic_components["GENERATORS"],
                    dynamic_components["shutdown_cost"]):
         if is_number(row[1]) and float(row[1]) > 0:
-            m.shutdown_cost_generators.append(row[0])
-            m.shutdown_cost_by_generator[row[0]] = float(row[1])
+            d.shutdown_cost_generators.append(row[0])
+            d.shutdown_cost_by_generator[row[0]] = float(row[1])
         else:
             pass
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
 
@@ -132,14 +133,14 @@ def add_model_components(m):
 
     # Generators that incur startup/shutdown costs
     m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS,
-                                    initialize=m.startup_cost_generators)
+                                    initialize=d.startup_cost_generators)
     m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS,
-                                     initialize=m.shutdown_cost_generators)
+                                     initialize=d.shutdown_cost_generators)
     # Startup and shutdown cost (per unit started/shut down)
     m.startup_cost = Param(m.STARTUP_COST_GENERATORS, within=PositiveReals,
-                           initialize=m.startup_cost_by_generator)
+                           initialize=d.startup_cost_by_generator)
     m.shutdown_cost = Param(m.SHUTDOWN_COST_GENERATORS, within=PositiveReals,
-                            initialize=m.shutdown_cost_by_generator)
+                            initialize=d.shutdown_cost_by_generator)
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):

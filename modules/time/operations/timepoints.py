@@ -9,7 +9,7 @@ import os.path
 from pyomo.environ import Set, NonNegativeIntegers
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
 
 

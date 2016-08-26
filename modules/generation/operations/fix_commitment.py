@@ -12,10 +12,10 @@ from pyomo.environ import Set, Param, PercentFraction, Expression
 from auxiliary import load_operational_modules
 
 
-def determine_dynamic_components(m, scenario_directory, horizon, stage):
+def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
     """
 
-    :param m:
+    :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
@@ -28,7 +28,7 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
     # there instead
     # m.current_stage = \
     #     os.path.basename(os.path.normpath(scenario_directory))
-    m.current_stage = stage
+    d.current_stage = stage
 
     dynamic_components = \
         read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
@@ -37,12 +37,12 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
                  )
 
     # Last commitment stage
-    m.final_commitment_generators = list()
+    d.final_commitment_generators = list()
 
     for row in zip(dynamic_components["GENERATORS"],
                    dynamic_components["last_commitment_stage"]):
-        if row[1] == m.current_stage:
-            m.final_commitment_generators.append(row[0])
+        if row[1] == d.current_stage:
+            d.final_commitment_generators.append(row[0])
         else:
             pass
 
@@ -52,22 +52,25 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
         read_csv(os.path.join(scenario_directory, horizon,
                               "pass_through_inputs", "fixed_commitment.csv"))
 
-    m.fixed_commitment_generators =\
+    d.fixed_commitment_generators =\
         set(fixed_commitment_df["generator"].tolist())
 
-    m.fixed_commitment_dict = \
+    d.fixed_commitment_dict = \
         dict([((g, tmp), c)
               for g, tmp, c in zip(fixed_commitment_df.generator,
                                    fixed_commitment_df.timepoint,
                                    fixed_commitment_df.commitment)])
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
+
+    m.current_stage = d.current_stage
 
     # Import needed operational modules
     # TODO: import only
@@ -77,7 +80,7 @@ def add_model_components(m):
     # The generators for which the current stage is the final commitment stage
     m.FINAL_COMMITMENT_GENERATORS = \
         Set(within=m.COMMIT_GENERATORS,
-            initialize=m.final_commitment_generators)
+            initialize=d.final_commitment_generators)
 
     def commitment_rule(mod, g, tmp):
         """
@@ -98,10 +101,10 @@ def add_model_components(m):
     # commitment stage
     m.FIXED_COMMITMENT_GENERATORS = \
         Set(within=m.COMMIT_GENERATORS,
-            initialize=m.fixed_commitment_generators)
+            initialize=d.fixed_commitment_generators)
     m.fixed_commitment = Param(m.FIXED_COMMITMENT_GENERATORS, m.TIMEPOINTS,
                                within=PercentFraction,
-                               initialize=m.fixed_commitment_dict)
+                               initialize=d.fixed_commitment_dict)
 
 
 def fix_variables(m):

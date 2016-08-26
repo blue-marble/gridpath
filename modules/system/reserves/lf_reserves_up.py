@@ -5,9 +5,10 @@ import os.path
 from reserve_requirements import add_generic_reserve_components
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     add_generic_reserve_components(
         m,
+        d,
         reserve_violation_variable="LF_Reserves_Up_Violation",
         reserve_violation_penalty_param="lf_reserves_up_violation_penalty",
         reserve_requirement_param="lf_reserves_up_requirement_mw",

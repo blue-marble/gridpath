@@ -14,11 +14,11 @@ from auxiliary import check_list_items_are_unique, \
     load_operational_modules
 
 
-def determine_dynamic_components(m, scenario_directory, horizon, stage):
+def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
     """
     Determine which operational type modules will be needed based on the
     operational types in the input data.
-    :param m:
+    :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
@@ -26,8 +26,8 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
     """
 
     # Generator capabilities
-    m.headroom_variables = dict()
-    m.footroom_variables = dict()
+    d.headroom_variables = dict()
+    d.footroom_variables = dict()
 
     with open(os.path.join(scenario_directory, "inputs", "generators.tab"),
               "rb") as generation_capacity_file:
@@ -41,30 +41,30 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
             # so can expect a single-item list here and get 0th element
             generator = row[find_list_item_position(headers, "GENERATORS")[0]]
             # All generators get the following variables
-            m.headroom_variables[generator] = list()
-            m.footroom_variables[generator] = list()
+            d.headroom_variables[generator] = list()
+            d.footroom_variables[generator] = list()
             # In addition, some generators get the variables associated with
             # provision of other services (e.g. reserves) if flagged
             # Generators that can provide upward load-following reserves
             if int(row[find_list_item_position(headers,
                                                "lf_reserves_up")[0]]
                    ):
-                m.headroom_variables[generator].append(
+                d.headroom_variables[generator].append(
                     "Provide_LF_Reserves_Up")
             # Generators that can provide upward regulation
             if int(row[find_list_item_position(headers, "regulation_up")[0]]
                    ):
-                m.headroom_variables[generator].append(
+                d.headroom_variables[generator].append(
                     "Provide_Regulation_Up")
             # Generators that can provide downward load-following reserves
             if int(row[find_list_item_position(headers, "lf_reserves_down")[0]]
                    ):
-                m.footroom_variables[generator].append(
+                d.footroom_variables[generator].append(
                     "Provide_LF_Reserves_Down")
             # Generators that can provide downward regulation
             if int(row[find_list_item_position(headers, "regulation_down")[0]]
                    ):
-                m.footroom_variables[generator].append(
+                d.footroom_variables[generator].append(
                     "Provide_Regulation_Down")
 
     # TODO: ugly; make this more uniform with the loading of data above rather
@@ -77,14 +77,15 @@ def determine_dynamic_components(m, scenario_directory, horizon, stage):
 
     # Required modules are the unique set of generator operational types
     # This list will be used to know which operational modules to load
-    m.required_operational_modules = \
+    d.required_operational_modules = \
         dynamic_components.operational_type.unique()
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
 
@@ -105,6 +106,21 @@ def add_model_components(m):
     m.Provide_Regulation_Down = Var(m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS,
                                     within=NonNegativeReals)
 
+    # Aggregate the headroom and footroom decision variables respectively for
+    # use by the operationa modules
+    def headroom_provision_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
+    m.Headroom_Provision = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                      rule=headroom_provision_rule)
+
+    def footroom_provision_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
+    m.Footroom_Provision = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                      rule=footroom_provision_rule)
+
+    # From here, the operational modules determine how the model components are
+    # formulated
+    m.required_operational_modules = d.required_operational_modules
     # Import needed operational modules
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)

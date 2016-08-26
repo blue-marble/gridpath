@@ -92,6 +92,20 @@ class ScenarioStructure(object):
         pass
 
 
+class DynamicInputs(object):
+    """
+    Will contain the dynamic inputs that modules will populate, which will be
+    used to initialize model components
+    """
+    def __init__(self):
+        # Load balance
+        self.energy_generation_components = list()
+        self.energy_consumption_components = list()
+
+        # Objective function
+        self.total_cost_components = list()
+
+
 def run_optimization(scenario_directory, horizon, stage):
 
     # TODO: move to each problem's directory
@@ -100,21 +114,25 @@ def run_optimization(scenario_directory, horizon, stage):
     # Create pyomo abstract model class
     model = AbstractModel()
 
-    make_dynamic_component_objects(model)
+    # Initialize the dynamic inputs class
+    inputs = DynamicInputs()
 
     modules_to_use = get_modules(scenario_directory)
 
     loaded_modules = load_modules(modules_to_use)
 
-    populate_dynamic_component_lists(model, loaded_modules,
-                                     scenario_directory, horizon, stage)
+    #
+    populate_dynamic_inputs(inputs, loaded_modules,
+                            scenario_directory, horizon, stage)
 
-    create_abstract_model(model, loaded_modules)
+    # Create the abstract model; some components are initialized here
+    create_abstract_model(model, inputs, loaded_modules)
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
     model.dual = Suffix(direction=Suffix.IMPORT)
 
+    # Load the 'static' scenario data, not populated by the dynamic input functions
     scenario_data = load_scenario_data(model, loaded_modules,
                                        scenario_directory, horizon, stage)
 
@@ -178,21 +196,21 @@ def load_modules(modules_to_use):
     return loaded_modules
 
 
-def populate_dynamic_component_lists(model, loaded_modules, scenario_directory,
-                                     horizon, stage):
+def populate_dynamic_inputs(inputs, loaded_modules,
+                                     scenario_directory, horizon, stage):
     for m in loaded_modules:
-        if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(model, scenario_directory, horizon,
-                                           stage)
+        if hasattr(m, 'determine_dynamic_inputs'):
+            m.determine_dynamic_inputs(inputs,
+                                       scenario_directory, horizon, stage)
         else:
             pass
 
 
-def create_abstract_model(model, loaded_modules):
+def create_abstract_model(model, inputs, loaded_modules):
     print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model)
+            m.add_model_components(model, inputs)
         else:
             print("ERROR! Module " + m + " does not contain model components.")
             sys.exit(1)

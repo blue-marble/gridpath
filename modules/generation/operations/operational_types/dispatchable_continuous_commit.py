@@ -47,8 +47,7 @@ def max_power_rule(mod, g, tmp):
     :return:
     """
     return mod.Provide_Power[g, tmp] + \
-        sum(getattr(mod, c)[g, tmp]
-            for c in mod.headroom_variables[g]) \
+        mod.Headroom_Provision[g, tmp] \
         <= mod.capacity[g] * mod.Commit_Continuous[g, tmp]
 
 
@@ -61,8 +60,7 @@ def min_power_rule(mod, g, tmp):
     :return:
     """
     return mod.Provide_Power[g, tmp] - \
-        sum(getattr(mod, c)[g, tmp]
-            for c in mod.footroom_variables[g]) \
+        mod.Footroom_Provision[g, tmp] \
         >= mod.Commit_Continuous[g, tmp] * mod.capacity[g] \
         * mod.min_stable_level[g]
 

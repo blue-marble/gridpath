@@ -5,6 +5,7 @@ from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals
 
 def add_generic_reserve_components(
         m,
+        d,
         reserve_violation_variable,
         reserve_violation_penalty_param,
         reserve_requirement_param,
@@ -26,6 +27,7 @@ def add_generic_reserve_components(
     7) an expression for total penalty costs that may have been incurred to add
     to the objective function
     :param m:
+    :param d:
     :param reserve_violation_variable:
     :param reserve_violation_penalty_param:
     :param reserve_requirement_param:
@@ -48,27 +50,27 @@ def add_generic_reserve_components(
 
     # TODO: by zone eventually, not all generators
     # Reserve provision
-    def total_reserve_rule(m, z, tmp):
-        return sum(getattr(m, generator_reserve_provision_variable)[g, tmp]
-                   for g in getattr(m, reserve_generator_set))
+    def total_reserve_rule(mod, z, tmp):
+        return sum(getattr(mod, generator_reserve_provision_variable)[g, tmp]
+                   for g in getattr(mod, reserve_generator_set))
     setattr(m, total_reserve_provision_variable,
             Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_reserve_rule))
 
     # Reserve constraints
-    def meet_reserve_rule(m, z, tmp):
-        return getattr(m, total_reserve_provision_variable)[z, tmp] \
-               == getattr(m, reserve_requirement_param)[z, tmp]
+    def meet_reserve_rule(mod, z, tmp):
+        return getattr(mod, total_reserve_provision_variable)[z, tmp] \
+               == getattr(mod, reserve_requirement_param)[z, tmp]
 
     setattr(m, meet_reserve_constraint,
             Constraint(m.LOAD_ZONES, m.TIMEPOINTS, rule=meet_reserve_rule))
 
     # Add violation penalty costs incurred to objective function
-    def penalty_costs_rule(m):
-        return sum(getattr(m, reserve_violation_variable)[z, tmp]
-                   * getattr(m, reserve_violation_penalty_param)
-                   for z in m.LOAD_ZONES for tmp in m.TIMEPOINTS)
+    def penalty_costs_rule(mod):
+        return sum(getattr(mod, reserve_violation_variable)[z, tmp]
+                   * getattr(mod, reserve_violation_penalty_param)
+                   for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)
     setattr(m, objective_function_reserve_penalty_cost_component,
             Expression(rule=penalty_costs_rule))
 
-    m.total_cost_components.append(
+    d.total_cost_components.append(
         objective_function_reserve_penalty_cost_component)

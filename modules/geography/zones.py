@@ -4,7 +4,7 @@ import os.path
 from pyomo.environ import Set
 
 
-def add_model_components(m):
+def add_model_components(m, d):
     m.LOAD_ZONES = Set()
 
 
