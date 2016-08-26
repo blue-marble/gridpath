@@ -31,7 +31,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp]
+    return mod.Provide_Power_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -46,9 +46,9 @@ def max_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] + \
-        mod.Headroom_Provision[g, tmp] \
-        <= mod.capacity[g] * mod.Commit_Continuous[g, tmp]
+    return mod.Provide_Power_MW[g, tmp] + \
+        mod.Headroom_Provision_MW[g, tmp] \
+        <= mod.capacity_mw[g] * mod.Commit_Continuous[g, tmp]
 
 
 def min_power_rule(mod, g, tmp):
@@ -59,12 +59,14 @@ def min_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] - \
-        mod.Footroom_Provision[g, tmp] \
-        >= mod.Commit_Continuous[g, tmp] * mod.capacity[g] \
-        * mod.min_stable_level[g]
+    return mod.Provide_Power_MW[g, tmp] - \
+        mod.Footroom_Provision_MW[g, tmp] \
+        >= mod.Commit_Continuous[g, tmp] * mod.capacity_mw[g] \
+        * mod.min_stable_level_fraction[g]
 
 
+# TODO: startup/shutdown cost per unit won't work without additional info
+# about unit size vs total fleet size if modeling a fleet with this module
 def startup_rule(mod, g, tmp):
     """
     Will be positive when there are more generators committed in the current

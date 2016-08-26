@@ -15,7 +15,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.capacity[g]
+    return mod.capacity_mw[g]
 
 
 def max_power_rule(mod, g, tmp):

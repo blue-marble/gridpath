@@ -50,22 +50,22 @@ def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
                                                "lf_reserves_up")[0]]
                    ):
                 d.headroom_variables[generator].append(
-                    "Provide_LF_Reserves_Up")
+                    "Provide_LF_Reserves_Up_MW")
             # Generators that can provide upward regulation
             if int(row[find_list_item_position(headers, "regulation_up")[0]]
                    ):
                 d.headroom_variables[generator].append(
-                    "Provide_Regulation_Up")
+                    "Provide_Regulation_Up_MW")
             # Generators that can provide downward load-following reserves
             if int(row[find_list_item_position(headers, "lf_reserves_down")[0]]
                    ):
                 d.footroom_variables[generator].append(
-                    "Provide_LF_Reserves_Down")
+                    "Provide_LF_Reserves_Down_MW")
             # Generators that can provide downward regulation
             if int(row[find_list_item_position(headers, "regulation_down")[0]]
                    ):
                 d.footroom_variables[generator].append(
-                    "Provide_Regulation_Down")
+                    "Provide_Regulation_Down_MW")
 
     # TODO: ugly; make this more uniform with the loading of data above rather
     # than having two separate methods
@@ -91,32 +91,35 @@ def add_model_components(m, d):
 
     # TODO: figure out how to flag which generators get this variable
     # Generators that can vary power output
-    m.Provide_Power = Var(m.DISPATCHABLE_GENERATORS,
+    m.Provide_Power_MW = Var(m.DISPATCHABLE_GENERATORS,
                           m.TIMEPOINTS,
                           within=NonNegativeReals)
 
     # Headroom and footroom services
-    m.Provide_LF_Reserves_Up = Var(m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS,
-                                   within=NonNegativeReals)
-    m.Provide_Regulation_Up = Var(m.REGULATION_UP_GENERATORS, m.TIMEPOINTS,
-                                  within=NonNegativeReals)
-    m.Provide_LF_Reserves_Down = Var(m.LF_RESERVES_DOWN_GENERATORS,
-                                     m.TIMEPOINTS,
-                                     within=NonNegativeReals)
-    m.Provide_Regulation_Down = Var(m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS,
-                                    within=NonNegativeReals)
+    m.Provide_LF_Reserves_Up_MW = Var(
+        m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS,
+        within=NonNegativeReals)
+    m.Provide_Regulation_Up_MW = Var(
+        m.REGULATION_UP_GENERATORS, m.TIMEPOINTS,
+        within=NonNegativeReals)
+    m.Provide_LF_Reserves_Down_MW = Var(
+        m.LF_RESERVES_DOWN_GENERATORS, m.TIMEPOINTS,
+         within=NonNegativeReals)
+    m.Provide_Regulation_Down_MW = Var(
+        m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS,
+        within=NonNegativeReals)
 
     # Aggregate the headroom and footroom decision variables respectively for
     # use by the operationa modules
     def headroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
-    m.Headroom_Provision = Expression(m.GENERATORS, m.TIMEPOINTS,
-                                      rule=headroom_provision_rule)
+    m.Headroom_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                         rule=headroom_provision_rule)
 
     def footroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
-    m.Footroom_Provision = Expression(m.GENERATORS, m.TIMEPOINTS,
-                                      rule=footroom_provision_rule)
+    m.Footroom_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                         rule=footroom_provision_rule)
 
     # From here, the operational modules determine how the model components are
     # formulated
@@ -131,9 +134,13 @@ def add_model_components(m, d):
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m)
 
+    # Then define operational constraints for all generators
+    # Get rules from the generator's operational module
     def power_provision_rule(mod, g, tmp):
         """
-
+        Power provision is a variable for some generators, but not others; get
+        the appropriate expression for each generator based on its operational
+        type.
         :param mod:
         :param g:
         :param tmp:
@@ -142,12 +149,14 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision = Expression(m.GENERATORS, m.TIMEPOINTS,
-                                   rule=power_provision_rule)
+    m.Power_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                      rule=power_provision_rule)
 
     def max_power_rule(mod, g, tmp):
         """
-
+        The maximum power and headroom services from a generator; get the
+        appropriate variables to be constrained from the generator's
+        operational module.
         :param mod:
         :param g:
         :param tmp:
@@ -161,7 +170,10 @@ def add_model_components(m, d):
 
     def min_power_rule(mod, g, tmp):
         """
-
+        The minimum amount of power a generator must provide in a timepoint; if
+        providing footroom services add those to the minimum level; get the
+        appropriate variables to be constrained from the generator's
+        operational module.
         :param mod:
         :param g:
         :param tmp:
@@ -175,7 +187,8 @@ def add_model_components(m, d):
 
     def startup_rule(mod, g, tmp):
         """
-
+        Track units started up from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
         :param mod:
         :param g:
         :param tmp:
@@ -190,7 +203,8 @@ def add_model_components(m, d):
 
     def shutdown_rule(mod, g, tmp):
         """
-
+        Track units shut down from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
         :param mod:
         :param g:
         :param tmp:
@@ -219,7 +233,6 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     for op_m in m.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
-            print op_m
             imported_operational_modules[op_m].load_module_specific_data(
                 m, data_portal, scenario_directory, horizon, stage)
         else:
@@ -252,28 +265,28 @@ def export_results(scenario_directory, horizon, stage, m):
     power_df = make_gen_tmp_var_df(m,
                                    "GENERATORS",
                                    "TIMEPOINTS",
-                                   "Power_Provision",
-                                   "power")
+                                   "Power_Provision_MW",
+                                   "power_mw")
     lf_reserves_up_df = make_gen_tmp_var_df(m,
                                             "LF_RESERVES_UP_GENERATORS",
                                             "TIMEPOINTS",
-                                            "Provide_LF_Reserves_Up",
-                                            "lf_reserves_up")
+                                            "Provide_LF_Reserves_Up_MW",
+                                            "lf_reserves_up_mw")
     lf_reserves_down_df = make_gen_tmp_var_df(m,
                                               "LF_RESERVES_DOWN_GENERATORS",
                                               "TIMEPOINTS",
-                                              "Provide_LF_Reserves_Down",
-                                              "lf_reserves_down")
+                                              "Provide_LF_Reserves_Down_MW",
+                                              "lf_reserves_down_mw")
     regulation_up_df = make_gen_tmp_var_df(m,
                                            "REGULATION_UP_GENERATORS",
                                            "TIMEPOINTS",
-                                           "Provide_Regulation_Up",
-                                           "regulation_up")
+                                           "Provide_Regulation_Up_MW",
+                                           "regulation_up_mw")
     regulation_down_df = make_gen_tmp_var_df(m,
                                              "REGULATION_DOWN_GENERATORS",
                                              "TIMEPOINTS",
-                                             "Provide_Regulation_Down",
-                                             "regulation_down")
+                                             "Provide_Regulation_Down_MW",
+                                             "regulation_down_mw")
 
     dfs_to_merge = [power_df] + m.module_specific_df + \
                    [lf_reserves_up_df, lf_reserves_down_df,

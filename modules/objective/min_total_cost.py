@@ -12,8 +12,10 @@ def add_model_components(m, d):
     """
 
     def penalty_costs_rule(mod):
-        return sum((mod.Unserved_Energy[z, tmp] * mod.unserved_energy_penalty +
-                    mod.Overgeneration[z, tmp] * mod.overgeneration_penalty)
+        return sum((mod.Unserved_Energy_MW[z, tmp]
+                    * mod.unserved_energy_penalty_per_mw +
+                    mod.Overgeneration_MW[z, tmp]
+                    * mod.overgeneration_penalty_per_mw)
                    for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)
     m.Penalty_Costs = Expression(rule=penalty_costs_rule)
     d.total_cost_components.append("Penalty_Costs")

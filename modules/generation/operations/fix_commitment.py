@@ -115,7 +115,6 @@ def fix_variables(m):
     """
 
     # Import needed operational modules
-    # TODO: import only
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)
 

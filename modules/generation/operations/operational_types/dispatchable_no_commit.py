@@ -13,7 +13,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp]
+    return mod.Provide_Power_MW[g, tmp]
 
 
 def max_power_rule(mod, g, tmp):
@@ -24,9 +24,9 @@ def max_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] + \
-        mod.Headroom_Provision[g, tmp] \
-        <= mod.capacity[g]
+    return mod.Provide_Power_MW[g, tmp] + \
+        mod.Headroom_Provision_MW[g, tmp] \
+        <= mod.capacity_mw[g]
 
 
 def min_power_rule(mod, g, tmp):
@@ -37,13 +37,28 @@ def min_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] - \
-        mod.Footroom_Provision[g, tmp] \
+    return mod.Provide_Power_MW[g, tmp] - \
+        mod.Footroom_Provision_MW[g, tmp] \
         >= 0
 
 
-# TODO: should these return 'None' -- what is the no-commit modeling?
+# TODO: what should these return -- what is the no-commit modeling?
 def startup_rule(mod, g, tmp):
+    """
+    No commit variables, so shouldn't happen
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    raise(ValueError(
+        "ERROR! No-commit generators should not incur startup costs." + "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its startup costs to '.' (no value).")
+    )
+
+
+def shutdown_rule(mod, g, tmp):
     """
 
     :param mod:
@@ -51,8 +66,8 @@ def startup_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return None
-
-
-def shutdown_rule(mod, g, tmp):
-    return None
+    raise(ValueError(
+        "ERROR! No-commit generators should not incur shutdown costs." + "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its shutdown costs to '.' (no value).")
+    )

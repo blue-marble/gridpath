@@ -30,7 +30,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp]
+    return mod.Provide_Power_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -45,9 +45,9 @@ def max_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] + \
-        mod.Headroom_Provision[g, tmp] \
-        <= mod.capacity[g] * mod.Commit_Binary[g, tmp]
+    return mod.Provide_Power_MW[g, tmp] + \
+        mod.Headroom_Provision_MW[g, tmp] \
+        <= mod.capacity_mw[g] * mod.Commit_Binary[g, tmp]
 
 
 def min_power_rule(mod, g, tmp):
@@ -58,10 +58,10 @@ def min_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power[g, tmp] - \
-        mod.Footroom_Provision[g, tmp] \
-        >= mod.Commit_Binary[g, tmp] * mod.capacity[g] \
-        * mod.min_stable_level[g]
+    return mod.Provide_Power_MW[g, tmp] - \
+        mod.Footroom_Provision_MW[g, tmp] \
+        >= mod.Commit_Binary[g, tmp] * mod.capacity_mw[g] \
+        * mod.min_stable_level_fraction[g]
 
 
 def startup_rule(mod, g, tmp):
@@ -79,7 +79,7 @@ def startup_rule(mod, g, tmp):
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":
-        return None
+        return Non
     else:
         return mod.Commit_Binary[g, tmp] \
             - mod.Commit_Binary[g, mod.previous_timepoint[tmp]]

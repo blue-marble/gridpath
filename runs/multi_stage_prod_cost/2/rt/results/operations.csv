@@ -1,4 +1,4 @@
-generator,timepoint,power,commit_continuous,lf_reserves_up,lf_reserves_down,regulation_up,regulation_down
+generator,timepoint,power_mw,commit_continuous,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
 Gen1,1,6.0,,,,,
 Gen1,2,6.0,,,,,
 Gen2,1,1.7,1.0,1.0,1.0,1.0,0.7

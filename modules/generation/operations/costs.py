@@ -23,7 +23,7 @@ def add_model_components(m, d):
         :param m:
         :return:
         """
-        return m.Power_Provision[g, tmp] * m.variable_cost[g]
+        return m.Power_Provision_MW[g, tmp] * m.variable_cost_per_mwh[g]
 
     m.Generation_Cost = Expression(m.GENERATORS, m.TIMEPOINTS,
                                    rule=generation_cost_rule)
@@ -55,7 +55,8 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
-                >= mod.Startup_Expression[g, tmp] * mod.startup_cost[g]
+                >= mod.Startup_Expression[g, tmp] \
+                * mod.startup_cost_per_unit[g]
     m.Startup_Cost_Constraint = Constraint(m.STARTUP_COST_GENERATORS,
                                            m.TIMEPOINTS,
                                            rule=startup_cost_rule)
@@ -81,7 +82,8 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
-                >= mod.Shutdown_Expression[g, tmp] * mod.shutdown_cost[g]
+                >= mod.Shutdown_Expression[g, tmp] \
+                * mod.shutdown_cost_per_unit[g]
     m.Shutdown_Cost_Constraint = Constraint(m.SHUTDOWN_COST_GENERATORS,
                                             m.TIMEPOINTS,
                                             rule=shutdown_cost_rule)

@@ -104,8 +104,8 @@ def add_model_components(m, d):
                               m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
                               m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
 
-    m.min_stable_level = Param(m.DISPATCHABLE_GENERATORS,
-                               within=PercentFraction)
+    m.min_stable_level_fraction = Param(m.DISPATCHABLE_GENERATORS,
+                                        within=PercentFraction)
 
     # Headroom services flags
     m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
@@ -137,10 +137,12 @@ def add_model_components(m, d):
     m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS,
                                      initialize=d.shutdown_cost_generators)
     # Startup and shutdown cost (per unit started/shut down)
-    m.startup_cost = Param(m.STARTUP_COST_GENERATORS, within=PositiveReals,
-                           initialize=d.startup_cost_by_generator)
-    m.shutdown_cost = Param(m.SHUTDOWN_COST_GENERATORS, within=PositiveReals,
-                            initialize=d.shutdown_cost_by_generator)
+    m.startup_cost_per_unit = Param(
+        m.STARTUP_COST_GENERATORS, within=PositiveReals,
+        initialize=d.startup_cost_by_generator)
+    m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_GENERATORS,
+                                     within=PositiveReals,
+                                     initialize=d.shutdown_cost_by_generator)
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
@@ -159,11 +161,11 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                      select=("GENERATORS", "operational_type",
                              "lf_reserves_up", "regulation_up",
                              "lf_reserves_down", "regulation_down",
-                             "min_stable_level"),
+                             "min_stable_level_fraction"),
                      param=(m.operational_type,
                             m.lf_reserves_up, m.regulation_up,
                             m.lf_reserves_down, m.regulation_down,
-                            m.min_stable_level)
+                            m.min_stable_level_fraction)
                      )
 
 

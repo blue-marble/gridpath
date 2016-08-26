@@ -1,4 +1,4 @@
-GENERATORS	capacity	variable_cost	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level	startup_cost	shutdown_cost	last_commitment_stage
+GENERATORS	capacity_mw	variable_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost	last_commitment_stage
 Gen1	6	1	must_run	0	0	0	0	.	.	.	.
 Gen2	6	2	dispatchable_continuous_commit	1	1	1	1	0.0	1.0	2.0	rt
 Gen3	6	1	dispatchable_continuous_commit	0	1	0	1	0.4	1.0	0.0	ha
