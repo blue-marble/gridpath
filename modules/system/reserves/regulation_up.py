@@ -5,7 +5,16 @@ import os.path
 from reserve_requirements import add_generic_reserve_components
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
     add_generic_reserve_components(
         m,
         d,

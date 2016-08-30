@@ -137,7 +137,7 @@ def fix_commitment(mod, g, tmp):
     :param tmp:
     :return:
     """
-    mod.Commit_Continuous[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Continuous[g, tmp] = mod.fixed_commitment[g, tmp].value
     mod.Commit_Continuous[g, tmp].fixed = True
 
 

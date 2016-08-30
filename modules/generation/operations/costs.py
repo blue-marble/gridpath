@@ -6,11 +6,14 @@ Describe operational costs.
 from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
     """
     Sum up all operational costs and add to the objective function.
     :param m:
     :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 
@@ -38,7 +41,8 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Fuel_Use_MMBtu[g, tmp] \
-            * mod.fuel_price_per_mmbtu[mod.fuel[g]]
+            * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
+
     m.Fuel_Cost = Expression(m.FUEL_GENERATORS, m.TIMEPOINTS,
                              rule=fuel_cost_rule)
 

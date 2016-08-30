@@ -90,7 +90,7 @@ class ScenarioStructure(object):
         pass
 
 
-class DynamicInputs(object):
+class DynamicComponents(object):
     """
     Will contain the dynamic inputs that modules will populate, which will be
     used to initialize model components
@@ -112,35 +112,41 @@ def run_optimization(scenario_directory, horizon, stage):
     # Create pyomo abstract model class
     model = AbstractModel()
 
-    # Initialize the dynamic inputs class
-    inputs = DynamicInputs()
+    # Initialize the dynamic components class
+    inputs = DynamicComponents()
 
     modules_to_use = get_modules(scenario_directory)
 
     loaded_modules = load_modules(modules_to_use)
 
-    # Set dynamic inputs as attributes to inputs class
-    populate_dynamic_inputs(inputs, loaded_modules,
-                            scenario_directory, horizon, stage)
+    # Set dynamic components as attributes to inputs class
+    populate_dynamic_components(inputs, loaded_modules,
+                                scenario_directory, horizon, stage)
 
     # Create the abstract model; some components are initialized here
-    create_abstract_model(model, inputs, loaded_modules)
+    create_abstract_model(model, inputs,
+                          scenario_directory, horizon, stage,
+                          loaded_modules)
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
     model.dual = Suffix(direction=Suffix.IMPORT)
 
-    # Load the 'static' scenario data, not populated by the dynamic input
-    # functions
+    # Load the scenario data
     scenario_data = load_scenario_data(model, loaded_modules,
                                        scenario_directory, horizon, stage)
 
+    # Build the problem instance; this will also call the BuildActions that
+    # construct the dynamic inputs
     instance = create_problem_instance(model, scenario_data)
 
+    # Fix variables if modules request so
     instance = fix_variables(instance, loaded_modules)
 
+    # Solve
     results = solve(instance)
 
+    # RESULTS
     instance.solutions.load_from(results)
 
     save_objective_function_value(scenario_directory, horizon, stage, instance)
@@ -194,21 +200,23 @@ def load_modules(modules_to_use):
     return loaded_modules
 
 
-def populate_dynamic_inputs(inputs, loaded_modules,
-                                     scenario_directory, horizon, stage):
+def populate_dynamic_components(inputs, loaded_modules,
+                                scenario_directory, horizon, stage):
     for m in loaded_modules:
-        if hasattr(m, 'determine_dynamic_inputs'):
-            m.determine_dynamic_inputs(inputs,
-                                       scenario_directory, horizon, stage)
+        if hasattr(m, 'determine_dynamic_components'):
+            m.determine_dynamic_components(inputs,
+                                           scenario_directory, horizon, stage)
         else:
             pass
 
 
-def create_abstract_model(model, inputs, loaded_modules):
+def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
+                          loaded_modules):
     print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model, inputs)
+            m.add_model_components(model, inputs,
+                                   scenario_directory, horizon, stage)
         else:
             print("ERROR! Module " + m + " does not contain model components.")
             sys.exit(1)

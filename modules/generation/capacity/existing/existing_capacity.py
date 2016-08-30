@@ -4,7 +4,16 @@ import os.path
 from pyomo.environ import Set, Param, NonNegativeReals
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
     m.GENERATORS = Set()
 
     m.capacity_mw = Param(m.GENERATORS, within=NonNegativeReals)

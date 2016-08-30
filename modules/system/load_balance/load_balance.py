@@ -4,7 +4,16 @@ import os.path
 from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
 
     # Penalty variables
     m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)

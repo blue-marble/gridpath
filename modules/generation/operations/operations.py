@@ -14,7 +14,7 @@ from auxiliary import check_list_items_are_unique, \
     load_operational_modules
 
 
-def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
     Determine which operational type modules will be needed based on the
     operational types in the input data.
@@ -67,7 +67,7 @@ def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
                 d.footroom_variables[generator].append(
                     "Provide_Regulation_Down_MW")
 
-    # TODO: ugly; make this more uniform with the loading of data above rather
+    # TODO: ugly; make this more uniform with the above rather
     # than having two separate methods
     # Get the operational type of each generator
     dynamic_components = \
@@ -81,11 +81,14 @@ def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
         dynamic_components.operational_type.unique()
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
     """
 
     :param m:
     :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 

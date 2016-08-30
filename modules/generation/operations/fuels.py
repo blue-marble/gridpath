@@ -8,11 +8,14 @@ import os.path
 from pyomo.environ import Param, Set, NonNegativeReals
 
 
-def add_model_components(m, d):
+def add_model_components(m, d, scenario_directory, horizon, stage):
     """
 
     :param m:
     :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
     m.FUELS = Set()

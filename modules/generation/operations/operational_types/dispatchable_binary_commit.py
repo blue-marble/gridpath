@@ -76,7 +76,7 @@ def fuel_use_rule(mod, g, tmp):
     :return:
     """
     return mod.Commit_Binary[g, tmp] \
-        * mod.minimum_input_mmbtu_per_hr_by_generator[g] \
+        * mod.minimum_input_mmbtu_per_hr[g] \
         + (mod.Provide_Power_MW[g, tmp] -
            (mod.Commit_Binary[g, tmp] * mod.capacity_mw[g]
             * mod.min_stable_level_fraction[g])
@@ -133,7 +133,7 @@ def fix_commitment(mod, g, tmp):
     :param tmp:
     :return:
     """
-    mod.Commit_Binary[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Binary[g, tmp] = mod.fixed_commitment[g, tmp].value
     mod.Commit_Binary[g, tmp].fixed = True
 
 

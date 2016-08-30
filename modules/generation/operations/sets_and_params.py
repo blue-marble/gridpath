@@ -8,87 +8,38 @@ import os.path
 from pandas import read_csv
 
 from pyomo.environ import Param, Set, PercentFraction, Boolean, \
-    NonNegativeReals,  PositiveReals
+    NonNegativeReals,  PositiveReals, BuildAction
 
 
-def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
+def add_model_components(m, d, scenario_directory, horizon, stage):
     """
-    Populate the lists of dynamic components, i.e which generators can provide
-    which services. Generators that can vary power output will get the
-    Provide_Power variable; generators that can provide reserves will get the
-    various reserve variables.
-    The operational constraints are then built depending on which services a
-    generator can provide.
+
+    :param m:
     :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
     :return:
     """
-    dynamic_components = \
-        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
-                 sep="\t", usecols=["GENERATORS",
-                                    "startup_cost",
-                                    "shutdown_cost",
-                                    "fuel",
-                                    "minimum_input_mmbtu_per_hr",
-                                    "inc_heat_rate_mmbtu_per_mwh"]
-                 )
 
-    # TODO: only initialize subsets of generators, not param data?
-    # If numeric values greater than for startup/shutdown costs are specified
-    # for some generators, add those generators to lists that will be used to
-    # initialize generators subsets for which startup/shutdown costs will be
-    # tracked as well as dictionaries that will be used to initialize the
-    # startup_cost and shutdown_cost params
-    d.startup_cost_generators = list()  # to init STARTUP_COST_GENERATORS set
-    d.startup_cost_by_generator = dict()  # to init startup_cost param
-    for row in zip(dynamic_components["GENERATORS"],
-                   dynamic_components["startup_cost"]):
-        if is_number(row[1]) and float(row[1]) > 0:
-            d.startup_cost_generators.append(row[0])
-            d.startup_cost_by_generator[row[0]] = float(row[1])
-        else:
-            pass
+    # ### Params defined for all generators ### #
+    # Variable O&M cost
+    m.variable_om_cost_per_mwh = Param(m.GENERATORS, within=NonNegativeReals)
 
-    d.shutdown_cost_generators = list()  # to init SHUTDOWN_COST_GENERATORS set
-    d.shutdown_cost_by_generator = dict()  # to init shutdown_cost param
-    for row in zip(dynamic_components["GENERATORS"],
-                   dynamic_components["shutdown_cost"]):
-        if is_number(row[1]) and float(row[1]) > 0:
-            d.shutdown_cost_generators.append(row[0])
-            d.shutdown_cost_by_generator[row[0]] = float(row[1])
-        else:
-            pass
+    # These params will be used to initialize subsets
 
-    # Fuels (e.g. coal, gas, uranium)
-    # TODO: implement check for which genreator types can have fuels
-    d.fuel_generators = list()
-    d.fuel_by_generator = dict()
-    d.minimum_input_mmbtu_per_hr_by_generator = dict()
-    d.inc_heat_rate_mmbtu_per_mwh_by_generator = dict()
-    for row in zip(dynamic_components["GENERATORS"],
-                   dynamic_components["fuel"],
-                   dynamic_components["minimum_input_mmbtu_per_hr"],
-                   dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
-        if row[1] != ".":
-            d.fuel_generators.append(row[0])
-            d.fuel_by_generator[row[0]] = row[1]
-            d.minimum_input_mmbtu_per_hr_by_generator[row[0]] = float(row[2])
-            d.inc_heat_rate_mmbtu_per_mwh_by_generator[row[0]] = float(row[3])
-        else:
-            pass
-
-
-def add_model_components(m, d):
-    """
-
-    :param m:
-    :param d:
-    :return:
-    """
-
+    # Operational type
     m.operational_type = Param(m.GENERATORS)
+
+    # Headroom services flags
+    m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
+    m.regulation_up = Param(m.GENERATORS, within=Boolean)
+
+    # Footroom services flags
+    m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
+    m.regulation_down = Param(m.GENERATORS, within=Boolean)
+
+    # Subsets of generators by operational type
     m.MUST_RUN_GENERATORS = Set(within=m.GENERATORS,
                                 initialize=generator_subset_init(
                                     "operational_type", "must_run")
@@ -127,20 +78,11 @@ def add_model_components(m, d):
                               m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
                               m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
 
+    # TODO: this should be built below with the dynamic components
     m.min_stable_level_fraction = Param(m.DISPATCHABLE_GENERATORS,
                                         within=PercentFraction)
 
-    # Variable O&M cost
-    m.variable_om_cost_per_mwh = Param(m.GENERATORS, within=NonNegativeReals)
-
-    # Headroom services flags
-    m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
-    m.regulation_up = Param(m.GENERATORS, within=Boolean)
-
-    # Footroom services flags
-    m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
-    m.regulation_down = Param(m.GENERATORS, within=Boolean)
-
+    # Subsets of generators by services they can provide
     # Sets of generators that can provide headroom services
     m.LF_RESERVES_UP_GENERATORS = Set(
         within=m.GENERATORS,
@@ -157,34 +99,109 @@ def add_model_components(m, d):
         within=m.GENERATORS,
         initialize=generator_subset_init("regulation_down", 1))
 
+    # The components below will be initialized via Pyomo's BuildAction function
+    # See:
+    # software.sandia.gov/downloads/pub/pyomo/PyomoOnlineDocs.html#BuildAction
+
+    def determine_startup_cost_generators(mod):
+        """
+        If numeric values greater than 0 for startup costs are specified
+        for some generators, add those generators to the
+        STARTUP_COST_GENERATORS subset and initialize the respective startup
+        cost param value
+        :param mod:
+        :return:
+        """
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "generators.tab"),
+                sep="\t", usecols=["GENERATORS",
+                                   "startup_cost"]
+                )
+        for row in zip(dynamic_components["GENERATORS"],
+                       dynamic_components["startup_cost"]):
+            if is_number(row[1]) and float(row[1]) > 0:
+                mod.STARTUP_COST_GENERATORS.add(row[0])
+                mod.startup_cost_per_unit[row[0]] = float(row[1])
+            else:
+                pass
+
     # Generators that incur startup/shutdown costs
-    m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS,
-                                    initialize=d.startup_cost_generators)
-    m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS,
-                                     initialize=d.shutdown_cost_generators)
-    # Startup and shutdown cost (per unit started/shut down)
-    m.startup_cost_per_unit = Param(
-        m.STARTUP_COST_GENERATORS, within=PositiveReals,
-        initialize=d.startup_cost_by_generator)
+    m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS, initialize=[])
+    m.startup_cost_per_unit = Param(m.STARTUP_COST_GENERATORS,
+                                    within=PositiveReals, mutable=True,
+                                    initialize={})
+    m.StartupCostGeneratorsBuild = BuildAction(
+        rule=determine_startup_cost_generators)
+
+    def determine_shutdown_cost_generators(mod):
+        """
+        If numeric values greater than 0 for shutdown costs are specified
+        for some generators, add those generators to the
+        SHUTDOWON_COST_GENERATORS subset and initialize the respective shutdown
+        cost param value
+        :param mod:
+        :return:
+        """
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "generators.tab"),
+                sep="\t", usecols=["GENERATORS",
+                                   "shutdown_cost"]
+                )
+        for row in zip(dynamic_components["GENERATORS"],
+                       dynamic_components["shutdown_cost"]):
+            if is_number(row[1]) and float(row[1]) > 0:
+                mod.SHUTDOWN_COST_GENERATORS.add(row[0])
+                mod.shutdown_cost_per_unit[row[0]] = float(row[1])
+            else:
+                pass
+
+    m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS, initialize=[])
     m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_GENERATORS,
-                                     within=PositiveReals,
-                                     initialize=d.shutdown_cost_by_generator)
+                                     within=PositiveReals, mutable=True,
+                                     initialize={})
+    m.ShutdownCostGeneratorsBuild = BuildAction(
+        rule=determine_shutdown_cost_generators)
 
+    # TODO: implement check for which generator types can have fuels
     # Fuels and heat rates
-    m.FUEL_GENERATORS = Set(within=m.GENERATORS,
-                            initialize=d.fuel_generators)
+    def determine_fuel_generators(mod):
+        """
+        E.g. generators that use coal, gas, uranium
+        :param mod:
+        :return:
+        """
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "generators.tab"),
+                sep="\t", usecols=["GENERATORS",
+                                   "fuel",
+                                   "minimum_input_mmbtu_per_hr",
+                                   "inc_heat_rate_mmbtu_per_mwh"]
+                )
 
-    m.fuel = Param(m.FUEL_GENERATORS, within=m.FUELS,
-                   initialize=d.fuel_by_generator)
-    m.minimum_input_mmbtu_per_hr = Param(
-        m.FUEL_GENERATORS,
-        initialize=
-        d.minimum_input_mmbtu_per_hr_by_generator)
+        for row in zip(dynamic_components["GENERATORS"],
+                       dynamic_components["fuel"],
+                       dynamic_components["minimum_input_mmbtu_per_hr"],
+                       dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
+            if row[1] != ".":
+                mod.FUEL_GENERATORS.add(row[0])
+                mod.fuel[row[0]] = row[1]
+                mod.minimum_input_mmbtu_per_hr[row[0]] = float(row[2])
+                mod.inc_heat_rate_mmbtu_per_mwh[row[0]] = float(row[3])
+            else:
+                pass
 
-    m.inc_heat_rate_mmbtu_per_mwh = Param(
-        m.FUEL_GENERATORS,
-        initialize=
-        d.inc_heat_rate_mmbtu_per_mwh_by_generator)
+    m.FUEL_GENERATORS = Set(within=m.GENERATORS, initialize=[])
+    m.fuel = Param(m.FUEL_GENERATORS, within=m.FUELS, mutable=True,
+                   initialize={})
+    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_GENERATORS, mutable=True,
+                                         initialize={})
+
+    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_GENERATORS, mutable=True,
+                                          initialize={})
+    m.FuelGeneratorsBuild = BuildAction(rule=determine_fuel_generators)
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
