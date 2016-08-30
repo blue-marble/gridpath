@@ -55,6 +55,21 @@ def min_power_rule(mod, g, tmp):
     return Constraint.Skip
 
 
+def fuel_use_rule(mod, g, tmp):
+    """
+    Variable generators should not have fuel use
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    raise (ValueError(
+        "ERROR! Variable generators should not use fuel." + "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its fuel to '.' (no value).")
+    )
+
+
 def startup_rule(mod, g, tmp):
     """
     Variable generators are never started up.

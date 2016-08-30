@@ -3,7 +3,7 @@
 """
 Describe operational costs.
 """
-from pyomo.environ import *
+from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -17,16 +17,30 @@ def add_model_components(m, d):
     # ### Aggregate power costs for objective function ### #
     # Add cost to objective function
     # TODO: fix this when periods added, etc.
-    def generation_cost_rule(m, g, tmp):
+    def variable_om_cost_rule(m, g, tmp):
         """
         Power production cost for each generator.
         :param m:
         :return:
         """
-        return m.Power_Provision_MW[g, tmp] * m.variable_cost_per_mwh[g]
+        return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
 
-    m.Generation_Cost = Expression(m.GENERATORS, m.TIMEPOINTS,
-                                   rule=generation_cost_rule)
+    m.Variable_OM_Cost = Expression(m.GENERATORS, m.TIMEPOINTS,
+                                    rule=variable_om_cost_rule)
+
+    # ### Fuel cost ### #
+    def fuel_cost_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Fuel_Use_MMBtu[g, tmp] \
+            * mod.fuel_price_per_mmbtu[mod.fuel[g]]
+    m.Fuel_Cost = Expression(m.FUEL_GENERATORS, m.TIMEPOINTS,
+                             rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
     m.Startup_Cost = Var(m.STARTUP_COST_GENERATORS, m.TIMEPOINTS,

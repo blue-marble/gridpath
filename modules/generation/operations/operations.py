@@ -92,8 +92,8 @@ def add_model_components(m, d):
     # TODO: figure out how to flag which generators get this variable
     # Generators that can vary power output
     m.Provide_Power_MW = Var(m.DISPATCHABLE_GENERATORS,
-                          m.TIMEPOINTS,
-                          within=NonNegativeReals)
+                             m.TIMEPOINTS,
+                             within=NonNegativeReals)
 
     # Headroom and footroom services
     m.Provide_LF_Reserves_Up_MW = Var(
@@ -104,7 +104,7 @@ def add_model_components(m, d):
         within=NonNegativeReals)
     m.Provide_LF_Reserves_Down_MW = Var(
         m.LF_RESERVES_DOWN_GENERATORS, m.TIMEPOINTS,
-         within=NonNegativeReals)
+        within=NonNegativeReals)
     m.Provide_Regulation_Down_MW = Var(
         m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS,
         within=NonNegativeReals)
@@ -184,6 +184,21 @@ def add_model_components(m, d):
             min_power_rule(mod, g, tmp)
     m.Min_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS,
                                         rule=min_power_rule)
+
+    def fuel_use_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            fuel_use_rule(mod, g, tmp)
+    # Fuel use
+    m.Fuel_Use_MMBtu = Expression(m.FUEL_GENERATORS, m.TIMEPOINTS,
+                                  rule=fuel_use_rule)
 
     def startup_rule(mod, g, tmp):
         """

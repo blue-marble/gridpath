@@ -7,7 +7,8 @@ power, reserves, ancillary services, etc.
 import os.path
 from pandas import read_csv
 
-from pyomo.environ import Param, Set, PercentFraction, Boolean, PositiveReals
+from pyomo.environ import Param, Set, PercentFraction, Boolean, \
+    NonNegativeReals,  PositiveReals
 
 
 def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
@@ -28,9 +29,13 @@ def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
         read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
                  sep="\t", usecols=["GENERATORS",
                                     "startup_cost",
-                                    "shutdown_cost"]
+                                    "shutdown_cost",
+                                    "fuel",
+                                    "minimum_input_mmbtu_per_hr",
+                                    "inc_heat_rate_mmbtu_per_mwh"]
                  )
 
+    # TODO: only initialize subsets of generators, not param data?
     # If numeric values greater than for startup/shutdown costs are specified
     # for some generators, add those generators to lists that will be used to
     # initialize generators subsets for which startup/shutdown costs will be
@@ -53,6 +58,24 @@ def determine_dynamic_inputs(d, scenario_directory, horizon, stage):
         if is_number(row[1]) and float(row[1]) > 0:
             d.shutdown_cost_generators.append(row[0])
             d.shutdown_cost_by_generator[row[0]] = float(row[1])
+        else:
+            pass
+
+    # Fuels (e.g. coal, gas, uranium)
+    # TODO: implement check for which genreator types can have fuels
+    d.fuel_generators = list()
+    d.fuel_by_generator = dict()
+    d.minimum_input_mmbtu_per_hr_by_generator = dict()
+    d.inc_heat_rate_mmbtu_per_mwh_by_generator = dict()
+    for row in zip(dynamic_components["GENERATORS"],
+                   dynamic_components["fuel"],
+                   dynamic_components["minimum_input_mmbtu_per_hr"],
+                   dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
+        if row[1] != ".":
+            d.fuel_generators.append(row[0])
+            d.fuel_by_generator[row[0]] = row[1]
+            d.minimum_input_mmbtu_per_hr_by_generator[row[0]] = float(row[2])
+            d.inc_heat_rate_mmbtu_per_mwh_by_generator[row[0]] = float(row[3])
         else:
             pass
 
@@ -107,6 +130,9 @@ def add_model_components(m, d):
     m.min_stable_level_fraction = Param(m.DISPATCHABLE_GENERATORS,
                                         within=PercentFraction)
 
+    # Variable O&M cost
+    m.variable_om_cost_per_mwh = Param(m.GENERATORS, within=NonNegativeReals)
+
     # Headroom services flags
     m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
     m.regulation_up = Param(m.GENERATORS, within=Boolean)
@@ -144,6 +170,22 @@ def add_model_components(m, d):
                                      within=PositiveReals,
                                      initialize=d.shutdown_cost_by_generator)
 
+    # Fuels and heat rates
+    m.FUEL_GENERATORS = Set(within=m.GENERATORS,
+                            initialize=d.fuel_generators)
+
+    m.fuel = Param(m.FUEL_GENERATORS, within=m.FUELS,
+                   initialize=d.fuel_by_generator)
+    m.minimum_input_mmbtu_per_hr = Param(
+        m.FUEL_GENERATORS,
+        initialize=
+        d.minimum_input_mmbtu_per_hr_by_generator)
+
+    m.inc_heat_rate_mmbtu_per_mwh = Param(
+        m.FUEL_GENERATORS,
+        initialize=
+        d.inc_heat_rate_mmbtu_per_mwh_by_generator)
+
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
@@ -161,11 +203,13 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                      select=("GENERATORS", "operational_type",
                              "lf_reserves_up", "regulation_up",
                              "lf_reserves_down", "regulation_down",
-                             "min_stable_level_fraction"),
+                             "min_stable_level_fraction",
+                             "variable_om_cost_per_mwh"),
                      param=(m.operational_type,
                             m.lf_reserves_up, m.regulation_up,
                             m.lf_reserves_down, m.regulation_down,
-                            m.min_stable_level_fraction)
+                            m.min_stable_level_fraction,
+                            m.variable_om_cost_per_mwh)
                      )
 
 

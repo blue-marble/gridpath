@@ -40,6 +40,19 @@ def min_power_rule(mod, g, tmp):
     return Constraint.Skip
 
 
+# TODO: add data check that inc_heat_rate_mmbtu_per_mwh is 0 for must-run gens
+# TODO: change when can-build-new
+def fuel_use_rule(mod, g, tmp):
+    """
+    Output doesn't vary, so this is
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.minimum_input_mmbtu_per_hr[g]
+
+
 def startup_rule(mod, g, tmp):
     """
     Must-run generators are never started up.

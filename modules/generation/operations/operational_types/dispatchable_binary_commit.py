@@ -64,6 +64,25 @@ def min_power_rule(mod, g, tmp):
         * mod.min_stable_level_fraction[g]
 
 
+def fuel_use_rule(mod, g, tmp):
+    """
+    Fuel use in terms of an IO curve with an incremental heat rate above
+    the minimum stable level, i.e. a minimum MMBtu input to have the generator
+    on plus incremental fuel use for each MWh above the minimum stable level of
+    the generator.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Commit_Binary[g, tmp] \
+        * mod.minimum_input_mmbtu_per_hr_by_generator[g] \
+        + (mod.Provide_Power_MW[g, tmp] -
+           (mod.Commit_Binary[g, tmp] * mod.capacity_mw[g]
+            * mod.min_stable_level_fraction[g])
+           ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
+
+
 def startup_rule(mod, g, tmp):
     """
     Will be positive when there are more generators committed in the current
@@ -79,7 +98,7 @@ def startup_rule(mod, g, tmp):
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":
-        return Non
+        return None
     else:
         return mod.Commit_Binary[g, tmp] \
             - mod.Commit_Binary[g, mod.previous_timepoint[tmp]]

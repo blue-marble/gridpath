@@ -22,18 +22,31 @@ def add_model_components(m, d):
 
     # Power production variable costs
     # TODO: fix this when periods added, etc.
-    def total_generation_cost_rule(m):
+    def total_variable_om_cost_rule(m):
         """
         Power production cost for all generators across all timepoints
         :param m:
         :return:
         """
-        return sum(m.Generation_Cost[g, tmp]
+        return sum(m.Variable_OM_Cost[g, tmp]
                    for g in m.GENERATORS
                    for tmp in m.TIMEPOINTS)
 
-    m.Total_Generation_Cost = Expression(rule=total_generation_cost_rule)
-    d.total_cost_components.append("Total_Generation_Cost")
+    m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
+    d.total_cost_components.append("Total_Variable_OM_Cost")
+
+    def total_fuel_cost_rule(m):
+        """
+        Power production cost for all generators across all timepoints
+        :param m:
+        :return:
+        """
+        return sum(m.Fuel_Cost[g, tmp]
+                   for g in m.FUEL_GENERATORS
+                   for tmp in m.TIMEPOINTS)
+
+    m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
+    d.total_cost_components.append("Total_Fuel_Cost")
 
     # Startup and shutdown costs
     def total_startup_cost_rule(mod):

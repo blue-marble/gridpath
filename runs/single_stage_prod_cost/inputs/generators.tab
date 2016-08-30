@@ -1,6 +1,6 @@
-GENERATORS	capacity_mw	variable_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost
-Gen1	6	1	must_run	0	0	0	0	.	.	.
-Gen2	6	2	dispatchable_continuous_commit	1	1	1	1	0.0	1.0	2.0
-Gen3	6	1	dispatchable_continuous_commit	0	1	0	1	0.4	1.0	0.0
-Gen4	6	2	dispatchable_continuous_commit	0	0	0	0	0.4	0.0	1.0
-Gen5	2	0	variable	0	0	0	0	.	.	.
+GENERATORS	capacity_mw	variable_om_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	last_commitment_stage
+Nuclear	6	1	must_run	0	0	0	0	.	.	.	Uranium	10000	0	.
+Gas_CCGT1	6	2	dispatchable_continuous_commit	1	1	1	1	0	1	2	Gas	1500	6	da
+Coal	6	1	dispatchable_continuous_commit	0	1	0	1	0.4	1	0	Coal	3000	10	ha
+Gas_CT	6	2	dispatchable_continuous_commit	0	0	0	0	0.4	0	1	Gas	500	8	rt
+Wind	2	0	variable	0	0	0	0	.	.	.	.	.	.	.
