@@ -20,7 +20,9 @@ def load_operational_modules(required_modules):
                 )
             imported_operational_modules[op_m] = imp_op_m
             required_attributes = ["power_provision_rule",
-                                   "max_power_rule", "min_power_rule"]
+                                   "max_power_rule", "min_power_rule",
+                                   "fuel_use_rule", "startup_rule",
+                                   "shutdown_rule"]
             for a in required_attributes:
                 if hasattr(imp_op_m, a):
                     pass
@@ -28,7 +30,7 @@ def load_operational_modules(required_modules):
                     raise("ERROR! No " + a + " function in module "
                           + imp_op_m + ".")
         except ImportError:
-            print("ERROR! Operational module " + op_m + " not found.")
+            print("ERROR! Operational type module " + op_m + " not found.")
 
     return imported_operational_modules
 
@@ -80,7 +82,8 @@ def get_final_expression(x):
 def get_value_of_var_or_expr(x):
     """
     If x has an "expr" attribute, check recursively if its expr attribute has
-    an expr attribute until it does not, then return its "value" attribute
+    an expr attribute until it does not, then return its "value" attribute;
+    if no value attribute, try evaluating the object
     :param x:
     :return:
     """
@@ -92,7 +95,10 @@ def get_value_of_var_or_expr(x):
     try:
         return getattr(x, "value")
     except AttributeError:
-        print(x + " does not have a 'value' attribute.")
+        try:
+            return eval(str(x))
+        except ValueError:
+            print(str(x) + " cannot be evaluated.")
 
 
 def make_gen_tmp_var_df(m, gen_set, tmp_set, x, header):
@@ -107,20 +113,22 @@ def make_gen_tmp_var_df(m, gen_set, tmp_set, x, header):
     """
     # Power
 
+    # Created nested dictionary for each generator-timepoint
     dict_for_gen_df = {}
-    generators = []
-    timepoints = []
-    gen_tmp = []
     for g in getattr(m, gen_set):
         dict_for_gen_df[g] = {}
-        generators.append(g)
         for tmp in getattr(m, tmp_set):
             dict_for_gen_df[g][tmp] = \
                 get_value_of_var_or_expr(getattr(m, x)[g, tmp])
-            gen_tmp.append((g, tmp))
 
     # For each generator, create a dataframe with its x values
+    # Create two lists, the generators and dictionaries with the timepoints as
+    # keys and the values -- it is critical that the order of generators and
+    # of the dictionaries with their values match
+    generators = []
+    timepoints = []
     for g, tmp in dict_for_gen_df.iteritems():
+        generators.append(g)
         timepoints.append(pandas.DataFrame.from_dict(tmp, orient='index'))
 
     # Concatenate all the individual generator dataframes into a final one
