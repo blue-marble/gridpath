@@ -7,7 +7,7 @@ import os.path
 from csv import reader
 from pandas import read_csv
 
-from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
+from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals
 
 from auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_gen_tmp_var_df, \
@@ -116,12 +116,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # use by the operationa modules
     def headroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
-    m.Headroom_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+    m.Headroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                          rule=headroom_provision_rule)
 
     def footroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
-    m.Footroom_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+    m.Footroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                          rule=footroom_provision_rule)
 
     # From here, the operational modules determine how the model components are
@@ -152,7 +152,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision_MW = Expression(m.GENERATORS, m.TIMEPOINTS,
+    m.Power_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                       rule=power_provision_rule)
 
     def max_power_rule(mod, g, tmp):
@@ -168,7 +168,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             max_power_rule(mod, g, tmp)
-    m.Max_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS,
+    m.Max_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                         rule=max_power_rule)
 
     def min_power_rule(mod, g, tmp):
@@ -185,8 +185,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             min_power_rule(mod, g, tmp)
-    m.Min_Power_Constraint = Constraint(m.GENERATORS, m.TIMEPOINTS,
+    m.Min_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                         rule=min_power_rule)
+
+    m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.FUEL_GENERATORS))
 
     def fuel_use_rule(mod, g, tmp):
         """
@@ -200,8 +206,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             fuel_use_rule(mod, g, tmp)
     # Fuel use
-    m.Fuel_Use_MMBtu = Expression(m.FUEL_GENERATORS, m.TIMEPOINTS,
+    m.Fuel_Use_MMBtu = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
                                   rule=fuel_use_rule)
+
+    m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_COST_GENERATORS))
 
     def startup_rule(mod, g, tmp):
         """
@@ -216,8 +228,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             startup_rule(mod, g, tmp)
     m.Startup_Expression = Expression(
-        m.STARTUP_COST_GENERATORS, m.TIMEPOINTS,
+        m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=startup_rule)
+
+    m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.SHUTDOWN_COST_GENERATORS))
 
     def shutdown_rule(mod, g, tmp):
         """
@@ -232,7 +250,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             shutdown_rule(mod, g, tmp)
     m.Shutdown_Expression = Expression(
-        m.SHUTDOWN_COST_GENERATORS, m.TIMEPOINTS,
+        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_rule)
 
 

@@ -49,6 +49,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.FinalCommitmentGeneratorsBuild = BuildAction(
         rule=determine_final_commitment_generators)
 
+    m.FINAL_COMMITMENT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.FINAL_COMMITMENT_GENERATORS))
+
     def commitment_rule(mod, g, tmp):
         """
 
@@ -101,6 +107,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.FixedCommitmentGeneratorsBuild = BuildAction(
         rule=determine_fixed_commitment_generators)
 
+    m.FIXED_COMMITMENT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.FIXED_COMMITMENT_GENERATORS))
+
 
 def fix_variables(m):
     """
@@ -135,8 +147,7 @@ def export_results(scenario_directory, horizon, stage, m):
             "pass_through_inputs", "fixed_commitment.csv"), "ab") \
             as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file)
-        for g in m.FINAL_COMMITMENT_GENERATORS:
-            for tmp in m.TIMEPOINTS:
-                fixed_commitment_writer.writerow(
-                    [g, tmp, stage, m.Commitment[g, tmp].expr.value])
+        for (g, tmp) in m.FINAL_COMMITMENT_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            fixed_commitment_writer.writerow(
+                [g, tmp, stage, m.Commitment[g, tmp].expr.value])
 

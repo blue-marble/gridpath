@@ -6,7 +6,7 @@ No curtailment variable by individual generator.
 """
 
 import os.path
-from pyomo.environ import Param, PercentFraction, Constraint
+from pyomo.environ import Param, PercentFraction, Constraint, Expression
 
 
 def add_module_specific_components(m):
@@ -30,7 +30,8 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.capacity_mw[g] * mod.cap_factor[g, tmp]
+
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]
 
 
 def max_power_rule(mod, g, tmp):

@@ -32,8 +32,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(m.Variable_OM_Cost[g, tmp]
-                   for g in m.GENERATORS
-                   for tmp in m.TIMEPOINTS)
+                   for (g, tmp) in m.GENERATOR_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
     d.total_cost_components.append("Total_Variable_OM_Cost")
@@ -45,8 +44,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(m.Fuel_Cost[g, tmp]
-                   for g in m.FUEL_GENERATORS
-                   for tmp in m.TIMEPOINTS)
+                   for (g, tmp) in m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
     d.total_cost_components.append("Total_Fuel_Cost")
@@ -59,8 +57,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Startup_Cost[g, tmp]
-                   for g in mod.STARTUP_COST_GENERATORS
-                   for tmp in mod.TIMEPOINTS)
+                   for (g, tmp)
+                   in mod.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
     d.total_cost_components.append("Total_Startup_Cost")
 
@@ -71,8 +69,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Shutdown_Cost[g, tmp]
-                   for g in mod.SHUTDOWN_COST_GENERATORS
-                   for tmp in mod.TIMEPOINTS)
+                   for (g, tmp)
+                   in mod.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
     d.total_cost_components.append("Total_Shutdown_Cost")
 

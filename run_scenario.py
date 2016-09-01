@@ -15,7 +15,7 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 # Scenario name
-scenario_name = "test"
+scenario_name = "multi_stage_prod_cost"
 
 
 class ScenarioStructure(object):
@@ -23,7 +23,7 @@ class ScenarioStructure(object):
     Directory and file structure for the scenario.
 
     Check for horizon and stage subproblems, and make appropriate lists to
-    iterate over.
+    iterate over and solve each subproblem.
 
     """
     def __init__(self, scenario):

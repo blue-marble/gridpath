@@ -26,7 +26,7 @@ def max_power_rule(mod, g, tmp):
     """
     return mod.Provide_Power_MW[g, tmp] + \
         mod.Headroom_Provision_MW[g, tmp] \
-        <= mod.capacity_mw[g]
+        <= mod.Capacity_MW[g, mod.period[tmp]]
 
 
 def min_power_rule(mod, g, tmp):

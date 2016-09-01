@@ -1,3 +1,3 @@
-TIMEPOINTS	horizon
-1	1
-2	1
+TIMEPOINTS	period	horizon
+1	2020	1
+2	2020	1

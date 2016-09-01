@@ -28,7 +28,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         """
         return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
 
-    m.Variable_OM_Cost = Expression(m.GENERATORS, m.TIMEPOINTS,
+    m.Variable_OM_Cost = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                     rule=variable_om_cost_rule)
 
     # ### Fuel cost ### #
@@ -43,7 +43,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return mod.Fuel_Use_MMBtu[g, tmp] \
             * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
 
-    m.Fuel_Cost = Expression(m.FUEL_GENERATORS, m.TIMEPOINTS,
+    m.Fuel_Cost = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
@@ -75,9 +75,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
             return mod.Startup_Cost[g, tmp] \
                 >= mod.Startup_Expression[g, tmp] \
                 * mod.startup_cost_per_unit[g]
-    m.Startup_Cost_Constraint = Constraint(m.STARTUP_COST_GENERATORS,
-                                           m.TIMEPOINTS,
-                                           rule=startup_cost_rule)
+    m.Startup_Cost_Constraint = \
+        Constraint(m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=startup_cost_rule)
 
     def shutdown_cost_rule(mod, g, tmp):
         """
@@ -102,6 +102,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
             return mod.Shutdown_Cost[g, tmp] \
                 >= mod.Shutdown_Expression[g, tmp] \
                 * mod.shutdown_cost_per_unit[g]
-    m.Shutdown_Cost_Constraint = Constraint(m.SHUTDOWN_COST_GENERATORS,
-                                            m.TIMEPOINTS,
-                                            rule=shutdown_cost_rule)
+    m.Shutdown_Cost_Constraint = Constraint(
+        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_cost_rule)

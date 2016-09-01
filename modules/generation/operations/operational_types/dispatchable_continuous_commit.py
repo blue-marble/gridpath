@@ -48,7 +48,7 @@ def max_power_rule(mod, g, tmp):
     """
     return mod.Provide_Power_MW[g, tmp] + \
         mod.Headroom_Provision_MW[g, tmp] \
-        <= mod.capacity_mw[g] * mod.Commit_Continuous[g, tmp]
+        <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Continuous[g, tmp]
 
 
 def min_power_rule(mod, g, tmp):
@@ -61,7 +61,7 @@ def min_power_rule(mod, g, tmp):
     """
     return mod.Provide_Power_MW[g, tmp] - \
         mod.Footroom_Provision_MW[g, tmp] \
-        >= mod.Commit_Continuous[g, tmp] * mod.capacity_mw[g] \
+        >= mod.Commit_Continuous[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.min_stable_level_fraction[g]
 
 
@@ -80,7 +80,7 @@ def fuel_use_rule(mod, g, tmp):
     return mod.Commit_Continuous[g, tmp] \
         * mod.minimum_input_mmbtu_per_hr[g] \
         + (mod.Provide_Power_MW[g, tmp] -
-           (mod.Commit_Continuous[g, tmp] * mod.capacity_mw[g]
+           (mod.Commit_Continuous[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]]
             * mod.min_stable_level_fraction[g])
            ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
 
