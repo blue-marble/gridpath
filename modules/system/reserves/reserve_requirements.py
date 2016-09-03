@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from pyomo.environ import Param, Var, Expression, Constraint, NonNegativeReals
+from pyomo.environ import Param, Var, Set, Expression, Constraint, \
+    NonNegativeReals
 
 
 def add_generic_reserve_components(
@@ -48,18 +49,30 @@ def add_generic_reserve_components(
     setattr(m, reserve_requirement_param, Param(m.LOAD_ZONES, m.TIMEPOINTS,
                                                 within=NonNegativeReals))
 
+    # Reserve generators operational generators in timepoint
+    # This will be the intersection of the reserve generator set and the set of
+    # generators operational in the timepoint
+    op_set = str(reserve_generator_set)+"_OPERATIONAL_IN_TIMEPOINT"
+    setattr(m, op_set,
+            Set(m.TIMEPOINTS,
+                initialize=lambda mod, tmp:
+                getattr(mod, reserve_generator_set) &
+                    mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]))
+
     # TODO: by zone eventually, not all generators
     # Reserve provision
     def total_reserve_rule(mod, z, tmp):
         return sum(getattr(mod, generator_reserve_provision_variable)[g, tmp]
-                   for g in getattr(mod, reserve_generator_set))
+                   for g in getattr(mod, op_set)[tmp]
+                   )
     setattr(m, total_reserve_provision_variable,
             Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_reserve_rule))
 
     # Reserve constraints
     def meet_reserve_rule(mod, z, tmp):
         return getattr(mod, total_reserve_provision_variable)[z, tmp] \
-               == getattr(mod, reserve_requirement_param)[z, tmp]
+            + getattr(mod, reserve_violation_variable)[z, tmp] \
+            == getattr(mod, reserve_requirement_param)[z, tmp]
 
     setattr(m, meet_reserve_constraint,
             Constraint(m.LOAD_ZONES, m.TIMEPOINTS, rule=meet_reserve_rule))

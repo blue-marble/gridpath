@@ -149,10 +149,10 @@ def export_module_specific_results(mod):
     """
 
     continuous_commit_df = \
-        make_gen_tmp_var_df(mod,
-                            "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS",
-                            "TIMEPOINTS",
-                            "Commit_Continuous",
-                            "commit_continuous")
+        make_gen_tmp_var_df(
+            mod,
+            "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Commit_Continuous",
+            "commit_continuous")
 
     mod.module_specific_df.append(continuous_commit_df)

@@ -6,7 +6,7 @@ Describes the relationships among timepoints in the optimization
 
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeIntegers
+from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -20,7 +20,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
     m.PERIODS = Set(within=NonNegativeIntegers, ordered=True)
-    m.discount_factor = Param(m.PERIODS)
+    m.discount_factor = Param(m.PERIODS, within=NonNegativeReals)
+    m.number_years_represented = Param(m.PERIODS, within=NonNegativeReals)
+    # TODO: add # number of years a period represents
 
     m.period = Param(m.TIMEPOINTS, within=m.PERIODS)
 
@@ -35,9 +37,10 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "periods.tab"),
-                     select=("PERIODS", "discount_factor"),
+                     select=("PERIODS", "discount_factor",
+                             "number_years_represented"),
                      index=m.PERIODS,
-                     param=(m.discount_factor,)
+                     param=(m.discount_factor, m.number_years_represented)
                      )
 
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,

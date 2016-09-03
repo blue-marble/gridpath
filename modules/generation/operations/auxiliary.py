@@ -101,12 +101,11 @@ def get_value_of_var_or_expr(x):
             print(str(x) + " cannot be evaluated.")
 
 
-def make_gen_tmp_var_df(m, gen_set, tmp_set, x, header):
+def make_gen_tmp_var_df(m, gen_tmp_set, x, header):
     """
 
     :param m:
-    :param gen_set:
-    :param tmp_set:
+    :param gen_tmp_set:
     :param x:
     :param header:
     :return:
@@ -115,9 +114,12 @@ def make_gen_tmp_var_df(m, gen_set, tmp_set, x, header):
 
     # Created nested dictionary for each generator-timepoint
     dict_for_gen_df = {}
-    for g in getattr(m, gen_set):
-        dict_for_gen_df[g] = {}
-        for tmp in getattr(m, tmp_set):
+    for (g, tmp) in getattr(m, gen_tmp_set):
+        if g not in dict_for_gen_df.keys():
+            dict_for_gen_df[g] = {}
+            dict_for_gen_df[g][tmp] = \
+                get_value_of_var_or_expr(getattr(m, x)[g, tmp])
+        else:
             dict_for_gen_df[g][tmp] = \
                 get_value_of_var_or_expr(getattr(m, x)[g, tmp])
 

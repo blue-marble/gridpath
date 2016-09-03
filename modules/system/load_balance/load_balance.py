@@ -35,7 +35,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # TODO: make this generators in the zone only when multiple zones actually
     # are implemented
     def total_generation_power_rule(m, z, tmp):
-        return sum(m.Power_Provision_MW[g, tmp] for g in m.GENERATORS)
+        return sum(m.Power_Provision_MW[g, tmp]
+                   for g in m.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp])
     m.Generation_Power_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                        rule=total_generation_power_rule)
 

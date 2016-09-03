@@ -15,7 +15,7 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 # Scenario name
-scenario_name = "multi_stage_prod_cost"
+scenario_name = "test"
 
 
 class ScenarioStructure(object):
@@ -278,8 +278,8 @@ def solve(instance):
     print("Solving...")
     results = solver.solve(instance,
                            tee=True,
-                           keepfiles=False,
-                           symbolic_solver_labels=False
+                           keepfiles=True,
+                           symbolic_solver_labels=True
                            )
     return results
 

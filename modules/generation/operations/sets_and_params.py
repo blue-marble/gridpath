@@ -69,16 +69,15 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                               "dispatchable_continuous_commit")
     )
 
-    m.DISPATCHABLE_GENERATORS = Set(initialize=
-                                    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
-                                    m.DISPATCHABLE_NO_COMMIT_GENERATORS |
-                                    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
-
     m.COMMIT_GENERATORS = Set(initialize=
                               m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
                               m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
 
     # TODO: this should be built below with the dynamic components
+    m.DISPATCHABLE_GENERATORS = Set(initialize=
+                                    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
+                                    m.DISPATCHABLE_NO_COMMIT_GENERATORS |
+                                    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
     m.min_stable_level_fraction = Param(m.DISPATCHABLE_GENERATORS,
                                         within=PercentFraction)
 
@@ -202,6 +201,79 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_GENERATORS, mutable=True,
                                           initialize={})
     m.FuelGeneratorsBuild = BuildAction(rule=determine_fuel_generators)
+
+    # Sets over which we'll define variables
+    m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.MUST_RUN_GENERATORS))
+
+    m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.VARIABLE_GENERATORS))
+
+    m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_NO_COMMIT_GENERATORS))
+
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
+
+    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS))
+
+    m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_UP_GENERATORS))
+
+    m.LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_DOWN_GENERATORS))
+
+    m.REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_UP_GENERATORS))
+
+    m.REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_DOWN_GENERATORS))
+
+    m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.FUEL_GENERATORS))
+
+    m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_COST_GENERATORS))
+
+    m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.SHUTDOWN_COST_GENERATORS))
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):

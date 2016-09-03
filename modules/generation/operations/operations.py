@@ -100,16 +100,16 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Headroom and footroom services
     m.Provide_LF_Reserves_Up_MW = Var(
-        m.LF_RESERVES_UP_GENERATORS, m.TIMEPOINTS,
+        m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_Regulation_Up_MW = Var(
-        m.REGULATION_UP_GENERATORS, m.TIMEPOINTS,
+        m.REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_LF_Reserves_Down_MW = Var(
-        m.LF_RESERVES_DOWN_GENERATORS, m.TIMEPOINTS,
+        m.LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_Regulation_Down_MW = Var(
-        m.REGULATION_DOWN_GENERATORS, m.TIMEPOINTS,
+        m.REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
 
     # Aggregate the headroom and footroom decision variables respectively for
@@ -188,12 +188,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Min_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                         rule=min_power_rule)
 
-    m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.FUEL_GENERATORS))
-
     def fuel_use_rule(mod, g, tmp):
         """
 
@@ -208,12 +202,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # Fuel use
     m.Fuel_Use_MMBtu = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
                                   rule=fuel_use_rule)
-
-    m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.STARTUP_COST_GENERATORS))
 
     def startup_rule(mod, g, tmp):
         """
@@ -230,12 +218,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Startup_Expression = Expression(
         m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=startup_rule)
-
-    m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.SHUTDOWN_COST_GENERATORS))
 
     def shutdown_rule(mod, g, tmp):
         """
@@ -298,31 +280,31 @@ def export_results(scenario_directory, horizon, stage, m):
             pass
 
     # Make pandas dataframes for the various operations variables results
-    power_df = make_gen_tmp_var_df(m,
-                                   "GENERATORS",
-                                   "TIMEPOINTS",
-                                   "Power_Provision_MW",
-                                   "power_mw")
-    lf_reserves_up_df = make_gen_tmp_var_df(m,
-                                            "LF_RESERVES_UP_GENERATORS",
-                                            "TIMEPOINTS",
-                                            "Provide_LF_Reserves_Up_MW",
-                                            "lf_reserves_up_mw")
-    lf_reserves_down_df = make_gen_tmp_var_df(m,
-                                              "LF_RESERVES_DOWN_GENERATORS",
-                                              "TIMEPOINTS",
-                                              "Provide_LF_Reserves_Down_MW",
-                                              "lf_reserves_down_mw")
-    regulation_up_df = make_gen_tmp_var_df(m,
-                                           "REGULATION_UP_GENERATORS",
-                                           "TIMEPOINTS",
-                                           "Provide_Regulation_Up_MW",
-                                           "regulation_up_mw")
-    regulation_down_df = make_gen_tmp_var_df(m,
-                                             "REGULATION_DOWN_GENERATORS",
-                                             "TIMEPOINTS",
-                                             "Provide_Regulation_Down_MW",
-                                             "regulation_down_mw")
+    power_df = make_gen_tmp_var_df(
+        m,
+        "GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "Power_Provision_MW",
+        "power_mw")
+    lf_reserves_up_df = make_gen_tmp_var_df(
+        m,
+        "LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "Provide_LF_Reserves_Up_MW",
+        "lf_reserves_up_mw")
+    lf_reserves_down_df = make_gen_tmp_var_df(
+        m,
+        "LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "Provide_LF_Reserves_Down_MW",
+        "lf_reserves_down_mw")
+    regulation_up_df = make_gen_tmp_var_df(
+        m,
+        "REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "Provide_Regulation_Up_MW",
+        "regulation_up_mw")
+    regulation_down_df = make_gen_tmp_var_df(
+        m,
+        "REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "Provide_Regulation_Down_MW",
+        "regulation_down_mw")
 
     dfs_to_merge = [power_df] + m.module_specific_df + \
                    [lf_reserves_up_df, lf_reserves_down_df,
