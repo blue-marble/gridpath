@@ -36,7 +36,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # are implemented
     def total_generation_power_rule(m, z, tmp):
         return sum(m.Power_Provision_MW[g, tmp]
-                   for g in m.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp])
+                   for g in m.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
+                   if m.load_zone[g] == z)
     m.Generation_Power_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                        rule=total_generation_power_rule)
 

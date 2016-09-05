@@ -40,6 +40,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
     m.GENERATORS = Set()
+    m.load_zone = Param(m.GENERATORS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.GENERATORS)
 
     m.capacity_type_operational_period_sets = []
@@ -116,8 +117,8 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "generators.tab"),
                      index=m.GENERATORS,
-                     select=("GENERATORS", "capacity_type"),
-                     param=m.capacity_type
+                     select=("GENERATORS", "load_zone", "capacity_type"),
+                     param=(m.load_zone, m.capacity_type)
                      )
 
     imported_capacity_modules = \

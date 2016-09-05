@@ -64,6 +64,7 @@ def add_generic_reserve_components(
     def total_reserve_rule(mod, z, tmp):
         return sum(getattr(mod, generator_reserve_provision_variable)[g, tmp]
                    for g in getattr(mod, op_set)[tmp]
+                   if mod.load_zone[g] == z
                    )
     setattr(m, total_reserve_provision_variable,
             Expression(m.LOAD_ZONES, m.TIMEPOINTS, rule=total_reserve_rule))

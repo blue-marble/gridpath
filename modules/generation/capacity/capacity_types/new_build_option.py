@@ -92,6 +92,9 @@ def capacity_rule(mod, g, p):
 
 def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
+
+    # TODO: throw an error when a generator of the 'new_build_option' capacity
+    # type is not found in new_build_option_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",
@@ -106,13 +109,5 @@ def load_module_specific_data(m,
 
 
 def export_module_specific_results(m):
-    for (g, v) in m.NEW_BUILD_OPTION_VINTAGES:
-        print (g, v)
-        print getattr(m, "OPERATIONAL_PERIODS_BY_NEW_BUILD_OPTION_VINTAGE")[g, v]
-
-    for p in getattr(m, "PERIODS"):
-        print p
-        for (g, v) in m.NEW_BUILD_OPTION_VINTAGES_OPERATIONAL_IN_PERIOD[p]:
-            print (g, v)
     for (g, v) in getattr(m, "NEW_BUILD_OPTION_VINTAGES"):
         print (g, v), m.Build_MW[g,v].value

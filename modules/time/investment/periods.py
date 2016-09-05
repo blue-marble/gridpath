@@ -22,7 +22,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.PERIODS = Set(within=NonNegativeIntegers, ordered=True)
     m.discount_factor = Param(m.PERIODS, within=NonNegativeReals)
     m.number_years_represented = Param(m.PERIODS, within=NonNegativeReals)
-    # TODO: add # number of years a period represents
 
     m.period = Param(m.TIMEPOINTS, within=m.PERIODS)
 

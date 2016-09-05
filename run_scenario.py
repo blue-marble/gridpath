@@ -15,7 +15,7 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 # Scenario name
-scenario_name = "test"
+scenario_name = "2periods_new_build_2zones"
 
 
 class ScenarioStructure(object):
@@ -273,7 +273,7 @@ def view_loaded_data(loaded_modules, instance):
 
 def solve(instance):
     # Get solver and solve
-    solver = SolverFactory("cbc")
+    solver = SolverFactory("ipopt")
 
     print("Solving...")
     results = solver.solve(instance,
