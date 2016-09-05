@@ -9,7 +9,7 @@ from pyomo.environ import Var, Set, Param, Binary
 from ..auxiliary import make_gen_tmp_var_df
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, scenario_directory):
     """
     Add a binary commit variable to represent 'on' or 'off' state of a
     generator.
@@ -141,11 +141,11 @@ def export_module_specific_results(mod):
     """
     Export commitment decisions.
     """
-    continuous_commit_df = \
-        make_gen_tmp_var_df(mod,
-                            "DISPATCHABLE_BINARY_COMMIT_GENERATORS",
-                            "TIMEPOINTS",
-                            "Commit_Binary",
-                            "commit_binary")
+    binary_commit_df = \
+        make_gen_tmp_var_df(
+            mod,
+            "DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Commit_Binary",
+            "commit_binary")
 
-    mod.module_specific_df.append(continuous_commit_df)
+    mod.module_specific_df.append(binary_commit_df)

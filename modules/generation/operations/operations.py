@@ -135,7 +135,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     for op_m in m.required_operational_modules:
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m)
+            imp_op_m.add_module_specific_components(m, scenario_directory)
 
     # Then define operational constraints for all generators
     # Get rules from the generator's operational module

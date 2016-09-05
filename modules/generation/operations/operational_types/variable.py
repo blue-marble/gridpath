@@ -9,7 +9,7 @@ import os.path
 from pyomo.environ import Param, PercentFraction, Constraint, Expression
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, scenario_directory):
     """
     Variable generators require a capacity factor for each timepoint.
     :param m:

@@ -1,7 +1,7 @@
 generator,timepoint,final_stage,commitment
-Gas_CCGT,1,da,0.66666667
-Gas_CCGT,2,da,1
-Coal,2,ha,0.83333333
+Gas_CCGT,1,da,4
+Gas_CCGT,2,da,6
+Coal,2,ha,5
 Coal,1,ha,0
-Gas_CT,1,rt,0.03333333
-Gas_CT,2,rt,1
+Gas_CT,1,rt,0.2
+Gas_CT,2,rt,6

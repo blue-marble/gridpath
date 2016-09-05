@@ -7,7 +7,7 @@ import os.path
 from pandas import read_csv
 from csv import writer
 
-from pyomo.environ import Set, Param, PercentFraction, Expression, BuildAction
+from pyomo.environ import Set, Param, NonNegativeReals, Expression, BuildAction
 
 from auxiliary import load_operational_modules
 
@@ -102,7 +102,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         Set(within=m.COMMIT_GENERATORS,
             initialize=[])
     m.fixed_commitment = Param(m.FIXED_COMMITMENT_GENERATORS, m.TIMEPOINTS,
-                               within=PercentFraction, mutable=True,
+                               within=NonNegativeReals, mutable=True,
                                initialize={})
     m.FixedCommitmentGeneratorsBuild = BuildAction(
         rule=determine_fixed_commitment_generators)

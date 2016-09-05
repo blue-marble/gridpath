@@ -69,15 +69,25 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                               "dispatchable_continuous_commit")
     )
 
+    m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type",
+                              "dispatchable_capacity_commit")
+    )
+
     m.COMMIT_GENERATORS = Set(initialize=
                               m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
-                              m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
+                              m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS |
+                              m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS)
 
     # TODO: this should be built below with the dynamic components
-    m.DISPATCHABLE_GENERATORS = Set(initialize=
-                                    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
-                                    m.DISPATCHABLE_NO_COMMIT_GENERATORS |
-                                    m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS)
+    m.DISPATCHABLE_GENERATORS = \
+        Set(initialize=m.DISPATCHABLE_BINARY_COMMIT_GENERATORS |
+                       m.DISPATCHABLE_NO_COMMIT_GENERATORS |
+                       m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS |
+                       m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            )
     m.min_stable_level_fraction = Param(m.DISPATCHABLE_GENERATORS,
                                         within=PercentFraction)
 
@@ -232,6 +242,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS))
+
+    m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
 
     m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,

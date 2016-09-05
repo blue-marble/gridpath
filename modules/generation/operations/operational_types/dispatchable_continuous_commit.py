@@ -9,7 +9,7 @@ from pyomo.environ import Var
 from ..auxiliary import make_gen_tmp_var_df
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, scenario_directory):
     """
     Add a continuous commit variable to represent the fraction of fleet
     capacity that is on.
