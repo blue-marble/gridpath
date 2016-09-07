@@ -31,17 +31,13 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS, within=NonNegativeReals)
     d.energy_consumption_components.append("load_mw")
 
-    # ### Aggregate generation for load balance ### #
-    # TODO: make this generators in the zone only when multiple zones actually
-    # are implemented
-    def total_generation_power_rule(m, z, tmp):
-        return sum(m.Power_Provision_MW[g, tmp]
-                   for g in m.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
-                   if m.load_zone[g] == z)
-    m.Generation_Power_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
-                                       rule=total_generation_power_rule)
-
-    d.energy_generation_components.append("Generation_Power_MW")
+    def total_generation_power_rule(mod, z, tmp):
+        return sum(mod.Power_Provision_MW[g, tmp]
+                   for g in mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
+                   if mod.load_zone[g] == z)
+    m.Generation_in_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+                                         rule=total_generation_power_rule)
+    d.energy_generation_components.append("Generation_in_Zone_MW")
 
     def total_energy_production_rule(mod, z, tmp):
         """

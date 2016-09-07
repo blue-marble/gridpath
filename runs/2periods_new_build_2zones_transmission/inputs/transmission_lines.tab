@@ -1,0 +1,2 @@
+TRANSMISSION_LINES	load_zone_from	load_zone_to	tx_min_mw	tx_max_mw
+Tx1	Zone1	Zone2	-10	10
