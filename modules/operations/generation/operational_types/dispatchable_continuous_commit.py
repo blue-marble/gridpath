@@ -6,7 +6,7 @@ Operations of must-run generators. Can't provide reserves.
 
 from pyomo.environ import Var
 
-from ..auxiliary import make_gen_tmp_var_df
+from modules.operations.generation.auxiliary import make_gen_tmp_var_df
 
 
 def add_module_specific_components(m, scenario_directory):

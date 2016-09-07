@@ -7,11 +7,12 @@ be good for modeling 'fleets' of generators, e.g. a total 2000 MW of 500-MW
 units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
 """
 
-from pandas import read_csv
 import os.path
+
+from pandas import read_csv
 from pyomo.environ import Var, Constraint, Param, BuildAction, NonNegativeReals
 
-from ..auxiliary import make_gen_tmp_var_df
+from modules.operations.generation.auxiliary import make_gen_tmp_var_df
 
 
 def add_module_specific_components(m, scenario_directory):

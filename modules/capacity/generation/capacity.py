@@ -58,7 +58,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     def join_cap_type_operational_period_sets(mod):
         """
-        Join the sets we need to join to make the GENERATOR_OPERATIONAL_PERIODS
+        Join the sets we need to make the GENERATOR_OPERATIONAL_PERIODS
         super set; if list contains only a single set, return just that set
         :param mod:
         :return:

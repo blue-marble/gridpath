@@ -1,5 +1,5 @@
 generator,timepoint,power_mw,commit_continuous,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
-Coal,1,2.7755576e-17,0.0,,,0.0,0.0
+Coal,1,0.0,0.0,,,0.0,0.0
 Coal,2,3.0,0.83333333,,,2.0,0.0
 Coal,3,2.7755576e-17,0.0,,,0.0,0.0
 Coal,4,3.0,0.83333333,,,2.0,0.0
