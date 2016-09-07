@@ -26,6 +26,17 @@ def capacity_rule(mod, g, p):
     return mod.specified_capacity_mw[g, p]
 
 
+# TODO: give the option to add an exogenous param here instead of 0
+def capacity_cost_rule(mod, g, p):
+    """
+    Capacity cost for specified capacity generators with no economic retirements
+    is 0
+    :param mod:
+    :return:
+    """
+    return 0
+
+
 def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=

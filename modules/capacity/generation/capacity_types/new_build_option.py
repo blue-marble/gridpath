@@ -90,6 +90,20 @@ def capacity_rule(mod, g, p):
     return mod.New_Build_Option_Capacity_MW[g, p]
 
 
+def capacity_cost_rule(mod, g, p):
+    """
+    Capacity cost for new builds in each period (sum over all vintages
+    operational in current period)
+    :param mod:
+    :return:
+    """
+    return sum(mod.Build_MW[g, v]
+               * mod.annualized_real_cost_per_mw_yr[g, v]
+               for (gen, v)
+               in mod.NEW_BUILD_OPTION_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+               if gen == g)
+
+
 def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
 

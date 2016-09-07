@@ -104,14 +104,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.OPERATIONAL_GENERATORS_IN_TIMEPOINT = \
         Set(m.TIMEPOINTS, initialize=op_gens_by_tmp)
 
-    def capacity_rule(mod, g, p):
-        gen_cap_type = mod.capacity_type[g]
-        return imported_capacity_modules[gen_cap_type].\
-            capacity_rule(mod, g, p)
-
-    m.Capacity_MW = Expression(m.GENERATOR_OPERATIONAL_PERIODS,
-                               rule=capacity_rule)
-
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,

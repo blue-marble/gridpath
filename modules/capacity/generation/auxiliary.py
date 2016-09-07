@@ -19,13 +19,14 @@ def load_capacity_modules(required_modules):
                     package="modules.capacity.generation.capacity_types"
                 )
             imported_capacity_modules[op_m] = imp_op_m
-            required_attributes = ["capacity_rule"]
+            required_attributes = ["capacity_rule", "capacity_cost_rule"]
             for a in required_attributes:
                 if hasattr(imp_op_m, a):
                     pass
                 else:
-                    raise("ERROR! No " + a + " function in module "
-                          + imp_op_m + ".")
+                    raise Exception(
+                        "ERROR! No " + str(a) + " function in module "
+                        + str(imp_op_m) + ".")
         except ImportError:
             print("ERROR! Capacity type module " + op_m + " not found.")
 
