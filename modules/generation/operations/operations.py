@@ -235,6 +235,15 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_rule)
 
+    # Add generation to load balance
+    def total_generation_rule(mod, z, tmp):
+        return sum(mod.Power_Provision_MW[g, tmp]
+                   for g in mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
+                   if mod.load_zone[g] == z)
+    m.Generation_in_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+                                         rule=total_generation_rule)
+    d.load_balance_production_components.append("Generation_in_Zone_MW")
+
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """

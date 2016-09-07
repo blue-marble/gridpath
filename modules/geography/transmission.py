@@ -30,7 +30,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    if mod.load_zone_to[tx] == z)
     m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                            rule=total_transmission_to_rule)
-    d.energy_generation_components.append("Transmission_to_Zone_MW")
+    d.load_balance_production_components.append("Transmission_to_Zone_MW")
 
     def total_transmission_from_rule(mod, z, tmp):
         return sum(mod.Transmit_Power_MW[tx, tmp]
@@ -38,7 +38,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    if mod.load_zone_from[tx] == z)
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                              rule=total_transmission_from_rule)
-    d.energy_consumption_components.append("Transmission_from_Zone_MW")
+    d.load_balance_consumption_components.append("Transmission_from_Zone_MW")
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):

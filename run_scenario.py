@@ -97,8 +97,8 @@ class DynamicComponents(object):
     """
     def __init__(self):
         # Load balance
-        self.energy_generation_components = list()
-        self.energy_consumption_components = list()
+        self.load_balance_production_components = list()
+        self.load_balance_consumption_components = list()
 
         # Objective function
         self.total_cost_components = list()
