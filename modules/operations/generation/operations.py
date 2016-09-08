@@ -7,11 +7,12 @@ import os.path
 from csv import reader
 from pandas import read_csv
 
-from pyomo.environ import Set, Var, Expression, Constraint, NonNegativeReals
+from pyomo.environ import Param, Set, Var, Expression, Constraint, \
+    NonNegativeReals, Boolean, PercentFraction
 
 from auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_gen_tmp_var_df, \
-    load_operational_modules
+    load_operational_modules, generator_subset_init
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -92,12 +93,76 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    # TODO: figure out how to flag which generators get this variable
-    # Generators that can vary power output
-    m.Provide_Power_MW = Var(m.DISPATCHABLE_GENERATORS,
-                             m.TIMEPOINTS,
-                             within=NonNegativeReals)
+    # ### Params defined for all generators ### #
+    # These are loaded via the DataPortal, not dynamically
+    # Variable O&M cost
+    m.variable_om_cost_per_mwh = Param(m.GENERATORS, within=NonNegativeReals)
 
+    # These params will be used to initialize subsets
+
+    # Operational type
+    m.operational_type = Param(m.GENERATORS)
+
+    # Headroom services flags
+    m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
+    m.regulation_up = Param(m.GENERATORS, within=Boolean)
+
+    # Footroom services flags
+    m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
+    m.regulation_down = Param(m.GENERATORS, within=Boolean)
+
+    # TODO: this should be built below with the dynamic components
+    m.min_stable_level_fraction = Param(m.GENERATORS,
+                                        within=PercentFraction)
+
+    ###
+    # Services that generators can provide that modify the operational modules
+    ###
+    # TODO: should probably be individual modules
+    # Subsets of generators by services they can provide
+    # Sets of generators that can provide headroom services
+    m.LF_RESERVES_UP_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=generator_subset_init("lf_reserves_up", 1))
+    m.REGULATION_UP_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=generator_subset_init("regulation_up", 1))
+
+    # Sets of generators that can provide footroom services
+    m.LF_RESERVES_DOWN_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=generator_subset_init("lf_reserves_down", 1))
+    m.REGULATION_DOWN_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=generator_subset_init("regulation_down", 1))
+
+    # TODO: maybe these should be created by the reserves module?
+    m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_UP_GENERATORS))
+
+    m.LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_DOWN_GENERATORS))
+
+    m.REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_UP_GENERATORS))
+
+    m.REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_DOWN_GENERATORS))
+
+    # TODO: these are used to modify the operational modules and should
+    # eventually be taken out into their own submodules
     # Headroom and footroom services
     m.Provide_LF_Reserves_Up_MW = Var(
         m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -113,7 +178,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         within=NonNegativeReals)
 
     # Aggregate the headroom and footroom decision variables respectively for
-    # use by the operationa modules
+    # use by the operational modules
     def headroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
     m.Headroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -123,6 +188,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
     m.Footroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                          rule=footroom_provision_rule)
+
+    # ### ### ### ### #
 
     # From here, the operational modules determine how the model components are
     # formulated
@@ -188,7 +255,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Min_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                         rule=min_power_rule)
 
-    # Add generation to load balance
+    # Add generation to load balance constraint
     def total_generation_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
                    for g in mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
@@ -208,6 +275,22 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "generators.tab"),
+                     index=m.GENERATORS,
+                     select=("GENERATORS", "operational_type",
+                             "lf_reserves_up", "regulation_up",
+                             "lf_reserves_down", "regulation_down",
+                             "min_stable_level_fraction",
+                             "variable_om_cost_per_mwh"),
+                     param=(m.operational_type,
+                            m.lf_reserves_up, m.regulation_up,
+                            m.lf_reserves_down, m.regulation_down,
+                            m.min_stable_level_fraction,
+                            m.variable_om_cost_per_mwh)
+                     )
+
     imported_operational_modules = \
         load_operational_modules(m.required_operational_modules)
     for op_m in m.required_operational_modules:

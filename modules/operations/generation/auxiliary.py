@@ -36,6 +36,23 @@ def load_operational_modules(required_modules):
     return imported_operational_modules
 
 
+def generator_subset_init(generator_parameter, expected_type):
+    """
+    Initialize subsets of generators by operational type based on operational
+    type flags.
+    Need to return a function with the model as argument, i.e. 'lambda mod'
+    because we can only iterate over the
+    generators after data is loaded; then we can pass the abstract model to the
+    initialization function.
+    :param generator_parameter:
+    :param expected_type:
+    :return:
+    """
+    return lambda mod: \
+        list(g for g in mod.GENERATORS if getattr(mod, generator_parameter)[g]
+             == expected_type)
+
+
 def check_list_has_single_item(l, error_msg):
     if len(l) > 1:
         raise ValueError(error_msg)
@@ -100,6 +117,14 @@ def get_value_of_var_or_expr(x):
             return eval(str(x))
         except ValueError:
             print(str(x) + " cannot be evaluated.")
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 
 def make_gen_tmp_var_df(m, gen_tmp_set, x, header):

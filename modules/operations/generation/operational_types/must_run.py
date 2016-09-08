@@ -4,7 +4,29 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-from pyomo.environ import Constraint
+from pyomo.environ import Constraint, Set
+
+from modules.operations.generation.auxiliary import generator_subset_init
+
+
+def add_module_specific_components(m, scenario_directory):
+    """
+
+    :param m:
+    :param scenario_directory:
+    :return:
+    """
+
+    m.MUST_RUN_GENERATORS = Set(within=m.GENERATORS,
+                                initialize=generator_subset_init(
+                                    "operational_type", "must_run")
+                                )
+
+    m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.MUST_RUN_GENERATORS))
 
 
 def power_provision_rule(mod, g, tmp):

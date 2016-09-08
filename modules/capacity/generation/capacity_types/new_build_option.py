@@ -66,10 +66,6 @@ def add_module_specific_components(m):
         :param p:
         :return:
         """
-        print ("Generator, operational period: " + str(g) + ", " + str(p))
-        for (gen, v) in mod.NEW_BUILD_OPTION_VINTAGES_OPERATIONAL_IN_PERIOD[p]:
-            if gen == g:
-                print gen, v
         return sum(mod.Build_MW[g, v] for (gen, v)
                    in mod.NEW_BUILD_OPTION_VINTAGES_OPERATIONAL_IN_PERIOD[p]
                    if gen == g)

@@ -6,7 +6,9 @@ No curtailment variable by individual generator.
 """
 
 import os.path
-from pyomo.environ import Param, PercentFraction, Constraint, Expression
+from pyomo.environ import Param, Set, PercentFraction, Constraint, Expression
+
+from modules.operations.generation.auxiliary import generator_subset_init
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -16,7 +18,18 @@ def add_module_specific_components(m, scenario_directory):
     :return:
     """
 
-    m.cap_factor = Param(m.VARIABLE_GENERATORS, m.TIMEPOINTS,
+    m.VARIABLE_GENERATORS = Set(within=m.GENERATORS,
+                                initialize=generator_subset_init(
+                                    "operational_type", "variable")
+                                )
+
+    m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.VARIABLE_GENERATORS))
+
+    m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=PercentFraction)
 
 

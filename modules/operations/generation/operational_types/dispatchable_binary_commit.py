@@ -4,9 +4,10 @@
 Operations of must-run generators. Can't provide reserves.
 """
 
-from pyomo.environ import Var, Binary
+from pyomo.environ import Var, Set, NonNegativeReals, Binary
 
-from modules.operations.generation.auxiliary import make_gen_tmp_var_df
+from modules.operations.generation.auxiliary import generator_subset_init, \
+    make_gen_tmp_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -17,9 +18,24 @@ def add_module_specific_components(m, scenario_directory):
     :return:
     """
 
-    m.Commit_Binary = Var(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-                          m.TIMEPOINTS,
-                          within=Binary)
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type", "dispatchable_binary_commit")
+    )
+
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
+
+    m.Provide_Power_DispBinaryCommit_MW = \
+        Var(m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            within=NonNegativeReals)
+    m.Commit_Binary = Var(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=Binary)
 
 
 def power_provision_rule(mod, g, tmp):
@@ -30,7 +46,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp]
+    return mod.Provide_Power_DispBinaryCommit_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -45,7 +61,7 @@ def max_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp] + \
+    return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] + \
         mod.Headroom_Provision_MW[g, tmp] \
         <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[g, tmp]
 
@@ -58,7 +74,7 @@ def min_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp] - \
+    return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] - \
         mod.Footroom_Provision_MW[g, tmp] \
         >= mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.min_stable_level_fraction[g]
@@ -77,7 +93,7 @@ def fuel_cost_rule(mod, g, tmp):
     """
     return (mod.Commit_Binary[g, tmp]
             * mod.minimum_input_mmbtu_per_hr[g]
-            + (mod.Provide_Power_MW[g, tmp] -
+            + (mod.Provide_Power_DispBinaryCommit_MW[g, tmp] -
                (mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]]
                 * mod.min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]

@@ -22,12 +22,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-
-    # Import needed operational modules
-    # TODO: import only
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
-
     def determine_final_commitment_generators(mod):
         dynamic_components = \
             read_csv(
@@ -44,8 +38,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                 pass
     # The generators for which the current stage is the final commitment stage
     m.FINAL_COMMITMENT_GENERATORS = \
-        Set(within=m.COMMIT_GENERATORS,
-            initialize=[])
+        Set(initialize=[])
     m.FinalCommitmentGeneratorsBuild = BuildAction(
         rule=determine_final_commitment_generators)
 
@@ -54,6 +47,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
                 if g in mod.FINAL_COMMITMENT_GENERATORS))
+
+    # Import needed operational modules
+    # TODO: import only
+    imported_operational_modules = \
+        load_operational_modules(m.required_operational_modules)
 
     def commitment_rule(mod, g, tmp):
         """
@@ -99,8 +97,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # The generators that have already had their commitment fixed in a prior
     # commitment stage
     m.FIXED_COMMITMENT_GENERATORS = \
-        Set(within=m.COMMIT_GENERATORS,
-            initialize=[])
+        Set(initialize=[])
     m.fixed_commitment = Param(m.FIXED_COMMITMENT_GENERATORS, m.TIMEPOINTS,
                                within=NonNegativeReals, mutable=True,
                                initialize={})

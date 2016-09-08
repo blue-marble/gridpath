@@ -7,6 +7,7 @@ from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 
 from auxiliary import load_capacity_modules
 
+
 def add_model_components(m, d, scenario_directory, horizon, stage):
     """
     Sum up all operational costs and add to the objective function.

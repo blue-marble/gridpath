@@ -10,22 +10,42 @@ units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
 import os.path
 
 from pandas import read_csv
-from pyomo.environ import Var, Constraint, Param, BuildAction, NonNegativeReals
+from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
+    NonNegativeReals
 
-from modules.operations.generation.auxiliary import make_gen_tmp_var_df
+from modules.operations.generation.auxiliary import generator_subset_init, \
+    make_gen_tmp_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
     """
-    Add a continuous commit variable to represent the fraction of fleet
-    capacity that is on.
+    Add a capacity commit variable to represent the amount of capacity that is
+    on.
     :param m:
+    :param scenario_directory:
     :return:
     """
 
-    m.Commit_Capacity_MW = Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-                               m.TIMEPOINTS, within=NonNegativeReals
-                               )
+    m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS = Set(
+        within=m.GENERATORS,
+        initialize=
+        generator_subset_init("operational_type",
+                              "dispatchable_capacity_commit")
+    )
+
+    m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
+    
+    m.Provide_Power_DispCapacityCommit_MW = \
+        Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            within=NonNegativeReals)
+    m.Commit_Capacity_MW = \
+        Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            within=NonNegativeReals
+            )
 
     def commit_capacity_constraint_rule(mod, g, tmp):
         """
@@ -44,10 +64,7 @@ def add_module_specific_components(m, scenario_directory):
 
     def determine_unit_size(mod):
         """
-        If numeric values greater than 0 for startup costs are specified
-        for some generators, add those generators to the
-        STARTUP_COST_GENERATORS subset and initialize the respective startup
-        cost param value
+
         :param mod:
         :return:
         """
@@ -81,7 +98,7 @@ def power_provision_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp]
+    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
 
 
 def commitment_rule(mod, g, tmp):
@@ -104,7 +121,7 @@ def max_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp] + \
+    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] + \
         mod.Headroom_Provision_MW[g, tmp] \
         <= mod.Commit_Capacity_MW[g, tmp]
 
@@ -117,7 +134,7 @@ def min_power_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp] - \
+    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
         mod.Footroom_Provision_MW[g, tmp] \
         >= mod.Commit_Capacity_MW[g, tmp] \
         * mod.min_stable_level_fraction[g]
@@ -137,7 +154,7 @@ def fuel_cost_rule(mod, g, tmp):
     """
     return ((mod.Commit_Capacity_MW[g, tmp]/mod.unit_size_mw[g])
             * mod.minimum_input_mmbtu_per_hr[g]
-            + (mod.Provide_Power_MW[g, tmp] -
+            + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                (mod.Commit_Capacity_MW[g, tmp]
                 * mod.min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
