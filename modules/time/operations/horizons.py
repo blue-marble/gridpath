@@ -41,20 +41,26 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
               lambda mod, h: max(tmp for tmp in mod.TIMEPOINTS_ON_HORIZON[h]))
 
     def previous_timepoint_init(mod, tmp):
-        for h in mod.HORIZONS:
-            if tmp == mod.first_horizon_timepoint[h]:
-                if mod.boundary[h] == "circular":
-                    return mod.last_horizon_timepoint[h]
-                elif mod.boundary[h] == "linear":
-                    return None
+        prev_tmp_dict = {}
+        for tmp in mod.TIMEPOINTS:
+            if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]]:
+                if mod.boundary[mod.horizon[tmp]] == "circular":
+                    prev_tmp_dict[tmp] = \
+                        mod.last_horizon_timepoint[mod.horizon[tmp]]
+                elif mod.boundary[mod.horizon[tmp]] == "linear":
+                    prev_tmp_dict[tmp] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for horizon '{}'".
-                        format(mod.boundary[h], h) + "\n" +
+                        format(
+                            mod.boundary[mod.horizon[tmp]], mod.horizon[tmp])
+                        + "\n" +
                         "Horizon boundary must be either 'circular' or 'linear'"
                     )
             else:
-                return tmp-1
+                prev_tmp_dict[tmp] = tmp-1
+
+        return prev_tmp_dict
 
     m.previous_timepoint = \
         Param(m.TIMEPOINTS,
