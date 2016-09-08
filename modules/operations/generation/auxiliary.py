@@ -21,14 +21,15 @@ def load_operational_modules(required_modules):
             imported_operational_modules[op_m] = imp_op_m
             required_attributes = ["power_provision_rule",
                                    "max_power_rule", "min_power_rule",
-                                   "fuel_use_rule", "startup_rule",
+                                   "fuel_cost_rule", "startup_rule",
                                    "shutdown_rule"]
             for a in required_attributes:
                 if hasattr(imp_op_m, a):
                     pass
                 else:
-                    raise("ERROR! No " + a + " function in module "
-                          + imp_op_m + ".")
+                    raise Exception(
+                        "ERROR! No " + str(a) + " function in module "
+                        + str(imp_op_m) + ".")
         except ImportError:
             print("ERROR! Operational type module " + op_m + " not found.")
 

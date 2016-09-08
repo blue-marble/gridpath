@@ -42,7 +42,7 @@ def min_power_rule(mod, g, tmp):
 
 # TODO: add data check that inc_heat_rate_mmbtu_per_mwh is 0 for must-run gens
 # TODO: change when can-build-new
-def fuel_use_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     Output doesn't vary, so this is
     :param mod:
@@ -50,7 +50,8 @@ def fuel_use_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.minimum_input_mmbtu_per_hr[g]
+    return mod.minimum_input_mmbtu_per_hr[g] \
+        * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
 
 
 def startup_rule(mod, g, tmp):

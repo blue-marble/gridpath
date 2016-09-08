@@ -188,53 +188,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Min_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                         rule=min_power_rule)
 
-    def fuel_use_rule(mod, g, tmp):
-        """
-
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_use_rule(mod, g, tmp)
-    # Fuel use
-    m.Fuel_Use_MMBtu = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                                  rule=fuel_use_rule)
-
-    def startup_rule(mod, g, tmp):
-        """
-        Track units started up from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            startup_rule(mod, g, tmp)
-    m.Startup_Expression = Expression(
-        m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=startup_rule)
-
-    def shutdown_rule(mod, g, tmp):
-        """
-        Track units shut down from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            shutdown_rule(mod, g, tmp)
-    m.Shutdown_Expression = Expression(
-        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=shutdown_rule)
-
     # Add generation to load balance
     def total_generation_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]

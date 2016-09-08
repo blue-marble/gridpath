@@ -56,7 +56,7 @@ def min_power_rule(mod, g, tmp):
     return Constraint.Skip
 
 
-def fuel_use_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     Variable generators should not have fuel use
     :param mod:

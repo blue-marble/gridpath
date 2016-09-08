@@ -5,6 +5,7 @@ Describe operational costs.
 """
 from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 
+from auxiliary import load_operational_modules
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
     """
@@ -31,6 +32,29 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Variable_OM_Cost = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
                                     rule=variable_om_cost_rule)
 
+    # Power production variable costs
+    # TODO: fix this when periods added, etc.
+    def total_variable_om_cost_rule(mod):
+        """
+        Power production cost for all generators across all timepoints
+        :param mod:
+        :return:
+        """
+        return sum(mod.Variable_OM_Cost[g, tmp]
+                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS)
+
+    m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
+    d.total_cost_components.append("Total_Variable_OM_Cost")
+
+    # From here, the operational modules determine how the model components are
+    # formulated
+    m.required_operational_modules = d.required_operational_modules
+    # Import needed operational modules
+    imported_operational_modules = \
+        load_operational_modules(m.required_operational_modules)
+
     # ### Fuel cost ### #
     def fuel_cost_rule(mod, g, tmp):
         """
@@ -40,13 +64,59 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :param tmp:
         :return:
         """
-        return mod.Fuel_Use_MMBtu[g, tmp] \
-            * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            fuel_cost_rule(mod, g, tmp)
 
     m.Fuel_Cost = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
 
+    def total_fuel_cost_rule(mod):
+        """
+        Power production cost for all generators across all timepoints
+        :param mod:
+        :return:
+        """
+        return sum(mod.Fuel_Cost[g, tmp]
+                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   for (g, tmp) in mod.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS)
+
+    m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
+    d.total_cost_components.append("Total_Fuel_Cost")
+    
     # ### Startup and shutdown costs ### #
+    def startup_rule(mod, g, tmp):
+        """
+        Track units started up from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            startup_rule(mod, g, tmp)
+    m.Startup_Expression = Expression(
+        m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=startup_rule)
+
+    def shutdown_rule(mod, g, tmp):
+        """
+        Track units shut down from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            shutdown_rule(mod, g, tmp)
+    m.Shutdown_Expression = Expression(
+        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_rule)
     m.Startup_Cost = Var(m.STARTUP_COST_GENERATORS, m.TIMEPOINTS,
                          within=NonNegativeReals)
     m.Shutdown_Cost = Var(m.SHUTDOWN_COST_GENERATORS, m.TIMEPOINTS,
@@ -105,3 +175,32 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Shutdown_Cost_Constraint = Constraint(
         m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_cost_rule)
+
+    # Startup and shutdown costs
+    def total_startup_cost_rule(mod):
+        """
+        Sum startup costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(mod.Startup_Cost[g, tmp]
+                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   for (g, tmp)
+                   in mod.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
+    m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
+    d.total_cost_components.append("Total_Startup_Cost")
+
+    def total_shutdown_cost_rule(mod):
+        """
+        Sum shutdown costs for the objective function term.
+        :param mod:
+        :return:
+        """
+        return sum(mod.Shutdown_Cost[g, tmp]
+                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_years_represented[mod.period[tmp]]
+                   for (g, tmp)
+                   in mod.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
+    m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
+    d.total_cost_components.append("Total_Shutdown_Cost")

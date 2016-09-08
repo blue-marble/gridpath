@@ -43,7 +43,7 @@ def min_power_rule(mod, g, tmp):
 
 
 # TODO: add data check that minimum_input_mmbtu_per_hr is 0 for no-commit gens
-def fuel_use_rule(mod, g, tmp):
+def fuel_cost_rule(mod, g, tmp):
     """
     Fuel use in terms of an IO curve with an incremental heat rate above
     the minimum stable level, which is 0 for no-commit generators, so just
@@ -53,7 +53,9 @@ def fuel_use_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Provide_Power_MW[g, tmp] * mod.inc_heat_rate_mmbtu_per_mwh[g]
+    return (mod.Provide_Power_MW[g, tmp]
+            * mod.inc_heat_rate_mmbtu_per_mwh[g]
+            ) * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
 
 
 # TODO: what should these return -- what is the no-commit modeling?
