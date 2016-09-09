@@ -82,7 +82,6 @@ def add_module_specific_components(m, scenario_directory):
             within=NonNegativeReals
             )
 
-    # TODO: multiply timepoint by hours it represents
     def energy_tracking_rule(mod, s, tmp):
         """
 
@@ -97,12 +96,16 @@ def add_module_specific_components(m, scenario_directory):
         else:
             return \
                 mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
-            == mod.Starting_Energy_in_Generic_Storage_MWh[
+                == mod.Starting_Energy_in_Generic_Storage_MWh[
                     s, mod.previous_timepoint[tmp]] \
-        + mod.Generic_Storage_Charge_MW[s, mod.previous_timepoint[tmp]] \
-        * mod.storage_generic_charging_efficiency[s] \
-        - mod.Generic_Storage_Discharge_MW[s, mod.previous_timepoint[tmp]] \
-        / mod.storage_generic_discharging_efficiency[s]
+                + mod.Generic_Storage_Charge_MW[
+                      s, mod.previous_timepoint[tmp]] \
+                * mod.number_of_hours_in_timepoint[tmp] \
+                * mod.storage_generic_charging_efficiency[s] \
+                - mod.Generic_Storage_Discharge_MW[
+                      s, mod.previous_timepoint[tmp]] \
+                * mod.number_of_hours_in_timepoint[tmp] \
+                / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Energy_Tracking_Constraint = \
         Constraint(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
