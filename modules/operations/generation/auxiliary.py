@@ -8,6 +8,8 @@ Various auxiliary functions used in operations module
 import pandas
 from importlib import import_module
 
+from pyomo.environ import value
+
 
 def load_operational_modules(required_modules):
     imported_operational_modules = dict()
@@ -84,41 +86,6 @@ def check_list_items_are_unique(l):
             " in generators.tab.")
 
 
-def get_final_expression(x):
-    """
-    Check recursively if x has an "expr" attribute until it does not
-    :param m:
-    :param x:
-    :return:
-    """
-    while hasattr(x, "expr"):
-        x = getattr(x, "expr")
-
-    return x
-
-
-def get_value_of_var_or_expr(x):
-    """
-    If x has an "expr" attribute, check recursively if its expr attribute has
-    an expr attribute until it does not, then return its "value" attribute;
-    if no value attribute, try evaluating the object
-    :param x:
-    :return:
-    """
-    if hasattr(x, "expr"):
-        x = get_final_expression(x)
-    else:
-        pass
-
-    try:
-        return getattr(x, "value")
-    except AttributeError:
-        try:
-            return eval(str(x))
-        except ValueError:
-            print(str(x) + " cannot be evaluated.")
-
-
 def is_number(s):
     try:
         float(s)
@@ -144,10 +111,10 @@ def make_gen_tmp_var_df(m, gen_tmp_set, x, header):
         if g not in dict_for_gen_df.keys():
             dict_for_gen_df[g] = {}
             dict_for_gen_df[g][tmp] = \
-                get_value_of_var_or_expr(getattr(m, x)[g, tmp])
+                value(getattr(m, x)[g, tmp])
         else:
             dict_for_gen_df[g][tmp] = \
-                get_value_of_var_or_expr(getattr(m, x)[g, tmp])
+                value(getattr(m, x)[g, tmp])
 
     # For each generator, create a dataframe with its x values
     # Create two lists, the generators and dictionaries with the timepoints as

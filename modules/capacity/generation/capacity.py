@@ -43,7 +43,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.load_zone = Param(m.GENERATORS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.GENERATORS)
 
+    # Capacity-type modules will populate this list if called
     m.capacity_type_operational_period_sets = []
+    m.storage_only_capacity_type_operational_period_sets = []
 
     m.required_capacity_modules = d.required_capacity_modules
     # Import needed operational modules
@@ -63,7 +65,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :param mod:
         :return:
         """
-        if len(mod.capacity_type_operational_period_sets) == 1:
+        if len(mod.capacity_type_operational_period_sets) == 0:
+            return []
+        elif len(mod.capacity_type_operational_period_sets) == 1:
             return getattr(mod, mod.capacity_type_operational_period_sets[0])
         else:
             return reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
@@ -80,6 +84,46 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     m.Capacity_MW = Expression(m.GENERATOR_OPERATIONAL_PERIODS,
                                rule=capacity_rule)
+
+    def join_storage_only_cap_type_operational_period_sets(mod):
+        """
+        Join the sets we need to make the STORAGE_OPERATIONAL_PERIODS
+        super set; if list contains only a single set, return just that set
+        :param mod:
+        :return:
+        """
+        if len(mod.storage_only_capacity_type_operational_period_sets) == 0:
+            return []
+        elif len(mod.storage_only_capacity_type_operational_period_sets) == 1:
+            return \
+                getattr(
+                    mod,
+                    mod.storage_only_capacity_type_operational_period_sets[0])
+        else:
+            return \
+                reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
+                       mod.storage_only_capacity_type_operational_period_sets)
+
+    m.STORAGE_OPERATIONAL_PERIODS = \
+        Set(dimen=2,
+            initialize=join_storage_only_cap_type_operational_period_sets)
+
+    def energy_capacity_rule(mod, g, p):
+        cap_type = mod.capacity_type[g]
+        if hasattr(imported_capacity_modules[cap_type], "energy_capacity_rule"):
+            return imported_capacity_modules[cap_type]. \
+                energy_capacity_rule(mod, g, p)
+        else:
+            raise Exception("Project " + str(g)
+                            + " is of capacity type " + str(cap_type)
+                            + ". This capacity type module does not have "
+                            + "a function 'energy_capacity_rule,' "
+                            + "but " + str(g)
+                            + " is defined as storage project.")
+
+    m.Energy_Capacity_MWh = Expression(
+        m.STORAGE_OPERATIONAL_PERIODS,
+        rule=energy_capacity_rule)
 
     # Define various sets to be used in operations module
     m.OPERATIONAL_PERIODS_BY_GENERATOR = \

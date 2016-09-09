@@ -256,13 +256,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                                         rule=min_power_rule)
 
     # Add generation to load balance constraint
-    def total_generation_rule(mod, z, tmp):
+    def total_power_production_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
                    for g in mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
                    if mod.load_zone[g] == z)
-    m.Generation_in_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
-                                         rule=total_generation_rule)
-    d.load_balance_production_components.append("Generation_in_Zone_MW")
+    m.Power_Production_in_Zone_MW = \
+        Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+                   rule=total_power_production_rule)
+    d.load_balance_production_components.append("Power_Production_in_Zone_MW")
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
