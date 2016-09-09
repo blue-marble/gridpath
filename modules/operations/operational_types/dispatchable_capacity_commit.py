@@ -13,7 +13,7 @@ from pandas import read_csv
 from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
     NonNegativeReals
 
-from modules.operations.generation.auxiliary import generator_subset_init, \
+from modules.operations.auxiliary import generator_subset_init, \
     make_gen_tmp_var_df
 
 
