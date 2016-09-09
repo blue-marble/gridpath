@@ -120,7 +120,7 @@ def add_module_specific_components(m, scenario_directory):
         :return:
         """
         return mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
-            <= mod.storage_specified_energy_capacity_mwh[s, mod.period[tmp]]
+            <= mod.Energy_Capacity_MWh[s, mod.period[tmp]]
     m.Max_Energy_in_Generic_Storage_Constraint = \
         Constraint(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
                    rule=max_energy_in_storage_rule)

@@ -176,28 +176,29 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
         else:
             pass
 
-        def export_results(scenario_directory, horizon, stage, m):
-            """
-            Export operations results.
-            :param scenario_directory:
-            :param horizon:
-            :param stage:
-            :param m:
-            :return:
-            """
 
-            m.module_specific_df = []
+def export_results(scenario_directory, horizon, stage, m):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param m:
+    :return:
+    """
 
-            imported_capacity_modules = \
-                load_capacity_modules(m.required_capacity_modules)
-            for op_m in m.required_capacity_modules:
-                if hasattr(imported_capacity_modules[op_m],
-                           "export_module_specific_results"):
-                    imported_capacity_modules[
-                        op_m].export_module_specific_results(
-                        m)
-                else:
-                    pass
+    m.module_specific_df = []
+
+    imported_capacity_modules = \
+        load_capacity_modules(m.required_capacity_modules)
+    for op_m in m.required_capacity_modules:
+        if hasattr(imported_capacity_modules[op_m],
+                   "export_module_specific_results"):
+            imported_capacity_modules[
+                op_m].export_module_specific_results(
+                m)
+        else:
+            pass
 
 # TODO: could be consolidated with same function in
 # generation.operations.sets_and_params
