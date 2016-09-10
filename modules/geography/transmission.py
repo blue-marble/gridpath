@@ -168,6 +168,31 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                                              rule=total_transmission_from_rule)
     d.load_balance_consumption_components.append("Transmission_from_Zone_MW")
 
+    # Add costs to objective function
+    def tx_capacity_cost_rule(mod, tx, p):
+        """
+        Get capacity cost from each line's respective capacity module
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        tx_cap_type = mod.tx_capacity_type[tx]
+        return imported_tx_capacity_modules[tx_cap_type].\
+            tx_capacity_cost_rule(mod, tx, p)
+    m.Transmission_Capacity_Cost_in_Period = \
+        Expression(m.TRANSMISSION_OPERATIONAL_PERIODS,
+                   rule=tx_capacity_cost_rule)
+
+    # Add costs to objective function
+    def total_tx_capacity_cost_rule(mod):
+        return sum(mod.Transmission_Capacity_Cost_in_Period[g, p]
+                   * mod.discount_factor[p]
+                   * mod.number_years_represented[p]
+                   for (g, p) in mod.TRANSMISSION_OPERATIONAL_PERIODS)
+    m.Total_Tx_Capacity_Costs = Expression(rule=total_tx_capacity_cost_rule)
+    d.total_cost_components.append("Total_Tx_Capacity_Costs")
+
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory, "inputs",

@@ -1,0 +1,9 @@
+GENERATORS	TIMEPOINTS	cap_factor
+Wind	1	.9
+Wind	2	.5
+Wind	3	.9
+Wind	4	.5
+Wind_z2	1	.9
+Wind_z2	2	.5
+Wind_z2	3	.9
+Wind_z2	4	.5

@@ -1,0 +1,2 @@
+TRANSMISSION_LINES	tx_capacity_type	load_zone_from	load_zone_to
+Tx1	new_build_transmission	Zone1	Zone2

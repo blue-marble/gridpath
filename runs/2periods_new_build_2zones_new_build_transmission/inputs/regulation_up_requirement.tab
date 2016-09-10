@@ -1,0 +1,9 @@
+LOAD_ZONES	TIMEPOINTS	regulation_requirement
+Zone1	1	1
+Zone1	2	2
+Zone1	3	1
+Zone1	4	2
+Zone2	1	1
+Zone2	2	2
+Zone2	3	1
+Zone2	4	2
