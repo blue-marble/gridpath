@@ -1,0 +1,3 @@
+transmission_line	period	specified_tx_min_mw	specified_tx_max_mw
+Tx1	2020	-10	10
+Tx1	2030	-10	10
