@@ -7,9 +7,11 @@ No curtailment variable by individual generator.
 
 import os.path
 
-from pyomo.environ import Param, Set, PercentFraction, Constraint
+from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
+    PercentFraction
 
-from modules.operations.auxiliary import generator_subset_init
+from modules.operations.auxiliary import generator_subset_init, \
+    make_gen_tmp_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -33,19 +35,38 @@ def add_module_specific_components(m, scenario_directory):
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=PercentFraction)
 
+    # Curtailment is a dispatch decision
+    m.Curtail_MW = Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                       within=NonNegativeReals)
+
+    # Can't curtail more than available power
+    def curtailment_limit_rule(mod, g, tmp):
+        """
+        Can't curtail more than available power
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Curtail_MW[g, tmp] \
+            <= mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]
+    m.Curtailment_Limit_Constraint = \
+        Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=curtailment_limit_rule)
 
 # Operations
 def power_provision_rule(mod, g, tmp):
     """
     Power provision from variable generators is their capacity times the
-    capacity factor in each timepoint.
+    capacity factor in each timepoint minus any curtailment.
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
 
-    return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] \
+        - mod.Curtail_MW[g, tmp]
 
 
 def max_power_rule(mod, g, tmp):
@@ -133,3 +154,16 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                      index=(mod.VARIABLE_GENERATORS, mod.TIMEPOINTS),
                      param=mod.cap_factor
                      )
+
+def export_module_specific_results(mod):
+    """
+    Export commitment decisions.
+    """
+    curtailment_df = \
+        make_gen_tmp_var_df(
+            mod,
+            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Curtail_MW",
+            "curtail_mw")
+
+    mod.module_specific_df.append(curtailment_df)
