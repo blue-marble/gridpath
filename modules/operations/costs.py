@@ -168,8 +168,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Variable_OM_Cost[g, tmp]
-                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
@@ -205,8 +207,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Fuel_Cost[g, tmp]
-                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp) in mod.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
@@ -311,8 +315,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Startup_Cost[g, tmp]
-                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
                    in mod.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
@@ -325,8 +331,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(mod.Shutdown_Cost[g, tmp]
-                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
                    in mod.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)

@@ -6,7 +6,7 @@ Describes the relationships among timepoints in the optimization
 
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeIntegers
+from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -21,11 +21,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     """
     m.HORIZONS = Set(within=NonNegativeIntegers, ordered=True)
     m.boundary = Param(m.HORIZONS)
+    m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
     m.horizon = Param(m.TIMEPOINTS, within=m.HORIZONS)
 
     m.TIMEPOINTS_ON_HORIZON = \
-        Set(m.HORIZONS,
+        Set(m.HORIZONS, ordered=True,
             initialize=lambda mod, h:
             set(tmp for tmp in mod.TIMEPOINTS if mod.horizon[tmp] == h))
 
@@ -72,9 +73,9 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, horizon,
                                            "inputs", "horizons.tab"),
-                     select=("HORIZONS", "boundary"),
+                     select=("HORIZONS", "boundary", "horizon_weight"),
                      index=m.HORIZONS,
-                     param=(m.boundary,)
+                     param=(m.boundary, m.horizon_weight)
                      )
 
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,

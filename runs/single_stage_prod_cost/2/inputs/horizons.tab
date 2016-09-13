@@ -1,2 +1,2 @@
-HORIZONS	horizon_description	boundary
-1	day1	circular
+HORIZONS	horizon_description	boundary	horizon_weight
+1	day1	circular	1
