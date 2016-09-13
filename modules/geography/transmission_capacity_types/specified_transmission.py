@@ -29,6 +29,16 @@ def max_transmission_capacity_rule(mod, tx, p):
     return mod.specified_tx_max_mw[tx, p]
 
 
+# TODO: should there be a fixed cost for keeping transmission around
+def tx_capacity_cost_rule(mod, g, p):
+    """
+    None for now
+    :param mod:
+    :return:
+    """
+    return 0
+
+
 def load_module_specific_data(m, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=
                      os.path.join(

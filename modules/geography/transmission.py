@@ -215,7 +215,6 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
             pass
 
 
-
 def export_results(scenario_directory, horizon, stage, m):
     for tx in getattr(m, "TRANSMISSION_LINES"):
         for tmp in getattr(m, "TIMEPOINTS"):
