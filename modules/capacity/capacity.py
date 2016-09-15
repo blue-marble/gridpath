@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import os.path
-from pyomo.environ import Set, Param, Expression, Boolean
 from pandas import read_csv
+from pyomo.environ import Set, Param, Expression, Boolean
 
 from auxiliary import load_capacity_modules
 
@@ -70,8 +70,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         elif len(mod.capacity_type_operational_period_sets) == 1:
             return getattr(mod, mod.capacity_type_operational_period_sets[0])
         else:
-            return reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
-                          mod.capacity_type_operational_period_sets)
+            joined_set = set()
+            for s in mod.capacity_type_operational_period_sets:
+                for element in getattr(mod, s):
+                    joined_set.add(element)
+        return joined_set
 
     m.GENERATOR_OPERATIONAL_PERIODS = \
         Set(dimen=2,
@@ -199,6 +202,7 @@ def export_results(scenario_directory, horizon, stage, m):
                 m)
         else:
             pass
+
 
 # TODO: could be consolidated with same function in
 # generation.operations.sets_and_params
