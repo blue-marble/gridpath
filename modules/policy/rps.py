@@ -51,6 +51,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     def rps_target_rule(mod, z, p):
         return sum(mod.Power_Provision_MW[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
                    for tmp in mod.TIMEPOINTS_IN_PERIOD[p]) \
             >= mod.rps_target_mwh[z, p]
