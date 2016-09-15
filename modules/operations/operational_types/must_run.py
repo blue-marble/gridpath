@@ -62,7 +62,7 @@ def min_power_rule(mod, g, tmp):
     return Constraint.Skip
 
 
-# TODO: add data check that inc_heat_rate_mmbtu_per_mwh is 0 for must-run gens
+# TODO: add data check that minimum_input_mmbtu_per_hr is 0 for must-run gens
 # TODO: change when can-build-new
 def fuel_cost_rule(mod, g, tmp):
     """
@@ -72,7 +72,7 @@ def fuel_cost_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.minimum_input_mmbtu_per_hr[g] \
+    return mod.inc_heat_rate_mmbtu_per_mwh[g] * mod.Power_Provision_MW[g, tmp] \
         * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
 
 
