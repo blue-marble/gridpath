@@ -46,8 +46,10 @@ def add_generic_reserve_components(
     setattr(m, reserve_violation_penalty_param, Param(initialize=999999999))
 
     # Magnitude of the requirement
+    # TODO: default to 0 for now; better to not create for load zones w/o req
     setattr(m, reserve_requirement_param, Param(m.LOAD_ZONES, m.TIMEPOINTS,
-                                                within=NonNegativeReals))
+                                                within=NonNegativeReals,
+                                                default=0))
 
     # Reserve generators operational generators in timepoint
     # This will be the intersection of the reserve generator set and the set of
