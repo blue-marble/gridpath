@@ -136,3 +136,8 @@ def export_results(scenario_directory, horizon, stage, m):
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p])
             ])
+
+
+def save_duals(m):
+    m.constraint_indices["RPS_Target_Constraint"] = \
+        ["rps_zone", "period", "dual"]
