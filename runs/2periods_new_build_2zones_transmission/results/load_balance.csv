@@ -1,0 +1,9 @@
+zone,timepoint,overgeneration_mw,unserved_energy_mw
+Zone2,1,0,16.2
+Zone2,2,0,8.2
+Zone2,3,0,6.2
+Zone2,4,0,18.2
+Zone1,1,0,0
+Zone1,2,0,0
+Zone1,3,0,0
+Zone1,4,0,0
