@@ -96,6 +96,17 @@ def min_power_rule(mod, g, tmp):
         >= mod.hydro_specified_min_power_mw[g, mod.horizon[tmp]]
 
 
+def curtailment_rule(mod, g, tmp):
+    """
+    This treatment does not allow curtailment
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
 def fuel_cost_rule(mod, g, tmp):
     """
 

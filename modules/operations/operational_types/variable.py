@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-Operations of variable generators. Can't provide reserves.
-No curtailment variable by individual generator.
+Operations of variable generators. Can be curtailed (dispatched down).
+Can't provide reserves.
 """
 
 import os.path
@@ -32,6 +32,7 @@ def add_module_specific_components(m, scenario_directory):
             set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
                 if g in mod.VARIABLE_GENERATORS))
 
+    # TODO: allow cap factors greater than 1?
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=PercentFraction)
 
@@ -53,6 +54,7 @@ def add_module_specific_components(m, scenario_directory):
     m.Curtailment_Limit_Constraint = \
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                    rule=curtailment_limit_rule)
+
 
 # Operations
 def power_provision_rule(mod, g, tmp):
@@ -89,6 +91,17 @@ def min_power_rule(mod, g, tmp):
     :return:
     """
     return Constraint.Skip
+
+
+def curtailment_rule(mod, g, tmp):
+    """
+    Variable generation can be dispatched down
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Curtail_MW[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -155,9 +168,12 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                      param=mod.cap_factor
                      )
 
+
 def export_module_specific_results(mod):
     """
-    Export commitment decisions.
+
+    :param mod:
+    :return:
     """
     curtailment_df = \
         make_gen_tmp_var_df(

@@ -166,6 +166,17 @@ def min_power_rule(mod, s, tmp):
         + mod.Capacity_MW[s, mod.period[tmp]]
 
 
+def curtailment_rule(mod, g, tmp):
+    """
+    Curtailment not allowed
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
 def fuel_cost_rule(mod, g, tmp):
     """
 

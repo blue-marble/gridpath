@@ -265,6 +265,24 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    rule=total_power_production_rule)
     d.load_balance_production_components.append("Power_Production_in_Zone_MW")
 
+    # Keep track of curtailment
+    def curtailment_rule(mod, g, tmp):
+        """
+        Keep track of curtailment to make it easier to calculate total
+        curtailed RPS energy for example.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            curtailment_rule(mod, g, tmp)
+
+    # TODO: possibly create this only if needed by another module?
+    m.Curtailment_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+                                  rule=curtailment_rule)
+
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """

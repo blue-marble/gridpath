@@ -4,10 +4,12 @@
 Simplest implementation with a MWh target
 """
 
+import csv
 import os.path
 from pandas import read_csv
 
-from pyomo.environ import Set, Param, NonNegativeReals, BuildAction, Constraint
+from pyomo.environ import Set, Param, Expression, NonNegativeReals, \
+    BuildAction, Constraint, value
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -25,7 +27,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.RPS_ZONES = Set(initialize=lambda mod:
                       set(i[0] for i in mod.RPS_ZONE_PERIODS_WITH_RPS)
                       )
-    m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals)
+    m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS,
+                             within=NonNegativeReals)
 
     def determine_rps_generators_by_contract(mod):
         dynamic_components = \
@@ -34,7 +37,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                 sep="\t", usecols=["GENERATORS",
                                    "rps_zone"]
                 )
-        print dynamic_components
         for row in zip(dynamic_components["GENERATORS"],
                        dynamic_components["rps_zone"]):
             if row[1] != ".":
@@ -46,18 +48,60 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.RPSGeneratorsBuild = \
         BuildAction(rule=determine_rps_generators_by_contract)
 
+
     # TODO: multiply by horizon weights when implemented
     # TODO: how to deal with curtailment
-    def rps_target_rule(mod, z, p):
+    def rps_energy_provision_rule(mod, z, p):
+        """
+        Calculate the delivered RPS energy for each zone and period
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
         return sum(mod.Power_Provision_MW[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.horizon_weight[mod.horizon[tmp]]
                    for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p]) \
+                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
+
+    m.Total_Delivered_RPS_Energy_MWh = \
+        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
+                   rule=rps_energy_provision_rule)
+
+    def rps_target_rule(mod, z, p):
+        """
+        Total delivered RPS-eligible energy must exceed target
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
             >= mod.rps_target_mwh[z, p]
 
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
+
+    def curtailed_rps_energy_rule(mod, z, p):
+        """
+        Calculate how much RPS-eligible energy was curtailed in each RPS zone
+        in each period
+        :param mod:
+        :param z:
+        :param p:
+        :return:
+        """
+        return sum(mod.Curtailment_MW[g, tmp]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
+                   for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
+                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
+    # TODO: is this only needed for export and, if so, should it be created on
+    # export?
+    m.Total_Curtailed_RPS_Energy_MWh = \
+        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
+                   rule=curtailed_rps_energy_rule)
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
@@ -67,3 +111,28 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                      param=m.rps_target_mwh,
                      select=("rps_zone", "period", "rps_target_mwh")
                      )
+
+
+def export_results(scenario_directory, horizon, stage, m):
+    """
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param m:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "rps.csv"), "wb") as rps_results_file:
+        writer = csv.writer(rps_results_file)
+        writer.writerow(["rps_zone", "period", "rps_target_mwh",
+                         "delivered_rps_energy_mwh",
+                         "curtailed_rps_energy_mwh"])
+        for (z, p) in m.RPS_ZONE_PERIODS_WITH_RPS:
+            writer.writerow([
+                z,
+                p,
+                m.rps_target_mwh[z, p],
+                value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p])
+            ])

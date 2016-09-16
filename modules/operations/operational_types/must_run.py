@@ -62,6 +62,17 @@ def min_power_rule(mod, g, tmp):
     return Constraint.Skip
 
 
+def curtailment_rule(mod, g, tmp):
+    """
+    Can't dispatch down and curtailment not allowed
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
 # TODO: add data check that minimum_input_mmbtu_per_hr is 0 for must-run gens
 # TODO: change when can-build-new
 def fuel_cost_rule(mod, g, tmp):

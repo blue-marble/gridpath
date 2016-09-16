@@ -140,6 +140,17 @@ def min_power_rule(mod, g, tmp):
         * mod.min_stable_level_fraction[g]
 
 
+def curtailment_rule(mod, g, tmp):
+    """
+    No 'curtailment' -- simply dispatch down
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
 # TODO: figure out how this should work with fleets (unit size here or in data)
 def fuel_cost_rule(mod, g, tmp):
     """

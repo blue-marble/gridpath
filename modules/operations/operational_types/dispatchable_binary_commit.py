@@ -80,6 +80,17 @@ def min_power_rule(mod, g, tmp):
         * mod.min_stable_level_fraction[g]
 
 
+def curtailment_rule(mod, g, tmp):
+    """
+    No 'curtailment' -- simply dispatch down
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
 def fuel_cost_rule(mod, g, tmp):
     """
     Fuel use in terms of an IO curve with an incremental heat rate above
