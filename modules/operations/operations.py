@@ -331,26 +331,42 @@ def export_results(scenario_directory, horizon, stage, m):
         "GENERATOR_OPERATIONAL_TIMEPOINTS",
         "Power_Provision_MW",
         "power_mw")
-    lf_reserves_up_df = make_gen_tmp_var_df(
-        m,
-        "LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
-        "Provide_LF_Reserves_Up_MW",
-        "lf_reserves_up_mw")
-    lf_reserves_down_df = make_gen_tmp_var_df(
-        m,
-        "LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
-        "Provide_LF_Reserves_Down_MW",
-        "lf_reserves_down_mw")
-    regulation_up_df = make_gen_tmp_var_df(
-        m,
-        "REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
-        "Provide_Regulation_Up_MW",
-        "regulation_up_mw")
-    regulation_down_df = make_gen_tmp_var_df(
-        m,
-        "REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
-        "Provide_Regulation_Down_MW",
-        "regulation_down_mw")
+
+    if len("LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+        lf_reserves_up_df = make_gen_tmp_var_df(
+            m,
+            "LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Provide_LF_Reserves_Up_MW",
+            "lf_reserves_up_mw")
+    else:
+        lf_reserves_up_df = []
+
+    if len("LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+        lf_reserves_down_df = make_gen_tmp_var_df(
+            m,
+            "LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Provide_LF_Reserves_Down_MW",
+            "lf_reserves_down_mw")
+    else:
+        lf_reserves_down_df = []
+
+    if len("REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+        regulation_up_df = make_gen_tmp_var_df(
+            m,
+            "REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Provide_Regulation_Up_MW",
+            "regulation_up_mw")
+    else:
+        regulation_up_df = []
+
+    if len("REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+        regulation_down_df = make_gen_tmp_var_df(
+            m,
+            "REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Provide_Regulation_Down_MW",
+            "regulation_down_mw")
+    else:
+        regulation_down_df = []
 
     dfs_to_merge = [power_df] + m.module_specific_df + \
                    [lf_reserves_up_df, lf_reserves_down_df,

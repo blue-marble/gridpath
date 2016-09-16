@@ -110,11 +110,23 @@ def make_gen_tmp_var_df(m, gen_tmp_set, x, header):
     for (g, tmp) in getattr(m, gen_tmp_set):
         if g not in dict_for_gen_df.keys():
             dict_for_gen_df[g] = {}
-            dict_for_gen_df[g][tmp] = \
-                value(getattr(m, x)[g, tmp])
+            try:
+                dict_for_gen_df[g][tmp] = value(getattr(m, x)[g, tmp])
+            except ValueError:
+                dict_for_gen_df[g][tmp] = None
+                print(
+                    """WARNING: the following operational variable was
+                    not initialized: """ + "\n" + str(x) + "\n"
+                    + "Check if " + str(tmp) + "is a timepoint in the study.")
         else:
-            dict_for_gen_df[g][tmp] = \
-                value(getattr(m, x)[g, tmp])
+            try:
+                dict_for_gen_df[g][tmp] = value(getattr(m, x)[g, tmp])
+            except ValueError:
+                dict_for_gen_df[g][tmp] = None
+                print(
+                    """WARNING: the following operational variable was
+                    not initialized: """ + "\n" + str(x) + "\n"
+                    + "Check if " + str(tmp) + "is a timepoint in the study.")
 
     # For each generator, create a dataframe with its x values
     # Create two lists, the generators and dictionaries with the timepoints as
