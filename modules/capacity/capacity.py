@@ -4,7 +4,7 @@ import os.path
 from pandas import read_csv
 from pyomo.environ import Set, Param, Expression, Boolean
 
-from auxiliary import load_capacity_modules
+from auxiliary import load_capacity_modules, make_gen_period_var_df
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -202,6 +202,33 @@ def export_results(scenario_directory, horizon, stage, m):
                 m)
         else:
             pass
+
+    capacity_df = make_gen_period_var_df(
+        m,
+        "GENERATOR_OPERATIONAL_PERIODS",
+        "Capacity_MW",
+        "capacity_mw"
+    )
+
+    if len(getattr(m, "STORAGE_OPERATIONAL_PERIODS")) > 0:
+        energy_capacity_df = make_gen_period_var_df(
+            m,
+            "STORAGE_OPERATIONAL_PERIODS",
+            "Energy_Capacity_MWh",
+            "energy_capacity_mwh"
+        )
+    else:
+        energy_capacity_df = []
+
+    dfs_to_merge = [capacity_df] + [energy_capacity_df] + m.module_specific_df
+
+    df_for_export = reduce(lambda left, right:
+                           left.join(right, how="outer"),
+                           dfs_to_merge)
+    df_for_export.to_csv(
+        os.path.join(scenario_directory, horizon, stage, "results",
+                     "capacity.csv"),
+        header=True, index=True)
 
 
 # TODO: could be consolidated with same function in

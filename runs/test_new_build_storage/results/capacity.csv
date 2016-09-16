@@ -1,0 +1,13 @@
+generator,period,capacity_mw,energy_capacity_mwh,new_build_storage_mw,new_build_storage_mwh
+Battery,2020,6.432,3.04,6.432,3.04
+Battery,2030,6.432,3.04,6.432,3.04
+Coal,2020,6.0,,,
+Coal,2030,6.0,,,
+Gas_CCGT,2020,6.0,,,
+Gas_CCGT,2030,6.0,,,
+Gas_CT,2020,6.0,,,
+Gas_CT,2030,6.0,,,
+Nuclear,2020,6.0,,,
+Nuclear,2030,6.0,,,
+Wind,2020,2.0,,,
+Wind,2030,2.0,,,

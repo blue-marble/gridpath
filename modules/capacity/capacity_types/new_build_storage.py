@@ -3,6 +3,8 @@
 import os.path
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
 
+from modules.capacity.auxiliary import make_gen_period_var_df
+
 
 def add_module_specific_components(m):
     """
@@ -16,10 +18,12 @@ def add_module_specific_components(m):
     m.new_build_storage_annualized_real_cost_per_mwh_yr = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
 
-    m.Build_Storage_Power_MW = Var(m.NEW_BUILD_STORAGE_VINTAGES,
-                             within=NonNegativeReals)
-    m.Build_Storage_Energy_MWh = Var(m.NEW_BUILD_STORAGE_VINTAGES,
-                              within=NonNegativeReals)
+    m.Build_Storage_Power_MW = \
+        Var(m.NEW_BUILD_STORAGE_VINTAGES,
+            within=NonNegativeReals)
+    m.Build_Storage_Energy_MWh = \
+        Var(m.NEW_BUILD_STORAGE_VINTAGES,
+            within=NonNegativeReals)
 
     # TODO: if vintage is 2020 and lifetime is 30, is the project available in
     # 2050 or not -- maybe have options for how this should be treated?
@@ -159,5 +163,21 @@ def load_module_specific_data(m,
 
 
 def export_module_specific_results(m):
-    for (g, v) in getattr(m, "NEW_BUILD_STORAGE_VINTAGES"):
-        print (g, v), m.Build_Storage_Power_MW[g,v].value
+
+    build_storage_capacity_df = \
+        make_gen_period_var_df(
+            m,
+            "NEW_BUILD_STORAGE_VINTAGES",
+            "Build_Storage_Power_MW",
+            "new_build_storage_mw")
+
+    build_storage_energy_df = \
+        make_gen_period_var_df(
+            m,
+            "NEW_BUILD_STORAGE_VINTAGES",
+            "Build_Storage_Energy_MWh",
+            "new_build_storage_mwh")
+
+    m.module_specific_df.append(build_storage_capacity_df)
+    m.module_specific_df.append(build_storage_energy_df)
+

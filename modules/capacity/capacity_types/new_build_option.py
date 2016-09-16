@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-import os.path
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
+import os.path
+
+from modules.capacity.auxiliary import make_gen_period_var_df
 
 
 def add_module_specific_components(m):
@@ -119,5 +121,11 @@ def load_module_specific_data(m,
 
 
 def export_module_specific_results(m):
-    for (g, v) in getattr(m, "NEW_BUILD_OPTION_VINTAGES"):
-        print (g, v), m.Build_MW[g,v].value
+    build_option_df = \
+        make_gen_period_var_df(
+            m,
+            "NEW_BUILD_OPTION_VINTAGES",
+            "Build_MW",
+            "new_build_option_mw")
+
+    m.module_specific_df.append(build_option_df)
