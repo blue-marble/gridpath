@@ -61,7 +61,6 @@ def add_generic_reserve_components(
                 getattr(mod, reserve_generator_set) &
                     mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]))
 
-    # TODO: by zone eventually, not all generators
     # Reserve provision
     def total_reserve_rule(mod, z, tmp):
         return sum(getattr(mod, generator_reserve_provision_variable)[g, tmp]
