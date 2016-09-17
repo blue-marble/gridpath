@@ -132,8 +132,11 @@ def load_module_specific_data(m,
 
 
 def export_module_specific_results(m):
-    for (g, v) in getattr(m, "NEW_BUILD_TRANSMISSION_VINTAGES"):
-        print (g, v), m.Build_Transmission_MW[g,v].value
+    """
+
+    :param m:
+    :return:
+    """
 
     new_tx_cap_df = \
         make_tx_time_var_df(

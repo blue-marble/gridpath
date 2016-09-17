@@ -17,7 +17,8 @@ def load_capacity_modules(required_modules):
             imp_op_m = \
                 import_module(
                     "." + op_m,
-                    package="modules.capacity.capacity_types"
+                    package=
+                    "modules.capacity.generation_and_storage.capacity_types"
                 )
             imported_capacity_modules[op_m] = imp_op_m
             required_attributes = ["capacity_rule", "capacity_cost_rule"]

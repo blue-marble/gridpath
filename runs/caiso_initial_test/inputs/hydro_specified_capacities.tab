@@ -1,0 +1,9 @@
+hydro_project	period	hydro_specified_power_capacity_mw
+CAISO_Hydro	2020	10000
+CAISO_Hydro	2030	10000
+NW_Hydro	2020	35000
+NW_Hydro	2030	35000
+SW_Hydro	2020	4000
+SW_Hydro	2030	4000
+LADWP_Hydro	2020	400
+LADWP_Hydro	2030	400

@@ -16,7 +16,8 @@ def load_tx_capacity_modules(required_modules):
             imp_op_m = \
                 import_module(
                     "." + op_m,
-                    package="modules.geography.transmission_capacity_types"
+                    package=
+                    "modules.capacity.transmission.transmission_capacity_types"
                 )
             imported_tx_capacity_modules[op_m] = imp_op_m
             required_attributes = ["min_transmission_capacity_rule",

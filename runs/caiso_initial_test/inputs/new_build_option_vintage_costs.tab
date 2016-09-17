@@ -1,0 +1,5 @@
+new_build_generator	vintage	lifetime_yrs	annualized_real_cost_per_mw_yr
+CAISO_Wind_New	2020	30	195000
+CAISO_Wind_New	2030	30	191000
+CAISO_Solar_New	2020	30	249000
+CAISO_Solar_New	2030	30	221000

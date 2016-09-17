@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
 import os.path
 
-from modules.capacity.auxiliary import make_gen_period_var_df
+from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
+
+from modules.capacity.generation_and_storage.auxiliary import make_gen_period_var_df
 
 
 def add_module_specific_components(m):
