@@ -9,14 +9,15 @@ import os.path
 
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.auxiliary.auxiliary import generator_subset_init, \
+    make_resource_time_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
     """
     Variable generators require a capacity factor for each timepoint.
     :param m:
+    :param scenario_directory:
     :return:
     """
 
@@ -175,10 +176,12 @@ def export_module_specific_results(mod):
     :return:
     """
     curtailment_df = \
-        make_gen_tmp_var_df(
+        make_resource_time_var_df(
             mod,
             "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Curtail_MW",
-            "curtail_mw")
+            ["resource", "timepoint"],
+            "curtail_mw"
+        )
 
     mod.module_specific_df.append(curtailment_df)

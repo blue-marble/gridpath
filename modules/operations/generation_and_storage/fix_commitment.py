@@ -9,7 +9,7 @@ from csv import writer
 
 from pyomo.environ import Set, Param, NonNegativeReals, Expression, BuildAction
 
-from auxiliary import load_operational_modules
+from modules.auxiliary.auxiliary import load_operational_type_modules
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -50,8 +50,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed operational modules
     # TODO: import only
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
 
     def commitment_rule(mod, g, tmp):
         """
@@ -119,8 +118,7 @@ def fix_variables(m):
     """
 
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
 
     for g in m.FIXED_COMMITMENT_GENERATORS:
         op_m = m.operational_type[g]

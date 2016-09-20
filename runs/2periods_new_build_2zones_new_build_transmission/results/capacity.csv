@@ -1,4 +1,4 @@
-generator,period,capacity_mw,new_build_option_mw
+resource,period,capacity_mw,new_build_option_mw
 Coal,2020,6.0,
 Coal,2030,6.0,
 Coal_z2,2020,6.0,

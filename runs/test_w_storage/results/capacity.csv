@@ -1,4 +1,4 @@
-generator,period,capacity_mw,energy_capacity_mwh
+resource,period,capacity_mw,energy_capacity_mwh
 Battery,2020,6.0,6.0
 Coal,2020,6.0,
 Gas_CCGT,2020,6.0,

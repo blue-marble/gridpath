@@ -1,4 +1,4 @@
-generator,timepoint,power_mw,commit_capacity_mw,curtail_mw,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
+resource,timepoint,power_mw,commit_capacity_mw,curtail_mw,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
 Coal,1,8.3266727e-17,0.0,,,,0.0,0.0
 Coal,2,3.0,5.0,,,,2.0,0.0
 Gas_CCGT,1,2.0,4.0,,1.0,1.0,1.0,1.0

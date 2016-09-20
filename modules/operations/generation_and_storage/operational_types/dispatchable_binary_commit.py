@@ -6,8 +6,8 @@ Operations of must-run generators. Can't provide reserves.
 
 from pyomo.environ import Var, Set, NonNegativeReals, Binary
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.auxiliary.auxiliary import generator_subset_init, \
+    make_resource_time_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -15,6 +15,7 @@ def add_module_specific_components(m, scenario_directory):
     Add a binary commit variable to represent 'on' or 'off' state of a
     generator.
     :param m:
+    :param scenario_directory:
     :return:
     """
 
@@ -170,10 +171,12 @@ def export_module_specific_results(mod):
     Export commitment decisions.
     """
     binary_commit_df = \
-        make_gen_tmp_var_df(
+        make_resource_time_var_df(
             mod,
             "DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Commit_Binary",
-            "commit_binary")
+            ["resource", "timepoint"],
+            "commit_binary"
+        )
 
     mod.module_specific_df.append(binary_commit_df)

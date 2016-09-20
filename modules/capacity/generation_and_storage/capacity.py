@@ -4,7 +4,8 @@ import os.path
 from pandas import read_csv
 from pyomo.environ import Set, Param, Expression, Boolean
 
-from auxiliary import load_capacity_modules, make_gen_period_var_df
+from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules, \
+    make_resource_time_var_df
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -48,9 +49,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.storage_only_capacity_type_operational_period_sets = []
 
     m.required_capacity_modules = d.required_capacity_modules
-    # Import needed operational modules
-    imported_capacity_modules = \
-        load_capacity_modules(m.required_capacity_modules)
+    # Import needed capacity type modules
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
 
     # First, add any components specific to the operational modules
     for op_m in m.required_capacity_modules:
@@ -169,8 +169,7 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                      param=(m.load_zone, m.capacity_type)
                      )
 
-    imported_capacity_modules = \
-        load_capacity_modules(m.required_capacity_modules)
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
     for op_m in m.required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
@@ -192,8 +191,7 @@ def export_results(scenario_directory, horizon, stage, m):
 
     m.module_specific_df = []
 
-    imported_capacity_modules = \
-        load_capacity_modules(m.required_capacity_modules)
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
     for op_m in m.required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
@@ -203,23 +201,28 @@ def export_results(scenario_directory, horizon, stage, m):
         else:
             pass
 
-    capacity_df = make_gen_period_var_df(
+    capacity_df = make_resource_time_var_df(
         m,
         "GENERATOR_OPERATIONAL_PERIODS",
         "Capacity_MW",
+        ["resource", "period"],
         "capacity_mw"
     )
 
+    # Storage is not required, so only make this dataframe if
+    # STORAGE_OPERATIONAL_PERIODS set is not empty
     if len(getattr(m, "STORAGE_OPERATIONAL_PERIODS")) > 0:
-        energy_capacity_df = make_gen_period_var_df(
+        energy_capacity_df = make_resource_time_var_df(
             m,
             "STORAGE_OPERATIONAL_PERIODS",
             "Energy_Capacity_MWh",
+            ["resource", "period"],
             "energy_capacity_mwh"
         )
     else:
         energy_capacity_df = []
 
+    # Merge and export dataframes
     dfs_to_merge = [capacity_df] + [energy_capacity_df] + m.module_specific_df
 
     df_for_export = reduce(lambda left, right:
@@ -229,22 +232,3 @@ def export_results(scenario_directory, horizon, stage, m):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "capacity.csv"),
         header=True, index=True)
-
-
-# TODO: could be consolidated with same function in
-# generation.operations.sets_and_params
-def generator_subset_init(generator_parameter, expected_type):
-    """
-    Initialize subsets of generators by operational type based on operational
-    type flags.
-    Need to return a function with the model as argument, i.e. 'lambda mod'
-    because we can only iterate over the
-    generators after data is loaded; then we can pass the abstract model to the
-    initialization function.
-    :param generator_parameter:
-    :param expected_type:
-    :return:
-    """
-    return lambda mod: \
-        list(g for g in mod.GENERATORS if getattr(mod, generator_parameter)[g]
-             == expected_type)

@@ -6,7 +6,7 @@ Operations of generic storage
 
 from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init
+from modules.auxiliary.auxiliary import generator_subset_init
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -133,4 +133,3 @@ def shutdown_rule(mod, g, tmp):
     :return:
     """
     return 0
-

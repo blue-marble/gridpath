@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 """
-Describe operational costs.
+Describe capacity costs.
 """
 from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
 
-from auxiliary import load_capacity_modules
+from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -20,9 +20,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     """
 
     m.required_capacity_modules = d.required_capacity_modules
-    # Import needed operational modules
-    imported_capacity_modules = \
-        load_capacity_modules(m.required_capacity_modules)
+    # Import needed capacity type modules
+    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
 
     def capacity_cost_rule(mod, g, p):
         """

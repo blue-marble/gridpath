@@ -3,16 +3,15 @@
 """
 Describe operational constraints on the generation infrastructure.
 """
-import os.path
 from csv import reader
+import os.path
 from pandas import read_csv
-
 from pyomo.environ import Param, Set, Var, Expression, Constraint, \
     NonNegativeReals, Boolean, PercentFraction
 
-from auxiliary import check_list_items_are_unique, \
-    find_list_item_position, make_gen_tmp_var_df, \
-    load_operational_modules, generator_subset_init
+from modules.auxiliary.auxiliary import check_list_items_are_unique, \
+    find_list_item_position, make_resource_time_var_df, \
+    load_operational_type_modules, generator_subset_init
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -195,8 +194,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # formulated
     m.required_operational_modules = d.required_operational_modules
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
 
     # First, add any components specific to the operational modules
     for op_m in m.required_operational_modules:
@@ -310,8 +308,7 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                             m.variable_om_cost_per_mwh)
                      )
 
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
     for op_m in m.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
@@ -333,8 +330,7 @@ def export_results(scenario_directory, horizon, stage, m):
 
     m.module_specific_df = []
 
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
     for op_m in m.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
@@ -344,45 +340,55 @@ def export_results(scenario_directory, horizon, stage, m):
             pass
 
     # Make pandas dataframes for the various operations variables results
-    power_df = make_gen_tmp_var_df(
+    power_df = make_resource_time_var_df(
         m,
         "GENERATOR_OPERATIONAL_TIMEPOINTS",
         "Power_Provision_MW",
-        "power_mw")
+        ["resource", "timepoint"],
+        "power_mw"
+        )
 
     if len("LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
-        lf_reserves_up_df = make_gen_tmp_var_df(
+        lf_reserves_up_df = make_resource_time_var_df(
             m,
             "LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Provide_LF_Reserves_Up_MW",
-            "lf_reserves_up_mw")
+            ["resource", "timepoint"],
+            "lf_reserves_up_mw"
+        )
     else:
         lf_reserves_up_df = []
 
     if len("LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
-        lf_reserves_down_df = make_gen_tmp_var_df(
+        lf_reserves_down_df = make_resource_time_var_df(
             m,
             "LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Provide_LF_Reserves_Down_MW",
-            "lf_reserves_down_mw")
+            ["resource", "timepoint"],
+            "lf_reserves_down_mw"
+        )
     else:
         lf_reserves_down_df = []
 
     if len("REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
-        regulation_up_df = make_gen_tmp_var_df(
+        regulation_up_df = make_resource_time_var_df(
             m,
             "REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Provide_Regulation_Up_MW",
-            "regulation_up_mw")
+            ["resource", "timepoint"],
+            "regulation_up_mw"
+        )
     else:
         regulation_up_df = []
 
     if len("REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
-        regulation_down_df = make_gen_tmp_var_df(
+        regulation_down_df = make_resource_time_var_df(
             m,
             "REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Provide_Regulation_Down_MW",
-            "regulation_down_mw")
+            ["resource", "timepoint"],
+            "regulation_down_mw"
+        )
     else:
         regulation_down_df = []
 

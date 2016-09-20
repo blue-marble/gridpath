@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import os.path
-import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Expression, Reals, value
+from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
+
+from modules.auxiliary.auxiliary import make_resource_time_var_df
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -95,7 +96,7 @@ def export_results(scenario_directory, horizon, stage, m):
     :return:
     """
     op_df = \
-        make_tx_time_var_df(
+        make_resource_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Max_Capacity_MW",
@@ -107,47 +108,3 @@ def export_results(scenario_directory, horizon, stage, m):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "transmission_operations.csv"),
         header=True, index=True)
-
-
-# TODO: consolidate with similar function in capacity and operations modules
-def make_tx_time_var_df(m, tx_time_set, x, df_index_names, header):
-    """
-
-    :param m:
-    :param tx_time_set:
-    :param df_index_names:
-    :param x:
-    :param header:
-    :return:
-    """
-    # Created nested dictionary for each generator-timepoint
-    dict_for_tx_df = {}
-    for (g, p) in getattr(m, tx_time_set):
-        if g not in dict_for_tx_df.keys():
-            dict_for_tx_df[g] = {}
-            try:
-                dict_for_tx_df[g][p] = value(getattr(m, x)[g, p])
-            except ValueError:
-                dict_for_tx_df[g][p] = None
-        else:
-            try:
-                dict_for_tx_df[g][p] = value(getattr(m, x)[g, p])
-            except ValueError:
-                dict_for_tx_df[g][p] = None
-
-    # For each generator, create a dataframe with its x values
-    # Create two lists, the generators and dictionaries with the timepoints as
-    # keys and the values -- it is critical that the order of generators and
-    # of the dictionaries with their values match
-    generators = []
-    periods = []
-    for g, tmp in dict_for_tx_df.iteritems():
-        generators.append(g)
-        periods.append(pd.DataFrame.from_dict(tmp, orient='index'))
-
-    # Concatenate all the individual generator dataframes into a final one
-    final_df = pd.DataFrame(pd.concat(periods, keys=generators))
-    final_df.index.names = df_index_names
-    final_df.columns = [header]
-
-    return final_df

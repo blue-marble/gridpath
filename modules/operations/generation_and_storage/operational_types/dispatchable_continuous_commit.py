@@ -6,8 +6,8 @@ Operations of must-run generators. Can't provide reserves.
 
 from pyomo.environ import Var, Set, NonNegativeReals
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.auxiliary.auxiliary import generator_subset_init, \
+    make_resource_time_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -15,6 +15,7 @@ def add_module_specific_components(m, scenario_directory):
     Add a continuous commit variable to represent the fraction of fleet
     capacity that is on.
     :param m:
+    :param scenario_directory:
     :return:
     """
 
@@ -179,10 +180,12 @@ def export_module_specific_results(mod):
     """
 
     continuous_commit_df = \
-        make_gen_tmp_var_df(
+        make_resource_time_var_df(
             mod,
             "DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Commit_Continuous",
-            "commit_continuous")
+            ["resource", "timepoint"],
+            "commit_continuous"
+        )
 
     mod.module_specific_df.append(continuous_commit_df)

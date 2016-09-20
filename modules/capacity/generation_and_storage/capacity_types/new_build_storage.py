@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 import os.path
-
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
 
-from modules.capacity.generation_and_storage.auxiliary import make_gen_period_var_df
+from modules.auxiliary.auxiliary import make_resource_time_var_df
 
 
 def add_module_specific_components(m):
@@ -144,6 +143,15 @@ def capacity_cost_rule(mod, g, p):
 
 def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
 
     # TODO: throw an error when a generator of the 'new_build_storage' capacity
     # type is not found in new_build_storage_vintage_costs.tab
@@ -164,20 +172,29 @@ def load_module_specific_data(m,
 
 
 def export_module_specific_results(m):
+    """
+
+    :param m:
+    :return:
+    """
 
     build_storage_capacity_df = \
-        make_gen_period_var_df(
+        make_resource_time_var_df(
             m,
             "NEW_BUILD_STORAGE_VINTAGES",
             "Build_Storage_Power_MW",
-            "new_build_storage_mw")
+            ["resource", "period"],
+            "new_build_storage_mw"
+        )
 
     build_storage_energy_df = \
-        make_gen_period_var_df(
+        make_resource_time_var_df(
             m,
             "NEW_BUILD_STORAGE_VINTAGES",
             "Build_Storage_Energy_MWh",
-            "new_build_storage_mwh")
+            ["resource", "period"],
+            "new_build_storage_mwh"
+        )
 
     m.module_specific_df.append(build_storage_capacity_df)
     m.module_specific_df.append(build_storage_energy_df)

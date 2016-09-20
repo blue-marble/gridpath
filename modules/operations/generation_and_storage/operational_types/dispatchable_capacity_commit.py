@@ -13,8 +13,8 @@ from pandas import read_csv
 from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
     NonNegativeReals
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.auxiliary.auxiliary import generator_subset_init, \
+    make_resource_time_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -239,10 +239,12 @@ def export_module_specific_results(mod):
     """
 
     commit_capacity_df = \
-        make_gen_tmp_var_df(
+        make_resource_time_var_df(
             mod,
             "DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
             "Commit_Capacity_MW",
-            "commit_capacity_mw")
+            ["resource", "timepoint"],
+            "commit_capacity_mw"
+        )
 
     mod.module_specific_df.append(commit_capacity_df)

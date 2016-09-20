@@ -6,7 +6,7 @@ Operations of must-run generators. Can't provide reserves.
 
 from pyomo.environ import Constraint, Set
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init
+from modules.auxiliary.auxiliary import generator_subset_init
 
 
 def add_module_specific_components(m, scenario_directory):

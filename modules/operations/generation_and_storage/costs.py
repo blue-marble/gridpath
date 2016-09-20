@@ -9,7 +9,7 @@ import os.path
 from pyomo.environ import Var, Set, Param, Expression, Constraint, \
     NonNegativeReals, PositiveReals, BuildAction
 
-from auxiliary import load_operational_modules, is_number
+from modules.auxiliary.auxiliary import load_operational_type_modules, is_number
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -181,8 +181,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # formulated
     m.required_operational_modules = d.required_operational_modules
     # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_modules(m.required_operational_modules)
+    imported_operational_modules = load_operational_type_modules(m)
 
     # ### Fuel cost ### #
     def fuel_cost_rule(mod, g, tmp):

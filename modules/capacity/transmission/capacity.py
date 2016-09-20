@@ -2,9 +2,10 @@
 
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Expression, Reals, value
+from pyomo.environ import Set, Param, Expression
 
-from auxiliary import load_tx_capacity_modules
+from modules.auxiliary.auxiliary import load_tx_capacity_type_modules, \
+    make_resource_time_var_df
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -50,10 +51,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.tx_capacity_type_operational_period_sets = []
 
     m.required_tx_capacity_modules = d.required_tx_capacity_modules
-    # Import needed transmission capacity modules
-    imported_tx_capacity_modules = \
-        load_tx_capacity_modules(m.required_tx_capacity_modules)
-
+    # Import needed transmission capacity type modules
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
     # First, add any components specific to the transmission capacity modules
     for op_m in m.required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
@@ -125,6 +124,15 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
     data_portal.load(filename=os.path.join(scenario_directory, "inputs",
                                            "transmission_lines.tab"),
                      select=("TRANSMISSION_LINES", "tx_capacity_type",
@@ -134,8 +142,7 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                             m.load_zone_from, m.load_zone_to)
                      )
 
-    imported_tx_capacity_modules = \
-        load_tx_capacity_modules(m.required_tx_capacity_modules)
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
     for op_m in m.required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
@@ -156,8 +163,7 @@ def export_results(scenario_directory, horizon, stage, m):
     """
     m.tx_module_specific_df = []
 
-    imported_tx_capacity_modules = \
-        load_tx_capacity_modules(m.required_tx_capacity_modules)
+    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
     for op_m in m.required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
@@ -168,7 +174,7 @@ def export_results(scenario_directory, horizon, stage, m):
 
     # Export transmission capacity
     min_cap_df = \
-        make_tx_time_var_df(
+        make_resource_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Min_Capacity_MW",
@@ -177,7 +183,7 @@ def export_results(scenario_directory, horizon, stage, m):
         )
 
     max_cap_df = \
-        make_tx_time_var_df(
+        make_resource_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Max_Capacity_MW",
@@ -193,47 +199,3 @@ def export_results(scenario_directory, horizon, stage, m):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "transmission_capacity.csv"),
         header=True, index=True)
-
-
-# TODO: consolidate with similar function in capacity and operations modules
-def make_tx_time_var_df(m, tx_time_set, x, df_index_names, header):
-    """
-
-    :param m:
-    :param tx_time_set:
-    :param df_index_names:
-    :param x:
-    :param header:
-    :return:
-    """
-    # Created nested dictionary for each generator-timepoint
-    dict_for_tx_df = {}
-    for (g, p) in getattr(m, tx_time_set):
-        if g not in dict_for_tx_df.keys():
-            dict_for_tx_df[g] = {}
-            try:
-                dict_for_tx_df[g][p] = value(getattr(m, x)[g, p])
-            except ValueError:
-                dict_for_tx_df[g][p] = None
-        else:
-            try:
-                dict_for_tx_df[g][p] = value(getattr(m, x)[g, p])
-            except ValueError:
-                dict_for_tx_df[g][p] = None
-
-    # For each generator, create a dataframe with its x values
-    # Create two lists, the generators and dictionaries with the timepoints as
-    # keys and the values -- it is critical that the order of generators and
-    # of the dictionaries with their values match
-    generators = []
-    periods = []
-    for g, tmp in dict_for_tx_df.iteritems():
-        generators.append(g)
-        periods.append(pd.DataFrame.from_dict(tmp, orient='index'))
-
-    # Concatenate all the individual generator dataframes into a final one
-    final_df = pd.DataFrame(pd.concat(periods, keys=generators))
-    final_df.index.names = df_index_names
-    final_df.columns = [header]
-
-    return final_df

@@ -5,13 +5,12 @@ Operations of generic storage
 """
 
 import os.path
-
 from pandas import read_csv
 from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
     NonNegativeReals, PercentFraction
 
-from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.auxiliary.auxiliary import generator_subset_init, \
+    make_resource_time_var_df
 
 
 def add_module_specific_components(m, scenario_directory):
@@ -217,10 +216,11 @@ def export_module_specific_results(mod):
     :return:
     """
     generic_storage_df = \
-        make_gen_tmp_var_df(
+        make_resource_time_var_df(
             mod,
             "STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS",
             "Starting_Energy_in_Generic_Storage_MWh",
+            ["resource", "timepoint"],
             "starting_energy_in_generic_storage_mwh")
 
     mod.module_specific_df.append(generic_storage_df)
