@@ -7,10 +7,9 @@ Can't provide reserves.
 
 import os.path
 
-from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    PercentFraction
+from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals
 
-from modules.operations.auxiliary import generator_subset_init, \
+from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
     make_gen_tmp_var_df
 
 
@@ -34,7 +33,7 @@ def add_module_specific_components(m, scenario_directory):
 
     # TODO: allow cap factors greater than 1?
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                         within=PercentFraction)
+                         within=NonNegativeReals)
 
     # Curtailment is a dispatch decision
     m.Curtail_MW = Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,

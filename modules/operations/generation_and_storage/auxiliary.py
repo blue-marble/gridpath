@@ -18,7 +18,9 @@ def load_operational_modules(required_modules):
             imp_op_m = \
                 import_module(
                     "." + op_m,
-                    package="modules.operations.operational_types"
+                    package=
+                    "modules.operations.generation_and_storage."
+                    "operational_types"
                 )
             imported_operational_modules[op_m] = imp_op_m
             required_attributes = ["power_provision_rule",

@@ -6,7 +6,7 @@ Operations of must-run generators. Can't provide reserves.
 
 from pyomo.environ import Var, Set, NonNegativeReals
 
-from modules.operations.auxiliary import generator_subset_init, \
+from modules.operations.generation_and_storage.auxiliary import generator_subset_init, \
     make_gen_tmp_var_df
 
 

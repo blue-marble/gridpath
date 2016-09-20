@@ -4,14 +4,9 @@
 Operations of generic storage
 """
 
-import os.path
+from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 
-from pandas import read_csv
-from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
-    NonNegativeReals, PercentFraction
-
-from modules.operations.auxiliary import generator_subset_init, \
-    make_gen_tmp_var_df
+from modules.operations.generation_and_storage.auxiliary import generator_subset_init
 
 
 def add_module_specific_components(m, scenario_directory):
