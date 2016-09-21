@@ -20,7 +20,7 @@ def add_module_specific_components(m, scenario_directory):
     """
 
     m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS = Set(
-        within=m.GENERATORS,
+        within=m.RESOURCES,
         initialize=
         generator_subset_init("operational_type",
                               "dispatchable_continuous_commit")
@@ -29,7 +29,7 @@ def add_module_specific_components(m, scenario_directory):
     m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS))
     
     m.Provide_Power_DispContinuousCommit_MW = \

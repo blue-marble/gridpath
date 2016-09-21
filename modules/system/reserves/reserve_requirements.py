@@ -59,7 +59,7 @@ def add_generic_reserve_components(
             Set(m.TIMEPOINTS,
                 initialize=lambda mod, tmp:
                 getattr(mod, reserve_generator_set) &
-                    mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]))
+                    mod.OPERATIONAL_RESOURCES_IN_TIMEPOINT[tmp]))
 
     # Reserve provision
     def total_reserve_rule(mod, z, tmp):

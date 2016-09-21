@@ -69,6 +69,7 @@ def load_tx_capacity_type_modules(m):
              "max_transmission_capacity_rule"]
         )
 
+
 def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by subtype based on subtype flags.
@@ -81,7 +82,7 @@ def generator_subset_init(generator_parameter, expected_type):
     :return:
     """
     return lambda mod: \
-        list(g for g in mod.GENERATORS if getattr(mod, generator_parameter)[g]
+        list(g for g in mod.RESOURCES if getattr(mod, generator_parameter)[g]
              == expected_type)
 
 

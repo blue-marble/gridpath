@@ -27,70 +27,70 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # See:
     # software.sandia.gov/downloads/pub/pyomo/PyomoOnlineDocs.html#BuildAction
 
-    def determine_startup_cost_generators(mod):
+    def determine_startup_cost_resources(mod):
         """
         If numeric values greater than 0 for startup costs are specified
         for some generators, add those generators to the
-        STARTUP_COST_GENERATORS subset and initialize the respective startup
+        STARTUP_COST_RESOURCES subset and initialize the respective startup
         cost param value
         :param mod:
         :return:
         """
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES",
                                    "startup_cost"]
                 )
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["startup_cost"]):
             if is_number(row[1]) and float(row[1]) > 0:
-                mod.STARTUP_COST_GENERATORS.add(row[0])
+                mod.STARTUP_COST_RESOURCES.add(row[0])
                 mod.startup_cost_per_unit[row[0]] = float(row[1])
             else:
                 pass
 
     # Generators that incur startup/shutdown costs
-    m.STARTUP_COST_GENERATORS = Set(within=m.GENERATORS, initialize=[])
-    m.startup_cost_per_unit = Param(m.STARTUP_COST_GENERATORS,
+    m.STARTUP_COST_RESOURCES = Set(within=m.RESOURCES, initialize=[])
+    m.startup_cost_per_unit = Param(m.STARTUP_COST_RESOURCES,
                                     within=PositiveReals, mutable=True,
                                     initialize={})
     m.StartupCostGeneratorsBuild = BuildAction(
-        rule=determine_startup_cost_generators)
+        rule=determine_startup_cost_resources)
 
-    def determine_shutdown_cost_generators(mod):
+    def determine_shutdown_cost_resources(mod):
         """
         If numeric values greater than 0 for shutdown costs are specified
         for some generators, add those generators to the
-        SHUTDOWON_COST_GENERATORS subset and initialize the respective shutdown
+        SHUTDOWON_COST_RESOURCES subset and initialize the respective shutdown
         cost param value
         :param mod:
         :return:
         """
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES",
                                    "shutdown_cost"]
                 )
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["shutdown_cost"]):
             if is_number(row[1]) and float(row[1]) > 0:
-                mod.SHUTDOWN_COST_GENERATORS.add(row[0])
+                mod.SHUTDOWN_COST_RESOURCES.add(row[0])
                 mod.shutdown_cost_per_unit[row[0]] = float(row[1])
             else:
                 pass
 
-    m.SHUTDOWN_COST_GENERATORS = Set(within=m.GENERATORS, initialize=[])
-    m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_GENERATORS,
+    m.SHUTDOWN_COST_RESOURCES = Set(within=m.RESOURCES, initialize=[])
+    m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_RESOURCES,
                                      within=PositiveReals, mutable=True,
                                      initialize={})
     m.ShutdownCostGeneratorsBuild = BuildAction(
-        rule=determine_shutdown_cost_generators)
+        rule=determine_shutdown_cost_resources)
 
     # TODO: implement check for which generator types can have fuels
     # Fuels and heat rates
-    def determine_fuel_generators(mod):
+    def determine_fuel_resources(mod):
         """
         E.g. generators that use coal, gas, uranium
         :param mod:
@@ -98,52 +98,52 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         """
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES",
                                    "fuel",
                                    "minimum_input_mmbtu_per_hr",
                                    "inc_heat_rate_mmbtu_per_mwh"]
                 )
 
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["fuel"],
                        dynamic_components["minimum_input_mmbtu_per_hr"],
                        dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
             if row[1] != ".":
-                mod.FUEL_GENERATORS.add(row[0])
+                mod.FUEL_RESOURCES.add(row[0])
                 mod.fuel[row[0]] = row[1]
                 mod.minimum_input_mmbtu_per_hr[row[0]] = float(row[2])
                 mod.inc_heat_rate_mmbtu_per_mwh[row[0]] = float(row[3])
             else:
                 pass
 
-    m.FUEL_GENERATORS = Set(within=m.GENERATORS, initialize=[])
-    m.fuel = Param(m.FUEL_GENERATORS, within=m.FUELS, mutable=True,
+    m.FUEL_RESOURCES = Set(within=m.RESOURCES, initialize=[])
+    m.fuel = Param(m.FUEL_RESOURCES, within=m.FUELS, mutable=True,
                    initialize={})
-    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_GENERATORS, mutable=True,
+    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_RESOURCES, mutable=True,
                                          initialize={})
 
-    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_GENERATORS, mutable=True,
+    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_RESOURCES, mutable=True,
                                           initialize={})
-    m.FuelGeneratorsBuild = BuildAction(rule=determine_fuel_generators)
+    m.FuelGeneratorsBuild = BuildAction(rule=determine_fuel_resources)
 
-    m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.FUEL_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.FUEL_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.FUEL_RESOURCES))
 
-    m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.STARTUP_COST_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.STARTUP_COST_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_COST_RESOURCES))
 
-    m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.SHUTDOWN_COST_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.SHUTDOWN_COST_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.SHUTDOWN_COST_RESOURCES))
 
     # ### Aggregate operational costs for objective function ### #
     # Add cost to objective function
@@ -156,7 +156,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         """
         return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
 
-    m.Variable_OM_Cost = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Variable_OM_Cost = Expression(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                     rule=variable_om_cost_rule)
 
     # Power production variable costs
@@ -172,7 +172,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS)
+                   for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
     d.total_cost_components.append("Total_Variable_OM_Cost")
@@ -196,7 +196,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             fuel_cost_rule(mod, g, tmp)
 
-    m.Fuel_Cost = Expression(m.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Fuel_Cost = Expression(m.FUEL_RESOURCE_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
 
     def total_fuel_cost_rule(mod):
@@ -210,7 +210,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.FUEL_GENERATOR_OPERATIONAL_TIMEPOINTS)
+                   for (g, tmp) in mod.FUEL_RESOURCE_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
     d.total_cost_components.append("Total_Fuel_Cost")
@@ -229,7 +229,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             startup_rule(mod, g, tmp)
     m.Startup_Expression = Expression(
-        m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.STARTUP_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
         rule=startup_rule)
 
     def shutdown_rule(mod, g, tmp):
@@ -245,11 +245,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_operational_modules[gen_op_type]. \
             shutdown_rule(mod, g, tmp)
     m.Shutdown_Expression = Expression(
-        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.SHUTDOWN_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_rule)
-    m.Startup_Cost = Var(m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Startup_Cost = Var(m.STARTUP_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
-    m.Shutdown_Cost = Var(m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Shutdown_Cost = Var(m.SHUTDOWN_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
                           within=NonNegativeReals)
 
     def startup_cost_rule(mod, g, tmp):
@@ -276,7 +276,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                 >= mod.Startup_Expression[g, tmp] \
                 * mod.startup_cost_per_unit[g]
     m.Startup_Cost_Constraint = \
-        Constraint(m.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        Constraint(m.STARTUP_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
                    rule=startup_cost_rule)
 
     def shutdown_cost_rule(mod, g, tmp):
@@ -303,7 +303,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                 >= mod.Shutdown_Expression[g, tmp] \
                 * mod.shutdown_cost_per_unit[g]
     m.Shutdown_Cost_Constraint = Constraint(
-        m.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.SHUTDOWN_COST_RESOURCE_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_cost_rule)
 
     # Startup and shutdown costs
@@ -319,7 +319,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.STARTUP_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
+                   in mod.STARTUP_COST_RESOURCE_OPERATIONAL_TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
     d.total_cost_components.append("Total_Startup_Cost")
 
@@ -335,6 +335,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
-                   in mod.SHUTDOWN_COST_GENERATOR_OPERATIONAL_TIMEPOINTS)
+                   in mod.SHUTDOWN_COST_RESOURCE_OPERATIONAL_TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
     d.total_cost_components.append("Total_Shutdown_Cost")

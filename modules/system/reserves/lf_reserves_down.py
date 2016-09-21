@@ -23,7 +23,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         reserve_violation_penalty_param=
         "lf_reserves_down_violation_penalty_per_mw",
         reserve_requirement_param="lf_reserves_down_requirement_mw",
-        reserve_generator_set="LF_RESERVES_DOWN_GENERATORS",
+        reserve_generator_set="LF_RESERVES_DOWN_RESOURCES",
         generator_reserve_provision_variable="Provide_LF_Reserves_Down_MW",
         total_reserve_provision_variable="Total_LF_Reserves_Down_Provision_MW",
         meet_reserve_constraint="Meet_LF_Reserves_Down_Constraint",

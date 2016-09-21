@@ -1,8 +1,8 @@
-generator,period,capacity_mw,energy_capacity_mwh,new_build_option_mw,new_build_storage_mw,new_build_storage_mwh
+resource,period,capacity_mw,energy_capacity_mwh,new_build_option_mw,new_build_storage_mw,new_build_storage_mwh
 CAISO_BTM_Solar,2020,6000.0,,,,
 CAISO_BTM_Solar,2030,16649.0,,,,
-CAISO_Battery,2020,-2.6958953e-11,-1.0584538e-10,,-2.6958953e-11,-1.0584538e-10
-CAISO_Battery,2030,9.3011781e-12,-9.1497748e-11,,9.3011781e-12,-9.1497748e-11
+CAISO_Battery,2020,-2.6174588e-11,-4.7992229e-11,,-2.6174588e-11,-4.7992229e-11
+CAISO_Battery,2030,-2.8410229e-11,-3.1707563e-11,,-2.8410229e-11,-3.1707563e-11
 CAISO_Biomass,2020,794.0,,,,
 CAISO_Biomass,2030,794.0,,,,
 CAISO_CHP,2020,4262.0,,,,
@@ -22,7 +22,7 @@ CAISO_Small_Hydro,2030,429.0,,,,
 CAISO_Solar,2020,9890.0,,,,
 CAISO_Solar,2030,9890.0,,,,
 CAISO_Solar_New,2020,0.0,,0.0,,
-CAISO_Solar_New,2030,-1.8328143e-12,,-1.8328143e-12,,
+CAISO_Solar_New,2030,0.0,,0.0,,
 CAISO_Wind,2020,5259.0,,,,
 CAISO_Wind,2030,5259.0,,,,
 CAISO_Wind_New,2020,3426.9712,,3426.9712,,

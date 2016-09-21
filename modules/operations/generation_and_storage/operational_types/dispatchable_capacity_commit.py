@@ -27,7 +27,7 @@ def add_module_specific_components(m, scenario_directory):
     """
 
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS = Set(
-        within=m.GENERATORS,
+        within=m.RESOURCES,
         initialize=
         generator_subset_init("operational_type",
                               "dispatchable_capacity_commit")
@@ -36,7 +36,7 @@ def add_module_specific_components(m, scenario_directory):
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
     
     m.Provide_Power_DispCapacityCommit_MW = \
@@ -70,11 +70,11 @@ def add_module_specific_components(m, scenario_directory):
         """
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS", "operational_type",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES", "operational_type",
                                    "unit_size_mw"]
                 )
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["operational_type"],
                        dynamic_components["unit_size_mw"]):
             if row[1] == "dispatchable_capacity_commit":

@@ -21,7 +21,7 @@ def add_module_specific_components(m, scenario_directory):
     :return:
     """
 
-    m.VARIABLE_GENERATORS = Set(within=m.GENERATORS,
+    m.VARIABLE_GENERATORS = Set(within=m.RESOURCES,
                                 initialize=generator_subset_init(
                                     "operational_type", "variable")
                                 )
@@ -29,7 +29,7 @@ def add_module_specific_components(m, scenario_directory):
     m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
                 if g in mod.VARIABLE_GENERATORS))
 
     # TODO: allow cap factors greater than 1?

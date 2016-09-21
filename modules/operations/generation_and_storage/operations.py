@@ -29,7 +29,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     d.headroom_variables = dict()
     d.footroom_variables = dict()
 
-    with open(os.path.join(scenario_directory, "inputs", "generators.tab"),
+    with open(os.path.join(scenario_directory, "inputs", "resources.tab"),
               "rb") as generation_capacity_file:
         generation_capacity_reader = reader(generation_capacity_file,
                                             delimiter="\t")
@@ -39,7 +39,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
         for row in generation_capacity_reader:
             # Get generator name; we have checked that columns names are unique
             # so can expect a single-item list here and get 0th element
-            generator = row[find_list_item_position(headers, "GENERATORS")[0]]
+            generator = row[find_list_item_position(headers, "RESOURCES")[0]]
             # All generators get the following variables
             d.headroom_variables[generator] = list()
             d.footroom_variables[generator] = list()
@@ -71,8 +71,8 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     # than having two separate methods
     # Get the operational type of each generator
     dynamic_components = \
-        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
-                 sep="\t", usecols=["GENERATORS", "operational_type"]
+        read_csv(os.path.join(scenario_directory, "inputs", "resources.tab"),
+                 sep="\t", usecols=["RESOURCES", "operational_type"]
                  )
 
     # Required modules are the unique set of generator operational types
@@ -95,23 +95,23 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # ### Params defined for all generators ### #
     # These are loaded via the DataPortal, not dynamically
     # Variable O&M cost
-    m.variable_om_cost_per_mwh = Param(m.GENERATORS, within=NonNegativeReals)
+    m.variable_om_cost_per_mwh = Param(m.RESOURCES, within=NonNegativeReals)
 
     # These params will be used to initialize subsets
 
     # Operational type
-    m.operational_type = Param(m.GENERATORS)
+    m.operational_type = Param(m.RESOURCES)
 
     # Headroom services flags
-    m.lf_reserves_up = Param(m.GENERATORS, within=Boolean)
-    m.regulation_up = Param(m.GENERATORS, within=Boolean)
+    m.lf_reserves_up = Param(m.RESOURCES, within=Boolean)
+    m.regulation_up = Param(m.RESOURCES, within=Boolean)
 
     # Footroom services flags
-    m.lf_reserves_down = Param(m.GENERATORS, within=Boolean)
-    m.regulation_down = Param(m.GENERATORS, within=Boolean)
+    m.lf_reserves_down = Param(m.RESOURCES, within=Boolean)
+    m.regulation_down = Param(m.RESOURCES, within=Boolean)
 
     # TODO: this should be built below with the dynamic components
-    m.min_stable_level_fraction = Param(m.GENERATORS,
+    m.min_stable_level_fraction = Param(m.RESOURCES,
                                         within=PercentFraction)
 
     ###
@@ -120,72 +120,72 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # TODO: should probably be individual modules
     # Subsets of generators by services they can provide
     # Sets of generators that can provide headroom services
-    m.LF_RESERVES_UP_GENERATORS = Set(
-        within=m.GENERATORS,
+    m.LF_RESERVES_UP_RESOURCES = Set(
+        within=m.RESOURCES,
         initialize=generator_subset_init("lf_reserves_up", 1))
-    m.REGULATION_UP_GENERATORS = Set(
-        within=m.GENERATORS,
+    m.REGULATION_UP_RESOURCES = Set(
+        within=m.RESOURCES,
         initialize=generator_subset_init("regulation_up", 1))
 
     # Sets of generators that can provide footroom services
-    m.LF_RESERVES_DOWN_GENERATORS = Set(
-        within=m.GENERATORS,
+    m.LF_RESERVES_DOWN_RESOURCES = Set(
+        within=m.RESOURCES,
         initialize=generator_subset_init("lf_reserves_down", 1))
-    m.REGULATION_DOWN_GENERATORS = Set(
-        within=m.GENERATORS,
+    m.REGULATION_DOWN_RESOURCES = Set(
+        within=m.RESOURCES,
         initialize=generator_subset_init("regulation_down", 1))
 
     # TODO: maybe these should be created by the reserves module?
-    m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.LF_RESERVES_UP_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.LF_RESERVES_UP_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_UP_RESOURCES))
 
-    m.LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.LF_RESERVES_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.LF_RESERVES_DOWN_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.LF_RESERVES_DOWN_RESOURCES))
 
-    m.REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.REGULATION_UP_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.REGULATION_UP_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_UP_RESOURCES))
 
-    m.REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.REGULATION_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
-                if g in mod.REGULATION_DOWN_GENERATORS))
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
+                if g in mod.REGULATION_DOWN_RESOURCES))
 
     # TODO: these are used to modify the operational modules and should
     # eventually be taken out into their own submodules
     # Headroom and footroom services
     m.Provide_LF_Reserves_Up_MW = Var(
-        m.LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.LF_RESERVES_UP_RESOURCE_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_Regulation_Up_MW = Var(
-        m.REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.REGULATION_UP_RESOURCE_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_LF_Reserves_Down_MW = Var(
-        m.LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.LF_RESERVES_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
     m.Provide_Regulation_Down_MW = Var(
-        m.REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        m.REGULATION_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS,
         within=NonNegativeReals)
 
     # Aggregate the headroom and footroom decision variables respectively for
     # use by the operational modules
     def headroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
-    m.Headroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Headroom_Provision_MW = Expression(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                          rule=headroom_provision_rule)
 
     def footroom_provision_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
-    m.Footroom_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Footroom_Provision_MW = Expression(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                          rule=footroom_provision_rule)
 
     # ### ### ### ### #
@@ -217,7 +217,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Power_Provision_MW = Expression(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                       rule=power_provision_rule)
 
     def max_power_rule(mod, g, tmp):
@@ -233,7 +233,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             max_power_rule(mod, g, tmp)
-    m.Max_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Max_Power_Constraint = Constraint(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                         rule=max_power_rule)
 
     def min_power_rule(mod, g, tmp):
@@ -250,13 +250,13 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             min_power_rule(mod, g, tmp)
-    m.Min_Power_Constraint = Constraint(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Min_Power_Constraint = Constraint(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                         rule=min_power_rule)
 
     # Add generation to load balance constraint
     def total_power_production_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
-                   for g in mod.OPERATIONAL_GENERATORS_IN_TIMEPOINT[tmp]
+                   for g in mod.OPERATIONAL_RESOURCES_IN_TIMEPOINT[tmp]
                    if mod.load_zone[g] == z)
     m.Power_Production_in_Zone_MW = \
         Expression(m.LOAD_ZONES, m.TIMEPOINTS,
@@ -278,7 +278,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
             curtailment_rule(mod, g, tmp)
 
     # TODO: possibly create this only if needed by another module?
-    m.Curtailment_MW = Expression(m.GENERATOR_OPERATIONAL_TIMEPOINTS,
+    m.Curtailment_MW = Expression(m.RESOURCE_OPERATIONAL_TIMEPOINTS,
                                   rule=curtailment_rule)
 
 
@@ -294,9 +294,9 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
 
     data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "generators.tab"),
-                     index=m.GENERATORS,
-                     select=("GENERATORS", "operational_type",
+                                           "inputs", "resources.tab"),
+                     index=m.RESOURCES,
+                     select=("RESOURCES", "operational_type",
                              "lf_reserves_up", "regulation_up",
                              "lf_reserves_down", "regulation_down",
                              "min_stable_level_fraction",
@@ -342,16 +342,16 @@ def export_results(scenario_directory, horizon, stage, m):
     # Make pandas dataframes for the various operations variables results
     power_df = make_resource_time_var_df(
         m,
-        "GENERATOR_OPERATIONAL_TIMEPOINTS",
+        "RESOURCE_OPERATIONAL_TIMEPOINTS",
         "Power_Provision_MW",
         ["resource", "timepoint"],
         "power_mw"
         )
 
-    if len("LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+    if len("LF_RESERVES_UP_RESOURCE_OPERATIONAL_TIMEPOINTS") > 0:
         lf_reserves_up_df = make_resource_time_var_df(
             m,
-            "LF_RESERVES_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "LF_RESERVES_UP_RESOURCE_OPERATIONAL_TIMEPOINTS",
             "Provide_LF_Reserves_Up_MW",
             ["resource", "timepoint"],
             "lf_reserves_up_mw"
@@ -359,10 +359,10 @@ def export_results(scenario_directory, horizon, stage, m):
     else:
         lf_reserves_up_df = []
 
-    if len("LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+    if len("LF_RESERVES_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS") > 0:
         lf_reserves_down_df = make_resource_time_var_df(
             m,
-            "LF_RESERVES_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "LF_RESERVES_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS",
             "Provide_LF_Reserves_Down_MW",
             ["resource", "timepoint"],
             "lf_reserves_down_mw"
@@ -370,10 +370,10 @@ def export_results(scenario_directory, horizon, stage, m):
     else:
         lf_reserves_down_df = []
 
-    if len("REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+    if len("REGULATION_UP_RESOURCE_OPERATIONAL_TIMEPOINTS") > 0:
         regulation_up_df = make_resource_time_var_df(
             m,
-            "REGULATION_UP_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "REGULATION_UP_RESOURCE_OPERATIONAL_TIMEPOINTS",
             "Provide_Regulation_Up_MW",
             ["resource", "timepoint"],
             "regulation_up_mw"
@@ -381,10 +381,10 @@ def export_results(scenario_directory, horizon, stage, m):
     else:
         regulation_up_df = []
 
-    if len("REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS") > 0:
+    if len("REGULATION_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS") > 0:
         regulation_down_df = make_resource_time_var_df(
             m,
-            "REGULATION_DOWN_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "REGULATION_DOWN_RESOURCE_OPERATIONAL_TIMEPOINTS",
             "Provide_Regulation_Down_MW",
             ["resource", "timepoint"],
             "regulation_down_mw"

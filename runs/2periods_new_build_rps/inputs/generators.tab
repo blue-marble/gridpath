@@ -1,9 +1,0 @@
-GENERATORS	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	rps_zone
-Nuclear	Zone1	specified_no_economic_retirement	1	must_run	0	0	0	0	.	.	.	Uranium	0	1666.67	.
-Gas_CCGT	Zone1	specified_no_economic_retirement	2	dispatchable_continuous_commit	1	1	1	1	0.4	1	2	Gas	1500	6	.
-Coal	Zone1	specified_no_economic_retirement	1	dispatchable_continuous_commit	0	1	0	1	0.4	1	0	Coal	3000	10	.
-Gas_CT	Zone1	specified_no_economic_retirement	2	dispatchable_continuous_commit	0	0	0	0	0.4	0	1	Gas	500	8	.
-Wind	Zone1	specified_no_economic_retirement	0	variable	0	0	0	0	.	.	.	.	.	.	RPSZone1
-Gas_CCGT_New	Zone1	new_build_option	2	dispatchable_continuous_commit	1	1	1	1	0.4	1	2	Gas	1500	6	.
-Gas_CT_New	Zone1	new_build_option	2	dispatchable_continuous_commit	0	0	0	0	0.4	0	1	Gas	500	8	.
-Wind_New	Zone1	new_build_option	0	variable	0	0	0	0	.	.	.	.	.	.	RPSZone1

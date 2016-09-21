@@ -1,4 +1,4 @@
-GENERATORS	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	charging_efficiency	discharging_efficiency	rps_zone
+RESOURCES	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up	regulation_up	lf_reserves_down	regulation_down	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	charging_efficiency	discharging_efficiency	rps_zone
 CAISO_Nuclear	CAISO	specified_no_economic_retirement	10	must_run	0	0	0	0	.	.	.	Uranium	0	10	.	.	.	.
 CAISO_CHP	CAISO	specified_no_economic_retirement	10	must_run	0	0	0	0	.	.	.	Gas	0	7	.	.	.	.
 CAISO_Gas_CCGT	CAISO	specified_no_economic_retirement	10	dispatchable_capacity_commit	1	1	1	1	0.4	20000	5000	Gas	1800	6	500	.	.	.
@@ -31,6 +31,6 @@ LADWP_Gas_CT	LADWP	specified_no_economic_retirement	10	dispatchable_capacity_com
 LADWP_Hydro	LADWP	hydro_specified	0	hydro_conventional	0	0	0	0	.	.	.	.	.	.	.	.	.	.
 LADWP_Wind	LADWP	specified_no_economic_retirement	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	.
 LADWP_Solar	LADWP	specified_no_economic_retirement	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	.
-CAISO_Wind_New	CAISO	new_build_option	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	CAISO
-CAISO_Solar_New	CAISO	new_build_option	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	CAISO
+CAISO_Wind_New	CAISO	new_build_generator	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	CAISO
+CAISO_Solar_New	CAISO	new_build_generator	0	variable	0	0	0	0	.	.	.	.	.	.	.	.	.	CAISO
 CAISO_Battery	CAISO	new_build_storage	1	storage_generic	1	1	1	1	.	.	.	.	.	.	.	0.85	0.85	.

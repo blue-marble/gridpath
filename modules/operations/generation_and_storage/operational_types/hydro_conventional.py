@@ -19,7 +19,7 @@ def add_module_specific_components(m, scenario_directory):
     """
 
     m.HYDRO_CONVENTIONAL_PROJECTS = Set(
-        within=m.GENERATORS,
+        within=m.RESOURCES,
         initialize=
         generator_subset_init("operational_type",
                               "hydro_conventional")
@@ -28,7 +28,7 @@ def add_module_specific_components(m, scenario_directory):
     m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
                 if g in mod.HYDRO_CONVENTIONAL_PROJECTS))
 
     m.Hydro_Conventional_Provide_Power_MW = \

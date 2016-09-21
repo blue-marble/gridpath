@@ -33,11 +33,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     def determine_rps_generators_by_contract(mod):
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES",
                                    "rps_zone"]
                 )
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["rps_zone"]):
             if row[1] != ".":
                 mod.RPS_PROJECTS_BY_RPS_ZONE[row[1]].add(row[0])

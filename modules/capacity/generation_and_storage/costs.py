@@ -35,7 +35,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_capacity_modules[gen_cap_type].\
             capacity_cost_rule(mod, g, p)
     m.Capacity_Cost_in_Period = \
-        Expression(m.GENERATOR_OPERATIONAL_PERIODS,
+        Expression(m.RESOURCE_OPERATIONAL_PERIODS,
                    rule=capacity_cost_rule)
 
     # Add costs to objective function
@@ -43,6 +43,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return sum(mod.Capacity_Cost_in_Period[g, p]
                    * mod.discount_factor[p]
                    * mod.number_years_represented[p]
-                   for (g, p) in mod.GENERATOR_OPERATIONAL_PERIODS)
+                   for (g, p) in mod.RESOURCE_OPERATIONAL_PERIODS)
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
     d.total_cost_components.append("Total_Capacity_Costs")

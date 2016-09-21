@@ -23,7 +23,7 @@ def add_module_specific_components(m, scenario_directory):
     """
 
     m.STORAGE_GENERIC_PROJECTS = Set(
-        within=m.GENERATORS,
+        within=m.RESOURCES,
         initialize=
         generator_subset_init("operational_type",
                               "storage_generic")
@@ -32,7 +32,7 @@ def add_module_specific_components(m, scenario_directory):
     m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS
+            set((g, tmp) for (g, tmp) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS
                 if g in mod.STORAGE_GENERIC_PROJECTS))
 
     m.storage_generic_charging_efficiency = \
@@ -50,12 +50,12 @@ def add_module_specific_components(m, scenario_directory):
         """
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "generators.tab"),
-                sep="\t", usecols=["GENERATORS", "operational_type",
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES", "operational_type",
                                    "charging_efficiency",
                                    "discharging_efficiency"]
             )
-        for row in zip(dynamic_components["GENERATORS"],
+        for row in zip(dynamic_components["RESOURCES"],
                        dynamic_components["operational_type"],
                        dynamic_components["charging_efficiency"],
                        dynamic_components["discharging_efficiency"]):

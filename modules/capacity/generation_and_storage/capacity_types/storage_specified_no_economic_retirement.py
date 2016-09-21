@@ -12,10 +12,12 @@ def add_module_specific_components(m):
         Set(dimen=2)
 
     # Add to list of sets we'll join to get the final
-    # GENERATOR_OPERATIONAL_PERIODS set
+    # RESOURCE_OPERATIONAL_PERIODS set
     m.capacity_type_operational_period_sets.append(
         "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
     )
+    # Add to list of sets we'll join to get the final
+    # STORAGE_OPERATIONAL_PERIODS set
     m.storage_only_capacity_type_operational_period_sets.append(
         "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
     )

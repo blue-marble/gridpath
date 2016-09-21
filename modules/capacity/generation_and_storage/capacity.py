@@ -20,8 +20,8 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
 
     # Get the capacity type of each generator
     dynamic_components = \
-        read_csv(os.path.join(scenario_directory, "inputs", "generators.tab"),
-                 sep="\t", usecols=["GENERATORS", "capacity_type"]
+        read_csv(os.path.join(scenario_directory, "inputs", "resources.tab"),
+                 sep="\t", usecols=["RESOURCES", "capacity_type"]
                  )
 
     # Required modules are the unique set of generator operational types
@@ -40,9 +40,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-    m.GENERATORS = Set()
-    m.load_zone = Param(m.GENERATORS, within=m.LOAD_ZONES)
-    m.capacity_type = Param(m.GENERATORS)
+    m.RESOURCES = Set()
+    m.load_zone = Param(m.RESOURCES, within=m.LOAD_ZONES)
+    m.capacity_type = Param(m.RESOURCES)
 
     # Capacity-type modules will populate this list if called
     m.capacity_type_operational_period_sets = []
@@ -60,7 +60,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     def join_cap_type_operational_period_sets(mod):
         """
-        Join the sets we need to make the GENERATOR_OPERATIONAL_PERIODS
+        Join the sets we need to make the RESOURCE_OPERATIONAL_PERIODS
         super set; if list contains only a single set, return just that set
         :param mod:
         :return:
@@ -76,7 +76,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                     joined_set.add(element)
         return joined_set
 
-    m.GENERATOR_OPERATIONAL_PERIODS = \
+    m.RESOURCE_OPERATIONAL_PERIODS = \
         Set(dimen=2,
             initialize=join_cap_type_operational_period_sets)
 
@@ -85,7 +85,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         return imported_capacity_modules[gen_cap_type].\
             capacity_rule(mod, g, p)
 
-    m.Capacity_MW = Expression(m.GENERATOR_OPERATIONAL_PERIODS,
+    m.Capacity_MW = Expression(m.RESOURCE_OPERATIONAL_PERIODS,
                                rule=capacity_rule)
 
     def join_storage_only_cap_type_operational_period_sets(mod):
@@ -103,9 +103,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                     mod,
                     mod.storage_only_capacity_type_operational_period_sets[0])
         else:
-            return \
-                reduce(lambda x, y: getattr(mod, x) | getattr(mod, y),
-                       mod.storage_only_capacity_type_operational_period_sets)
+            joined_set = set()
+            for s in mod.storage_only_capacity_type_operational_period_sets:
+                for element in getattr(mod, s):
+                    joined_set.add(element)
+        return joined_set
 
     m.STORAGE_OPERATIONAL_PERIODS = \
         Set(dimen=2,
@@ -129,21 +131,21 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         rule=energy_capacity_rule)
 
     # Define various sets to be used in operations module
-    m.OPERATIONAL_PERIODS_BY_GENERATOR = \
-        Set(m.GENERATORS,
+    m.OPERATIONAL_PERIODS_BY_RESOURCE = \
+        Set(m.RESOURCES,
             rule=lambda mod, gen: set(
-                p for (g, p) in mod.GENERATOR_OPERATIONAL_PERIODS if
+                p for (g, p) in mod.RESOURCE_OPERATIONAL_PERIODS if
                 g == gen)
             )
 
     def gen_op_tmps_init(mod):
         gen_tmps = set()
-        for g in mod.GENERATORS:
-            for p in mod.OPERATIONAL_PERIODS_BY_GENERATOR[g]:
+        for g in mod.RESOURCES:
+            for p in mod.OPERATIONAL_PERIODS_BY_RESOURCE[g]:
                 for tmp in mod.TIMEPOINTS_IN_PERIOD[p]:
                     gen_tmps.add((g, tmp))
         return gen_tmps
-    m.GENERATOR_OPERATIONAL_TIMEPOINTS = \
+    m.RESOURCE_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, rule=gen_op_tmps_init)
 
     def op_gens_by_tmp(mod, tmp):
@@ -154,18 +156,18 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         gens = list(
-            g for (g, t) in mod.GENERATOR_OPERATIONAL_TIMEPOINTS if t == tmp)
+            g for (g, t) in mod.RESOURCE_OPERATIONAL_TIMEPOINTS if t == tmp)
         return gens
 
-    m.OPERATIONAL_GENERATORS_IN_TIMEPOINT = \
+    m.OPERATIONAL_RESOURCES_IN_TIMEPOINT = \
         Set(m.TIMEPOINTS, initialize=op_gens_by_tmp)
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "generators.tab"),
-                     index=m.GENERATORS,
-                     select=("GENERATORS", "load_zone", "capacity_type"),
+                                           "inputs", "resources.tab"),
+                     index=m.RESOURCES,
+                     select=("RESOURCES", "load_zone", "capacity_type"),
                      param=(m.load_zone, m.capacity_type)
                      )
 
@@ -203,7 +205,7 @@ def export_results(scenario_directory, horizon, stage, m):
 
     capacity_df = make_resource_time_var_df(
         m,
-        "GENERATOR_OPERATIONAL_PERIODS",
+        "RESOURCE_OPERATIONAL_PERIODS",
         "Capacity_MW",
         ["resource", "period"],
         "capacity_mw"

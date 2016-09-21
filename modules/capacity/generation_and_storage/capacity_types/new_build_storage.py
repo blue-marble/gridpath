@@ -50,9 +50,13 @@ def add_module_specific_components(m):
     m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS = \
         Set(dimen=2, initialize=new_build_storage_operational_periods)
 
+    # Add to list of sets we'll join to get the final
+    # RESOURCE_OPERATIONAL_PERIODS set
     m.capacity_type_operational_period_sets.append(
         "NEW_BUILD_STORAGE_OPERATIONAL_PERIODS",
     )
+    # Add to list of sets we'll join to get the final
+    # STORAGE_OPERATIONAL_PERIODS set
     m.storage_only_capacity_type_operational_period_sets.append(
         "NEW_BUILD_STORAGE_OPERATIONAL_PERIODS",
     )
