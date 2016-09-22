@@ -7,11 +7,11 @@ from csv import reader
 import os.path
 from pandas import read_csv
 from pyomo.environ import Param, Set, Var, Expression, Constraint, \
-    NonNegativeReals, Boolean, PercentFraction
+    NonNegativeReals, PercentFraction, BuildAction
 
 from modules.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_resource_time_var_df, \
-    load_operational_type_modules, generator_subset_init
+    load_operational_type_modules
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -45,25 +45,29 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
             d.footroom_variables[generator] = list()
             # In addition, some generators get the variables associated with
             # provision of other services (e.g. reserves) if flagged
+            # Figure out which these are here based on whether a reserve zone
+            # is specified ("." = no zone specified, so resource does not
+            # contribute to this reserve requirement)
             # Generators that can provide upward load-following reserves
-            if int(row[find_list_item_position(headers,
-                                               "lf_reserves_up")[0]]
-                   ):
+            if row[find_list_item_position(headers, "lf_reserves_up_zone")[0]] \
+                    != ".":
                 d.headroom_variables[generator].append(
                     "Provide_LF_Reserves_Up_MW")
             # Generators that can provide upward regulation
-            if int(row[find_list_item_position(headers, "regulation_up")[0]]
-                   ):
+            if row[find_list_item_position(headers, "regulation_up_zone")[0]] \
+                    != ".":
                 d.headroom_variables[generator].append(
                     "Provide_Regulation_Up_MW")
             # Generators that can provide downward load-following reserves
-            if int(row[find_list_item_position(headers, "lf_reserves_down")[0]]
-                   ):
+            if row[find_list_item_position(
+                    headers, "lf_reserves_down_zone")[0]] \
+                    != ".":
                 d.footroom_variables[generator].append(
                     "Provide_LF_Reserves_Down_MW")
             # Generators that can provide downward regulation
-            if int(row[find_list_item_position(headers, "regulation_down")[0]]
-                   ):
+            if row[find_list_item_position(
+                    headers, "regulation_down_zone")[0]] \
+                    != ".":
                 d.footroom_variables[generator].append(
                     "Provide_Regulation_Down_MW")
 
@@ -102,14 +106,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # Operational type
     m.operational_type = Param(m.RESOURCES)
 
-    # Headroom services flags
-    m.lf_reserves_up = Param(m.RESOURCES, within=Boolean)
-    m.regulation_up = Param(m.RESOURCES, within=Boolean)
-
-    # Footroom services flags
-    m.lf_reserves_down = Param(m.RESOURCES, within=Boolean)
-    m.regulation_down = Param(m.RESOURCES, within=Boolean)
-
     # TODO: this should be built below with the dynamic components
     m.min_stable_level_fraction = Param(m.RESOURCES,
                                         within=PercentFraction)
@@ -117,23 +113,61 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     ###
     # Services that generators can provide that modify the operational modules
     ###
+
+    def determine_reserve_resources(mod, reserve_type, reserve_resource_set):
+        """
+
+        :param mod:
+        :param reserve_type:
+        :param reserve_resource_set:
+        :return:
+        """
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "resources.tab"),
+                sep="\t", usecols=["RESOURCES",
+                                   reserve_type]
+                )
+
+        for row in zip(dynamic_components["RESOURCES"],
+                       dynamic_components[reserve_type]):
+            if row[1] != ".":
+                getattr(mod, reserve_resource_set).add(row[0])
+            else:
+                pass
+
+
     # TODO: should probably be individual modules
     # Subsets of generators by services they can provide
     # Sets of generators that can provide headroom services
-    m.LF_RESERVES_UP_RESOURCES = Set(
-        within=m.RESOURCES,
-        initialize=generator_subset_init("lf_reserves_up", 1))
-    m.REGULATION_UP_RESOURCES = Set(
-        within=m.RESOURCES,
-        initialize=generator_subset_init("regulation_up", 1))
+    m.LF_RESERVES_UP_RESOURCES = Set(within=m.RESOURCES)
+    m.lf_reserves_up_zone = Param(m.LF_RESERVES_UP_RESOURCES)
+    # m.LFReservesUpResourcesBuild = \
+    #     BuildAction(rule=
+    #                 determine_reserve_resources)
+    m.REGULATION_UP_RESOURCES = Set(within=m.RESOURCES)
+    m.regulation_up_zone = Param(m.REGULATION_UP_RESOURCES)
+    # m.RegulationUpResourcesBuild = \
+    #     BuildAction(rule=
+    #                 determine_reserve_resources(
+    #                     m, "regulation_up_zone","REGULATION_UP_RESOURCES")
+    #                 )
 
     # Sets of generators that can provide footroom services
-    m.LF_RESERVES_DOWN_RESOURCES = Set(
-        within=m.RESOURCES,
-        initialize=generator_subset_init("lf_reserves_down", 1))
-    m.REGULATION_DOWN_RESOURCES = Set(
-        within=m.RESOURCES,
-        initialize=generator_subset_init("regulation_down", 1))
+    m.LF_RESERVES_DOWN_RESOURCES = Set(within=m.RESOURCES)
+    m.lf_reserves_down_zone = Param(m.LF_RESERVES_DOWN_RESOURCES)
+    # m.LFReservesDownResourcesBuild = \
+    #     BuildAction(rule=
+    #                 determine_reserve_resources(
+    #                     m, "lf_reserves_down_zone","LF_RESERVES_DOWN_RESOURCES")
+    #                 )
+    m.REGULATION_DOWN_RESOURCES = Set(within=m.RESOURCES)
+    m.regulation_down_zone = Param(m.REGULATION_DOWN_RESOURCES)
+    # m.RegulationDownResourcesBuild = \
+    #     BuildAction(rule=
+    #                 determine_reserve_resources(
+    #                     m, "regulation_down_zone","REGULATION_DOWN_RESOURCES")
+    #                 )
 
     # TODO: maybe these should be created by the reserves module?
     m.LF_RESERVES_UP_RESOURCE_OPERATIONAL_TIMEPOINTS = \
@@ -297,16 +331,49 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                                            "inputs", "resources.tab"),
                      index=m.RESOURCES,
                      select=("RESOURCES", "operational_type",
-                             "lf_reserves_up", "regulation_up",
-                             "lf_reserves_down", "regulation_down",
                              "min_stable_level_fraction",
                              "variable_om_cost_per_mwh"),
                      param=(m.operational_type,
-                            m.lf_reserves_up, m.regulation_up,
-                            m.lf_reserves_down, m.regulation_down,
                             m.min_stable_level_fraction,
                             m.variable_om_cost_per_mwh)
                      )
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "resources.tab"),
+                     select=("RESOURCES", "lf_reserves_up_zone"),
+                     param=(m.lf_reserves_up_zone,)
+                     )
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "resources.tab"),
+                     select=("RESOURCES", "lf_reserves_down_zone"),
+                     param=m.lf_reserves_down_zone
+                     )
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "resources.tab"),
+                     select=("RESOURCES", "regulation_up_zone"),
+                     param=m.regulation_up_zone
+                     )
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "resources.tab"),
+                     select=("RESOURCES", "regulation_down_zone"),
+                     param=m.regulation_down_zone
+                     )
+
+    data_portal.data()['LF_RESERVES_UP_RESOURCES'] = {
+        None: data_portal.data()['lf_reserves_up_zone'].keys()
+    }
+    data_portal.data()['LF_RESERVES_DOWN_RESOURCES'] = {
+        None: data_portal.data()['lf_reserves_down_zone'].keys()
+    }
+    data_portal.data()['REGULATION_UP_RESOURCES'] = {
+        None: data_portal.data()['regulation_up_zone'].keys()
+    }
+    data_portal.data()['REGULATION_DOWN_RESOURCES'] = {
+        None: data_portal.data()['regulation_down_zone'].keys()
+    }
 
     imported_operational_modules = load_operational_type_modules(m)
     for op_m in m.required_operational_modules:

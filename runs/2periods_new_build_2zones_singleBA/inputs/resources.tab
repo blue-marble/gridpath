@@ -1,0 +1,15 @@
+RESOURCES	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up_zone	regulation_up_zone	lf_reserves_down_zone	regulation_down_zone	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh
+Nuclear	Zone1	specified_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	0	1666.67
+Gas_CCGT	Zone1	specified_no_economic_retirement	2	dispatchable_continuous_commit	BA	BA	BA	BA	0.4	1	2	Gas	1500	6
+Coal	Zone1	specified_no_economic_retirement	1	dispatchable_continuous_commit	.	BA	.	BA	0.4	1	0	Coal	3000	10
+Gas_CT	Zone1	specified_no_economic_retirement	2	dispatchable_continuous_commit	.	.	.	.	0.4	0	1	Gas	500	8
+Wind	Zone1	specified_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.
+Gas_CCGT_New	Zone1	new_build_generator	2	dispatchable_continuous_commit	BA	BA	BA	BA	0.4	1	2	Gas	1500	6
+Gas_CT_New	Zone1	new_build_generator	2	dispatchable_continuous_commit	.	.	.	.	0.4	0	1	Gas	500	8
+Nuclear_z2	Zone2	specified_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	10000	0
+Gas_CCGT_z2	Zone2	specified_no_economic_retirement	2	dispatchable_continuous_commit	BA	BA	BA	BA	0.4	1	2	Gas	1500	6
+Coal_z2	Zone2	specified_no_economic_retirement	1	dispatchable_continuous_commit	.	BA	.	BA	0.4	1	0	Coal	3000	10
+Gas_CT_z2	Zone2	specified_no_economic_retirement	2	dispatchable_continuous_commit	.	.	.	.	0.4	0	1	Gas	500	8
+Wind_z2	Zone2	specified_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.
+Gas_CCGT_New_z2	Zone2	new_build_generator	2	dispatchable_continuous_commit	BA	BA	BA	BA	0.4	1	2	Gas	1500	6
+Gas_CT_New_z2	Zone2	new_build_generator	2	dispatchable_continuous_commit	.	.	.	.	0.4	0	1	Gas	500	8

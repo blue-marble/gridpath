@@ -159,9 +159,10 @@ def make_resource_time_var_df(m, resource_time_set, var, index, header):
             except ValueError:
                 dict_for_resource_df[r][time] = None
                 print(
-                    """WARNING: the following variable was
-                    not initialized: """ + "\n" + str(var) + "\n"
-                    + "Check if " + str(time) + "is in the study."
+                    "WARNING: The following variable was not initialized: "
+                    + "\n" + str(var) + "\n"
+                    + "The uninitialized index of set " + resource_time_set
+                    + " is (" + str((r, time)) + ")."
                 )
         else:
             try:
@@ -169,9 +170,11 @@ def make_resource_time_var_df(m, resource_time_set, var, index, header):
             except ValueError:
                 dict_for_resource_df[r][time] = None
                 print(
-                    """WARNING: the following variable was
-                    not initialized: """ + "\n" + str(var) + "\n"
-                    + "Check if " + str(time) + "is a in the study.")
+                    "WARNING: The following variable was not initialized: "
+                    + "\n" + str(var) + "\n"
+                    + "The uninitialized index of set " + resource_time_set
+                    + " is (" + str((r, time)) + ")."
+                )
 
     # For each generator, create a dataframe with the variable (x) values
     # Create two lists, the generators and dictionaries with the timepoints as

@@ -1,0 +1,5 @@
+LOAD_ZONES	TIMEPOINTS	upward_reserve_requirement
+BA	1	2
+BA	2	4
+BA	3	2
+BA	4	4
