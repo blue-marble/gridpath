@@ -3,16 +3,13 @@
 """
 Run model.
 """
-# General
+from csv import writer
 from importlib import import_module
 import os.path
-import sys
-from csv import writer
 from pandas import read_csv
-
-# Pyomo
 from pyomo.environ import *
 from pyutilib.services import TempfileManager
+import sys
 
 # Scenario name
 scenario_name = sys.argv[1]
@@ -179,11 +176,57 @@ def get_modules(scenario_directory):
     """
     modules_file = os.path.join(scenario_directory, "modules.csv")
     try:
-        modules_to_use = read_csv(modules_file)["modules"].tolist()
-        return modules_to_use
+        requested_modules = read_csv(modules_file)["modules"].tolist()
     except IOError:
         print "ERROR! Modules file {} not found".format(modules_file)
         sys.exit(1)
+
+    # If all optional modules are selected, this would be the list
+    all_modules = [
+        "time.operations.timepoints",
+        "time.operations.horizons",
+        "time.investment.periods",
+        "geography.zones",
+        "generation_and_storage.capacity.capacity",
+        "generation_and_storage.capacity.costs",
+        "generation_and_storage.operations.fuels",
+        "generation_and_storage.operations.operations",
+        "generation_and_storage.operations.fix_commitment",
+        "generation_and_storage.operations.costs",
+        "transmission.capacity.capacity",
+        "transmission.operations.operations",
+        "system.load_balance.load_balance",
+        "system.reserves.lf_reserves_up",
+        "system.reserves.regulation_up",
+        "system.reserves.lf_reserves_down",
+        "system.reserves.regulation_down",
+        "objective.min_total_cost",
+        "policy.rps"
+    ]
+
+    # Names of groups of optional modules
+    optional_modules = {
+        "fuels": ["generation_and_storage.operations.fuels"],
+        "multi_stage": ["generation_and_storage.operations.fix_commitment"],
+        "transmission": ["transmission.capacity.capacity",
+                         "transmission.operations.operations"],
+        "lf_reserves_up": ["system.reserves.lf_reserves_up"],
+        "lf_reserves_down": ["system.reserves.lf_reserves_down"],
+        "regulation_up": ["system.reserves.regulation_reserves_up"],
+        "regulation_down": ["system.reserves.regulation_reserves_down"],
+        "rps": ["policy.rps"]
+    }
+
+    # Remove any modules not requested by user
+    modules_to_use = all_modules
+    for module_name in optional_modules.keys():
+        if module_name in requested_modules:
+            pass
+        else:
+            for m in optional_modules[module_name]:
+                modules_to_use.remove(m)
+
+    return modules_to_use
 
 
 def load_modules(modules_to_use):
