@@ -1,4 +1,4 @@
-resource,period,capacity_mw
+project,period,capacity_mw
 Nuclear,2020,6.0
 Nuclear,2030,6.0
 Coal,2020,6.0

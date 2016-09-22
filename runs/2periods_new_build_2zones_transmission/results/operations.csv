@@ -1,4 +1,4 @@
-resource,timepoint,power_mw,commit_capacity_mw,curtail_mw,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
+project,timepoint,power_mw,commit_capacity_mw,curtail_mw,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
 Coal,1,5.0,6.0,,,,1.0,0.0
 Coal,2,0.0,0.0,,,,0.0,0.0
 Coal,3,0.0,0.0,,,,0.0,0.0

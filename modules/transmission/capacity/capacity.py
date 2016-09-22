@@ -5,7 +5,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, Expression
 
 from modules.auxiliary.auxiliary import load_tx_capacity_type_modules, \
-    make_resource_time_var_df
+    make_project_time_var_df
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -175,7 +175,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     # Export transmission capacity
     min_cap_df = \
-        make_resource_time_var_df(
+        make_project_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Min_Capacity_MW",
@@ -184,7 +184,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
         )
 
     max_cap_df = \
-        make_resource_time_var_df(
+        make_project_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Max_Capacity_MW",

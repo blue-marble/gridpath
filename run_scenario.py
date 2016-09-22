@@ -195,17 +195,17 @@ def get_modules(scenario_directory):
         "time.operations.horizons",
         "time.investment.periods",
         "geography.zones",
-        'generation_and_storage',
-        "generation_and_storage.capacity.capacity",
-        "generation_and_storage.capacity.costs",
-        "generation_and_storage.operations.reserves.lf_reserves_up",
-        "generation_and_storage.operations.reserves.lf_reserves_down",
-        "generation_and_storage.operations.reserves.regulation_up",
-        "generation_and_storage.operations.reserves.regulation_down",
-        "generation_and_storage.operations.fuels",
-        "generation_and_storage.operations.operations",
-        "generation_and_storage.operations.fix_commitment",
-        "generation_and_storage.operations.costs",
+        'project',
+        "project.capacity.capacity",
+        "project.capacity.costs",
+        "project.operations.reserves.lf_reserves_up",
+        "project.operations.reserves.lf_reserves_down",
+        "project.operations.reserves.regulation_up",
+        "project.operations.reserves.regulation_down",
+        "project.operations.fuels",
+        "project.operations.operations",
+        "project.operations.fix_commitment",
+        "project.operations.costs",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
         "system.load_balance.load_balance",
@@ -220,23 +220,23 @@ def get_modules(scenario_directory):
     # Names of groups of optional modules
     optional_modules = {
         "fuels":
-            ["generation_and_storage.operations.fuels"],
+            ["project.operations.fuels"],
         "multi_stage":
-            ["generation_and_storage.operations.fix_commitment"],
+            ["project.operations.fix_commitment"],
         "transmission":
             ["transmission.capacity.capacity",
              "transmission.operations.operations"],
         "lf_reserves_up":
-            ["generation_and_storage.operations.reserves.lf_reserves_up",
+            ["project.operations.reserves.lf_reserves_up",
              "system.reserves.lf_reserves_up"],
         "lf_reserves_down":
-            ["generation_and_storage.operations.reserves.lf_reserves_down",
+            ["project.operations.reserves.lf_reserves_down",
              "system.reserves.lf_reserves_down"],
         "regulation_up":
-            ["generation_and_storage.operations.reserves.regulation_up",
+            ["project.operations.reserves.regulation_up",
              "system.reserves.regulation_up"],
         "regulation_down":
-            ["generation_and_storage.operations.reserves.regulation_down",
+            ["project.operations.reserves.regulation_down",
              "system.reserves.regulation_down"],
         "rps":
             ["policy.rps"]

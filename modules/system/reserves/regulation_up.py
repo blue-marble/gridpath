@@ -34,7 +34,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         reserve_violation_variable="Regulation_Up_Violation_MW",
         reserve_violation_penalty_param="regulation_up_violation_penalty_mw",
         reserve_requirement_param="regulation_up_requirement_mw",
-        reserve_generator_set="REGULATION_UP_RESOURCES",
+        reserve_generator_set="REGULATION_UP_PROJECTS",
         generator_reserve_provision_variable="Provide_Regulation_Up_MW",
         total_reserve_provision_expression="Total_Regulation_Up_Provision_MW",
         meet_reserve_constraint="Meet_Regulation_Up_Constraint",

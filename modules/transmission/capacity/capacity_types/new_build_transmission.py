@@ -4,7 +4,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 
-from modules.auxiliary.auxiliary import make_resource_time_var_df
+from modules.auxiliary.auxiliary import make_project_time_var_df
 
 
 def add_module_specific_components(m):
@@ -142,7 +142,7 @@ def export_module_specific_results(m, d):
     """
 
     new_tx_cap_df = \
-        make_resource_time_var_df(
+        make_project_time_var_df(
             m,
             "NEW_BUILD_TRANSMISSION_VINTAGES",
             "Build_Transmission_MW",

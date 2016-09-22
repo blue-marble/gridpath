@@ -1,4 +1,4 @@
-resource,period,capacity_mw,energy_capacity_mwh,new_build_storage_mw,new_build_storage_mwh
+project,period,capacity_mw,energy_capacity_mwh,new_build_storage_mw,new_build_storage_mwh
 Battery,2020,6.432,3.04,6.432,3.04
 Battery,2030,6.432,3.04,6.432,3.04
 Coal,2020,6.0,,,

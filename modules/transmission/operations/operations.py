@@ -3,7 +3,7 @@
 import os.path
 from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
 
-from modules.auxiliary.auxiliary import make_resource_time_var_df
+from modules.auxiliary.auxiliary import make_project_time_var_df
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -97,7 +97,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     op_df = \
-        make_resource_time_var_df(
+        make_project_time_var_df(
             m,
             "TRANSMISSION_OPERATIONAL_PERIODS",
             "Transmission_Max_Capacity_MW",

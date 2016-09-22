@@ -1,4 +1,4 @@
-resource,period,capacity_mw
+project,period,capacity_mw
 Gas_CCGT,2020,6.0
 Nuclear,2020,6.0
 Gas_CT,2020,6.0

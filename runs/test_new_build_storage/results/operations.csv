@@ -1,4 +1,4 @@
-resource,timepoint,power_mw,commit_capacity_mw,curtail_mw,starting_energy_in_generic_storage_mwh,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
+project,timepoint,power_mw,commit_capacity_mw,curtail_mw,starting_energy_in_generic_storage_mwh,lf_reserves_up_mw,lf_reserves_down_mw,regulation_up_mw,regulation_down_mw
 Battery,1,-3.8,,,0.0,1.0,1.0,1.0,1.0
 Battery,2,2.432,,,3.04,2.0,0.0,2.0,2.0
 Battery,3,-3.8,,,0.0,1.0,1.0,1.0,1.0

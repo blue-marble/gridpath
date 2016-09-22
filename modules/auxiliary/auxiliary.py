@@ -47,7 +47,7 @@ def load_subtype_modules(
 def load_gen_storage_capacity_type_modules(d):
     return load_subtype_modules(
             d.required_capacity_modules,
-            "modules.generation_and_storage.capacity.capacity_types",
+            "modules.project.capacity.capacity_types",
             ["capacity_rule", "capacity_cost_rule"]
         )
 
@@ -55,7 +55,7 @@ def load_gen_storage_capacity_type_modules(d):
 def load_reserve_type_modules(d):
     return load_subtype_modules(
         d.required_reserve_modules,
-        "modules.generation_and_storage.operations.reserves",
+        "modules.project.operations.reserves",
         []
          )
 
@@ -63,7 +63,7 @@ def load_reserve_type_modules(d):
 def load_operational_type_modules(d):
     return load_subtype_modules(
         d.required_operational_modules,
-        "modules.generation_and_storage.operations.operational_types",
+        "modules.project.operations.operational_types",
         ["power_provision_rule","max_power_rule", "min_power_rule",
          "fuel_cost_rule", "startup_rule", "shutdown_rule"]
          )
@@ -90,7 +90,7 @@ def generator_subset_init(generator_parameter, expected_type):
     :return:
     """
     return lambda mod: \
-        list(g for g in mod.RESOURCES if getattr(mod, generator_parameter)[g]
+        list(g for g in mod.PROJECTS if getattr(mod, generator_parameter)[g]
              == expected_type)
 
 
@@ -135,20 +135,20 @@ def is_number(s):
         return False
 
 
-def make_resource_time_var_df(m, resource_time_set, var, index, header):
+def make_project_time_var_df(m, project_time_set, var, index, header):
     """
-    Create a pandas dataframe with the two-dimensional resource_time_set as a
+    Create a pandas dataframe with the two-dimensional project_time_set as a
     two-column index and the values of x, a variable indexed by
-    resource_time_set, as the value column. A 'resource' can be a generator,
+    project_time_set, as the value column. A 'project' can be a generator,
     a storage project, a transmission line, etc. 'Time' can be timepoints,
     periods, etc.
     :param m:
     The abstract model
-    :param resource_time_set:
-    A two-dimensional set of resource (e.g. generator, transmission line, etc.)
+    :param project_time_set:
+    A two-dimensional set of project (e.g. generator, transmission line, etc.)
     and time index (e.g. timepoint, period, etc.)
     :param var:
-    The variable indexed by resource_time_set that we will get values for
+    The variable indexed by project_time_set that we will get values for
     :param index:
     The DataFrame columns we'll index by
     :param header:
@@ -158,29 +158,29 @@ def make_resource_time_var_df(m, resource_time_set, var, index, header):
     """
 
     # Created nested dictionary for each generator-time combo
-    dict_for_resource_df = {}
-    for (r, time) in getattr(m, resource_time_set):
-        if r not in dict_for_resource_df.keys():
-            dict_for_resource_df[r] = {}
+    dict_for_project_df = {}
+    for (r, time) in getattr(m, project_time_set):
+        if r not in dict_for_project_df.keys():
+            dict_for_project_df[r] = {}
             try:
-                dict_for_resource_df[r][time] = value(getattr(m, var)[r, time])
+                dict_for_project_df[r][time] = value(getattr(m, var)[r, time])
             except ValueError:
-                dict_for_resource_df[r][time] = None
+                dict_for_project_df[r][time] = None
                 print(
                     "WARNING: The following variable was not initialized: "
                     + "\n" + str(var) + "\n"
-                    + "The uninitialized index of set " + resource_time_set
+                    + "The uninitialized index of set " + project_time_set
                     + " is (" + str((r, time)) + ")."
                 )
         else:
             try:
-                dict_for_resource_df[r][time] = value(getattr(m, var)[r, time])
+                dict_for_project_df[r][time] = value(getattr(m, var)[r, time])
             except ValueError:
-                dict_for_resource_df[r][time] = None
+                dict_for_project_df[r][time] = None
                 print(
                     "WARNING: The following variable was not initialized: "
                     + "\n" + str(var) + "\n"
-                    + "The uninitialized index of set " + resource_time_set
+                    + "The uninitialized index of set " + project_time_set
                     + " is (" + str((r, time)) + ")."
                 )
 
@@ -191,7 +191,7 @@ def make_resource_time_var_df(m, resource_time_set, var, index, header):
     # on that order below
     generators = []
     times = []
-    for r, tmp in dict_for_resource_df.iteritems():
+    for r, tmp in dict_for_project_df.iteritems():
         generators.append(r)
         times.append(pandas.DataFrame.from_dict(tmp, orient='index'))
 
