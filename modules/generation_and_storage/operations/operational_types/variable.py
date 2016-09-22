@@ -169,10 +169,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                      )
 
 
-def export_module_specific_results(mod):
+def export_module_specific_results(mod, d):
     """
 
     :param mod:
+    :param d:
     :return:
     """
     curtailment_df = \
@@ -184,4 +185,4 @@ def export_module_specific_results(mod):
             "curtail_mw"
         )
 
-    mod.module_specific_df.append(curtailment_df)
+    d.module_specific_df.append(curtailment_df)

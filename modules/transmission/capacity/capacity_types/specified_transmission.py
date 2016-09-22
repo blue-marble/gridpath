@@ -39,7 +39,8 @@ def tx_capacity_cost_rule(mod, g, p):
     return 0
 
 
-def load_module_specific_data(m, data_portal, scenario_directory, horizon, stage):
+def load_module_specific_data(m, data_portal, scenario_directory,
+                              horizon, stage):
     data_portal.load(filename=
                      os.path.join(
                          scenario_directory, "inputs",

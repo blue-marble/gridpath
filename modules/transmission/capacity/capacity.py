@@ -152,23 +152,24 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param m:
+    :param d:
     :return:
     """
-    m.tx_module_specific_df = []
+    d.tx_module_specific_df = []
 
     imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
     for op_m in m.required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
-                m)
+                m, d)
         else:
             pass
 
@@ -191,7 +192,7 @@ def export_results(scenario_directory, horizon, stage, m):
             "transmission_max_capacity_mw"
         )
 
-    cap_dfs_to_merge = [min_cap_df] + [max_cap_df] + m.tx_module_specific_df
+    cap_dfs_to_merge = [min_cap_df] + [max_cap_df] + d.tx_module_specific_df
     cap_df_for_export = reduce(lambda left, right:
                                left.join(right, how="outer"),
                                cap_dfs_to_merge)

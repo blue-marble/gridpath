@@ -166,9 +166,12 @@ def fix_commitment(mod, g, tmp):
     mod.Commit_Binary[g, tmp].fixed = True
 
 
-def export_module_specific_results(mod):
+def export_module_specific_results(mod, d):
     """
     Export commitment decisions.
+    :param mod:
+    :param d:
+    :return:
     """
     binary_commit_df = \
         make_resource_time_var_df(
@@ -179,4 +182,4 @@ def export_module_specific_results(mod):
             "commit_binary"
         )
 
-    mod.module_specific_df.append(binary_commit_df)
+    d.module_specific_df.append(binary_commit_df)

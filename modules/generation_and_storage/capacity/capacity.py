@@ -8,28 +8,6 @@ from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules, 
     make_resource_time_var_df
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
-    """
-
-    :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-
-    # Get the capacity type of each generator
-    dynamic_components = \
-        read_csv(os.path.join(scenario_directory, "inputs", "resources.tab"),
-                 sep="\t", usecols=["RESOURCES", "capacity_type"]
-                 )
-
-    # Required modules are the unique set of generator operational types
-    # This list will be used to know which operational modules to load
-    d.required_capacity_modules = \
-        dynamic_components.capacity_type.unique()
-
-
 def add_model_components(m, d, scenario_directory, horizon, stage):
     """
 
@@ -181,25 +159,25 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param m:
+    :param d:
     :return:
     """
 
-    m.module_specific_df = []
+    d.module_specific_df = []
 
     imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
     for op_m in m.required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_capacity_modules[
-                op_m].export_module_specific_results(
-                m)
+                op_m].export_module_specific_results(m, d)
         else:
             pass
 
@@ -225,7 +203,7 @@ def export_results(scenario_directory, horizon, stage, m):
         energy_capacity_df = []
 
     # Merge and export dataframes
-    dfs_to_merge = [capacity_df] + [energy_capacity_df] + m.module_specific_df
+    dfs_to_merge = [capacity_df] + [energy_capacity_df] + d.module_specific_df
 
     df_for_export = reduce(lambda left, right:
                            left.join(right, how="outer"),

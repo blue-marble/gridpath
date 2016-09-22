@@ -71,13 +71,14 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def export_results(scenario_directory, horizon, stage, m):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param m:
+    :param d:
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",

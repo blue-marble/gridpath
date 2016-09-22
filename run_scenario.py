@@ -93,11 +93,33 @@ class DynamicComponents(object):
     used to initialize model components
     """
     def __init__(self):
+        """
+        Initiate the dynamic components
+        """
+
+        #
+        # Projects
+        self.required_capacity_modules = list()
+        self.required_operational_modules = list()
+
+        # Reserve types
+        # Will be determined based on whether the user has specified a module
+        self.required_reserve_modules = list()
+
+        # Headroom and footroom
+        self.headroom_variables = dict()
+        self.footroom_variables = dict()
+
+        # Transmission
+        self.required_tx_capacity_modules = list()
+
         # Load balance
+        # Modules will add component names to these lists
         self.load_balance_production_components = list()
         self.load_balance_consumption_components = list()
 
         # Objective function
+        # Modules will add component names to this list
         self.total_cost_components = list()
 
 
@@ -110,18 +132,18 @@ def run_optimization(scenario_directory, horizon, stage):
     model = AbstractModel()
 
     # Initialize the dynamic components class
-    inputs = DynamicComponents()
+    dynamic_inputs = DynamicComponents()
 
     modules_to_use = get_modules(scenario_directory)
 
     loaded_modules = load_modules(modules_to_use)
 
     # Set dynamic components as attributes to inputs class
-    populate_dynamic_components(inputs, loaded_modules,
+    populate_dynamic_components(dynamic_inputs, loaded_modules,
                                 scenario_directory, horizon, stage)
 
     # Create the abstract model; some components are initialized here
-    create_abstract_model(model, inputs,
+    create_abstract_model(model, dynamic_inputs,
                           scenario_directory, horizon, stage,
                           loaded_modules)
 
@@ -150,22 +172,8 @@ def run_optimization(scenario_directory, horizon, stage):
 
     save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
 
-    export_results(scenario_directory, horizon, stage, instance, loaded_modules)
-
-
-def make_dynamic_component_objects(model):
-    """
-    Lists of model components that modules will populate
-    :param model:
-    :return:
-    """
-    # Load balance
-    # TODO: these may have to vary by load area
-    model.energy_generation_components = list()
-    model.energy_consumption_components = list()
-
-    # Objective function
-    model.total_cost_components = list()
+    export_results(scenario_directory, horizon, stage, instance, dynamic_inputs,
+                   loaded_modules)
 
 
 def get_modules(scenario_directory):
@@ -187,8 +195,13 @@ def get_modules(scenario_directory):
         "time.operations.horizons",
         "time.investment.periods",
         "geography.zones",
+        'generation_and_storage',
         "generation_and_storage.capacity.capacity",
         "generation_and_storage.capacity.costs",
+        "generation_and_storage.operations.reserves.lf_reserves_up",
+        "generation_and_storage.operations.reserves.lf_reserves_down",
+        "generation_and_storage.operations.reserves.regulation_up",
+        "generation_and_storage.operations.reserves.regulation_down",
         "generation_and_storage.operations.fuels",
         "generation_and_storage.operations.operations",
         "generation_and_storage.operations.fix_commitment",
@@ -206,15 +219,27 @@ def get_modules(scenario_directory):
 
     # Names of groups of optional modules
     optional_modules = {
-        "fuels": ["generation_and_storage.operations.fuels"],
-        "multi_stage": ["generation_and_storage.operations.fix_commitment"],
-        "transmission": ["transmission.capacity.capacity",
-                         "transmission.operations.operations"],
-        "lf_reserves_up": ["system.reserves.lf_reserves_up"],
-        "lf_reserves_down": ["system.reserves.lf_reserves_down"],
-        "regulation_up": ["system.reserves.regulation_reserves_up"],
-        "regulation_down": ["system.reserves.regulation_reserves_down"],
-        "rps": ["policy.rps"]
+        "fuels":
+            ["generation_and_storage.operations.fuels"],
+        "multi_stage":
+            ["generation_and_storage.operations.fix_commitment"],
+        "transmission":
+            ["transmission.capacity.capacity",
+             "transmission.operations.operations"],
+        "lf_reserves_up":
+            ["generation_and_storage.operations.reserves.lf_reserves_up",
+             "system.reserves.lf_reserves_up"],
+        "lf_reserves_down":
+            ["generation_and_storage.operations.reserves.lf_reserves_down",
+             "system.reserves.lf_reserves_down"],
+        "regulation_up":
+            ["generation_and_storage.operations.reserves.regulation_up",
+             "system.reserves.regulation_up"],
+        "regulation_down":
+            ["generation_and_storage.operations.reserves.regulation_down",
+             "system.reserves.regulation_down"],
+        "rps":
+            ["policy.rps"]
     }
 
     # Remove any modules not requested by user
@@ -237,7 +262,7 @@ def load_modules(modules_to_use):
             imported_module = import_module("."+m, package='modules')
             loaded_modules.append(imported_module)
         except ImportError:
-            print("ERROR! Module " + m + " not found.")
+            print("ERROR! Module " + str(m) + " not found.")
             sys.exit(1)
 
     return loaded_modules
@@ -260,9 +285,6 @@ def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
         if hasattr(m, 'add_model_components'):
             m.add_model_components(model, inputs,
                                    scenario_directory, horizon, stage)
-        else:
-            print("ERROR! Module " + m + " does not contain model components.")
-            sys.exit(1)
 
 
 def load_scenario_data(model, loaded_modules, scenario_directory,
@@ -327,10 +349,12 @@ def solve(instance):
     return results
 
 
-def export_results(problem_directory, horizon, stage, instance, loaded_modules):
+def export_results(problem_directory, horizon, stage, instance,
+                   dynamic_inputs, loaded_modules):
     for m in loaded_modules:
         if hasattr(m, "export_results"):
-            m.export_results(problem_directory, horizon, stage, instance)
+            m.export_results(problem_directory, horizon, stage, instance,
+                             dynamic_inputs)
     else:
         pass
 

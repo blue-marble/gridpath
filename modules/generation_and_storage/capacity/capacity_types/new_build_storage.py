@@ -175,10 +175,11 @@ def load_module_specific_data(m,
                      )
 
 
-def export_module_specific_results(m):
+def export_module_specific_results(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
 
@@ -200,6 +201,6 @@ def export_module_specific_results(m):
             "new_build_storage_mwh"
         )
 
-    m.module_specific_df.append(build_storage_capacity_df)
-    m.module_specific_df.append(build_storage_energy_df)
+    d.module_specific_df.append(build_storage_capacity_df)
+    d.module_specific_df.append(build_storage_energy_df)
 

@@ -50,7 +50,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed operational modules
     # TODO: import only
-    imported_operational_modules = load_operational_type_modules(m)
+    imported_operational_modules = load_operational_type_modules(d)
 
     def commitment_rule(mod, g, tmp):
         """
@@ -128,13 +128,14 @@ def fix_variables(m):
                 imp_op_m.fix_commitment(m, g, tmp)
 
 
-def export_results(scenario_directory, horizon, stage, m):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param m:
+    :param d:
     :return:
     """
     with open(os.path.join(

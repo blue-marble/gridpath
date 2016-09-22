@@ -86,13 +86,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     d.load_balance_consumption_components.append("Transmission_from_Zone_MW")
 
 
-def export_results(scenario_directory, horizon, stage, m):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
     Export transmission operations
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param m:
+    :param d:
     :return:
     """
     op_df = \

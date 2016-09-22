@@ -209,10 +209,11 @@ def shutdown_rule(mod, g, tmp):
     return 0
 
 
-def export_module_specific_results(mod):
+def export_module_specific_results(mod, d):
     """
 
     :param mod:
+    :param d:
     :return:
     """
     generic_storage_df = \
@@ -223,4 +224,4 @@ def export_module_specific_results(mod):
             ["resource", "timepoint"],
             "starting_energy_in_generic_storage_mwh")
 
-    mod.module_specific_df.append(generic_storage_df)
+    d.module_specific_df.append(generic_storage_df)

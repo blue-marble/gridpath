@@ -44,26 +44,34 @@ def load_subtype_modules(
     return imported_subtype_modules
 
 
-def load_operational_type_modules(m):
+def load_gen_storage_capacity_type_modules(d):
     return load_subtype_modules(
-        m.required_operational_modules,
+            d.required_capacity_modules,
+            "modules.generation_and_storage.capacity.capacity_types",
+            ["capacity_rule", "capacity_cost_rule"]
+        )
+
+
+def load_reserve_type_modules(d):
+    return load_subtype_modules(
+        d.required_reserve_modules,
+        "modules.generation_and_storage.operations.reserves",
+        []
+         )
+
+
+def load_operational_type_modules(d):
+    return load_subtype_modules(
+        d.required_operational_modules,
         "modules.generation_and_storage.operations.operational_types",
         ["power_provision_rule","max_power_rule", "min_power_rule",
          "fuel_cost_rule", "startup_rule", "shutdown_rule"]
          )
 
 
-def load_gen_storage_capacity_type_modules(m):
+def load_tx_capacity_type_modules(d):
     return load_subtype_modules(
-            m.required_capacity_modules,
-            "modules.generation_and_storage.capacity.capacity_types",
-            ["capacity_rule", "capacity_cost_rule"]
-        )
-
-
-def load_tx_capacity_type_modules(m):
-    return load_subtype_modules(
-            m.required_tx_capacity_modules,
+            d.required_tx_capacity_modules,
             "modules.transmission.capacity.capacity_types",
             ["min_transmission_capacity_rule",
              "max_transmission_capacity_rule"]

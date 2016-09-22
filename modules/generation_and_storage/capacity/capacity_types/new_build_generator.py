@@ -131,10 +131,11 @@ def load_module_specific_data(m,
                      )
 
 
-def export_module_specific_results(m):
+def export_module_specific_results(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
     build_option_df = \
@@ -146,4 +147,4 @@ def export_module_specific_results(m):
             "new_build_option_mw"
         )
 
-    m.module_specific_df.append(build_option_df)
+    d.module_specific_df.append(build_option_df)

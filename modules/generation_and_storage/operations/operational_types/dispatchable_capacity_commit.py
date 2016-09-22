@@ -231,10 +231,11 @@ def fix_commitment(mod, g, tmp):
     mod.Commit_Capacity_MW[g, tmp].fixed = True
 
 
-def export_module_specific_results(mod):
+def export_module_specific_results(mod, d):
     """
     Export commitment decisions.
     :param mod:
+    :param d:
     :return:
     """
 
@@ -247,4 +248,4 @@ def export_module_specific_results(mod):
             "commit_capacity_mw"
         )
 
-    mod.module_specific_df.append(commit_capacity_df)
+    d.module_specific_df.append(commit_capacity_df)
