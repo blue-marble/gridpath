@@ -29,5 +29,7 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, "inputs",
                                            "load_zones.tab"),
-                     set=m.LOAD_ZONES
+                     select=("load_zone",),
+                     index=m.LOAD_ZONES,
+                     param=()
                      )

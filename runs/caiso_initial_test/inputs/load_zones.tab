@@ -1,5 +1,5 @@
-load_zones
-CAISO
-NW
-SW
-LADWP
+load_zone	overgeneration_penalty_per_mw	unserved_energy_penalty_per_mw
+CAISO	99999999	99999999
+NW	99999999	99999999
+SW	99999999	99999999
+LADWP	99999999	99999999

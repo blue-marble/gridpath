@@ -27,10 +27,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Unserved_Energy_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
                                within=NonNegativeReals)
 
-    # TODO: load from file
-    m.overgeneration_penalty_per_mw = Param(initialize=99999999)
-    m.unserved_energy_penalty_per_mw = Param(initialize=99999999)
-
     d.load_balance_production_components.append("Unserved_Energy_MW")
     d.load_balance_consumption_components.append("Overgeneration_MW")
 
