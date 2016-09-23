@@ -23,34 +23,22 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    m.RPS_ZONE_PERIODS_WITH_RPS = Set(dimen=2)
-    m.RPS_ZONES = Set(initialize=lambda mod:
-                      set(i[0] for i in mod.RPS_ZONE_PERIODS_WITH_RPS)
-                      )
+    m.RPS_ZONES = Set()
+    m.RPS_ZONE_PERIODS_WITH_RPS = \
+        Set(dimen=2, within=m.RPS_ZONES * m.PERIODS)
     m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS,
                              within=NonNegativeReals)
 
-    def determine_rps_generators_by_contract(mod):
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "rps_zone"]
-                )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["rps_zone"]):
-            if row[1] != ".":
-                mod.RPS_PROJECTS_BY_RPS_ZONE[row[1]].add(row[0])
-            else:
-                pass
+    m.RPS_PROJECTS = Set(within=m.PROJECTS)
+    m.rps_zone = Param(m.RPS_PROJECTS, within=m.RPS_ZONES)
 
-    m.RPS_PROJECTS_BY_RPS_ZONE = Set(m.RPS_ZONES, initialize=[])
-    m.RPSGeneratorsBuild = \
-        BuildAction(rule=determine_rps_generators_by_contract)
+    def determine_rps_generators_by_rps_zone(mod, rps_z):
+        return [p for p in mod.RPS_PROJECTS if mod.rps_zone[p] == rps_z]
 
+    m.RPS_PROJECTS_BY_RPS_ZONE = \
+        Set(m.RPS_ZONES, within=m.RPS_PROJECTS,
+            initialize=determine_rps_generators_by_rps_zone)
 
-    # TODO: multiply by horizon weights when implemented
-    # TODO: how to deal with curtailment
     def rps_energy_provision_rule(mod, z, p):
         """
         Calculate the delivered RPS energy for each zone and period
@@ -63,7 +51,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.horizon_weight[mod.horizon[tmp]]
                    for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
+                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                   )
 
     m.Total_Delivered_RPS_Energy_MWh = \
         Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
@@ -105,12 +94,28 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+
+    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+                                           "inputs", "rps_zones.tab"),
+                     set=m.RPS_ZONES
+                     )
+
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
                                            "inputs", "rps_targets.tab"),
                      index=m.RPS_ZONE_PERIODS_WITH_RPS,
                      param=m.rps_target_mwh,
                      select=("rps_zone", "period", "rps_target_mwh")
                      )
+
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "projects.tab"),
+                     select=("project", "rps_zone"),
+                     param=(m.rps_zone,)
+                     )
+
+    data_portal.data()['RPS_PROJECTS'] = {
+        None: data_portal.data()['rps_zone'].keys()
+    }
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

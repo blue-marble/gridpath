@@ -43,7 +43,7 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "load_zones.tab"),
                      param=(m.overgeneration_penalty_per_mw,
                             m.unserved_energy_penalty_per_mw)
