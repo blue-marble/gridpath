@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
 """
-Add variables for downward load-following reserves
+Add project-level components for downward load-following reserves
 """
 
-from csv import reader
-import os.path
-from pyomo.environ import Set, Param, Var, NonNegativeReals
-
-from modules.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, make_project_time_var_df
+from modules.project.operations.reserves.reserve_provision import \
+    generic_determine_dynamic_components, generic_add_model_components, \
+    generic_load_model_data, generic_export_module_specific_results
 
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
@@ -22,33 +19,16 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     :return:
     """
 
-    d.required_reserve_modules.append("regulation_down")
-
-    with open(os.path.join(scenario_directory, "inputs", "projects.tab"),
-              "rb") as generation_capacity_file:
-        projects_file_reader = reader(generation_capacity_file, delimiter="\t")
-        headers = projects_file_reader.next()
-        # Check that columns are not repeated
-        check_list_items_are_unique(headers)
-        for row in projects_file_reader:
-            # Get generator name; we have checked that columns names are unique
-            # so can expect a single-item list here and get 0th element
-            generator = row[find_list_item_position(headers, "project")[0]]
-
-            # If we have already added this generator to the footroom variables
-            # dictionary, move on; otherwise, create the dictionary item
-            if generator not in d.footroom_variables.keys():
-                d.footroom_variables[generator] = list()
-            # In addition, some generators get the variables associated with
-            # provision of other services (e.g. reserves) if flagged
-            # Figure out which these are here based on whether a reserve zone
-            # is specified ("." = no zone specified, so project does not
-            # contribute to this reserve requirement)
-            # Generators that can provide downward load-following reserves
-            if row[find_list_item_position(
-                    headers, "regulation_down_zone")[0]] != ".":
-                d.footroom_variables[generator].append(
-                    "Provide_Regulation_Down_MW")
+    generic_determine_dynamic_components(
+        d,
+        scenario_directory,
+        horizon,
+        stage,
+        "regulation_down",
+        "footroom_variables",
+        "regulation_down_zone",
+        "Provide_Regulation_Down_MW"
+    )
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -62,18 +42,18 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    m.REGULATION_DOWN_PROJECTS = Set(within=m.PROJECTS)
-    m.regulation_down_zone = Param(m.REGULATION_DOWN_PROJECTS)
-
-    m.REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.REGULATION_DOWN_PROJECTS))
-
-    m.Provide_Regulation_Down_MW = Var(
-        m.REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS,
-        within=NonNegativeReals)
+    generic_add_model_components(
+        m,
+        d,
+        scenario_directory,
+        horizon,
+        stage,
+        "REGULATION_DOWN_PROJECTS",
+        "regulation_down_zone",
+        "REGULATION_DOWN_ZONES",
+        "REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS",
+        "Provide_Regulation_Down_MW"
+    )
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
@@ -86,16 +66,16 @@ def load_model_data(m, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-
-    data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "projects.tab"),
-                     select=("project", "regulation_down_zone"),
-                     param=(m.regulation_down_zone,)
-                     )
-
-    data_portal.data()['REGULATION_DOWN_PROJECTS'] = {
-        None: data_portal.data()['regulation_down_zone'].keys()
-    }
+    generic_load_model_data(
+        m,
+        data_portal,
+        scenario_directory,
+        horizon,
+        stage,
+        "regulation_down_zone",
+        "regulation_down_zone",
+        "REGULATION_DOWN_PROJECTS"
+    )
 
 
 def export_module_specific_results(m, d):
@@ -106,12 +86,9 @@ def export_module_specific_results(m, d):
     :return:
     """
 
-    regulation_down_df = make_project_time_var_df(
-        m,
+    generic_export_module_specific_results(
+        m, d,
         "REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS",
         "Provide_Regulation_Down_MW",
-        ["project", "timepoint"],
         "regulation_down_mw"
     )
-
-    d.module_specific_df.append(regulation_down_df)
