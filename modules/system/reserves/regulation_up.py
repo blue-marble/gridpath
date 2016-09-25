@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
-import csv
-import os.path
-from pyomo.environ import Set
-
-from reserve_requirements import add_generic_reserve_components
+from reserve_requirements import generic_add_model_components, \
+    generic_load_model_data, generic_export_results, generic_save_duals
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -18,38 +15,31 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    # TODO: flexible, as requirement does not have to be specified for all
-    # timepoints, but has memory implications
-    m.REGULATION_UP_ZONE_TIMEPOINTS = Set(dimen=2)
-    # m.REGULATION_UP_ZONES = \
-    #     Set(initialize=
-    #         lambda mod: set(i[0] for i in mod.REGULATION_UP_ZONE_TIMEPOINTS)
-    #         )
-
-    add_generic_reserve_components(
+    generic_add_model_components(
         m,
         d,
-        reserve_zone_param="regulation_up_zone",
-        reserve_zone_timepoint_set="REGULATION_UP_ZONE_TIMEPOINTS",
-        reserve_violation_variable="Regulation_Up_Violation_MW",
-        reserve_violation_penalty_param="regulation_up_violation_penalty_mw",
-        reserve_requirement_param="regulation_up_requirement_mw",
-        reserve_generator_set="REGULATION_UP_PROJECTS",
-        generator_reserve_provision_variable="Provide_Regulation_Up_MW",
-        total_reserve_provision_expression="Total_Regulation_Up_Provision_MW",
-        meet_reserve_constraint="Meet_Regulation_Up_Constraint",
-        objective_function_reserve_penalty_cost_component=
-        "Regulation_Up_Penalty_Cost"
+        "REGULATION_UP_ZONES",
+        "regulation_up_zone",
+        "REGULATION_UP_ZONE_TIMEPOINTS",
+        "Regulation_Up_Violation_MW",
+        "regulation_up_violation_penalty_per_mw",
+        "regulation_up_requirement_mw",
+        "REGULATION_UP_PROJECTS",
+        "Provide_Regulation_Up_MW",
+        "Total_Regulation_Up_Provision_MW",
+        "Meet_Regulation_Up_Constraint",
+        "Regulation_Up_Penalty_Costs"
         )
 
 
 def load_model_data(m, data_portal, scenario_directory, horizon, stage):
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs",
-                                           "regulation_up_requirement.tab"),
-                     index=m.REGULATION_UP_ZONE_TIMEPOINTS,
-                     param=m.regulation_up_requirement_mw
-                     )
+    generic_load_model_data(m, data_portal, scenario_directory, horizon, stage,
+                            "regulation_up_balancing_areas.tab",
+                            "regulation_up_violation_penalty_per_mw",
+                            "regulation_up_requirement.tab",
+                            "REGULATION_UP_ZONE_TIMEPOINTS",
+                            "regulation_up_requirement_mw"
+                            )
 
 
 def export_results(scenario_directory, horizon, stage, m, d):
@@ -62,21 +52,18 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "regulation_up_violation.csv"), "wb") \
-            as results_file:
-        writer = csv.writer(results_file)
-        writer.writerow(["zone", "timepoint",
-                         "regulation_up_violation_mw"]
-                        )
-        for (z, tmp) in getattr(m, "REGULATION_UP_ZONE_TIMEPOINTS"):
-            writer.writerow([
-                z,
-                tmp,
-                m.Regulation_Up_Violation_MW[z, tmp].value]
-            )
+    generic_export_results(scenario_directory, horizon, stage, m, d,
+                           "regulation_up_violation.csv",
+                           "regulation_up_violation_mw",
+                           "REGULATION_UP_ZONE_TIMEPOINTS",
+                           "Regulation_Up_Violation_MW"
+                           )
 
 
 def save_duals(m):
-    m.constraint_indices["Meet_Regulation_Up_Constraint"] = \
-        ["zone", "timepoint", "dual"]
+    """
+
+    :param m:
+    :return:
+    """
+    generic_save_duals(m, "Meet_Regulation_Up_Constraint")
