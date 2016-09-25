@@ -21,10 +21,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # TODO: flexible, as requirement does not have to be specified for all
     # timepoints, but has memory implications
     m.LF_RESERVE_DOWN_ZONE_TIMEPOINTS = Set(dimen=2)
-    m.LF_RESERVE_DOWN_ZONES = \
-        Set(initialize=
-            lambda mod: set(i[0] for i in mod.LF_RESERVE_DOWN_ZONE_TIMEPOINTS)
-            )
+    # m.LF_RESERVE_DOWN_ZONES = \
+    #     Set(initialize=
+    #         lambda mod: set(i[0] for i in mod.LF_RESERVE_DOWN_ZONE_TIMEPOINTS)
+    #         )
 
     add_generic_reserve_components(
         m,

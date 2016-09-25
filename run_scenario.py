@@ -195,6 +195,10 @@ def get_modules(scenario_directory):
         "time.operations.horizons",
         "time.investment.periods",
         "geography.load_zones",
+        "geography.load_following_up_balancing_areas",
+        "geography.load_following_down_balancing_areas",
+        "geography.regulation_up_balancing_areas",
+        "geography.regulation_down_balancing_areas",
         'project',
         "project.capacity.capacity",
         "project.capacity.costs",
@@ -228,16 +232,20 @@ def get_modules(scenario_directory):
             ["transmission.capacity.capacity",
              "transmission.operations.operations"],
         "lf_reserves_up":
-            ["project.operations.reserves.lf_reserves_up",
+            ["geography.load_following_up_balancing_areas",
+             "project.operations.reserves.lf_reserves_up",
              "system.reserves.lf_reserves_up"],
         "lf_reserves_down":
-            ["project.operations.reserves.lf_reserves_down",
+            ["geography.load_following_down_balancing_areas",
+            "project.operations.reserves.lf_reserves_down",
              "system.reserves.lf_reserves_down"],
         "regulation_up":
-            ["project.operations.reserves.regulation_up",
+            ["geography.regulation_up_balancing_areas",
+            "project.operations.reserves.regulation_up",
              "system.reserves.regulation_up"],
         "regulation_down":
-            ["project.operations.reserves.regulation_down",
+            ["geography.regulation_down_balancing_areas",
+             "project.operations.reserves.regulation_down",
              "system.reserves.regulation_down"],
         "rps":
             ["policy.rps"]
