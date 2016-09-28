@@ -49,7 +49,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # From here, the operational modules determine how the model components are
     # formulated
     # Import needed operational modules
-    imported_operational_modules = load_operational_type_modules(d)
+    imported_operational_modules = \
+        load_operational_type_modules(d.required_operational_modules)
 
     # First, add any components specific to the operational modules
     for op_m in d.required_operational_modules:
@@ -160,8 +161,9 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                             m.variable_om_cost_per_mwh)
                      )
 
-    imported_operational_modules = load_operational_type_modules(m)
-    for op_m in m.required_operational_modules:
+    imported_operational_modules = \
+        load_operational_type_modules(d.required_operational_modules)
+    for op_m in d.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
@@ -199,7 +201,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     d.module_specific_df = []
 
     # From the operational type modules
-    imported_operational_modules = load_operational_type_modules(d)
+    imported_operational_modules = \
+        load_operational_type_modules(d.required_operational_modules)
     for op_m in d.required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
@@ -209,7 +212,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
             pass
 
     # From the reserve modules
-    imported_reserve_modules = load_reserve_type_modules(d)
+    imported_reserve_modules = \
+        load_reserve_type_modules(d.required_reserve_modules)
     for r_m in d.required_reserve_modules:
         if hasattr(imported_reserve_modules[r_m],
                    "export_module_specific_results"):

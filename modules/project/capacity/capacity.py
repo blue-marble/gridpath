@@ -26,12 +26,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.capacity_type_operational_period_sets = []
     m.storage_only_capacity_type_operational_period_sets = []
 
-    m.required_capacity_modules = d.required_capacity_modules
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
+    imported_capacity_modules = \
+        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
 
     # First, add any components specific to the operational modules
-    for op_m in m.required_capacity_modules:
+    for op_m in d.required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m)
@@ -149,8 +149,9 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      param=(m.load_zone, m.capacity_type)
                      )
 
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
-    for op_m in m.required_capacity_modules:
+    imported_capacity_modules = \
+        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
+    for op_m in d.required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
@@ -172,8 +173,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     d.module_specific_df = []
 
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
-    for op_m in m.required_capacity_modules:
+    imported_capacity_modules = \
+        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
+    for op_m in d.required_capacity_modules:
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_capacity_modules[

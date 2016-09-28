@@ -19,9 +19,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    m.required_capacity_modules = d.required_capacity_modules
     # Import needed capacity type modules
-    imported_capacity_modules = load_gen_storage_capacity_type_modules(m)
+    imported_capacity_modules = \
+        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
 
     def capacity_cost_rule(mod, g, p):
         """

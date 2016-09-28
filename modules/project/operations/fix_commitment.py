@@ -50,7 +50,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed operational modules
     # TODO: import only
-    imported_operational_modules = load_operational_type_modules(d)
+    imported_operational_modules = \
+        load_operational_type_modules(d.required_operational_modules)
 
     def commitment_rule(mod, g, tmp):
         """

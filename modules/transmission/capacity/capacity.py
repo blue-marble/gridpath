@@ -50,11 +50,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # List will be used to initialize TRANSMISSION_OPERATIONAL_PERIODS
     m.tx_capacity_type_operational_period_sets = []
 
-    m.required_tx_capacity_modules = d.required_tx_capacity_modules
     # Import needed transmission capacity type modules
-    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
+    imported_tx_capacity_modules = \
+        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
     # First, add any components specific to the transmission capacity modules
-    for op_m in m.required_tx_capacity_modules:
+    for op_m in d.required_tx_capacity_modules:
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m)
@@ -143,8 +143,9 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                             m.load_zone_from, m.load_zone_to)
                      )
 
-    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
-    for op_m in m.required_tx_capacity_modules:
+    imported_tx_capacity_modules = \
+        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
+    for op_m in d.required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
@@ -165,8 +166,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
     d.tx_module_specific_df = []
 
-    imported_tx_capacity_modules = load_tx_capacity_type_modules(m)
-    for op_m in m.required_tx_capacity_modules:
+    imported_tx_capacity_modules = \
+        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
+    for op_m in d.required_tx_capacity_modules:
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(

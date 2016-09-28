@@ -179,9 +179,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # From here, the operational modules determine how the model components are
     # formulated
-    m.required_operational_modules = d.required_operational_modules
     # Import needed operational modules
-    imported_operational_modules = load_operational_type_modules(m)
+    imported_operational_modules = \
+        load_operational_type_modules(d.required_operational_modules)
 
     # ### Fuel cost ### #
     def fuel_cost_rule(mod, g, tmp):
