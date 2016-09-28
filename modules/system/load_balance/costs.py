@@ -26,8 +26,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                     * mod.unserved_energy_penalty_per_mw[z] +
                     mod.Overgeneration_MW[z, tmp]
                     * mod.overgeneration_penalty_per_mw[z])
-                   * mod.discount_factor[mod.period[tmp]]
+                   * mod.number_of_hours_in_timepoint[tmp]
+                   * mod.horizon_weight[mod.horizon[tmp]]
                    * mod.number_years_represented[mod.period[tmp]]
+                   * mod.discount_factor[mod.period[tmp]]
                    for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)
     m.Load_Balance_Penalty_Costs = Expression(rule=penalty_costs_rule)
     d.total_cost_components.append("Load_Balance_Penalty_Costs")
