@@ -126,6 +126,8 @@ class DynamicComponents(object):
 def run_optimization(scenario_directory, horizon, stage):
 
     # TODO: move to each problem's directory
+    if not os.path.exists(os.path.join(os.getcwd(), "logs")):
+        os.makedirs(os.path.join(os.getcwd(), "logs"))
     TempfileManager.tempdir = os.path.join(os.getcwd(), "logs")
 
     # Create pyomo abstract model class
