@@ -83,6 +83,7 @@ class ScenarioStructure(object):
             self.horizons_flag = False
             self.horizon_subproblems = []
 
+    # TODO: make directories if they don't exist
     def make_directories(self):
         pass
 
@@ -154,7 +155,7 @@ def run_optimization(scenario_directory, horizon, stage):
     model.dual = Suffix(direction=Suffix.IMPORT)
 
     # Load the scenario data
-    scenario_data = load_scenario_data(model, loaded_modules,
+    scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
                                        scenario_directory, horizon, stage)
 
     # Build the problem instance; this will also call the BuildActions that
@@ -298,15 +299,15 @@ def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
                                    scenario_directory, horizon, stage)
 
 
-def load_scenario_data(model, loaded_modules, scenario_directory,
-                       horizon, stage):
+def load_scenario_data(model, dynamic_inputs, loaded_modules,
+                       scenario_directory, horizon, stage):
     print("Loading data...")
     # Load data
     data_portal = DataPortal()
     for m in loaded_modules:
         if hasattr(m, "load_model_data"):
-            m.load_model_data(model, data_portal, scenario_directory,
-                              horizon, stage)
+            m.load_model_data(model, dynamic_inputs, data_portal,
+                              scenario_directory, horizon, stage)
         else:
             pass
     return data_portal

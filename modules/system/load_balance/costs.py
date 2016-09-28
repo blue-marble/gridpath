@@ -35,10 +35,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     d.total_cost_components.append("Load_Balance_Penalty_Costs")
 
 
-def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
 
     :param m:
+    :param d:
     :param data_portal:
     :param scenario_directory:
     :param horizon:

@@ -121,7 +121,8 @@ def generic_add_model_components(
         objective_function_reserve_penalty_cost_component)
 
 
-def generic_load_model_data(m, data_portal, scenario_directory, horizon, stage,
+def generic_load_model_data(m, d, data_portal,
+                            scenario_directory, horizon, stage,
                             ba_list_filename,
                             reserve_violation_penalty_param,
                             requirement_filename,
@@ -130,6 +131,7 @@ def generic_load_model_data(m, data_portal, scenario_directory, horizon, stage,
     """
 
     :param m:
+    :param d:
     :param data_portal:
     :param scenario_directory:
     :param horizon:

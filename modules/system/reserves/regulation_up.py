@@ -32,8 +32,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         )
 
 
-def load_model_data(m, data_portal, scenario_directory, horizon, stage):
-    generic_load_model_data(m, data_portal, scenario_directory, horizon, stage,
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    generic_load_model_data(m, d, data_portal,
+                            scenario_directory, horizon, stage,
                             "regulation_up_balancing_areas.tab",
                             "regulation_up_violation_penalty_per_mw",
                             "regulation_up_requirement.tab",

@@ -24,7 +24,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         Param(m.TIMEPOINTS, within=NonNegativeReals)
 
 
-def load_model_data(m, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
