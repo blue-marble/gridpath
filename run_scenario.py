@@ -12,7 +12,8 @@ from pandas import read_csv
 from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
-# Scenario name
+from modules.auxiliary.dynamic_components import DynamicComponents
+
 scenario_name = sys.argv[1]
 
 
@@ -87,46 +88,6 @@ class ScenarioStructure(object):
     # TODO: make directories if they don't exist
     def make_directories(self):
         pass
-
-
-class DynamicComponents(object):
-    """
-    Will contain the dynamic inputs that modules will populate, which will be
-    used to initialize model components
-    """
-    def __init__(self):
-        """
-        Initiate the dynamic components
-        """
-
-        # Capacity-type modules
-        self.required_capacity_modules = list()
-        # Capacity-type modules will populate this list if called
-        self.capacity_type_operational_period_sets = list()
-        self.storage_only_capacity_type_operational_period_sets = list()
-
-        # Operational type modules
-        self.required_operational_modules = list()
-
-        # Reserve types
-        # Will be determined based on whether the user has specified a module
-        self.required_reserve_modules = list()
-
-        # Headroom and footroom variables
-        self.headroom_variables = dict()
-        self.footroom_variables = dict()
-
-        # Transmission
-        self.required_tx_capacity_modules = list()
-
-        # Load balance
-        # Modules will add component names to these lists
-        self.load_balance_production_components = list()
-        self.load_balance_consumption_components = list()
-
-        # Objective function
-        # Modules will add component names to this list
-        self.total_cost_components = list()
 
 
 def run_optimization(scenario_directory, horizon, stage):
