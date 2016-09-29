@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import csv
 import os.path
 from pyomo.environ import Param, Expression, NonNegativeReals
+
+from modules.auxiliary.dynamic_components import total_cost_components
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -32,7 +33,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.discount_factor[mod.period[tmp]]
                    for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)
     m.Load_Balance_Penalty_Costs = Expression(rule=penalty_costs_rule)
-    d.total_cost_components.append("Load_Balance_Penalty_Costs")
+    getattr(d, total_cost_components).append("Load_Balance_Penalty_Costs")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

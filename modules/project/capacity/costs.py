@@ -3,8 +3,10 @@
 """
 Describe capacity costs.
 """
-from pyomo.environ import Var, Expression, Constraint, NonNegativeReals
+from pyomo.environ import Expression
 
+from modules.auxiliary.dynamic_components import required_capacity_modules, \
+    total_cost_components
 from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
 
@@ -21,7 +23,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed capacity type modules
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
+        load_gen_storage_capacity_type_modules(
+            getattr(d, required_capacity_modules)
+        )
 
     def capacity_cost_rule(mod, g, p):
         """
@@ -45,4 +49,4 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.number_years_represented[p]
                    for (g, p) in mod.PROJECT_OPERATIONAL_PERIODS)
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
-    d.total_cost_components.append("Total_Capacity_Costs")
+    getattr(d, total_cost_components).append("Total_Capacity_Costs")

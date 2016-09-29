@@ -4,6 +4,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Expression
 
+from modules.auxiliary.dynamic_components import required_tx_capacity_modules, \
+    total_cost_components
 from modules.auxiliary.auxiliary import load_tx_capacity_type_modules, \
     make_project_time_var_df
 
@@ -27,8 +29,9 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
 
     # Required modules are the unique set of generator operational types
     # This list will be used to know which operational modules to load
-    d.required_tx_capacity_modules = \
-        dynamic_components.tx_capacity_type.unique()
+    setattr(d, required_tx_capacity_modules,
+            dynamic_components.tx_capacity_type.unique()
+            )
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -52,9 +55,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed transmission capacity type modules
     imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
+        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
     # First, add any components specific to the transmission capacity modules
-    for op_m in d.required_tx_capacity_modules:
+    for op_m in getattr(d, required_tx_capacity_modules):
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m)
@@ -120,7 +123,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    * mod.number_years_represented[p]
                    for (g, p) in mod.TRANSMISSION_OPERATIONAL_PERIODS)
     m.Total_Tx_Capacity_Costs = Expression(rule=total_tx_capacity_cost_rule)
-    d.total_cost_components.append("Total_Tx_Capacity_Costs")
+    getattr(d, total_cost_components).append("Total_Tx_Capacity_Costs")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
@@ -144,8 +147,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
-    for op_m in d.required_tx_capacity_modules:
+        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
+    for op_m in getattr(d, required_tx_capacity_modules):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
@@ -167,8 +170,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     d.tx_module_specific_df = []
 
     imported_tx_capacity_modules = \
-        load_tx_capacity_type_modules(d.required_tx_capacity_modules)
-    for op_m in d.required_tx_capacity_modules:
+        load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
+    for op_m in getattr(d, required_tx_capacity_modules):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(

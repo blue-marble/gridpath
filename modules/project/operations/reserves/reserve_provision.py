@@ -8,6 +8,7 @@ from csv import reader
 import os.path
 from pyomo.environ import Set, Param, Var, NonNegativeReals
 
+from modules.auxiliary.dynamic_components import required_reserve_modules
 from modules.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_project_time_var_df
 
@@ -30,7 +31,7 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
     :return:
     """
 
-    d.required_reserve_modules.append(reserve_module)
+    getattr(d, required_reserve_modules).append(reserve_module)
 
     with open(os.path.join(scenario_directory, "inputs", "projects.tab"),
               "rb") as projects_file:

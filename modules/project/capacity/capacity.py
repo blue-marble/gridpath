@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 import os.path
-from pandas import read_csv
-from pyomo.environ import Set, Param, Expression, Boolean
+from pyomo.environ import Set, Param, Expression
 
+
+from modules.auxiliary.dynamic_components import required_capacity_modules, \
+    capacity_type_operational_period_sets, \
+    storage_only_capacity_type_operational_period_sets
 from modules.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules, join_sets, \
     make_project_time_var_df
@@ -25,10 +28,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     # Import needed capacity type modules
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
+        load_gen_storage_capacity_type_modules(
+            getattr(d, required_capacity_modules))
 
     # First, add any components specific to the operational modules
-    for op_m in d.required_capacity_modules:
+    for op_m in getattr(d, required_capacity_modules):
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, d)
@@ -36,7 +40,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.PROJECT_OPERATIONAL_PERIODS = \
         Set(dimen=2,
             initialize=lambda mod: 
-            join_sets(mod, d.capacity_type_operational_period_sets)
+            join_sets(mod, getattr(d, capacity_type_operational_period_sets))
             )
 
     def capacity_rule(mod, g, p):
@@ -51,7 +55,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         Set(dimen=2,
             initialize=lambda mod: 
             join_sets(
-                mod, d.storage_only_capacity_type_operational_period_sets)
+                mod,
+                getattr(d, storage_only_capacity_type_operational_period_sets)
+            )
             )
 
     def energy_capacity_rule(mod, g, p):
@@ -113,8 +119,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
-    for op_m in d.required_capacity_modules:
+        load_gen_storage_capacity_type_modules(getattr(d, required_capacity_modules))
+    for op_m in getattr(d, required_capacity_modules):
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
@@ -137,8 +143,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     d.module_specific_df = []
 
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(d.required_capacity_modules)
-    for op_m in d.required_capacity_modules:
+        load_gen_storage_capacity_type_modules(getattr(d, required_capacity_modules))
+    for op_m in getattr(d, required_capacity_modules):
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_capacity_modules[

@@ -4,6 +4,9 @@ import csv
 import os.path
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals
 
+from modules.auxiliary.dynamic_components import \
+    load_balance_consumption_components, load_balance_production_components
+
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
     """
@@ -19,7 +22,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # Static load
     m.static_load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS,
                              within=NonNegativeReals)
-    d.load_balance_consumption_components.append("static_load_mw")
+    getattr(d, load_balance_consumption_components).append("static_load_mw")
 
     # Penalty variables
     m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
@@ -27,8 +30,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Unserved_Energy_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
                                within=NonNegativeReals)
 
-    d.load_balance_production_components.append("Unserved_Energy_MW")
-    d.load_balance_consumption_components.append("Overgeneration_MW")
+    getattr(d, load_balance_production_components).append("Unserved_Energy_MW")
+    getattr(d, load_balance_consumption_components).append("Overgeneration_MW")
 
     def meet_load_rule(mod, z, tmp):
         """
@@ -42,10 +45,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         :return:
         """
         return sum(getattr(mod, component)[z, tmp]
-                   for component in d.load_balance_production_components) \
+                   for component in getattr(d,
+                                            load_balance_production_components)
+                   ) \
             == \
             sum(getattr(mod, component)[z, tmp]
-                for component in d.load_balance_consumption_components)
+                for component in getattr(d,
+                                         load_balance_consumption_components)
+                )
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TIMEPOINTS,
                                         rule=meet_load_rule)

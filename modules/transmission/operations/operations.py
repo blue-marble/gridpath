@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import os.path
-from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
+from pyomo.environ import Set, Var, Constraint, Expression, Reals
 
+from modules.auxiliary.dynamic_components import \
+    load_balance_production_components, load_balance_consumption_components
 from modules.auxiliary.auxiliary import make_project_time_var_df
 
 
@@ -75,7 +77,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    if mod.load_zone_to[tx] == z)
     m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                            rule=total_transmission_to_rule)
-    d.load_balance_production_components.append("Transmission_to_Zone_MW")
+    getattr(d, load_balance_production_components).append(
+        "Transmission_to_Zone_MW")
 
     def total_transmission_from_rule(mod, z, tmp):
         return sum(mod.Transmit_Power_MW[tx, tmp]
@@ -83,7 +86,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    if mod.load_zone_from[tx] == z)
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                              rule=total_transmission_from_rule)
-    d.load_balance_consumption_components.append("Transmission_from_Zone_MW")
+    getattr(d, load_balance_consumption_components).append(
+        "Transmission_from_Zone_MW")
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

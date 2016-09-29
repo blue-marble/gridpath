@@ -5,10 +5,11 @@ Describe operational costs.
 """
 from pandas import read_csv
 import os.path
-
 from pyomo.environ import Var, Set, Param, Expression, Constraint, \
     NonNegativeReals, PositiveReals, BuildAction
 
+from modules.auxiliary.dynamic_components import required_operational_modules, \
+    total_cost_components
 from modules.auxiliary.auxiliary import load_operational_type_modules, is_number
 
 
@@ -175,13 +176,13 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
-    d.total_cost_components.append("Total_Variable_OM_Cost")
+    getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
 
     # From here, the operational modules determine how the model components are
     # formulated
     # Import needed operational modules
     imported_operational_modules = \
-        load_operational_type_modules(d.required_operational_modules)
+        load_operational_type_modules(getattr(d, required_operational_modules))
 
     # ### Fuel cost ### #
     def fuel_cost_rule(mod, g, tmp):
@@ -213,7 +214,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    for (g, tmp) in mod.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS)
 
     m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
-    d.total_cost_components.append("Total_Fuel_Cost")
+    getattr(d, total_cost_components).append("Total_Fuel_Cost")
 
     # ### Startup and shutdown costs ### #
     def startup_rule(mod, g, tmp):
@@ -321,7 +322,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    for (g, tmp)
                    in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
-    d.total_cost_components.append("Total_Startup_Cost")
+    getattr(d, total_cost_components).append("Total_Startup_Cost")
 
     def total_shutdown_cost_rule(mod):
         """
@@ -337,4 +338,4 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    for (g, tmp)
                    in mod.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
-    d.total_cost_components.append("Total_Shutdown_Cost")
+    getattr(d, total_cost_components).append("Total_Shutdown_Cost")

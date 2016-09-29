@@ -3,6 +3,8 @@
 import os.path
 from pyomo.environ import Set, Param, NonNegativeReals
 
+from modules.auxiliary.dynamic_components import \
+    capacity_type_operational_period_sets
 
 def add_module_specific_components(m, d):
     """
@@ -15,7 +17,7 @@ def add_module_specific_components(m, d):
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
-    d.capacity_type_operational_period_sets.append(
+    getattr(d, capacity_type_operational_period_sets).append(
         "HYDRO_SPECIFIED_OPERATIONAL_PERIODS",
     )
 

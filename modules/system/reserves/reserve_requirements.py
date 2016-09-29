@@ -5,6 +5,8 @@ import os.path
 from pyomo.environ import Param, Var, Set, Expression, Constraint, \
     NonNegativeReals
 
+from modules.auxiliary.dynamic_components import total_cost_components
+
 
 def generic_add_model_components(
         m,
@@ -117,7 +119,7 @@ def generic_add_model_components(
     setattr(m, objective_function_reserve_penalty_cost_component,
             Expression(rule=penalty_costs_rule))
 
-    d.total_cost_components.append(
+    getattr(d, total_cost_components).append(
         objective_function_reserve_penalty_cost_component)
 
 

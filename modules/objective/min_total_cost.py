@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from pyomo.environ import Expression, Objective, minimize
+from pyomo.environ import Objective, minimize
+
+from modules.auxiliary.dynamic_components import total_cost_components
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):
@@ -18,6 +20,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     def total_cost_rule(mod):
 
         return sum(getattr(mod, c)
-                   for c in d.total_cost_components)
+                   for c in getattr(d, total_cost_components))
 
     m.Total_Cost = Objective(rule=total_cost_rule, sense=minimize)

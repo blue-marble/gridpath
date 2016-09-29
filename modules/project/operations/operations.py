@@ -3,12 +3,13 @@
 """
 Describe operational constraints on the generation infrastructure.
 """
-from csv import reader
 import os.path
-from pandas import read_csv
-from pyomo.environ import Param, Set, Var, Expression, Constraint, \
-    NonNegativeReals, PercentFraction, BuildAction
+from pyomo.environ import Param, Expression, Constraint, NonNegativeReals, \
+    PercentFraction
 
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables, required_operational_modules, \
+    load_balance_production_components, required_reserve_modules
 from modules.auxiliary.auxiliary import make_project_time_var_df, \
     load_operational_type_modules, load_reserve_type_modules
 
@@ -37,12 +38,14 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # Aggregate the headroom and footroom decision variables added by the
     # reserves modules for use by the operational modules
     def headroom_provision_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in d.headroom_variables[g])
+        return sum(getattr(mod, c)[g, tmp] 
+                   for c in getattr(d, headroom_variables)[g])
     m.Headroom_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
                                          rule=headroom_provision_rule)
 
     def footroom_provision_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] for c in d.footroom_variables[g])
+        return sum(getattr(mod, c)[g, tmp] 
+                   for c in getattr(d, footroom_variables)[g])
     m.Footroom_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
                                          rule=footroom_provision_rule)
 
@@ -50,10 +53,10 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # formulated
     # Import needed operational modules
     imported_operational_modules = \
-        load_operational_type_modules(d.required_operational_modules)
+        load_operational_type_modules(getattr(d, required_operational_modules))
 
     # First, add any components specific to the operational modules
-    for op_m in d.required_operational_modules:
+    for op_m in getattr(d, required_operational_modules):
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m, scenario_directory)
@@ -117,7 +120,8 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Power_Production_in_Zone_MW = \
         Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                    rule=total_power_production_rule)
-    d.load_balance_production_components.append("Power_Production_in_Zone_MW")
+    getattr(d, load_balance_production_components).append(
+        "Power_Production_in_Zone_MW")
 
     # Keep track of curtailment
     def curtailment_rule(mod, g, tmp):
@@ -162,8 +166,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     imported_operational_modules = \
-        load_operational_type_modules(d.required_operational_modules)
-    for op_m in d.required_operational_modules:
+        load_operational_type_modules(getattr(d, required_operational_modules))
+    for op_m in getattr(d, required_operational_modules):
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
@@ -202,8 +206,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     # From the operational type modules
     imported_operational_modules = \
-        load_operational_type_modules(d.required_operational_modules)
-    for op_m in d.required_operational_modules:
+        load_operational_type_modules(getattr(d, required_operational_modules))
+    for op_m in getattr(d, required_operational_modules):
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
@@ -213,8 +217,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     # From the reserve modules
     imported_reserve_modules = \
-        load_reserve_type_modules(d.required_reserve_modules)
-    for r_m in d.required_reserve_modules:
+        load_reserve_type_modules(getattr(d, required_reserve_modules))
+    for r_m in getattr(d, required_reserve_modules):
         if hasattr(imported_reserve_modules[r_m],
                    "export_module_specific_results"):
             imported_reserve_modules[r_m].export_module_specific_results(m, d)
