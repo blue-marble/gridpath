@@ -4,7 +4,7 @@ import os.path
 from pyomo.environ import Set, Param, NonNegativeReals
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, d):
     """
 
     """
@@ -13,12 +13,12 @@ def add_module_specific_components(m):
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
-    m.capacity_type_operational_period_sets.append(
+    d.capacity_type_operational_period_sets.append(
         "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
     )
     # Add to list of sets we'll join to get the final
     # STORAGE_OPERATIONAL_PERIODS set
-    m.storage_only_capacity_type_operational_period_sets.append(
+    d.storage_only_capacity_type_operational_period_sets.append(
         "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
     )
 

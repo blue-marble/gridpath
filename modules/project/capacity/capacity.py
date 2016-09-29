@@ -23,10 +23,6 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
 
-    # Capacity-type modules will populate this list if called
-    m.capacity_type_operational_period_sets = []
-    m.storage_only_capacity_type_operational_period_sets = []
-
     # Import needed capacity type modules
     imported_capacity_modules = \
         load_gen_storage_capacity_type_modules(d.required_capacity_modules)
@@ -35,12 +31,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     for op_m in d.required_capacity_modules:
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m)
+            imp_op_m.add_module_specific_components(m, d)
 
     m.PROJECT_OPERATIONAL_PERIODS = \
         Set(dimen=2,
-            initialize=lambda mod:
-            join_sets(mod, mod.capacity_type_operational_period_sets)
+            initialize=lambda mod: 
+            join_sets(mod, d.capacity_type_operational_period_sets)
             )
 
     def capacity_rule(mod, g, p):
@@ -53,9 +49,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
 
     m.STORAGE_OPERATIONAL_PERIODS = \
         Set(dimen=2,
-            initialize=lambda mod:
+            initialize=lambda mod: 
             join_sets(
-                mod, mod.storage_only_capacity_type_operational_period_sets)
+                mod, d.storage_only_capacity_type_operational_period_sets)
             )
 
     def energy_capacity_rule(mod, g, p):

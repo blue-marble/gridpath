@@ -3,13 +3,14 @@
 """
 Run model.
 """
+import os.path
+import sys
 from csv import writer
 from importlib import import_module
-import os.path
+
 from pandas import read_csv
 from pyomo.environ import *
 from pyutilib.services import TempfileManager
-import sys
 
 # Scenario name
 scenario_name = sys.argv[1]
@@ -98,16 +99,20 @@ class DynamicComponents(object):
         Initiate the dynamic components
         """
 
-        #
-        # Projects
+        # Capacity-type modules
         self.required_capacity_modules = list()
+        # Capacity-type modules will populate this list if called
+        self.capacity_type_operational_period_sets = list()
+        self.storage_only_capacity_type_operational_period_sets = list()
+
+        # Operational type modules
         self.required_operational_modules = list()
 
         # Reserve types
         # Will be determined based on whether the user has specified a module
         self.required_reserve_modules = list()
 
-        # Headroom and footroom
+        # Headroom and footroom variables
         self.headroom_variables = dict()
         self.footroom_variables = dict()
 
