@@ -129,7 +129,7 @@ def run_optimization(scenario_directory, horizon, stage):
     instance = create_problem_instance(model, scenario_data)
 
     # Fix variables if modules request so
-    instance = fix_variables(instance, loaded_modules)
+    instance = fix_variables(instance, dynamic_inputs, loaded_modules)
 
     # Solve
     results = solve(instance)
@@ -286,16 +286,17 @@ def create_problem_instance(model, loaded_data):
     return instance
 
 
-def fix_variables(instance, loaded_modules):
+def fix_variables(instance, dynamic_inputs, loaded_modules):
     """
     Fix any variables modules want fixed and return the modified instance
     :param instance:
+    :param dynamic_inputs:
     :param loaded_modules:
     :return:
     """
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
-            m.fix_variables(instance)
+            m.fix_variables(instance, dynamic_inputs)
         else:
             pass
 

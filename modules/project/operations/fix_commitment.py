@@ -3,12 +3,12 @@
 """
 
 """
+from csv import writer
 import os.path
 from pandas import read_csv
-from csv import writer
-
 from pyomo.environ import Set, Param, NonNegativeReals, Expression, BuildAction
 
+from modules.auxiliary.dynamic_components import required_operational_modules
 from modules.auxiliary.auxiliary import load_operational_type_modules
 
 
@@ -51,7 +51,9 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     # Import needed operational modules
     # TODO: import only
     imported_operational_modules = \
-        load_operational_type_modules(d.required_operational_modules)
+        load_operational_type_modules(
+            getattr(d, required_operational_modules)
+        )
 
     def commitment_rule(mod, g, tmp):
         """
@@ -111,7 +113,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                 if g in mod.FIXED_COMMITMENT_PROJECTS))
 
 
-def fix_variables(m):
+def fix_variables(m, d):
     """
 
     :param m:
@@ -119,7 +121,8 @@ def fix_variables(m):
     """
 
     # Import needed operational modules
-    imported_operational_modules = load_operational_type_modules(m)
+    imported_operational_modules = load_operational_type_modules(
+        d.required_operational_modules)
 
     for g in m.FIXED_COMMITMENT_PROJECTS:
         op_m = m.operational_type[g]
