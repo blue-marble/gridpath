@@ -45,7 +45,7 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
 
             # If we have already added this generator to the footroom variables
             # dictionary, move on; otherwise, create the dictionary item
-            if generator not in d.footroom_variables.keys():
+            if generator not in getattr(d, headroom_or_footroom_dict).keys():
                 getattr(d, headroom_or_footroom_dict)[generator] = list()
             # In addition, some generators get the variables associated with
             # provision of other services (e.g. reserves) if flagged
