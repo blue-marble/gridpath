@@ -4,7 +4,8 @@ import os.path
 from pandas import read_csv
 from pyomo.environ import Set, Param, Expression, Boolean
 
-from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules, \
+from modules.auxiliary.auxiliary import \
+    load_gen_storage_capacity_type_modules, join_sets, \
     make_project_time_var_df
 
 
@@ -36,27 +37,11 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         if hasattr(imp_op_m, "add_module_specific_components"):
             imp_op_m.add_module_specific_components(m)
 
-    def join_cap_type_operational_period_sets(mod):
-        """
-        Join the sets we need to make the PROJECT_OPERATIONAL_PERIODS
-        super set; if list contains only a single set, return just that set
-        :param mod:
-        :return:
-        """
-        if len(mod.capacity_type_operational_period_sets) == 0:
-            return []
-        elif len(mod.capacity_type_operational_period_sets) == 1:
-            return getattr(mod, mod.capacity_type_operational_period_sets[0])
-        else:
-            joined_set = set()
-            for s in mod.capacity_type_operational_period_sets:
-                for element in getattr(mod, s):
-                    joined_set.add(element)
-        return joined_set
-
     m.PROJECT_OPERATIONAL_PERIODS = \
         Set(dimen=2,
-            initialize=join_cap_type_operational_period_sets)
+            initialize=lambda mod:
+            join_sets(mod, mod.capacity_type_operational_period_sets)
+            )
 
     def capacity_rule(mod, g, p):
         gen_cap_type = mod.capacity_type[g]
@@ -66,30 +51,12 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     m.Capacity_MW = Expression(m.PROJECT_OPERATIONAL_PERIODS,
                                rule=capacity_rule)
 
-    def join_storage_only_cap_type_operational_period_sets(mod):
-        """
-        Join the sets we need to make the STORAGE_OPERATIONAL_PERIODS
-        super set; if list contains only a single set, return just that set
-        :param mod:
-        :return:
-        """
-        if len(mod.storage_only_capacity_type_operational_period_sets) == 0:
-            return []
-        elif len(mod.storage_only_capacity_type_operational_period_sets) == 1:
-            return \
-                getattr(
-                    mod,
-                    mod.storage_only_capacity_type_operational_period_sets[0])
-        else:
-            joined_set = set()
-            for s in mod.storage_only_capacity_type_operational_period_sets:
-                for element in getattr(mod, s):
-                    joined_set.add(element)
-        return joined_set
-
     m.STORAGE_OPERATIONAL_PERIODS = \
         Set(dimen=2,
-            initialize=join_storage_only_cap_type_operational_period_sets)
+            initialize=lambda mod:
+            join_sets(
+                mod, mod.storage_only_capacity_type_operational_period_sets)
+            )
 
     def energy_capacity_rule(mod, g, p):
         cap_type = mod.capacity_type[g]

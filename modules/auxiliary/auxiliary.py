@@ -78,6 +78,26 @@ def load_tx_capacity_type_modules(required_tx_capacity_modules):
         )
 
 
+def join_sets(mod, set_list):
+    """
+    Join sets in a list.
+    If list contains only a single set, return just that set.
+    :param mod:
+    :param set_list:
+    :return:
+    """
+    if len(set_list) == 0:
+        return []
+    elif len(set_list) == 1:
+        return getattr(mod, set_list[0])
+    else:
+        joined_set = set()
+        for s in set_list:
+            for element in getattr(mod, s):
+                joined_set.add(element)
+    return joined_set
+
+
 def generator_subset_init(generator_parameter, expected_type):
     """
     Initialize subsets of generators by subtype based on subtype flags.
