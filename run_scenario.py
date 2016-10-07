@@ -317,7 +317,7 @@ def view_loaded_data(loaded_modules, instance):
 
 def solve(instance):
     # Get solver and solve
-    solver = SolverFactory("cbc")
+    solver = SolverFactory("cplex")
 
     print("Solving...")
     results = solver.solve(instance,
