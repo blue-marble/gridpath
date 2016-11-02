@@ -125,7 +125,7 @@ def run_optimization(scenario_directory, horizon, stage):
     scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
                                        scenario_directory, horizon, stage)
 
-    # Build the problem instance; this will also call the BuildActions that
+    # Build the problem instance; this will also call any BuildActions that
     # construct the dynamic inputs
     instance = create_problem_instance(model, scenario_data)
 

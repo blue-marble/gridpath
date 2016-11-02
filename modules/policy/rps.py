@@ -9,7 +9,7 @@ import os.path
 from pandas import read_csv
 
 from pyomo.environ import Set, Param, Expression, NonNegativeReals, \
-    BuildAction, Constraint, value
+    Constraint, value
 
 
 def add_model_components(m, d, scenario_directory, horizon, stage):

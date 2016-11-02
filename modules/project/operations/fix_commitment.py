@@ -6,7 +6,7 @@
 from csv import writer
 import os.path
 from pandas import read_csv
-from pyomo.environ import Set, Param, NonNegativeReals, Expression, BuildAction
+from pyomo.environ import Set, Param, NonNegativeReals, Expression
 
 from modules.auxiliary.dynamic_components import required_operational_modules
 from modules.auxiliary.auxiliary import load_operational_type_modules
