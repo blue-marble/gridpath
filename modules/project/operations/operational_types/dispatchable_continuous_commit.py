@@ -10,12 +10,11 @@ from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
 
 
-def add_module_specific_components(m, scenario_directory):
+def add_module_specific_components(m):
     """
     Add a continuous commit variable to represent the fraction of fleet
     capacity that is on.
     :param m:
-    :param scenario_directory:
     :return:
     """
 

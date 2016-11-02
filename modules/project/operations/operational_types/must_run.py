@@ -9,11 +9,10 @@ from pyomo.environ import Constraint, Set
 from modules.auxiliary.auxiliary import generator_subset_init
 
 
-def add_module_specific_components(m, scenario_directory):
+def add_module_specific_components(m):
     """
 
     :param m:
-    :param scenario_directory:
     :return:
     """
 

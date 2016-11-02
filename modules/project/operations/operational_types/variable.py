@@ -13,11 +13,10 @@ from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
 
 
-def add_module_specific_components(m, scenario_directory):
+def add_module_specific_components(m):
     """
     Variable generators require a capacity factor for each timepoint.
     :param m:
-    :param scenario_directory:
     :return:
     """
 

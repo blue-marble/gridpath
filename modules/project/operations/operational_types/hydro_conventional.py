@@ -9,12 +9,11 @@ from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 from modules.auxiliary.auxiliary import generator_subset_init
 
 
-def add_module_specific_components(m, scenario_directory):
+def add_module_specific_components(m):
     """
     Add a capacity commit variable to represent the amount of capacity that is
     on.
     :param m:
-    :param scenario_directory:
     :return:
     """
 
