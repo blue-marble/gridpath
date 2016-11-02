@@ -6,8 +6,8 @@ Operations of generic storage
 
 import os.path
 from pandas import read_csv
-from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
-    NonNegativeReals, PercentFraction
+from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
+    PercentFraction
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -36,38 +36,9 @@ def add_module_specific_components(m, scenario_directory):
                 if g in mod.STORAGE_GENERIC_PROJECTS))
 
     m.storage_generic_charging_efficiency = \
-        Param(m.STORAGE_GENERIC_PROJECTS,
-              within=PercentFraction, mutable=True, initialize={})
+        Param(m.STORAGE_GENERIC_PROJECTS, within=PercentFraction)
     m.storage_generic_discharging_efficiency = \
-        Param(m.STORAGE_GENERIC_PROJECTS,
-              within=PercentFraction, mutable=True, initialize={})
-
-    def determine_efficiencies(mod):
-        """
-
-        :param mod:
-        :return:
-        """
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project", "operational_type",
-                                   "charging_efficiency",
-                                   "discharging_efficiency"]
-            )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["charging_efficiency"],
-                       dynamic_components["discharging_efficiency"]):
-            if row[1] == "storage_generic":
-                mod.storage_generic_charging_efficiency[row[0]] \
-                    = float(row[2])
-                mod.storage_generic_discharging_efficiency[row[0]] \
-                    = float(row[3])
-            else:
-                pass
-
-    m.EfficienciesBuild = BuildAction(rule=determine_efficiencies)
+        Param(m.STORAGE_GENERIC_PROJECTS, within=PercentFraction)
 
     m.Generic_Storage_Discharge_MW = \
         Var(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -207,6 +178,54 @@ def shutdown_rule(mod, g, tmp):
     :return:
     """
     return 0
+
+
+def load_module_specific_data(mod, data_portal, scenario_directory,
+                              horizon, stage):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    def determine_efficiencies():
+        """
+
+        :param mod:
+        :return:
+        """
+        storage_generic_charging_efficiency = dict()
+        storage_generic_discharging_efficiency = dict()
+
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project", "operational_type",
+                                   "charging_efficiency",
+                                   "discharging_efficiency"]
+            )
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components["charging_efficiency"],
+                       dynamic_components["discharging_efficiency"]):
+            if row[1] == "storage_generic":
+                storage_generic_charging_efficiency[row[0]] \
+                    = float(row[2])
+                storage_generic_discharging_efficiency[row[0]] \
+                    = float(row[3])
+            else:
+                pass
+
+        return storage_generic_charging_efficiency, \
+               storage_generic_discharging_efficiency
+
+    data_portal.data()["storage_generic_charging_efficiency"] = \
+        determine_efficiencies()[0]
+    data_portal.data()["storage_generic_discharging_efficiency"] = \
+        determine_efficiencies()[1]
 
 
 def export_module_specific_results(mod, d):

@@ -10,8 +10,7 @@ units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
 import os.path
 
 from pandas import read_csv
-from pyomo.environ import Var, Set, Constraint, Param, BuildAction, \
-    NonNegativeReals
+from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -62,32 +61,8 @@ def add_module_specific_components(m, scenario_directory):
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=commit_capacity_constraint_rule)
 
-    def determine_unit_size(mod):
-        """
-
-        :param mod:
-        :return:
-        """
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project", "operational_type",
-                                   "unit_size_mw"]
-                )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["unit_size_mw"]):
-            if row[1] == "dispatchable_capacity_commit":
-                mod.unit_size_mw[row[0]] = float(row[2])
-            else:
-                pass
-
-    # Generators that incur startup/shutdown costs
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-                           within=NonNegativeReals, mutable=True,
-                           initialize={})
-    m.UnitSizeBuild = BuildAction(
-        rule=determine_unit_size)
+                           within=NonNegativeReals)
 
 
 def power_provision_rule(mod, g, tmp):
@@ -229,6 +204,40 @@ def fix_commitment(mod, g, tmp):
     """
     mod.Commit_Capacity_MW[g, tmp] = mod.fixed_commitment[g, tmp]
     mod.Commit_Capacity_MW[g, tmp].fixed = True
+
+
+def load_module_specific_data(mod, data_portal, scenario_directory,
+                              horizon, stage):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    def determine_unit_size():
+        """
+        """
+        unit_size_mw = dict()
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project", "operational_type",
+                                   "unit_size_mw"]
+                )
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components["unit_size_mw"]):
+            if row[1] == "dispatchable_capacity_commit":
+                unit_size_mw[row[0]] = float(row[2])
+            else:
+                pass
+
+        return unit_size_mw
+
+    data_portal.data()["unit_size_mw"] = determine_unit_size()
 
 
 def export_module_specific_results(mod, d):
