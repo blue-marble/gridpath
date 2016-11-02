@@ -64,11 +64,12 @@ class ScenarioStructure(object):
                             os.path.join(
                                 self.horizon_subproblem_directories[h],
                             "pass_through_inputs",
-                                "fixed_commitment.csv"), "wb") \
+                                "fixed_commitment.tab"), "wb") \
                             as fixed_commitment_file:
-                        fixed_commitment_writer = writer(fixed_commitment_file)
+                        fixed_commitment_writer = \
+                            writer(fixed_commitment_file, delimiter="\t")
                         fixed_commitment_writer.writerow(
-                            ["generator", "timepoint", "final_stage",
+                            ["project", "timepoint", "final_stage",
                              "commitment"])
 
                     # Since there were subproblems in this horizon, empty the
@@ -210,7 +211,7 @@ def get_modules(scenario_directory):
              "system.reserves.lf_reserves_down"],
         "regulation_up":
             ["geography.regulation_up_balancing_areas",
-            "project.operations.reserves.regulation_up",
+             "project.operations.reserves.regulation_up",
              "system.reserves.regulation_up"],
         "regulation_down":
             ["geography.regulation_down_balancing_areas",
@@ -317,7 +318,7 @@ def view_loaded_data(loaded_modules, instance):
 
 def solve(instance):
     # Get solver and solve
-    solver = SolverFactory("cplex")
+    solver = SolverFactory("cbc")
 
     print("Solving...")
     results = solver.solve(instance,
