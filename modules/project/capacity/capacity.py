@@ -12,14 +12,11 @@ from modules.auxiliary.auxiliary import \
     make_project_time_var_df
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
     m.PROJECTS = Set()
@@ -31,7 +28,7 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
         load_gen_storage_capacity_type_modules(
             getattr(d, required_capacity_modules))
 
-    # First, add any components specific to the operational modules
+    # First, add any components specific to the capacity type modules
     for op_m in getattr(d, required_capacity_modules):
         imp_op_m = imported_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):

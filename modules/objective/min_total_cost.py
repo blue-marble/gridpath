@@ -5,14 +5,11 @@ from pyomo.environ import Objective, minimize
 from modules.auxiliary.dynamic_components import total_cost_components
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
     Aggregate costs and components to objective function.
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

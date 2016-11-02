@@ -188,8 +188,8 @@ def get_modules(scenario_directory):
         "system.reserves.regulation_up",
         "system.reserves.lf_reserves_down",
         "system.reserves.regulation_down",
-        "objective.min_total_cost",
-        "policy.rps"
+        "policy.rps",
+        "objective.min_total_cost"
     ]
 
     # Names of groups of optional modules
@@ -262,8 +262,7 @@ def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
     print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model, inputs,
-                                   scenario_directory, horizon, stage)
+            m.add_model_components(model, inputs)
 
 
 def load_scenario_data(model, dynamic_inputs, loaded_modules,

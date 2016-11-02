@@ -12,14 +12,11 @@ from pyomo.environ import Set, Param, Expression, NonNegativeReals, \
     Constraint, value
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

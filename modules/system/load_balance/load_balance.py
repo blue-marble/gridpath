@@ -8,14 +8,11 @@ from modules.auxiliary.dynamic_components import \
     load_balance_consumption_components, load_balance_production_components
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

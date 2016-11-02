@@ -10,14 +10,11 @@ from modules.auxiliary.dynamic_components import required_capacity_modules, \
 from modules.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
     Sum up all operational costs and add to the objective function.
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

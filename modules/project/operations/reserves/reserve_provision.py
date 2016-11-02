@@ -60,7 +60,7 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
                     reserve_provision_variable_name)
 
 
-def generic_add_model_components(m, d, scenario_directory, horizon, stage,
+def generic_add_model_components(m, d,
                                  reserve_projects_set,
                                  reserve_balancing_area_param,
                                  reserve_balancing_areas_set,
@@ -70,9 +70,6 @@ def generic_add_model_components(m, d, scenario_directory, horizon, stage,
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :param reserve_projects_set:
     :param reserve_balancing_area_param:
     :param reserve_balancing_areas_set:

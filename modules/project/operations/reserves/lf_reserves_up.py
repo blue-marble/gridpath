@@ -31,23 +31,17 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     )
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 
     generic_add_model_components(
         m,
         d,
-        scenario_directory,
-        horizon,
-        stage,
         "LF_RESERVES_UP_PROJECTS",
         "lf_reserves_up_zone",
         "LF_RESERVES_UP_ZONES",

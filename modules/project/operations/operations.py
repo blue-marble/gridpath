@@ -14,14 +14,11 @@ from modules.auxiliary.auxiliary import make_project_time_var_df, \
     load_operational_type_modules, load_reserve_type_modules
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

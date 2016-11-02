@@ -9,14 +9,11 @@ import os.path
 from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
     m.HORIZONS = Set(within=NonNegativeIntegers, ordered=True)

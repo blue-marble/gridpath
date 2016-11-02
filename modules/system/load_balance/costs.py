@@ -6,14 +6,11 @@ from pyomo.environ import Param, Expression, NonNegativeReals
 from modules.auxiliary.dynamic_components import total_cost_components
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

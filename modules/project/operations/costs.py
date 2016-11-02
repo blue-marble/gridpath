@@ -13,14 +13,11 @@ from modules.auxiliary.dynamic_components import required_operational_modules, \
 from modules.auxiliary.auxiliary import load_operational_type_modules, is_number
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
     Sum up all operational costs and add to the objective function.
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 

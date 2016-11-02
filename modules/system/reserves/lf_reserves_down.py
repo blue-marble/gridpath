@@ -4,14 +4,11 @@ from reserve_requirements import generic_add_model_components, \
     generic_load_model_data, generic_export_results, generic_save_duals
 
 
-def add_model_components(m, d, scenario_directory, horizon, stage):
+def add_model_components(m, d):
     """
 
     :param m:
     :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
     :return:
     """
 
