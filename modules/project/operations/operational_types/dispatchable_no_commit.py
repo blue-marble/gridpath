@@ -95,7 +95,7 @@ def fuel_cost_rule(mod, g, tmp):
     """
     return (mod.Provide_Power_DispNoCommit_MW[g, tmp]
             * mod.inc_heat_rate_mmbtu_per_mwh[g]
-            ) * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
+            ) * mod.fuel_price_per_mmbtu[mod.fuel[g]]
 
 
 # TODO: what should these return -- what is the no-commit modeling?

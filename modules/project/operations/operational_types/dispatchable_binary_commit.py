@@ -109,7 +109,7 @@ def fuel_cost_rule(mod, g, tmp):
                (mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]]
                 * mod.min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
-            ) * mod.fuel_price_per_mmbtu[mod.fuel[g].value]
+            ) * mod.fuel_price_per_mmbtu[mod.fuel[g]]
 
 
 def startup_rule(mod, g, tmp):

@@ -6,7 +6,7 @@ Describe operational costs.
 from pandas import read_csv
 import os.path
 from pyomo.environ import Var, Set, Param, Expression, Constraint, \
-    NonNegativeReals, PositiveReals, BuildAction
+    NonNegativeReals, PositiveReals
 
 from modules.auxiliary.dynamic_components import required_operational_modules, \
     total_cost_components
@@ -24,109 +24,21 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
     :return:
     """
 
-    # The components below will be initialized via Pyomo's BuildAction function
-    # See:
-    # software.sandia.gov/downloads/pub/pyomo/PyomoOnlineDocs.html#BuildAction
-
-    def determine_startup_cost_projects(mod):
-        """
-        If numeric values greater than 0 for startup costs are specified
-        for some generators, add those generators to the
-        STARTUP_COST_PROJECTS subset and initialize the respective startup
-        cost param value
-        :param mod:
-        :return:
-        """
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "startup_cost"]
-                )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["startup_cost"]):
-            if is_number(row[1]) and float(row[1]) > 0:
-                mod.STARTUP_COST_PROJECTS.add(row[0])
-                mod.startup_cost_per_unit[row[0]] = float(row[1])
-            else:
-                pass
-
     # Generators that incur startup/shutdown costs
-    m.STARTUP_COST_PROJECTS = Set(within=m.PROJECTS, initialize=[])
+    m.STARTUP_COST_PROJECTS = Set(within=m.PROJECTS)
     m.startup_cost_per_unit = Param(m.STARTUP_COST_PROJECTS,
-                                    within=PositiveReals, mutable=True,
-                                    initialize={})
-    m.StartupCostGeneratorsBuild = BuildAction(
-        rule=determine_startup_cost_projects)
+                                    within=PositiveReals)
 
-    def determine_shutdown_cost_projects(mod):
-        """
-        If numeric values greater than 0 for shutdown costs are specified
-        for some generators, add those generators to the
-        SHUTDOWON_COST_PROJECTS subset and initialize the respective shutdown
-        cost param value
-        :param mod:
-        :return:
-        """
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "shutdown_cost"]
-                )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["shutdown_cost"]):
-            if is_number(row[1]) and float(row[1]) > 0:
-                mod.SHUTDOWN_COST_PROJECTS.add(row[0])
-                mod.shutdown_cost_per_unit[row[0]] = float(row[1])
-            else:
-                pass
-
-    m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS, initialize=[])
+    m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS)
     m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_PROJECTS,
-                                     within=PositiveReals, mutable=True,
-                                     initialize={})
-    m.ShutdownCostGeneratorsBuild = BuildAction(
-        rule=determine_shutdown_cost_projects)
+                                     within=PositiveReals)
 
     # TODO: implement check for which generator types can have fuels
     # Fuels and heat rates
-    def determine_fuel_projects(mod):
-        """
-        E.g. generators that use coal, gas, uranium
-        :param mod:
-        :return:
-        """
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "fuel",
-                                   "minimum_input_mmbtu_per_hr",
-                                   "inc_heat_rate_mmbtu_per_mwh"]
-                )
-
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["fuel"],
-                       dynamic_components["minimum_input_mmbtu_per_hr"],
-                       dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
-            if row[1] != ".":
-                mod.FUEL_PROJECTS.add(row[0])
-                mod.fuel[row[0]] = row[1]
-                mod.minimum_input_mmbtu_per_hr[row[0]] = float(row[2])
-                mod.inc_heat_rate_mmbtu_per_mwh[row[0]] = float(row[3])
-            else:
-                pass
-
-    m.FUEL_PROJECTS = Set(within=m.PROJECTS, initialize=[])
-    m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS, mutable=True,
-                   initialize={})
-    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS, mutable=True,
-                                         initialize={})
-
-    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS, mutable=True,
-                                          initialize={})
-    m.FuelGeneratorsBuild = BuildAction(rule=determine_fuel_projects)
+    m.FUEL_PROJECTS = Set(within=m.PROJECTS)
+    m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS)
+    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS)
+    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS)
 
     m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
@@ -339,3 +251,135 @@ def add_model_components(m, d, scenario_directory, horizon, stage):
                    in mod.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
     m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
     getattr(d, total_cost_components).append("Total_Shutdown_Cost")
+
+
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+
+    # STARTUP_COST_PROJECTS
+    def determine_startup_cost_projects():
+        """
+        If numeric values greater than 0 for startup costs are specified
+        for some generators, add those generators to the
+        STARTUP_COST_PROJECTS subset and initialize the respective startup
+        cost param value
+        :param mod:
+        :return:
+        """
+        startup_cost_projects = list()
+        startup_cost_per_unit = dict()
+
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project",
+                                   "startup_cost"]
+                )
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["startup_cost"]):
+            if is_number(row[1]) and float(row[1]) > 0:
+                startup_cost_projects.append(row[0])
+                startup_cost_per_unit[row[0]] = float(row[1])
+            else:
+                pass
+
+        return startup_cost_projects, startup_cost_per_unit
+
+    data_portal.data()["STARTUP_COST_PROJECTS"] = {
+        None: determine_startup_cost_projects()[0]
+    }
+
+    data_portal.data()["startup_cost_per_unit"] = \
+        determine_startup_cost_projects()[1]
+
+    # SHUTDOWN_COST_PROJECTS
+    def determine_shutdown_cost_projects():
+        """
+        If numeric values greater than 0 for shutdown costs are specified
+        for some generators, add those generators to the
+        SHUTDOWN_COST_PROJECTS subset and initialize the respective shutdown
+        cost param value
+        :param mod:
+        :return:
+        """
+
+        shutdown_cost_projects = list()
+        shutdown_cost_per_unit = dict()
+
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project",
+                                   "shutdown_cost"]
+                )
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["shutdown_cost"]):
+            if is_number(row[1]) and float(row[1]) > 0:
+                shutdown_cost_projects.append(row[0])
+                shutdown_cost_per_unit[row[0]] = float(row[1])
+            else:
+                pass
+
+        return shutdown_cost_projects, shutdown_cost_per_unit
+
+    data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
+        None: determine_shutdown_cost_projects()[0]
+    }
+
+    data_portal.data()["shutdown_cost_per_unit"] = \
+        determine_shutdown_cost_projects()[1]
+
+    # FUEL_PROJECTS
+    def determine_fuel_projects():
+        """
+        E.g. generators that use coal, gas, uranium
+        :param mod:
+        :return:
+        """
+        fuel_projects = list()
+        fuel = dict()
+        minimum_input_mmbtu_per_hr = dict()
+        inc_heat_rate_mmbtu_per_mwh = dict()
+
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project",
+                                   "fuel",
+                                   "minimum_input_mmbtu_per_hr",
+                                   "inc_heat_rate_mmbtu_per_mwh"]
+                )
+
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["fuel"],
+                       dynamic_components["minimum_input_mmbtu_per_hr"],
+                       dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
+            if row[1] != ".":
+                fuel_projects.append(row[0])
+                fuel[row[0]] = row[1]
+                minimum_input_mmbtu_per_hr[row[0]] = float(row[2])
+                inc_heat_rate_mmbtu_per_mwh[row[0]] = float(row[3])
+            else:
+                pass
+
+        return fuel_projects, fuel, minimum_input_mmbtu_per_hr, \
+               inc_heat_rate_mmbtu_per_mwh
+
+    data_portal.data()["FUEL_PROJECTS"] = {
+        None: determine_fuel_projects()[0]
+    }
+
+    data_portal.data()["fuel"] = determine_fuel_projects()[1]
+    data_portal.data()["minimum_input_mmbtu_per_hr"] = \
+        determine_fuel_projects()[2]
+    data_portal.data()["inc_heat_rate_mmbtu_per_mwh"] = \
+        determine_fuel_projects()[3]
