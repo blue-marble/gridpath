@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Smallest unit of time over which operational variables are defined
+Smallest unit of temporal over which operational variables are defined
 """
 
 import os.path
@@ -28,3 +28,4 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      param=m.number_of_hours_in_timepoint,
                      select=("TIMEPOINTS", "number_of_hours_in_timepoint")
                      )
+

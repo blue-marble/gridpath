@@ -161,9 +161,9 @@ def get_modules(scenario_directory):
 
     # If all optional modules are selected, this would be the list
     all_modules = [
-        "time.operations.timepoints",
-        "time.operations.horizons",
-        "time.investment.periods",
+        "temporal.operations.timepoints",
+        "temporal.operations.horizons",
+        "temporal.investment.periods",
         "geography.load_zones",
         "geography.load_following_up_balancing_areas",
         "geography.load_following_down_balancing_areas",
