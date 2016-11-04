@@ -27,7 +27,7 @@ def add_model_components(m, d):
             initialize=lambda mod, h:
             set(tmp for tmp in mod.TIMEPOINTS if mod.horizon[tmp] == h))
 
-    # TODO: make more robust that relying on min and max
+    # TODO: is there are a better way to do this than relying on min and max?
     m.first_horizon_timepoint = \
         Param(m.HORIZONS,
               initialize=
