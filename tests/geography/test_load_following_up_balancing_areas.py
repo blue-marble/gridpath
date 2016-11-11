@@ -1,15 +1,24 @@
 #!/usr/bin/env python
 
+from importlib import import_module
 import os.path
-from pyomo.environ import AbstractModel, DataPortal
 import unittest
 
-from modules.geography.load_following_up_balancing_areas import \
-    add_model_components, load_model_data
-
+from tests.common_functions import create_abstract_model, \
+    add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "test_data")
+
+# No prerequisite modules
+NAME_OF_MODULE_BEING_TESTED = "geography.load_following_up_balancing_areas"
+
+try:
+    MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
+                                        package='modules')
+except ImportError:
+    print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
+          " to test.")
 
 class TestLoadFollowingUpBAs(unittest.TestCase):
     """
@@ -20,28 +29,36 @@ class TestLoadFollowingUpBAs(unittest.TestCase):
         Test that there are no errors when adding model components
         :return:
         """
-        m = AbstractModel()
-        add_model_components(m, None)
+        create_abstract_model(prereq_modules=[],
+                              module_to_test=MODULE_BEING_TESTED,
+                              test_data_dir=TEST_DATA_DIRECTORY,
+                              horizon="",
+                              stage=""
+                              )
 
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
         :return:
         """
-        m = AbstractModel()
-        add_model_components(m, None)
-        data = DataPortal()
-        load_model_data(m, None, data, TEST_DATA_DIRECTORY, "", "")
+        add_components_and_load_data(prereq_modules=[],
+                                     module_to_test=MODULE_BEING_TESTED,
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
+                                     )
 
     def test_load_following_up_zones_data_loads_correctly(self):
         """
         Create set and load data; check resulting set is as expected
         :return:
         """
-        m = AbstractModel()
-        add_model_components(m, None)
-        data = DataPortal()
-        load_model_data(m, None, data, TEST_DATA_DIRECTORY, "", "")
+        m, data = \
+            add_components_and_load_data(prereq_modules=[],
+                                         module_to_test=MODULE_BEING_TESTED,
+                                         test_data_dir=TEST_DATA_DIRECTORY,
+                                         horizon="",
+                                         stage="")
         instance = m.create_instance(data)
         expected = sorted(["Zone1", "Zone2"])
         actual = sorted([z for z in instance.LF_RESERVES_UP_ZONES])

@@ -4,13 +4,13 @@ from importlib import import_module
 import os.path
 import unittest
 
-from tests.common_functions import add_model_components, \
+from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
-# Import prerequisite modules
+# No prerequisite modules
 NAME_OF_MODULE_BEING_TESTED = "temporal.operations.timepoints"
 
 try:
@@ -30,9 +30,12 @@ class TestTimepoints(unittest.TestCase):
         Test that there are no errors when adding model components
         :return:
         """
-        add_model_components(prereq_modules=[],
-                             module_to_test=MODULE_BEING_TESTED
-                             )
+        create_abstract_model(prereq_modules=[],
+                              module_to_test=MODULE_BEING_TESTED,
+                              test_data_dir=TEST_DATA_DIRECTORY,
+                              horizon="",
+                              stage=""
+                              )
 
     def test_load_model_data(self):
         """
@@ -41,8 +44,10 @@ class TestTimepoints(unittest.TestCase):
         """
         add_components_and_load_data(prereq_modules=[],
                                      module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY
-                                     )
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
+        )
 
     def test_timepoints_data_load_correctly(self):
         """
@@ -52,8 +57,9 @@ class TestTimepoints(unittest.TestCase):
         m, data = \
             add_components_and_load_data(prereq_modules=[],
                                          module_to_test=MODULE_BEING_TESTED,
-                                         test_data_dir=TEST_DATA_DIRECTORY
-                                         )
+                                         test_data_dir=TEST_DATA_DIRECTORY,
+                                         horizon="",
+                                         stage="")
         instance = m.create_instance(data)
 
         expected_tmp = \

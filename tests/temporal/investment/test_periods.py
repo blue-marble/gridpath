@@ -5,7 +5,7 @@ import os.path
 import sys
 import unittest
 
-from tests.common_functions import add_model_components, \
+from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
@@ -40,9 +40,12 @@ class TestPeriods(unittest.TestCase):
         Test that there are no errors when adding model components
         :return:
         """
-        add_model_components(prereq_modules=IMPORTED_PREREQ_MODULES,
-                             module_to_test=MODULE_BEING_TESTED
-                             )
+        create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
+                              module_to_test=MODULE_BEING_TESTED,
+                              test_data_dir=TEST_DATA_DIRECTORY,
+                              horizon="",
+                              stage=""
+                              )
 
     def test_load_model_data(self):
         """
@@ -51,7 +54,9 @@ class TestPeriods(unittest.TestCase):
         """
         add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
                                      module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
                                      )
 
     def test_horizons_data_load_correctly(self):
@@ -62,7 +67,9 @@ class TestPeriods(unittest.TestCase):
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY
+            test_data_dir=TEST_DATA_DIRECTORY,
+            horizon="",
+            stage=""
         )
         instance = m.create_instance(data)
 
@@ -142,7 +149,9 @@ class TestPeriods(unittest.TestCase):
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY
+            test_data_dir=TEST_DATA_DIRECTORY,
+            horizon="",
+            stage=""
         )
         instance = m.create_instance(data)
 
