@@ -19,10 +19,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    m.PROJECTS = Set()
-    m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
-    m.capacity_type = Param(m.PROJECTS)
-
     # Import needed capacity type modules
     imported_capacity_modules = \
         load_gen_storage_capacity_type_modules(
@@ -108,13 +104,6 @@ def add_model_components(m, d):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
-    data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "projects.tab"),
-                     index=m.PROJECTS,
-                     select=("project", "load_zone", "capacity_type"),
-                     param=(m.load_zone, m.capacity_type)
-                     )
-
     imported_capacity_modules = \
         load_gen_storage_capacity_type_modules(getattr(d, required_capacity_modules))
     for op_m in getattr(d, required_capacity_modules):

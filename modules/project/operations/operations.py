@@ -22,10 +22,6 @@ def add_model_components(m, d):
     :return:
     """
 
-    # ### Params defined for all generators ### #
-    # Operational type
-    m.operational_type = Param(m.PROJECTS)
-
     # Variable O&M cost
     m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
     # TODO: this should be built below with the dynamic components
@@ -154,11 +150,10 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
-                     select=("project", "operational_type",
+                     select=("project",
                              "min_stable_level_fraction",
                              "variable_om_cost_per_mwh"),
-                     param=(m.operational_type,
-                            m.min_stable_level_fraction,
+                     param=(m.min_stable_level_fraction,
                             m.variable_om_cost_per_mwh)
                      )
 

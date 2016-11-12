@@ -6,6 +6,7 @@ from pyomo.environ import Set, Param, NonNegativeReals
 from modules.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 
+
 def add_module_specific_components(m, d):
     """
 

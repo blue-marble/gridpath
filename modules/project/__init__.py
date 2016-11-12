@@ -2,6 +2,7 @@
 
 import os.path
 from pandas import read_csv
+from pyomo.environ import Set, Param
 
 from modules.auxiliary.dynamic_components import required_capacity_modules, \
     required_operational_modules, headroom_variables, footroom_variables
@@ -52,3 +53,27 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     setattr(d, footroom_variables,
             {r: [] for r in project_dynamic_data.project}
             )
+
+
+def add_model_components(m, d):
+    """
+
+    :param m:
+    :param d:
+    :return:
+    """
+    m.PROJECTS = Set()
+    m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
+    m.capacity_type = Param(m.PROJECTS)
+    m.operational_type = Param(m.PROJECTS)
+
+
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "projects.tab"),
+                     index=m.PROJECTS,
+                     select=("project", "load_zone", "capacity_type",
+                             "operational_type"),
+                     param=(m.load_zone, m.capacity_type,
+                            m.operational_type)
+                     )
