@@ -7,6 +7,9 @@ from modules.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
 from modules.auxiliary.auxiliary import make_project_time_var_df
+from modules.project.capacity.capacity_types.common_methods import \
+    operational_periods_by_project_vintage, project_operational_periods, \
+    project_vintages_operational_in_period
 
 
 def add_module_specific_components(m, d):
@@ -28,27 +31,9 @@ def add_module_specific_components(m, d):
         Var(m.NEW_BUILD_STORAGE_VINTAGES,
             within=NonNegativeReals)
 
-    # TODO: if vintage is 2020 and lifetime is 30, is the project available in
-    # 2050 or not -- maybe have options for how this should be treated?
-    def operational_periods_by_new_build_storage_vintage(mod, g, v):
-        operational_periods = list()
-        for p in mod.PERIODS:
-            if v <= p < v + mod.lifetime_yrs_by_new_build_storage_vintage[g, v]:
-                operational_periods.append(p)
-            else:
-                pass
-        return operational_periods
-
     m.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE = \
         Set(m.NEW_BUILD_STORAGE_VINTAGES,
-            initialize=operational_periods_by_new_build_storage_vintage)
-
-    def new_build_storage_operational_periods(mod):
-        return set((g, p)
-                   for (g, v) in mod.NEW_BUILD_STORAGE_VINTAGES
-                   for p
-                   in mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE[g, v]
-                   )
+            initialize=operational_periods_by_storage_vintage)
 
     m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS = \
         Set(dimen=2, initialize=new_build_storage_operational_periods)
@@ -63,15 +48,6 @@ def add_module_specific_components(m, d):
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
         "NEW_BUILD_STORAGE_OPERATIONAL_PERIODS",
     )
-
-    def new_build_storage_vintages_operational_in_period(mod, p):
-        build_vintages_by_period = list()
-        for (g, v) in mod.NEW_BUILD_STORAGE_VINTAGES:
-            if p in mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE[g, v]:
-                build_vintages_by_period.append((g, v))
-            else:
-                pass
-        return build_vintages_by_period
 
     m.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD = \
         Set(m.PERIODS, dimen=2,
@@ -207,3 +183,25 @@ def export_module_specific_results(m, d):
     d.module_specific_df.append(build_storage_capacity_df)
     d.module_specific_df.append(build_storage_energy_df)
 
+
+def operational_periods_by_storage_vintage(mod, prj, v):
+    return operational_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"), vintage=v,
+        lifetime=mod.lifetime_yrs_by_new_build_storage_vintage[prj, v])
+
+
+def new_build_storage_operational_periods(mod):
+    return project_operational_periods(
+        project_vintages_set=mod.NEW_BUILD_STORAGE_VINTAGES,
+        operational_periods_by_project_vintage_set=
+        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE
+    )
+
+
+def new_build_storage_vintages_operational_in_period(mod, p):
+    return project_vintages_operational_in_period(
+        project_vintage_set=mod.NEW_BUILD_STORAGE_VINTAGES,
+        operational_periods_by_project_vintage_set=
+        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE,
+        period=p
+    )
