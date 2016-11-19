@@ -57,7 +57,8 @@ class TestProject(unittest.TestCase):
 
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = [
-            "new_build_generator", "specified_no_economic_retirement",
+            "new_build_generator", "new_build_storage",
+            "specified_no_economic_retirement",
         ]
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
@@ -66,7 +67,8 @@ class TestProject(unittest.TestCase):
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = [
-            "dispatchable_capacity_commit", "must_run", "variable"
+            "dispatchable_capacity_commit", "must_run", "storage_generic",
+            "variable"
         ]
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))
@@ -75,9 +77,10 @@ class TestProject(unittest.TestCase):
 
         # Check if headroom variables dictionaries are as expected
         expected_headroom_var_dict = {
-            'Coal': [], 'Coal_z2': [], 'Gas_CCGT': [], 'Gas_CCGT_New': [],
-            'Gas_CCGT_z2': [], 'Gas_CT': [], 'Gas_CT_New': [], 'Gas_CT_z2': [],
-            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
+            'Battery': [], 'Coal': [], 'Coal_z2': [], 'Gas_CCGT': [],
+            'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
+            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Nuclear': [],
+            'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -85,9 +88,10 @@ class TestProject(unittest.TestCase):
 
         # Check if footroom variables dictionaries are as expected
         expected_footroom_var_dict = {
-            'Coal': [], 'Coal_z2': [], 'Gas_CCGT': [], 'Gas_CCGT_New': [],
-            'Gas_CCGT_z2': [], 'Gas_CT': [], 'Gas_CT_New': [], 'Gas_CT_z2': [],
-            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
+            'Battery': [], 'Coal': [], 'Coal_z2': [], 'Gas_CCGT': [],
+            'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
+            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Nuclear': [],
+            'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -133,10 +137,10 @@ class TestProject(unittest.TestCase):
 
         # Check data are as expected
         # PROJECTS
-        expected_projects = [
+        expected_projects = sorted([
             "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
-            "Wind", "Wind_z2"]
+            "Wind", "Wind_z2", "Battery"])
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
         self.assertListEqual(expected_projects, actual_projects)
@@ -150,7 +154,7 @@ class TestProject(unittest.TestCase):
                  "Gas_CT_New": "Zone1", "Gas_CT_z2": "Zone2",
                  "Nuclear": "Zone1",
                  "Nuclear_z2": "Zone2", "Wind": "Zone1",
-                 "Wind_z2": "Zone2"}.items()
+                 "Wind_z2": "Zone2", "Battery": "Zone1"}.items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -175,7 +179,8 @@ class TestProject(unittest.TestCase):
                  "Nuclear": "specified_no_economic_retirement",
                  "Nuclear_z2": "specified_no_economic_retirement",
                  "Wind": "specified_no_economic_retirement",
-                 "Wind_z2": "specified_no_economic_retirement"}.items()
+                 "Wind_z2": "specified_no_economic_retirement",
+                 "Battery": "new_build_storage"}.items()
             )
         )
         actual_cap_type = OrderedDict(
