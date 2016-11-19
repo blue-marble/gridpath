@@ -56,11 +56,11 @@ class TestProject(unittest.TestCase):
             d, TEST_DATA_DIRECTORY, "", "")
 
         # Check if capacity type modules are as expected
-        expected_required_capacity_modules = [
-            "new_build_generator", "new_build_storage",
+        expected_required_capacity_modules = sorted([
+            "new_build_generator", "new_build_storage", "hydro_specified",
             "specified_no_economic_retirement",
             "storage_specified_no_economic_retirement",
-        ]
+        ])
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
         self.assertListEqual(expected_required_capacity_modules,
@@ -68,8 +68,8 @@ class TestProject(unittest.TestCase):
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = [
-            "dispatchable_capacity_commit", "must_run", "storage_generic",
-            "variable"
+            "dispatchable_capacity_commit", "hydro_conventional", "must_run",
+            "storage_generic", "variable"
         ]
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))
@@ -80,8 +80,8 @@ class TestProject(unittest.TestCase):
         expected_headroom_var_dict = {
             'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
             'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
-            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Nuclear': [], 'Nuclear_z2': [],
-            'Wind': [], 'Wind_z2': []
+            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
+            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -91,8 +91,8 @@ class TestProject(unittest.TestCase):
         expected_footroom_var_dict = {
             'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
             'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
-            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Nuclear': [], 'Nuclear_z2': [],
-            'Wind': [], 'Wind_z2': []
+            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
+            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': []
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -141,7 +141,7 @@ class TestProject(unittest.TestCase):
         expected_projects = sorted([
             "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
-            "Wind", "Wind_z2", "Battery", "Battery_Specified"])
+            "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro"])
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
         self.assertListEqual(expected_projects, actual_projects)
@@ -156,7 +156,7 @@ class TestProject(unittest.TestCase):
                  "Nuclear": "Zone1",
                  "Nuclear_z2": "Zone2", "Wind": "Zone1",
                  "Wind_z2": "Zone2", "Battery": "Zone1",
-                 "Battery_Specified": "Zone1"}.items()
+                 "Battery_Specified": "Zone1", "Hydro": "Zone1"}.items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -183,7 +183,9 @@ class TestProject(unittest.TestCase):
                  "Wind": "specified_no_economic_retirement",
                  "Wind_z2": "specified_no_economic_retirement",
                  "Battery": "new_build_storage",
-                 "Battery_Specified": "storage_specified_no_economic_retirement"
+                 "Battery_Specified":
+                     "storage_specified_no_economic_retirement",
+                 "Hydro": "hydro_specified"
                  }.items()
             )
         )
