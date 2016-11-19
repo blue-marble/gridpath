@@ -12,3 +12,4 @@ Coal_z2	Zone2	specified_no_economic_retirement	1	dispatchable_capacity_commit	.	
 Gas_CT_z2	Zone2	specified_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.
 Wind_z2	Zone2	specified_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.
 Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
+Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
