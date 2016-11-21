@@ -32,8 +32,7 @@ def add_model_components(m, d):
         :param p:
         :return:
         """
-        gen_cap_type = mod.capacity_type[g]
-        return imported_capacity_modules[gen_cap_type].\
+        return imported_capacity_modules[mod.capacity_type[g]].\
             capacity_cost_rule(mod, g, p)
     m.Capacity_Cost_in_Period = \
         Expression(m.PROJECT_OPERATIONAL_PERIODS,
