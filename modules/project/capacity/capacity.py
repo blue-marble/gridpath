@@ -73,20 +73,21 @@ def add_model_components(m, d):
     # Define various sets to be used in operations module
     m.OPERATIONAL_PERIODS_BY_PROJECT = \
         Set(m.PROJECTS,
-            rule=lambda mod, gen: set(
-                p for (g, p) in mod.PROJECT_OPERATIONAL_PERIODS if
-                g == gen)
+            rule=lambda mod, project:
+            operational_periods_by_project(
+                prj=project,
+                project_operational_periods=mod.PROJECT_OPERATIONAL_PERIODS
+            )
             )
 
-    def gen_op_tmps_init(mod):
-        gen_tmps = set()
-        for g in mod.PROJECTS:
-            for p in mod.OPERATIONAL_PERIODS_BY_PROJECT[g]:
-                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]:
-                    gen_tmps.add((g, tmp))
-        return gen_tmps
     m.PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, rule=gen_op_tmps_init)
+        Set(dimen=2,
+            rule=lambda mod: [
+                (g, tmp) for g in mod.PROJECTS
+                for p in mod.OPERATIONAL_PERIODS_BY_PROJECT[g]
+                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                ]
+            )
 
     def op_gens_by_tmp(mod, tmp):
         """
@@ -169,3 +170,15 @@ def export_results(scenario_directory, horizon, stage, m, d):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "capacity.csv"),
         header=True, index=True)
+
+
+def operational_periods_by_project(prj, project_operational_periods):
+    """
+
+    :param prj:
+    :param project_operational_periods:
+    :return:
+    """
+    return set(period for (project, period) in project_operational_periods
+               if project == prj
+               )
