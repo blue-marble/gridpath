@@ -57,7 +57,7 @@ class TestProject(unittest.TestCase):
 
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
-            "new_build_generator", "new_build_storage", "hydro_specified",
+            "new_build_generator", "new_build_storage",
             "specified_no_economic_retirement",
             "storage_specified_no_economic_retirement",
         ])
@@ -185,7 +185,7 @@ class TestProject(unittest.TestCase):
                  "Battery": "new_build_storage",
                  "Battery_Specified":
                      "storage_specified_no_economic_retirement",
-                 "Hydro": "hydro_specified"
+                 "Hydro": "specified_no_economic_retirement"
                  }.items()
             )
         )

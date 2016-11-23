@@ -13,4 +13,4 @@ Gas_CT_z2	Zone2	specified_no_economic_retirement	2	dispatchable_capacity_commit	
 Wind_z2	Zone2	specified_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.
 Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
 Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
-Hydro	Zone1	hydro_specified	0	hydro_conventional	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.
+Hydro	Zone1	specified_no_economic_retirement	0	hydro_conventional	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.

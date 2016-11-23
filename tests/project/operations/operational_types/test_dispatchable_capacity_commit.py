@@ -36,7 +36,7 @@ except ImportError:
           " to test.")
 
 
-class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
+class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
     """
 
     """

@@ -933,8 +933,6 @@ class TestCapacity(unittest.TestCase):
                                                          )
         self.assertDictEqual(expected_operational_projects_in_tmp,
                              actual_operational_projects_in_tmp)
-        
-        
 
     def test_module_methods(self):
         """

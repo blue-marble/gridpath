@@ -4,12 +4,13 @@
 Operations of generic storage
 """
 
-from pyomo.environ import Var, Set, Constraint, NonNegativeReals
+import os.path
+from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
 from modules.auxiliary.auxiliary import generator_subset_init
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, d):
     """
     Add a capacity commit variable to represent the amount of capacity that is
     on.
@@ -23,6 +24,19 @@ def add_module_specific_components(m):
         generator_subset_init("operational_type",
                               "hydro_conventional")
     )
+
+    m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS = \
+        Set(dimen=2)
+
+    m.hydro_specified_average_power_mwa = \
+        Param(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
+              within=NonNegativeReals)
+    m.hydro_specified_min_power_mw = \
+        Param(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
+              within=NonNegativeReals)
+    m.hydro_specified_max_power_mw = \
+        Param(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
+              within=NonNegativeReals)
 
     m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
@@ -51,7 +65,7 @@ def add_module_specific_components(m):
                 for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
 
     m.Conventional_Hydro_Energy_Budget_Constraint = \
-        Constraint(m.HYDRO_SPECIFIED_OPERATIONAL_HORIZONS,
+        Constraint(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
                    rule=hydro_energy_budget_rule)
 
 
@@ -132,3 +146,29 @@ def shutdown_rule(mod, g, tmp):
     :return:
     """
     return 0
+
+def load_module_specific_data(m,
+                              data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    data_portal.load(filename=
+                     os.path.join(scenario_directory,
+                                  "inputs",
+                                  "hydro_conventional_horizon_params.tab"),
+                     index=
+                     m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
+                     select=("hydro_project", "horizon",
+                             "hydro_specified_average_power_mwa",
+                             "hydro_specified_min_power_mw",
+                             "hydro_specified_max_power_mw"),
+                     param=(m.hydro_specified_average_power_mwa,
+                            m.hydro_specified_min_power_mw,
+                            m.hydro_specified_max_power_mw)
+                     )
