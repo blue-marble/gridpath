@@ -9,7 +9,7 @@ from pyomo.environ import Constraint, Set
 from modules.auxiliary.auxiliary import generator_subset_init
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, d):
     """
 
     :param m:
