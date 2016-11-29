@@ -166,7 +166,7 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
     The abstract model
     :param project_time_set:
     A two-dimensional set of project (e.g. generator, transmission line, etc.)
-    and time index (e.g. timepoint, period, etc.)
+    and temporal index (e.g. timepoint, period, etc.)
     :param var:
     The variable indexed by project_time_set that we will get values for
     :param index:
@@ -177,7 +177,7 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
     Nothing
     """
 
-    # Created nested dictionary for each generator-time combo
+    # Created nested dictionary for each generator-temporal combo
     dict_for_project_df = {}
     for (r, time) in getattr(m, project_time_set):
         if r not in dict_for_project_df.keys():

@@ -21,3 +21,9 @@ Gas_CT_z2	2030	6
 Wind_z2	2030	2
 Hydro	2020	6
 Hydro	2030	6
+Disp_Binary_Commit	2020	6
+Disp_Binary_Commit	2030	6
+Disp_Cont_Commit	2020	6
+Disp_Cont_Commit	2030	6
+Disp_No_Commit	2020	6
+Disp_No_Commit	2030	6

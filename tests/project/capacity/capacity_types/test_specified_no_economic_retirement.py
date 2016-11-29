@@ -87,7 +87,10 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
             ("Coal_z2", 2020), ("Gas_CT_z2", 2020), ("Wind_z2", 2020),
             ("Nuclear_z2", 2030), ("Gas_CCGT_z2", 2030), ("Coal_z2", 2030),
             ("Gas_CT_z2", 2030), ("Wind_z2", 2030), ("Hydro", 2020),
-            ("Hydro", 2030)
+            ("Hydro", 2030), ("Disp_Binary_Commit", 2020),
+            ("Disp_Binary_Commit", 2030), ("Disp_Cont_Commit", 2020),
+            ("Disp_Cont_Commit", 2030), ("Disp_No_Commit", 2020),
+            ("Disp_No_Commit", 2030)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period) in
@@ -109,7 +112,12 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
                  ("Wind_z2", 2020): 2, ("Nuclear_z2", 2030): 6,
                  ("Gas_CCGT_z2", 2030): 6, ("Coal_z2", 2030): 6,
                  ("Gas_CT_z2", 2030): 6, ("Wind_z2", 2030): 2,
-                 ("Hydro", 2020): 6, ("Hydro", 2030): 6}.items()
+                 ("Hydro", 2020): 6, ("Hydro", 2030): 6,
+                 ("Disp_Binary_Commit", 2020): 6,
+                 ("Disp_Binary_Commit", 2030): 6,
+                 ("Disp_Cont_Commit", 2020): 6, ("Disp_Cont_Commit", 2030): 6,
+                 ("Disp_No_Commit", 2020): 6, ("Disp_No_Commit", 2030): 6
+        }.items()
             )
         )
         actual_specified_cap = OrderedDict(

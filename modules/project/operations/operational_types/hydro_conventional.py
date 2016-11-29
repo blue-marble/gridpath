@@ -147,6 +147,7 @@ def shutdown_rule(mod, g, tmp):
     """
     return 0
 
+
 def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
     """

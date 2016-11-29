@@ -34,7 +34,7 @@ except ImportError:
           " to test.")
 
 
-class TestCapacity(unittest.TestCase):
+class TestOperations(unittest.TestCase):
     """
 
     """

@@ -14,3 +14,6 @@ Wind_z2	Zone2	specified_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	
 Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
 Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8
 Hydro	Zone1	specified_no_economic_retirement	0	hydro_conventional	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.
+Disp_Binary_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_binary_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.
+Disp_Cont_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.
+Disp_No_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.
