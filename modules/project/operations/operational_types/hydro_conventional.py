@@ -8,6 +8,8 @@ import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
 from modules.auxiliary.auxiliary import generator_subset_init
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -70,7 +72,6 @@ def add_module_specific_components(m, d):
         Constraint(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
                    rule=hydro_energy_budget_rule)
 
-    # TODO: add reserve variables
     def max_power_rule(mod, g, tmp):
         """
 
@@ -79,8 +80,10 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
-            <= mod.hydro_specified_max_power_mw[g, mod.horizon[tmp]]
+        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] + \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, headroom_variables)[g]) \
+               <= mod.hydro_specified_max_power_mw[g, mod.horizon[tmp]]
     m.Hydro_Conventional_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -95,7 +98,9 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
+        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] - \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, footroom_variables)[g]) \
             >= mod.hydro_specified_min_power_mw[g, mod.horizon[tmp]]
     m.Hydro_Conventional_Min_Power_Constraint = \
         Constraint(
