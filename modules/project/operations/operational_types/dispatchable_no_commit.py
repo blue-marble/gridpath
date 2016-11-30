@@ -4,9 +4,11 @@
 Operations of no-commit generators.
 """
 
-from pyomo.environ import Set, Var, NonNegativeReals
+from pyomo.environ import Set, Var, Constraint, NonNegativeReals
 
 from modules.auxiliary.auxiliary import generator_subset_init
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -17,6 +19,7 @@ def add_module_specific_components(m, d):
     :return:
     """
 
+    # Sets
     m.DISPATCHABLE_NO_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
@@ -28,10 +31,48 @@ def add_module_specific_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_NO_COMMIT_GENERATORS))
-    
+
+    # Variables
     m.Provide_Power_DispNoCommit_MW = \
         Var(m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
+
+    # Operational constraints
+    def max_power_rule(mod, g, tmp):
+        """
+        Power plus upward services cannot exceed capacity.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispNoCommit_MW[g, tmp] + \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, headroom_variables)[g]) \
+            <= mod.Capacity_MW[g, mod.period[tmp]]
+    m.DispNoCommit_Max_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Power minus downward services cannot be below 0 (no commitment variable).
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, footroom_variables)[g]) \
+            >= 0
+    m.DispNoCommit_Min_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -43,32 +84,6 @@ def power_provision_rule(mod, g, tmp):
     :return:
     """
     return mod.Provide_Power_DispNoCommit_MW[g, tmp]
-
-
-def max_power_rule(mod, g, tmp):
-    """
-    Power plus upward services cannot exceed capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispNoCommit_MW[g, tmp] + \
-        mod.Headroom_Provision_MW[g, tmp] \
-        <= mod.Capacity_MW[g, mod.period[tmp]]
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    Power minus downward services cannot be below 0 (no commitment variable).
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-        mod.Footroom_Provision_MW[g, tmp] \
-        >= 0
 
 
 def curtailment_rule(mod, g, tmp):

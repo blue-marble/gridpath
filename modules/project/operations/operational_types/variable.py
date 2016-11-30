@@ -19,7 +19,7 @@ def add_module_specific_components(m, d):
     :param m:
     :return:
     """
-
+    # Sets and params
     m.VARIABLE_GENERATORS = Set(within=m.PROJECTS,
                                 initialize=generator_subset_init(
                                     "operational_type", "variable")
@@ -35,6 +35,7 @@ def add_module_specific_components(m, d):
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
 
+    # Variables
     # Curtailment is a dispatch decision
     m.Curtail_MW = Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                        within=NonNegativeReals)
@@ -68,28 +69,6 @@ def power_provision_rule(mod, g, tmp):
 
     return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] \
         - mod.Curtail_MW[g, tmp]
-
-
-def max_power_rule(mod, g, tmp):
-    """
-    No variables to constrain for variable generators.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return Constraint.Skip
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    No variables to constrain for variable generators.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return Constraint.Skip
 
 
 def curtailment_rule(mod, g, tmp):

@@ -11,6 +11,8 @@ from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -20,7 +22,7 @@ def add_module_specific_components(m, d):
     :param m:
     :return:
     """
-
+    # Sets and params
     m.STORAGE_GENERIC_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=
@@ -39,6 +41,7 @@ def add_module_specific_components(m, d):
     m.storage_generic_discharging_efficiency = \
         Param(m.STORAGE_GENERIC_PROJECTS, within=PercentFraction)
 
+    # Variables
     m.Generic_Storage_Discharge_MW = \
         Var(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
@@ -50,6 +53,45 @@ def add_module_specific_components(m, d):
         Var(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals
             )
+
+    # Operational constraints
+    def max_power_rule(mod, s, tmp):
+        """
+
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return mod.Generic_Storage_Discharge_MW[s, tmp] + \
+            sum(getattr(mod, c)[s, tmp]
+                for c in getattr(d, headroom_variables)[s]) \
+            <= mod.Generic_Storage_Charge_MW[s, tmp] \
+            + mod.Capacity_MW[s, mod.period[tmp]]
+    m.Storage_Generic_Max_Power_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, s, tmp):
+        """
+
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return mod.Generic_Storage_Charge_MW[s, tmp] + \
+            sum(getattr(mod, c)[s, tmp]
+                for c in getattr(d, footroom_variables)[s]) \
+            <= mod.Generic_Storage_Discharge_MW[s, tmp] \
+            + mod.Capacity_MW[s, mod.period[tmp]]
+    m.Storage_Generic_Min_Power_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
 
     def energy_tracking_rule(mod, s, tmp):
         """
@@ -105,34 +147,6 @@ def power_provision_rule(mod, s, tmp):
     """
     return mod.Generic_Storage_Discharge_MW[s, tmp] \
         - mod.Generic_Storage_Charge_MW[s, tmp]
-
-
-def max_power_rule(mod, s, tmp):
-    """
-
-    :param mod:
-    :param s:
-    :param tmp:
-    :return:
-    """
-    return mod.Generic_Storage_Discharge_MW[s, tmp] + \
-        mod.Headroom_Provision_MW[s, tmp] \
-        <= mod.Generic_Storage_Charge_MW[s, tmp] \
-        + mod.Capacity_MW[s, mod.period[tmp]]
-
-
-def min_power_rule(mod, s, tmp):
-    """
-
-    :param mod:
-    :param s:
-    :param tmp:
-    :return:
-    """
-    return mod.Generic_Storage_Charge_MW[s, tmp] + \
-        mod.Footroom_Provision_MW[s, tmp] \
-        <= mod.Generic_Storage_Discharge_MW[s, tmp] \
-        + mod.Capacity_MW[s, mod.period[tmp]]
 
 
 def curtailment_rule(mod, g, tmp):

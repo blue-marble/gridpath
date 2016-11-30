@@ -64,8 +64,8 @@ def load_operational_type_modules(required_operational_modules):
     return load_subtype_modules(
         required_operational_modules,
         "modules.project.operations.operational_types",
-        ["power_provision_rule","max_power_rule", "min_power_rule",
-         "fuel_cost_rule", "startup_rule", "shutdown_rule"]
+        ["power_provision_rule", "fuel_cost_rule",
+         "startup_rule", "shutdown_rule"]
          )
 
 

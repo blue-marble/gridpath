@@ -5,11 +5,13 @@ Operations of must-run generators. Can't provide reserves.
 """
 import os.path
 from pandas import read_csv
-from pyomo.environ import Var, Set, Param, NonNegativeReals, Binary, \
-    PercentFraction
+from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
+    Binary, PercentFraction
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -20,7 +22,7 @@ def add_module_specific_components(m, d):
     :param d:
     :return:
     """
-
+    # Sets and params
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
@@ -33,6 +35,11 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
 
+    m.disp_binary_commit_min_stable_level_fraction = \
+        Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
+              within=PercentFraction)
+
+    # Variables
     m.Provide_Power_DispBinaryCommit_MW = \
         Var(m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
@@ -40,9 +47,44 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=Binary)
 
-    m.disp_binary_commit_min_stable_level_fraction = \
-        Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-              within=PercentFraction)
+    # Operational constraints
+    def max_power_rule(mod, g, tmp):
+        """
+        Power plus upward services cannot exceed capacity.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] + \
+           sum(getattr(mod, c)[g, tmp]
+               for c in getattr(d, headroom_variables)[g]) \
+            <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[
+            g, tmp]
+    m.DispBinCommit_Max_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Power minus downward services cannot be below a minimum stable level.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] - \
+           sum(getattr(mod, c)[g, tmp]
+               for c in getattr(d, footroom_variables)[g]) \
+            >= mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.disp_binary_commit_min_stable_level_fraction[g]
+    m.DispBinCommit_Min_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -58,33 +100,6 @@ def power_provision_rule(mod, g, tmp):
 
 def commitment_rule(mod, g, tmp):
     return mod.Commit_Binary[g, tmp]
-
-
-def max_power_rule(mod, g, tmp):
-    """
-    Power plus upward services cannot exceed capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] + \
-        mod.Headroom_Provision_MW[g, tmp] \
-        <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[g, tmp]
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    Power minus downward services cannot be below a minimum stable level.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] - \
-        mod.Footroom_Provision_MW[g, tmp] \
-        >= mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.disp_binary_commit_min_stable_level_fraction[g]
 
 
 def curtailment_rule(mod, g, tmp):

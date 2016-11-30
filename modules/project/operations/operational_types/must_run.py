@@ -39,28 +39,6 @@ def power_provision_rule(mod, g, tmp):
     return mod.Capacity_MW[g, mod.period[tmp]]
 
 
-def max_power_rule(mod, g, tmp):
-    """
-    No variables to constrain for must-run generators.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return Constraint.Skip
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    No variables to constrain for must-run generators.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return Constraint.Skip
-
-
 def curtailment_rule(mod, g, tmp):
     """
     Can't dispatch down and curtailment not allowed

@@ -7,8 +7,7 @@ import os.path
 from pyomo.environ import Param, Expression, Constraint, NonNegativeReals, \
     PercentFraction
 
-from modules.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables, required_operational_modules, \
+from modules.auxiliary.dynamic_components import required_operational_modules, \
     load_balance_production_components, required_reserve_modules
 from modules.auxiliary.auxiliary import make_project_time_var_df, \
     load_operational_type_modules, load_reserve_type_modules
@@ -21,22 +20,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    # Aggregate the headroom and footroom decision variables added by the
-    # reserves modules for use by the operational modules
-    def headroom_provision_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] 
-                   for c in getattr(d, headroom_variables)[g])
-    m.Headroom_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                         rule=headroom_provision_rule)
-
-    def footroom_provision_rule(mod, g, tmp):
-        return sum(getattr(mod, c)[g, tmp] 
-                   for c in getattr(d, footroom_variables)[g])
-    m.Footroom_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                         rule=footroom_provision_rule)
-
-    # From here, the operational modules determine how the model components are
-    # formulated
     # Import needed operational modules
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
@@ -64,39 +47,6 @@ def add_model_components(m, d):
             power_provision_rule(mod, g, tmp)
     m.Power_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
                                       rule=power_provision_rule)
-
-    def max_power_rule(mod, g, tmp):
-        """
-        The maximum power and headroom services from a generator; get the
-        appropriate variables to be constrained from the generator's
-        operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type].\
-            max_power_rule(mod, g, tmp)
-    m.Max_Power_Constraint = Constraint(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                        rule=max_power_rule)
-
-    def min_power_rule(mod, g, tmp):
-        """
-        The minimum amount of power a generator must provide in a timepoint; if
-        providing footroom services add those to the minimum level; get the
-        appropriate variables to be constrained from the generator's
-        operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            min_power_rule(mod, g, tmp)
-    m.Min_Power_Constraint = Constraint(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                        rule=min_power_rule)
 
     # Add generation to load balance constraint
     def total_power_production_rule(mod, z, tmp):

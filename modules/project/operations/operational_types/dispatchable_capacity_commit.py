@@ -5,6 +5,8 @@ Operations of dispatchable generators with 'capacity commitment,' i.e.
 commit some level of capacity below the total capacity. This approach can
 be good for modeling 'fleets' of generators, e.g. a total 2000 MW of 500-MW
 units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
+Integer commitment is not enforced as capacity commitment with this approach is
+continuous.
 """
 
 import os.path
@@ -15,6 +17,8 @@ from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -26,6 +30,7 @@ def add_module_specific_components(m, d):
     :return:
     """
 
+    # Sets and params
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
@@ -39,6 +44,13 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
     
+    m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+                           within=NonNegativeReals)
+    m.disp_cap_commit_min_stable_level_fraction = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=PercentFraction)
+
+    # Variables
     m.Provide_Power_DispCapacityCommit_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
@@ -47,6 +59,7 @@ def add_module_specific_components(m, d):
             within=NonNegativeReals
             )
 
+    # Operational constraints
     def commit_capacity_constraint_rule(mod, g, tmp):
         """
         Can't commit more capacity than available in each timepoint.
@@ -62,11 +75,42 @@ def add_module_specific_components(m, d):
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=commit_capacity_constraint_rule)
 
-    m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-                           within=NonNegativeReals)
-    m.disp_cap_commit_min_stable_level_fraction = \
-        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-              within=PercentFraction)
+    def max_power_rule(mod, g, tmp):
+        """
+        Power plus upward services cannot exceed capacity.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] + \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, headroom_variables)[g]) \
+            <= mod.Commit_Capacity_MW[g, tmp]
+    m.DispCapCommit_Max_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Power minus downward services cannot be below a minimum stable level.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, footroom_variables)[g]) \
+            >= mod.Commit_Capacity_MW[g, tmp] \
+            * mod.disp_cap_commit_min_stable_level_fraction[g]
+    m.DispCapCommit_Min_Power_Constraint = \
+        Constraint(
+            m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -90,33 +134,6 @@ def commitment_rule(mod, g, tmp):
     :return:
     """
     return mod.Commit_Capacity_MW[g, tmp]
-
-
-def max_power_rule(mod, g, tmp):
-    """
-    Power plus upward services cannot exceed capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] + \
-        mod.Headroom_Provision_MW[g, tmp] \
-        <= mod.Commit_Capacity_MW[g, tmp]
-
-
-def min_power_rule(mod, g, tmp):
-    """
-    Power minus downward services cannot be below a minimum stable level.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
-        mod.Footroom_Provision_MW[g, tmp] \
-        >= mod.Commit_Capacity_MW[g, tmp] \
-        * mod.disp_cap_commit_min_stable_level_fraction[g]
 
 
 def curtailment_rule(mod, g, tmp):

@@ -17,7 +17,7 @@ def add_module_specific_components(m, d):
     :param m:
     :return:
     """
-
+    # Sets and params
     m.HYDRO_CONVENTIONAL_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=
@@ -44,10 +44,12 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.HYDRO_CONVENTIONAL_PROJECTS))
 
+    # Variables
     m.Hydro_Conventional_Provide_Power_MW = \
         Var(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
 
+    # Operational constraints
     def hydro_energy_budget_rule(mod, g, h):
         """
 
@@ -68,6 +70,39 @@ def add_module_specific_components(m, d):
         Constraint(m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS,
                    rule=hydro_energy_budget_rule)
 
+    # TODO: add reserve variables
+    def max_power_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
+            <= mod.hydro_specified_max_power_mw[g, mod.horizon[tmp]]
+    m.Hydro_Conventional_Max_Power_Constraint = \
+        Constraint(
+            m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
+            >= mod.hydro_specified_min_power_mw[g, mod.horizon[tmp]]
+    m.Hydro_Conventional_Min_Power_Constraint = \
+        Constraint(
+            m.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
+
 
 def power_provision_rule(mod, g, tmp):
     """
@@ -78,30 +113,6 @@ def power_provision_rule(mod, g, tmp):
     :return:
     """
     return mod.Hydro_Conventional_Provide_Power_MW[g, tmp]
-
-
-def max_power_rule(mod, g, tmp):
-    """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
-        <= mod.hydro_specified_max_power_mw[g, mod.horizon[tmp]]
-
-
-def min_power_rule(mod, g, tmp):
-    """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return mod.Hydro_Conventional_Provide_Power_MW[g, tmp] \
-        >= mod.hydro_specified_min_power_mw[g, mod.horizon[tmp]]
 
 
 def curtailment_rule(mod, g, tmp):
