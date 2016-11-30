@@ -2,7 +2,7 @@
 
 import os.path
 from pandas import read_csv
-from pyomo.environ import Set, Param
+from pyomo.environ import Set, Param, NonNegativeReals
 
 from modules.auxiliary.dynamic_components import required_capacity_modules, \
     required_operational_modules, headroom_variables, footroom_variables
@@ -67,13 +67,17 @@ def add_model_components(m, d):
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
 
+    # Variable O&M cost
+    # TODO: all projects have this for now; is that what makes the most sense?
+    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
+
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
-                             "operational_type"),
+                             "operational_type", "variable_om_cost_per_mwh"),
                      param=(m.load_zone, m.capacity_type,
-                            m.operational_type)
+                            m.operational_type, m.variable_om_cost_per_mwh)
                      )

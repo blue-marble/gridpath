@@ -208,6 +208,26 @@ class TestProject(unittest.TestCase):
         )
         self.assertDictEqual(expected_cap_type, actual_cap_type)
 
+        # Params: variable_om_cost_per_mwh
+        expected_var_om_cost = OrderedDict(
+            sorted(
+                {"Coal": 1, "Coal_z2": 1, "Gas_CCGT": 2, "Gas_CCGT_New": 2,
+                 "Gas_CCGT_z2": 2, "Gas_CT": 2, "Gas_CT_New": 2, "Gas_CT_z2": 2,
+                 "Nuclear": 1, "Nuclear_z2": 1, "Wind": 0, "Wind_z2": 0,
+                 "Battery": 0, "Battery_Specified": 0, "Hydro": 0,
+                 "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
+                 "Disp_No_Commit": 0
+                 }.items()
+            )
+        )
+        actual_var_om_cost = OrderedDict(
+            sorted(
+                {prj: instance.variable_om_cost_per_mwh[prj] for prj in
+                 instance.PROJECTS}.items()
+            )
+        )
+        self.assertDictEqual(expected_var_om_cost, actual_var_om_cost)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,10 +21,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
-    # Variable O&M cost
-    m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
-
     # Aggregate the headroom and footroom decision variables added by the
     # reserves modules for use by the operational modules
     def headroom_provision_rule(mod, g, tmp):
@@ -143,15 +139,6 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-
-    data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "projects.tab"),
-                     index=m.PROJECTS,
-                     select=("project",
-                             "variable_om_cost_per_mwh"),
-                     param=m.variable_om_cost_per_mwh
-                     )
-
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
     for op_m in getattr(d, required_operational_modules):
