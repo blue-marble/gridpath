@@ -3,8 +3,9 @@
 """
 Operations of must-run generators. Can't provide reserves.
 """
-
-from pyomo.environ import Var, Set, NonNegativeReals
+import os.path
+from pandas import read_csv
+from pyomo.environ import Var, Set, Param, NonNegativeReals, PercentFraction
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -40,6 +41,10 @@ def add_module_specific_components(m, d):
         Var(m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             bounds=(0, 1)
             )
+
+    m.disp_cont_commit_min_stable_level_fraction = \
+        Param(m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS,
+              within=PercentFraction)
 
 
 # ### OPERATIONS ### #
@@ -82,7 +87,7 @@ def min_power_rule(mod, g, tmp):
     return mod.Provide_Power_DispContinuousCommit_MW[g, tmp] - \
         mod.Footroom_Provision_MW[g, tmp] \
         >= mod.Commit_Continuous[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.min_stable_level_fraction[g]
+        * mod.disp_cont_commit_min_stable_level_fraction[g]
 
 
 def curtailment_rule(mod, g, tmp):
@@ -113,7 +118,7 @@ def fuel_cost_rule(mod, g, tmp):
     * mod.minimum_input_mmbtu_per_hr[g]
     + (mod.Provide_Power_DispContinuousCommit_MW[g, tmp] -
        (mod.Commit_Continuous[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]]
-        * mod.min_stable_level_fraction[g])
+        * mod.disp_cont_commit_min_stable_level_fraction[g])
        ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
             ) * mod.fuel_price_per_mmbtu[mod.fuel[g]]
 
@@ -170,6 +175,36 @@ def fix_commitment(mod, g, tmp):
     """
     mod.Commit_Continuous[g, tmp] = mod.fixed_commitment[g, tmp]
     mod.Commit_Continuous[g, tmp].fixed = True
+
+
+def load_module_specific_data(mod, data_portal, scenario_directory,
+                              horizon, stage):
+    """
+
+    :param mod:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    min_stable_fraction = dict()
+    dynamic_components = \
+        read_csv(
+            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            sep="\t", usecols=["project", "operational_type",
+                               "min_stable_level_fraction"]
+            )
+    for row in zip(dynamic_components["project"],
+                   dynamic_components["operational_type"],
+                   dynamic_components["min_stable_level_fraction"]):
+        if row[1] == "dispatchable_continuous_commit":
+            min_stable_fraction[row[0]] = float(row[2])
+        else:
+            pass
+
+    data_portal.data()["disp_cont_commit_min_stable_level_fraction"] = \
+        min_stable_fraction
 
 
 def export_module_specific_results(mod, d):

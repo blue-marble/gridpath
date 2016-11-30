@@ -473,5 +473,16 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_unit_size,
                              actual_unit_size)
 
-
-
+        # Param: disp_cap_commit_min_stable_level_fraction
+        expected_min_stable_fraction = {
+            "Gas_CCGT": 0.4, "Coal": 0.4, "Gas_CT": 0.4, "Gas_CCGT_New": 0.4,
+            "Gas_CT_New": 0.4, "Gas_CCGT_z2": 0.4, "Coal_z2": 0.4,
+            "Gas_CT_z2": 0.4
+        }
+        actual_min_stable_fraction = {
+            prj: instance.disp_cap_commit_min_stable_level_fraction[prj]
+            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_min_stable_fraction,
+                             actual_min_stable_fraction
+                             )

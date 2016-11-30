@@ -148,7 +148,12 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-
-
-
-
+        # Param: disp_binary_commit_min_stable_level_fraction
+        expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
+        actual_min_stable_fraction = {
+            prj: instance.disp_binary_commit_min_stable_level_fraction[prj]
+            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_min_stable_fraction,
+                             actual_min_stable_fraction
+                             )

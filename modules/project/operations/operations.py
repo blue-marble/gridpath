@@ -24,9 +24,6 @@ def add_model_components(m, d):
 
     # Variable O&M cost
     m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
-    # TODO: this should be built below with the dynamic components
-    m.min_stable_level_fraction = Param(m.PROJECTS,
-                                        within=PercentFraction)
 
     # Aggregate the headroom and footroom decision variables added by the
     # reserves modules for use by the operational modules
@@ -151,10 +148,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project",
-                             "min_stable_level_fraction",
                              "variable_om_cost_per_mwh"),
-                     param=(m.min_stable_level_fraction,
-                            m.variable_om_cost_per_mwh)
+                     param=m.variable_om_cost_per_mwh
                      )
 
     imported_operational_modules = \

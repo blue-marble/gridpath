@@ -10,7 +10,8 @@ units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
 import os.path
 
 from pandas import read_csv
-from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals
+from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
+    PercentFraction
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -63,6 +64,9 @@ def add_module_specific_components(m, d):
 
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
                            within=NonNegativeReals)
+    m.disp_cap_commit_min_stable_level_fraction = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=PercentFraction)
 
 
 def power_provision_rule(mod, g, tmp):
@@ -112,7 +116,7 @@ def min_power_rule(mod, g, tmp):
     return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
         mod.Footroom_Provision_MW[g, tmp] \
         >= mod.Commit_Capacity_MW[g, tmp] \
-        * mod.min_stable_level_fraction[g]
+        * mod.disp_cap_commit_min_stable_level_fraction[g]
 
 
 def curtailment_rule(mod, g, tmp):
@@ -142,7 +146,7 @@ def fuel_cost_rule(mod, g, tmp):
             * mod.minimum_input_mmbtu_per_hr[g]
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                (mod.Commit_Capacity_MW[g, tmp]
-                * mod.min_stable_level_fraction[g])
+                * mod.disp_cap_commit_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
             ) * mod.fuel_price_per_mmbtu[mod.fuel[g]]
 
@@ -217,27 +221,28 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :param stage:
     :return:
     """
-    def determine_unit_size():
-        """
-        """
-        unit_size_mw = dict()
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project", "operational_type",
-                                   "unit_size_mw"]
-                )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["unit_size_mw"]):
-            if row[1] == "dispatchable_capacity_commit":
-                unit_size_mw[row[0]] = float(row[2])
-            else:
-                pass
 
-        return unit_size_mw
+    unit_size_mw = dict()
+    min_stable_fraction = dict()
+    dynamic_components = \
+        read_csv(
+            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            sep="\t", usecols=["project", "operational_type",
+                               "unit_size_mw", "min_stable_level_fraction"]
+            )
+    for row in zip(dynamic_components["project"],
+                   dynamic_components["operational_type"],
+                   dynamic_components["unit_size_mw"],
+                   dynamic_components["min_stable_level_fraction"]):
+        if row[1] == "dispatchable_capacity_commit":
+            unit_size_mw[row[0]] = float(row[2])
+            min_stable_fraction[row[0]] = float(row[3])
+        else:
+            pass
 
-    data_portal.data()["unit_size_mw"] = determine_unit_size()
+    data_portal.data()["unit_size_mw"] = unit_size_mw
+    data_portal.data()["disp_cap_commit_min_stable_level_fraction"] = \
+        min_stable_fraction
 
 
 def export_module_specific_results(mod, d):
