@@ -78,7 +78,6 @@ def generic_add_model_components(m, d,
     :return:
     """
 
-    # TODO: limit to BA set when implemented
     setattr(m, reserve_projects_set, Set(within=m.PROJECTS))
     setattr(m, reserve_balancing_area_param,
             Param(getattr(m, reserve_projects_set),
