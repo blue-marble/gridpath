@@ -57,7 +57,6 @@ def add_model_components(m, d):
 
     # ### Aggregate operational costs for objective function ### #
     # Add cost to objective function
-    # TODO: fix this when periods added, etc.
     def variable_om_cost_rule(m, g, tmp):
         """
         Power production cost for each generator.
@@ -70,7 +69,6 @@ def add_model_components(m, d):
                                     rule=variable_om_cost_rule)
 
     # Power production variable costs
-    # TODO: fix this when periods added, etc.
     def total_variable_om_cost_rule(mod):
         """
         Power production cost for all generators across all timepoints
