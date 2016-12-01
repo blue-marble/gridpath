@@ -77,11 +77,12 @@ def add_components_and_load_data(prereq_modules, module_to_test, test_data_dir,
     data = DataPortal()
     for mod in prereq_modules:
         if hasattr(mod, 'load_model_data'):
-            mod.load_model_data(m, d, data, test_data_dir, "", "")
+            mod.load_model_data(m, d, data, test_data_dir, horizon, stage)
     if hasattr(module_to_test, "load_model_data"):
-        module_to_test.load_model_data(m, d, data, test_data_dir, "", "")
+        module_to_test.load_model_data(m, d, data, test_data_dir,
+                                       horizon, stage)
     if hasattr(module_to_test, "load_module_specific_data"):
         module_to_test.load_module_specific_data(m, data, test_data_dir,
-                                                 "", "")
+                                                  horizon, stage)
 
     return m, data

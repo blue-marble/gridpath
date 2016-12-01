@@ -47,21 +47,23 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             commitment_rule(mod, g, tmp)
-    m.Commitment = Expression(m.FINAL_COMMITMENT_PROJECTS, m.TIMEPOINTS,
+    m.Commitment = Expression(m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
                               rule=commitment_rule)
 
     # TODO: is there a need to subdivide into binary and continuous?
     # The generators that have already had their commitment fixed in a prior
     # commitment stage
     m.FIXED_COMMITMENT_PROJECTS = Set()
-    m.fixed_commitment = Param(m.FIXED_COMMITMENT_PROJECTS, m.TIMEPOINTS,
-                               within=NonNegativeReals)
 
     m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.FIXED_COMMITMENT_PROJECTS))
+
+    m.fixed_commitment = Param(
+        m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
 
 
 def fix_variables(m, d):
