@@ -1,0 +1,7 @@
+project,period,capacity_mw
+Gas_CCGT,2020,6.0
+Nuclear,2020,6.0
+Gas_CT,2020,6.0
+Coal,2020,6.0
+Wind,2020,2.0
+Hydro,2020,6.0

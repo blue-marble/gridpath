@@ -176,7 +176,7 @@ def load_module_specific_data(m,
     :return:
     """
     data_portal.load(filename=
-                     os.path.join(scenario_directory,
+                     os.path.join(scenario_directory, horizon,
                                   "inputs",
                                   "hydro_conventional_horizon_params.tab"),
                      index=
