@@ -36,7 +36,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperations(unittest.TestCase):
+class TestOperationalCosts(unittest.TestCase):
     """
 
     """
