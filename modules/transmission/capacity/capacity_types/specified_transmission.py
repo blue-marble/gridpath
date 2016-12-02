@@ -4,10 +4,11 @@ import os.path
 from pyomo.environ import Set, Param, Reals
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, d):
     """
 
     :param m:
+    :param d:
     :return:
     """
     m.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS = Set(dimen=2)

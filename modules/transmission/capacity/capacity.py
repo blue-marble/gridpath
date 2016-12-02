@@ -10,30 +10,6 @@ from modules.auxiliary.auxiliary import load_tx_capacity_type_modules, \
     make_project_time_var_df
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
-    """
-
-    :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-
-    # Get the capacity type of each generator
-    dynamic_components = \
-        pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                 "transmission_lines.tab"),
-                    sep="\t", usecols=["TRANSMISSION_LINES", "tx_capacity_type"]
-                    )
-
-    # Required modules are the unique set of generator operational types
-    # This list will be used to know which operational modules to load
-    setattr(d, required_tx_capacity_modules,
-            dynamic_components.tx_capacity_type.unique()
-            )
-
-
 def add_model_components(m, d):
     """
 
@@ -41,15 +17,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    m.TRANSMISSION_LINES = Set()
-    m.tx_capacity_type = Param(m.TRANSMISSION_LINES)
-    m.load_zone_from = Param(m.TRANSMISSION_LINES)
-    m.load_zone_to = Param(m.TRANSMISSION_LINES)
-
-    # Capacity-type modules will populate this list if called
-    # List will be used to initialize TRANSMISSION_OPERATIONAL_PERIODS
-    m.tx_capacity_type_operational_period_sets = []
-
     # Import needed transmission capacity type modules
     imported_tx_capacity_modules = \
         load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
@@ -57,7 +24,7 @@ def add_model_components(m, d):
     for op_m in getattr(d, required_tx_capacity_modules):
         imp_op_m = imported_tx_capacity_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m)
+            imp_op_m.add_module_specific_components(m, d)
 
     def join_tx_cap_type_operational_period_sets(mod):
         """
@@ -134,15 +101,6 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, "inputs",
-                                           "transmission_lines.tab"),
-                     select=("TRANSMISSION_LINES", "tx_capacity_type",
-                             "load_zone_from", "load_zone_to"),
-                     index=m.TRANSMISSION_LINES,
-                     param=(m.tx_capacity_type,
-                            m.load_zone_from, m.load_zone_to)
-                     )
-
     imported_tx_capacity_modules = \
         load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
     for op_m in getattr(d, required_tx_capacity_modules):

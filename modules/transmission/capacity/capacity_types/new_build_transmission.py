@@ -7,7 +7,7 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 from modules.auxiliary.auxiliary import make_project_time_var_df
 
 
-def add_module_specific_components(m):
+def add_module_specific_components(m, d):
     """
 
     """
