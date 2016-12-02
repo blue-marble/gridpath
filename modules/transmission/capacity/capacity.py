@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os.path
-import pandas as pd
 from pyomo.environ import Set, Param, Expression
 
 from modules.auxiliary.dynamic_components import required_tx_capacity_modules, \
@@ -43,7 +42,7 @@ def add_model_components(m, d):
                           mod.tx_capacity_type_operational_period_sets)
 
     m.TRANSMISSION_OPERATIONAL_PERIODS = \
-        Set(dimen=2,
+        Set(dimen=2, within=m.TRANSMISSION_LINES*m.PERIODS,
             initialize=join_tx_cap_type_operational_period_sets)
 
     def transmission_min_capacity_rule(mod, tx, p):
