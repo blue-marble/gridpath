@@ -85,10 +85,6 @@ class ScenarioStructure(object):
             self.horizons_flag = False
             self.horizon_subproblems = []
 
-    # TODO: make directories if they don't exist
-    def make_directories(self):
-        pass
-
 
 def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     """
@@ -100,10 +96,19 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     :return:
     """
 
-    # TODO: move to each problem's directory
-    if not os.path.exists(os.path.join(os.getcwd(), "logs")):
-        os.makedirs(os.path.join(os.getcwd(), "logs"))
-    TempfileManager.tempdir = os.path.join(os.getcwd(), "logs")
+    # TODO: how best to handle non-empty results directories?
+    # Make results and logs directories
+    results_directory = os.path.join(scenario_directory, horizon, stage,
+                                     "results")
+    logs_directory = os.path.join(scenario_directory, horizon, stage,
+                                  "logs")
+    if not os.path.exists(results_directory):
+        os.makedirs(results_directory)
+
+    if not os.path.exists(logs_directory):
+        os.makedirs(logs_directory)
+    # Write temporary files to logs directory
+    TempfileManager.tempdir = logs_directory
 
     # Create pyomo abstract model class
     model = AbstractModel()
@@ -140,7 +145,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     instance = fix_variables(instance, dynamic_inputs, loaded_modules)
 
     # Solve
-    results = solve(instance, parsed_arguments.solver)
+    results = solve(instance, parsed_arguments)
 
     # RESULTS
     instance.solutions.load_from(results)
@@ -324,15 +329,21 @@ def view_loaded_data(loaded_modules, instance):
             m.view_loaded_data(instance)
 
 
-def solve(instance, solver_name):
+def solve(instance, parsed_arguments):
+    """
+
+    :param instance:
+    :param parsed_arguments:
+    :return:
+    """
     # Get solver and solve
-    solver = SolverFactory(solver_name)
+    solver = SolverFactory(parsed_arguments.solver)
 
     print("Solving...")
     results = solver.solve(instance,
-                           tee=True,
-                           keepfiles=False,
-                           symbolic_solver_labels=False
+                           tee=parsed_arguments.quiet,
+                           keepfiles=parsed_arguments.keepfiles,
+                           symbolic_solver_labels=parsed_arguments.symbolic
                            )
     return results
 
@@ -465,8 +476,16 @@ def parse_arguments(arguments):
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
+
+    # Solve options
     parser.add_argument("--solver", default="cbc",
                         help="Name of the solver to use. Default is cbc.")
+    parser.add_argument("--quiet", default=True, action="store_false",
+                        help="Don't print solver output if set to true.")
+    parser.add_argument("--keepfiles", default=False, action="store_true",
+                        help="Save temporary solver files in logs directory.")
+    parser.add_argument("--symbolic", default=False, action="store_true",
+                        help="Use symbolic labels in solver files.")
 
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
