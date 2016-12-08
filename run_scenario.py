@@ -24,9 +24,9 @@ class ScenarioStructure(object):
     iterate over and solve each subproblem.
 
     """
-    def __init__(self, scenario):
+    def __init__(self, scenario, scenario_location):
         self.main_scenario_directory = \
-            os.path.join(os.getcwd(), "runs", scenario)
+            os.path.join(os.getcwd(), scenario_location, scenario)
 
         # Check if there are horizon subproblems
         # If yes, make list of horizon subproblem names and
@@ -474,7 +474,11 @@ def parse_arguments(arguments):
     :return:
     """
     parser = ArgumentParser(add_help=True)
+
+    # Scenario name and location options
     parser.add_argument("--scenario",
+                        help="Name of the scenario problem to solve.")
+    parser.add_argument("--scenario_location", default="runs",
                         help="Name of the scenario problem to solve.")
 
     # Solve options
@@ -498,6 +502,7 @@ if __name__ == "__main__":
     # Parse arguments
     parsed_args = parse_arguments(args)
     # Figure out the scenario structure (i.e. horizons and stages)
-    scenario_structure = ScenarioStructure(parsed_args.scenario)
+    scenario_structure = ScenarioStructure(parsed_args.scenario,
+                                           parsed_args.scenario_location)
     # Run the optimization
     run_scenario(scenario_structure, parsed_args)
