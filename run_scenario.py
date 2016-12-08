@@ -3,6 +3,7 @@
 """
 Run model.
 """
+from argparse import ArgumentParser
 import os.path
 import sys
 from csv import writer
@@ -13,8 +14,6 @@ from pyomo.environ import *
 from pyutilib.services import TempfileManager
 
 from modules.auxiliary.dynamic_components import DynamicComponents
-
-SCENARIO_NAME = sys.argv[1]
 
 
 class ScenarioStructure(object):
@@ -91,7 +90,15 @@ class ScenarioStructure(object):
         pass
 
 
-def run_optimization(scenario_directory, horizon, stage):
+def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
+    """
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param parsed_arguments:
+    :return:
+    """
 
     # TODO: move to each problem's directory
     if not os.path.exists(os.path.join(os.getcwd(), "logs")):
@@ -133,7 +140,7 @@ def run_optimization(scenario_directory, horizon, stage):
     instance = fix_variables(instance, dynamic_inputs, loaded_modules)
 
     # Solve
-    results = solve(instance)
+    results = solve(instance, parsed_arguments.solver)
 
     # RESULTS
     instance.solutions.load_from(results)
@@ -317,9 +324,9 @@ def view_loaded_data(loaded_modules, instance):
             m.view_loaded_data(instance)
 
 
-def solve(instance):
+def solve(instance, solver_name):
     # Get solver and solve
-    solver = SolverFactory("cbc")
+    solver = SolverFactory(solver_name)
 
     print("Solving...")
     results = solver.solve(instance,
@@ -387,28 +394,31 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
                             [instance.dual[constraint_object[index]]])
 
 
-def run_scenario(structure):
+def run_scenario(structure, parsed_arguments):
     """
     Check if there are scenario subproblems and solve each problem
     :param structure:
+    :param parsed_arguments:
     :return:
     """
     # If no horizon subproblems (empty list), run main problem
     if not structure.horizon_subproblems:
-        run_optimization(structure.main_scenario_directory, "", "")
+        run_optimization(structure.main_scenario_directory, "", "",
+                         parsed_arguments)
     else:
         for h in structure.horizon_subproblems:
             # If no stage subproblems (empty list), run horizon problem
             if not structure.stage_subproblems[h]:
                 print("Running horizon {}".format(h))
                 run_optimization(
-                    structure.main_scenario_directory, h, "")
+                    structure.main_scenario_directory, h, "",
+                    parsed_arguments)
             else:
                 for s in structure.stage_subproblems[h]:
                     print("Running horizon {}, stage {}".format(h, s))
                     run_optimization(
                         structure.main_scenario_directory,
-                        h, s)
+                        h, s, parsed_arguments)
 
 
 # Auxiliary functions
@@ -446,6 +456,29 @@ def get_subproblems(directory):
         sys.exit(1)
 
 
+# Parse run options
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = ArgumentParser(add_help=True)
+    parser.add_argument("--scenario",
+                        help="Name of the scenario problem to solve.")
+    parser.add_argument("--solver", default="cbc",
+                        help="Name of the solver to use. Default is cbc.")
+
+    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+
+    return parsed_arguments
+
+
 if __name__ == "__main__":
-    scenario_structure = ScenarioStructure(SCENARIO_NAME)
-    run_scenario(scenario_structure)
+    # Get arguments
+    args = sys.argv[1:]
+    # Parse arguments
+    parsed_args = parse_arguments(args)
+    # Figure out the scenario structure (i.e. horizons and stages)
+    scenario_structure = ScenarioStructure(parsed_args.scenario)
+    # Run the optimization
+    run_scenario(scenario_structure, parsed_args)
