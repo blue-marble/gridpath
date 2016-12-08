@@ -14,7 +14,7 @@ from pyutilib.services import TempfileManager
 
 from modules.auxiliary.dynamic_components import DynamicComponents
 
-scenario_name = sys.argv[1]
+SCENARIO_NAME = sys.argv[1]
 
 
 class ScenarioStructure(object):
@@ -180,6 +180,7 @@ def get_modules(scenario_directory):
         "project.operations.operations",
         "project.operations.fix_commitment",
         "project.operations.costs",
+        "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
         "system.load_balance.load_balance",
@@ -199,7 +200,8 @@ def get_modules(scenario_directory):
         "multi_stage":
             ["project.operations.fix_commitment"],
         "transmission":
-            ["transmission.capacity.capacity",
+            ["transmission",
+             "transmission.capacity.capacity",
              "transmission.operations.operations"],
         "lf_reserves_up":
             ["geography.load_following_up_balancing_areas",
@@ -445,5 +447,5 @@ def get_subproblems(directory):
 
 
 if __name__ == "__main__":
-    scenario_structure = ScenarioStructure(scenario_name)
+    scenario_structure = ScenarioStructure(SCENARIO_NAME)
     run_scenario(scenario_structure)
