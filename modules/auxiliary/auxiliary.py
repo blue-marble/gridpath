@@ -170,54 +170,35 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
     :param var:
     The variable indexed by project_time_set that we will get values for
     :param index:
-    The DataFrame columns we'll index by
+    The names of the DataFrame columns we'll index by
     :param header:
     The header of the value column of the DataFrame we'll create
     :return:
     Nothing
     """
 
-    # Created nested dictionary for each generator-temporal combo
-    dict_for_project_df = {}
-    for (r, time) in getattr(m, project_time_set):
-        if r not in dict_for_project_df.keys():
-            dict_for_project_df[r] = {}
-            try:
-                dict_for_project_df[r][time] = value(getattr(m, var)[r, time])
-            except ValueError:
-                dict_for_project_df[r][time] = None
-                print(
-                    "WARNING: The following variable was not initialized: "
-                    + "\n" + str(var) + "\n"
-                    + "The uninitialized index of set " + project_time_set
-                    + " is (" + str((r, time)) + ")."
-                )
-        else:
-            try:
-                dict_for_project_df[r][time] = value(getattr(m, var)[r, time])
-            except ValueError:
-                dict_for_project_df[r][time] = None
-                print(
-                    "WARNING: The following variable was not initialized: "
-                    + "\n" + str(var) + "\n"
-                    + "The uninitialized index of set " + project_time_set
-                    + " is (" + str((r, time)) + ")."
-                )
+    # Create a multi-index from the relevant project-time set
+    multi_index = pandas.MultiIndex.from_tuples(
+        tuples=[(p, time) for (p, time) in getattr(m, project_time_set)],
+        names=index
+    )
+    results_df = pandas.DataFrame(
+        index=multi_index, columns=[header]
+    )
 
-    # For each generator, create a dataframe with the variable (x) values
-    # Create two lists, the generators and dictionaries with the timepoints as
-    # keys and the values -- it is critical that the order of generators and
-    # of the dictionaries with their values match, as we will concatenate based
-    # on that order below
-    generators = []
-    times = []
-    for r, tmp in dict_for_project_df.iteritems():
-        generators.append(r)
-        times.append(pandas.DataFrame.from_dict(tmp, orient='index'))
+    # Populate indexed dataframe with the variable results values
+    for indx in multi_index:
+        try:
+            results_df[header][indx] = value(getattr(m, var)[indx])
+        except ValueError:
+            results_df[header][indx] = None
+            print(
+                "WARNING: The following variable was not initialized: "
+                + "\n" + str(var) + "\n"
+                + "The uninitialized index of set " + project_time_set
+                + " is (" + str((indx)) + ")."
+            )
 
-    # Concatenate all the individual generator dataframes into a final one
-    final_df = pandas.DataFrame(pandas.concat(times, keys=generators))
-    final_df.index.names = index
-    final_df.columns = [header]
+    return results_df
 
-    return final_df
+
