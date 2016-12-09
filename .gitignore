@@ -90,3 +90,11 @@ ENV/
 
 # PyCharm settings
 .idea
+
+# Don't track example run CSV results
+# Cap-expansion run
+runs/*/results/*.csv
+# Multi-horizon, single-stage prod cost run
+runs/*/*/results/*.csv
+# Multi-horizon, multi-stage prod cost run
+runs/*/*/*/results/*.csv
