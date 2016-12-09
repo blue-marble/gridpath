@@ -111,6 +111,8 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
                                 scenario_directory, horizon, stage)
 
     # Create the abstract model; some components are initialized here
+    if not parsed_arguments.quiet:
+        print("Building model...")
     create_abstract_model(model, dynamic_inputs, loaded_modules)
 
     # Create a dual suffix component
@@ -118,11 +120,15 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     model.dual = Suffix(direction=Suffix.IMPORT)
 
     # Load the scenario data
+    if not parsed_arguments.quiet:
+        print("Loading data...")
     scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
                                        scenario_directory, horizon, stage)
 
     # Build the problem instance; this will also call any BuildActions that
     # construct the dynamic inputs
+    if not parsed_arguments.quiet:
+        print("Creating problem instance...")
     instance = create_problem_instance(model, scenario_data)
 
     # Fix variables if modules request so
@@ -176,25 +182,6 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     # function value to check against expected value
     if parsed_arguments.testing:
         return instance.Total_Cost()
-
-
-# def test_optimization(scenario_directory, horizon, stage, parsed_arguments):
-#     """
-#
-#     :param scenario_directory:
-#     :param horizon:
-#     :param stage:
-#     :param parsed_arguments:
-#     :return:
-#     """
-#     modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
-#         create_and_solve_problem(scenario_directory, horizon, stage,
-#                                  parsed_arguments)
-#     objective_function = instance.Total_Cost()
-#     export_pass_through_inputs(scenario_directory, horizon, stage, instance,
-#                                dynamic_inputs, loaded_modules)
-#
-#     return objective_function
 
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,
@@ -342,7 +329,6 @@ def create_abstract_model(model, inputs, loaded_modules):
     :param loaded_modules:
     :return:
     """
-    print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
             m.add_model_components(model, inputs)
@@ -360,7 +346,6 @@ def load_scenario_data(model, dynamic_inputs, loaded_modules,
     :param stage:
     :return:
     """
-    print("Loading data...")
     # Load data
     data_portal = DataPortal()
     for m in loaded_modules:
@@ -373,7 +358,6 @@ def load_scenario_data(model, dynamic_inputs, loaded_modules,
 
 
 def create_problem_instance(model, loaded_data):
-    print("Creating problem instance...")
     # Create instance
     instance = model.create_instance(loaded_data)
     return instance
@@ -418,9 +402,10 @@ def solve(instance, parsed_arguments):
     # Get solver and solve
     solver = SolverFactory(parsed_arguments.solver)
 
-    print("Solving...")
+    if not parsed_arguments.quiet:
+        print("Solving...")
     results = solver.solve(instance,
-                           tee=parsed_arguments.quiet,
+                           tee=parsed_arguments.mute_solver_output,
                            keepfiles=parsed_arguments.keepfiles,
                            symbolic_solver_labels=parsed_arguments.symbolic
                            )
@@ -522,7 +507,8 @@ def run_scenario(structure, parsed_arguments):
         for h in structure.horizon_subproblems:
             # If no stage subproblems (empty list), run horizon problem
             if not structure.stage_subproblems[h]:
-                print("Running horizon {}".format(h))
+                if not parsed_arguments.quiet:
+                    print("Running horizon {}".format(h))
                 if parsed_arguments.testing:
                     objective_values[h] = run_optimization(
                         structure.main_scenario_directory, h, "",
@@ -535,7 +521,8 @@ def run_scenario(structure, parsed_arguments):
                 if parsed_arguments.testing:
                     objective_values[h] = {}
                 for s in structure.stage_subproblems[h]:
-                    print("Running horizon {}, stage {}".format(h, s))
+                    if not parsed_arguments.quiet:
+                        print("Running horizon {}, stage {}".format(h, s))
                     if parsed_arguments.testing:
                         objective_values[h][s] = \
                             run_optimization(
@@ -599,10 +586,14 @@ def parse_arguments(arguments):
     parser.add_argument("--scenario_location", default="runs",
                         help="Name of the scenario problem to solve.")
 
+    # Output options
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print run output.")
+
     # Solve options
     parser.add_argument("--solver", default="cbc",
                         help="Name of the solver to use. Default is cbc.")
-    parser.add_argument("--quiet", default=True, action="store_false",
+    parser.add_argument("--mute_solver_output", default=True, action="store_false",
                         help="Don't print solver output if set to true.")
     parser.add_argument("--keepfiles", default=False, action="store_true",
                         help="Save temporary solver files in logs directory.")

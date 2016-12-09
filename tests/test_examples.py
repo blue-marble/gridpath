@@ -3,7 +3,7 @@ import unittest
 
 import run_scenario
 
-# Change directory to base directory, as that's what run_scenario.py expects
+# Change directory to base directory, as that"s what run_scenario.py expects
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
 
 
@@ -13,26 +13,26 @@ class TestExamples(unittest.TestCase):
     """
     def test_example_test(self):
         """
-        Check objective function value of 'test' example
+        Check objective function value of "test" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', 'test', '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "test",
+                               "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 65494.41333
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5
-        )
+                               places=5)
 
     def test_example_test_new_build_storage(self):
         """
-        Check objective function value of 'test_new_build_storage' example
+        Check objective function value of "test_new_build_storage" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', 'test_new_build_storage',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "test_new_build_storage",
+                               "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 102384.02400
 
@@ -41,42 +41,40 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_no_reserves(self):
         """
-        Check objective function value of 'test_no_reserves' example
+        Check objective function value of "test_no_reserves" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', 'test_no_reserves',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "test_no_reserves", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 53362.74667
-
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
     def test_example_test_w_hydro(self):
         """
-        Check objective function value of 'test_w_hydro' example
+        Check objective function value of "test_w_hydro" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', 'test_w_hydro',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "test_w_hydro", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 49049.58000
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5
-        )
+                               places=5)
 
     def test_example_test_w_storage(self):
         """
-        Check objective function value of 'test_no_reserves' example
+        Check objective function value of "test_no_reserves" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', 'test_w_storage',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "test_w_storage", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 51437.89250
 
@@ -85,12 +83,12 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2horizons(self):
         """
-        Check objective function value of '2horizons' example
+        Check objective function value of "2horizons" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', '2horizons',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "2horizons", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 130988.82664
 
@@ -99,12 +97,12 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2periods(self):
         """
-        Check objective function value of '2periods' example
+        Check objective function value of "2periods" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', '2periods',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "2periods", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 1309888.26636
 
@@ -113,14 +111,14 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2periods_new_build(self):
         """
-        Check objective function value of '2periods_new_build' example;
+        Check objective function value of "2periods_new_build" example;
         this example requires a non-linear solver
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', '2periods_new_build',
-                               '--solver', 'ipopt',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "2periods_new_build",
+                               "--solver", "ipopt", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 110443853.67752
 
@@ -129,14 +127,14 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2periods_new_build_2zones(self):
         """
-        Check objective function value of '2periods_new_build_2zones' example;
+        Check objective function value of "2periods_new_build_2zones" example;
         this example requires a non-linear solver
         :return:
         """
         actual_objective = \
-            run_scenario.main(['--scenario', '2periods_new_build_2zones',
-                               '--solver', 'ipopt',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "2periods_new_build_2zones",
+                               "--solver", "ipopt", "--quiet",
+                               "--mute_solver_output", "--testing"])
 
         expected_objective = 220087705.75504
 
@@ -147,14 +145,14 @@ class TestExamples(unittest.TestCase):
                                                                            ):
         """
         Check objective function value of
-        '2periods_new_build_2zones_new_build_transmission' example
+        "2periods_new_build_2zones_new_build_transmission" example
         :return:
         """
         actual_objective = \
             run_scenario.main(
-                ['--scenario',
-                 '2periods_new_build_2zones_new_build_transmission',
-                 '--quiet', '--testing']
+                ["--scenario",
+                 "2periods_new_build_2zones_new_build_transmission", "--quiet",
+                 "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 1941106539.62229
@@ -164,16 +162,16 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2periods_new_build_2zones_singleBA(self):
         """
-        Check objective function value of '2periods_new_build_2zones_singleBA'
+        Check objective function value of "2periods_new_build_2zones_singleBA"
         example; this example requires a non-linear solver
         :return:
         """
         actual_objective = \
             run_scenario.main(
-                ['--scenario',
-                 '2periods_new_build_2zones_singleBA',
-                 '--solver', 'ipopt',
-                 '--quiet', '--testing']
+                ["--scenario",
+                 "2periods_new_build_2zones_singleBA",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 220044845.67373
@@ -184,14 +182,14 @@ class TestExamples(unittest.TestCase):
     def test_example_test_2periods_new_build_2zones_transmission(self):
         """
         Check objective function value of
-        '2periods_new_build_2zones_transmission' example
+        "2periods_new_build_2zones_transmission" example
         :return:
         """
         actual_objective = \
             run_scenario.main(
-                ['--scenario',
-                 '2periods_new_build_2zones_transmission',
-                 '--quiet', '--testing']
+                ["--scenario",
+                 "2periods_new_build_2zones_transmission", "--quiet",
+                 "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 50552825288.933334
@@ -201,16 +199,16 @@ class TestExamples(unittest.TestCase):
 
     def test_example_test_2periods_new_build_rps(self):
         """
-        Check objective function value of '2periods_new_build_rps' example;
+        Check objective function value of "2periods_new_build_rps" example;
         this example requires a non-linear solver
         :return:
         """
         actual_objective = \
             run_scenario.main(
-                ['--scenario',
-                 '2periods_new_build_rps',
-                 '--solver', 'ipopt',
-                 '--quiet', '--testing']
+                ["--scenario",
+                 "2periods_new_build_rps",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 972816049.42922
@@ -220,12 +218,12 @@ class TestExamples(unittest.TestCase):
 
     def test_single_stage_prod_cost(self):
         """
-        Check objective function values of 'single_stage_prod_cost' example
+        Check objective function values of "single_stage_prod_cost" example
         :return:
         """
         actual_objectives = \
-            run_scenario.main(['--scenario', 'single_stage_prod_cost',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "single_stage_prod_cost", 
+                               "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
             1: 65494.41332,
@@ -242,12 +240,12 @@ class TestExamples(unittest.TestCase):
 
     def test_example_multi_stage_prod_cost(self):
         """
-        Check objective function values of 'multi_stage_prod_cost' example
+        Check objective function values of "multi_stage_prod_cost" example
         :return:
         """
         actual_objectives = \
-            run_scenario.main(['--scenario', 'multi_stage_prod_cost', '--quiet',
-                               '--testing'])
+            run_scenario.main(["--scenario", "multi_stage_prod_cost",
+                               "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
             1: {"da": 65494.41333,
@@ -271,13 +269,13 @@ class TestExamples(unittest.TestCase):
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
         """
-        Check objective function values of 'multi_stage_prod_cost_w_hydro'
+        Check objective function values of "multi_stage_prod_cost_w_hydro"
         example
         :return:
         """
         actual_objectives = \
-            run_scenario.main(['--scenario', 'multi_stage_prod_cost_w_hydro',
-                               '--quiet', '--testing'])
+            run_scenario.main(["--scenario", "multi_stage_prod_cost_w_hydro",
+                               "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
             1: {"da": 60554.52439,
