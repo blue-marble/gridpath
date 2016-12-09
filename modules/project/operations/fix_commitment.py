@@ -160,7 +160,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         pass
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_pass_through_inputs(scenario_directory, horizon, stage, m, d):
     """
 
     :param scenario_directory:

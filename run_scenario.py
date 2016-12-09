@@ -86,6 +86,54 @@ class ScenarioStructure(object):
             self.horizon_subproblems = []
 
 
+def create_and_solve_problem(scenario_directory, horizon, stage,
+                             parsed_arguments):
+    """
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param parsed_arguments:
+    :return:
+    """
+    # Create pyomo abstract model class
+    model = AbstractModel()
+
+    # Initialize the dynamic components class
+    dynamic_inputs = DynamicComponents()
+
+    modules_to_use = get_modules(scenario_directory)
+
+    loaded_modules = load_modules(modules_to_use)
+
+    # Set dynamic components as attributes to inputs class
+    populate_dynamic_components(dynamic_inputs, loaded_modules,
+                                scenario_directory, horizon, stage)
+
+    # Create the abstract model; some components are initialized here
+    create_abstract_model(model, dynamic_inputs, loaded_modules)
+
+    # Create a dual suffix component
+    # TODO: maybe this shouldn't always be needed
+    model.dual = Suffix(direction=Suffix.IMPORT)
+
+    # Load the scenario data
+    scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
+                                       scenario_directory, horizon, stage)
+
+    # Build the problem instance; this will also call any BuildActions that
+    # construct the dynamic inputs
+    instance = create_problem_instance(model, scenario_data)
+
+    # Fix variables if modules request so
+    instance = fix_variables(instance, dynamic_inputs, loaded_modules)
+
+    # Solve
+    results = solve(instance, parsed_arguments)
+
+    return modules_to_use, loaded_modules, dynamic_inputs, instance, results
+
+
 def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     """
 
@@ -107,46 +155,61 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
+
+    # TODO: this should be an option
     # Write temporary files to logs directory
     TempfileManager.tempdir = logs_directory
 
-    # Create pyomo abstract model class
-    model = AbstractModel()
+    modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
+        create_and_solve_problem(scenario_directory, horizon, stage,
+                                 parsed_arguments)
 
-    # Initialize the dynamic components class
-    dynamic_inputs = DynamicComponents()
+    # Export pass-through results if modules require it
+    export_pass_through_inputs(scenario_directory, horizon, stage, instance,
+                               dynamic_inputs, loaded_modules)
 
-    modules_to_use = get_modules(scenario_directory)
+    # Save the scenario results to disk
+    save_results(scenario_directory, horizon, stage, loaded_modules,
+                 dynamic_inputs, instance, results)
 
-    loaded_modules = load_modules(modules_to_use)
+    # If running this problem as part of the test suite, return the objective
+    # function value to check against expected value
+    if parsed_arguments.testing:
+        return instance.Total_Cost()
 
-    # Set dynamic components as attributes to inputs class
-    populate_dynamic_components(dynamic_inputs, loaded_modules,
-                                scenario_directory, horizon, stage)
 
-    # Create the abstract model; some components are initialized here
-    create_abstract_model(model, dynamic_inputs,
-                          scenario_directory, horizon, stage,
-                          loaded_modules)
+# def test_optimization(scenario_directory, horizon, stage, parsed_arguments):
+#     """
+#
+#     :param scenario_directory:
+#     :param horizon:
+#     :param stage:
+#     :param parsed_arguments:
+#     :return:
+#     """
+#     modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
+#         create_and_solve_problem(scenario_directory, horizon, stage,
+#                                  parsed_arguments)
+#     objective_function = instance.Total_Cost()
+#     export_pass_through_inputs(scenario_directory, horizon, stage, instance,
+#                                dynamic_inputs, loaded_modules)
+#
+#     return objective_function
 
-    # Create a dual suffix component
-    # TODO: maybe this shouldn't always be needed
-    model.dual = Suffix(direction=Suffix.IMPORT)
 
-    # Load the scenario data
-    scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
-                                       scenario_directory, horizon, stage)
+def save_results(scenario_directory, horizon, stage, loaded_modules,
+                 dynamic_inputs, instance, results):
+    """
 
-    # Build the problem instance; this will also call any BuildActions that
-    # construct the dynamic inputs
-    instance = create_problem_instance(model, scenario_data)
-
-    # Fix variables if modules request so
-    instance = fix_variables(instance, dynamic_inputs, loaded_modules)
-
-    # Solve
-    results = solve(instance, parsed_arguments)
-
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param loaded_modules:
+    :param dynamic_inputs:
+    :param instance:
+    :param results:
+    :return:
+    """
     # RESULTS
     instance.solutions.load_from(results)
 
@@ -221,7 +284,7 @@ def get_modules(scenario_directory):
              "system.reserves.lf_reserves_up"],
         "lf_reserves_down":
             ["geography.load_following_down_balancing_areas",
-            "project.operations.reserves.lf_reserves_down",
+             "project.operations.reserves.lf_reserves_down",
              "system.reserves.lf_reserves_down"],
         "regulation_up":
             ["geography.regulation_up_balancing_areas",
@@ -271,8 +334,14 @@ def populate_dynamic_components(inputs, loaded_modules,
             pass
 
 
-def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
-                          loaded_modules):
+def create_abstract_model(model, inputs, loaded_modules):
+    """
+
+    :param model:
+    :param inputs:
+    :param loaded_modules:
+    :return:
+    """
     print("Building model...")
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
@@ -281,6 +350,16 @@ def create_abstract_model(model, inputs, scenario_directory, horizon, stage,
 
 def load_scenario_data(model, dynamic_inputs, loaded_modules,
                        scenario_directory, horizon, stage):
+    """
+
+    :param model:
+    :param dynamic_inputs:
+    :param loaded_modules:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
     print("Loading data...")
     # Load data
     data_portal = DataPortal()
@@ -358,6 +437,17 @@ def export_results(problem_directory, horizon, stage, instance,
         pass
 
 
+def export_pass_through_inputs(problem_directory, horizon, stage, instance,
+                               dynamic_inputs, loaded_modules):
+    for m in loaded_modules:
+        if hasattr(m, "export_pass_through_inputs"):
+            m.export_pass_through_inputs(
+                problem_directory, horizon, stage, instance, dynamic_inputs
+            )
+    else:
+        pass
+
+
 def save_objective_function_value(scenario_directory, horizon, stage, instance):
     """
     Save the objective function value.
@@ -412,24 +502,52 @@ def run_scenario(structure, parsed_arguments):
     :param parsed_arguments:
     :return:
     """
+
     # If no horizon subproblems (empty list), run main problem
     if not structure.horizon_subproblems:
-        run_optimization(structure.main_scenario_directory, "", "",
-                         parsed_arguments)
+        # If we're testing, get the objective function value
+        if parsed_arguments.testing:
+            objective_values = run_optimization(
+                structure.main_scenario_directory, "", "", parsed_arguments)
+        # If not testing, don't create the objective function value object
+        # (run_optimization doesn't return anything if not testing)
+        else:
+            run_optimization(structure.main_scenario_directory, "", "",
+                             parsed_arguments)
     else:
+        # If this is a test run, create dictionary with which we'll keep track
+        # of subproblem objective function values
+        if parsed_arguments.testing:
+            objective_values = {}
         for h in structure.horizon_subproblems:
             # If no stage subproblems (empty list), run horizon problem
             if not structure.stage_subproblems[h]:
                 print("Running horizon {}".format(h))
-                run_optimization(
-                    structure.main_scenario_directory, h, "",
-                    parsed_arguments)
+                if parsed_arguments.testing:
+                    objective_values[h] = run_optimization(
+                        structure.main_scenario_directory, h, "",
+                        parsed_arguments)
+                else:
+                    run_optimization(
+                        structure.main_scenario_directory, h, "",
+                        parsed_arguments)
             else:
+                if parsed_arguments.testing:
+                    objective_values[h] = {}
                 for s in structure.stage_subproblems[h]:
                     print("Running horizon {}, stage {}".format(h, s))
-                    run_optimization(
-                        structure.main_scenario_directory,
-                        h, s, parsed_arguments)
+                    if parsed_arguments.testing:
+                        objective_values[h][s] = \
+                            run_optimization(
+                                structure.main_scenario_directory, h, s,
+                                parsed_arguments)
+                    else:
+                        run_optimization(
+                            structure.main_scenario_directory,
+                            h, s, parsed_arguments)
+
+    if parsed_arguments.testing:
+        return objective_values
 
 
 # Auxiliary functions
@@ -491,18 +609,35 @@ def parse_arguments(arguments):
     parser.add_argument("--symbolic", default=False, action="store_true",
                         help="Use symbolic labels in solver files.")
 
+    # Flag for test runs (output not saved and other changes in behavior)
+    parser.add_argument("--testing", default=False, action="store_true",
+                        help="Flag for test suite runs. Results not saved.")
+
+    # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
     return parsed_arguments
 
 
-if __name__ == "__main__":
-    # Get arguments
-    args = sys.argv[1:]
+def main(args=None):
+    """
+
+    :return:
+    """
+    if args is None:
+        args = sys.argv[1:]
     # Parse arguments
     parsed_args = parse_arguments(args)
     # Figure out the scenario structure (i.e. horizons and stages)
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
     # Run the optimization
-    run_scenario(scenario_structure, parsed_args)
+    if parsed_args.testing:
+        expected_objective_values = run_scenario(
+            scenario_structure, parsed_args)
+        return expected_objective_values
+    else:
+        run_scenario(scenario_structure, parsed_args)
+
+if __name__ == "__main__":
+    main()
