@@ -1,3 +1,0 @@
-rps_zone,period,rps_target_mwh,delivered_rps_energy_mwh,curtailed_rps_energy_mwh
-RPSZone1,2030,50,49.99999950800189,35.866665659752535
-RPSZone1,2020,50,49.99999950800339,4.962962637789328

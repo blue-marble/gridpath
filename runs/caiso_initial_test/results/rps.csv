@@ -1,3 +1,0 @@
-rps_zone,period,rps_target_mwh,delivered_rps_energy_mwh,curtailed_rps_energy_mwh
-CAISO,2030,101000000,101000000.4598694,0.0
-CAISO,2020,70000000,70000000.04645032,0.0
