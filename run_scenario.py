@@ -590,7 +590,7 @@ def parse_arguments(arguments):
     # Scenario name and location options
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
-    parser.add_argument("--scenario_location", default="runs",
+    parser.add_argument("--scenario_location", default="scenarios",
                         help="Name of the scenario problem to solve.")
 
     # Output options
@@ -607,7 +607,7 @@ def parse_arguments(arguments):
     parser.add_argument("--symbolic", default=False, action="store_true",
                         help="Use symbolic labels in solver files.")
 
-    # Flag for test runs (output not saved and other changes in behavior)
+    # Flag for test runs (various changes in behavior)
     parser.add_argument("--testing", default=False, action="store_true",
                         help="Flag for test suite runs. Results not saved.")
 

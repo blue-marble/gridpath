@@ -18,6 +18,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test",
+                               "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 65494.41333
@@ -32,6 +33,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_new_build_storage",
+                               "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 102384.02400
@@ -46,6 +48,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_no_reserves", "--quiet",
+                               "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 53362.74667
@@ -60,6 +63,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_w_hydro", "--quiet",
+                               "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 49049.58000
@@ -74,6 +78,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_w_storage", "--quiet",
+                               "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 51437.89250
@@ -88,6 +93,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2horizons", "--quiet",
+                               "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 130988.82664
@@ -102,6 +108,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods", "--quiet",
+                               "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 1309888.26636
@@ -117,6 +124,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods_new_build",
+                               "--scenario_location", "examples",
                                "--solver", "ipopt", "--quiet",
                                "--mute_solver_output", "--testing"])
 
@@ -133,6 +141,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods_new_build_2zones",
+                               "--scenario_location", "examples",
                                "--solver", "ipopt", "--quiet",
                                "--mute_solver_output", "--testing"])
 
@@ -151,8 +160,9 @@ class TestExamples(unittest.TestCase):
         actual_objective = \
             run_scenario.main(
                 ["--scenario",
-                 "2periods_new_build_2zones_new_build_transmission", "--quiet",
-                 "--mute_solver_output", "--testing"]
+                 "2periods_new_build_2zones_new_build_transmission",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 1941106539.62229
@@ -170,6 +180,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_2zones_singleBA",
+                 "--scenario_location", "examples",
                  "--solver", "ipopt", "--quiet",
                  "--mute_solver_output", "--testing"]
             )
@@ -188,8 +199,9 @@ class TestExamples(unittest.TestCase):
         actual_objective = \
             run_scenario.main(
                 ["--scenario",
-                 "2periods_new_build_2zones_transmission", "--quiet",
-                 "--mute_solver_output", "--testing"]
+                 "2periods_new_build_2zones_transmission",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
             )
 
         expected_objective = 50552825288.933334
@@ -207,6 +219,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps",
+                 "--scenario_location", "examples",
                  "--solver", "ipopt", "--quiet",
                  "--mute_solver_output", "--testing"]
             )
@@ -222,7 +235,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objectives = \
-            run_scenario.main(["--scenario", "single_stage_prod_cost", 
+            run_scenario.main(["--scenario", "single_stage_prod_cost",
+                               "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
@@ -245,6 +259,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objectives = \
             run_scenario.main(["--scenario", "multi_stage_prod_cost",
+                               "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
@@ -275,6 +290,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objectives = \
             run_scenario.main(["--scenario", "multi_stage_prod_cost_w_hydro",
+                               "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {

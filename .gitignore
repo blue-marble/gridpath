@@ -93,11 +93,11 @@ ENV/
 
 # Don't track example run CSV results
 # Cap-expansion run
-runs/*/results/*.csv
+examples/*/results/*.csv
 # Multi-horizon, single-stage prod cost run
-runs/*/*/results/*.csv
+examples/*/*/results/*.csv
 # Multi-horizon, multi-stage prod cost run
-runs/*/*/*/results/*.csv
+examples/*/*/*/results/*.csv
 
 # Don't track pass-through inputs directory in multi-stage runs
-runs/*/*/pass_through_inputs/
+examples/*/*/pass_through_inputs/
