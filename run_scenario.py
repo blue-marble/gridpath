@@ -4,14 +4,13 @@
 Run model.
 """
 from argparse import ArgumentParser
-import os.path
-import sys
 from csv import writer
 from importlib import import_module
-
+import os.path
 from pandas import read_csv
 from pyomo.environ import *
 from pyutilib.services import TempfileManager
+import sys
 
 from modules.auxiliary.dynamic_components import DynamicComponents
 
@@ -484,7 +483,8 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
         duals_writer.writerow(instance.constraint_indices[c])
         for index in constraint_object:
             duals_writer.writerow(list(index) +
-                            [instance.dual[constraint_object[index]]])
+                                  [instance.dual[constraint_object[index]]]
+                                  )
 
 
 def run_scenario(structure, parsed_arguments):
@@ -600,7 +600,8 @@ def parse_arguments(arguments):
     # Solve options
     parser.add_argument("--solver", default="cbc",
                         help="Name of the solver to use. Default is cbc.")
-    parser.add_argument("--mute_solver_output", default=True, action="store_false",
+    parser.add_argument("--mute_solver_output", default=True,
+                        action="store_false",
                         help="Don't print solver output if set to true.")
     parser.add_argument("--keepfiles", default=False, action="store_true",
                         help="Save temporary solver files in logs directory.")
