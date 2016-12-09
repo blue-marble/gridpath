@@ -472,3 +472,6 @@ class TestRegulationDownProvision(unittest.TestCase):
             instance.REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS
         ])
         self.assertListEqual(expected_prj_op_tmps, actual_prj_op_tmps)
+
+if __name__ == "__main__":
+    unittest.main()

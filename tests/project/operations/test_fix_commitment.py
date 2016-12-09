@@ -239,3 +239,6 @@ class TestOperationalCosts(unittest.TestCase):
                                               )
         self.assertDictEqual(expected_fixed_commitment,
                              actual_fixed_commitment)
+
+if __name__ == "__main__":
+    unittest.main()

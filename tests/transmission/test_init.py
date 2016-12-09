@@ -119,3 +119,6 @@ class TestTransmissionInit(unittest.TestCase):
                                         )
                                               )
         self.assertDictEqual(expected_load_zone_to, actual_load_zone_to)
+
+if __name__ == "__main__":
+    unittest.main()

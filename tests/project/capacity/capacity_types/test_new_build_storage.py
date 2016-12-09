@@ -185,3 +185,6 @@ class TestNewBuildStorage(unittest.TestCase):
         }
         self.assertDictEqual(expected_stor_vintage_op_in_period,
                              actual_stor_vintage_op_in_period)
+
+if __name__ == "__main__":
+    unittest.main()

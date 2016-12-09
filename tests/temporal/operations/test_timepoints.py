@@ -47,7 +47,7 @@ class TestTimepoints(unittest.TestCase):
                                      test_data_dir=TEST_DATA_DIRECTORY,
                                      horizon="",
                                      stage=""
-        )
+                                     )
 
     def test_timepoints_data_load_correctly(self):
         """
@@ -116,4 +116,3 @@ class TestTimepoints(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

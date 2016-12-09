@@ -138,3 +138,6 @@ class TestRPS(unittest.TestCase):
                                                 )
                                          )
         self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
+
+if __name__ == "__main__":
+    unittest.main()

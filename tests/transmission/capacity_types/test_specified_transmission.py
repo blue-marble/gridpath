@@ -113,3 +113,6 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                         )
                                  )
         self.assertDictEqual(expected_max, actual_max)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -615,3 +615,6 @@ class TestRegulationUp(unittest.TestCase):
                                              )
                                       )
         self.assertDictEqual(expected_projects, actual_projects)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -199,3 +199,6 @@ class TestCapacity(unittest.TestCase):
             instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
+
+if __name__ == "__main__":
+    unittest.main()

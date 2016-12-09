@@ -175,7 +175,7 @@ class TestPeriods(unittest.TestCase):
                  20300207, 20300208, 20300209, 20300210, 20300211, 20300212,
                  20300213, 20300214, 20300215, 20300216, 20300217, 20300218,
                  20300219, 20300220, 20300221, 20300222, 20300223, 20300224]
-            }
+             }
         actual_tmps_in_p = {
             p: sorted([tmp for tmp in instance.TIMEPOINTS_IN_PERIOD[p]])
             for p in instance.TIMEPOINTS_IN_PERIOD.keys()
@@ -185,7 +185,5 @@ class TestPeriods(unittest.TestCase):
                                  "expected."
                              )
 
-
 if __name__ == "__main__":
     unittest.main()
-

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -191,7 +190,10 @@ class TestMustRunOperationalType(unittest.TestCase):
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-                 MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
+
+if __name__ == "__main__":
+    unittest.main()

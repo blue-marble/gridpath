@@ -1,4 +1,3 @@
-import pandas as pd
 from pyomo.environ import AbstractModel
 import unittest
 

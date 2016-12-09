@@ -130,3 +130,6 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_specified_cap, actual_specified_cap)
+
+if __name__ == "__main__":
+    unittest.main()

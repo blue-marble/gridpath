@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -157,3 +156,6 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction
                              )
+
+if __name__ == "__main__":
+    unittest.main()

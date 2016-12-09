@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -185,3 +184,6 @@ class TestCapacity(unittest.TestCase):
         }
         self.assertDictEqual(expected_discharging_efficiency,
                              actual_discharging_efficiency)
+
+if __name__ == "__main__":
+    unittest.main()

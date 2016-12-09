@@ -177,3 +177,6 @@ class TestNewBuildGenerator(unittest.TestCase):
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
                              actual_gen_vintage_op_in_period)
+
+if __name__ == "__main__":
+    unittest.main()

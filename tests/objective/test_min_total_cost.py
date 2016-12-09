@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
 import unittest
 
-from tests.common_functions import create_abstract_model, \
-    add_components_and_load_data
+from tests.common_functions import create_abstract_model
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "test_data")
@@ -47,3 +45,6 @@ class TestRegulationUp(unittest.TestCase):
                               horizon="",
                               stage=""
                               )
+
+if __name__ == "__main__":
+    unittest.main()

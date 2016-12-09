@@ -102,3 +102,6 @@ class TestOperationalCosts(unittest.TestCase):
                                             )
                                      )
         self.assertDictEqual(expected_co2, actual_co2)
+
+if __name__ == "__main__":
+    unittest.main()

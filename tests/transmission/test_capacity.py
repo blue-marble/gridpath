@@ -83,3 +83,6 @@ class TestTxCapacity(unittest.TestCase):
             (tx, p) for (tx, p) in instance.TRANSMISSION_OPERATIONAL_PERIODS
         ])
         self.assertListEqual(expected_tx_periods, actual_tx_periods)
+
+if __name__ == "__main__":
+    unittest.main()

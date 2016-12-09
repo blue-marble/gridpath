@@ -1514,3 +1514,6 @@ class TestOperationalCosts(unittest.TestCase):
         ])
         self.assertListEqual(expected_tmps_by_shutdown_project,
                              actual_tmps_by_shutdown_project)
+
+if __name__ == "__main__":
+    unittest.main()

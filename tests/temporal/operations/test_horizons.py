@@ -195,7 +195,7 @@ class TestHorizons(unittest.TestCase):
 
         # Param: first_horizon_timepoint
         expected_first_horizon_timepoint = {
-            202001: 20200101, 202002:20200201,
+            202001: 20200101, 202002: 20200201,
             203001: 20300101, 203002: 20300201
         }
         actual_first_horizon_timepoint = {
@@ -208,7 +208,7 @@ class TestHorizons(unittest.TestCase):
 
         # Param: last_horizon_timepoint
         expected_last_horizon_timepoint = {
-            202001: 20200124, 202002:20200224,
+            202001: 20200124, 202002: 20200224,
             203001: 20300124, 203002: 20300224
         }
         actual_last_horizon_timepoint = {
@@ -265,4 +265,3 @@ class TestHorizons(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

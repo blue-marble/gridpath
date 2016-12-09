@@ -127,3 +127,6 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         )
         self.assertDictEqual(expected_specified_energy_cap,
                              actual_specified_energy_cap)
+
+if __name__ == "__main__":
+    unittest.main()

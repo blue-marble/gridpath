@@ -15,7 +15,8 @@ TEST_DATA_DIRECTORY = \
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "system.load_balance.load_balance"]
+     "temporal.investment.periods", "geography.load_zones",
+     "system.load_balance.load_balance"]
 NAME_OF_MODULE_BEING_TESTED = "system.load_balance.costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -86,8 +87,8 @@ class TestCosts(unittest.TestCase):
             z: instance.overgeneration_penalty_per_mw[z]
             for z in instance.LOAD_ZONES
                                                       }.items()
-                                                      )
-                                               )
+                                                    )
+                                             )
         self.assertDictEqual(expected_overgen_penalty, actual_overgen_penalty)
 
         # Param: unserved_energy_penalty_per_mw
@@ -104,3 +105,6 @@ class TestCosts(unittest.TestCase):
                                              )
         self.assertDictEqual(expected_unserved_energy_penalty,
                              actual_unserved_energy_penalty)
+
+if __name__ == "__main__":
+    unittest.main()

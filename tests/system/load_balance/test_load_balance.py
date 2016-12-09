@@ -279,3 +279,6 @@ class TestLoadBalance(unittest.TestCase):
                                                 )
                                          )
         self.assertDictEqual(expected_static_load, actual_static_load)
+
+if __name__ == "__main__":
+    unittest.main()

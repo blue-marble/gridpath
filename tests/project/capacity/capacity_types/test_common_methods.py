@@ -122,3 +122,6 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             )
             self.assertListEqual(expected_project_vintages,
                                  actual_project_vintages)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -61,3 +61,6 @@ class TestOperations(unittest.TestCase):
                                      horizon="",
                                      stage=""
                                      )
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1081,7 +1081,7 @@ class TestCapacity(unittest.TestCase):
                                              )
         actual_operational_projects_in_tmp = OrderedDict(sorted({
             tmp: sorted([prj for prj
-                  in instance.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]])
+                         in instance.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]])
             for tmp in instance.TIMEPOINTS
         }.items()
                                                                 )
@@ -1126,3 +1126,6 @@ class TestCapacity(unittest.TestCase):
             )
         self.assertListEqual(expected_battery_specified_periods,
                              actual_battery_specified_periods)
+
+if __name__ == "__main__":
+    unittest.main()

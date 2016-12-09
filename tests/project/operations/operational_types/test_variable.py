@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -191,7 +190,7 @@ class TestVariableOperationalType(unittest.TestCase):
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-                 VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
@@ -300,3 +299,6 @@ class TestVariableOperationalType(unittest.TestCase):
             for (g, tmp) in instance.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS
         }
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
+
+if __name__ == "__main__":
+    unittest.main()

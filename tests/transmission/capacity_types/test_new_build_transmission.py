@@ -174,3 +174,6 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                                      )
                                               )
         self.assertDictEqual(expected_tx_v_by_period, actual_tx_v_by_period)
+
+if __name__ == "__main__":
+    unittest.main()
