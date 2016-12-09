@@ -58,11 +58,18 @@ class ScenarioStructure(object):
                          for s in self.stage_subproblems[h]}
                     # Create the commitment pass-through file (also deletes any
                     # prior results)
+                    # First create the pass-through directory if it doesn't
+                    # exist
                     # TODO: need better handling of deleting prior results?
+                    pass_through_directory = \
+                        os.path.join(
+                            self.horizon_subproblem_directories[h],
+                            "pass_through_inputs")
+                    if not os.path.exists(pass_through_directory):
+                        os.makedirs(pass_through_directory)
                     with open(
                             os.path.join(
-                                self.horizon_subproblem_directories[h],
-                            "pass_through_inputs",
+                                pass_through_directory,
                                 "fixed_commitment.tab"), "wb") \
                             as fixed_commitment_file:
                         fixed_commitment_writer = \
