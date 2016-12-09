@@ -98,3 +98,6 @@ runs/*/results/*.csv
 runs/*/*/results/*.csv
 # Multi-horizon, multi-stage prod cost run
 runs/*/*/*/results/*.csv
+
+# Don't track pass-through inputs directory in multi-stage runs
+runs/*/*/pass_through_inputs/
