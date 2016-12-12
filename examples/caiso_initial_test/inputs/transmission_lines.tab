@@ -1,7 +1,0 @@
-TRANSMISSION_LINES	tx_capacity_type	load_zone_from	load_zone_to
-SW_to_CAISO	specified_transmission	SW	CAISO
-NW_to_CAISO	specified_transmission	NW	CAISO
-LADWP_to_CAISO	specified_transmission	LADWP	CAISO
-LADWP_to_NW	specified_transmission	LADWP	NW
-SW_to_LADWP	specified_transmission	SW	LADWP
-NW_to_SW	specified_transmission	NW	SW
