@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os.path
+import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
 
 from modules.auxiliary.dynamic_components import \
@@ -205,3 +206,28 @@ def new_build_storage_vintages_operational_in_period(mod, p):
         mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE,
         period=p
     )
+
+
+def summarize_results(capacity_results_agg_df):
+    """
+    Summarize new build storage results.
+    :param capacity_results_agg_df:
+    :return:
+    """
+    print("\n--> New Storage Capacity <--")
+    # Set the formatting of float to be readable
+    pd.options.display.float_format = "{:,.0f}".format
+
+    # Get all technologies with new build storage power OR energy capacity
+    new_build_storage_df = pd.DataFrame(
+        capacity_results_agg_df[
+            (capacity_results_agg_df["new_build_storage_mw"] > 0) |
+            (capacity_results_agg_df["new_build_storage_mwh"] > 0)
+        ][["new_build_storage_mw", "new_build_storage_mwh"]]
+    )
+    new_build_storage_df.columns =["New Storage Power Capacity (MW)",
+                                   "New Storage Energy Capacity (MWh)"]
+    if new_build_storage_df.empty:
+        print("No new storage was built.")
+    else:
+        print new_build_storage_df

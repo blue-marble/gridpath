@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os.path
-
+import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
 
 from modules.auxiliary.auxiliary import make_project_time_var_df
@@ -151,3 +151,27 @@ def new_build_option_vintages_operational_in_period(mod, p):
         mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE,
         period=p
     )
+
+
+def summarize_results(capacity_results_agg_df):
+    """
+    Summarize new build generation capacity results.
+    :param capacity_results_agg_df:
+    :return:
+    """
+    print("\n--> New Generation Capacity <--")
+    # Set the formatting of float to be readable
+    pd.options.display.float_format = "{:,.0f}".format
+
+    # Get all technologies with the new build capacity
+    new_build_option_df = pd.DataFrame(
+        capacity_results_agg_df[
+            capacity_results_agg_df["new_build_option_mw"] > 0
+        ]["new_build_option_mw"]
+    )
+
+    new_build_option_df.columns = ["New Capacity (MW)"]
+    if new_build_option_df.empty:
+        print("No new storage was built.")
+    else:
+        print new_build_option_df

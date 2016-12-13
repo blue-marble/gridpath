@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import os.path
-from pyomo.environ import Set, Param, Expression
+import pandas as pd
+from pyomo.environ import Set, Expression
 
 
 from modules.auxiliary.dynamic_components import required_capacity_modules, \
@@ -106,7 +107,9 @@ def add_model_components(m, d):
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(getattr(d, required_capacity_modules))
+        load_gen_storage_capacity_type_modules(
+            getattr(d, required_capacity_modules)
+        )
     for op_m in getattr(d, required_capacity_modules):
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
@@ -130,7 +133,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
     d.module_specific_df = []
 
     imported_capacity_modules = \
-        load_gen_storage_capacity_type_modules(getattr(d, required_capacity_modules))
+        load_gen_storage_capacity_type_modules(
+            getattr(d, required_capacity_modules)
+        )
     for op_m in getattr(d, required_capacity_modules):
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
@@ -170,6 +175,75 @@ def export_results(scenario_directory, horizon, stage, m, d):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "capacity.csv"),
         header=True, index=True)
+
+
+def summarize_results(d, problem_directory):
+    """
+    Summarize capacity results
+    :param d:
+    :param problem_directory:
+    :return:
+    """
+
+    # Check if the 'technology' exists in  projects.tab; if it doesn't, we
+    # don't have a category to aggregate by, so we'll skip summarizing results
+
+    # TODO: how should this interplay with the 'quiet' option
+    # TODO: print to screen AND write to file
+    print("\n##### CAPACITY RESULTS #####")
+
+    if not check_if_technology_column_exists(problem_directory):
+        print("...skipping aggregating capacity results: column 'technology' "
+              "not found in projects.tab")
+    else:
+        # Get the technology for each project by which we'll aggregate
+        project_tech = \
+            pd.read_csv(
+                os.path.join(problem_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project", "load_zone",
+                                   "technology"]
+            )
+        project_tech.set_index("project")
+
+        # Get the results CSV
+        capacity_results = \
+            pd.read_csv(os.path.join(problem_directory, "results",
+                                     "capacity.csv")
+                        )
+        capacity_results.set_index("project")
+
+        # Join the two dataframes (i.e. add technology column)
+        capacity_results_df = \
+            pd.merge(left=capacity_results, right=project_tech, how="left",
+                     left_on="project", right_on="project")
+
+        capacity_results_agg_df = \
+            capacity_results_df.groupby(by=["load_zone", "technology",
+                                            'period'],
+                                        as_index=True
+                                        ).sum()
+
+        imported_capacity_modules = \
+            load_gen_storage_capacity_type_modules(
+                getattr(d, required_capacity_modules)
+            )
+        for op_m in getattr(d, required_capacity_modules):
+            if hasattr(imported_capacity_modules[op_m],
+                       "summarize_results"):
+                imported_capacity_modules[
+                    op_m].summarize_results(capacity_results_agg_df)
+            else:
+                pass
+
+
+def check_if_technology_column_exists(problem_directory):
+    try:
+        # If this works, we'll continue; otherwise, we'll skip to
+        pd.read_csv(os.path.join(problem_directory, "inputs", "projects.tab"),
+                    sep="\t", usecols=["technology"])
+        return True
+    except ValueError:
+        return False
 
 
 def operational_periods_by_project(prj, project_operational_periods):

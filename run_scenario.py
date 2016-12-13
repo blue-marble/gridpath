@@ -7,8 +7,8 @@ from argparse import ArgumentParser
 from csv import writer
 from importlib import import_module
 import os.path
-from pandas import read_csv
-from pyomo.environ import *
+import pandas as pd
+from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyutilib.services import TempfileManager
 import sys
 
@@ -43,8 +43,8 @@ class ScenarioStructure(object):
             self.stage_subproblems = {}
             self.stage_subproblem_directories = {}
             for h in self.horizon_subproblems:
-                # If there are stage subproblems, make dictionaries of stages by
-                # horizon and of stage directories by horizon and stage
+                # If there are stage subproblems, make dictionaries of stages
+                # by horizon and of stage directories by horizon and stage
                 if check_for_subproblems(
                         self.horizon_subproblem_directories[h]):
                     self.stages_flag = True
@@ -189,6 +189,10 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     if parsed_arguments.testing:
         return instance.Total_Cost()
 
+    # Summarize results
+    summarize_results(scenario_directory, horizon, stage, loaded_modules,
+                      dynamic_inputs, parsed_arguments)
+
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,
                  dynamic_inputs, instance, results):
@@ -210,8 +214,8 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
 
     save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
 
-    export_results(scenario_directory, horizon, stage, instance, dynamic_inputs,
-                   loaded_modules)
+    export_results(scenario_directory, horizon, stage, instance,
+                   dynamic_inputs, loaded_modules)
 
 
 def get_modules(scenario_directory):
@@ -222,7 +226,7 @@ def get_modules(scenario_directory):
     """
     modules_file = os.path.join(scenario_directory, "modules.csv")
     try:
-        requested_modules = read_csv(modules_file)["modules"].tolist()
+        requested_modules = pd.read_csv(modules_file)["modules"].tolist()
     except IOError:
         print "ERROR! Modules file {} not found".format(modules_file)
         sys.exit(1)
@@ -439,7 +443,8 @@ def export_pass_through_inputs(problem_directory, horizon, stage, instance,
         pass
 
 
-def save_objective_function_value(scenario_directory, horizon, stage, instance):
+def save_objective_function_value(scenario_directory, horizon, stage, instance
+                                  ):
     """
     Save the objective function value.
     :param scenario_directory:
@@ -485,6 +490,29 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
             duals_writer.writerow(list(index) +
                                   [instance.dual[constraint_object[index]]]
                                   )
+
+
+def summarize_results(problem_directory, horizon, stage, loaded_modules,
+                      dynamic_inputs, parsed_arguments):
+    """
+    Summarize results (after results export)
+    :param problem_directory:
+    :param horizon:
+    :param stage:
+    :param loaded_modules:
+    :param dynamic_inputs:
+    :param parsed_arguments:
+    :return:
+    """
+    if not parsed_arguments.quiet:
+        print("Summarizing results...")
+
+    # Go through the modules and get the appropriate results
+    for m in loaded_modules:
+        if hasattr(m, "summarize_results"):
+            m.summarize_results(dynamic_inputs, problem_directory)
+    else:
+        pass
 
 
 def run_scenario(structure, parsed_arguments):
@@ -570,7 +598,7 @@ def get_subproblems(directory):
     subproblems_file = os.path.join(directory, "subproblems.csv")
     try:
         subproblems = \
-            [str(sp) for sp in read_csv(subproblems_file)["subproblems"]
+            [str(sp) for sp in pd.read_csv(subproblems_file)["subproblems"]
                 .tolist()]
         return subproblems
     except IOError:
