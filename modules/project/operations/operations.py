@@ -4,12 +4,15 @@
 Describe operational constraints on the generation infrastructure.
 """
 import os.path
+import pandas as pd
 from pyomo.environ import Expression
 
-from modules.auxiliary.dynamic_components import required_operational_modules, \
-    load_balance_production_components, required_reserve_modules
+from modules.auxiliary.dynamic_components import \
+    required_operational_modules, load_balance_production_components, \
+    required_reserve_modules
 from modules.auxiliary.auxiliary import make_project_time_var_df, \
-    load_operational_type_modules, load_reserve_type_modules
+    load_operational_type_modules, load_reserve_type_modules, \
+    check_if_technology_column_exists
 
 
 def add_model_components(m, d):
@@ -158,3 +161,124 @@ def export_results(scenario_directory, horizon, stage, m, d):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "operations.csv"),
         header=True, index=True)
+
+
+def summarize_results(d, problem_directory, horizon, stage):
+    """
+    Summarize operational results
+    :param d:
+    :param problem_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+
+    summary_results_file = os.path.join(
+        problem_directory, horizon, stage, "results", "summary_results.txt"
+    )
+
+    # Open in 'append' mode, so that results already written by other
+    # modules are not overridden
+    with open(summary_results_file, "a") as outfile:
+        outfile.write(
+            "\n### OPERATIONAL RESULTS ###\n"
+        )
+
+    # Next, our goal is to get a summary table of power production by load
+    # zone, technology, and period
+
+    # Check if the 'technology' exists in  projects.tab; if it doesn't, we
+    # don't have a category to aggregate by, so we'll skip summarizing results
+    if not check_if_technology_column_exists(problem_directory):
+        with open(summary_results_file, "a") as outfile:
+            outfile.write(
+                "...skipping aggregating operational results: column '"
+                "technology' not found in projects.tab"
+            )
+    else:
+        # Get the technology for each project by which we'll aggregate
+        project_tech = \
+            pd.read_csv(
+                os.path.join(problem_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project", "load_zone",
+                                   "technology"]
+            )
+        project_tech.set_index("project", inplace=True, verify_integrity=True)
+
+        # Get the period for each timepoint
+        tmp_period = \
+            pd.read_csv(
+                os.path.join(problem_directory, "inputs", "timepoints.tab"),
+                sep="\t", usecols=["TIMEPOINTS", "period"]
+            )
+        tmp_period.set_index("TIMEPOINTS", inplace=True, verify_integrity=True)
+
+        # Get the results CSV as dataframe
+        operational_results = \
+            pd.read_csv(os.path.join(problem_directory, horizon,
+                                     stage, "results", "operations.csv")
+                        )
+        # Set the index to 'project' for the first join
+        # We'll change to this to 'timepoints' on the go during the merge
+        # below for the second join
+        operational_results.set_index(["project"], inplace=True)
+
+        # Join the dataframes (i.e. add technology, load_zone and period
+        # columns)
+        operational_results_df = \
+            pd.merge(
+                left=pd.DataFrame(
+                    pd.merge(left=operational_results,
+                             right=project_tech,
+                             how="left",
+                             left_index=True,
+                             right_index=True
+                             )
+                ).set_index("timepoint"),
+                right=tmp_period,
+                how="left",
+                left_index=True,
+                right_index=True
+            )
+
+        # Aggregate total power results by load_zone, technology, and period
+        operational_results_agg_df = pd.DataFrame(
+            operational_results_df.groupby(by=["load_zone", "period",
+                                               "technology",],
+                                           as_index=True
+                                           ).sum()["power_mw"]
+        )
+
+        operational_results_agg_df.columns = ["power_mw"]
+
+        # Aggregate total power by load_zone and period -- we'll need this
+        # to find the percentage of total power by technology (for each load
+        # zone and period)
+        lz_period_power_df = pd.DataFrame(
+            operational_results_df.groupby(by=["load_zone", "period"],
+                                           as_index=True
+                                           ).sum()["power_mw"]
+        )
+
+        # Name the power column
+        operational_results_agg_df.columns = ["power_mw"]
+        # Add a column with the percentage of total power by load zone and tech
+        operational_results_agg_df["percent_total_power"] = pd.Series(
+            index=operational_results_agg_df.index
+        )
+
+        # Calculate the percent of total power for each tech (by load zone
+        # and period)
+        for indx, row in operational_results_agg_df.iterrows():
+            operational_results_agg_df.percent_total_power[indx] = \
+                operational_results_agg_df.power_mw[indx] \
+                / lz_period_power_df.power_mw[indx[0], indx[1]]*100.0
+
+        # Rename the columns for the final table
+        operational_results_agg_df.columns = (["Annual Energy (MWh)",
+                                               "% Total Power"])
+
+        with open(summary_results_file, "a") as outfile:
+            outfile.write("\n--> Energy Production <--\n")
+            operational_results_agg_df.to_string(outfile)
+            outfile.write("\n")

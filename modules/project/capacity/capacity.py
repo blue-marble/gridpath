@@ -4,13 +4,12 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression
 
-
+from modules.auxiliary.auxiliary import \
+    load_gen_storage_capacity_type_modules, join_sets, \
+    make_project_time_var_df, check_if_technology_column_exists
 from modules.auxiliary.dynamic_components import required_capacity_modules, \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
-from modules.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, join_sets, \
-    make_project_time_var_df
 
 
 def add_model_components(m, d):
@@ -216,7 +215,7 @@ def summarize_results(d, problem_directory, horizon, stage):
             )
         project_tech.set_index("project")
 
-        # Get the results CSV
+        # Get the results CSV as dataframe
         capacity_results = \
             pd.read_csv(os.path.join(problem_directory, "results",
                                      "capacity.csv")
@@ -247,22 +246,6 @@ def summarize_results(d, problem_directory, horizon, stage):
                 )
             else:
                 pass
-
-
-def check_if_technology_column_exists(problem_directory):
-    """
-
-    :param problem_directory:
-    :return:
-    """
-    try:
-        # If this works, we'll continue; otherwise, we'll skip summarizing
-        # results
-        pd.read_csv(os.path.join(problem_directory, "inputs", "projects.tab"),
-                    sep="\t", usecols=["technology"])
-        return True
-    except ValueError:
-        return False
 
 
 def operational_periods_by_project(prj, project_operational_periods):

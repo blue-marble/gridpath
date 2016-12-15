@@ -1,4 +1,4 @@
-##### SUMMARY RESULTS FOR SCENARIO *test* #####
+##### SUMMARY RESULTS FOR SCENARIO *test_w_hydro* #####
 
 ### CAPACITY RESULTS ###
 ...skipping aggregating capacity results: column 'technology' not found in projects.tab

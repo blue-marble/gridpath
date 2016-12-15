@@ -4,10 +4,9 @@
 Various auxiliary functions used in other modules
 """
 
-
-import pandas
 from importlib import import_module
-
+import os.path
+import pandas as pd
 from pyomo.environ import value
 
 
@@ -178,11 +177,11 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
     """
 
     # Create a multi-index from the relevant project-time set
-    multi_index = pandas.MultiIndex.from_tuples(
+    multi_index = pd.MultiIndex.from_tuples(
         tuples=[(p, time) for (p, time) in getattr(m, project_time_set)],
         names=index
     )
-    results_df = pandas.DataFrame(
+    results_df = pd.DataFrame(
         index=multi_index, columns=[header]
     )
 
@@ -202,3 +201,17 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
     return results_df
 
 
+def check_if_technology_column_exists(problem_directory):
+    """
+
+    :param problem_directory:
+    :return:
+    """
+    try:
+        # If this works, we'll continue; otherwise, we'll skip summarizing
+        # results
+        pd.read_csv(os.path.join(problem_directory, "inputs", "projects.tab"),
+                    sep="\t", usecols=["technology"])
+        return True
+    except ValueError:
+        return False
