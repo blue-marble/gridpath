@@ -208,16 +208,16 @@ def new_build_storage_vintages_operational_in_period(mod, p):
     )
 
 
-def summarize_results(capacity_results_agg_df):
+def summarize_module_specific_results(capacity_results_agg_df,
+                                      summary_results_file):
     """
     Summarize new build storage results.
     :param capacity_results_agg_df:
+    :param summary_results_file:
     :return:
     """
-    print("\n--> New Storage Capacity <--")
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
-
     # Get all technologies with new build storage power OR energy capacity
     new_build_storage_df = pd.DataFrame(
         capacity_results_agg_df[
@@ -227,7 +227,15 @@ def summarize_results(capacity_results_agg_df):
     )
     new_build_storage_df.columns =["New Storage Power Capacity (MW)",
                                    "New Storage Energy Capacity (MWh)"]
-    if new_build_storage_df.empty:
-        print("No new storage was built.")
-    else:
-        print new_build_storage_df
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write("\n--> New Storage Capacity <--\n")
+        if new_build_storage_df.empty:
+            outfile.write("No new storage was built.\n")
+        else:
+            new_build_storage_df.to_string(outfile)
+            outfile.write("\n")
+
+
+
+

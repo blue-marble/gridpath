@@ -153,13 +153,14 @@ def new_build_option_vintages_operational_in_period(mod, p):
     )
 
 
-def summarize_results(capacity_results_agg_df):
+def summarize_module_specific_results(capacity_results_agg_df,
+                                      summary_results_file):
     """
     Summarize new build generation capacity results.
     :param capacity_results_agg_df:
+    :param summary_results_file:
     :return:
     """
-    print("\n--> New Generation Capacity <--")
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
 
@@ -171,7 +172,11 @@ def summarize_results(capacity_results_agg_df):
     )
 
     new_build_option_df.columns = ["New Capacity (MW)"]
-    if new_build_option_df.empty:
-        print("No new storage was built.")
-    else:
-        print new_build_option_df
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write("\n--> New Generation Capacity <--\n")
+        if new_build_option_df.empty:
+            outfile.write("No new storage was built.\n")
+        else:
+            new_build_option_df.to_string(outfile)
+            outfile.write("\n")

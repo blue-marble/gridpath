@@ -177,24 +177,35 @@ def export_results(scenario_directory, horizon, stage, m, d):
         header=True, index=True)
 
 
-def summarize_results(d, problem_directory):
+def summarize_results(d, problem_directory, horizon, stage):
     """
     Summarize capacity results
     :param d:
     :param problem_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 
+    summary_results_file = os.path.join(
+        problem_directory, horizon, stage, "results", "summary_results.txt"
+    )
     # Check if the 'technology' exists in  projects.tab; if it doesn't, we
     # don't have a category to aggregate by, so we'll skip summarizing results
 
-    # TODO: how should this interplay with the 'quiet' option
-    # TODO: print to screen AND write to file
-    print("\n##### CAPACITY RESULTS #####")
+    # Open in 'append' mode, so that results already written by other
+    # modules are not overridden
+    with open(summary_results_file, "a") as outfile:
+        outfile.write(
+            "\n### CAPACITY RESULTS ###\n"
+        )
 
     if not check_if_technology_column_exists(problem_directory):
-        print("...skipping aggregating capacity results: column 'technology' "
-              "not found in projects.tab")
+        with open(summary_results_file, "a") as outfile:
+            outfile.write(
+                "...skipping aggregating capacity results: column '"
+                "technology' not found in projects.tab"
+            )
     else:
         # Get the technology for each project by which we'll aggregate
         project_tech = \
@@ -229,16 +240,24 @@ def summarize_results(d, problem_directory):
             )
         for op_m in getattr(d, required_capacity_modules):
             if hasattr(imported_capacity_modules[op_m],
-                       "summarize_results"):
+                       "summarize_module_specific_results"):
                 imported_capacity_modules[
-                    op_m].summarize_results(capacity_results_agg_df)
+                    op_m].summarize_module_specific_results(
+                    capacity_results_agg_df, summary_results_file
+                )
             else:
                 pass
 
 
 def check_if_technology_column_exists(problem_directory):
+    """
+
+    :param problem_directory:
+    :return:
+    """
     try:
-        # If this works, we'll continue; otherwise, we'll skip to
+        # If this works, we'll continue; otherwise, we'll skip summarizing
+        # results
         pd.read_csv(os.path.join(problem_directory, "inputs", "projects.tab"),
                     sep="\t", usecols=["technology"])
         return True

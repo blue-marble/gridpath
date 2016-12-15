@@ -507,10 +507,23 @@ def summarize_results(problem_directory, horizon, stage, loaded_modules,
     if not parsed_arguments.quiet:
         print("Summarizing results...")
 
+    # Make the summary results file
+    summary_results_file = os.path.join(
+        problem_directory, horizon, stage, "results", "summary_results.txt"
+    )
+
+    # TODO: how to handle results from previous runs
+    # Overwrite prior results
+    with open(summary_results_file, "w") as outfile:
+        outfile.write("##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
+            parsed_arguments.scenario)
+        )
+
     # Go through the modules and get the appropriate results
     for m in loaded_modules:
         if hasattr(m, "summarize_results"):
-            m.summarize_results(dynamic_inputs, problem_directory)
+            m.summarize_results(dynamic_inputs, problem_directory, horizon,
+                                stage)
     else:
         pass
 
