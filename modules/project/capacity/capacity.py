@@ -213,19 +213,20 @@ def summarize_results(d, problem_directory, horizon, stage):
                 sep="\t", usecols=["project", "load_zone",
                                    "technology"]
             )
-        project_tech.set_index("project")
+        project_tech.set_index(["project"], inplace=True,
+                               verify_integrity=True)
 
         # Get the results CSV as dataframe
         capacity_results = \
             pd.read_csv(os.path.join(problem_directory, "results",
                                      "capacity.csv")
                         )
-        capacity_results.set_index("project")
+        capacity_results.set_index(["project"], inplace=True)
 
         # Join the two dataframes (i.e. add technology column)
         capacity_results_df = \
             pd.merge(left=capacity_results, right=project_tech, how="left",
-                     left_on="project", right_on="project")
+                     left_index=True, right_index=True)
 
         capacity_results_agg_df = \
             capacity_results_df.groupby(by=["load_zone", "technology",
