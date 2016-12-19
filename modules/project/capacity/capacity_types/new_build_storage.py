@@ -235,7 +235,3 @@ def summarize_module_specific_results(capacity_results_agg_df,
         else:
             new_build_storage_df.to_string(outfile)
             outfile.write("\n")
-
-
-
-

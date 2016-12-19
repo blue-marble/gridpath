@@ -41,7 +41,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
 
     # From here on, the dynamic components will be further populated by the
     # modules
-    # Reserve variablesd
+    # Reserve variables
     # Will be determined based on whether the user has specified the
     # respective reserve module AND based on whether a reserve zone is
     # specified for a project in projects.tab

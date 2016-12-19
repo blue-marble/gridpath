@@ -184,14 +184,14 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     save_results(scenario_directory, horizon, stage, loaded_modules,
                  dynamic_inputs, instance, results)
 
+    # Summarize results
+    summarize_results(scenario_directory, horizon, stage, loaded_modules,
+                      dynamic_inputs, parsed_arguments)
+
     # If running this problem as part of the test suite, return the objective
     # function value to check against expected value
     if parsed_arguments.testing:
         return instance.Total_Cost()
-
-    # Summarize results
-    summarize_results(scenario_directory, horizon, stage, loaded_modules,
-                      dynamic_inputs, parsed_arguments)
 
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,

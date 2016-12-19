@@ -93,6 +93,7 @@ def add_module_specific_components(m, d):
             rule=min_power_rule
         )
 
+    # TODO: adjust storage energy for reserves provided
     def energy_tracking_rule(mod, s, tmp):
         """
 
