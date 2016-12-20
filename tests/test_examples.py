@@ -313,6 +313,26 @@ class TestExamples(unittest.TestCase):
                     places=5
                 )
 
+    def test_2periods_gen_lin_econ_retirement(self):
+        """
+        Check objective function value of "2periods_gen_lin_econ_retirement"
+        example; this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_gen_lin_econ_retirement",
+                 "--scenario_location", "examples",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 1309888.26166
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
 
 if __name__ == "__main__":
     unittest.main()

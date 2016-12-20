@@ -60,6 +60,7 @@ class TestProject(unittest.TestCase):
             "new_build_generator", "new_build_storage",
             "specified_no_economic_retirement",
             "storage_specified_no_economic_retirement",
+            "existing_gen_linear_economic_retirement"
         ])
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
@@ -84,7 +85,7 @@ class TestProject(unittest.TestCase):
             'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": []
+            "Disp_No_Commit": [], "Clunky_Old_Gen": []
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -97,7 +98,7 @@ class TestProject(unittest.TestCase):
             'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": []
+            "Disp_No_Commit": [], "Clunky_Old_Gen": []
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -147,7 +148,9 @@ class TestProject(unittest.TestCase):
             "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
-            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit"])
+            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
+            "Clunky_Old_Gen"]
+            )
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
         self.assertListEqual(expected_projects, actual_projects)
@@ -164,7 +167,7 @@ class TestProject(unittest.TestCase):
                  "Wind_z2": "Zone2", "Battery": "Zone1",
                  "Battery_Specified": "Zone1", "Hydro": "Zone1",
                  "Disp_Binary_Commit": "Zone1", "Disp_Cont_Commit": "Zone1",
-                 "Disp_No_Commit": "Zone1"}.items()
+                 "Disp_No_Commit": "Zone1", "Clunky_Old_Gen": "Zone1"}.items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -196,7 +199,8 @@ class TestProject(unittest.TestCase):
                  "Hydro": "specified_no_economic_retirement",
                  "Disp_Binary_Commit": "specified_no_economic_retirement",
                  "Disp_Cont_Commit": "specified_no_economic_retirement",
-                 "Disp_No_Commit": "specified_no_economic_retirement"
+                 "Disp_No_Commit": "specified_no_economic_retirement",
+                 "Clunky_Old_Gen": "existing_gen_linear_economic_retirement"
                  }.items()
             )
         )
@@ -216,7 +220,7 @@ class TestProject(unittest.TestCase):
                  "Nuclear": 1, "Nuclear_z2": 1, "Wind": 0, "Wind_z2": 0,
                  "Battery": 0, "Battery_Specified": 0, "Hydro": 0,
                  "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
-                 "Disp_No_Commit": 0
+                 "Disp_No_Commit": 0, "Clunky_Old_Gen": 1
                  }.items()
             )
         )

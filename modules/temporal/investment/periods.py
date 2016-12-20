@@ -27,6 +27,17 @@ def add_model_components(m, d):
             initialize=lambda mod, p:
             set(tmp for tmp in mod.TIMEPOINTS if mod.period[tmp] == p))
 
+    # Figure out which one is the first period and the previous
+    # period for each period other than the first period
+    m.first_period = Param(within=m.PERIODS,
+                           initialize=lambda mod: list(mod.PERIODS)[0])
+    m.NOT_FIRST_PERIODS = Set(within=m.PERIODS,
+                                initialize=lambda mod: list(mod.PERIODS)[1:])
+
+    m.previous_period = Param(m.NOT_FIRST_PERIODS,
+                              initialize=lambda mod, p:
+                              list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
+                              )
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """

@@ -185,5 +185,21 @@ class TestPeriods(unittest.TestCase):
                                  "expected."
                              )
 
+        # Param: first_period
+        expected_first_period = 2020
+        actual_first_period = instance.first_period
+        self.assertEqual(expected_first_period, actual_first_period)
+
+        # Set: NOT_FIRST_PERIODS
+        expected_not_first_periods = [2030]
+        actual_not_first_periods = [p for p in instance.NOT_FIRST_PERIODS]
+        self.assertListEqual(expected_not_first_periods, actual_not_first_periods)
+
+        # Param: previous_period
+        expected_prev_periods = {2030:2020}
+        actual_prev_periods = {p: instance.previous_period[p] for p in
+                               instance.NOT_FIRST_PERIODS}
+        self.assertDictEqual(expected_prev_periods, actual_prev_periods)
+
 if __name__ == "__main__":
     unittest.main()

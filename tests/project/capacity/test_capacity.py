@@ -94,7 +94,8 @@ class TestCapacity(unittest.TestCase):
             ("Disp_Cont_Commit", 2020),
             ("Disp_Cont_Commit", 2030),
             ("Disp_No_Commit", 2020),
-            ("Disp_No_Commit", 2030)
+            ("Disp_No_Commit", 2030),
+            ("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
@@ -126,7 +127,8 @@ class TestCapacity(unittest.TestCase):
                  "Gas_CT_New": [2030],
                  "Disp_Binary_Commit": [2020, 2030],
                  "Disp_Cont_Commit": [2020, 2030],
-                 "Disp_No_Commit": [2020, 2030]}.items()
+                 "Disp_No_Commit": [2020, 2030],
+                 "Clunky_Old_Gen": [2020, 2030]}.items()
             )
         )
         actual_operational_periods_by_project = OrderedDict(
@@ -956,7 +958,55 @@ class TestCapacity(unittest.TestCase):
             ("Disp_No_Commit", 20300217), ("Disp_No_Commit", 20300218),
             ("Disp_No_Commit", 20300219), ("Disp_No_Commit", 20300220),
             ("Disp_No_Commit", 20300221), ("Disp_No_Commit", 20300222),
-            ("Disp_No_Commit", 20300223), ("Disp_No_Commit", 20300224)
+            ("Disp_No_Commit", 20300223), ("Disp_No_Commit", 20300224),
+            ("Clunky_Old_Gen", 20200101), ("Clunky_Old_Gen", 20200102),
+            ("Clunky_Old_Gen", 20200103), ("Clunky_Old_Gen", 20200104),
+            ("Clunky_Old_Gen", 20200105), ("Clunky_Old_Gen", 20200106),
+            ("Clunky_Old_Gen", 20200107), ("Clunky_Old_Gen", 20200108),
+            ("Clunky_Old_Gen", 20200109), ("Clunky_Old_Gen", 20200110),
+            ("Clunky_Old_Gen", 20200111), ("Clunky_Old_Gen", 20200112),
+            ("Clunky_Old_Gen", 20200113), ("Clunky_Old_Gen", 20200114),
+            ("Clunky_Old_Gen", 20200115), ("Clunky_Old_Gen", 20200116),
+            ("Clunky_Old_Gen", 20200117), ("Clunky_Old_Gen", 20200118),
+            ("Clunky_Old_Gen", 20200119), ("Clunky_Old_Gen", 20200120),
+            ("Clunky_Old_Gen", 20200121), ("Clunky_Old_Gen", 20200122),
+            ("Clunky_Old_Gen", 20200123), ("Clunky_Old_Gen", 20200124),
+            ("Clunky_Old_Gen", 20200201), ("Clunky_Old_Gen", 20200202),
+            ("Clunky_Old_Gen", 20200203), ("Clunky_Old_Gen", 20200204),
+            ("Clunky_Old_Gen", 20200205), ("Clunky_Old_Gen", 20200206),
+            ("Clunky_Old_Gen", 20200207), ("Clunky_Old_Gen", 20200208),
+            ("Clunky_Old_Gen", 20200209), ("Clunky_Old_Gen", 20200210),
+            ("Clunky_Old_Gen", 20200211), ("Clunky_Old_Gen", 20200212),
+            ("Clunky_Old_Gen", 20200213), ("Clunky_Old_Gen", 20200214),
+            ("Clunky_Old_Gen", 20200215), ("Clunky_Old_Gen", 20200216),
+            ("Clunky_Old_Gen", 20200217), ("Clunky_Old_Gen", 20200218),
+            ("Clunky_Old_Gen", 20200219), ("Clunky_Old_Gen", 20200220),
+            ("Clunky_Old_Gen", 20200221), ("Clunky_Old_Gen", 20200222),
+            ("Clunky_Old_Gen", 20200223), ("Clunky_Old_Gen", 20200224),
+            ("Clunky_Old_Gen", 20300101), ("Clunky_Old_Gen", 20300102),
+            ("Clunky_Old_Gen", 20300103), ("Clunky_Old_Gen", 20300104),
+            ("Clunky_Old_Gen", 20300105), ("Clunky_Old_Gen", 20300106),
+            ("Clunky_Old_Gen", 20300107), ("Clunky_Old_Gen", 20300108),
+            ("Clunky_Old_Gen", 20300109), ("Clunky_Old_Gen", 20300110),
+            ("Clunky_Old_Gen", 20300111), ("Clunky_Old_Gen", 20300112),
+            ("Clunky_Old_Gen", 20300113), ("Clunky_Old_Gen", 20300114),
+            ("Clunky_Old_Gen", 20300115), ("Clunky_Old_Gen", 20300116),
+            ("Clunky_Old_Gen", 20300117), ("Clunky_Old_Gen", 20300118),
+            ("Clunky_Old_Gen", 20300119), ("Clunky_Old_Gen", 20300120),
+            ("Clunky_Old_Gen", 20300121), ("Clunky_Old_Gen", 20300122),
+            ("Clunky_Old_Gen", 20300123), ("Clunky_Old_Gen", 20300124),
+            ("Clunky_Old_Gen", 20300201), ("Clunky_Old_Gen", 20300202),
+            ("Clunky_Old_Gen", 20300203), ("Clunky_Old_Gen", 20300204),
+            ("Clunky_Old_Gen", 20300205), ("Clunky_Old_Gen", 20300206),
+            ("Clunky_Old_Gen", 20300207), ("Clunky_Old_Gen", 20300208),
+            ("Clunky_Old_Gen", 20300209), ("Clunky_Old_Gen", 20300210),
+            ("Clunky_Old_Gen", 20300211), ("Clunky_Old_Gen", 20300212),
+            ("Clunky_Old_Gen", 20300213), ("Clunky_Old_Gen", 20300214),
+            ("Clunky_Old_Gen", 20300215), ("Clunky_Old_Gen", 20300216),
+            ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
+            ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
+            ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
         ])
         actual_operational_timepoints_by_project = sorted([
             (g, tmp) for (g, tmp) in instance.PROJECT_OPERATIONAL_TIMEPOINTS
@@ -970,14 +1020,14 @@ class TestCapacity(unittest.TestCase):
              "Gas_CCGT_New", "Nuclear_z2", "Gas_CCGT_z2",
              "Coal_z2", "Gas_CT_z2", "Wind_z2", "Battery",
              "Battery_Specified", "Hydro", "Disp_Binary_Commit",
-             "Disp_Cont_Commit", "Disp_No_Commit"]
+             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"]
         )
         projects_2030 = sorted(
             ["Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Wind",
              "Gas_CCGT_New", "Nuclear_z2", "Gas_CCGT_z2",
              "Coal_z2", "Gas_CT_z2", "Wind_z2", "Battery",
              "Gas_CT_New", "Hydro", "Disp_Binary_Commit",
-             "Disp_Cont_Commit", "Disp_No_Commit"]
+             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"]
         )
         expected_operational_projects_in_tmp = OrderedDict(sorted({
             20200101: projects_2020,
@@ -1107,7 +1157,8 @@ class TestCapacity(unittest.TestCase):
             ("Hydro", 2020), ("Hydro", 2030), ("Disp_Binary_Commit", 2020),
             ("Disp_Binary_Commit", 2030), ("Disp_Cont_Commit", 2020),
             ("Disp_Cont_Commit", 2030), ("Disp_No_Commit", 2020),
-            ("Disp_No_Commit", 2030)
+            ("Disp_No_Commit", 2030), ("Clunky_Old_Gen", 2020),
+            ("Clunky_Old_Gen", 2030)
         ]
 
         expected_nuclear_periods = [2020, 2030]

@@ -17,3 +17,4 @@ Hydro	Zone1	specified_no_economic_retirement	0	hydro_conventional	Zone1	Zone1	Zo
 Disp_Binary_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_binary_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.
 Disp_Cont_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.
 Disp_No_Commit	Zone1	specified_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	.	.	.	Gas	500	8	.	.	.	.	.
+Clunky_Old_Gen	Zone1	existing_gen_linear_economic_retirement	1	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Coal	5000	15	5	.	.	da	.
