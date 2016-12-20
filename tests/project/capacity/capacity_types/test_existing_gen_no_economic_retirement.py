@@ -18,7 +18,7 @@ PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
      "temporal.investment.periods", "geography.load_zones", "project"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.specified_no_economic_retirement"
+    "project.capacity.capacity_types.existing_gen_no_economic_retirement"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -36,7 +36,7 @@ except ImportError:
           " to test.")
 
 
-class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
+class TestExistingNoEconomicRetirement(unittest.TestCase):
     """
 
     """
@@ -78,7 +78,7 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: SPECIFIED_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+        # Set: EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
         expected_proj_period_set = sorted([
             ("Nuclear", 2020), ("Gas_CCGT", 2020), ("Coal", 2020),
             ("Gas_CT", 2020), ("Wind", 2020), ("Nuclear", 2030),
@@ -95,12 +95,12 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period) in
                  instance.
-                     SPECIFIED_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                     EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
             ])
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
         
-        # Params: specified_capacity_mw
-        expected_specified_cap = OrderedDict(
+        # Params: existing_gen_no_econ_ret_capacity_mw
+        expected_existing_cap = OrderedDict(
             sorted(
                 {("Nuclear", 2020): 6, ("Gas_CCGT", 2020): 6,
                  ("Coal", 2020): 6, ("Gas_CT", 2020): 6,
@@ -120,16 +120,48 @@ class TestSpecifiedNoEconomicRetirement(unittest.TestCase):
         }.items()
             )
         )
-        actual_specified_cap = OrderedDict(
+        actual_existing_cap = OrderedDict(
             sorted(
-                {(prj, period): instance.specified_capacity_mw[prj, period]
+                {(prj, period): instance.existing_gen_no_econ_ret_capacity_mw[prj, period]
                  for (prj, period) in
                  instance.
-                     SPECIFIED_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                     EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
                  }.items()
             )
         )
-        self.assertDictEqual(expected_specified_cap, actual_specified_cap)
+        self.assertDictEqual(expected_existing_cap, actual_existing_cap)
+        
+        # Params: existing_no_econ_ret_fixed_cost_per_mw_yr
+        expected_fixed_cost = OrderedDict(
+            sorted(
+                {("Nuclear", 2020): 0, ("Gas_CCGT", 2020): 0,
+                 ("Coal", 2020): 0, ("Gas_CT", 2020): 0,
+                 ("Wind", 2020): 0, ("Nuclear", 2030): 0,
+                 ("Gas_CCGT", 2030): 0, ("Coal", 2030): 0,
+                 ("Gas_CT", 2030): 0, ("Wind", 2030): 0,
+                 ("Nuclear_z2", 2020): 0, ("Gas_CCGT_z2", 2020): 0,
+                 ("Coal_z2", 2020): 0, ("Gas_CT_z2", 2020): 0,
+                 ("Wind_z2", 2020): 0, ("Nuclear_z2", 2030): 0,
+                 ("Gas_CCGT_z2", 2030): 0, ("Coal_z2", 2030): 0,
+                 ("Gas_CT_z2", 2030): 0, ("Wind_z2", 2030): 0,
+                 ("Hydro", 2020): 0, ("Hydro", 2030): 0,
+                 ("Disp_Binary_Commit", 2020): 0,
+                 ("Disp_Binary_Commit", 2030): 0,
+                 ("Disp_Cont_Commit", 2020): 0, ("Disp_Cont_Commit", 2030): 0,
+                 ("Disp_No_Commit", 2020): 0, ("Disp_No_Commit", 2030): 0
+        }.items()
+            )
+        )
+        actual_fixed_cost = OrderedDict(
+            sorted(
+                {(prj, period): instance.existing_no_econ_ret_fixed_cost_per_mw_yr[prj, period]
+                 for (prj, period) in
+                 instance.
+                     EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_fixed_cost, actual_fixed_cost)
 
 if __name__ == "__main__":
     unittest.main()

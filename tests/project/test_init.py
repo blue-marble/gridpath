@@ -58,7 +58,7 @@ class TestProject(unittest.TestCase):
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
             "new_build_generator", "new_build_storage",
-            "specified_no_economic_retirement",
+            "existing_gen_no_economic_retirement",
             "storage_specified_no_economic_retirement",
             "existing_gen_linear_economic_retirement"
         ])
@@ -181,25 +181,25 @@ class TestProject(unittest.TestCase):
         # Params: capacity_type
         expected_cap_type = OrderedDict(
             sorted(
-                {"Coal": "specified_no_economic_retirement",
-                 "Coal_z2": "specified_no_economic_retirement",
-                 "Gas_CCGT": "specified_no_economic_retirement",
+                {"Coal": "existing_gen_no_economic_retirement",
+                 "Coal_z2": "existing_gen_no_economic_retirement",
+                 "Gas_CCGT": "existing_gen_no_economic_retirement",
                  "Gas_CCGT_New": "new_build_generator",
-                 "Gas_CCGT_z2": "specified_no_economic_retirement",
-                 "Gas_CT": "specified_no_economic_retirement",
+                 "Gas_CCGT_z2": "existing_gen_no_economic_retirement",
+                 "Gas_CT": "existing_gen_no_economic_retirement",
                  "Gas_CT_New": "new_build_generator",
-                 "Gas_CT_z2": "specified_no_economic_retirement",
-                 "Nuclear": "specified_no_economic_retirement",
-                 "Nuclear_z2": "specified_no_economic_retirement",
-                 "Wind": "specified_no_economic_retirement",
-                 "Wind_z2": "specified_no_economic_retirement",
+                 "Gas_CT_z2": "existing_gen_no_economic_retirement",
+                 "Nuclear": "existing_gen_no_economic_retirement",
+                 "Nuclear_z2": "existing_gen_no_economic_retirement",
+                 "Wind": "existing_gen_no_economic_retirement",
+                 "Wind_z2": "existing_gen_no_economic_retirement",
                  "Battery": "new_build_storage",
                  "Battery_Specified":
                      "storage_specified_no_economic_retirement",
-                 "Hydro": "specified_no_economic_retirement",
-                 "Disp_Binary_Commit": "specified_no_economic_retirement",
-                 "Disp_Cont_Commit": "specified_no_economic_retirement",
-                 "Disp_No_Commit": "specified_no_economic_retirement",
+                 "Hydro": "existing_gen_no_economic_retirement",
+                 "Disp_Binary_Commit": "existing_gen_no_economic_retirement",
+                 "Disp_Cont_Commit": "existing_gen_no_economic_retirement",
+                 "Disp_No_Commit": "existing_gen_no_economic_retirement",
                  "Clunky_Old_Gen": "existing_gen_linear_economic_retirement"
                  }.items()
             )
