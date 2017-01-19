@@ -326,6 +326,18 @@ FOREIGN KEY (timepoint_scenario_id) REFERENCES timepoint_scenarios
 (timepoint_scenario_id)
 );
 
+DROP TABLE IF EXISTS variable_generator_profiles;
+CREATE TABLE variable_generator_profiles(
+period_scenario_id INTEGER,
+timepoint_scenario_id INTEGER,
+variable_generator_profiles_scenario_id INTEGER,
+project INTEGER,
+timepoint INTEGER,
+cap_factor FLOAT,
+PRIMARY KEY (period_scenario_id, timepoint_scenario_id,
+variable_generator_profiles_scenario_id, project, timepoint)
+);
+
 -- TODO: add check that load_zone is one of the load zones of the
 -- appropriate load_zone_scenario_id (can't be done in sqlite, so do in
 -- python or write function when we move to postgresql)
@@ -765,4 +777,44 @@ FOREIGN KEY (period_scenario_id) REFERENCES period_scenarios
 (period_scenario_id),
 FOREIGN KEY (timepoint_scenario_id) REFERENCES timepoint_scenarios
 (timepoint_scenario_id)
+);
+
+
+-- TRANSMISSION --
+
+DROP TABLE IF EXISTS transmission_lines;
+CREATE TABLE transmission_lines(
+load_zone_scenario_id INTEGER,
+transmission_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+tx_capacity_type VARCHAR(32),
+load_zone_from VARCHAR(32),
+load_zone_to VARCHAR(32),
+PRIMARY KEY (load_zone_scenario_id, transmission_scenario_id,
+transmission_line)
+);
+
+DROP TABLE IF EXISTS transmission_line_capacities;
+CREATE TABLE transmission_line_capacities(
+period_scenario_id INTEGER,
+load_zone_scenario_id INTEGER,
+transmission_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+capacity_mw FLOAT,
+PRIMARY KEY (period_scenario_id, load_zone_scenario_id,
+transmission_scenario_id, transmission_line, period)
+);
+
+-- POLICY --
+DROP TABLE IF EXISTS rps_targets;
+CREATE TABLE rps_targets(
+period_scenario_id INTEGER,
+rps_zone_scenario_id INTEGER,
+rps_target_scenario_id INTEGER,
+rps_zone VARCHAR(32),
+period INTEGER,
+rps_target_mwh FLOAT,
+PRIMARY KEY (period_scenario_id, rps_zone_scenario_id,
+rps_target_scenario_id, rps_zone, period)
 );
