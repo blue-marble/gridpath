@@ -33,7 +33,7 @@ def parse_arguments(arguments):
     parser = ArgumentParser(add_help=True)
 
     # Scenario name and location options
-    parser.add_argument("--db_name", default="project_db",
+    parser.add_argument("--db_name", default="io",
                         help="Name of the database.")
     parser.add_argument("--db_location", default=".",
                         help="Path to the database (relative to "
