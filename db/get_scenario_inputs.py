@@ -98,6 +98,17 @@ NEW_PROJECT_COST_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+FUEL_SCENARIO_ID = c.execute(
+    """SELECT fuel_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+HYDRO_OPERATIONAL_CHARS_SCENARIO_ID = c.execute(
+    """SELECT hydro_operational_chars_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
 
 # periods.tab
 with open(os.path.join(os.getcwd(), "temp_inputs", "periods.tab"), "w") as \
@@ -298,7 +309,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
 with open(os.path.join(os.getcwd(), "temp_inputs",
                        "existing_generation_period_params.tab"), "w") as \
         existing_project_capacity_tab_file:
-    writer = csv.writer(existing_project_capacity_tab_file, delimiter = "\t")
+    writer = csv.writer(existing_project_capacity_tab_file, delimiter="\t")
 
     # Write header
     writer.writerow(
@@ -324,7 +335,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 with open(os.path.join(os.getcwd(), "temp_inputs",
                        "new_build_generator_vintage_costs.tab"), "w") as \
         new_gen_costs_tab_file:
-    writer = csv.writer(new_gen_costs_tab_file, delimiter = "\t")
+    writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
 
     # Write header
     writer.writerow(
@@ -353,7 +364,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 with open(os.path.join(os.getcwd(), "temp_inputs",
                        "new_build_storage_vintage_costs.tab"), "w") as \
         new_storage_costs_tab_file:
-    writer = csv.writer(new_storage_costs_tab_file, delimiter = "\t")
+    writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
 
     # Write header
     writer.writerow(
@@ -377,4 +388,55 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         )
     )
     for row in new_stor_costs:
+        writer.writerow(row)
+
+# fuels.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "fuels.tab"), "w") as \
+        fuels_tab_file:
+    writer = csv.writer(fuels_tab_file, delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["FUELS", "fuel_price_per_mmbtu", "co2_intensity_tons_per_mmbtu"]
+    )
+
+    fuels = c.execute(
+        """SELECT fuel, fuel_price_per_mmbtu, co2_intensity_tons_per_mmbtu
+        FROM fuels
+        WHERE fuel_scenario_id = {}""".format(
+            FUEL_SCENARIO_ID
+        )
+    )
+    for row in fuels:
+        writer.writerow(row)
+
+# fuels.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "hydro_conventional_horizon_params.tab"), "w") as \
+        hydro_chars_tab_file:
+    writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["hydro_project", "horizon", "hydro_specified_average_power_mwa",
+         "hydro_specified_min_power_mw", "hydro_specified_max_power_mw"]
+    )
+
+    hydro_chars = c.execute(
+        """SELECT project, horizon, average_power_mwa, min_power_mw,
+        max_power_mw
+        FROM hydro_operational_chars
+        WHERE existing_project_scenario_id = {}
+        AND new_project_scenario_id = {}
+        AND period_scenario_id = {}
+        AND horizon_scenario_id = {}
+        AND hydro_operational_chars_scenario_id = {}
+        """.format(
+            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID,
+            HYDRO_OPERATIONAL_CHARS_SCENARIO_ID
+        )
+    )
+    for row in hydro_chars:
         writer.writerow(row)

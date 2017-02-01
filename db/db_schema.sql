@@ -19,6 +19,8 @@ project_lf_reserves_down_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 existing_project_capacity_scenario_id INTEGER,
 new_project_cost_scenario_id INTEGER,
+fuel_scenario_id INTEGER,
+hydro_operational_chars_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -65,7 +67,13 @@ period_scenario_id, existing_project_capacity_scenario_id),
 FOREIGN KEY (new_project_scenario_id,
 period_scenario_id, new_project_cost_scenario_id) REFERENCES
 subscenarios_new_project_cost (new_project_scenario_id,
-period_scenario_id, new_project_cost_scenario_id)
+period_scenario_id, new_project_cost_scenario_id),
+FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
+(fuel_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, period_scenario_id,
+horizon_scenario_id, hydro_operational_chars_scenario_id) REFERENCES
+subscenarios_hydro_operational_chars (existing_project_scenario_id,
+period_scenario_id, horizon_scenario_id, hydro_operational_chars_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -153,7 +161,11 @@ existing_project_capacity_scenario_id INTEGER,
 existing_project_capacity_scenario_name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (existing_project_scenario_id, period_scenario_id,
-existing_project_capacity_scenario_id)
+existing_project_capacity_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_new_projects;
@@ -171,7 +183,37 @@ new_project_cost_scenario_id INTEGER,
 new_project_cost_scenario_name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (new_project_scenario_id, period_scenario_id,
-new_project_cost_scenario_id)
+new_project_cost_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+(new_project_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id)
+);
+
+-- TODO: this needs to have a foreign key to a operational chars scenario
+DROP TABLE IF EXISTS subscenarios_fuels;
+CREATE TABLE subscenarios_fuels(
+fuel_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+fuel_scenario_name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS subscenarios_hydro_operational_chars;
+CREATE TABLE subscenarios_hydro_operational_chars(
+existing_project_scenario_id INTEGER,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+hydro_operational_chars_scenario_id INTEGER,
+hydro_operational_chars_scenario_name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (existing_project_scenario_id, period_scenario_id,
+horizon_scenario_id, hydro_operational_chars_scenario_id)
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_load_zones;
@@ -476,40 +518,16 @@ FOREIGN KEY (operational_type) REFERENCES operational_types (operational_type)
 -- TODO: add checks
 );
 
+-- TODO: link to operational chars scenarios when implemented
+-- TODO: fuel price should vary by year and maybe month
 DROP TABLE IF EXISTS fuels;
 CREATE TABLE fuels(
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 fuel_price_per_mmbtu FLOAT,
 co2_intensity_tons_per_mmbtu FLOAT,
-PRIMARY KEY (fuel_scenario_id, fuel)
-);
-
-DROP TABLE IF EXISTS hydro_operational_chars;
-CREATE TABLE hydro_operational_chars(
-timepoint_scenario_id INTEGER,
-hydro_operational_chars_scenario_id INTEGER,
-project VARCHAR(64),
-horizon INTEGER,
-average_power_mwa FLOAT,
-min_power_mw FLOAT,
-max_power_mw FLOAT,
-PRIMARY KEY (timepoint_scenario_id, hydro_operational_chars_scenario_id,
-project, horizon),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
-(timepoint_scenario_id)
-);
-
-DROP TABLE IF EXISTS variable_generator_profiles;
-CREATE TABLE variable_generator_profiles(
-period_scenario_id INTEGER,
-timepoint_scenario_id INTEGER,
-variable_generator_profiles_scenario_id INTEGER,
-project INTEGER,
-timepoint INTEGER,
-cap_factor FLOAT,
-PRIMARY KEY (period_scenario_id, timepoint_scenario_id,
-variable_generator_profiles_scenario_id, project, timepoint)
+PRIMARY KEY (fuel_scenario_id, fuel),
+FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels (fuel_scenario_id)
 );
 
 -- Existing projects
@@ -693,6 +711,66 @@ subscenarios_new_projects (new_project_scenario_id)
 --AND discharging_efficiency IS NOT NULL and discharging_efficiency >= 0 AND
 --discharging_efficiency <= 1)
 );
+
+-- TODO: how to make sure projects are valid; currently assuming all hydro
+-- is existing
+DROP TABLE IF EXISTS hydro_operational_chars;
+CREATE TABLE hydro_operational_chars(
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+hydro_operational_chars_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+average_power_mwa FLOAT,
+min_power_mw FLOAT,
+max_power_mw FLOAT,
+PRIMARY KEY (period_scenario_id, horizon_scenario_id,
+existing_project_scenario_id,  new_project_scenario_id,
+hydro_operational_chars_scenario_id, project, period, horizon),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, period) REFERENCES periods
+(period_scenario_id, period),
+FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, project) REFERENCES
+existing_projects (existing_project_scenario_id, project),
+FOREIGN KEY (new_project_scenario_id, project) REFERENCES
+new_projects (new_project_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
+ REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
+  project),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, horizon) REFERENCES
+horizons (period_scenario_id, horizon_scenario_id, horizon),
+FOREIGN KEY (hydro_operational_chars_scenario_id) REFERENCES
+subscenarios_hydro_operational_chars (hydro_operational_chars_scenario_id)
+);
+
+
+-- TODO: need to create a combined existing + new projects table and add
+-- foreign key here
+DROP TABLE IF EXISTS variable_generator_profiles;
+CREATE TABLE variable_generator_profiles(
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+timepoint_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+variable_generator_profiles_scenario_id INTEGER,
+project INTEGER,
+timepoint INTEGER,
+cap_factor FLOAT,
+PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+existing_project_scenario_id, new_project_scenario_id,
+variable_generator_profiles_scenario_id, project, timepoint)
+);
+
 
 -- Project-load zones
 DROP TABLE IF EXISTS project_load_zones;
