@@ -104,6 +104,12 @@ FUEL_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = c.execute(
+    """SELECT project_operational_chars_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
 HYDRO_OPERATIONAL_CHARS_SCENARIO_ID = c.execute(
     """SELECT hydro_operational_chars_scenario_id
        FROM scenarios
@@ -280,7 +286,9 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
         minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
         min_stable_level, unit_size_mw, startup_cost, shutdown_cost,
         charging_efficiency, discharging_efficiency
-        FROM projects
+        FROM all_projects
+        JOIN project_operational_chars
+        USING (existing_project_scenario_id, new_project_scenario_id, project)
         JOIN project_load_zones
         USING (existing_project_scenario_id, new_project_scenario_id, project)
         JOIN project_lf_reserves_up_bas
@@ -291,9 +299,11 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
         USING (existing_project_scenario_id, new_project_scenario_id, project)
         WHERE existing_project_scenario_id = {}
         AND new_project_scenario_id = {}
+        AND project_operational_chars_scenario_id = {}
         AND project_load_zone_scenario_id = {}
         AND project_rps_zone_scenario_id = {};""".format(
             EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+            PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             PROJECT_LOAD_ZONE_SCENARIO_ID,
             PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
             PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID,

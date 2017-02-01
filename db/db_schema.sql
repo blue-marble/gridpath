@@ -20,6 +20,7 @@ project_rps_zone_scenario_id INTEGER,
 existing_project_capacity_scenario_id INTEGER,
 new_project_cost_scenario_id INTEGER,
 fuel_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
 hydro_operational_chars_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
@@ -70,10 +71,16 @@ subscenarios_new_project_cost (new_project_scenario_id,
 period_scenario_id, new_project_cost_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels
 (fuel_scenario_id),
-FOREIGN KEY (existing_project_scenario_id, period_scenario_id,
-horizon_scenario_id, hydro_operational_chars_scenario_id) REFERENCES
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id,
+period_scenario_id, horizon_scenario_id,
+hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_hydro_operational_chars (existing_project_scenario_id,
-period_scenario_id, horizon_scenario_id, hydro_operational_chars_scenario_id)
+new_project_scenario_id, period_scenario_id, horizon_scenario_id,
+hydro_operational_chars_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id) REFERENCES
+subscenarios_project_operational_chars (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -175,6 +182,17 @@ new_project_scenario_name VARCHAR(32),
 description VARCHAR(128)
 );
 
+DROP TABLE IF EXISTS subscenarios_project_operational_chars;
+CREATE TABLE subscenarios_project_operational_chars(
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
+project_operational_chars_scenario_name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id)
+);
+
 DROP TABLE IF EXISTS subscenarios_new_project_cost;
 CREATE TABLE subscenarios_new_project_cost(
 new_project_scenario_id INTEGER,
@@ -200,6 +218,28 @@ description VARCHAR(128)
 
 DROP TABLE IF EXISTS subscenarios_hydro_operational_chars;
 CREATE TABLE subscenarios_hydro_operational_chars(
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+hydro_operational_chars_scenario_id INTEGER,
+hydro_operational_chars_scenario_name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (existing_project_scenario_id,
+new_project_scenario_id, period_scenario_id, horizon_scenario_id,
+hydro_operational_chars_scenario_id)
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES
+subscenarios_new_projects (new_project_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_variable_generator_profiles;
+CREATE TABLE subscenarios_variable_generator_profiles(
 existing_project_scenario_id INTEGER,
 period_scenario_id INTEGER,
 horizon_scenario_id INTEGER,
@@ -497,27 +537,6 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('dispatchable_continuous_commit'), ('dispatchable_no_commit'),
 ('hydro_conventional'), ('must_run'), ('storage_generic'), ('variable');
 
--- All projects
--- Probably won't be changing this much
--- TODO: figure out how to handle sensitivities
-DROP TABLE IF EXISTS project_operational_chars_default;
-CREATE TABLE project_operational_chars_default(
-project VARCHAR(64) PRIMARY KEY,
-operational_type VARCHAR(32),
-technology VARCHAR(32),
-fuel VARCHAR(32),
-minimum_input_mmbtu_per_hr FLOAT,
-inc_heat_rate_mmbtu_per_mwh FLOAT,
-min_stable_level FLOAT,
-unit_size_mw FLOAT,
-startup_cost FLOAT,
-shutdown_cost FLOAT,
-charging_efficiency FLOAT,
-discharging_efficiency FLOAT,
-FOREIGN KEY (operational_type) REFERENCES operational_types (operational_type)
--- TODO: add checks
-);
-
 -- TODO: link to operational chars scenarios when implemented
 -- TODO: fuel price should vary by year and maybe month
 DROP TABLE IF EXISTS fuels;
@@ -530,6 +549,7 @@ PRIMARY KEY (fuel_scenario_id, fuel),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_fuels (fuel_scenario_id)
 );
 
+-- TODO: capacity type characteristcs should probably be their own subscenario
 -- Existing projects
 DROP TABLE IF EXISTS existing_projects;
 CREATE TABLE existing_projects(
@@ -537,7 +557,6 @@ existing_project_scenario_id INTEGER,
 project VARCHAR(64),
 capacity_type VARCHAR(32),
 PRIMARY KEY (existing_project_scenario_id, project),
-FOREIGN KEY (project) REFERENCES projects_all_defaults(project),
 FOREIGN KEY (capacity_type) REFERENCES capacity_types(capacity_type)
 );
 
@@ -548,29 +567,34 @@ new_project_scenario_id INTEGER,
 project VARCHAR(64),
 capacity_type VARCHAR(32),
 PRIMARY KEY (new_project_scenario_id, project),
-FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
 FOREIGN KEY (capacity_type) REFERENCES capacity_types (capacity_type),
 CHECK (capacity_type = 'new_build_generator' OR capacity_type =
 'new_build_storage')
 );
 
--- TODO: does it make sense to combine existing and new projects here, but
--- keep operational chars separate
--- All projects plus operational characteristics
-DROP TABLE IF EXISTS projects;
-CREATE TABLE projects(
+-- All projects (existing and new)
+DROP TABLE IF EXISTS all_projects;
+CREATE TABLE all_projects(
 existing_project_scenario_id INTEGER,
 new_project_scenario_id INTEGER,
 project VARCHAR(64),
 capacity_type VARCHAR(32),
+PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES
+subscenarios_new_projects (new_project_scenario_id)
+);
+
+-- Project operational characteristics
+DROP TABLE IF EXISTS project_operational_chars;
+CREATE TABLE project_operational_chars(
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
+project VARCHAR(64),
 operational_type VARCHAR(32),
 technology VARCHAR(32),
---load_zone VARCHAR(32),
---lf_reserves_up_zone VARCHAR(32),
---lf_reserves_down_zone VARCHAR(32),
---regulation_up_zone VARCHAR(32),
---regulation_down_zone VARCHAR(32),
---rps_zone VARCHAR(32),
 fuel VARCHAR(32),
 minimum_input_mmbtu_per_hr FLOAT,
 inc_heat_rate_mmbtu_per_mwh FLOAT,
@@ -580,140 +604,19 @@ startup_cost FLOAT,
 shutdown_cost FLOAT,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
-PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id, project),
-FOREIGN KEY (existing_project_scenario_id) REFERENCES
-subscenarios_existing_projects (existing_project_scenario_id),
-FOREIGN KEY (new_project_scenario_id) REFERENCES
-subscenarios_new_projects (new_project_scenario_id)
--- Data checks --
--- Operational types
--- Fuel
---CHECK (operational_type = 'dispatchable_binary_commit' AND fuel IS NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit' AND fuel IS NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit' AND fuel IS NOT
---NULL),
---CHECK (operational_type = 'dispatchable_no_commit' AND fuel IS NOT NULL),
---CHECK (operational_type = 'hydro_conventional' AND fuel IS NULL)
---CHECK (operational_type = 'must_run' AND fuel IS NULL),
---CHECK (operational_type = 'storage_generic' AND fuel IS NULL),
---CHECK (operational_type = 'variable' AND fuel IS NULL),
----- Minimum input
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND minimum_input_mmbtu_per_hr IS NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND minimum_input_mmbtu_per_hr IS NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND minimum_input_mmbtu_per_hr IS NOT NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND minimum_input_mmbtu_per_hr = 0),
---CHECK (operational_type = 'hydro_conventional'
---AND minimum_input_mmbtu_per_hr IS NULL),
---CHECK (operational_type = 'must_run' AND minimum_input_mmbtu_per_hr IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND minimum_input_mmbtu_per_hr IS NULL),
---CHECK (operational_type = 'variable' AND minimum_input_mmbtu_per_hr IS NULL),
----- Incremental heat rate
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND inc_heat_rate_mmbtu_per_mwh IS NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND inc_heat_rate_mmbtu_per_mwh IS NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND inc_heat_rate_mmbtu_per_mwh IS NOT NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND inc_heat_rate_mmbtu_per_mwh IS NOT NULL),
---CHECK (operational_type = 'hydro_conventional'
---AND inc_heat_rate_mmbtu_per_mwh IS NULL),
---CHECK (operational_type = 'must_run' AND inc_heat_rate_mmbtu_per_mwh IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND inc_heat_rate_mmbtu_per_mwh IS NULL),
---CHECK (operational_type = 'variable' AND inc_heat_rate_mmbtu_per_mwh IS NULL),
----- Minimum stable level
---CHECK (operational_type = 'dispatchable_binary_commit' AND min_stable_level
--->= 0 AND min_stable_level <= 1),
---CHECK (operational_type = 'dispatchable_capacity_commit' AND min_stable_level
--->= 0 AND min_stable_level <= 1),
---CHECK (operational_type = 'dispatchable_continuous_commit' AND min_stable_level
--->= 0 AND min_stable_level <= 1),
---CHECK (operational_type = 'dispatchable_no_commit' AND min_stable_level IS
---NULL),
---CHECK (operational_type = 'hydro_conventional' AND min_stable_level IS NULL),
---CHECK (operational_type = 'must_run' AND min_stable_level IS NULL),
---CHECK (operational_type = 'storage_generic' AND min_stable_level IS NULL),
---CHECK (operational_type = 'variable' AND min_stable_level IS NULL),
----- Unit size
---CHECK (operational_type = 'dispatchable_binary_commit' AND unit_size_mw IS
---NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit' AND unit_size_mw IS
--- NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit' AND unit_size_mw
---IS NULL),
---CHECK (operational_type = 'dispatchable_no_commit' AND unit_size_mw IS
---NULL),
---CHECK (operational_type = 'hydro_conventional' AND unit_size_mw IS NULL),
---CHECK (operational_type = 'must_run' AND unit_size_mw IS NULL),
---CHECK (operational_type = 'storage_generic' AND unit_size_mw IS NULL),
---CHECK (operational_type = 'variable' AND unit_size_mw IS NULL),
----- Startup cost
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND startup_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND startup_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND startup_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND startup_cost IS NULL),
---CHECK (operational_type = 'hydro_conventional'
---AND startup_cost IS NULL),
---CHECK (operational_type = 'must_run' AND startup_cost IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND startup_cost IS NULL),
----- Shutdown cost
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND shutdown_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND shutdown_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND shutdown_cost IS NOT NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND shutdown_cost IS NULL),
---CHECK (operational_type = 'hydro_conventional'
---AND shutdown_cost IS NULL),
---CHECK (operational_type = 'must_run' AND shutdown_cost IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND shutdown_cost IS NULL),
----- Charging efficiency
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND charging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND charging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND charging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND charging_efficiency IS NULL),
---CHECK (operational_type = 'hydro_conventional'
---AND charging_efficiency IS NULL),
---CHECK (operational_type = 'must_run' AND charging_efficiency IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND charging_efficiency IS NOT NULL AND charging_efficiency >= 0 AND charging_efficiency <= 1),
----- Discharging efficiency
---CHECK (operational_type = 'dispatchable_binary_commit'
---AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_capacity_commit'
---AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_continuous_commit'
---AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'dispatchable_no_commit'
---AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'hydro_conventional'
---AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'must_run' AND discharging_efficiency IS NULL),
---CHECK (operational_type = 'storage_generic'
---AND discharging_efficiency IS NOT NULL and discharging_efficiency >= 0 AND
---discharging_efficiency <= 1)
+PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id) REFERENCES
+subscenarios_project_operational_chars (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id),
+FOREIGN KEY (operational_type) REFERENCES operational_types (operational_type)
 );
 
--- TODO: how to make sure projects are valid; currently assuming all hydro
--- is existing
+
 DROP TABLE IF EXISTS hydro_operational_chars;
 CREATE TABLE hydro_operational_chars(
 existing_project_scenario_id INTEGER,
@@ -727,48 +630,32 @@ horizon INTEGER,
 average_power_mwa FLOAT,
 min_power_mw FLOAT,
 max_power_mw FLOAT,
-PRIMARY KEY (period_scenario_id, horizon_scenario_id,
-existing_project_scenario_id,  new_project_scenario_id,
+PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id,
+period_scenario_id,  horizon_scenario_id,
 hydro_operational_chars_scenario_id, project, period, horizon),
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, period) REFERENCES periods
 (period_scenario_id, period),
-FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
 FOREIGN KEY (existing_project_scenario_id) REFERENCES
 subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
+REFERENCES all_projects (existing_project_scenario_id,
+new_project_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id, project) REFERENCES
 existing_projects (existing_project_scenario_id, project),
 FOREIGN KEY (new_project_scenario_id, project) REFERENCES
 new_projects (new_project_scenario_id, project),
-FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
- REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
-  project),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
 subscenarios_horizons (period_scenario_id, horizon_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id, horizon) REFERENCES
 horizons (period_scenario_id, horizon_scenario_id, horizon),
-FOREIGN KEY (hydro_operational_chars_scenario_id) REFERENCES
-subscenarios_hydro_operational_chars (hydro_operational_chars_scenario_id)
-);
-
-
--- TODO: need to create a combined existing + new projects table and add
--- foreign key here
-DROP TABLE IF EXISTS variable_generator_profiles;
-CREATE TABLE variable_generator_profiles(
-period_scenario_id INTEGER,
-horizon_scenario_id INTEGER,
-timepoint_scenario_id INTEGER,
-existing_project_scenario_id INTEGER,
-new_project_scenario_id INTEGER,
-variable_generator_profiles_scenario_id INTEGER,
-project INTEGER,
-timepoint INTEGER,
-cap_factor FLOAT,
-PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
-existing_project_scenario_id, new_project_scenario_id,
-variable_generator_profiles_scenario_id, project, timepoint)
+FOREIGN KEY (existing_project_scenario_id,
+new_project_scenario_id, period_scenario_id, horizon_scenario_id,
+hydro_operational_chars_scenario_id) REFERENCES
+subscenarios_hydro_operational_chars (existing_project_scenario_id,
+new_project_scenario_id, period_scenario_id, horizon_scenario_id,
+hydro_operational_chars_scenario_id)
 );
 
 
@@ -784,7 +671,8 @@ load_zone VARCHAR(32),
 PRIMARY KEY (load_zone_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_load_zone_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
- REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id,
   project),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
 (load_zone_scenario_id)
@@ -802,7 +690,8 @@ lf_reserves_up_ba VARCHAR(32),
 PRIMARY KEY (lf_reserves_up_ba_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_lf_reserves_up_ba_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
- REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id,
   project),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
@@ -820,7 +709,8 @@ lf_reserves_down_ba VARCHAR(32),
 PRIMARY KEY (lf_reserves_down_ba_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_lf_reserves_down_ba_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
- REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id,
   project),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
@@ -838,7 +728,8 @@ rps_zone VARCHAR(32),
 PRIMARY KEY (rps_zone_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_rps_zone_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
- REFERENCES projects (existing_project_scenario_id, new_project_scenario_id,
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id,
   project),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES subscenarios_rps_zones
 (rps_zone_scenario_id)
@@ -865,10 +756,10 @@ annual_fixed_cost_per_mw_year FLOAT,
 annual_fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (existing_project_scenario_id, period_scenario_id, project, period,
 existing_project_capacity_scenario_id),
-FOREIGN KEY (period_scenario_id) REFERENCES periods (period_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
 FOREIGN KEY (period_scenario_id, period) REFERENCES periods
 (period_scenario_id, period),
-FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
 FOREIGN KEY (existing_project_scenario_id, project) REFERENCES
 existing_projects (existing_project_scenario_id, project)
 --CHECK (existing_capacity_mwh IS NULL and capacity_type !=
@@ -900,7 +791,6 @@ FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, period) REFERENCES periods
 (period_scenario_id, period),
-FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
 FOREIGN KEY (new_project_scenario_id, project) REFERENCES
 new_projects (new_project_scenario_id, project)
 --CHECK (annualized_real_cost_per_mwh_yr IS NULL AND capacity_type !=
