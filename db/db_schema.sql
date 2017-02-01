@@ -17,6 +17,8 @@ project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
+existing_project_capacity_scenario_id INTEGER,
+new_project_cost_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -55,7 +57,15 @@ FOREIGN KEY (rps_zone_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_rps_zone_scenario_id) 
 REFERENCES subscenarios_project_rps_zones 
 (rps_zone_scenario_id, existing_project_scenario_id, 
-new_project_scenario_id, project_rps_zone_scenario_id)
+new_project_scenario_id, project_rps_zone_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, period_scenario_id,
+existing_project_capacity_scenario_id) REFERENCES
+subscenarios_existing_project_capacity (existing_project_scenario_id,
+period_scenario_id, existing_project_capacity_scenario_id),
+FOREIGN KEY (new_project_scenario_id,
+period_scenario_id, new_project_cost_scenario_id) REFERENCES
+subscenarios_new_project_cost (new_project_scenario_id,
+period_scenario_id, new_project_cost_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -135,11 +145,15 @@ existing_project_scenario_name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS subscenarios_existing_project_capacities;
-CREATE TABLE subscenarios_existing_project_capacities(
-existing_project_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_existing_project_capacity;
+CREATE TABLE subscenarios_existing_project_capacity(
+existing_project_scenario_id INTEGER,
+period_scenario_id INTEGER,
+existing_project_capacity_scenario_id INTEGER,
 existing_project_capacity_scenario_name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (existing_project_scenario_id, period_scenario_id,
+existing_project_capacity_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_new_projects;
@@ -149,11 +163,15 @@ new_project_scenario_name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS subscenarios_new_project_costs;
-CREATE TABLE subscenarios_new_project_costs(
-new_project_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_new_project_cost;
+CREATE TABLE subscenarios_new_project_cost(
+new_project_scenario_id INTEGER,
+period_scenario_id INTEGER,
+new_project_cost_scenario_id INTEGER,
 new_project_cost_scenario_name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (new_project_scenario_id, period_scenario_id,
+new_project_cost_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_load_zones;
@@ -758,48 +776,59 @@ FOREIGN KEY (rps_zone_scenario_id) REFERENCES subscenarios_rps_zones
 DROP TABLE IF EXISTS existing_project_capacity;
 CREATE TABLE existing_project_capacity(
 existing_project_scenario_id INTEGER,
-project VARCHAR(64),
+period_scenario_id INTEGER,
 existing_project_capacity_scenario_id INTEGER,
-capacity_type VARCHAR(32),
+project VARCHAR(64),
 period INTEGER,
+capacity_type VARCHAR(32),
 existing_capacity_mw FLOAT,
 existing_capacity_mwh FLOAT,
 annual_fixed_cost_per_mw_year FLOAT,
 annual_fixed_cost_per_mwh_year FLOAT,
-PRIMARY KEY (existing_project_scenario_id, project, period,
+PRIMARY KEY (existing_project_scenario_id, period_scenario_id, project, period,
 existing_project_capacity_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES periods (period_scenario_id),
+FOREIGN KEY (period_scenario_id, period) REFERENCES periods
+(period_scenario_id, period),
 FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
 FOREIGN KEY (existing_project_scenario_id, project) REFERENCES
-existing_projects (existing_project_scenario_id, project),
-CHECK (existing_capacity_mwh IS NULL and capacity_type !=
-'storage_specified_no_economic_retirement'),
-CHECK (existing_capacity_mwh IS NOT NULL and capacity_type =
-'storage_specified_no_economic_retirement'),
-CHECK (annual_fixed_cost_per_mwh_year IS NULL and capacity_type !=
-'storage_specified_no_economic_retirement'),
-CHECK (annual_fixed_cost_per_mwh_year IS NOT NULL and capacity_type =
-'storage_specified_no_economic_retirement')
+existing_projects (existing_project_scenario_id, project)
+--CHECK (existing_capacity_mwh IS NULL and capacity_type !=
+--'storage_specified_no_economic_retirement'),
+--CHECK (existing_capacity_mwh IS NOT NULL and capacity_type =
+--'storage_specified_no_economic_retirement'),
+--CHECK (annual_fixed_cost_per_mwh_year IS NULL and capacity_type !=
+--'storage_specified_no_economic_retirement'),
+--CHECK (annual_fixed_cost_per_mwh_year IS NOT NULL and capacity_type =
+--'storage_specified_no_economic_retirement')
 );
 
 -- New projects
 -- TODO: consolidate new generation and new storage into single table
-DROP TABLE IF EXISTS new_project_costs;
-CREATE TABLE new_project_costs(
+DROP TABLE IF EXISTS new_project_cost;
+CREATE TABLE new_project_cost(
 new_project_scenario_id INTEGER,
-project VARCHAR(64),
+period_scenario_id INTEGER,
 new_project_cost_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
 capacity_type VARCHAR(32),
-vintage INTEGER,
-annualized_real_cost_per_mw_yr FLOAT,
-annualized_real_cost_per_mwh_yr FLOAT,  -- storage only
-PRIMARY KEY (new_project_scenario_id, project,
-new_project_cost_scenario_id),
-FOREIGN KEY (new_project_scenario_id, project) REFERENCES new_projects
-(new_project_scenario_id, project),
-CHECK (annualized_real_cost_per_mwh_yr IS NULL AND capacity_type !=
-'new_build_storage'),
-CHECK (annualized_real_cost_per_mwh_yr IS NOT NULL AND capacity_type =
-'new_build_storage')
+lifetime_yrs INTEGER,
+annualized_real_cost_per_kw_yr FLOAT,
+annualized_real_cost_per_kwh_yr FLOAT,  -- storage only
+PRIMARY KEY (new_project_scenario_id, period_scenario_id,
+new_project_cost_scenario_id, project, period),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, period) REFERENCES periods
+(period_scenario_id, period),
+FOREIGN KEY (project) REFERENCES project_operational_chars_default (project),
+FOREIGN KEY (new_project_scenario_id, project) REFERENCES
+new_projects (new_project_scenario_id, project)
+--CHECK (annualized_real_cost_per_mwh_yr IS NULL AND capacity_type !=
+--'new_build_storage'),
+--CHECK (annualized_real_cost_per_mwh_yr IS NOT NULL AND capacity_type =
+--'new_build_storage')
 );
 
 
@@ -939,7 +968,6 @@ FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
 
 
 -- TRANSMISSION --
-
 DROP TABLE IF EXISTS transmission_lines;
 CREATE TABLE transmission_lines(
 load_zone_scenario_id INTEGER,
