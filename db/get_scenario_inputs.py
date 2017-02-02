@@ -122,6 +122,14 @@ VARIABLE_GENERATOR_PROFILES_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+LOAD_SCENARIO_ID = c.execute(
+    """SELECT load_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+
+
 # periods.tab
 with open(os.path.join(os.getcwd(), "temp_inputs", "periods.tab"), "w") as \
         periods_tab_file:
@@ -486,4 +494,31 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         )
     )
     for row in variable_profiles:
+        writer.writerow(row)
+
+# load_mw.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "load_mw.tab"), "w") as \
+        load_tab_file:
+    writer = csv.writer(load_tab_file, delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["LOAD_ZONES", "TIMEPOINTS", "load_mw"]
+    )
+
+    loads = c.execute(
+        """SELECT load_zone, timepoint, load_mw
+        FROM loads
+        WHERE period_scenario_id = {}
+        AND horizon_scenario_id = {}
+        AND timepoint_scenario_id = {}
+        AND load_zone_scenario_id = {}
+        AND load_scenario_id = {}
+        """.format(
+            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+            LOAD_ZONE_SCENARIO_ID, LOAD_SCENARIO_ID
+        )
+    )
+    for row in loads:
         writer.writerow(row)
