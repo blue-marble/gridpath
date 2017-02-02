@@ -22,6 +22,7 @@ new_project_cost_scenario_id INTEGER,
 fuel_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 hydro_operational_chars_scenario_id INTEGER,
+variable_generator_profiles_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -80,7 +81,15 @@ hydro_operational_chars_scenario_id),
 FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id,
 project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (existing_project_scenario_id,
-new_project_scenario_id, project_operational_chars_scenario_id)
+new_project_scenario_id, project_operational_chars_scenario_id),
+FOREIGN KEY (existing_project_scenario_id,
+new_project_scenario_id,
+project_operational_chars_scenario_id, period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id, variable_generator_profiles_scenario_id) REFERENCES
+subscenarios_variable_generator_profiles (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id,
+period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+variable_generator_profiles_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -241,20 +250,36 @@ subscenarios_new_projects (new_project_scenario_id)
 DROP TABLE IF EXISTS subscenarios_variable_generator_profiles;
 CREATE TABLE subscenarios_variable_generator_profiles(
 existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
 period_scenario_id INTEGER,
 horizon_scenario_id INTEGER,
-hydro_operational_chars_scenario_id INTEGER,
-hydro_operational_chars_scenario_name VARCHAR(32),
+timepoint_scenario_id INTEGER,
+variable_generator_profiles_scenario_id INTEGER,
+variable_generator_profiles_scenario_name VARCHAR(32),
 description VARCHAR(128),
-PRIMARY KEY (existing_project_scenario_id, period_scenario_id,
-horizon_scenario_id, hydro_operational_chars_scenario_id)
+PRIMARY KEY (existing_project_scenario_id,
+new_project_scenario_id,
+project_operational_chars_scenario_id, period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id, variable_generator_profiles_scenario_id)
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
 subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id)
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+ timepoint_scenario_id),
 FOREIGN KEY (existing_project_scenario_id) REFERENCES
-subscenarios_existing_projects (existing_project_scenario_id)
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES
+subscenarios_new_projects (new_project_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id) REFERENCES
+subscenarios_project_operational_chars (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id)
 );
+
+
 
 DROP TABLE IF EXISTS subscenarios_project_load_zones;
 CREATE TABLE subscenarios_project_load_zones(
@@ -616,7 +641,6 @@ new_project_scenario_id, project_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES operational_types (operational_type)
 );
 
-
 DROP TABLE IF EXISTS hydro_operational_chars;
 CREATE TABLE hydro_operational_chars(
 existing_project_scenario_id INTEGER,
@@ -657,6 +681,58 @@ subscenarios_hydro_operational_chars (existing_project_scenario_id,
 new_project_scenario_id, period_scenario_id, horizon_scenario_id,
 hydro_operational_chars_scenario_id)
 );
+
+DROP TABLE IF EXISTS variable_generator_profiles;
+CREATE TABLE variable_generator_profiles(
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+timepoint_scenario_id INTEGER,
+variable_generator_profiles_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+cap_factor FLOAT,
+PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id,
+project_operational_chars_scenario_id,
+period_scenario_id,  horizon_scenario_id, timepoint_scenario_id,
+variable_generator_profiles_scenario_id, project, period, horizon, timepoint),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, period) REFERENCES periods
+(period_scenario_id, period),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
+REFERENCES all_projects (existing_project_scenario_id,
+new_project_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id, project) REFERENCES
+existing_projects (existing_project_scenario_id, project),
+FOREIGN KEY (new_project_scenario_id, project) REFERENCES
+new_projects (new_project_scenario_id, project),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, horizon) REFERENCES
+horizons (period_scenario_id, horizon_scenario_id, horizon),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id) 
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+ timepoint_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id, 
+timepoint) REFERENCES timepoints (period_scenario_id, horizon_scenario_id, 
+timepoint_scenario_id, timepoint),
+FOREIGN KEY (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id,
+period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id, variable_generator_profiles_scenario_id) REFERENCES
+subscenarios_variable_generator_profiles (existing_project_scenario_id,
+new_project_scenario_id, project_operational_chars_scenario_id,
+period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id, variable_generator_profiles_scenario_id)
+);
+
 
 
 -- Project-load zones
