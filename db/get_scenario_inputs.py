@@ -128,6 +128,18 @@ LOAD_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+LF_RESERVES_UP_SCENARIO_ID = c.execute(
+    """SELECT lf_reserves_up_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+LF_RESERVES_DOWN_SCENARIO_ID = c.execute(
+    """SELECT lf_reserves_down_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
 
 
 # periods.tab
@@ -521,4 +533,66 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         )
     )
     for row in loads:
+        writer.writerow(row)
+
+# lf_reserves_up_requirement.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "lf_reserves_up_requirement.tab"), "w") as \
+        lf_reserves_up_tab_file:
+    writer = csv.writer(lf_reserves_up_tab_file, delimiter="\t")
+
+    # Write header
+    # TODO: change these headers
+    writer.writerow(
+        ["LOAD_ZONES", "TIMEPOINTS", "upward_reserve_requirement"]
+    )
+
+    lf_reserves_up = c.execute(
+        """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
+        FROM lf_reserves_up
+        WHERE period_scenario_id = {}
+        AND horizon_scenario_id = {}
+        AND timepoint_scenario_id = {}
+        AND existing_project_scenario_id = {}
+        AND new_project_scenario_id = {}
+        AND lf_reserves_up_ba_scenario_id = {}
+        AND lf_reserves_up_scenario_id = {}
+        """.format(
+            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+            LF_RESERVES_UP_BA_SCENARIO_ID, LF_RESERVES_UP_SCENARIO_ID
+        )
+    )
+    for row in lf_reserves_up:
+        writer.writerow(row)
+        
+# lf_reserves_down_requirement.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "lf_reserves_down_requirement.tab"), "w") as \
+        lf_reserves_down_tab_file:
+    writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t")
+
+    # Write header
+    # TODO: change these headers
+    writer.writerow(
+        ["LOAD_ZONES", "TIMEPOINTS", "downward_reserve_requirement"]
+    )
+
+    lf_reserves_down = c.execute(
+        """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
+        FROM lf_reserves_down
+        WHERE period_scenario_id = {}
+        AND horizon_scenario_id = {}
+        AND timepoint_scenario_id = {}
+        AND existing_project_scenario_id = {}
+        AND new_project_scenario_id = {}
+        AND lf_reserves_down_ba_scenario_id = {}
+        AND lf_reserves_down_scenario_id = {}
+        """.format(
+            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+            LF_RESERVES_DOWN_BA_SCENARIO_ID, LF_RESERVES_DOWN_SCENARIO_ID
+        )
+    )
+    for row in lf_reserves_down:
         writer.writerow(row)

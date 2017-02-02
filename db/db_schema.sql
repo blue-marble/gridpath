@@ -24,6 +24,8 @@ project_operational_chars_scenario_id INTEGER,
 hydro_operational_chars_scenario_id INTEGER,
 variable_generator_profiles_scenario_id INTEGER,
 load_scenario_id INTEGER,
+lf_reserves_up_scenario_id INTEGER,
+lf_reserves_down_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -94,7 +96,19 @@ variable_generator_profiles_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
 load_zone_scenario_id, load_zone_scenario_id) REFERENCES subscenarios_loads
 (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
-load_zone_scenario_id, load_zone_scenario_id)
+load_zone_scenario_id, load_zone_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id) REFERENCES
+subscenarios_lf_reserves_up (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id) REFERENCES
+subscenarios_lf_reserves_down (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -379,40 +393,62 @@ FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
 -- Ancillary services
 DROP TABLE IF EXISTS subscenarios_lf_reserves_up;
 CREATE TABLE subscenarios_lf_reserves_up(
-lf_reserves_up_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+timepoint_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+lf_reserves_up_ba_scenario_id INTEGER,
+lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_scenario_name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id)
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+ (new_project_scenario_id),
+FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
+subscenarios_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
+
 DROP TABLE IF EXISTS subscenarios_lf_reserves_down;
 CREATE TABLE subscenarios_lf_reserves_down(
-lf_reserves_down_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
+timepoint_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+lf_reserves_down_ba_scenario_id INTEGER,
+lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_scenario_name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id)
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+timepoint_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+ (new_project_scenario_id),
+FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
+subscenarios_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
-DROP TABLE IF EXISTS subscenarios_regulation_up;
-CREATE TABLE subscenarios_regulation_up(
-regulation_up_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-regulation_up_scenario_name VARCHAR(32),
-description VARCHAR(128)
-);
-DROP TABLE IF EXISTS subscenarios_regulation_down;
-CREATE TABLE subscenarios_regulation_down(
-regulation_down_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-regulation_down_scenario_name VARCHAR(32),
-description VARCHAR(128)
-);
-DROP TABLE IF EXISTS subscenarios_spinning_reserves;
-CREATE TABLE subscenarios_spinning_reserves(
-spinning_reserves_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-spinning_reserves_scenario_name VARCHAR(32),
-description VARCHAR(128)
-);
-DROP TABLE IF EXISTS subscenarios_frequency_response;
-CREATE TABLE subscenarios_frequency_response(
-frequency_response_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-frequency_response_scenario_name VARCHAR(32),
-description VARCHAR(128)
-);
+
 
 -- Policy
 DROP TABLE IF EXISTS subscenarios_rps_zones;
@@ -922,105 +958,83 @@ load_zone_scenario_id, load_scenario_id) REFERENCES subscenarios_loads
 load_zone_scenario_id, load_scenario_id)
 );
 
+-- LF reserves up
+-- depends on portfolio, so existing_project_scenario_id and 
+-- new_project_scenario_id are included
 DROP TABLE IF EXISTS lf_reserves_up;
 CREATE TABLE lf_reserves_up(
-lf_reserves_up_zone_scenario_id INTEGER,
 period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
 timepoint_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_up_scenario_id INTEGER,
-lf_reserves_up_scenario_name INTEGER,
-lf_reserves_up_zone_id INTEGER,
-lf_reserves_up_zone VARCHAR(32),
+lf_reserves_up_ba VARCHAR(32),
 timepoint INTEGER,
 lf_reserves_up_mw FLOAT,
-PRIMARY KEY (lf_reserves_up_zone_scenario_id, period_scenario_id,
-timepoint_scenario_id, lf_reserves_up_scenario_id, lf_reserves_up_zone_id),
-UNIQUE (lf_reserves_up_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-lf_reserves_up_scenario_id, lf_reserves_up_zone),
-UNIQUE (lf_reserves_up_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-lf_reserves_up_scenario_name, lf_reserves_up_zone),
-FOREIGN KEY (lf_reserves_up_zone_scenario_id) REFERENCES subscenarios_lf_reserves_up
-(lf_reserves_up_zone_scenario_id),
+PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id, lf_reserves_up_ba,
+timepoint),
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
-(timepoint_scenario_id)
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id)
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+ timepoint_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+(new_project_scenario_id),
+FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
+subscenarios_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id) REFERENCES
+subscenarios_lf_reserves_up
+(period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id)
 );
 
 DROP TABLE IF EXISTS lf_reserves_down;
 CREATE TABLE lf_reserves_down(
-lf_reserves_down_zone_scenario_id INTEGER,
 period_scenario_id INTEGER,
+horizon_scenario_id INTEGER,
 timepoint_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+lf_reserves_down_ba_scenario_id INTEGER,
 lf_reserves_down_scenario_id INTEGER,
-lf_reserves_down_scenario_name INTEGER,
-lf_reserves_down_zone_id INTEGER,
-lf_reserves_down_zone VARCHAR(32),
+lf_reserves_down_ba VARCHAR(32),
 timepoint INTEGER,
 lf_reserves_down_mw FLOAT,
-PRIMARY KEY (lf_reserves_down_zone_scenario_id, period_scenario_id,
-timepoint_scenario_id, lf_reserves_down_scenario_id, lf_reserves_down_zone_id),
-UNIQUE (lf_reserves_down_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-lf_reserves_down_scenario_id, lf_reserves_down_zone),
-UNIQUE (lf_reserves_down_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-lf_reserves_down_scenario_name, lf_reserves_down_zone),
-FOREIGN KEY (lf_reserves_down_zone_scenario_id) REFERENCES subscenarios_lf_reserves_down
-(lf_reserves_down_zone_scenario_id),
+PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id, lf_reserves_down_ba,
+timepoint),
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
-(timepoint_scenario_id)
-);
-
-
-DROP TABLE IF EXISTS regulation_up;
-CREATE TABLE regulation_up(
-regulation_up_zone_scenario_id INTEGER,
-period_scenario_id INTEGER,
-timepoint_scenario_id INTEGER,
-regulation_up_scenario_id INTEGER,
-regulation_up_scenario_name INTEGER,
-regulation_up_zone_id INTEGER,
-regulation_up_zone VARCHAR(32),
-timepoint INTEGER,
-regulation_up_mw FLOAT,
-PRIMARY KEY (regulation_up_zone_scenario_id, period_scenario_id,
-timepoint_scenario_id, regulation_up_scenario_id, regulation_up_zone_id),
-UNIQUE (regulation_up_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-regulation_up_scenario_id, regulation_up_zone),
-UNIQUE (regulation_up_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-regulation_up_scenario_name, regulation_up_zone),
-FOREIGN KEY (regulation_up_zone_scenario_id) REFERENCES subscenarios_regulation_up
-(regulation_up_zone_scenario_id),
-FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
-(period_scenario_id),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
-(timepoint_scenario_id)
-);
-
-DROP TABLE IF EXISTS regulation_down;
-CREATE TABLE regulation_down(
-regulation_down_zone_scenario_id INTEGER,
-period_scenario_id INTEGER,
-timepoint_scenario_id INTEGER,
-regulation_down_scenario_id INTEGER,
-regulation_down_scenario_name INTEGER,
-regulation_down_zone_id INTEGER,
-regulation_down_zone VARCHAR(32),
-timepoint INTEGER,
-regulation_down_mw FLOAT,
-PRIMARY KEY (regulation_down_zone_scenario_id, period_scenario_id,
-timepoint_scenario_id, regulation_down_scenario_id, regulation_down_zone_id),
-UNIQUE (regulation_down_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-regulation_down_scenario_id, regulation_down_zone),
-UNIQUE (regulation_down_zone_scenario_id, period_scenario_id, timepoint_scenario_id,
-regulation_down_scenario_name, regulation_down_zone),
-FOREIGN KEY (regulation_down_zone_scenario_id) REFERENCES subscenarios_regulation_down
-(regulation_down_zone_scenario_id),
-FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
-(period_scenario_id),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
-(timepoint_scenario_id)
+FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
+subscenarios_horizons (period_scenario_id, horizon_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id)
+REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
+ timepoint_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+(new_project_scenario_id),
+FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
+subscenarios_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+ existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id) REFERENCES
+subscenarios_lf_reserves_down
+(period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
+existing_project_scenario_id, new_project_scenario_id,
+lf_reserves_down_ba_scenario_id, lf_reserves_down_scenario_id)
 );
 
 
