@@ -182,7 +182,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
     # Save the scenario results to disk
     save_results(scenario_directory, horizon, stage, loaded_modules,
-                 dynamic_inputs, instance, results)
+                 dynamic_inputs, instance, results, parsed_arguments)
 
     # Summarize results
     summarize_results(scenario_directory, horizon, stage, loaded_modules,
@@ -195,7 +195,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,
-                 dynamic_inputs, instance, results):
+                 dynamic_inputs, instance, results, parsed_arguments):
     """
 
     :param scenario_directory:
@@ -205,6 +205,7 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
     :param dynamic_inputs:
     :param instance:
     :param results:
+    :param parsed_arguments:
     :return:
     """
     # RESULTS
@@ -215,7 +216,7 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
     save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
 
     export_results(scenario_directory, horizon, stage, instance,
-                   dynamic_inputs, loaded_modules)
+                   dynamic_inputs, loaded_modules, parsed_arguments)
 
 
 def get_modules(scenario_directory):
@@ -228,7 +229,7 @@ def get_modules(scenario_directory):
     try:
         requested_modules = pd.read_csv(modules_file)["modules"].tolist()
     except IOError:
-        print "ERROR! Modules file {} not found".format(modules_file)
+        print("ERROR! Modules file {} not found".format(modules_file))
         sys.exit(1)
 
     # If all optional modules are selected, this would be the list
@@ -423,7 +424,9 @@ def solve(instance, parsed_arguments):
 
 
 def export_results(problem_directory, horizon, stage, instance,
-                   dynamic_inputs, loaded_modules):
+                   dynamic_inputs, loaded_modules, parsed_arguments):
+    if not parsed_arguments.quiet:
+        print("Exporting results...")
     for m in loaded_modules:
         if hasattr(m, "export_results"):
             m.export_results(problem_directory, horizon, stage, instance,
@@ -632,7 +635,8 @@ def parse_arguments(arguments):
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
     parser.add_argument("--scenario_location", default="scenarios",
-                        help="Name of the scenario problem to solve.")
+                        help="Scenario directory path (relative to "
+                             "run_scenario.py.")
 
     # Output options
     parser.add_argument("--quiet", default=False, action="store_true",

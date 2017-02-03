@@ -30,15 +30,15 @@ def add_module_specific_components(m, d):
         Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
 
-    def retire_capacity_bounds(m, g, p):
+    def retire_capacity_bounds(mod, g, p):
         """
         Shouldn't be able to retire more than available capacity
-        :param m:
+        :param mod:
         :param g:
         :param p:
         :return:
         """
-        return 0, m.existing_lin_econ_ret_capacity_mw[g, p]
+        return 0, mod.existing_lin_econ_ret_capacity_mw[g, p]
 
     # Retire capacity variable
     m.Retire_MW = Var(
