@@ -291,6 +291,10 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "rps_zones.tab"),
 
 
 # TODO: how to handle optional columns (e.g. lf_reserves_up_ba, rps_zone, etc.)
+# TODO: add variable cost
+# TODO: add heat rate for new advanced ccgt and aero ct
+# TODO: if fuel specified, can't have '.' -- must be 0 instead
+# TODO: why is there a startup cost for CAISO_Nuclear and CAISO_CHP
 # projects.tab
 with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
         projects_tab_file:
@@ -298,11 +302,12 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
 
     # Write header
     writer.writerow(
-        ["project", "load_zone", "lf_reserves_up_ba", "lf_reserves_down_ba",
+        ["project", "load_zone", "lf_reserves_up_zone",
+         "lf_reserves_down_zone",
          "rps_zone", "capacity_type", "operational_type", "fuel",
          "minimum_input_mmbtu_per_hr", "inc_heat_rate_mmbtu_per_mwh",
-         "min_stable_level", "unit_size_mw", "startup_cost_per_mw",
-         "shutdown_cost_per_mw", "charging_efficiency",
+         "min_stable_level_fraction", "unit_size_mw", "startup_cost",
+         "shutdown_cost", "charging_efficiency",
          "discharging_efficiency"]
     )
 
@@ -375,7 +380,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 
     # Write header
     writer.writerow(
-        ["new_build_generartor", "vintage", "lifetime_yrs",
+        ["new_build_generator", "vintage", "lifetime_yrs",
          "annualized_real_cost_per_mw_yr"]
     )
 
@@ -405,7 +410,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
     # Write header
     writer.writerow(
         ["new_build_storage", "vintage", "lifetime_yrs",
-         "annualized_real_cost_per_mw_yr, annualized_real_cost_per_mwh_yr"]
+         "annualized_real_cost_per_mw_yr", "annualized_real_cost_per_mwh_yr"]
     )
 
     # TODO: select only rows with non NULL for cost per kWh-yr for storage
