@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from functools import reduce
 import os.path
 from pyomo.environ import Set, Param, Expression
 
