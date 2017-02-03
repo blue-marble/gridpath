@@ -205,19 +205,42 @@ def summarize_results(d, problem_directory, horizon, stage):
             )
         project_tech.set_index("project", inplace=True, verify_integrity=True)
 
-        # Get the period for each timepoint
-        tmp_period = \
+        # Get the period and horizon for each timepoint
+        tmp_period_horizon = \
             pd.read_csv(
                 os.path.join(problem_directory, "inputs", "timepoints.tab"),
-                sep="\t", usecols=["TIMEPOINTS", "period"]
+                sep="\t", usecols=["TIMEPOINTS", "period", "horizon"]
             )
-        tmp_period.set_index("TIMEPOINTS", inplace=True, verify_integrity=True)
+        tmp_period_horizon.set_index(
+            "TIMEPOINTS", inplace=True, verify_integrity=True
+        )
+
+        # Get the weight for each horizon
+        horizon_weight = \
+            pd.read_csv(
+                os.path.join(problem_directory, "inputs", "horizons.tab"),
+                sep="\t", usecols=["HORIZONS", "horizon_weight"]
+            )
+        horizon_weight.set_index(
+            "HORIZONS", inplace=True, verify_integrity=True
+        )
+
+        # Get weight for each timepoint by joining on horizon
+        tmp_period_horizon_weight = \
+            pd.merge(
+                left=tmp_period_horizon,
+                right=horizon_weight,
+                left_on="horizon",
+                right_index=True,
+                how="left"
+            )
 
         # Get the results CSV as dataframe
         operational_results = \
             pd.read_csv(os.path.join(problem_directory, horizon,
                                      stage, "results", "operations.csv")
                         )
+
         # Set the index to 'project' for the first join
         # We'll change to this to 'timepoints' on the go during the merge
         # below for the second join
@@ -235,21 +258,25 @@ def summarize_results(d, problem_directory, horizon, stage):
                              right_index=True
                              )
                 ).set_index("timepoint"),
-                right=tmp_period,
+                right=tmp_period_horizon_weight,
                 how="left",
                 left_index=True,
                 right_index=True
             )
+
+        operational_results_df["weighted_power_mwh"] = \
+            operational_results_df["power_mw"] * \
+            operational_results_df["horizon_weight"]
 
         # Aggregate total power results by load_zone, technology, and period
         operational_results_agg_df = pd.DataFrame(
             operational_results_df.groupby(by=["load_zone", "period",
                                                "technology",],
                                            as_index=True
-                                           ).sum()["power_mw"]
+                                           ).sum()["weighted_power_mwh"]
         )
 
-        operational_results_agg_df.columns = ["power_mw"]
+        operational_results_agg_df.columns = ["weighted_power_mwh"]
 
         # Aggregate total power by load_zone and period -- we'll need this
         # to find the percentage of total power by technology (for each load
@@ -257,11 +284,11 @@ def summarize_results(d, problem_directory, horizon, stage):
         lz_period_power_df = pd.DataFrame(
             operational_results_df.groupby(by=["load_zone", "period"],
                                            as_index=True
-                                           ).sum()["power_mw"]
+                                           ).sum()["weighted_power_mwh"]
         )
 
         # Name the power column
-        operational_results_agg_df.columns = ["power_mw"]
+        operational_results_agg_df.columns = ["weighted_power_mwh"]
         # Add a column with the percentage of total power by load zone and tech
         operational_results_agg_df["percent_total_power"] = pd.Series(
             index=operational_results_agg_df.index
@@ -271,8 +298,8 @@ def summarize_results(d, problem_directory, horizon, stage):
         # and period)
         for indx, row in operational_results_agg_df.iterrows():
             operational_results_agg_df.percent_total_power[indx] = \
-                operational_results_agg_df.power_mw[indx] \
-                / lz_period_power_df.power_mw[indx[0], indx[1]]*100.0
+                operational_results_agg_df.weighted_power_mwh[indx] \
+                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]*100.0
 
         # Rename the columns for the final table
         operational_results_agg_df.columns = (["Annual Energy (MWh)",
