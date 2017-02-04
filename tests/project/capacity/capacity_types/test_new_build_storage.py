@@ -78,6 +78,28 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Set: NEW_BUILD_STORAGE_PROJECTS
+        expected_new_build_storage_project_set = ["Battery"]
+        actual_new_build_storage_project_set = sorted(
+            [prj for prj in instance.NEW_BUILD_STORAGE_PROJECTS]
+        )
+        self.assertListEqual(expected_new_build_storage_project_set,
+                             actual_new_build_storage_project_set)
+
+        # Param: minimum_duration_hours
+        expected_min_duration = OrderedDict(
+            sorted({"Battery": 1}.items())
+        )
+        actual_min_duration = OrderedDict(
+            sorted(
+                {prj:
+                    instance.minimum_duration_hours[prj]
+                 for prj in instance.NEW_BUILD_STORAGE_PROJECTS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_duration, actual_min_duration)
+
         # Set: NEW_BUILD_STORAGE_VINTAGES
         expected_storage_vintage_set = sorted([
             ("Battery", 2020), ("Battery", 2030)

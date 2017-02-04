@@ -2,7 +2,8 @@
 
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
+from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
+    Constraint
 
 from modules.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
@@ -17,7 +18,11 @@ def add_module_specific_components(m, d):
     """
 
     """
-    m.NEW_BUILD_STORAGE_VINTAGES = Set(dimen=2)
+    m.NEW_BUILD_STORAGE_PROJECTS = Set()
+    m.minimum_duration_hours = \
+        Param(m.NEW_BUILD_STORAGE_PROJECTS, within=NonNegativeReals)
+    m.NEW_BUILD_STORAGE_VINTAGES = \
+        Set(dimen=2, within=m.NEW_BUILD_STORAGE_PROJECTS*m.PERIODS)
     m.lifetime_yrs_by_new_build_storage_vintage = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
     m.new_build_storage_annualized_real_cost_per_mw_yr = \
@@ -86,6 +91,21 @@ def add_module_specific_components(m, d):
         Expression(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
                    rule=new_build_storage_energy_capacity_rule)
 
+    def minimum_duration_constraint_rule(mod, g, p):
+        """
+        Storage duration must be above a pre-specified requirement
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] >= \
+            mod.New_Build_Storage_Power_Capacity_MW[g, p] * \
+            mod.minimum_duration_hours[g]
+    m.New_Build_Storage_Minimum_Duration_Constraint = \
+        Constraint(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
+                   rule=minimum_duration_constraint_rule)
+
 
 def capacity_rule(mod, g, p):
     """
@@ -136,6 +156,36 @@ def load_module_specific_data(m,
     :param stage:
     :return:
     """
+    def determine_minimum_duration():
+        """
+        :return:
+        """
+        new_build_storage_projects = list()
+        storage_min_duration = dict()
+
+        dynamic_components = \
+            pd.read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project", "capacity_type",
+                                   "minimum_duration_hours"]
+            )
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["capacity_type"],
+                       dynamic_components["minimum_duration_hours"]):
+            if row[1] == "new_build_storage":
+                new_build_storage_projects.append(row[0])
+                storage_min_duration[row[0]] \
+                    = float(row[2])
+            else:
+                pass
+
+        return new_build_storage_projects, storage_min_duration
+
+    data_portal.data()["NEW_BUILD_STORAGE_PROJECTS"] = {
+        None: determine_minimum_duration()[0]
+    }
+    data_portal.data()["minimum_duration_hours"] = \
+        determine_minimum_duration()[1]
 
     # TODO: throw an error when a generator of the 'new_build_storage' capacity
     # type is not found in new_build_storage_vintage_costs.tab
