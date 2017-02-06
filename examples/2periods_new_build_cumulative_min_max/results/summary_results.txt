@@ -1,0 +1,6 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_cumulative_min_max* #####
+
+### CAPACITY RESULTS ###
+...skipping aggregating capacity results: column 'technology' not found in projects.tab
+### OPERATIONAL RESULTS ###
+...skipping aggregating operational results: column 'technology' not found in projects.tab

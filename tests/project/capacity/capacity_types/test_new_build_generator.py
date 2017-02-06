@@ -80,7 +80,8 @@ class TestNewBuildGenerator(unittest.TestCase):
 
         # Set: NEW_BUILD_GENERATOR_VINTAGES
         expected_gen_vintage_set = sorted([
-            ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030)
+            ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030),
+            ("Gas_CT_New", 2030)
         ])
         actual_gen_vintage_set = sorted(
             [(prj, period)
@@ -109,7 +110,8 @@ class TestNewBuildGenerator(unittest.TestCase):
         # Params: annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(
             sorted(
-                {("Gas_CCGT_New", 2020): 200000, ("Gas_CCGT_New", 2030): 180000,
+                {("Gas_CCGT_New", 2020): 200000,
+                 ("Gas_CCGT_New", 2030): 180000,
                  ("Gas_CT_New", 2030): 140000}.items()
             )
         )
@@ -122,6 +124,67 @@ class TestNewBuildGenerator(unittest.TestCase):
             )
         )
         self.assertDictEqual(expected_cost, actual_cost)
+
+        # Set: NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+        expected_gen_vintage_min_set = sorted([
+            ("Gas_CT_New", 2030)
+        ])
+        actual_gen_vintage_min_set = sorted(
+            [(prj, period)
+             for (prj, period)
+             in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_gen_vintage_min_set,
+                             actual_gen_vintage_min_set)
+
+        # Params: annualized_real_cost_per_mw_yr
+        expected_min_new_mw = OrderedDict(
+            sorted(
+                {("Gas_CT_New", 2030): 10}.items()
+            )
+        )
+        actual_min_new_mw = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                    instance.min_cumulative_new_build_mw[prj, vintage]
+                 for (prj, vintage)
+                 in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
+
+        # Set: NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+        expected_gen_vintage_max_set = sorted([
+            ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030)
+        ])
+        actual_gen_vintage_max_set = sorted(
+            [(prj, period)
+             for (prj, period)
+             in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_gen_vintage_max_set,
+                             actual_gen_vintage_max_set)
+
+        # Params: annualized_real_cost_per_mw_yr
+        expected_max_new_mw = OrderedDict(
+            sorted(
+                {("Gas_CCGT_New", 2020): 20,
+                 ("Gas_CCGT_New", 2030): 20}.items()
+            )
+        )
+        actual_max_new_mw = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                    instance.max_cumulative_new_build_mw[prj, vintage]
+                 for (prj, vintage)
+                 in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_new_mw, actual_max_new_mw)
 
     def test_derived_data(self):
         """

@@ -86,7 +86,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2horizons(self):
+    def test_example_2horizons(self):
         """
         Check objective function value of "2horizons" example
         :return:
@@ -101,7 +101,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods(self):
+    def test_example_2periods(self):
         """
         Check objective function value of "2periods" example
         :return:
@@ -116,7 +116,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build(self):
+    def test_example_2periods_new_build(self):
         """
         Check objective function value of "2periods_new_build" example;
         this example requires a non-linear solver
@@ -133,7 +133,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build_2zones(self):
+    def test_example_2periods_new_build_2zones(self):
         """
         Check objective function value of "2periods_new_build_2zones" example;
         this example requires a non-linear solver
@@ -150,7 +150,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build_2zones_new_build_transmission(self
+    def test_example_2periods_new_build_2zones_new_build_transmission(self
                                                                            ):
         """
         Check objective function value of
@@ -170,7 +170,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build_2zones_singleBA(self):
+    def test_example_2periods_new_build_2zones_singleBA(self):
         """
         Check objective function value of "2periods_new_build_2zones_singleBA"
         example; this example requires a non-linear solver
@@ -190,7 +190,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build_2zones_transmission(self):
+    def test_example_2periods_new_build_2zones_transmission(self):
         """
         Check objective function value of
         "2periods_new_build_2zones_transmission" example
@@ -209,7 +209,7 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_example_test_2periods_new_build_rps(self):
+    def test_example_2periods_new_build_rps(self):
         """
         Check objective function value of "2periods_new_build_rps" example;
         this example requires a non-linear solver
@@ -229,7 +229,26 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
-    def test_single_stage_prod_cost(self):
+    def test_example_2periods_new_build_cumulative_min_max(self):
+        """
+        Check objective function value of
+        "2periods_new_build_cumulative_min_max" example;
+        this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "2periods_new_build_cumulative_min_max",
+                               "--scenario_location", "examples",
+                               "--solver", "ipopt", "--quiet",
+                               "--mute_solver_output", "--testing"])
+
+        expected_objective = 6295817385.20171
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_single_stage_prod_cost(self):
         """
         Check objective function values of "single_stage_prod_cost" example
         :return:
@@ -313,7 +332,7 @@ class TestExamples(unittest.TestCase):
                     places=5
                 )
 
-    def test_2periods_gen_lin_econ_retirement(self):
+    def test_example_2periods_gen_lin_econ_retirement(self):
         """
         Check objective function value of "2periods_gen_lin_econ_retirement"
         example; this example requires a non-linear solver

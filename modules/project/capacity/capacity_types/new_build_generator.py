@@ -2,7 +2,8 @@
 
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals
+from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
+    Constraint
 
 from modules.auxiliary.auxiliary import make_project_time_var_df
 from modules.auxiliary.dynamic_components import \
@@ -21,6 +22,15 @@ def add_module_specific_components(m, d):
         Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
     m.annualized_real_cost_per_mw_yr = \
         Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
+
+    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT = Set(dimen=2)
+    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT = Set(dimen=2)
+    m.min_cumulative_new_build_mw = \
+        Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT,
+              within=NonNegativeReals)
+    m.max_cumulative_new_build_mw = \
+        Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT,
+              within=NonNegativeReals)
 
     m.Build_MW = Var(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
 
@@ -56,6 +66,37 @@ def add_module_specific_components(m, d):
     m.New_Build_Option_Capacity_MW = \
         Expression(m.NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS,
                    rule=new_build_capacity_rule)
+
+    def min_cumulative_new_build_rule(mod, g, p):
+        """
+        Must build a certain amount by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        if mod.min_cumulative_new_build_mw == 0:
+            return Constraint.Skip
+        else:
+            return mod.New_Build_Option_Capacity_MW[g, p] >= \
+                mod.min_cumulative_new_build_mw[g, p]
+    m.Min_Cumulative_New_Capacity_Constraint = Constraint(
+        m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT,
+        rule=min_cumulative_new_build_rule)
+
+    def max_cumulative_new_build_rule(mod, g, p):
+        """
+        Can't build more than certain amount by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        return mod.New_Build_Option_Capacity_MW[g, p] <= \
+            mod.max_cumulative_new_build_mw[g, p]
+    m.Max_Cumulative_New_Capacity_Constraint = Constraint(
+        m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT,
+        rule=max_cumulative_new_build_rule)
 
 
 def capacity_rule(mod, g, p):
@@ -108,6 +149,79 @@ def load_module_specific_data(m,
                      param=(m.lifetime_yrs_by_new_build_vintage,
                             m.annualized_real_cost_per_mw_yr)
                      )
+
+    def determine_min_max_cap_project_vintages():
+        """
+
+        :return:
+        """
+        project_vintages_with_min = list()
+        project_vintages_with_max = list()
+        min_cumulative_mw = dict()
+        max_cumulative_mw = dict()
+
+        dynamic_components = \
+            pd.read_csv(
+                os.path.join(scenario_directory, "inputs",
+                             "new_build_generator_vintage_costs.tab"),
+                sep="\t", usecols=["new_build_generator",
+                                   "vintage",
+                                   "min_cumulative_new_build_mw",
+                                   "max_cumulative_new_build_mw"]
+                )
+
+        # min_cumulative_new_build_mw is optional,
+        # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+        # and min_cumulative_new_build_mw simply won't be initialized if
+        # min_cumulative_new_build_mw does not exist in the input file
+        if "min_cumulative_new_build_mw" in dynamic_components.columns:
+            for row in zip(dynamic_components["new_build_generator"],
+                           dynamic_components["vintage"],
+                           dynamic_components["min_cumulative_new_build_mw"]):
+                if row[2] != ".":
+                    project_vintages_with_min.append((row[0], row[1]))
+                    min_cumulative_mw[(row[0], row[1])] = float(row[2])
+                else:
+                    pass
+        else:
+            pass
+
+        # max_cumulative_new_build_mw is optional,
+        # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+        # and max_cumulative_new_build_mw simply won't be initialized if
+        # max_cumulative_new_build_mw does not exist in the input file
+        if "max_cumulative_new_build_mw" in dynamic_components.columns:
+            for row in zip(dynamic_components["new_build_generator"],
+                           dynamic_components["vintage"],
+                           dynamic_components["max_cumulative_new_build_mw"]):
+                if row[2] != ".":
+                    project_vintages_with_max.append((row[0], row[1]))
+                    max_cumulative_mw[(row[0], row[1])] = float(row[2])
+                else:
+                    pass
+        else:
+            pass
+
+        return project_vintages_with_min, min_cumulative_mw, \
+            project_vintages_with_max, max_cumulative_mw
+
+    if not determine_min_max_cap_project_vintages()[0]:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT"
+        ] = {None: determine_min_max_cap_project_vintages()[0]}
+    data_portal.data()["min_cumulative_new_build_mw"] = \
+        determine_min_max_cap_project_vintages()[1]
+
+    if not determine_min_max_cap_project_vintages()[2]:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT"
+        ] = {None: determine_min_max_cap_project_vintages()[2]}
+    data_portal.data()["max_cumulative_new_build_mw"] = \
+        determine_min_max_cap_project_vintages()[3]
 
 
 def export_module_specific_results(m, d):
