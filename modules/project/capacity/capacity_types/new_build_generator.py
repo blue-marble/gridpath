@@ -150,78 +150,78 @@ def load_module_specific_data(m,
                             m.annualized_real_cost_per_mw_yr)
                      )
 
-    def determine_min_max_cap_project_vintages():
-        """
+    # Min and max cumulative capacity
+    project_vintages_with_min = list()
+    project_vintages_with_max = list()
+    min_cumulative_mw = dict()
+    max_cumulative_mw = dict()
 
-        :return:
-        """
-        project_vintages_with_min = list()
-        project_vintages_with_max = list()
-        min_cumulative_mw = dict()
-        max_cumulative_mw = dict()
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "new_build_generator_vintage_costs.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
 
-        dynamic_components = \
-            pd.read_csv(
-                os.path.join(scenario_directory, "inputs",
-                             "new_build_generator_vintage_costs.tab"),
-                sep="\t", usecols=["new_build_generator",
-                                   "vintage",
-                                   "min_cumulative_new_build_mw",
-                                   "max_cumulative_new_build_mw"]
-                )
+    dynamic_columns = ["min_cumulative_new_build_mw",
+                       "max_cumulative_new_build_mw"]
+    used_columns = [c for c in dynamic_columns if c in header]
 
-        # min_cumulative_new_build_mw is optional,
-        # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
-        # and min_cumulative_new_build_mw simply won't be initialized if
-        # min_cumulative_new_build_mw does not exist in the input file
-        if "min_cumulative_new_build_mw" in dynamic_components.columns:
-            for row in zip(dynamic_components["new_build_generator"],
-                           dynamic_components["vintage"],
-                           dynamic_components["min_cumulative_new_build_mw"]):
-                if row[2] != ".":
-                    project_vintages_with_min.append((row[0], row[1]))
-                    min_cumulative_mw[(row[0], row[1])] = float(row[2])
-                else:
-                    pass
-        else:
-            pass
+    dynamic_components = \
+        pd.read_csv(
+            os.path.join(scenario_directory, "inputs",
+                         "new_build_generator_vintage_costs.tab"),
+            sep="\t", usecols=["new_build_generator",
+                               "vintage"] + used_columns
+            )
 
-        # max_cumulative_new_build_mw is optional,
-        # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
-        # and max_cumulative_new_build_mw simply won't be initialized if
-        # max_cumulative_new_build_mw does not exist in the input file
-        if "max_cumulative_new_build_mw" in dynamic_components.columns:
-            for row in zip(dynamic_components["new_build_generator"],
-                           dynamic_components["vintage"],
-                           dynamic_components["max_cumulative_new_build_mw"]):
-                if row[2] != ".":
-                    project_vintages_with_max.append((row[0], row[1]))
-                    max_cumulative_mw[(row[0], row[1])] = float(row[2])
-                else:
-                    pass
-        else:
-            pass
+    # min_cumulative_new_build_mw is optional,
+    # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+    # and min_cumulative_new_build_mw simply won't be initialized if
+    # min_cumulative_new_build_mw does not exist in the input file
+    if "min_cumulative_new_build_mw" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_generator"],
+                       dynamic_components["vintage"],
+                       dynamic_components["min_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_min.append((row[0], row[1]))
+                min_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
 
-        return project_vintages_with_min, min_cumulative_mw, \
-            project_vintages_with_max, max_cumulative_mw
+    # max_cumulative_new_build_mw is optional,
+    # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+    # and max_cumulative_new_build_mw simply won't be initialized if
+    # max_cumulative_new_build_mw does not exist in the input file
+    if "max_cumulative_new_build_mw" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_generator"],
+                       dynamic_components["vintage"],
+                       dynamic_components["max_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_max.append((row[0], row[1]))
+                max_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
 
-    if not determine_min_max_cap_project_vintages()[0]:
+    # Load min and max cumulative capacity data
+    if not project_vintages_with_min:
         pass  # if the list is empty, don't initialize the set
     else:
         data_portal.data()[
             "NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT"
-        ] = {None: determine_min_max_cap_project_vintages()[0]}
+        ] = {None: project_vintages_with_min}
     data_portal.data()["min_cumulative_new_build_mw"] = \
-        determine_min_max_cap_project_vintages()[1]
+        min_cumulative_mw
 
-    if not determine_min_max_cap_project_vintages()[2]:
+    if not project_vintages_with_max:
         pass  # if the list is empty, don't initialize the set
     else:
         data_portal.data()[
             "NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT"
-        ] = {None: determine_min_max_cap_project_vintages()[2]}
+        ] = {None: project_vintages_with_max}
     data_portal.data()["max_cumulative_new_build_mw"] = \
-        determine_min_max_cap_project_vintages()[3]
+        max_cumulative_mw
 
 
 def export_module_specific_results(m, d):
