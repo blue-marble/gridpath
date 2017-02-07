@@ -41,6 +41,23 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
+    def test_example_test_new_build_storage_cumulative_min_max(self):
+        """
+        Check objective function value of
+        "test_new_build_storage_cumulative_min_max" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "test_new_build_storage_cumulative_min_max",
+                               "--scenario_location", "examples",
+                               "--quiet", "--mute_solver_output", "--testing"])
+
+        expected_objective = 102657.43250
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
     def test_example_test_no_reserves(self):
         """
         Check objective function value of "test_no_reserves" example

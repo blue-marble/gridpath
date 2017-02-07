@@ -157,6 +157,125 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         self.assertDictEqual(expected_mwh_yr_cost, actual_mwh_yr_cost)
 
+        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+        expected_storage_vintage_min_capacity_set = sorted([
+            ("Battery", 2030)
+        ])
+        actual_storage_vintage_min_capacity_set = sorted(
+            [(prj, period)
+             for (prj, period) in
+             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_storage_vintage_min_capacity_set,
+                             actual_storage_vintage_min_capacity_set)
+
+        # Params: min_storage_cumulative_new_build_mw
+        expected_min_capacity = OrderedDict(
+            sorted({("Battery", 2030): 7}.items())
+        )
+        actual_min_capacity = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                    instance.min_storage_cumulative_new_build_mw[
+                        prj, vintage]
+                 for (prj, vintage) in
+                 instance.
+                 NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_capacity, actual_min_capacity)
+        
+        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+        expected_storage_vintage_min_energy_set = sorted([
+            ("Battery", 2030)
+        ])
+        actual_storage_vintage_min_energy_set = sorted(
+            [(prj, period)
+             for (prj, period) in
+             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_storage_vintage_min_energy_set,
+                             actual_storage_vintage_min_energy_set)
+
+        # Params: min_storage_cumulative_new_build_mw
+        expected_min_energy = OrderedDict(
+            sorted({("Battery", 2030): 10}.items())
+        )
+        actual_min_energy = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                    instance.min_storage_cumulative_new_build_mwh[
+                        prj, vintage]
+                 for (prj, vintage) in
+                 instance.
+                 NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_energy, actual_min_energy)
+
+        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+        expected_storage_vintage_max_capacity_set = sorted([
+            ("Battery", 2020)
+        ])
+        actual_storage_vintage_max_capacity_set = sorted(
+            [(prj, period)
+             for (prj, period) in
+             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_storage_vintage_max_capacity_set,
+                             actual_storage_vintage_max_capacity_set)
+
+        # Params: max_storage_cumulative_new_build_mw
+        expected_max_capacity = OrderedDict(
+            sorted({("Battery", 2020): 6}.items())
+        )
+        actual_max_capacity = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                     instance.max_storage_cumulative_new_build_mw[
+                         prj, vintage]
+                 for (prj, vintage) in
+                 instance.
+                     NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_capacity, actual_max_capacity)
+
+        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+        expected_storage_vintage_max_energy_set = sorted([
+            ("Battery", 2020)
+        ])
+        actual_storage_vintage_max_energy_set = sorted(
+            [(prj, period)
+             for (prj, period) in
+             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+             ]
+        )
+        self.assertListEqual(expected_storage_vintage_max_energy_set,
+                             actual_storage_vintage_max_energy_set)
+
+        # Params: max_storage_cumulative_new_build_mw
+        expected_max_energy = OrderedDict(
+            sorted({("Battery", 2020): 7}.items())
+        )
+        actual_max_energy = OrderedDict(
+            sorted(
+                {(prj, vintage):
+                    instance.max_storage_cumulative_new_build_mwh[
+                         prj, vintage]
+                 for (prj, vintage) in
+                 instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_max_energy, actual_max_energy)
+
     def test_derived_data(self):
         """
         Calculations

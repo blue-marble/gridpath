@@ -30,6 +30,25 @@ def add_module_specific_components(m, d):
     m.new_build_storage_annualized_real_cost_per_mwh_yr = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
 
+    # Min and max cumulative MW and MWh are optional params that will be
+    # initialized only if data are specified
+    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT = Set(dimen=2)
+    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT = Set(dimen=2)
+    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT = Set(dimen=2)
+    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT = Set(dimen=2)
+    m.min_storage_cumulative_new_build_mw = \
+        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT,
+              within=NonNegativeReals)
+    m.min_storage_cumulative_new_build_mwh = \
+        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT,
+              within=NonNegativeReals)
+    m.max_storage_cumulative_new_build_mw = \
+        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT,
+              within=NonNegativeReals)
+    m.max_storage_cumulative_new_build_mwh = \
+        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT,
+              within=NonNegativeReals)
+
     m.Build_Storage_Power_MW = \
         Var(m.NEW_BUILD_STORAGE_VINTAGES,
             within=NonNegativeReals)
@@ -105,6 +124,68 @@ def add_module_specific_components(m, d):
     m.New_Build_Storage_Minimum_Duration_Constraint = \
         Constraint(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
                    rule=minimum_duration_constraint_rule)
+
+    def min_cumulative_new_build_capacity_rule(mod, g, p):
+        """
+        Must build a certain amount of capacity by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        if mod.min_storage_cumulative_new_build_mw == 0:
+            return Constraint.Skip
+        else:
+            return mod.New_Build_Storage_Power_Capacity_MW[g, p] >= \
+                mod.min_storage_cumulative_new_build_mw[g, p]
+    m.Min_Storage_Cumulative_New_Capacity_Constraint = Constraint(
+        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT,
+        rule=min_cumulative_new_build_capacity_rule)
+
+    def min_cumulative_new_build_energy_rule(mod, g, p):
+        """
+        Must build a certain amount of energy by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        if mod.min_storage_cumulative_new_build_mwh == 0:
+            return Constraint.Skip
+        else:
+            return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] >= \
+                mod.min_storage_cumulative_new_build_mwh[g, p]
+    m.Min_Storage_Cumulative_New_Energy_Constraint = Constraint(
+        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT,
+        rule=min_cumulative_new_build_energy_rule)
+
+    def max_cumulative_new_build_capacity_rule(mod, g, p):
+        """
+        Can't build more than certain amount of capacity by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        return mod.New_Build_Storage_Power_Capacity_MW[g, p] <= \
+            mod.max_storage_cumulative_new_build_mw[g, p]
+    m.Max_Storage_Cumulative_New_Capacity_Constraint = Constraint(
+        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT,
+        rule=max_cumulative_new_build_capacity_rule)
+
+    def max_cumulative_new_build_energy_rule(mod, g, p):
+        """
+        Can't build more than certain amount of energy by period p
+        :param mod:
+        :param g:
+        :param p:
+        :return:
+        """
+        return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] <= \
+            mod.max_storage_cumulative_new_build_mwh[g, p]
+    m.Max_Storage_Cumulative_New_Energy_Constraint = Constraint(
+        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT,
+        rule=max_cumulative_new_build_energy_rule)
 
 
 def capacity_rule(mod, g, p):
@@ -203,6 +284,129 @@ def load_module_specific_data(m,
                             m.new_build_storage_annualized_real_cost_per_mwh_yr
                             )
                      )
+
+    # Min and max power capacity and energy
+    project_vintages_with_min_capacity = list()
+    project_vintages_with_min_energy = list()
+    project_vintages_with_max_capacity = list()
+    project_vintages_with_max_energy = list()
+    min_cumulative_mw = dict()
+    min_cumulative_mwh = dict()
+    max_cumulative_mw = dict()
+    max_cumulative_mwh = dict()
+
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "new_build_storage_vintage_costs.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+
+    dynamic_columns = ["min_cumulative_new_build_mw",
+                       "min_cumulative_new_build_mwh",
+                       "max_cumulative_new_build_mw",
+                       "max_cumulative_new_build_mwh"]
+    used_columns = [c for c in dynamic_columns if c in header]
+
+    dynamic_components = \
+        pd.read_csv(
+            os.path.join(scenario_directory, "inputs",
+                         "new_build_storage_vintage_costs.tab"),
+            sep="\t",
+            usecols=["new_build_storage", "vintage"] + used_columns
+            )
+
+    # min_storage_cumulative_new_build_mw and
+    # min_storage_cumulative_new_build_mwh are optional,
+    # so NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CONSTRAINT
+    # and either params won't be initialized if the param does not exist in
+    # the input file
+    if "min_cumulative_new_build_mw" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_storage"],
+                       dynamic_components["vintage"],
+                       dynamic_components["min_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_min_capacity.append((row[0], row[1]))
+                min_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    if "min_cumulative_new_build_mwh" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_storage"],
+                       dynamic_components["vintage"],
+                       dynamic_components["min_cumulative_new_build_mwh"]):
+            if row[2] != ".":
+                project_vintages_with_min_energy.append((row[0], row[1]))
+                min_cumulative_mwh[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # min_storage_cumulative_new_build_mw and
+    # min_storage_cumulative_new_build_mwh are optional,
+    # so NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CONSTRAINT
+    # and either params won't be initialized if the param does not exist in
+    # the input file
+    if "max_cumulative_new_build_mw" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_storage"],
+                       dynamic_components["vintage"],
+                       dynamic_components["max_cumulative_new_build_mw"]):
+            if row[2] != ".":
+                project_vintages_with_max_capacity.append((row[0], row[1]))
+                max_cumulative_mw[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    if "max_cumulative_new_build_mwh" in dynamic_components.columns:
+        for row in zip(dynamic_components["new_build_storage"],
+                       dynamic_components["vintage"],
+                       dynamic_components["max_cumulative_new_build_mwh"]):
+            if row[2] != ".":
+                project_vintages_with_max_energy.append((row[0], row[1]))
+                max_cumulative_mwh[(row[0], row[1])] = float(row[2])
+            else:
+                pass
+    else:
+        pass
+
+    # Load the min and max capacity and energy data
+    if not project_vintages_with_min_capacity:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT"
+        ] = {None: project_vintages_with_min_capacity}
+    data_portal.data()["min_storage_cumulative_new_build_mw"] = \
+        min_cumulative_mw
+
+    if not project_vintages_with_min_energy:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT"
+        ] = {None: project_vintages_with_min_energy}
+    data_portal.data()["min_storage_cumulative_new_build_mwh"] = \
+        min_cumulative_mwh
+
+    if not project_vintages_with_max_capacity:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT"
+        ] = {None: project_vintages_with_max_capacity}
+    data_portal.data()["max_storage_cumulative_new_build_mw"] = \
+        max_cumulative_mw
+
+    if not project_vintages_with_max_energy:
+        pass  # if the list is empty, don't initialize the set
+    else:
+        data_portal.data()[
+            "NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT"
+        ] = {None: project_vintages_with_max_energy}
+    data_portal.data()["max_storage_cumulative_new_build_mwh"] = \
+        max_cumulative_mwh
 
 
 def export_module_specific_results(m, d):
