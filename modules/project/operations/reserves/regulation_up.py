@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Add project-level components for upward load-following reserves
+Add project-level components for upward regulation
 """
 
 from modules.project.operations.reserves.reserve_provision import \
@@ -27,7 +27,8 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
         "regulation_up",
         "headroom_variables",
         "regulation_up_zone",
-        "Provide_Regulation_Up_MW"
+        "Provide_Regulation_Up_MW",
+        "regulation_up_derate"
     )
 
 
@@ -44,6 +45,7 @@ def add_model_components(m, d):
         d,
         "REGULATION_UP_PROJECTS",
         "regulation_up_zone",
+        "regulation_up_derate",
         "REGULATION_UP_ZONES",
         "REGULATION_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
         "Provide_Regulation_Up_MW"
@@ -69,7 +71,9 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         horizon,
         stage,
         "regulation_up_zone",
+        "regulation_up_derate",
         "regulation_up_zone",
+        "regulation_up_derate",
         "REGULATION_UP_PROJECTS"
     )
 

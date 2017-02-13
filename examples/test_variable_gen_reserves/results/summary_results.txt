@@ -1,0 +1,6 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_variable_gen_reserves* #####
+
+### CAPACITY RESULTS ###
+...skipping aggregating capacity results: column 'technology' not found in projects.tab
+### OPERATIONAL RESULTS ###
+...skipping aggregating operational results: column 'technology' not found in projects.tab

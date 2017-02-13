@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 """
-Add variables for downward load-following reserves
+
 """
 
 from csv import reader
 import os.path
-from pyomo.environ import Set, Param, Var, NonNegativeReals
+import pandas as pd
+from pyomo.environ import Set, Param, Var, NonNegativeReals, PercentFraction
 
-from modules.auxiliary.dynamic_components import required_reserve_modules
+from modules.auxiliary.dynamic_components import required_reserve_modules, \
+    reserve_variable_derate_params  # just importing the names
 from modules.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_project_time_var_df
 
@@ -16,8 +18,9 @@ from modules.auxiliary.auxiliary import check_list_items_are_unique, \
 def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
                                          reserve_module,
                                          headroom_or_footroom_dict,
-                                         column_name,
-                                         reserve_provision_variable_name):
+                                         ba_column_name,
+                                         reserve_provision_variable_name,
+                                         reserve_provision_derate_param_name):
     """
 
     :param d:
@@ -26,8 +29,9 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
     :param stage:
     :param reserve_module:
     :param headroom_or_footroom_dict:
-    :param column_name:
+    :param ba_column_name:
     :param reserve_provision_variable_name:
+    :param reserve_provision_derate_param_name:
     :return:
     """
 
@@ -53,16 +57,21 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
             # Figure out which these are here based on whether a reserve zone
             # is specified ("." = no zone specified, so project does not
             # contribute to this reserve requirement)
-            # Generators that can provide downward load-following reserves
+            # The names of the reserve variables for each generator
             if row[find_list_item_position(
-                    headers, column_name)[0]] != ".":
+                    headers, ba_column_name)[0]] != ".":
                 getattr(d, headroom_or_footroom_dict)[generator].append(
                     reserve_provision_variable_name)
+
+    # The names of the derate params for each reserve variable
+    getattr(d, reserve_variable_derate_params)[
+        reserve_provision_variable_name] = reserve_provision_derate_param_name
 
 
 def generic_add_model_components(m, d,
                                  reserve_projects_set,
                                  reserve_balancing_area_param,
+                                 reserve_provision_derate_param,
                                  reserve_balancing_areas_set,
                                  reserve_project_operational_timepoints_set,
                                  reserve_provision_variable_name):
@@ -72,6 +81,7 @@ def generic_add_model_components(m, d,
     :param d:
     :param reserve_projects_set:
     :param reserve_balancing_area_param:
+    :param reserve_provision_derate_param:
     :param reserve_balancing_areas_set:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
@@ -99,11 +109,18 @@ def generic_add_model_components(m, d,
                 )
             )
 
+    # Derate defaults to 1 if not specified
+    setattr(m, reserve_provision_derate_param,
+            Param(getattr(m, reserve_projects_set),
+                  within=PercentFraction, default=1))
+
 
 def generic_load_model_data(
         m, d, data_portal, scenario_directory, horizon, stage,
-        column_name,
+        ba_column_name,
+        derate_column_name,
         reserve_balancing_area_param,
+        reserve_provision_derate_param,
         reserve_projects_set):
     """
 
@@ -113,16 +130,34 @@ def generic_load_model_data(
     :param scenario_directory:
     :param horizon:
     :param stage:
-    :param column_name:
+    :param ba_column_name:
+    :param derate_column_name:
     :param reserve_balancing_area_param:
+    :param reserve_provision_derate_param:
     :param reserve_projects_set:
     :return:
     """
 
+    # Import reserve provision de-rate parameter only if column is present
+    # Otherwise, the de-rate param goes to its default of 1
+    columns_to_import = ("project", ba_column_name,)
+    params_to_import = (getattr(m, reserve_balancing_area_param),)
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "projects.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+    if derate_column_name in header:
+        columns_to_import = columns_to_import + (
+            derate_column_name, )
+        params_to_import = \
+            params_to_import + (getattr(m, reserve_provision_derate_param),)
+    else:
+        pass
+
+    # Load the needed data
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "projects.tab"),
-                     select=("project", column_name),
-                     param=(getattr(m, reserve_balancing_area_param),)
+                     select=columns_to_import,
+                     param=params_to_import
                      )
 
     data_portal.data()[reserve_projects_set] = {

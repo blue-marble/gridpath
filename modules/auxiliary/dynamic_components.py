@@ -13,6 +13,7 @@ required_reserve_modules = "required_reserve_modules"
 
 headroom_variables = "headroom_variables"
 footroom_variables = "footroom_variables"
+reserve_variable_derate_params = "reserve_variable_derate_params"
 
 required_tx_capacity_modules = "required_tx_capacity_modules"
 
@@ -49,6 +50,7 @@ class DynamicComponents(object):
         # Headroom and footroom variables
         setattr(self, headroom_variables, dict())
         setattr(self, footroom_variables, dict())
+        setattr(self, reserve_variable_derate_params, dict())
 
         # Transmission
         setattr(self, required_tx_capacity_modules, list())

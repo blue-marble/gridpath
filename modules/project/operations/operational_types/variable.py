@@ -7,10 +7,13 @@ Can't provide reserves.
 
 import os.path
 
-from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals
+from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
+    Expression
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
+from modules.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables, reserve_variable_derate_params
 
 
 def add_module_specific_components(m, d):
@@ -35,25 +38,60 @@ def add_module_specific_components(m, d):
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
 
-    # Variables
-    # Curtailment is a dispatch decision
-    m.Curtail_MW = Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                       within=NonNegativeReals)
+    # Variable generators treated as dispatchable (can also be curtailed and
+    # provide reserves)
+    m.Provide_Variable_Power_MW = \
+        Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            within=NonNegativeReals)
 
-    # Can't curtail more than available power
-    def curtailment_limit_rule(mod, g, tmp):
+    def max_power_rule(mod, g, tmp):
         """
-        Can't curtail more than available power
+        Power provision plus upward services cannot exceed available power.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Curtail_MW[g, tmp] \
+        return mod.Provide_Variable_Power_MW[g, tmp] + \
+            sum(
+            getattr(mod, c)[g, tmp]
+            / getattr(
+                mod, getattr(d, reserve_variable_derate_params)[c]
+            )[g]
+            for c in getattr(d, headroom_variables)[g]
+        ) \
             <= mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]
-    m.Curtailment_Limit_Constraint = \
+    m.Variable_Max_Power_Constraint = \
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=curtailment_limit_rule)
+                   rule=max_power_rule)
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Power provision minus downward services cannot be less than 0.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Variable_Power_MW[g, tmp] - \
+            sum(
+            getattr(mod, c)[g, tmp]
+            / getattr(
+                mod, getattr(d, reserve_variable_derate_params)[c]
+            )[g]
+            for c in getattr(d, footroom_variables)[g]
+        ) \
+            >= 0
+    m.Variable_Min_Power_Constraint = \
+        Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=min_power_rule)
+
+    def curtailment_expression_rule(mod, g, tmp):
+        return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] - \
+            mod.Provide_Variable_Power_MW[g, tmp]
+    m.Variable_Generator_Curtailment_MW = \
+        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=curtailment_expression_rule)
 
 
 # Operations
@@ -67,8 +105,7 @@ def power_provision_rule(mod, g, tmp):
     :return:
     """
 
-    return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] \
-        - mod.Curtail_MW[g, tmp]
+    return mod.Provide_Variable_Power_MW[g, tmp]
 
 
 def curtailment_rule(mod, g, tmp):
@@ -79,7 +116,7 @@ def curtailment_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Curtail_MW[g, tmp]
+    return mod.Variable_Generator_Curtailment_MW[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -158,7 +195,7 @@ def export_module_specific_results(mod, d):
         make_project_time_var_df(
             mod,
             "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Curtail_MW",
+            "Variable_Generator_Curtailment_MW",
             ["project", "timepoint"],
             "curtail_mw"
         )

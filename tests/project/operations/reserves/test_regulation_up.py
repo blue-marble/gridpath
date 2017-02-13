@@ -473,5 +473,20 @@ class TestRegulationUpProvision(unittest.TestCase):
         ])
         self.assertListEqual(expected_prj_op_tmps, actual_prj_op_tmps)
 
+
+        # Param: regulation_up_derate (defaults to 1 if not specified)
+        expected_derate = OrderedDict(sorted(
+            {"Battery": 1, "Battery_Specified": 0.5, "Coal": 1,
+             "Coal_z2": 1, "Gas_CCGT": 1, "Gas_CCGT_New": 1, "Gas_CCGT_z2": 1,
+             "Hydro": 1}.items()
+        )
+        )
+        actual_derate = OrderedDict(sorted(
+            {prj: instance.regulation_up_derate[prj]
+             for prj in instance.REGULATION_UP_PROJECTS}.items()
+        )
+        )
+        self.assertDictEqual(expected_derate, actual_derate)
+
 if __name__ == "__main__":
     unittest.main()

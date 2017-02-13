@@ -377,5 +377,18 @@ class TestLFReservesUpProvision(unittest.TestCase):
         ])
         self.assertListEqual(expected_prj_op_tmps, actual_prj_op_tmps)
 
+        # Param: lf_reserves_up_derate (defaults to 1 if not specified)
+        expected_derate = OrderedDict(sorted(
+            {"Battery": 1, "Battery_Specified": 0.5, "Gas_CCGT": 1,
+             "Gas_CCGT_New": 1, "Gas_CCGT_z2": 1, "Hydro": 1}.items()
+        )
+        )
+        actual_derate = OrderedDict(sorted(
+            {prj: instance.lf_reserves_up_derate[prj]
+             for prj in instance.LF_RESERVES_UP_PROJECTS}.items()
+        )
+        )
+        self.assertDictEqual(expected_derate, actual_derate)
+
 if __name__ == "__main__":
     unittest.main()

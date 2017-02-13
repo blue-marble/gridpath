@@ -145,7 +145,7 @@ class TestExamples(unittest.TestCase):
                                "--solver", "ipopt", "--quiet",
                                "--mute_solver_output", "--testing"])
 
-        expected_objective = 110443853.67752
+        expected_objective = 110443853.65676
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -162,7 +162,7 @@ class TestExamples(unittest.TestCase):
                                "--solver", "ipopt", "--quiet",
                                "--mute_solver_output", "--testing"])
 
-        expected_objective = 220087705.75504
+        expected_objective = 220087705.71353
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -202,7 +202,7 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 220044845.67373
+        expected_objective = 220044845.63228
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -241,7 +241,7 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 972816049.42922
+        expected_objective = 972816048.46947
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -260,7 +260,7 @@ class TestExamples(unittest.TestCase):
                                "--solver", "ipopt", "--quiet",
                                "--mute_solver_output", "--testing"])
 
-        expected_objective = 6295817385.20171
+        expected_objective = 6295817377.201665
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -364,7 +364,27 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 1309888.26166
+        expected_objective = 1309888.26159
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_variable_gen_reserves(self):
+        """
+        Check objective function value of "variable_gen_reserves"
+        example; this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_variable_gen_reserves",
+                 "--scenario_location", "examples",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 64739.31331
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)

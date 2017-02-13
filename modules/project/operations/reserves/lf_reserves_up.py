@@ -27,7 +27,8 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
         "lf_reserves_up",
         "headroom_variables",
         "lf_reserves_up_zone",
-        "Provide_LF_Reserves_Up_MW"
+        "Provide_LF_Reserves_Up_MW",
+        "lf_reserves_up_derate"
     )
 
 
@@ -44,6 +45,7 @@ def add_model_components(m, d):
         d,
         "LF_RESERVES_UP_PROJECTS",
         "lf_reserves_up_zone",
+        "lf_reserves_up_derate",
         "LF_RESERVES_UP_ZONES",
         "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
         "Provide_LF_Reserves_Up_MW"
@@ -69,7 +71,9 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         horizon,
         stage,
         "lf_reserves_up_zone",
+        "lf_reserves_up_derate",
         "lf_reserves_up_zone",
+        "lf_reserves_up_derate",
         "LF_RESERVES_UP_PROJECTS"
     )
 
