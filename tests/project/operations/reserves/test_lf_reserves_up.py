@@ -390,5 +390,19 @@ class TestLFReservesUpProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_derate, actual_derate)
 
+        # Param: lf_reserves_up_provision_subhourly_energy_adjustment
+        # (defaults to 0 if not specified)
+        expected_adjustment = OrderedDict(sorted(
+            {"Zone1": 0.1, "Zone2": 0}.items()
+        )
+        )
+        actual_adjustment = OrderedDict(sorted(
+            {z: instance.
+                lf_reserves_up_provision_subhourly_energy_adjustment[z]
+             for z in instance.LF_RESERVES_UP_ZONES}.items()
+        )
+        )
+        self.assertDictEqual(expected_adjustment, actual_adjustment)
+
 if __name__ == "__main__":
     unittest.main()

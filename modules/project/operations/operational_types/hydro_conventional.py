@@ -120,9 +120,31 @@ def power_provision_rule(mod, g, tmp):
     return mod.Hydro_Conventional_Provide_Power_MW[g, tmp]
 
 
-def curtailment_rule(mod, g, tmp):
+def scheduled_curtailment_rule(mod, g, tmp):
     """
     This treatment does not allow curtailment
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+# TODO: ignoring subhourly behavior for hydro for now
+def subhourly_curtailment_rule(mod, g, tmp):
+    """
+    Can't provide reserves
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, g, tmp):
+    """
+    Can't provide reserves
     :param mod:
     :param g:
     :param tmp:

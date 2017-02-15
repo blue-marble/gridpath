@@ -39,17 +39,24 @@ def add_model_components(m, d):
     def rps_energy_provision_rule(mod, z, p):
         """
         Calculate the delivered RPS energy for each zone and period
+        Scheduled power provision (available energy minus reserves minus
+        scheduled curtailment) + subhourly delivered energy (from
+        providing upward reserves) - subhourly curtailment (from providing
+        downward reserves)
         :param mod:
         :param z:
         :param p:
         :return:
         """
-        return sum(mod.Power_Provision_MW[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-                   )
+        return \
+            sum((mod.Power_Provision_MW[g, tmp]
+                 + mod.Subhourly_Energy_Delivered_MW[g,tmp]
+                 - mod.Subhourly_Curtailment_MW[g, tmp])
+                * mod.number_of_hours_in_timepoint[tmp]
+                * mod.horizon_weight[mod.horizon[tmp]]
+                for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
+                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                )
 
     m.Total_Delivered_RPS_Energy_MWh = \
         Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
@@ -69,7 +76,7 @@ def add_model_components(m, d):
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
 
-    def curtailed_rps_energy_rule(mod, z, p):
+    def total_curtailed_rps_energy_rule(mod, z, p):
         """
         Calculate how much RPS-eligible energy was curtailed in each RPS zone
         in each period
@@ -78,7 +85,9 @@ def add_model_components(m, d):
         :param p:
         :return:
         """
-        return sum(mod.Curtailment_MW[g, tmp]
+        return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
+                    mod.Subhourly_Curtailment_MW[g, tmp] -
+                    mod.Subhourly_Energy_Delivered_MW[g, tmp])
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.horizon_weight[mod.horizon[tmp]]
                    for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
@@ -87,7 +96,7 @@ def add_model_components(m, d):
     # export?
     m.Total_Curtailed_RPS_Energy_MWh = \
         Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
-                   rule=curtailed_rps_energy_rule)
+                   rule=total_curtailed_rps_energy_rule)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

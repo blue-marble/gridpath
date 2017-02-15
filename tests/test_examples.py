@@ -389,6 +389,48 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
+    def test_example_2periods_new_build_rps_variable_reserves(self):
+        """
+        Check objective function value of
+        "2periods_new_build_rps_variable_reserves" example; this example
+        requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_new_build_rps_variable_reserves",
+                 "--scenario_location", "examples",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 844035398.4645239
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_2periods_new_build_rps_variable_reserves_subhourly_adj(
+            self):
+        """
+        Check objective function value of
+        "2periods_new_build_rps_variable_reserves_subhourly_adj" example;
+        this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_new_build_rps_variable_reserves_subhourly_adj",
+                 "--scenario_location", "examples",
+                 "--solver", "ipopt", "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 845531663.7953748
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
 
 if __name__ == "__main__":
     unittest.main()

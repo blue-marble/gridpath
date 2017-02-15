@@ -106,9 +106,32 @@ def commitment_rule(mod, g, tmp):
     return mod.Commit_Continuous[g, tmp]
 
 
-def curtailment_rule(mod, g, tmp):
+def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+# TODO: ignoring subhourly behavior for dispatchable gens for now
+def subhourly_curtailment_rule(mod, g, tmp):
+    """
+    Can't provide reserves
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, g, tmp):
+    """
+    Can't provide reserves
     :param mod:
     :param g:
     :param tmp:

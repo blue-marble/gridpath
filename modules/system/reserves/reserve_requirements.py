@@ -148,6 +148,7 @@ def generic_load_model_data(m, d, data_portal,
 
     data_portal.load(filename=os.path.join(scenario_directory, "inputs",
                                            ba_list_filename),
+                     select=("balancing_area", "violation_penalty_per_mw"),
                      param=getattr(m, reserve_violation_penalty_param)
                      )
 

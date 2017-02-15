@@ -1,0 +1,11 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_rps_variable_reserves_subhourly_adj* #####
+
+### CAPACITY RESULTS ###
+...skipping aggregating capacity results: column 'technology' not found in projects.tab
+### OPERATIONAL RESULTS ###
+...skipping aggregating operational results: column 'technology' not found in projects.tab
+### RPS RESULTS ###
+                 rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed       dual  rps_marginal_cost_per_mwh
+rps_zone period                                                                                                                             
+RPSZone1 2020                50                        50                         0                  0  7,199,748                    719,975
+         2030                50                        50                        23                 31 18,599,740                  1,859,974

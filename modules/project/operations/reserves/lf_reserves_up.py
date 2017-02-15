@@ -20,15 +20,18 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
 
     generic_determine_dynamic_components(
-        d,
-        scenario_directory,
-        horizon,
-        stage,
-        "lf_reserves_up",
-        "headroom_variables",
-        "lf_reserves_up_zone",
-        "Provide_LF_Reserves_Up_MW",
-        "lf_reserves_up_derate"
+        d=d,
+        scenario_directory=scenario_directory,
+        horizon=horizon,
+        stage=stage,
+        reserve_module="lf_reserves_up",
+        headroom_or_footroom_dict="headroom_variables",
+        ba_column_name="lf_reserves_up_zone",
+        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW",
+        reserve_provision_derate_param_name="lf_reserves_up_derate",
+        reserve_provision_subhourly_adjustment_param_name=
+        "lf_reserves_up_provision_subhourly_energy_adjustment",
+        reserve_balancing_area_param_name="lf_reserves_up_zone"
     )
 
 
@@ -41,14 +44,17 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "LF_RESERVES_UP_PROJECTS",
-        "lf_reserves_up_zone",
-        "lf_reserves_up_derate",
-        "LF_RESERVES_UP_ZONES",
+        m=m,
+        d=d,
+        reserve_projects_set="LF_RESERVES_UP_PROJECTS",
+        reserve_balancing_area_param="lf_reserves_up_zone",
+        reserve_provision_derate_param="lf_reserves_up_derate",
+        reserve_balancing_areas_set="LF_RESERVES_UP_ZONES",
+        reserve_project_operational_timepoints_set=
         "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        "Provide_LF_Reserves_Up_MW"
+        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW",
+        reserve_provision_subhourly_adjustment_param
+        ="lf_reserves_up_provision_subhourly_energy_adjustment"
     )
 
 
@@ -64,17 +70,21 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :return:
     """
     generic_load_model_data(
-        m,
-        d,
-        data_portal,
-        scenario_directory,
-        horizon,
-        stage,
-        "lf_reserves_up_zone",
-        "lf_reserves_up_derate",
-        "lf_reserves_up_zone",
-        "lf_reserves_up_derate",
-        "LF_RESERVES_UP_PROJECTS"
+        m=m,
+        d=d,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        horizon=horizon,
+        stage=stage,
+        ba_column_name="lf_reserves_up_zone",
+        derate_column_name="lf_reserves_up_derate",
+        reserve_balancing_area_param="lf_reserves_up_zone",
+        reserve_provision_derate_param="lf_reserves_up_derate",
+        reserve_projects_set="LF_RESERVES_UP_PROJECTS",
+        reserve_provision_subhourly_adjustment_param
+        ="lf_reserves_up_provision_subhourly_energy_adjustment",
+        reserve_balancing_areas_input_file
+        ="load_following_up_balancing_areas.tab"
     )
 
 
@@ -87,8 +97,10 @@ def export_module_specific_results(m, d):
     """
 
     generic_export_module_specific_results(
-        m, d,
+        m=m,
+        d=d,
+        reserve_project_operational_timepoints_set=
         "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        "Provide_LF_Reserves_Up_MW",
-        "lf_reserves_up_mw"
+        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW",
+        column_name="lf_reserves_up_mw"
     )

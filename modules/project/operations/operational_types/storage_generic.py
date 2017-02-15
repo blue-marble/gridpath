@@ -150,9 +150,31 @@ def power_provision_rule(mod, s, tmp):
         - mod.Generic_Storage_Charge_MW[s, tmp]
 
 
-def curtailment_rule(mod, g, tmp):
+def scheduled_curtailment_rule(mod, g, tmp):
     """
     Curtailment not allowed
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+# TODO: ignoring subhourly behavior for storage for now
+def subhourly_curtailment_rule(mod, g, tmp):
+    """
+    Can't provide reserves
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, g, tmp):
+    """
+    Can't provide reserves
     :param mod:
     :param g:
     :param tmp:

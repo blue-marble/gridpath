@@ -13,7 +13,8 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
 from modules.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables, reserve_variable_derate_params
+    footroom_variables, reserve_variable_derate_params, \
+    reserve_provision_subhourly_adjustment_params
 
 
 def add_module_specific_components(m, d):
@@ -86,12 +87,138 @@ def add_module_specific_components(m, d):
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                    rule=min_power_rule)
 
-    def curtailment_expression_rule(mod, g, tmp):
+    def scheduled_curtailment_expression_rule(mod, g, tmp):
+        """
+        Scheduled curtailment
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
         return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] - \
             mod.Provide_Variable_Power_MW[g, tmp]
-    m.Variable_Generator_Curtailment_MW = \
+
+    m.Scheduled_Variable_Generator_Curtailment_MW = \
         Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=curtailment_expression_rule)
+                   rule=scheduled_curtailment_expression_rule)
+
+    def subhourly_curtailment_expression_rule(mod, g, tmp):
+        """
+        Subhourly curtailment from providing downward reserves
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        subhourly_footroom_adjustment = \
+            sum(
+                getattr(mod, c)[g, tmp] *
+                # This is tricky
+                # We need to get the value of the adjustment param
+                # The adjustment parameter name varies by reserve type and its
+                # value varies by balancing area
+                # The balancing area param names also varies by reserve type
+                # In the dynamic components, we have created a dictionary
+                # that has the reserve variable name as key and a tuple as
+                # value for each key: the first value in the tuple is the
+                # subhourly adjustment parameter name and the second
+                # tuple value is the balancing area parameter name (for this
+                # type of reserve)
+                # Here, we are getting the value for the following:
+                # subhourly_adjustment_param[this type of reserve][
+                getattr(mod,
+                        getattr(d,
+                                reserve_provision_subhourly_adjustment_params
+                                )[c][0]  # this is the adjustment param name
+                        )[
+                    getattr(mod,
+                            getattr(
+                                d,
+                                reserve_provision_subhourly_adjustment_params
+                            )[c][1]  # this is the balancing area param name
+                            )[g]  # the balancing area (value) varies by g
+                ]  # the index of the adjustment param is a balancing area
+                # adjustment param name and BA param name vary by reserve type
+                for c in getattr(d, footroom_variables)[g]
+            )
+
+        return subhourly_footroom_adjustment
+
+    m.Subhourly_Variable_Generator_Curtailment_MW = \
+        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=subhourly_curtailment_expression_rule)
+
+    def subhourly_energy_delivered_expression_rule(mod, g, tmp):
+        """
+        Subhourly energy delivered from providing upward reserves
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        subhourly_headroom_adjustment = \
+            sum(
+                getattr(mod, c)[g, tmp] *
+                # This is tricky
+                # We need to get the value of the adjustment param
+                # The adjustment parameter name varies by reserve type and its
+                # value varies by balancing area
+                # The balancing area param names also varies by reserve type
+                # In the dynamic components, we have created a dictionary
+                # that has the reserve variable name as key and a tuple as
+                # value for each key: the first value in the tuple is the
+                # subhourly adjustment parameter name and the second
+                # tuple value is the balancing area parameter name (for this
+                # type of reserve)
+                # Here, we are getting the value for the following:
+                # subhourly_adjustment_param[this type of reserve][
+                getattr(mod,
+                        getattr(d,
+                                reserve_provision_subhourly_adjustment_params
+                                )[c][0]  # this is the adjustment param name
+                        )[
+                    getattr(mod,
+                            getattr(
+                                d,
+                                reserve_provision_subhourly_adjustment_params
+                            )[c][1]  # this is the balancing area param name
+                            )[g]  # the balancing area (value) varies by g
+                ]  # the index of the adjustment param is a balancing area
+                # adjustment param name and BA param name vary by reserve type
+                for c in getattr(d, headroom_variables)[g]
+            )
+
+        return subhourly_headroom_adjustment
+
+    m.Subhourly_Variable_Generator_Energy_Delivered_MW = \
+        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=subhourly_energy_delivered_expression_rule)
+
+    def total_curtailment_expression_rule(mod, g, tmp):
+        """
+        Available energy that was not delivered
+        There's an adjustment for subhourly reserve provision:
+        1) if downward reserves are provided, they will be called upon
+        occasionally, so power provision will have to decrease and additional
+        curtailment will be incurred;
+        2) if upward reserves are provided (energy is being curtailed),
+        they will be called upon occasionally, so power provision will have to
+        increase and less curtailment will be incurred
+        The subhourly adjustment here is a simple linear function of reserve
+        provision.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] - \
+            mod.Provide_Variable_Power_MW[g, tmp] \
+            + mod.Subhourly_Variable_Generator_Curtailment_MW[g, tmp] \
+            - mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
+
+    m.Total_Variable_Generator_Curtailment_MW = \
+        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
+                   rule=total_curtailment_expression_rule)
 
 
 # Operations
@@ -108,15 +235,42 @@ def power_provision_rule(mod, g, tmp):
     return mod.Provide_Variable_Power_MW[g, tmp]
 
 
-def curtailment_rule(mod, g, tmp):
+def scheduled_curtailment_rule(mod, g, tmp):
     """
-    Variable generation can be dispatched down
+    Variable generation can be dispatched down, i.e. scheduled below the
+    available energy
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
-    return mod.Variable_Generator_Curtailment_MW[g, tmp]
+    return mod.Scheduled_Variable_Generator_Curtailment_MW[g, tmp]
+
+
+def subhourly_curtailment_rule(mod, g, tmp):
+    """
+    If providing downward reserves, variable generators will occasionally
+    have to be dispatched down relative to their schedule, resulting in
+    additional curtailment within the hour
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Subhourly_Variable_Generator_Curtailment_MW[g, tmp]
+
+
+def subhourly_energy_delivered_rule(mod, g, tmp):
+    """
+    If providing upward reserves, variable generators will occasionally be
+    dispatched up, so additional energy will be delivered within the hour
+    relative to their schedule (less curtailment)
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
 
 
 def fuel_cost_rule(mod, g, tmp):
@@ -191,13 +345,47 @@ def export_module_specific_results(mod, d):
     :param d:
     :return:
     """
-    curtailment_df = \
+
+    scheduled_curtailment_df = \
         make_project_time_var_df(
             mod,
             "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Variable_Generator_Curtailment_MW",
+            "Scheduled_Variable_Generator_Curtailment_MW",
             ["project", "timepoint"],
-            "curtail_mw"
+            "scheduled_curtailment_mw"
         )
 
-    d.module_specific_df.append(curtailment_df)
+    d.module_specific_df.append(scheduled_curtailment_df)
+
+    subhourly_curtailment_df = \
+        make_project_time_var_df(
+            mod,
+            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Subhourly_Variable_Generator_Curtailment_MW",
+            ["project", "timepoint"],
+            "subhourly_curtailment_mw"
+        )
+
+    d.module_specific_df.append(subhourly_curtailment_df)
+
+    subhourly_energy_delivered_df = \
+        make_project_time_var_df(
+            mod,
+            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Subhourly_Variable_Generator_Energy_Delivered_MW",
+            ["project", "timepoint"],
+            "subhourly_energy_delivered_mw"
+        )
+
+    d.module_specific_df.append(subhourly_energy_delivered_df)
+
+    total_curtailment_df = \
+        make_project_time_var_df(
+            mod,
+            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
+            "Total_Variable_Generator_Curtailment_MW",
+            ["project", "timepoint"],
+            "total_curtailmen_mw"
+        )
+
+    d.module_specific_df.append(total_curtailment_df)

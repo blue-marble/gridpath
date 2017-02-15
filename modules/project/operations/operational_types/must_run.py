@@ -39,9 +39,31 @@ def power_provision_rule(mod, g, tmp):
     return mod.Capacity_MW[g, mod.period[tmp]]
 
 
-def curtailment_rule(mod, g, tmp):
+def scheduled_curtailment_rule(mod, g, tmp):
     """
     Can't dispatch down and curtailment not allowed
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+def subhourly_curtailment_rule(mod, g, tmp):
+    """
+    Can't provide reserves
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return 0
+
+
+def subhourly_energy_delivered_rule(mod, g, tmp):
+    """
+    Can't provide reserves
     :param mod:
     :param g:
     :param tmp:

@@ -20,15 +20,18 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
 
     generic_determine_dynamic_components(
-        d,
-        scenario_directory,
-        horizon,
-        stage,
-        "regulation_up",
-        "headroom_variables",
-        "regulation_up_zone",
-        "Provide_Regulation_Up_MW",
-        "regulation_up_derate"
+        d=d,
+        scenario_directory=scenario_directory,
+        horizon=horizon,
+        stage=stage,
+        reserve_module="regulation_up",
+        headroom_or_footroom_dict="headroom_variables",
+        ba_column_name="regulation_up_zone",
+        reserve_provision_variable_name="Provide_Regulation_Up_MW",
+        reserve_provision_derate_param_name="regulation_up_derate",
+        reserve_provision_subhourly_adjustment_param_name=
+        "regulation_up_provision_subhourly_energy_adjustment",
+        reserve_balancing_area_param_name="regulation_up_zone"
     )
 
 
@@ -41,14 +44,17 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "REGULATION_UP_PROJECTS",
-        "regulation_up_zone",
-        "regulation_up_derate",
-        "REGULATION_UP_ZONES",
+        m=m,
+        d=d,
+        reserve_projects_set="REGULATION_UP_PROJECTS",
+        reserve_balancing_area_param="regulation_up_zone",
+        reserve_provision_derate_param="regulation_up_derate",
+        reserve_balancing_areas_set="REGULATION_UP_ZONES",
+        reserve_project_operational_timepoints_set=
         "REGULATION_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        "Provide_Regulation_Up_MW"
+        reserve_provision_variable_name="Provide_Regulation_Up_MW",
+        reserve_provision_subhourly_adjustment_param
+        ="regulation_up_provision_subhourly_energy_adjustment"
     )
 
 
@@ -64,17 +70,21 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :return:
     """
     generic_load_model_data(
-        m,
-        d,
-        data_portal,
-        scenario_directory,
-        horizon,
-        stage,
-        "regulation_up_zone",
-        "regulation_up_derate",
-        "regulation_up_zone",
-        "regulation_up_derate",
-        "REGULATION_UP_PROJECTS"
+        m=m,
+        d=d,
+        data_portal=data_portal,
+        scenario_directory=scenario_directory,
+        horizon=horizon,
+        stage=stage,
+        ba_column_name="regulation_up_zone",
+        derate_column_name="regulation_up_derate",
+        reserve_balancing_area_param="regulation_up_zone",
+        reserve_provision_derate_param="regulation_up_derate",
+        reserve_projects_set="REGULATION_UP_PROJECTS",
+        reserve_provision_subhourly_adjustment_param
+        ="regulation_up_provision_subhourly_energy_adjustment",
+        reserve_balancing_areas_input_file
+        ="regulation_up_balancing_areas.tab"
     )
 
 
@@ -87,8 +97,10 @@ def export_module_specific_results(m, d):
     """
 
     generic_export_module_specific_results(
-        m, d,
+        m=m,
+        d=d,
+        reserve_project_operational_timepoints_set=
         "REGULATION_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        "Provide_Regulation_Up_MW",
-        "regulation_up_mw"
+        reserve_provision_variable_name="Provide_Regulation_Up_MW",
+        column_name="regulation_up_mw"
     )

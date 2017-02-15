@@ -3,6 +3,7 @@
 """
 Describe operational constraints on the generation infrastructure.
 """
+from functools import reduce
 import os.path
 import pandas as pd
 from pyomo.environ import Expression
@@ -62,10 +63,11 @@ def add_model_components(m, d):
         "Power_Production_in_Zone_MW")
 
     # Keep track of curtailment
-    def curtailment_rule(mod, g, tmp):
+    def scheduled_curtailment_rule(mod, g, tmp):
         """
         Keep track of curtailment to make it easier to calculate total
-        curtailed RPS energy for example.
+        curtailed RPS energy for example -- this is the scheduled
+        curtailment component
         :param mod:
         :param g:
         :param tmp:
@@ -73,11 +75,50 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            curtailment_rule(mod, g, tmp)
+            scheduled_curtailment_rule(mod, g, tmp)
 
     # TODO: possibly create this only if needed by another module?
-    m.Curtailment_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                  rule=curtailment_rule)
+    m.Scheduled_Curtailment_MW = Expression(
+        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=scheduled_curtailment_rule
+    )
+
+    def subhourly_curtailment_rule(mod, g, tmp):
+        """
+        Keep track of curtailment to make it easier to calculate total
+        curtailed RPS energy for example -- this is the subhourly
+        curtailment component
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            subhourly_curtailment_rule(mod, g, tmp)
+
+    # TODO: possibly create this only if needed by another module?
+    m.Subhourly_Curtailment_MW = Expression(
+        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=subhourly_curtailment_rule
+    )
+
+    def subhourly_energy_delivered_rule(mod, g, tmp):
+        """
+        Keep track of curtailment to make it easier to calculate total
+        curtailed RPS energy for example -- this is the subhourly
+        curtailment component
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            subhourly_energy_delivered_rule(mod, g, tmp)
+
+    # TODO: possibly create this only if needed by another module?
+    m.Subhourly_Energy_Delivered_MW = Expression(
+        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=subhourly_energy_delivered_rule
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

@@ -10,17 +10,22 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, NonNegativeReals, PercentFraction
 
 from modules.auxiliary.dynamic_components import required_reserve_modules, \
-    reserve_variable_derate_params  # just importing the names
+    reserve_variable_derate_params, \
+    reserve_provision_subhourly_adjustment_params
 from modules.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position, make_project_time_var_df
 
 
-def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
-                                         reserve_module,
-                                         headroom_or_footroom_dict,
-                                         ba_column_name,
-                                         reserve_provision_variable_name,
-                                         reserve_provision_derate_param_name):
+def generic_determine_dynamic_components(
+        d, scenario_directory, horizon, stage,
+        reserve_module,
+        headroom_or_footroom_dict,
+        ba_column_name,
+        reserve_provision_variable_name,
+        reserve_provision_derate_param_name,
+        reserve_provision_subhourly_adjustment_param_name,
+        reserve_balancing_area_param_name
+):
     """
 
     :param d:
@@ -32,6 +37,8 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
     :param ba_column_name:
     :param reserve_provision_variable_name:
     :param reserve_provision_derate_param_name:
+    :param reserve_provision_subhourly_adjustment_param_name:
+    :param reserve_balancing_area_param_name:
     :return:
     """
 
@@ -64,8 +71,20 @@ def generic_determine_dynamic_components(d, scenario_directory, horizon, stage,
                     reserve_provision_variable_name)
 
     # The names of the derate params for each reserve variable
+    # Will be used to get the right derate for each project providing a
+    # particular reserve (derate can vary by reserve type)
     getattr(d, reserve_variable_derate_params)[
         reserve_provision_variable_name] = reserve_provision_derate_param_name
+
+    # The names of the subhourly energy adjustment params and project
+    # balancing area param for each reserve variable (adjustment can vary by
+    #  reserve type and by balancing area within each reserve type)
+    # Will be used to get the right adjustment for each project providing a
+    # particular reserve
+    getattr(d, reserve_provision_subhourly_adjustment_params)[
+        reserve_provision_variable_name] = \
+        (reserve_provision_subhourly_adjustment_param_name,
+         reserve_balancing_area_param_name)
 
 
 def generic_add_model_components(m, d,
@@ -74,7 +93,8 @@ def generic_add_model_components(m, d,
                                  reserve_provision_derate_param,
                                  reserve_balancing_areas_set,
                                  reserve_project_operational_timepoints_set,
-                                 reserve_provision_variable_name):
+                                 reserve_provision_variable_name,
+                                 reserve_provision_subhourly_adjustment_param):
     """
 
     :param m:
@@ -85,6 +105,7 @@ def generic_add_model_components(m, d,
     :param reserve_balancing_areas_set:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
+    :param reserve_provision_subhourly_adjustment_param:
     :return:
     """
 
@@ -112,7 +133,17 @@ def generic_add_model_components(m, d,
     # Derate defaults to 1 if not specified
     setattr(m, reserve_provision_derate_param,
             Param(getattr(m, reserve_projects_set),
-                  within=PercentFraction, default=1))
+                  within=PercentFraction, default=1)
+            )
+
+    # Energy adjustment from subhourly reserve provision
+    # (e.g. for storage state of charge or how much variable RPS energy is
+    # delivered because of subhourly reserve provision)
+    # This is an optional param, which will default to 0 if not specified
+    setattr(m, reserve_provision_subhourly_adjustment_param,
+            Param(getattr(m, reserve_balancing_areas_set),
+                  within=PercentFraction, default=0)
+            )
 
 
 def generic_load_model_data(
@@ -121,7 +152,9 @@ def generic_load_model_data(
         derate_column_name,
         reserve_balancing_area_param,
         reserve_provision_derate_param,
-        reserve_projects_set):
+        reserve_projects_set,
+        reserve_provision_subhourly_adjustment_param,
+        reserve_balancing_areas_input_file):
     """
 
     :param m:
@@ -135,6 +168,8 @@ def generic_load_model_data(
     :param reserve_balancing_area_param:
     :param reserve_provision_derate_param:
     :param reserve_projects_set:
+    :param reserve_provision_subhourly_adjustment_param:
+    :param reserve_balancing_areas_input_file:
     :return:
     """
 
@@ -142,10 +177,11 @@ def generic_load_model_data(
     # Otherwise, the de-rate param goes to its default of 1
     columns_to_import = ("project", ba_column_name,)
     params_to_import = (getattr(m, reserve_balancing_area_param),)
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
-    if derate_column_name in header:
+    projects_file_header = pd.read_csv(os.path.join(scenario_directory,
+                                                    "inputs", "projects.tab"),
+                                       sep="\t", header=None, nrows=1
+                                       ).values[0]
+    if derate_column_name in projects_file_header:
         columns_to_import = columns_to_import + (
             derate_column_name, )
         params_to_import = \
@@ -163,6 +199,21 @@ def generic_load_model_data(
     data_portal.data()[reserve_projects_set] = {
         None: data_portal.data()[reserve_balancing_area_param].keys()
     }
+
+    # Load reserve provision subhourly energy adjustment (e.g. for storage
+    # state of charge adjustment or delivered variable RPS energy adjustment)
+    # if specified; otherwise it will default to 0
+    ba_file_header = pd.read_csv(os.path.join(
+        scenario_directory, "inputs", reserve_balancing_areas_input_file),
+        sep="\t", header=None, nrows=1).values[0]
+
+    if "reserve_provision_subhourly_adjustment" in ba_file_header:
+        data_portal.load(filename=os.path.join(
+            scenario_directory, "inputs", reserve_balancing_areas_input_file),
+            select=("balancing_area",
+                    "reserve_provision_subhourly_adjustment"),
+            param=reserve_provision_subhourly_adjustment_param
+                         )
 
 
 def generic_export_module_specific_results(
