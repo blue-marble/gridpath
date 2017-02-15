@@ -12,15 +12,18 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
-from modules.auxiliary.dynamic_components import headroom_variables, \
-    footroom_variables, reserve_variable_derate_params, \
-    reserve_provision_subhourly_adjustment_params
+from modules.auxiliary.dynamic_components import \
+    footroom_variables, headroom_variables, reserve_variable_derate_params
+from modules.project.operations.reserves.subhourly_energy_adjustment import \
+    footroom_subhourly_energy_adjustment_rule, \
+    headroom_subhourly_energy_adjustment_rule
 
 
 def add_module_specific_components(m, d):
     """
     Variable generators require a capacity factor for each timepoint.
     :param m:
+    :param d:
     :return:
     """
     # Sets and params
@@ -110,89 +113,27 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        subhourly_footroom_adjustment = \
-            sum(
-                getattr(mod, c)[g, tmp] *
-                # This is tricky
-                # We need to get the value of the adjustment param
-                # The adjustment parameter name varies by reserve type and its
-                # value varies by balancing area
-                # The balancing area param names also varies by reserve type
-                # In the dynamic components, we have created a dictionary
-                # that has the reserve variable name as key and a tuple as
-                # value for each key: the first value in the tuple is the
-                # subhourly adjustment parameter name and the second
-                # tuple value is the balancing area parameter name (for this
-                # type of reserve)
-                # Here, we are getting the value for the following:
-                # subhourly_adjustment_param[this type of reserve][
-                getattr(mod,
-                        getattr(d,
-                                reserve_provision_subhourly_adjustment_params
-                                )[c][0]  # this is the adjustment param name
-                        )[
-                    getattr(mod,
-                            getattr(
-                                d,
-                                reserve_provision_subhourly_adjustment_params
-                            )[c][1]  # this is the balancing area param name
-                            )[g]  # the balancing area (value) varies by g
-                ]  # the index of the adjustment param is a balancing area
-                # adjustment param name and BA param name vary by reserve type
-                for c in getattr(d, footroom_variables)[g]
-            )
-
-        return subhourly_footroom_adjustment
+        return footroom_subhourly_energy_adjustment_rule(d=d, mod=mod, g=g,
+                                                         tmp=tmp)
 
     m.Subhourly_Variable_Generator_Curtailment_MW = \
         Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                    rule=subhourly_curtailment_expression_rule)
 
-    def subhourly_energy_delivered_expression_rule(mod, g, tmp):
+    def subhourly_delivered_energy_expression_rule(mod, g, tmp):
         """
-        Subhourly energy delivered from providing upward reserves
+        # Subhourly energy delivered from providing upward reserves
         :param mod:
         :param g:
-        :param tmp:
+        :param tmp: 
         :return:
         """
-        subhourly_headroom_adjustment = \
-            sum(
-                getattr(mod, c)[g, tmp] *
-                # This is tricky
-                # We need to get the value of the adjustment param
-                # The adjustment parameter name varies by reserve type and its
-                # value varies by balancing area
-                # The balancing area param names also varies by reserve type
-                # In the dynamic components, we have created a dictionary
-                # that has the reserve variable name as key and a tuple as
-                # value for each key: the first value in the tuple is the
-                # subhourly adjustment parameter name and the second
-                # tuple value is the balancing area parameter name (for this
-                # type of reserve)
-                # Here, we are getting the value for the following:
-                # subhourly_adjustment_param[this type of reserve][
-                getattr(mod,
-                        getattr(d,
-                                reserve_provision_subhourly_adjustment_params
-                                )[c][0]  # this is the adjustment param name
-                        )[
-                    getattr(mod,
-                            getattr(
-                                d,
-                                reserve_provision_subhourly_adjustment_params
-                            )[c][1]  # this is the balancing area param name
-                            )[g]  # the balancing area (value) varies by g
-                ]  # the index of the adjustment param is a balancing area
-                # adjustment param name and BA param name vary by reserve type
-                for c in getattr(d, headroom_variables)[g]
-            )
-
-        return subhourly_headroom_adjustment
+        return headroom_subhourly_energy_adjustment_rule(d=d, mod=mod, g=g,
+                                                         tmp=tmp)
 
     m.Subhourly_Variable_Generator_Energy_Delivered_MW = \
         Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=subhourly_energy_delivered_expression_rule)
+                   rule=subhourly_delivered_energy_expression_rule)
 
     def total_curtailment_expression_rule(mod, g, tmp):
         """
