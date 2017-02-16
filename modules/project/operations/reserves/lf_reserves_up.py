@@ -8,6 +8,26 @@ from modules.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results
 
+# Reserve-module variables
+MODULE_NAME = "lf_reserves_up"
+# Dynamic components
+HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
+# Inputs
+BA_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_zone"
+RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_derate"
+RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
+    "load_following_up_balancing_areas.tab"
+# Model components
+RESERVE_PROVISION_VARIABLE_NAME = "Provide_LF_Reserves_Up_MW"
+RESERVE_PROVISION_DERATE_PARAM_NAME = "lf_reserves_up_derate"
+RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME = \
+    "lf_reserves_up_provision_subhourly_energy_adjustment"
+RESERVE_BALANCING_AREA_PARAM_NAME = "lf_reserves_up_zone"
+RESERVE_PROJECTS_SET_NAME = "LF_RESERVES_UP_PROJECTS"
+RESERVE_BALANCING_AREAS_SET_NAME = "LF_RESERVES_UP_ZONES"
+RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
+    "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS"
+
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
@@ -24,14 +44,15 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
         scenario_directory=scenario_directory,
         horizon=horizon,
         stage=stage,
-        reserve_module="lf_reserves_up",
-        headroom_or_footroom_dict="headroom_variables",
-        ba_column_name="lf_reserves_up_zone",
-        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW",
-        reserve_provision_derate_param_name="lf_reserves_up_derate",
+        reserve_module=MODULE_NAME,
+        headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
+        ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
+        reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
+        reserve_provision_derate_param_name=
+        RESERVE_PROVISION_DERATE_PARAM_NAME,
         reserve_provision_subhourly_adjustment_param_name=
-        "lf_reserves_up_provision_subhourly_energy_adjustment",
-        reserve_balancing_area_param_name="lf_reserves_up_zone"
+        RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME,
+        reserve_balancing_area_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
     )
 
 
@@ -46,15 +67,15 @@ def add_model_components(m, d):
     generic_add_model_components(
         m=m,
         d=d,
-        reserve_projects_set="LF_RESERVES_UP_PROJECTS",
-        reserve_balancing_area_param="lf_reserves_up_zone",
-        reserve_provision_derate_param="lf_reserves_up_derate",
-        reserve_balancing_areas_set="LF_RESERVES_UP_ZONES",
+        reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
+        reserve_balancing_area_param=RESERVE_BALANCING_AREA_PARAM_NAME,
+        reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
+        reserve_balancing_areas_set=RESERVE_BALANCING_AREAS_SET_NAME,
         reserve_project_operational_timepoints_set=
-        "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW",
-        reserve_provision_subhourly_adjustment_param
-        ="lf_reserves_up_provision_subhourly_energy_adjustment"
+        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
+        reserve_provision_subhourly_adjustment_param=
+        RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME
     )
 
 
@@ -76,15 +97,16 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         scenario_directory=scenario_directory,
         horizon=horizon,
         stage=stage,
-        ba_column_name="lf_reserves_up_zone",
-        derate_column_name="lf_reserves_up_derate",
-        reserve_balancing_area_param="lf_reserves_up_zone",
-        reserve_provision_derate_param="lf_reserves_up_derate",
-        reserve_projects_set="LF_RESERVES_UP_PROJECTS",
+        ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
+        derate_column_name=
+        RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
+        reserve_balancing_area_param=RESERVE_BALANCING_AREA_PARAM_NAME,
+        reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
+        reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_provision_subhourly_adjustment_param
-        ="lf_reserves_up_provision_subhourly_energy_adjustment",
+        =RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME,
         reserve_balancing_areas_input_file
-        ="load_following_up_balancing_areas.tab"
+        =RESERVE_BALANCING_AREAS_INPUT_FILE_NAME
     )
 
 
@@ -105,8 +127,8 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
         scenario_directory=scenario_directory,
         horizon=horizon,
         stage=stage,
-        module_name="lf_reserves_up",
+        module_name=MODULE_NAME,
         reserve_project_operational_timepoints_set=
-        "LF_RESERVES_UP_PROJECT_OPERATIONAL_TIMEPOINTS",
-        reserve_provision_variable_name="Provide_LF_Reserves_Up_MW"
+        RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
+        reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME
     )
