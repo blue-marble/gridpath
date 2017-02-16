@@ -249,8 +249,10 @@ def get_modules(scenario_directory):
         "project.operations.reserves.lf_reserves_down",
         "project.operations.reserves.regulation_up",
         "project.operations.reserves.regulation_down",
+        "project.operations.operational_types",
         "project.operations.fuels",
-        "project.operations.operations",
+        "project.operations.power",
+        "project.operations.curtailment",
         "project.operations.fix_commitment",
         "project.operations.costs",
         "transmission",
@@ -293,7 +295,7 @@ def get_modules(scenario_directory):
              "project.operations.reserves.regulation_down",
              "system.reserves.regulation_down"],
         "rps":
-            ["policy.rps"]
+            ["project.operations.curtailment", "policy.rps"]
     }
 
     # Remove any modules not requested by user
@@ -618,8 +620,9 @@ def get_subproblems(directory):
                 .tolist()]
         return subproblems
     except IOError:
-        print """ERROR! Subproblems file {} not found""" \
-            .format(subproblems_file)
+        print(
+            """ERROR! Subproblems file {} not found""".format(subproblems_file)
+        )
         sys.exit(1)
 
 

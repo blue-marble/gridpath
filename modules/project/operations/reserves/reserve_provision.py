@@ -235,7 +235,7 @@ def generic_export_module_specific_results(
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_" + module_name + ".csv"), "wb") as f:
+                           "test.csv"), "wb") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",

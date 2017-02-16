@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Describe operational constraints on the generation infrastructure.
+Get the dispatch of all projects and aggregate for load balance
 """
 import csv
 import os.path
@@ -9,10 +9,8 @@ import pandas as pd
 from pyomo.environ import Expression, value
 
 from modules.auxiliary.dynamic_components import \
-    required_operational_modules, load_balance_production_components, \
-    required_reserve_modules
-from modules.auxiliary.auxiliary import make_project_time_var_df, \
-    load_operational_type_modules, load_reserve_type_modules, \
+    required_operational_modules, load_balance_production_components
+from modules.auxiliary.auxiliary import load_operational_type_modules, \
     check_if_technology_column_exists
 
 
@@ -27,14 +25,7 @@ def add_model_components(m, d):
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
 
-    # First, add any components specific to the operational modules
-    for op_m in getattr(d, required_operational_modules):
-        imp_op_m = imported_operational_modules[op_m]
-        if hasattr(imp_op_m, "add_module_specific_components"):
-            imp_op_m.add_module_specific_components(m, d)
-
-    # Then define operational constraints for all generators
-    # Get rules from the generator's operational module
+    # Get dispatch for all generators from the generator's operational module
     def power_provision_rule(mod, g, tmp):
         """
         Power provision is a variable for some generators, but not others; get
@@ -51,7 +42,7 @@ def add_model_components(m, d):
     m.Power_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
                                       rule=power_provision_rule)
 
-    # Add generation to load balance constraint
+    # Add power generation to load balance constraint
     def total_power_production_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
                    for g in mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]
@@ -61,86 +52,6 @@ def add_model_components(m, d):
                    rule=total_power_production_rule)
     getattr(d, load_balance_production_components).append(
         "Power_Production_in_Zone_MW")
-
-    # Keep track of curtailment
-    def scheduled_curtailment_rule(mod, g, tmp):
-        """
-        Keep track of curtailment to make it easier to calculate total
-        curtailed RPS energy for example -- this is the scheduled
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            scheduled_curtailment_rule(mod, g, tmp)
-
-    # TODO: possibly create this only if needed by another module?
-    m.Scheduled_Curtailment_MW = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=scheduled_curtailment_rule
-    )
-
-    def subhourly_curtailment_rule(mod, g, tmp):
-        """
-        Keep track of curtailment to make it easier to calculate total
-        curtailed RPS energy for example -- this is the subhourly
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            subhourly_curtailment_rule(mod, g, tmp)
-
-    # TODO: possibly create this only if needed by another module?
-    m.Subhourly_Curtailment_MW = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=subhourly_curtailment_rule
-    )
-
-    def subhourly_energy_delivered_rule(mod, g, tmp):
-        """
-        Keep track of curtailment to make it easier to calculate total
-        curtailed RPS energy for example -- this is the subhourly
-        curtailment component
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            subhourly_energy_delivered_rule(mod, g, tmp)
-
-    # TODO: possibly create this only if needed by another module?
-    m.Subhourly_Energy_Delivered_MW = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS, rule=subhourly_energy_delivered_rule
-    )
-
-
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
-        if hasattr(imported_operational_modules[op_m],
-                   "load_module_specific_data"):
-            imported_operational_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, horizon, stage)
-        else:
-            pass
 
 
 def export_results(scenario_directory, horizon, stage, m, d):
@@ -174,32 +85,6 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.number_of_hours_in_timepoint[tmp],
                 value(m.Power_Provision_MW[p, tmp])
             ])
-
-    # Next, export module-specific results
-    # Operational type modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
-    for op_m in getattr(d, required_operational_modules):
-        if hasattr(imported_operational_modules[op_m],
-                   "export_module_specific_results"):
-            imported_operational_modules[op_m].\
-                export_module_specific_results(
-                m, d, scenario_directory, horizon, stage,
-            )
-        else:
-            pass
-
-    # Reserve modules
-    imported_reserve_modules = \
-        load_reserve_type_modules(getattr(d, required_reserve_modules))
-    for r_m in getattr(d, required_reserve_modules):
-        if hasattr(imported_reserve_modules[r_m],
-                   "export_module_specific_results"):
-            imported_reserve_modules[r_m].export_module_specific_results(
-                m, d, scenario_directory, horizon, stage
-            )
-        else:
-            pass
 
 
 def summarize_results(d, problem_directory, horizon, stage):
@@ -244,40 +129,10 @@ def summarize_results(d, problem_directory, horizon, stage):
             )
         project_tech.set_index("project", inplace=True, verify_integrity=True)
 
-        # Get the period and horizon for each timepoint
-        tmp_period_horizon = \
-            pd.read_csv(
-                os.path.join(problem_directory, "inputs", "timepoints.tab"),
-                sep="\t", usecols=["TIMEPOINTS", "period", "horizon"]
-            )
-        tmp_period_horizon.set_index(
-            "TIMEPOINTS", inplace=True, verify_integrity=True
-        )
-
-        # Get the weight for each horizon
-        horizon_weight = \
-            pd.read_csv(
-                os.path.join(problem_directory, "inputs", "horizons.tab"),
-                sep="\t", usecols=["HORIZONS", "horizon_weight"]
-            )
-        horizon_weight.set_index(
-            "HORIZONS", inplace=True, verify_integrity=True
-        )
-
-        # Get weight for each timepoint by joining on horizon
-        tmp_period_horizon_weight = \
-            pd.merge(
-                left=tmp_period_horizon,
-                right=horizon_weight,
-                left_on="horizon",
-                right_index=True,
-                how="left"
-            )
-
         # Get the results CSV as dataframe
         operational_results = \
             pd.read_csv(os.path.join(problem_directory, horizon,
-                                     stage, "results", "operations.csv")
+                                     stage, "results", "dispatch_all.csv")
                         )
 
         # Set the index to 'project' for the first join
@@ -288,20 +143,12 @@ def summarize_results(d, problem_directory, horizon, stage):
         # Join the dataframes (i.e. add technology, load_zone and period
         # columns)
         operational_results_df = \
-            pd.merge(
-                left=pd.DataFrame(
-                    pd.merge(left=operational_results,
-                             right=project_tech,
-                             how="left",
-                             left_index=True,
-                             right_index=True
-                             )
-                ).set_index("timepoint"),
-                right=tmp_period_horizon_weight,
-                how="left",
-                left_index=True,
-                right_index=True
-            )
+            pd.merge(left=operational_results,
+                     right=project_tech,
+                     how="left",
+                     left_index=True,
+                     right_index=True
+                     )
 
         operational_results_df["weighted_power_mwh"] = \
             operational_results_df["power_mw"] * \

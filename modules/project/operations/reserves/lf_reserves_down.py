@@ -3,10 +3,13 @@
 """
 Add project-level components for downward load-following reserves
 """
-
+import csv
+import os.path
 from modules.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results
+
+from pyomo.environ import value
 
 # Reserve-module variables
 MODULE_NAME = "lf_reserves_down"
@@ -110,14 +113,14 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def export_module_specific_results(m, d, scenario_directory, horizon, stage):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
     Export project-level results for downward load-following
-    :param m:
-    :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
+    :param m:
+    :param d:
     :return:
     """
 
@@ -132,3 +135,4 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
         RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME
     )
+

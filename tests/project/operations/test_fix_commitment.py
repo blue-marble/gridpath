@@ -16,7 +16,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
      "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity", "project.operations.operations"]
+     "project.capacity.capacity", "project.operations.operational_types",
+     "project.operations.power"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.fix_commitment"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -35,7 +36,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperationalCosts(unittest.TestCase):
+class TestFixCommitment(unittest.TestCase):
     """
 
     """

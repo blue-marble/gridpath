@@ -110,14 +110,14 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def export_module_specific_results(m, d, scenario_directory, horizon, stage):
+def export_results(scenario_directory, horizon, stage, m, d):
     """
     Export project-level results for downward regulation
-    :param m:
-    :param d:
     :param scenario_directory:
     :param horizon:
     :param stage:
+    :param m:
+    :param d:
     :return:
     """
 
