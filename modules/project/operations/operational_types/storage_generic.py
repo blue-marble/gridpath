@@ -55,7 +55,7 @@ def add_module_specific_components(m, d):
             )
 
     # Operational constraints
-    def max_power_rule(mod, s, tmp):
+    def max_discharge_rule(mod, s, tmp):
         """
 
         :param mod:
@@ -63,18 +63,16 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Generic_Storage_Discharge_MW[s, tmp] + \
-            sum(getattr(mod, c)[s, tmp]
-                for c in getattr(d, headroom_variables)[s]) \
-            <= mod.Generic_Storage_Charge_MW[s, tmp] \
-            + mod.Capacity_MW[s, mod.period[tmp]]
-    m.Storage_Generic_Max_Power_Constraint = \
+        return mod.Generic_Storage_Discharge_MW[s, tmp] \
+            <= mod.Capacity_MW[s, mod.period[tmp]]
+
+    m.Storage_Max_Discharge_Constraint = \
         Constraint(
             m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=max_power_rule
+            rule=max_discharge_rule
         )
 
-    def min_power_rule(mod, s, tmp):
+    def max_charge_rule(mod, s, tmp):
         """
 
         :param mod:
@@ -82,15 +80,125 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Generic_Storage_Charge_MW[s, tmp] + \
-            sum(getattr(mod, c)[s, tmp]
-                for c in getattr(d, footroom_variables)[s]) \
-            <= mod.Generic_Storage_Discharge_MW[s, tmp] \
-            + mod.Capacity_MW[s, mod.period[tmp]]
-    m.Storage_Generic_Min_Power_Constraint = \
+        return mod.Generic_Storage_Charge_MW[s, tmp] \
+            <= mod.Capacity_MW[s, mod.period[tmp]]
+
+    m.Storage_Generic_Max_Charge_Constraint = \
         Constraint(
             m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=min_power_rule
+            rule=max_charge_rule
+        )
+
+    # For reserves, we can also look at the additional headroom available
+    # when charging; not charging also counts as footroom
+    def max_headroom_power_rule(mod, s, tmp):
+        """
+
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return sum(getattr(mod, c)[s, tmp]
+                   for c in getattr(d, headroom_variables)[s]) \
+            <= \
+            mod.Capacity_MW[s, mod.period[tmp]] \
+            - mod.Generic_Storage_Discharge_MW[s, tmp] \
+            + mod.Generic_Storage_Charge_MW[s, tmp]
+
+    m.Storage_Generic_Max_Headroom_Power_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_headroom_power_rule
+        )
+
+    def max_footroom_power_rule(mod, s, tmp):
+        """
+
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return sum(getattr(mod, c)[s, tmp]
+                   for c in getattr(d, footroom_variables)[s]) \
+            <= mod.Generic_Storage_Discharge_MW[s, tmp] \
+            + mod.Capacity_MW[s, mod.period[tmp]] \
+            - mod.Generic_Storage_Charge_MW[s, tmp]
+
+    m.Storage_Generic_Max_Footroom_Power_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_footroom_power_rule
+        )
+
+    # Headroom and footroom energy constraints
+    # TODO: allow different sustained duration requirements; assumption here is
+    # that if reserves are called, new setpoint must be sustained for 1 hour
+    # TODO: allow derate of the net energy in the current timepoint in the
+    # headroom and footroom energy rules; in reality, reserves could be
+    # called at the very beginning or the very end of the timepoint (e.g. hour)
+    # If called at the end, we would have all the net energy (or
+    # resulting 'room in the tank') available, but if called in the beginning
+    # none of it would be available
+
+    # Can't provide more reserves (times sustained duration required) than
+    # available energy in storage (for upward reserves) in that timepoint or
+    # available capacity to store energy (for downward reserves) in that
+    # timepoint
+    def max_headroom_energy_rule(mod, s, tmp):
+        """
+        How much energy do we have available
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return sum(getattr(mod, c)[s, tmp]
+                   for c in getattr(d, headroom_variables)[s]) \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s] \
+            <= \
+            mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
+            + mod.Generic_Storage_Charge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            * mod.storage_generic_charging_efficiency[s] \
+            - mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp]  \
+            / mod.storage_generic_discharging_efficiency[s]
+
+    m.Storage_Generic_Max_Headroom_Energy_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_headroom_energy_rule
+        )
+
+    def max_footroom_energy_rule(mod, s, tmp):
+        """
+        How much room is left in the tank
+        :param mod:
+        :param s:
+        :param tmp:
+        :return:
+        """
+        return sum(getattr(mod, c)[s, tmp]
+                   for c in getattr(d, headroom_variables)[s]) \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            * mod.storage_generic_charging_efficiency[s] \
+            <= \
+            mod.Capacity_MW[s, mod.period[tmp]] - \
+            mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
+            - mod.Generic_Storage_Charge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            * mod.storage_generic_charging_efficiency[s] \
+            + mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s]
+
+    m.Storage_Generic_Max_Footroom_Energy_Constraint = \
+        Constraint(
+            m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=max_footroom_energy_rule
         )
 
     # TODO: adjust storage energy for reserves provided
@@ -112,11 +220,13 @@ def add_module_specific_components(m, d):
                     s, mod.previous_timepoint[tmp]] \
                 + mod.Generic_Storage_Charge_MW[
                       s, mod.previous_timepoint[tmp]] \
-                * mod.number_of_hours_in_timepoint[tmp] \
+                * mod.number_of_hours_in_timepoint[
+                      mod.previous_timepoint[tmp]] \
                 * mod.storage_generic_charging_efficiency[s] \
                 - mod.Generic_Storage_Discharge_MW[
                       s, mod.previous_timepoint[tmp]] \
-                * mod.number_of_hours_in_timepoint[tmp] \
+                * mod.number_of_hours_in_timepoint[
+                      mod.previous_timepoint[tmp]] \
                 / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Energy_Tracking_Constraint = \
@@ -159,6 +269,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
     :return:
     """
     return 0
+
 
 # TODO: ignoring subhourly behavior for storage for now
 def subhourly_curtailment_rule(mod, g, tmp):
@@ -271,6 +382,7 @@ def export_module_specific_results(mod, d):
     :param d:
     :return:
     """
+
     generic_storage_df = \
         make_project_time_var_df(
             mod,
@@ -280,3 +392,5 @@ def export_module_specific_results(mod, d):
             "starting_energy_in_generic_storage_mwh")
 
     d.module_specific_df.append(generic_storage_df)
+
+

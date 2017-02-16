@@ -36,7 +36,7 @@ class TestExamples(unittest.TestCase):
                                "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
-        expected_objective = 102390.80800
+        expected_objective = 102403.6400000600
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -53,7 +53,7 @@ class TestExamples(unittest.TestCase):
                                "--scenario_location", "examples",
                                "--quiet", "--mute_solver_output", "--testing"])
 
-        expected_objective = 102657.43250
+        expected_objective = 105922.15516955667
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
@@ -98,7 +98,7 @@ class TestExamples(unittest.TestCase):
                                "--scenario_location", "examples",
                                "--mute_solver_output", "--testing"])
 
-        expected_objective = 51437.89250
+        expected_objective = 54702.61516952667
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
