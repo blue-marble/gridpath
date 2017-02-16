@@ -5,10 +5,10 @@ Operations of variable generators. Can be curtailed (dispatched down).
 Can't provide reserves.
 """
 
+import csv
 import os.path
-
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
-    Expression
+    Expression, value
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -125,7 +125,7 @@ def add_module_specific_components(m, d):
         # Subhourly energy delivered from providing upward reserves
         :param mod:
         :param g:
-        :param tmp: 
+        :param tmp:
         :return:
         """
         return headroom_subhourly_energy_adjustment_rule(d=d, mod=mod, g=g,
@@ -279,54 +279,39 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                      )
 
 
-def export_module_specific_results(mod, d):
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
 
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param mod:
     :param d:
     :return:
     """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_variable.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "power_mw", "scheduled_curtailment_mw",
+                         "subhourly_curtailment_mw",
+                         "subhourly_energy_delivered_mw",
+                         "total_curtailment_mw"
+                         ])
 
-    scheduled_curtailment_df = \
-        make_project_time_var_df(
-            mod,
-            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Scheduled_Variable_Generator_Curtailment_MW",
-            ["project", "timepoint"],
-            "scheduled_curtailment_mw"
-        )
-
-    d.module_specific_df.append(scheduled_curtailment_df)
-
-    subhourly_curtailment_df = \
-        make_project_time_var_df(
-            mod,
-            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Subhourly_Variable_Generator_Curtailment_MW",
-            ["project", "timepoint"],
-            "subhourly_curtailment_mw"
-        )
-
-    d.module_specific_df.append(subhourly_curtailment_df)
-
-    subhourly_energy_delivered_df = \
-        make_project_time_var_df(
-            mod,
-            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Subhourly_Variable_Generator_Energy_Delivered_MW",
-            ["project", "timepoint"],
-            "subhourly_energy_delivered_mw"
-        )
-
-    d.module_specific_df.append(subhourly_energy_delivered_df)
-
-    total_curtailment_df = \
-        make_project_time_var_df(
-            mod,
-            "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Total_Variable_Generator_Curtailment_MW",
-            ["project", "timepoint"],
-            "total_curtailmen_mw"
-        )
-
-    d.module_specific_df.append(total_curtailment_df)
+        for (p, tmp) in mod.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.horizon[tmp],
+                tmp,
+                mod.horizon_weight[mod.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                value(mod.Provide_Variable_Power_MW[p, tmp]),
+                value(mod.Scheduled_Variable_Generator_Curtailment_MW[p, tmp]),
+                value(mod.Subhourly_Variable_Generator_Curtailment_MW[p, tmp]),
+                value(mod.Subhourly_Variable_Generator_Energy_Delivered_MW[
+                          p, tmp]),
+                value(mod.Total_Variable_Generator_Curtailment_MW[p, tmp])
+            ])

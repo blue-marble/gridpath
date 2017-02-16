@@ -4,16 +4,17 @@
 
 """
 
-from csv import reader
+import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, NonNegativeReals, PercentFraction
+from pyomo.environ import Set, Param, Var, NonNegativeReals, \
+    PercentFraction, value
 
 from modules.auxiliary.dynamic_components import required_reserve_modules, \
     reserve_variable_derate_params, \
     reserve_provision_subhourly_adjustment_params
 from modules.auxiliary.auxiliary import check_list_items_are_unique, \
-    find_list_item_position, make_project_time_var_df
+    find_list_item_position
 
 
 def generic_determine_dynamic_components(
@@ -46,7 +47,7 @@ def generic_determine_dynamic_components(
 
     with open(os.path.join(scenario_directory, "inputs", "projects.tab"),
               "rb") as projects_file:
-        projects_file_reader = reader(projects_file, delimiter="\t")
+        projects_file_reader = csv.reader(projects_file, delimiter="\t")
         headers = projects_file_reader.next()
         # Check that columns are not repeated
         check_list_items_are_unique(headers)
@@ -217,25 +218,35 @@ def generic_load_model_data(
 
 
 def generic_export_module_specific_results(
-        m, d,
+        m, d, scenario_directory, horizon, stage,
+        module_name,
         reserve_project_operational_timepoints_set,
-        reserve_provision_variable_name,
-        column_name):
+        reserve_provision_variable_name):
     """
     Export project-level reserves results
     :param m:
     :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param module_name:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
-    :param column_name:
     :return:
     """
-    reserves_dataframe = \
-        make_project_time_var_df(
-            m,
-            reserve_project_operational_timepoints_set,
-            reserve_provision_variable_name,
-            ["project", "timepoint"],
-            column_name
-        )
-    d.module_specific_df.append(reserves_dataframe)
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_" + module_name + ".csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "reserve_provision_mw"])
+        for (p, tmp) in getattr(m, reserve_project_operational_timepoints_set):
+            writer.writerow([
+                p,
+                m.period[tmp],
+                m.horizon[tmp],
+                tmp,
+                m.horizon_weight[m.horizon[tmp]],
+                m.number_of_hours_in_timepoint[tmp],
+                value(getattr(m, reserve_provision_variable_name)[p, tmp])
+            ])

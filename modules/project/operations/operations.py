@@ -3,10 +3,10 @@
 """
 Describe operational constraints on the generation infrastructure.
 """
-from functools import reduce
+import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Expression
+from pyomo.environ import Expression, value
 
 from modules.auxiliary.dynamic_components import \
     required_operational_modules, load_balance_production_components, \
@@ -157,51 +157,49 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
 
-    # Make pandas dataframes for the various operations variables results
-
     # First power
-    power_df = make_project_time_var_df(
-        m,
-        "PROJECT_OPERATIONAL_TIMEPOINTS",
-        "Power_Provision_MW",
-        ["project", "timepoint"],
-        "power_mw"
-        )
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_all.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "power_mw"])
+        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                m.period[tmp],
+                m.horizon[tmp],
+                tmp,
+                m.horizon_weight[m.horizon[tmp]],
+                m.number_of_hours_in_timepoint[tmp],
+                value(m.Power_Provision_MW[p, tmp])
+            ])
 
-    # Then get results from the various modules
-    d.module_specific_df = []
-
-    # From the operational type modules
+    # Next, export module-specific results
+    # Operational type modules
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
     for op_m in getattr(d, required_operational_modules):
         if hasattr(imported_operational_modules[op_m],
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
-                export_module_specific_results(m, d)
+                export_module_specific_results(
+                m, d, scenario_directory, horizon, stage,
+            )
         else:
             pass
 
-    # From the reserve modules
+    # Reserve modules
     imported_reserve_modules = \
         load_reserve_type_modules(getattr(d, required_reserve_modules))
     for r_m in getattr(d, required_reserve_modules):
         if hasattr(imported_reserve_modules[r_m],
                    "export_module_specific_results"):
-            imported_reserve_modules[r_m].export_module_specific_results(m, d)
+            imported_reserve_modules[r_m].export_module_specific_results(
+                m, d, scenario_directory, horizon, stage
+            )
         else:
             pass
-
-    # Join all the dataframes and export results
-    dfs_to_join = [power_df] + d.module_specific_df
-
-    df_for_export = reduce(lambda left, right:
-                           left.join(right, how="outer"),
-                           dfs_to_join)
-    df_for_export.to_csv(
-        os.path.join(scenario_directory, horizon, stage, "results",
-                     "operations.csv"),
-        header=True, index=True)
 
 
 def summarize_results(d, problem_directory, horizon, stage):

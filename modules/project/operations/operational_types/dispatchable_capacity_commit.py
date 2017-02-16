@@ -9,14 +9,13 @@ Integer commitment is not enforced as capacity commitment with this approach is
 continuous.
 """
 
+import csv
 import os.path
-
 from pandas import read_csv
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    PercentFraction
+    PercentFraction, value
 
-from modules.auxiliary.auxiliary import generator_subset_init, \
-    make_project_time_var_df
+from modules.auxiliary.auxiliary import generator_subset_init
 from modules.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -138,7 +137,7 @@ def commitment_rule(mod, g, tmp):
 
 def scheduled_curtailment_rule(mod, g, tmp):
     """
-    No 'curtailment' -- simply dispatch down
+    No 'curtailment' -- simply dispatch down and use energy (fuel) later
     :param mod:
     :param g:
     :param tmp:
@@ -285,21 +284,35 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         min_stable_fraction
 
 
-def export_module_specific_results(mod, d):
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
-    Export commitment decisions.
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param mod:
     :param d:
     :return:
     """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_capacity_commit.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "power_mw", "committed_mw", "committed_units"
+                         ])
 
-    commit_capacity_df = \
-        make_project_time_var_df(
-            mod,
-            "DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Commit_Capacity_MW",
-            ["project", "timepoint"],
-            "commit_capacity_mw"
-        )
-
-    d.module_specific_df.append(commit_capacity_df)
+        for (p, tmp) \
+                in mod. \
+                DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.horizon[tmp],
+                tmp,
+                mod.horizon_weight[mod.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                value(mod.Provide_Power_DispCapacityCommit_MW[p, tmp]),
+                value(mod.Commit_Capacity_MW[p, tmp]),
+                value(mod.Commit_Capacity_MW[p, tmp])/mod.unit_size_mw[p]
+            ])

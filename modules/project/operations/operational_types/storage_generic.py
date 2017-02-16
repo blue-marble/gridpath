@@ -4,13 +4,13 @@
 Operations of generic storage
 """
 
+import csv
 import os.path
 from pandas import read_csv
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    PercentFraction
+    PercentFraction, value
 
-from modules.auxiliary.auxiliary import generator_subset_init, \
-    make_project_time_var_df
+from modules.auxiliary.auxiliary import generator_subset_init
 from modules.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -375,22 +375,32 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         determine_efficiencies()[1]
 
 
-def export_module_specific_results(mod, d):
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
 
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param mod:
     :param d:
     :return:
     """
-
-    generic_storage_df = \
-        make_project_time_var_df(
-            mod,
-            "STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS",
-            "Starting_Energy_in_Generic_Storage_MWh",
-            ["project", "timepoint"],
-            "starting_energy_in_generic_storage_mwh")
-
-    d.module_specific_df.append(generic_storage_df)
-
-
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_storage_generic.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "starting_energy_mwh",
+                         "charge_mw", "discharge_mw"])
+        for (p, tmp) in mod.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.horizon[tmp],
+                tmp,
+                mod.horizon_weight[mod.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                value(mod.Starting_Energy_in_Generic_Storage_MWh[p, tmp]),
+                value(mod.Generic_Storage_Charge_MW[p, tmp]),
+                value(mod.Generic_Storage_Discharge_MW[p, tmp])
+            ])

@@ -3,10 +3,11 @@
 """
 Operations of must-run generators. Can't provide reserves.
 """
+import csv
 import os.path
 from pandas import read_csv
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
-    Binary, PercentFraction
+    Binary, PercentFraction, value
 
 from modules.auxiliary.auxiliary import generator_subset_init, \
     make_project_time_var_df
@@ -240,20 +241,36 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         min_stable_fraction
 
 
-def export_module_specific_results(mod, d):
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
-    Export commitment decisions.
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param mod:
     :param d:
     :return:
     """
-    binary_commit_df = \
-        make_project_time_var_df(
-            mod,
-            "DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS",
-            "Commit_Binary",
-            ["project", "timepoint"],
-            "commit_binary"
-        )
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_binary_commit.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "power_mw", "committed_mw", "committed_units"
+                         ])
 
-    d.module_specific_df.append(binary_commit_df)
+        for (p, tmp) \
+                in mod. \
+                DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.horizon[tmp],
+                tmp,
+                mod.horizon_weight[m.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp]),
+                value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp])
+                * value(mod.Commit_Binary[p, tmp]),
+                value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp])
+            ])

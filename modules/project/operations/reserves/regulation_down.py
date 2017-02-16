@@ -88,19 +88,25 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def export_module_specific_results(m, d):
+def export_module_specific_results(m, d, scenario_directory, horizon, stage):
     """
     Export project-level results for downward load-following
     :param m:
     :param d:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :return:
     """
 
     generic_export_module_specific_results(
         m=m,
         d=d,
+        scenario_directory=scenario_directory,
+        horizon=horizon,
+        stage=stage,
+        module_name="regulation_down",
         reserve_project_operational_timepoints_set=
         "REGULATION_DOWN_PROJECT_OPERATIONAL_TIMEPOINTS",
-        reserve_provision_variable_name="Provide_Regulation_Down_MW",
-        column_name="regulation_down_mw"
+        reserve_provision_variable_name="Provide_Regulation_Down_MW"
     )
