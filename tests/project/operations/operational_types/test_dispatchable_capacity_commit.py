@@ -486,5 +486,35 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
+        # Param: ramp_rate_up_frac_of_capacity
+        expected_ramp_up_rate = {
+            "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,
+            "Gas_CT_New": 0.8, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+            "Gas_CT_z2": 1
+        }
+        actual_ramp_down_rate = {
+            prj: instance.dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour[
+                prj]
+            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_up_rate,
+                             actual_ramp_down_rate
+                             )
+        
+        # Param: ramp_rate_down_frac_of_capacity
+        expected_ramp_down_rate = {
+            "Gas_CCGT": 0.5, "Coal": 0.3, "Gas_CT": 0.2, "Gas_CCGT_New": 0.8,
+            "Gas_CT_New": 0.5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+            "Gas_CT_z2": 1
+        }
+        actual_ramp_down_rate = {
+            prj: instance.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour[
+                prj]
+            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_down_rate,
+                             actual_ramp_down_rate
+                             )
+
 if __name__ == "__main__":
     unittest.main()

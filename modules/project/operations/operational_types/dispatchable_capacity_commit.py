@@ -11,9 +11,9 @@ continuous.
 
 import csv
 import os.path
-from pandas import read_csv
+import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    PercentFraction, value
+    PercentFraction, Expression, value
 
 from modules.auxiliary.auxiliary import generator_subset_init
 from modules.auxiliary.dynamic_components import headroom_variables, \
@@ -48,6 +48,12 @@ def add_module_specific_components(m, d):
     m.disp_cap_commit_min_stable_level_fraction = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction)
+    m.dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=PercentFraction, default=1)
+    m.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=PercentFraction, default=1)
 
     # Variables
     m.Provide_Power_DispCapacityCommit_MW = \
@@ -111,6 +117,93 @@ def add_module_specific_components(m, d):
             rule=min_power_rule
         )
 
+    # Optional
+    # Constrain ramps
+
+    def ramp_up_constraint_rule(mod, g, tmp):
+        """
+        The ramp up (power provided in the current timepoint minus power
+        provided in the previous timepoint) cannot exceed a prespecified
+        ramp rate (expressed as fraction of capacity)
+        Two components:
+        1) if we are turning generators on, we will allow the extra ramp of
+        going from 0 to minimum stable level (if generators are turning off,
+        the ramp up allowed is reduced since committed capacity in current
+        minus committed capacity in previous timepoint will be negative)
+        2) units committed in the current timepoint could have ramped up at a
+        certain rate since the previous timepoint
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        elif mod.dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour[g] >= \
+                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
+            return Constraint.Skip  # constraint won't bind, so don't create
+        else:
+            return (
+                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+                - mod.Provide_Power_DispCapacityCommit_MW[
+                g, mod.previous_timepoint[tmp]]
+                   ) \
+                / mod.number_of_hours_in_timepoint[tmp] \
+                <= \
+                (mod.Commit_Capacity_MW[g, tmp]
+                    - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
+                * mod.disp_cap_commit_min_stable_level_fraction[g] \
+                + \
+                mod.Commit_Capacity_MW[g, tmp] \
+                * mod.dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour[g]
+    m.DispCapCommit_Ramp_Up_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_up_constraint_rule
+    )
+
+    def ramp_down_constraint_rule(mod, g, tmp):
+        """
+        The ramp down (power provided in the current timepoint minus power
+        provided in the previous timepoint) cannot exceed a prespecified
+        ramp rate (expressed as fraction of capacity)
+        Two components:
+        1) if we are turning generators off, we will allow the extra ramp of
+        going from minimum stable level to 0 (if generators are turning on,
+        the ramp up allowed is reduced since committed capacity in current
+        minus committed capacity in previous timepoint will be positive)
+        2) units committed in the current timepoint could have ramped down at a
+        certain rate since the previous timepoint
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        elif mod.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour[g] >= \
+                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
+            return Constraint.Skip  # constraint won't bind, so don't create
+        else:
+            return (
+                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+                - mod.Provide_Power_DispCapacityCommit_MW[
+                g, mod.previous_timepoint[tmp]]
+                   ) \
+                / mod.number_of_hours_in_timepoint[tmp] \
+                >= \
+                (mod.Commit_Capacity_MW[g, tmp]
+                    - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
+                * mod.disp_cap_commit_min_stable_level_fraction[g] \
+                + \
+                mod.Commit_Capacity_MW[g, tmp] \
+                * \
+                - mod.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour[g]
+    m.DispCapCommit_Ramp_Down_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_down_constraint_rule
+    )
 
 def power_provision_rule(mod, g, tmp):
     """
@@ -263,12 +356,25 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     unit_size_mw = dict()
     min_stable_fraction = dict()
+    ramp_rate_up = dict()
+    ramp_rate_down = dict()
+
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "projects.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+
+    optional_columns = ["ramp_rate_up_frac_of_capacity_per_hour",
+                        "ramp_rate_down_frac_of_capacity_per_hour"]
+    used_columns = [c for c in optional_columns if c in header]
+
     dynamic_components = \
-        read_csv(
+        pd.read_csv(
             os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", usecols=["project", "operational_type",
-                               "unit_size_mw", "min_stable_level_fraction"]
+            sep="\t", 
+            usecols=["project", "operational_type", "unit_size_mw", 
+                     "min_stable_level_fraction"] + used_columns
             )
+
     for row in zip(dynamic_components["project"],
                    dynamic_components["operational_type"],
                    dynamic_components["unit_size_mw"],
@@ -283,6 +389,34 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["disp_cap_commit_min_stable_level_fraction"] = \
         min_stable_fraction
 
+    # Ramp rate limits are optional
+    if "ramp_rate_up_frac_of_capacity_per_hour" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "ramp_rate_up_frac_of_capacity_per_hour"]
+                       ):
+            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+                ramp_rate_up[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour"] = \
+            ramp_rate_up
+
+    if "ramp_rate_down_frac_of_capacity_per_hour" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "ramp_rate_down_frac_of_capacity_per_hour"]
+                       ):
+            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+                ramp_rate_down[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour"] = \
+            ramp_rate_down
 
 def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """

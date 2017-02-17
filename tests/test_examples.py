@@ -432,5 +432,44 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
+    def test_example_test_ramp_up_constraints(self):
+        """
+        Check objective function value of "test_ramp_up_constraints" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_ramp_up_constraints",
+                 "--scenario_location", "examples",
+                 "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 67482.61333333331
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_test_ramp_up_and_down_constraints(self):
+        """
+        Check objective function value of "test_ramp_up_and_down_constraints"
+        example; this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_ramp_up_and_down_constraints",
+                 "--scenario_location", "examples",
+                 "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 168075558.92000
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
 if __name__ == "__main__":
     unittest.main()
