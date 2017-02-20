@@ -13,7 +13,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    PercentFraction, Expression, value
+    PercentFraction, Expression, Integers, value
 
 from modules.auxiliary.auxiliary import generator_subset_init
 from modules.auxiliary.dynamic_components import headroom_variables, \
@@ -54,11 +54,19 @@ def add_module_specific_components(m, d):
     m.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
+    m.dispcapcommit_min_up_time_hours = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=Integers, default=1)
+    m.dispcapcommit_min_down_time_hours = \
+        Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
+              within=Integers, default=1)
 
     # Variables
+    # Dispatch
     m.Provide_Power_DispCapacityCommit_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
+    # Commitment
     m.Commit_Capacity_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals
@@ -204,6 +212,146 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_constraint_rule
     )
+
+    # Constrain up and down time
+    # Startup and shutdown variables, must be non-negative
+    m.DispCapCommit_Startup_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
+    )
+    m.DispCapCommit_Shutdown_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
+    )
+
+    def startup_constraint_rule(mod, g, tmp):
+        """
+        When units are shut off, DispCapCommit_Startup_MW will be 0 (as it
+        has to be non-negative)
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.DispCapCommit_Startup_MW[g, tmp] \
+                >= mod.Commit_Capacity_MW[g, tmp] \
+                - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
+
+    m.DispCapCommit_Startup_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=startup_constraint_rule
+    )
+
+    def shutdown_constraint_rule(mod, g, tmp):
+        """
+        When units are turned on, DispCapCommit_Shutdown_MW will be 0 (as it
+        has to be non-negative)
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.DispCapCommit_Shutdown_MW[g, tmp] \
+                >= mod.Commit_Capacity_MW[g, tmp] \
+                - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
+
+    m.DispCapCommit_Shutdown_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_constraint_rule
+    )
+
+    def min_up_time_constraint_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        # TODO: enforce subhourly?
+        elif mod.dispcapcommit_min_up_time_hours[g] <= 1:
+            return Constraint.Skip
+        else:
+            relevant_tmps = list()
+            current_tmp = tmp
+
+            for n in range(1,
+                           int(mod.dispcapcommit_min_up_time_hours[g] /
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
+                relevant_tmps.append(current_tmp)
+                # If horizon is 'linear' and we reach the first timepoint,
+                # skip the constraint
+                if current_tmp == mod.first_horizon_timepoint[mod.horizon[
+                    tmp]] \
+                        and mod.boundary[mod.horizon[tmp]] == "linear":
+                    return Constraint.Skip
+                else:
+                    current_tmp = mod.previous_timepoint[current_tmp]
+
+            units_turned_on_min_up_time_or_less_hours_ago = \
+                sum(mod.DispCapCommit_Startup_MW[g, tp]
+                    for tp in relevant_tmps)
+
+            return mod.Commit_Capacity_MW[g, tmp] \
+                >= units_turned_on_min_up_time_or_less_hours_ago
+
+    m.DispCapCommit_Min_Up_Time_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_up_time_constraint_rule
+    )
+
+    def min_down_time_constraint_rule(mod, g, tmp):
+        """
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        # TODO: enforce subhourly?
+        if mod.dispcapcommit_min_up_time_hours[g] <= 1:
+            return Constraint.Skip
+        else:
+            relevant_tmps = list()
+            current_tmp = tmp
+
+            for n in range(1,
+                           int(mod.dispcapcommit_min_down_time_hours[g] /
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
+                relevant_tmps.append(current_tmp)
+                # If horizon is 'linear' and we reach the first timepoint,
+                # skip the constraint
+                if current_tmp == mod.first_horizon_timepoint[mod.horizon[
+                    tmp]] \
+                        and mod.boundary[mod.horizon[tmp]] == "linear":
+                    return Constraint.Skip
+                else:
+                    current_tmp = mod.previous_timepoint[current_tmp]
+
+            units_turned_off_min_up_time_or_less_hours_ago = \
+                sum(mod.DispCapCommit_Shutdown_MW[g, tp]
+                    for tp in relevant_tmps)
+
+            return mod.Capacity_MW[g, mod.period[tmp]] \
+                - mod.Commit_Capacity_MW[g, tmp] \
+                >= units_turned_off_min_up_time_or_less_hours_ago
+
+    m.DispCapCommit_Min_Down_Time_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_down_time_constraint_rule
+    )
+
 
 def power_provision_rule(mod, g, tmp):
     """
@@ -358,13 +506,16 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     min_stable_fraction = dict()
     ramp_rate_up = dict()
     ramp_rate_down = dict()
+    min_up_time = dict()
+    min_down_time = dict()
 
     header = pd.read_csv(os.path.join(scenario_directory, "inputs",
                                       "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
     optional_columns = ["ramp_rate_up_frac_of_capacity_per_hour",
-                        "ramp_rate_down_frac_of_capacity_per_hour"]
+                        "ramp_rate_down_frac_of_capacity_per_hour",
+                        "min_up_time_hours", "min_down_time_hours"]
     used_columns = [c for c in optional_columns if c in header]
 
     dynamic_components = \
@@ -389,7 +540,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["disp_cap_commit_min_stable_level_fraction"] = \
         min_stable_fraction
 
-    # Ramp rate limits are optional
+    # Ramp rate limits are optional, will default to 1 if not specified
     if "ramp_rate_up_frac_of_capacity_per_hour" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
@@ -417,6 +568,36 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour"] = \
             ramp_rate_down
+        
+    # Up and down time limits are optional, will default to 1 if not specified
+    if "min_up_time_hours" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "min_up_time_hours"]
+                       ):
+            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+                min_up_time[row[0]] = int(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "dispcapcommit_min_up_time_hours"] = \
+            min_up_time
+        
+    if "min_down_time_hours" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "min_down_time_hours"]
+                       ):
+            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+                min_down_time[row[0]] = int(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "dispcapcommit_min_down_time_hours"] = \
+            min_down_time
+
 
 def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """

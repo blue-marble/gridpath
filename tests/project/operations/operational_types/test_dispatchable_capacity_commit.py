@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -486,7 +487,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
-        # Param: ramp_rate_up_frac_of_capacity
+        # Param: dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour
         expected_ramp_up_rate = {
             "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,
             "Gas_CT_New": 0.8, "Gas_CCGT_z2": 1, "Coal_z2": 1,
@@ -501,7 +502,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_ramp_down_rate
                              )
         
-        # Param: ramp_rate_down_frac_of_capacity
+        # Param: dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour
         expected_ramp_down_rate = {
             "Gas_CCGT": 0.5, "Coal": 0.3, "Gas_CT": 0.2, "Gas_CCGT_New": 0.8,
             "Gas_CT_New": 0.5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
@@ -514,6 +515,42 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         }
         self.assertDictEqual(expected_ramp_down_rate,
                              actual_ramp_down_rate
+                             )
+
+        # Param: dispcapcommit_min_up_time_hours
+        expected_min_up_time = OrderedDict(
+            sorted({"Gas_CCGT": 3, "Coal": 2, "Gas_CT": 5, "Gas_CCGT_New": 8,
+                    "Gas_CT_New": 5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+                    "Gas_CT_z2": 1}.items()
+                   )
+        )
+        actual_min_up_time = OrderedDict(
+            sorted(
+                {prj: instance.dispcapcommit_min_up_time_hours[prj]
+                 for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_up_time,
+                             actual_min_up_time
+                             )
+
+        # Param: dispcapcommit_min_down_time_hours
+        expected_min_down_time = OrderedDict(
+            sorted({"Gas_CCGT": 7, "Coal": 10, "Gas_CT": 3, "Gas_CCGT_New": 5,
+                    "Gas_CT_New": 2, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+                    "Gas_CT_z2": 1}.items()
+                   )
+        )
+        actual_min_down_time = OrderedDict(
+            sorted(
+                {prj: instance.dispcapcommit_min_down_time_hours[prj]
+                 for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_min_down_time,
+                             actual_min_down_time
                              )
 
 if __name__ == "__main__":
