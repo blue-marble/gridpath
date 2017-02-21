@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
 Operations of dispatchable generators with 'capacity commitment,' i.e.

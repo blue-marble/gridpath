@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from reserve_requirements import generic_add_model_components, \
     generic_load_model_data, generic_export_results, generic_save_duals

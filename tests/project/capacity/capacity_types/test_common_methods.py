@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from importlib import import_module
 import unittest

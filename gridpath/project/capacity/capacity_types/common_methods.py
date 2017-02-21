@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 
 # TODO: if vintage is 2020 and lifetime is 30, is the project available in

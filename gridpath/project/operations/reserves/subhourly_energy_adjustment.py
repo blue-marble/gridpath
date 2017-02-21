@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 from gridpath.auxiliary.dynamic_components import \
     headroom_variables, footroom_variables, \
     reserve_provision_subhourly_adjustment_params
