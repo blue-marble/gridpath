@@ -275,7 +275,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
                                            "inputs",
                                            "variable_generator_profiles.tab"),
-                     index=(mod.VARIABLE_GENERATORS, mod.TIMEPOINTS),
+                     index=mod.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                      param=mod.cap_factor
                      )
 
