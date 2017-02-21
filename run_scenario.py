@@ -169,9 +169,13 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
 
-    # TODO: this should be an option
-    # Write temporary files to logs directory
-    TempfileManager.tempdir = logs_directory
+    # Write temporary files to logs directory if directed to do so
+    # This can be useful for debugging in conjunction with the --keepfiles
+    # and --symbolic arguments
+    if parsed_arguments.write_solver_files_to_logs_dir:
+        TempfileManager.tempdir = logs_directory
+    else:
+        pass
 
     modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
         create_and_solve_problem(scenario_directory, horizon, stage,
@@ -652,8 +656,12 @@ def parse_arguments(arguments):
     parser.add_argument("--mute_solver_output", default=True,
                         action="store_false",
                         help="Don't print solver output if set to true.")
+    parser.add_argument("--write_solver_files_to_logs_dir", default=False,
+                        action="store_true", help="Write the temporary "
+                                                  "solver files to the logs "
+                                                  "directory.")
     parser.add_argument("--keepfiles", default=False, action="store_true",
-                        help="Save temporary solver files in logs directory.")
+                        help="Save temporary solver files.")
     parser.add_argument("--symbolic", default=False, action="store_true",
                         help="Use symbolic labels in solver files.")
 
