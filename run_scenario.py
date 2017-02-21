@@ -12,7 +12,7 @@ from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyutilib.services import TempfileManager
 import sys
 
-from modules.auxiliary.dynamic_components import DynamicComponents
+from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
 class ScenarioStructure(object):
@@ -315,7 +315,7 @@ def load_modules(modules_to_use):
     loaded_modules = list()
     for m in modules_to_use:
         try:
-            imported_module = import_module("."+m, package='modules')
+            imported_module = import_module("."+m, package='gridpath')
             loaded_modules.append(imported_module)
         except ImportError:
             print("ERROR! Module " + str(m) + " not found.")

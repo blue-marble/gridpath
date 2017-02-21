@@ -20,7 +20,7 @@ NAME_OF_MODULE_BEING_TESTED = "project.capacity.capacity"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package="modules")
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
@@ -28,7 +28,7 @@ for mdl in PREREQUISITE_MODULE_NAMES:
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package="modules")
+                                        package="gridpath")
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
@@ -64,7 +64,7 @@ class TestCapacity(unittest.TestCase):
 
     def test_derived_data(self):
         """
-        Capacity-type modules should have added appropriate data;
+        Capacity-type gridpath should have added appropriate data;
         make sure it is all as expected
         :return:
         """

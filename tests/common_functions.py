@@ -1,5 +1,5 @@
 from pyomo.environ import AbstractModel, DataPortal
-from modules.auxiliary.dynamic_components import DynamicComponents
+from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
 def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,

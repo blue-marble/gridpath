@@ -1,7 +1,7 @@
 from pyomo.environ import AbstractModel
 import unittest
 
-import modules.auxiliary.auxiliary as auxiliary_module_to_test
+import gridpath.auxiliary.auxiliary as auxiliary_module_to_test
 
 
 class TestAuxiliary(unittest.TestCase):

@@ -9,7 +9,7 @@ NAME_OF_MODULE_BEING_TESTED = \
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='modules')
+                                        package='gridpath')
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
