@@ -10,14 +10,13 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity"]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.power"
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
+                             "temporal.operations.horizons",
+                             "temporal.investment.periods"]
+NAME_OF_MODULE_BEING_TESTED = "geography.rps_zones"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -35,7 +34,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperations(unittest.TestCase):
+class TestRPSZones(unittest.TestCase):
     """
 
     """
@@ -63,5 +62,21 @@ class TestOperations(unittest.TestCase):
                                      stage=""
                                      )
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_data_loaded_correctly(self):
+        """
+        Test components initialized with data as expected
+        :return:
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            horizon="",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        # Set: RPS_ZONES
+        expected_rps_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
+        actual_rps_zones = sorted([z for z in instance.RPS_ZONES])
+        self.assertListEqual(expected_rps_zones, actual_rps_zones)

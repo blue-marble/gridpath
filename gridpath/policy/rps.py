@@ -21,47 +21,10 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.RPS_ZONES = Set()
     m.RPS_ZONE_PERIODS_WITH_RPS = \
         Set(dimen=2, within=m.RPS_ZONES * m.PERIODS)
     m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS,
                              within=NonNegativeReals)
-
-    m.RPS_PROJECTS = Set(within=m.PROJECTS)
-    m.rps_zone = Param(m.RPS_PROJECTS, within=m.RPS_ZONES)
-
-    def determine_rps_generators_by_rps_zone(mod, rps_z):
-        return [p for p in mod.RPS_PROJECTS if mod.rps_zone[p] == rps_z]
-
-    m.RPS_PROJECTS_BY_RPS_ZONE = \
-        Set(m.RPS_ZONES, within=m.RPS_PROJECTS,
-            initialize=determine_rps_generators_by_rps_zone)
-
-    def rps_energy_provision_rule(mod, z, p):
-        """
-        Calculate the delivered RPS energy for each zone and period
-        Scheduled power provision (available energy minus reserves minus
-        scheduled curtailment) + subhourly delivered energy (from
-        providing upward reserves) - subhourly curtailment (from providing
-        downward reserves)
-        :param mod:
-        :param z:
-        :param p:
-        :return:
-        """
-        return \
-            sum((mod.Power_Provision_MW[g, tmp]
-                 + mod.Subhourly_Energy_Delivered_MW[g,tmp]
-                 - mod.Subhourly_Curtailment_MW[g, tmp])
-                * mod.number_of_hours_in_timepoint[tmp]
-                * mod.horizon_weight[mod.horizon[tmp]]
-                for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-                )
-
-    m.Total_Delivered_RPS_Energy_MWh = \
-        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
-                   rule=rps_energy_provision_rule)
 
     def rps_target_rule(mod, z, p):
         """
@@ -77,52 +40,24 @@ def add_model_components(m, d):
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
 
-    def total_curtailed_rps_energy_rule(mod, z, p):
-        """
-        Calculate how much RPS-eligible energy was curtailed in each RPS zone
-        in each period
-        :param mod:
-        :param z:
-        :param p:
-        :return:
-        """
-        return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
-                    mod.Subhourly_Curtailment_MW[g, tmp] -
-                    mod.Subhourly_Energy_Delivered_MW[g, tmp])
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   for g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
-    # TODO: is this only needed for export and, if so, should it be created on
-    # export?
-    m.Total_Curtailed_RPS_Energy_MWh = \
-        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
-                   rule=total_curtailed_rps_energy_rule)
-
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    """
 
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs", "rps_zones.tab"),
-                     set=m.RPS_ZONES
-                     )
-
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
                                            "inputs", "rps_targets.tab"),
                      index=m.RPS_ZONE_PERIODS_WITH_RPS,
                      param=m.rps_target_mwh,
                      select=("rps_zone", "period", "rps_target_mwh")
                      )
-
-    data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs", "projects.tab"),
-                     select=("project", "rps_zone"),
-                     param=(m.rps_zone,)
-                     )
-
-    data_portal.data()['RPS_PROJECTS'] = {
-        None: data_portal.data()['rps_zone'].keys()
-    }
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

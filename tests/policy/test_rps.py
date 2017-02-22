@@ -17,11 +17,12 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "temporal.operations.horizons",
                              "temporal.investment.periods",
-                             "geography.load_zones",
+                              "geography.load_zones",
+                             "geography.rps_zones",
                              "project", "project.capacity.capacity",
                              "project.operations.operational_types",
-                             "project.operations.power",
-                             "project.operations.curtailment"]
+                             "project.operations.aggregate_power",
+                             "project.operations.aggregate_recs"]
 NAME_OF_MODULE_BEING_TESTED = "policy.rps"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -81,11 +82,6 @@ class TestRPS(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
-
-        # Set: RPS_ZONES
-        expected_rps_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
-        actual_rps_zones = sorted([z for z in instance.RPS_ZONES])
-        self.assertListEqual(expected_rps_zones, actual_rps_zones)
 
         # Set: RPS_ZONE_PERIODS_WITH_RPS
         expected_rps_zone_periods = sorted([
