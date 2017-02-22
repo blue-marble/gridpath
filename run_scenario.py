@@ -248,6 +248,7 @@ def get_modules(scenario_directory):
         "geography.regulation_up_balancing_areas",
         "geography.regulation_down_balancing_areas",
         "geography.rps_zones",
+        "system.load_balance.static_load_requirement",
         'project',
         "project.capacity.capacity",
         "project.capacity.costs",
