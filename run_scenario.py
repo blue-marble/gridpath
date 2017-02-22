@@ -270,7 +270,7 @@ def get_modules(scenario_directory):
         "system.reserves.regulation_up",
         "system.reserves.lf_reserves_down",
         "system.reserves.regulation_down",
-        "policy.rps",
+        "system.policy.rps",
         "objective.min_total_cost"
     ]
 
@@ -302,7 +302,7 @@ def get_modules(scenario_directory):
              "system.reserves.regulation_down"],
         "rps":
             ["geography.rps_zones", "project.operations.aggregate_recs",
-             "policy.rps"]
+             "system.policy.rps"]
     }
 
     # Remove any modules not requested by user

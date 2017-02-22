@@ -11,7 +11,7 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
@@ -23,7 +23,7 @@ PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "project.operations.operational_types",
                              "project.operations.aggregate_power",
                              "project.operations.aggregate_recs"]
-NAME_OF_MODULE_BEING_TESTED = "policy.rps"
+NAME_OF_MODULE_BEING_TESTED = "system.policy.rps"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
