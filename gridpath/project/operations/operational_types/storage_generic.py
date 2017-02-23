@@ -42,6 +42,8 @@ def add_module_specific_components(m, d):
     m.storage_generic_discharging_efficiency = \
         Param(m.STORAGE_GENERIC_PROJECTS, within=PercentFraction)
 
+    m.losses_factor_in_rps = Param(default=1)
+
     # Variables
     m.Generic_Storage_Discharge_MW = \
         Var(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -275,7 +277,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for storage for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    Can't provide reserves
+
     :param mod:
     :param g:
     :param tmp:
@@ -286,13 +288,35 @@ def subhourly_curtailment_rule(mod, g, tmp):
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    Can't provide reserves
+
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
     return 0
+
+
+def rec_provision_rule(mod, g, tmp):
+    """
+    If modeled as eligible for RPS, losses incurred by storage (the sum
+    over all timepoints of total discharging minus total charging) will count
+    against the RPS (i.e. increase RPS requirement). By default all losses
+    count against the RPS, but this can be derated with the
+    losses_factor_in_rps parameter (can be between 0 and 1 with default of 1).
+    Storage MUST be modeled as eligible for RPS for this rule to apply.
+    Modeling storage this way can be necessary to avoid having storage behave
+    as load (e.g. by charging and discharging at the same time) in order to
+    absorb RPS-eligible energy that would otherwise be curtailed, making it
+    appear as if it were delivered to load.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return (mod.Generic_Storage_Discharge_MW[g, tmp] -
+            mod.Generic_Storage_Charge_MW[g, tmp]) \
+        * mod.losses_factor_in_rps
 
 
 def fuel_cost_rule(mod, g, tmp):

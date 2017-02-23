@@ -108,6 +108,17 @@ def commitment_rule(mod, g, tmp):
     return mod.Commit_Continuous[g, tmp]
 
 
+def rec_provision_rule(mod, g, tmp):
+    """
+    REC provision from dispatchable generators is an endogenous variable.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Provide_Power_DispContinuousCommit_MW[g, tmp]
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down

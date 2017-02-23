@@ -40,6 +40,17 @@ def power_provision_rule(mod, g, tmp):
     return mod.Capacity_MW[g, mod.period[tmp]]
 
 
+def rec_provision_rule(mod, g, tmp):
+    """
+    REC provision for must-run generators, if eligible, is their capacity.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]]
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Can't dispatch down and curtailment not allowed

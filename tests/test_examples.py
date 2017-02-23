@@ -473,5 +473,43 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
+    def test_example_2periods_new_build_rps_w_rps_ineligible_storage(self):
+        """
+        Check objective function value of
+        "2periods_new_build_rps_w_rps_ineligible_storage" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_new_build_rps_w_rps_ineligible_storage",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 940371813.2241585
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
+        """
+        Check objective function value of
+        "2periods_new_build_rps_w_rps_eligible_storage" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_new_build_rps_w_rps_eligible_storage",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 945001614.7902235
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
 if __name__ == "__main__":
     unittest.main()

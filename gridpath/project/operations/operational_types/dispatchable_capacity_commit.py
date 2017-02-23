@@ -365,6 +365,17 @@ def power_provision_rule(mod, g, tmp):
     return mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
 
 
+def rec_provision_rule(mod, g, tmp):
+    """
+    REC provision from dispatchable generators is an endogenous variable.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+
+
 def commitment_rule(mod, g, tmp):
     """
     Number of units committed is the committed capacity divided by the unit

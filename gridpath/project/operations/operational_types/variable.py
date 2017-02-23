@@ -167,7 +167,23 @@ def add_module_specific_components(m, d):
 def power_provision_rule(mod, g, tmp):
     """
     Power provision from variable generators is their capacity times the
-    capacity factor in each timepoint minus any curtailment.
+    capacity factor in each timepoint minus any upward reserves/curtailment.
+    See max_power_rule above.
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+
+    return mod.Provide_Variable_Power_MW[g, tmp]
+
+
+# RPS
+def rec_provision_rule(mod, g, tmp):
+    """
+    REC provision from variable generators is a variable lesser than or
+    equal to capacity times the capacity factor in each timepoint minus any
+    upward reserves/curtailment. See max_power_rule above.
     :param mod:
     :param g:
     :param tmp:

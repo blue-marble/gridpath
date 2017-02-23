@@ -121,6 +121,17 @@ def power_provision_rule(mod, g, tmp):
     return mod.Hydro_Conventional_Provide_Power_MW[g, tmp]
 
 
+def rec_provision_rule(mod, g, tmp):
+    """
+    REC provision from conventional hydro if eligible
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Hydro_Conventional_Provide_Power_MW[g, tmp]
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     This treatment does not allow curtailment
