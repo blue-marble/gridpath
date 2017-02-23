@@ -11,14 +11,20 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "temporal.operations.horizons",
                              "temporal.investment.periods",
-                             "geography.rps_zones"]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.rps_requirement"
+                             "geography.load_zones",
+                             "geography.rps_zones",
+                             "system.policy.rps.rps_requirement",
+                             "project", "project.capacity.capacity",
+                             "project.operations.operational_types",
+                             "project.operations.aggregate_power",
+                             "project.operations.aggregate_recs"]
+NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_balance"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -36,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestRPSRequirement(unittest.TestCase):
+class TestRPSBalance(unittest.TestCase):
     """
 
     """
@@ -77,32 +83,6 @@ class TestRPSRequirement(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
-
-        # Set: RPS_ZONE_PERIODS_WITH_RPS
-        expected_rps_zone_periods = sorted([
-            ("RPS_Zone_1", 2020), ("RPS_Zone_1", 2030),
-            ("RPS_Zone_2", 2020), ("RPS_Zone_2", 2030)
-        ])
-        actual_rps_zone_periods = sorted([
-            (z, p) for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS
-        ])
-        self.assertListEqual(expected_rps_zone_periods,
-                             actual_rps_zone_periods)
-
-        # Param: rps_target_mwh
-        expected_rps_target = OrderedDict(sorted({
-            ("RPS_Zone_1", 2020): 50, ("RPS_Zone_1", 2030): 50,
-            ("RPS_Zone_2", 2020): 10, ("RPS_Zone_2", 2030): 10}.items()
-                                                 )
-                                          )
-        actual_rps_target = OrderedDict(sorted({
-            (z, p): instance.rps_target_mwh[z, p]
-            for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS}.items()
-                                               )
-                                        )
-        self.assertDictEqual(expected_rps_target, actual_rps_target)
-
-
 
 if __name__ == "__main__":
     unittest.main()
