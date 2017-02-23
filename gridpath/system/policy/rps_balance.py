@@ -9,8 +9,7 @@ import csv
 import os.path
 import pandas as pd
 
-from pyomo.environ import Set, Param, Expression, NonNegativeReals, \
-    Constraint, value
+from pyomo.environ import Constraint, value
 
 
 def add_model_components(m, d):
@@ -20,11 +19,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
-    m.RPS_ZONE_PERIODS_WITH_RPS = \
-        Set(dimen=2, within=m.RPS_ZONES * m.PERIODS)
-    m.rps_target_mwh = Param(m.RPS_ZONE_PERIODS_WITH_RPS,
-                             within=NonNegativeReals)
 
     def rps_target_rule(mod, z, p):
         """
@@ -39,25 +33,6 @@ def add_model_components(m, d):
 
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
                                          rule=rps_target_rule)
-
-
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs", "rps_targets.tab"),
-                     index=m.RPS_ZONE_PERIODS_WITH_RPS,
-                     param=m.rps_target_mwh,
-                     select=("rps_zone", "period", "rps_target_mwh")
-                     )
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

@@ -249,6 +249,7 @@ def get_modules(scenario_directory):
         "geography.regulation_down_balancing_areas",
         "geography.rps_zones",
         "system.load_balance.static_load_requirement",
+        "system.policy.rps_requirement",
         'project',
         "project.capacity.capacity",
         "project.capacity.costs",
@@ -271,7 +272,7 @@ def get_modules(scenario_directory):
         "system.reserves.regulation_up",
         "system.reserves.lf_reserves_down",
         "system.reserves.regulation_down",
-        "system.policy.rps",
+        "system.policy.rps_balance",
         "objective.min_total_cost"
     ]
 
@@ -302,8 +303,10 @@ def get_modules(scenario_directory):
              "project.operations.reserves.regulation_down",
              "system.reserves.regulation_down"],
         "rps":
-            ["geography.rps_zones", "project.operations.aggregate_recs",
-             "system.policy.rps"]
+            ["geography.rps_zones",
+             "system.policy.rps_requirement",
+             "project.operations.aggregate_recs",
+             "system.policy.rps_balance"]
     }
 
     # Remove any modules not requested by user

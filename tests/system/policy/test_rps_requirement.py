@@ -14,14 +14,11 @@ TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.rps_zones", "system.policy.rps_requirement",
-    "project", "project.capacity.capacity",
-    "project.operations.operational_types",
-    "project.operations.aggregate_power"]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.aggregate_recs"
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
+                             "temporal.operations.horizons",
+                             "temporal.investment.periods",
+                             "geography.rps_zones"]
+NAME_OF_MODULE_BEING_TESTED = "system.policy.rps_requirement"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -39,7 +36,7 @@ except ImportError:
           " to test.")
 
 
-class TestAggregateRECs(unittest.TestCase):
+class TestRPSRequirement(unittest.TestCase):
     """
 
     """
@@ -81,36 +78,31 @@ class TestAggregateRECs(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: RPS_PROJECTS
-        expected_rps_projects = sorted(["Wind", "Wind_z2"])
-        actual_rps_projects = sorted([p for p in instance.RPS_PROJECTS])
-        self.assertListEqual(expected_rps_projects, actual_rps_projects)
+        # Set: RPS_ZONE_PERIODS_WITH_RPS
+        expected_rps_zone_periods = sorted([
+            ("RPS_Zone_1", 2020), ("RPS_Zone_1", 2030),
+            ("RPS_Zone_2", 2020), ("RPS_Zone_2", 2030)
+        ])
+        actual_rps_zone_periods = sorted([
+            (z, p) for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS
+        ])
+        self.assertListEqual(expected_rps_zone_periods,
+                             actual_rps_zone_periods)
 
-        # Param: rps_zone
-        expected_rps_zone_by_prj = OrderedDict(sorted({
-           "Wind": "RPS_Zone_1", "Wind_z2": "RPS_Zone_2"
-                                                      }.items()
-                                                      )
+        # Param: rps_target_mwh
+        expected_rps_target = OrderedDict(sorted({
+            ("RPS_Zone_1", 2020): 50, ("RPS_Zone_1", 2030): 50,
+            ("RPS_Zone_2", 2020): 10, ("RPS_Zone_2", 2030): 10}.items()
+                                                 )
+                                          )
+        actual_rps_target = OrderedDict(sorted({
+            (z, p): instance.rps_target_mwh[z, p]
+            for (z, p) in instance.RPS_ZONE_PERIODS_WITH_RPS}.items()
                                                )
-        actual_rps_zone_by_prj = OrderedDict(sorted({
-            p: instance.rps_zone[p] for p in instance.RPS_PROJECTS}.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_rps_zone_by_prj, actual_rps_zone_by_prj)
+                                        )
+        self.assertDictEqual(expected_rps_target, actual_rps_target)
 
-        # Set: RPS_PROJECTS_BY_RPS_ZONE
-        expected_prj_by_zone = OrderedDict(sorted({
-            "RPS_Zone_1": ["Wind"], "RPS_Zone_2": ["Wind_z2"]
-                                                  }.items()
-                                                  )
-                                           )
-        actual_prj_by_zone = OrderedDict(sorted({
-            z: [p for p in instance.RPS_PROJECTS_BY_RPS_ZONE[z]]
-            for z in instance.RPS_ZONES
-                                                }.items()
-                                                )
-                                         )
-        self.assertDictEqual(expected_prj_by_zone, actual_prj_by_zone)
+
 
 if __name__ == "__main__":
     unittest.main()

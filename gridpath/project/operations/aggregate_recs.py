@@ -135,7 +135,7 @@ def add_model_components(m, d):
     # TODO: is this only needed for export and, if so, should it be created on
     # export?
     m.Total_Curtailed_RPS_Energy_MWh = \
-        Expression(m.RPS_ZONES, m.PERIODS,
+        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
                    rule=total_curtailed_rps_energy_rule)
 
 
