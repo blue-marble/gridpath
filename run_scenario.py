@@ -248,8 +248,10 @@ def get_modules(scenario_directory):
         "geography.regulation_up_balancing_areas",
         "geography.regulation_down_balancing_areas",
         "geography.rps_zones",
+        "geography.carbon_cap_zones",
         "system.load_balance.static_load_requirement",
         "system.policy.rps.rps_requirement",
+        "system.policy.carbon_cap.carbon_cap",
         'project',
         "project.capacity.capacity",
         "project.capacity.costs",
@@ -260,9 +262,10 @@ def get_modules(scenario_directory):
         "project.operations.operational_types",
         "project.operations.fuels",
         "project.operations.aggregate_power",
-        "project.operations.aggregate_recs",
         "project.operations.fix_commitment",
         "project.operations.aggregate_costs",
+        "project.operations.aggregate_recs",
+        "project.operations.aggregate_carbon_emissions",
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
@@ -273,6 +276,7 @@ def get_modules(scenario_directory):
         "system.reserves.lf_reserves_down",
         "system.reserves.regulation_down",
         "system.policy.rps.rps_balance",
+        "system.policy.carbon_cap.carbon_balance",
         "objective.min_total_cost"
     ]
 
@@ -306,17 +310,39 @@ def get_modules(scenario_directory):
             ["geography.rps_zones",
              "system.policy.rps.rps_requirement",
              "project.operations.aggregate_recs",
-             "system.policy.rps.rps_balance"]
+             "system.policy.rps.rps_balance"],
+        "carbon_cap":
+            ["geography.carbon_cap_zones",
+             "system.policy.carbon_cap.carbon_cap",
+             "project.operations.aggregate_carbon_emissions",
+             "system.policy.carbon_cap.carbon_balance"]
     }
+
+    # # Some modules depend on more than one supermodule
+    # cross_modules = {
+    #     ("transmission", "carbon_cap"):
+    #         ["transmission.operations.aggregate_carbon_emissions"]
+    # }
 
     # Remove any modules not requested by user
     modules_to_use = all_modules
-    for module_name in optional_modules.keys():
-        if module_name in requested_modules:
+    for supermodule in optional_modules.keys():
+        if supermodule in requested_modules:
             pass
         else:
-            for m in optional_modules[module_name]:
+            for m in optional_modules[supermodule]:
                 modules_to_use.remove(m)
+
+    # # Some modules depend on more than one supermodule
+    # # We have to check if all supermodules that the module depends on are
+    # # specified before removing it
+    # for supermodule_group in cross_modules.keys():
+    #     if all(supermodule in requested_modules
+    #            for supermodule in supermodule_group ):
+    #         pass
+    #     else:
+    #         for m in cross_modules[supermodule_group]:
+    #             modules_to_use.remove(m)
 
     return modules_to_use
 

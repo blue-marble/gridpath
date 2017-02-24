@@ -9,9 +9,10 @@ import os.path
 from pyomo.environ import Var, Set, Param, Expression, Constraint, \
     NonNegativeReals, PositiveReals
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules, \
-    total_cost_components
-from gridpath.auxiliary.auxiliary import load_operational_type_modules, is_number
+from gridpath.auxiliary.dynamic_components import \
+    required_operational_modules, total_cost_components
+from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
+    is_number
 
 
 def add_model_components(m, d):
@@ -103,14 +104,17 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            fuel_cost_rule(mod, g, tmp)
+            fuel_burn_rule(mod, g, tmp, "Error calling fuel_cost_rule "
+                                        "function in aggregate_costs.py") * \
+            mod.fuel_price_per_mmbtu[
+            mod.fuel[g]]
 
     m.Fuel_Cost = Expression(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
 
     def total_fuel_cost_rule(mod):
         """
-        Power production cost for all generators across all timepoints
+        Fuel costs for all generators across all timepoints
         :param mod:
         :return:
         """

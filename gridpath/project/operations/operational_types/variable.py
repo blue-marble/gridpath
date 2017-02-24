@@ -231,19 +231,23 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
 
 
-def fuel_cost_rule(mod, g, tmp):
+def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Variable generators should not have fuel use
     :param mod:
     :param g:
     :param tmp:
+    :param error_message:
     :return:
     """
-    raise (ValueError(
-        "ERROR! Variable generators should not use fuel." + "\n" +
-        "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its fuel to '.' (no value).")
-    )
+    if g in mod.FUEL_PROJECTS:
+        raise (ValueError(
+            "ERROR! Variable projects should not use fuel." + "\n" +
+            "Check input data for project '{}'".format(g) + "\n" +
+            "and change its fuel to '.' (no value).")
+        )
+    else:
+        raise ValueError(error_message)
 
 
 def startup_rule(mod, g, tmp):

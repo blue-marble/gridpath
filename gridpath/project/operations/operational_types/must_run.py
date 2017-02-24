@@ -86,16 +86,23 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 # TODO: add data check that minimum_input_mmbtu_per_hr is 0 for must-run gens
 # TODO: change when can-build-new
-def fuel_cost_rule(mod, g, tmp):
+def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Output doesn't vary, so this is
+    Output doesn't vary, so this is a constant
+    Return 0 if must-run generator with no fuel (e.g. geothermal); these
+    should not have been given a fuel or labeled carbonaceous in the first
+    place
     :param mod:
     :param g:
     :param tmp:
+    :param error_message:
     :return:
     """
-    return mod.inc_heat_rate_mmbtu_per_mwh[g] * mod.Power_Provision_MW[g, tmp] \
-        * mod.fuel_price_per_mmbtu[mod.fuel[g]]
+    if g in mod.FUEL_PROJECTS:
+        return mod.inc_heat_rate_mmbtu_per_mwh[g] \
+            * mod.Power_Provision_MW[g, tmp]
+    else:
+        raise ValueError(error_message)
 
 
 def startup_rule(mod, g, tmp):

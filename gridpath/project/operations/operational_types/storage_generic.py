@@ -319,15 +319,23 @@ def rec_provision_rule(mod, g, tmp):
         * mod.losses_factor_in_rps
 
 
-def fuel_cost_rule(mod, g, tmp):
+def fuel_burn_rule(mod, g, tmp, error_message):
     """
 
     :param mod:
     :param g:
     :param tmp:
+    :param error_message:
     :return:
     """
-    return 0
+    if g in mod.FUEL_PROJECTS:
+        raise (ValueError(
+            "ERROR! Generic storage projects should not use fuel." + "\n" +
+            "Check input data for project '{}'".format(g) + "\n" +
+            "and change its fuel to '.' (no value).")
+        )
+    else:
+        raise ValueError(error_message)
 
 
 def startup_rule(mod, g, tmp):

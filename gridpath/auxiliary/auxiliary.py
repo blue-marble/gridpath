@@ -59,12 +59,13 @@ def load_reserve_type_modules(required_reserve_modules):
         []
          )
 
+
 # TODO: add curtailment rules as required?
 def load_operational_type_modules(required_operational_modules):
     return load_subtype_modules(
         required_operational_modules,
         "gridpath.project.operations.operational_types",
-        ["power_provision_rule", "fuel_cost_rule",
+        ["power_provision_rule", "fuel_burn_rule",
          "startup_rule", "shutdown_rule"]
          )
 

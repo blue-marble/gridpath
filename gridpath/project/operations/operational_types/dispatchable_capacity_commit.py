@@ -423,7 +423,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 
 # TODO: figure out how this should work with fleets (unit size here or in data)
-def fuel_cost_rule(mod, g, tmp):
+def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Fuel use in terms of an IO curve with an incremental heat rate above
     the minimum stable level, i.e. a minimum MMBtu input to have the generator
@@ -432,15 +432,18 @@ def fuel_cost_rule(mod, g, tmp):
     :param mod:
     :param g:
     :param tmp:
+    :param error_message:
     :return:
     """
-    return ((mod.Commit_Capacity_MW[g, tmp]/mod.unit_size_mw[g])
-            * mod.minimum_input_mmbtu_per_hr[g]
+    if g in mod.FUEL_PROJECTS:
+        return (mod.Commit_Capacity_MW[g, tmp]/mod.unit_size_mw[g]) \
+            * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
-               (mod.Commit_Capacity_MW[g, tmp]
-                * mod.disp_cap_commit_min_stable_level_fraction[g])
+                (mod.Commit_Capacity_MW[g, tmp]
+                 * mod.disp_cap_commit_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
-            ) * mod.fuel_price_per_mmbtu[mod.fuel[g]]
+    else:
+        raise ValueError(error_message)
 
 
 # TODO: startup/shutdown cost per unit won't work without additional info
