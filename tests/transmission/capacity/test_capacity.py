@@ -15,14 +15,13 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.investment.periods",
-    "transmission"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "transmission.capacity.capacity_types.specified_transmission"
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones", "transmission"]
+NAME_OF_MODULE_BEING_TESTED = "transmission.capacity.capacity"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
-        imported_module = import_module("." + str(mdl), package='gridpath')
+        imported_module = import_module("." + str(mdl), package="gridpath")
         IMPORTED_PREREQ_MODULES.append(imported_module)
     except ImportError:
         print("ERROR! Module " + str(mdl) + " not found.")
@@ -30,13 +29,13 @@ for mdl in PREREQUISITE_MODULE_NAMES:
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+                                        package="gridpath")
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
 
 
-class TestSpecifiedTransmission(unittest.TestCase):
+class TestTxCapacity(unittest.TestCase):
     """
 
     """
@@ -65,9 +64,10 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                      stage=""
                                      )
 
-    def test_data_loaded_correctly(self):
+    def test_derived_data(self):
         """
-        Test that the data loaded are as expected
+        Capacity-type gridpath should have added appropriate data;
+        make sure it is all as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -79,41 +79,15 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-        expected_periods = [("Tx1", 2020), ("Tx1", 2030)]
-        actual_periods = [
-            (tx, p) for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-            ]
-        self.assertListEqual(expected_periods, actual_periods)
+        # TRANSMISSION_OPERATIONAL_PERIODS
+        expected_tx_op_p = sorted(
+            [("Tx1", 2020), ("Tx1", 2030), ("Tx_New", 2020), ("Tx_New", 2030)]
+        )
+        actual_tx_op_p = sorted(
+            [(tx, p) for (tx, p) in instance.TRANSMISSION_OPERATIONAL_PERIODS]
+        )
+        self.assertListEqual(expected_tx_op_p, actual_tx_op_p)
 
-        # Param: specified_tx_min_mw
-        expected_min = OrderedDict(sorted({
-            ("Tx1", 2020): -10, ("Tx1", 2030): -10
-                                          }.items()
-                                          )
-                                   )
-        actual_min = OrderedDict(sorted({
-            (tx, p): instance.specified_tx_min_mw[tx, p] for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-                                        }.items()
-                                        )
-                                 )
-        self.assertDictEqual(expected_min, actual_min)
-
-        # Param: specified_tx_max_mw
-        expected_max = OrderedDict(sorted({
-            ("Tx1", 2020): 10, ("Tx1", 2030): 10
-                                          }.items()
-                                          )
-                                   )
-        actual_max = OrderedDict(sorted({
-            (tx, p): instance.specified_tx_max_mw[tx, p] for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-                                        }.items()
-                                        )
-                                 )
-        self.assertDictEqual(expected_max, actual_max)
 
 if __name__ == "__main__":
     unittest.main()
