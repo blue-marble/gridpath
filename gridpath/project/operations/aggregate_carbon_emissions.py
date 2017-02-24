@@ -3,14 +3,15 @@
 
 """
 Aggregate carbon emissions from the project-timepoint level to
-the RPS zone - period level.
+the carbon cap zone - period level.
 """
 
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
-from gridpath.auxiliary.dynamic_components import required_operational_modules
+from gridpath.auxiliary.dynamic_components import \
+    required_operational_modules, carbon_cap_balance_emission_components
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 
@@ -87,6 +88,11 @@ def add_model_components(m, d):
     m.Total_Carbon_Emissions_Tons = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
         rule=total_carbon_emissions_rule
+    )
+
+    # Add to emission imports to carbon balance
+    getattr(d, carbon_cap_balance_emission_components).append(
+        "Total_Carbon_Emissions_Tons"
     )
 
 

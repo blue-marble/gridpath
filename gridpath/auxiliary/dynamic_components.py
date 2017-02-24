@@ -23,6 +23,9 @@ required_tx_capacity_modules = "required_tx_capacity_modules"
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
 
+carbon_cap_balance_emission_components = \
+    "carbon_cap_balance_emission_components"
+
 total_cost_components = "total_cost_components"
 
 
@@ -63,6 +66,10 @@ class DynamicComponents(object):
         # Modules will add component names to these lists
         setattr(self, load_balance_production_components, list())
         setattr(self, load_balance_consumption_components, list())
+
+        # Carbon cap constraint
+        # Modules will add component names to these lists
+        setattr(self, carbon_cap_balance_emission_components, list())
 
         # Objective function
         # Modules will add component names to this list

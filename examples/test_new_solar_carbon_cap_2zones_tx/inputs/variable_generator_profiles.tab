@@ -1,0 +1,5 @@
+GENERATORS	TIMEPOINTS	cap_factor
+Wind	1	.9
+Wind	2	.5
+Solar	1	0.05
+Solar	2	1

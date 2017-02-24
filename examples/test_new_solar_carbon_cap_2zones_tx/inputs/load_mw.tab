@@ -1,0 +1,5 @@
+LOAD_ZONES	TIMEPOINTS	load_mw
+Zone1	1	10
+Zone1	2	20
+Zone2	1	10
+Zone2	2	10

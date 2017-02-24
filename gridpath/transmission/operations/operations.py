@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
-from pyomo.environ import Set, Var, Constraint, Expression, Reals
+from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
 
 from gridpath.auxiliary.dynamic_components import \
     load_balance_production_components, load_balance_consumption_components
-from gridpath.auxiliary.auxiliary import make_project_time_var_df
 
 
 def add_model_components(m, d):
@@ -107,16 +107,19 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :param d:
     :return:
     """
-    op_df = \
-        make_project_time_var_df(
-            m,
-            "TRANSMISSION_OPERATIONAL_PERIODS",
-            "Transmission_Max_Capacity_MW",
-            ["transmission_line", "timepoint"],
-            "transmission_max_capacity_mw"
-        )
-
-    op_df.to_csv(
-        os.path.join(scenario_directory, horizon, stage, "results",
-                     "transmission_operations.csv"),
-        header=True, index=True)
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "transmission_operations.csv"), "wb") as \
+            tx_op_results_file:
+        writer = csv.writer(tx_op_results_file)
+        writer.writerow(["tx_line", "timepoint", "period",
+                         "horizon", "horizon_weight",
+                         "transmission_flow_mw"])
+        for (l, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                l,
+                tmp,
+                m.period[tmp],
+                m.horizon[tmp],
+                m.horizon_weight[m.horizon[tmp]],
+                value(m.Transmit_Power_MW[l, tmp])
+            ])

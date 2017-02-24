@@ -269,6 +269,7 @@ def get_modules(scenario_directory):
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
+        "transmission.operations.aggregate_carbon_emissions",
         "system.load_balance.load_balance",
         "system.load_balance.costs",
         "system.reserves.lf_reserves_up",
@@ -318,11 +319,11 @@ def get_modules(scenario_directory):
              "system.policy.carbon_cap.carbon_balance"]
     }
 
-    # # Some modules depend on more than one supermodule
-    # cross_modules = {
-    #     ("transmission", "carbon_cap"):
-    #         ["transmission.operations.aggregate_carbon_emissions"]
-    # }
+    # Some modules depend on more than one supermodule
+    cross_modules = {
+        ("transmission", "carbon_cap", "track_carbon_imports"):
+            ["transmission.operations.aggregate_carbon_emissions"]
+    }
 
     # Remove any modules not requested by user
     modules_to_use = all_modules
@@ -333,16 +334,16 @@ def get_modules(scenario_directory):
             for m in optional_modules[supermodule]:
                 modules_to_use.remove(m)
 
-    # # Some modules depend on more than one supermodule
-    # # We have to check if all supermodules that the module depends on are
-    # # specified before removing it
-    # for supermodule_group in cross_modules.keys():
-    #     if all(supermodule in requested_modules
-    #            for supermodule in supermodule_group ):
-    #         pass
-    #     else:
-    #         for m in cross_modules[supermodule_group]:
-    #             modules_to_use.remove(m)
+    # Some modules depend on more than one supermodule
+    # We have to check if all supermodules that the module depends on are
+    # specified before removing it
+    for supermodule_group in cross_modules.keys():
+        if all(supermodule in requested_modules
+               for supermodule in supermodule_group ):
+            pass
+        else:
+            for m in cross_modules[supermodule_group]:
+                modules_to_use.remove(m)
 
     return modules_to_use
 

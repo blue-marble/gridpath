@@ -1,0 +1,6 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_solar_carbon_cap_2zones_tx* #####
+
+### CAPACITY RESULTS ###
+...skipping aggregating capacity results: column 'technology' not found in projects.tab
+### OPERATIONAL RESULTS ###
+...skipping aggregating operational results: column 'technology' not found in projects.tab

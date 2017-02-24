@@ -547,5 +547,43 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=5)
 
+    def test_example_test_new_solar_carbon_cap_2zones_tx(self):
+        """
+        Check objective function value of
+        "test_new_solar_carbon_cap_2zones_tx" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_new_solar_carbon_cap_2zones_tx",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 159168636.89700875
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
+    def test_example_test_new_solar_carbon_cap_2zones_dont_count_tx(self):
+        """
+        Check objective function value of
+        "test_new_solar_carbon_cap_2zones_dont_count_tx" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_new_solar_carbon_cap_2zones_dont_count_tx",
+                 "--scenario_location", "examples",
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 142694316.98004726
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=5)
+
 if __name__ == "__main__":
     unittest.main()

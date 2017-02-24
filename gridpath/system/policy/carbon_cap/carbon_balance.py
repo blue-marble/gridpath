@@ -8,7 +8,10 @@ Constraint total carbon emissions to be less than cap
 import csv
 import os.path
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, Expression, value
+
+from gridpath.auxiliary.dynamic_components import \
+    carbon_cap_balance_emission_components
 
 
 def add_model_components(m, d):
@@ -19,6 +22,14 @@ def add_model_components(m, d):
     :return:
     """
 
+    m.Total_Carbon_Emissions_from_All_Sources_Expression = Expression(
+        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
+        rule=lambda mod, z, p:
+        sum(getattr(mod, component)[z, p] for component
+            in getattr(d, carbon_cap_balance_emission_components)
+            )
+    )
+
     def carbon_cap_target_rule(mod, z, p):
         """
         Total carbon emitted must be less than target
@@ -27,7 +38,7 @@ def add_model_components(m, d):
         :param p:
         :return:
         """
-        return mod.Total_Carbon_Emissions_Tons[z, p] \
+        return mod.Total_Carbon_Emissions_from_All_Sources_Expression[z, p] \
             <= mod.carbon_cap_target_mmt[z, p] * 10**6  # convert to tons
 
     m.Carbon_Cap_Constraint = Constraint(
@@ -56,7 +67,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 z,
                 p,
                 float(m.carbon_cap_target_mmt[z, p]),
-                value(m.Total_Carbon_Emissions_Tons[z, p]) / 10**6  # MMT
+                value(
+                    m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
+                ) / 10**6  # MMT
             ])
 
 
