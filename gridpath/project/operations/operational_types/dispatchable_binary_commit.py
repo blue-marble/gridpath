@@ -32,7 +32,7 @@ def add_module_specific_components(m, d):
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
+        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
