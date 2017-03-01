@@ -53,6 +53,12 @@ RPS_ZONE_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+RPS_TARGET_SCENARIO_ID = c.execute(
+    """SELECT rps_target_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
 PROJECT_LOAD_ZONE_SCENARIO_ID = c.execute(
     """SELECT project_load_zone_scenario_id
        FROM scenarios
@@ -101,6 +107,12 @@ NEW_PROJECT_COST_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+NEW_PROJECT_POTENTIAL_SCENARIO_ID = c.execute(
+    """SELECT new_project_potential_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
 FUEL_SCENARIO_ID = c.execute(
     """SELECT fuel_scenario_id
        FROM scenarios
@@ -143,7 +155,17 @@ LF_RESERVES_DOWN_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+TRANSMISSION_LINE_SCENARIO_ID = c.execute(
+    """SELECT transmission_line_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
 
+TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID = c.execute(
+    """SELECT transmission_line_existing_capacity_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
 
 # periods.tab
 with open(os.path.join(os.getcwd(), "temp_inputs", "periods.tab"), "w") as \
@@ -236,7 +258,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 
     # Write header
     writer.writerow(["balancing_area",
-                     "load_following_down_violation_penalty_per_mw"])
+                     "violation_penalty_per_mw"])
 
     lf_up_bas = c.execute(
         """SELECT lf_reserves_up_ba, lf_reserves_up_violation_penalty_per_mw
@@ -258,7 +280,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 
     # Write header
     writer.writerow(["balancing_area",
-                     "load_following_down_violation_penalty_per_mw"])
+                     "violation_penalty_per_mw"])
 
     lf_down_bas = c.execute(
         """SELECT lf_reserves_down_ba,
@@ -310,19 +332,23 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
          "rps_zone", "capacity_type", "operational_type", "fuel",
          "minimum_input_mmbtu_per_hr", "inc_heat_rate_mmbtu_per_mwh",
          "min_stable_level_fraction", "unit_size_mw", "startup_cost",
-         "shutdown_cost", "charging_efficiency",
-         "discharging_efficiency"]
+         "shutdown_cost", "min_up_time_hours", "min_down_time_hours",
+         "charging_efficiency", "discharging_efficiency",
+         "minimum_duration_hours", "variable_om_cost_per_mwh"]
     )
 
+    # TODO: add variable
     projects = c.execute(
         """SELECT project, load_zone, lf_reserves_up_ba, lf_reserves_down_ba,
         rps_zone, capacity_type, operational_type, fuel,
         minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
         min_stable_level, unit_size_mw, startup_cost, shutdown_cost,
-        charging_efficiency, discharging_efficiency
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours, 10
         FROM all_projects
         JOIN project_operational_chars
-        USING (existing_project_scenario_id, new_project_scenario_id, project)
+        USING (project)
         JOIN project_load_zones
         USING (existing_project_scenario_id, new_project_scenario_id, project)
         JOIN project_lf_reserves_up_bas
@@ -375,6 +401,36 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
     for row in ep_capacities:
         writer.writerow(row)
 
+# storage_specified_capacities.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "storage_specified_capacities.tab"), "w") as \
+        storage_specified_capacities_tab_file:
+    writer = csv.writer(storage_specified_capacities_tab_file, delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["storage_project", "period",
+         "storage_specified_power_capacity_mw",
+         "storage_specified_energy_capacity_mwh"]
+    )
+
+    # TODO: more robust way to get storage projects than selecting non-null
+    # rows
+    stor_capacities = c.execute(
+        """SELECT project, period, existing_capacity_mw, existing_capacity_mwh,
+        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
+        FROM existing_project_capacity
+        WHERE existing_project_scenario_id = {}
+        AND period_scenario_id = {}
+        AND existing_project_capacity_scenario_id = {}
+        AND existing_capacity_mwh IS NOT NULL;""".format(
+            EXISTING_PROJECT_SCENARIO_ID, PERIOD_SCENARIO_ID,
+            EXISTING_PROJECT_CAPACITY_SCENARIO_ID
+        )
+    )
+    for row in stor_capacities:
+        writer.writerow(row)
+
 # new_build_generator_vintage_costs.tab
 with open(os.path.join(os.getcwd(), "temp_inputs",
                        "new_build_generator_vintage_costs.tab"), "w") as \
@@ -384,25 +440,32 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
     # Write header
     writer.writerow(
         ["new_build_generator", "vintage", "lifetime_yrs",
-         "annualized_real_cost_per_mw_yr"]
+         "annualized_real_cost_per_mw_yr", "min_cumulative_new_build",
+         "max_cumulative_new_build"]
     )
 
     # TODO: select only rows with NULL for cost per kWh-yr for generators
-    # only (not storage), but need to make this more robust
+    # only (i.e to exclude storage), but need to make this more robust
     new_gen_costs = c.execute(
         """SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000
+        annualized_real_cost_per_kw_yr * 1000,
+        minimum_cumulative_new_build_mw, maximum_cumulative_new_build_mw
         FROM new_project_cost
+        JOIN new_project_potential
+        USING (new_project_scenario_id, period_scenario_id, project, period)
         WHERE annualized_real_cost_per_kwh_yr IS NULL
         AND new_project_scenario_id = {}
         AND period_scenario_id = {}
-        AND new_project_cost_scenario_id = {};""".format(
+        AND new_project_cost_scenario_id = {}
+        AND new_project_potential_scenario_id = {};""".format(
             NEW_PROJECT_SCENARIO_ID, PERIOD_SCENARIO_ID,
-            NEW_PROJECT_COST_SCENARIO_ID
+            NEW_PROJECT_COST_SCENARIO_ID,
+            NEW_PROJECT_POTENTIAL_SCENARIO_ID
         )
     )
     for row in new_gen_costs:
-        writer.writerow(row)
+        replace_nulls = ["." if i is None else i for i in row]
+        writer.writerow(replace_nulls)
 
 # new_build_storage_vintage_costs.tab
 with open(os.path.join(os.getcwd(), "temp_inputs",
@@ -472,12 +535,11 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         max_power_mw
         FROM hydro_operational_chars
         WHERE existing_project_scenario_id = {}
-        AND new_project_scenario_id = {}
         AND period_scenario_id = {}
         AND horizon_scenario_id = {}
         AND hydro_operational_chars_scenario_id = {}
         """.format(
-            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+            EXISTING_PROJECT_SCENARIO_ID,
             PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID,
             HYDRO_OPERATIONAL_CHARS_SCENARIO_ID
         )
@@ -603,4 +665,88 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         )
     )
     for row in lf_reserves_down:
+        writer.writerow(row)
+
+# transmission_lines.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "transmission_lines.tab"), "w") as \
+        transmission_lines_tab_file:
+    writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["TRANSMISSION_LINES", "tx_capacity_type", "load_zone_from",
+         "load_zone_to"]
+    )
+
+    transmission_lines = c.execute(
+        """SELECT transmission_line, tx_capacity_type, load_zone_from,
+        load_zone_to
+        FROM transmission_lines
+        WHERE load_zone_scenario_id = {}
+        AND transmission_line_scenario_id = {};
+        """.format(
+            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID
+        )
+    )
+    for row in transmission_lines:
+        writer.writerow(row)
+
+# specified_transmission_line_capacities.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "specified_transmission_line_capacities.tab"), "w") as \
+        transmission_lines_specified_capacities_tab_file:
+    writer = csv.writer(transmission_lines_specified_capacities_tab_file,
+                        delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["transmission_line", "period", "specified_tx_min_mw",
+         "specified_tx_max_mw"]
+    )
+
+    transmission_lines_specified_capacities = c.execute(
+        """SELECT transmission_line, period, min_mw, max_mw
+        FROM transmission_line_existing_capacity
+        WHERE load_zone_scenario_id = {}
+        AND transmission_line_scenario_id = {}
+        AND period_scenario_id = {}
+        AND transmission_line_existing_capacity_scenario_id = {};
+        """.format(
+            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
+            PERIOD_SCENARIO_ID, TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+        )
+    )
+    for row in transmission_lines_specified_capacities:
+        writer.writerow(row)
+
+
+# TODO: how to deal with optional modules
+# rps_targets.tab
+with open(os.path.join(os.getcwd(), "temp_inputs",
+                       "rps_targets.tab"), "w") as \
+        rps_targets_tab_file:
+    writer = csv.writer(rps_targets_tab_file,
+                        delimiter="\t")
+
+    # Write header
+    writer.writerow(
+        ["rps_zone", "period", "rps_target_mwh"]
+    )
+
+    rps_targets = c.execute(
+        """SELECT rps_zone, period, rps_target_mwh
+        FROM rps_targets
+        WHERE period_scenario_id = {}
+        AND horizon_scenario_id = {}
+        AND timepoint_scenario_id = {}
+        AND load_zone_scenario_id = {}
+        AND rps_zone_scenario_id = {}
+        AND rps_target_scenario_id = {};
+        """.format(
+            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+            LOAD_ZONE_SCENARIO_ID, RPS_ZONE_SCENARIO_ID, RPS_TARGET_SCENARIO_ID
+        )
+    )
+    for row in rps_targets:
         writer.writerow(row)
