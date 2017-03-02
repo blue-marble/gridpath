@@ -31,6 +31,8 @@ rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 transmission_line_scenario_id INTEGER,
 transmission_line_existing_capacity_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
+transmission_simultaneous_flow_limit_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -136,7 +138,21 @@ FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
 period_scenario_id, transmission_line_existing_capacity_scenario_id)
 REFERENCES subscenarios_transmission_line_existing_capacity (
 load_zone_scenario_id, transmission_line_scenario_id,
-period_scenario_id, transmission_line_existing_capacity_scenario_id)
+period_scenario_id, transmission_line_existing_capacity_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id) REFERENCES
+subscenarios_transmission_simultaneous_flow_group_lines
+(load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id),
+FOREIGN KEY (load_zone_scenario_id,
+transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
+transmission_simultaneous_flow_limit_scenario_id)
+REFERENCES subscenarios_transmission_simultaneous_flow_limits
+(load_zone_scenario_id,
+transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
+transmission_simultaneous_flow_limit_scenario_id)
 );
 
 -- -- SUB-SCENARIOS -- --
@@ -199,6 +215,22 @@ description VARCHAR(128),
 PRIMARY KEY (load_zone_scenario_id, transmission_line_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
 (load_zone_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_group_lines;
+CREATE TABLE subscenarios_transmission_simultaneous_flow_group_lines(
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id),
+FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
+(load_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id)
+REFERENCES subscenarios_transmission_lines
+(load_zone_scenario_id, transmission_line_scenario_id)
 );
 
 -- Temporal
@@ -463,8 +495,35 @@ FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
 (load_zone_scenario_id),
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
-FOREIGN KEY (transmission_line_scenario_id) REFERENCES
-subscenarios_transmission_lines (transmission_line_scenario_id)
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
+subscenarios_transmission_lines (load_zone_scenario_id,
+transmission_line_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_limits;
+CREATE TABLE subscenarios_transmission_simultaneous_flow_limits(
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
+period_scenario_id INTEGER,
+transmission_simultaneous_flow_limit_scenario_id INTEGER,
+transmission_simultaneous_flow_limit_scenario_name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id,
+period_scenario_id, transmission_simultaneous_flow_limit_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id) REFERENCES
+subscenarios_transmission_simultaneous_flow_group_lines
+(load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id)
+FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
+(load_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
+subscenarios_transmission_lines (load_zone_scenario_id,
+transmission_line_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id)
 );
 
 -- Ancillary services
@@ -1197,6 +1256,67 @@ period_scenario_id, transmission_line_existing_capacity_scenario_id)
 REFERENCES subscenarios_transmission_line_existing_capacity (
 load_zone_scenario_id, transmission_line_scenario_id,
 period_scenario_id, transmission_line_existing_capacity_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS transmission_simultaneous_flow_group_lines;
+CREATE TABLE transmission_simultaneous_flow_group_lines(
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
+transmission_simultaneous_flow_group VARCHAR(64),
+transmission_line VARCHAR(64),
+simultaneous_flow_direction INTEGER,
+PRIMARY KEY (load_zone_scenario_id,
+transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id,
+transmission_simultaneous_flow_group, transmission_line),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id) REFERENCES
+subscenarios_transmission_simultaneous_flow_group_lines
+(load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id)
+FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
+(load_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id)
+REFERENCES subscenario_transmission_lines (load_zone_scenario_id,
+transmission_line_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS transmission_simultaneous_flow_limits;
+CREATE TABLE transmission_simultaneous_flow_limits(
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
+period_scenario_id INTEGER,
+transmission_simultaneous_flow_limit_scenario_id INTEGER,
+transmission_simultaneous_flow_group VARCHAR(64),
+period INTEGER,
+max_flow_mw FLOAT,
+PRIMARY KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id,
+period_scenario_id, transmission_simultaneous_flow_limit_scenario_id,
+transmission_simultaneous_flow_group, period),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
+transmission_simultaneous_flow_limit_scenario_id)
+REFERENCES subscenarios_transmission_simultaneous_flow_limits
+(load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
+transmission_simultaneous_flow_limit_scenario_id)
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id) REFERENCES
+subscenarios_transmission_simultaneous_flow_group_lines
+(load_zone_scenario_id, transmission_line_scenario_id,
+transmission_simultaneous_flow_group_lines_scenario_id),
+FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
+(period_scenario_id),
+FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
+(load_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
+subscenarios_transmission_lines (load_zone_scenario_id,
+transmission_line_scenario_id)
 );
 
 -- POLICY --
