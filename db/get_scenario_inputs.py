@@ -397,112 +397,163 @@ with open(os.path.join(INPUTS_DIRECTORY, "load_zones.tab"), "w") as \
         writer.writerow(row)
 
 # load_following_up_balancing_areas.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "load_following_up_balancing_areas.tab"),
-          "w") as \
-        lf_up_bas_tab_file:
-    writer = csv.writer(lf_up_bas_tab_file, delimiter="\t")
+# part of optional lf_reserves_up module
+if OPTIONAL_MODULE_LF_RESERVES_UP:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "load_following_up_balancing_areas.tab"),
+              "w") as \
+            lf_up_bas_tab_file:
+        writer = csv.writer(lf_up_bas_tab_file, delimiter="\t")
 
-    # Write header
-    writer.writerow(["balancing_area",
-                     "violation_penalty_per_mw"])
+        # Write header
+        writer.writerow(["balancing_area",
+                         "violation_penalty_per_mw"])
 
-    lf_up_bas = c.execute(
-        """SELECT lf_reserves_up_ba, lf_reserves_up_violation_penalty_per_mw
-           FROM lf_reserves_up_bas
-           WHERE lf_reserves_up_ba_scenario_id = {};""".format(
-            LF_RESERVES_UP_BA_SCENARIO_ID
-        )
-    ).fetchall()
+        lf_up_bas = c.execute(
+            """SELECT lf_reserves_up_ba, lf_reserves_up_violation_penalty_per_mw
+               FROM lf_reserves_up_bas
+               WHERE lf_reserves_up_ba_scenario_id = {};""".format(
+                LF_RESERVES_UP_BA_SCENARIO_ID
+            )
+        ).fetchall()
 
-    for row in lf_up_bas:
-        writer.writerow(row)
+        for row in lf_up_bas:
+            writer.writerow(row)
 
 # load_following_down_balancing_areas.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "load_following_down_balancing_areas.tab"),
-          "w") as \
-        lf_down_bas_tab_file:
-    writer = csv.writer(lf_down_bas_tab_file, delimiter="\t")
+# part of optional lf_reserves_down module
+if OPTIONAL_MODULE_LF_RESERVES_DOWN:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "load_following_down_balancing_areas.tab"),
+              "w") as \
+            lf_down_bas_tab_file:
+        writer = csv.writer(lf_down_bas_tab_file, delimiter="\t")
 
-    # Write header
-    writer.writerow(["balancing_area",
-                     "violation_penalty_per_mw"])
+        # Write header
+        writer.writerow(["balancing_area",
+                         "violation_penalty_per_mw"])
 
-    lf_down_bas = c.execute(
-        """SELECT lf_reserves_down_ba,
-        lf_reserves_down_violation_penalty_per_mw
-           FROM lf_reserves_down_bas
-           WHERE lf_reserves_down_ba_scenario_id = {};""".format(
-            LF_RESERVES_DOWN_BA_SCENARIO_ID
-        )
-    ).fetchall()
+        lf_down_bas = c.execute(
+            """SELECT lf_reserves_down_ba,
+            lf_reserves_down_violation_penalty_per_mw
+               FROM lf_reserves_down_bas
+               WHERE lf_reserves_down_ba_scenario_id = {};""".format(
+                LF_RESERVES_DOWN_BA_SCENARIO_ID
+            )
+        ).fetchall()
 
-    for row in lf_down_bas:
-        writer.writerow(row)
+        for row in lf_down_bas:
+            writer.writerow(row)
 
 # rps_zones.tab
-with open(os.path.join(INPUTS_DIRECTORY, "rps_zones.tab"),
-          "w") as \
-        rps_zones_tab_file:
-    writer = csv.writer(rps_zones_tab_file, delimiter="\t")
+# part of optional rps module
+if OPTIONAL_MODULE_RPS:
+    with open(os.path.join(INPUTS_DIRECTORY, "rps_zones.tab"),
+              "w") as \
+            rps_zones_tab_file:
+        writer = csv.writer(rps_zones_tab_file, delimiter="\t")
 
-    # Write header
-    writer.writerow(["rps_zone"])
+        # Write header
+        writer.writerow(["rps_zone"])
 
-    rps_zones = c.execute(
-        """SELECT rps_zone
-           FROM rps_zones
-           WHERE rps_zone_scenario_id = {};""".format(
-            RPS_ZONE_SCENARIO_ID
-        )
-    ).fetchall()
+        rps_zones = c.execute(
+            """SELECT rps_zone
+               FROM rps_zones
+               WHERE rps_zone_scenario_id = {};""".format(
+                RPS_ZONE_SCENARIO_ID
+            )
+        ).fetchall()
 
-    for row in rps_zones:
-        writer.writerow(row)
+        for row in rps_zones:
+            writer.writerow(row)
 
 
 # TODO: how to handle optional columns (e.g. lf_reserves_up_ba, rps_zone, etc.)
-# TODO: add variable cost
 # TODO: add heat rate for new advanced ccgt and aero ct
 # TODO: if fuel specified, can't have '.' -- must be 0 instead
 # TODO: why is there a startup cost for CAISO_Nuclear and CAISO_CHP
 # projects.tab
+prj_db_table_optional_select = dict()
+prj_file_optional_headers = list()
+if OPTIONAL_MODULE_LF_RESERVES_UP:
+    prj_db_table_optional_select["lf_reserves_up"] = {
+        "db_column_name": ", lf_reserves_up_ba",
+        "db_join_statement": "\nJOIN project_lf_reserves_up_bas "
+                               "USING (existing_project_scenario_id, "
+                               "new_project_scenario_id, project) "
+        }
+    prj_file_optional_headers.append("lf_reserves_up_zone")
+else:
+    prj_db_table_optional_select["lf_reserves_up"] = {
+        "db_column_name": "",
+        "db_join_statement": ""
+        }
+    
+if OPTIONAL_MODULE_LF_RESERVES_DOWN:
+    prj_db_table_optional_select["lf_reserves_down"] = {
+        "db_column_name": ", lf_reserves_down_ba",
+        "db_join_statement": "\nJOIN project_lf_reserves_down_bas "
+                               "USING (existing_project_scenario_id, "
+                               "new_project_scenario_id, project) "
+        }
+    prj_file_optional_headers.append("lf_reserves_down_zone")
+else:
+    prj_db_table_optional_select["lf_reserves_down"] = {
+        "db_column_name": "",
+        "db_join_statement": ""
+        }
+
+if OPTIONAL_MODULE_RPS:
+    prj_db_table_optional_select["rps"] = {
+        "db_column_name": ", rps_zone",
+        "db_join_statement": "\nJOIN project_rps_zones "
+                             "USING (existing_project_scenario_id, "
+                             "new_project_scenario_id, project) "
+    }
+    prj_file_optional_headers.append("rps_zone")
+else:
+    prj_db_table_optional_select["rps"] = {
+        "db_column_name": "",
+        "db_join_statement": ""
+    }
+
 with open(os.path.join(INPUTS_DIRECTORY, "projects.tab"), "w") as \
         projects_tab_file:
     writer = csv.writer(projects_tab_file, delimiter="\t")
 
     # Write header
     writer.writerow(
-        ["project", "load_zone", "lf_reserves_up_zone",
-         "lf_reserves_down_zone",
-         "rps_zone", "capacity_type", "operational_type", "fuel",
+        ["project", "load_zone",
+         "capacity_type", "operational_type", "fuel",
          "minimum_input_mmbtu_per_hr", "inc_heat_rate_mmbtu_per_mwh",
          "min_stable_level_fraction", "unit_size_mw", "startup_cost",
          "shutdown_cost", "min_up_time_hours", "min_down_time_hours",
          "charging_efficiency", "discharging_efficiency",
          "minimum_duration_hours", "variable_om_cost_per_mwh", "technology"]
+        + prj_file_optional_headers
     )
 
     projects = c.execute(
-        """SELECT project, load_zone, lf_reserves_up_ba, lf_reserves_down_ba,
+        """SELECT project, load_zone,
         rps_zone, capacity_type, operational_type, fuel,
         minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
         min_stable_level, unit_size_mw, startup_cost, shutdown_cost,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, variable_cost_per_mwh, technology
-        FROM all_projects
+        minimum_duration_hours, variable_cost_per_mwh, technology""" +
+        prj_db_table_optional_select["lf_reserves_up"]["db_column_name"] +
+        prj_db_table_optional_select["lf_reserves_down"]["db_column_name"] +
+        prj_db_table_optional_select["rps"]["db_column_name"] +
+        """ FROM all_projects
         JOIN project_operational_chars
         USING (project)
         JOIN project_load_zones
-        USING (existing_project_scenario_id, new_project_scenario_id, project)
-        JOIN project_lf_reserves_up_bas
-        USING (existing_project_scenario_id, new_project_scenario_id, project)
-        JOIN project_lf_reserves_down_bas
-        USING (existing_project_scenario_id, new_project_scenario_id, project)
-        JOIN project_rps_zones
-        USING (existing_project_scenario_id, new_project_scenario_id, project)
+        USING (existing_project_scenario_id, new_project_scenario_id,
+        project)""" +
+        prj_db_table_optional_select["lf_reserves_up"]["db_join_statement"] +
+        prj_db_table_optional_select["lf_reserves_down"]["db_join_statement"] +
+        prj_db_table_optional_select["rps"]["db_join_statement"] +
+        """
         WHERE existing_project_scenario_id = {}
         AND new_project_scenario_id = {}
         AND project_operational_chars_scenario_id = {}
@@ -752,207 +803,215 @@ with open(os.path.join(INPUTS_DIRECTORY,
         writer.writerow(row)
 
 # lf_reserves_up_requirement.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "lf_reserves_up_requirement.tab"), "w") as \
-        lf_reserves_up_tab_file:
-    writer = csv.writer(lf_reserves_up_tab_file, delimiter="\t")
+# part of optional lf_reserves_up module
+if OPTIONAL_MODULE_LF_RESERVES_UP:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "lf_reserves_up_requirement.tab"), "w") as \
+            lf_reserves_up_tab_file:
+        writer = csv.writer(lf_reserves_up_tab_file, delimiter="\t")
 
-    # Write header
-    # TODO: change these headers
-    writer.writerow(
-        ["LOAD_ZONES", "TIMEPOINTS", "upward_reserve_requirement"]
-    )
-
-    lf_reserves_up = c.execute(
-        """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
-        FROM lf_reserves_up
-        WHERE period_scenario_id = {}
-        AND horizon_scenario_id = {}
-        AND timepoint_scenario_id = {}
-        AND existing_project_scenario_id = {}
-        AND new_project_scenario_id = {}
-        AND lf_reserves_up_ba_scenario_id = {}
-        AND lf_reserves_up_scenario_id = {}
-        """.format(
-            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
-            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
-            LF_RESERVES_UP_BA_SCENARIO_ID, LF_RESERVES_UP_SCENARIO_ID
+        # Write header
+        # TODO: change these headers
+        writer.writerow(
+            ["LOAD_ZONES", "TIMEPOINTS", "upward_reserve_requirement"]
         )
-    )
-    for row in lf_reserves_up:
-        writer.writerow(row)
+
+        lf_reserves_up = c.execute(
+            """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
+            FROM lf_reserves_up
+            WHERE period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND timepoint_scenario_id = {}
+            AND existing_project_scenario_id = {}
+            AND new_project_scenario_id = {}
+            AND lf_reserves_up_ba_scenario_id = {}
+            AND lf_reserves_up_scenario_id = {}
+            """.format(
+                PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+                EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+                LF_RESERVES_UP_BA_SCENARIO_ID, LF_RESERVES_UP_SCENARIO_ID
+            )
+        )
+        for row in lf_reserves_up:
+            writer.writerow(row)
         
 # lf_reserves_down_requirement.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "lf_reserves_down_requirement.tab"), "w") as \
-        lf_reserves_down_tab_file:
-    writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t")
+# part of optional lf_reserves_down module
+if OPTIONAL_MODULE_LF_RESERVES_DOWN:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "lf_reserves_down_requirement.tab"), "w") as \
+            lf_reserves_down_tab_file:
+        writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t")
 
-    # Write header
-    # TODO: change these headers
-    writer.writerow(
-        ["LOAD_ZONES", "TIMEPOINTS", "downward_reserve_requirement"]
-    )
-
-    lf_reserves_down = c.execute(
-        """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
-        FROM lf_reserves_down
-        WHERE period_scenario_id = {}
-        AND horizon_scenario_id = {}
-        AND timepoint_scenario_id = {}
-        AND existing_project_scenario_id = {}
-        AND new_project_scenario_id = {}
-        AND lf_reserves_down_ba_scenario_id = {}
-        AND lf_reserves_down_scenario_id = {}
-        """.format(
-            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
-            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
-            LF_RESERVES_DOWN_BA_SCENARIO_ID, LF_RESERVES_DOWN_SCENARIO_ID
+        # Write header
+        # TODO: change these headers
+        writer.writerow(
+            ["LOAD_ZONES", "TIMEPOINTS", "downward_reserve_requirement"]
         )
-    )
-    for row in lf_reserves_down:
-        writer.writerow(row)
 
-# transmission_lines.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "transmission_lines.tab"), "w") as \
-        transmission_lines_tab_file:
-    writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
-
-    # Write header
-    writer.writerow(
-        ["TRANSMISSION_LINES", "tx_capacity_type", "load_zone_from",
-         "load_zone_to"]
-    )
-
-    transmission_lines = c.execute(
-        """SELECT transmission_line, tx_capacity_type, load_zone_from,
-        load_zone_to
-        FROM transmission_lines
-        WHERE load_zone_scenario_id = {}
-        AND transmission_line_scenario_id = {};
-        """.format(
-            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID
+        lf_reserves_down = c.execute(
+            """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
+            FROM lf_reserves_down
+            WHERE period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND timepoint_scenario_id = {}
+            AND existing_project_scenario_id = {}
+            AND new_project_scenario_id = {}
+            AND lf_reserves_down_ba_scenario_id = {}
+            AND lf_reserves_down_scenario_id = {}
+            """.format(
+                PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+                EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+                LF_RESERVES_DOWN_BA_SCENARIO_ID, LF_RESERVES_DOWN_SCENARIO_ID
+            )
         )
-    )
-    for row in transmission_lines:
-        writer.writerow(row)
+        for row in lf_reserves_down:
+            writer.writerow(row)
 
-# specified_transmission_line_capacities.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "specified_transmission_line_capacities.tab"), "w") as \
-        transmission_lines_specified_capacities_tab_file:
-    writer = csv.writer(transmission_lines_specified_capacities_tab_file,
-                        delimiter="\t")
+if OPTIONAL_MODULE_TRANSMISSION:
+    # transmission_lines.tab
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "transmission_lines.tab"), "w") as \
+            transmission_lines_tab_file:
+        writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
 
-    # Write header
-    writer.writerow(
-        ["transmission_line", "period", "specified_tx_min_mw",
-         "specified_tx_max_mw"]
-    )
-
-    transmission_lines_specified_capacities = c.execute(
-        """SELECT transmission_line, period, min_mw, max_mw
-        FROM transmission_line_existing_capacity
-        WHERE load_zone_scenario_id = {}
-        AND transmission_line_scenario_id = {}
-        AND period_scenario_id = {}
-        AND transmission_line_existing_capacity_scenario_id = {};
-        """.format(
-            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
-            PERIOD_SCENARIO_ID, TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+        # Write header
+        writer.writerow(
+            ["TRANSMISSION_LINES", "tx_capacity_type", "load_zone_from",
+             "load_zone_to"]
         )
-    )
-    for row in transmission_lines_specified_capacities:
-        writer.writerow(row)
+
+        transmission_lines = c.execute(
+            """SELECT transmission_line, tx_capacity_type, load_zone_from,
+            load_zone_to
+            FROM transmission_lines
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {};
+            """.format(
+                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID
+            )
+        )
+        for row in transmission_lines:
+            writer.writerow(row)
+
+    # specified_transmission_line_capacities.tab
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "specified_transmission_line_capacities.tab"), "w") as \
+            transmission_lines_specified_capacities_tab_file:
+        writer = csv.writer(transmission_lines_specified_capacities_tab_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["transmission_line", "period", "specified_tx_min_mw",
+             "specified_tx_max_mw"]
+        )
+
+        transmission_lines_specified_capacities = c.execute(
+            """SELECT transmission_line, period, min_mw, max_mw
+            FROM transmission_line_existing_capacity
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND period_scenario_id = {}
+            AND transmission_line_existing_capacity_scenario_id = {};
+            """.format(
+                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
+                PERIOD_SCENARIO_ID, TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+            )
+        )
+        for row in transmission_lines_specified_capacities:
+            writer.writerow(row)
 
 
 # TODO: how to deal with optional modules
 # rps_targets.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "rps_targets.tab"), "w") as \
-        rps_targets_tab_file:
-    writer = csv.writer(rps_targets_tab_file,
-                        delimiter="\t")
+# part of optional rps module
+if OPTIONAL_MODULE_RPS:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "rps_targets.tab"), "w") as \
+            rps_targets_tab_file:
+        writer = csv.writer(rps_targets_tab_file,
+                            delimiter="\t")
 
-    # Write header
-    writer.writerow(
-        ["rps_zone", "period", "rps_target_mwh"]
-    )
-
-    rps_targets = c.execute(
-        """SELECT rps_zone, period, rps_target_mwh
-        FROM rps_targets
-        WHERE period_scenario_id = {}
-        AND horizon_scenario_id = {}
-        AND timepoint_scenario_id = {}
-        AND load_zone_scenario_id = {}
-        AND rps_zone_scenario_id = {}
-        AND rps_target_scenario_id = {};
-        """.format(
-            PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
-            LOAD_ZONE_SCENARIO_ID, RPS_ZONE_SCENARIO_ID, RPS_TARGET_SCENARIO_ID
+        # Write header
+        writer.writerow(
+            ["rps_zone", "period", "rps_target_mwh"]
         )
-    )
-    for row in rps_targets:
-        writer.writerow(row)
+
+        rps_targets = c.execute(
+            """SELECT rps_zone, period, rps_target_mwh
+            FROM rps_targets
+            WHERE period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND timepoint_scenario_id = {}
+            AND load_zone_scenario_id = {}
+            AND rps_zone_scenario_id = {}
+            AND rps_target_scenario_id = {};
+            """.format(
+                PERIOD_SCENARIO_ID, HORIZON_SCENARIO_ID, TIMEPOINT_SCENARIO_ID,
+                LOAD_ZONE_SCENARIO_ID, RPS_ZONE_SCENARIO_ID, RPS_TARGET_SCENARIO_ID
+            )
+        )
+        for row in rps_targets:
+            writer.writerow(row)
 
 
 # Simultaneous flow
 # transmission_simultaneous_flow_group_lines.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "transmission_simultaneous_flow_group_lines.tab"),
-          "w") as \
-        sim_flow_group_lines_file:
-    writer = csv.writer(sim_flow_group_lines_file,
-                        delimiter="\t")
+if OPTIONAL_MODULE_TRANSMISSION and OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS:
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "transmission_simultaneous_flow_group_lines.tab"),
+              "w") as \
+            sim_flow_group_lines_file:
+        writer = csv.writer(sim_flow_group_lines_file,
+                            delimiter="\t")
 
-    # Write header
-    writer.writerow(
-        ["simultaneous_flow_group", "transmission_line",
-         "simultaneous_flow_direction"]
-    )
-
-    group_lines = c.execute(
-        """SELECT transmission_simultaneous_flow_group, transmission_line,
-        simultaneous_flow_direction
-        FROM transmission_simultaneous_flow_group_lines
-        WHERE load_zone_scenario_id = {}
-        AND transmission_line_scenario_id = {}
-        AND transmission_simultaneous_flow_group_lines_scenario_id = {};
-        """.format(
-            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
-            TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID
+        # Write header
+        writer.writerow(
+            ["simultaneous_flow_group", "transmission_line",
+             "simultaneous_flow_direction"]
         )
-    )
-    for row in group_lines:
-        writer.writerow(row)
 
-# transmission_simultaneous_flows.tab
-with open(os.path.join(INPUTS_DIRECTORY,
-                       "transmission_simultaneous_flows.tab"), "w") as \
-        sim_flows_file:
-    writer = csv.writer(sim_flows_file, delimiter="\t")
-
-    # Write header
-    writer.writerow(
-        ["simultaneous_flow_group", "period", "simultaneous_flow_limit_mw"]
-    )
-
-    flow_limits = c.execute(
-        """SELECT transmission_simultaneous_flow_group, period, max_flow_mw
-        FROM transmission_simultaneous_flow_limits
-        WHERE load_zone_scenario_id = {}
-        AND transmission_line_scenario_id = {}
-        AND transmission_simultaneous_flow_group_lines_scenario_id = {}
-        AND period_scenario_id = {}
-        AND transmission_simultaneous_flow_limit_scenario_id = {};
-        """.format(
-            LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
-            TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID,
-            PERIOD_SCENARIO_ID,
-            TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
+        group_lines = c.execute(
+            """SELECT transmission_simultaneous_flow_group, transmission_line,
+            simultaneous_flow_direction
+            FROM transmission_simultaneous_flow_group_lines
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND transmission_simultaneous_flow_group_lines_scenario_id = {};
+            """.format(
+                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
+                TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID
+            )
         )
-    )
-    for row in flow_limits:
-        writer.writerow(row)
+        for row in group_lines:
+            writer.writerow(row)
+
+    # transmission_simultaneous_flows.tab
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "transmission_simultaneous_flows.tab"), "w") as \
+            sim_flows_file:
+        writer = csv.writer(sim_flows_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["simultaneous_flow_group", "period", "simultaneous_flow_limit_mw"]
+        )
+
+        flow_limits = c.execute(
+            """SELECT transmission_simultaneous_flow_group, period, max_flow_mw
+            FROM transmission_simultaneous_flow_limits
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND transmission_simultaneous_flow_group_lines_scenario_id = {}
+            AND period_scenario_id = {}
+            AND transmission_simultaneous_flow_limit_scenario_id = {};
+            """.format(
+                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
+                TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID,
+                PERIOD_SCENARIO_ID,
+                TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
+            )
+        )
+        for row in flow_limits:
+            writer.writerow(row)
