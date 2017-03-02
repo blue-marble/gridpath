@@ -269,6 +269,7 @@ def get_modules(scenario_directory):
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
+        "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.aggregate_carbon_emissions",
         "system.load_balance.load_balance",
         "system.load_balance.costs",
@@ -320,9 +321,12 @@ def get_modules(scenario_directory):
     }
 
     # Some modules depend on more than one supermodule
+    # Currently, these are: track_carbon_imports and simultaneous_flow_limits
     cross_modules = {
         ("transmission", "carbon_cap", "track_carbon_imports"):
-            ["transmission.operations.aggregate_carbon_emissions"]
+            ["transmission.operations.aggregate_carbon_emissions"],
+        ("transmission", "simultaneous_flow_limits"):
+            ["transmission.operations.simultaneous_flow_limits"]
     }
 
     # Remove any modules not requested by user
