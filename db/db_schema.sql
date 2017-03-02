@@ -3,6 +3,18 @@
 DROP TABLE IF EXISTS scenarios;
 CREATE TABLE scenarios(
 scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+scenario_name VARCHAR(64),
+om_fuels INTEGER,
+om_multi_stage INTEGER,
+om_transmission INTEGER,
+om_simultaneous_flow_limits INTEGER,
+om_lf_reserves_up INTEGER,
+om_lf_reserves_down INTEGER,
+om_regulation_up INTEGER,
+om_regulation_down INTEGER,
+om_rps INTEGER,
+om_carbon_cap INTEGER,
+om_track_carbon_imports INTEGER,
 period_scenario_id INTEGER,
 horizon_scenario_id INTEGER,
 timepoint_scenario_id INTEGER,
@@ -107,7 +119,7 @@ variable_generator_profiles_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
 load_zone_scenario_id, load_zone_scenario_id) REFERENCES subscenarios_loads
 (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
-load_zone_scenario_id, load_zone_scenario_id),
+load_zone_scenario_id, load_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
  existing_project_scenario_id, new_project_scenario_id,
 lf_reserves_up_ba_scenario_id, lf_reserves_up_scenario_id) REFERENCES
@@ -154,6 +166,7 @@ transmission_line_scenario_id,
 transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
 transmission_simultaneous_flow_limit_scenario_id)
 );
+
 
 -- -- SUB-SCENARIOS -- --
 -- Geography
@@ -468,7 +481,7 @@ load_scenario_id INTEGER,
 load_scenario_name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (period_scenario_id, horizon_scenario_id, timepoint_scenario_id,
-load_zone_scenario_id, load_zone_scenario_id),
+load_zone_scenario_id, load_scenario_id),
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -479,6 +492,7 @@ REFERENCES subscenarios_timepoints (period_scenario_id, horizon_scenario_id,
 FOREIGN KEY (load_zone_scenario_id) REFERENCES subscenarios_load_zones
 (load_zone_scenario_id)
 );
+
 
 -- Transmission capacities
 DROP TABLE IF EXISTS subscenarios_transmission_line_existing_capacity;
@@ -830,6 +844,7 @@ existing_project_scenario_id INTEGER,
 new_project_scenario_id INTEGER,
 project VARCHAR(64),
 capacity_type VARCHAR(32),
+technology VARCHAR(32),
 PRIMARY KEY (existing_project_scenario_id, new_project_scenario_id, project),
 FOREIGN KEY (existing_project_scenario_id) REFERENCES
 subscenarios_existing_projects (existing_project_scenario_id),
@@ -844,7 +859,7 @@ CREATE TABLE project_operational_chars(
 project_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
 operational_type VARCHAR(32),
-technology VARCHAR(32),
+variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 minimum_input_mmbtu_per_hr FLOAT,
 inc_heat_rate_mmbtu_per_mwh FLOAT,

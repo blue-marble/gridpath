@@ -1,16 +1,151 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from argparse import ArgumentParser
 import csv
 import os.path
 import sqlite3
+import sys
 
-SCENARIO_ID = 1
+
+arguments = sys.argv[1:]
+parser = ArgumentParser(add_help=True)
+parser.add_argument("--scenario_id", help="The scenario_id from the database.")
+parsed_arguments = parser.parse_known_args(args=arguments)[0]
+
+SCENARIO_ID = parsed_arguments.scenario_id
+
+# Assume script is run from same directory a the database, which is named io.db
 io = sqlite3.connect(
     os.path.join(os.getcwd(), 'io.db')
 )
 c = io.cursor()
 
+# Get scenario name and make inputs directory
+SCENARIO_NAME = c.execute(
+    """SELECT scenario_name
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+SCENARIOS_MAIN_DIRECTORY = os.path.join(
+    os.getcwd(), "..", "scenarios")
+if not os.path.exists(SCENARIOS_MAIN_DIRECTORY):
+    os.makedirs(SCENARIOS_MAIN_DIRECTORY)
+
+SCENARIO_DIRECTORY = os.path.join(
+    SCENARIOS_MAIN_DIRECTORY, str(SCENARIO_ID) + "_" + str(SCENARIO_NAME))
+if not os.path.exists(SCENARIO_DIRECTORY):
+    os.makedirs(SCENARIO_DIRECTORY)
+
+INPUTS_DIRECTORY = os.path.join(
+    SCENARIO_DIRECTORY, "inputs")
+if not os.path.exists(INPUTS_DIRECTORY):
+    os.makedirs(INPUTS_DIRECTORY)
+
+# Get modules we'll be using
+MODULE_LIST = list()
+
+OPTIONAL_MODULE_FUELS = c.execute(
+    """SELECT om_fuels
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_FUELS:
+    MODULE_LIST.append("fuels")
+
+OPTIONAL_MULTI_STAGE = c.execute(
+    """SELECT om_multi_stage
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MULTI_STAGE:
+    MODULE_LIST.append("multi_stage")
+
+OPTIONAL_MODULE_TRANSMISSION = c.execute(
+    """SELECT om_transmission
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_TRANSMISSION:
+    MODULE_LIST.append("transmission")
+
+OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS = c.execute(
+    """SELECT om_simultaneous_flow_limits
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS:
+    MODULE_LIST.append("simultaneous_flow_limits")
+
+OPTIONAL_MODULE_LF_RESERVES_UP = c.execute(
+    """SELECT om_lf_reserves_up
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_LF_RESERVES_UP:
+    MODULE_LIST.append("lf_reserves_up")
+
+OPTIONAL_MODULE_LF_RESERVES_DOWN = c.execute(
+    """SELECT om_lf_reserves_down
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_LF_RESERVES_DOWN:
+    MODULE_LIST.append("lf_reserves_down")
+
+OPTIONAL_MODULE_REGULATION_UP = c.execute(
+    """SELECT om_regulation_up
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_REGULATION_UP:
+    MODULE_LIST.append("regulation_up")
+
+OPTIONAL_MODULE_REGULATION_DOWN = c.execute(
+    """SELECT om_regulation_down
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_REGULATION_DOWN:
+    MODULE_LIST.append("regulation_down")
+
+OPTIONAL_MODULE_RPS = c.execute(
+    """SELECT om_rps
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_RPS:
+    MODULE_LIST.append("rps")
+
+OPTIONAL_MODULE_CARBON_CAP = c.execute(
+    """SELECT om_carbon_cap
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_CARBON_CAP:
+    MODULE_LIST.append("carbon_cap")
+
+OPTIONAL_MODULE_TRACK_CARBON_IMPORTS = c.execute(
+    """SELECT om_track_carbon_imports
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+if OPTIONAL_MODULE_TRACK_CARBON_IMPORTS:
+    MODULE_LIST.append("track_carbon_imports")
+
+# modules.csv
+with open(os.path.join(SCENARIO_DIRECTORY, "modules.csv"), "w") as \
+        modules_csv_file:
+    writer = csv.writer(modules_csv_file, delimiter=",")
+
+    # Write header
+    writer.writerow(["modules"])
+
+    for module in MODULE_LIST:
+        writer.writerow([module])
+
+# Get subscenarios
 HORIZON_SCENARIO_ID = c.execute(
     """SELECT horizon_scenario_id
        FROM scenarios
@@ -180,7 +315,7 @@ TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID = c.execute(
 ).fetchone()[0]
 
 # periods.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "periods.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY, "periods.tab"), "w") as \
         periods_tab_file:
     writer = csv.writer(periods_tab_file, delimiter="\t")
 
@@ -199,7 +334,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "periods.tab"), "w") as \
         writer.writerow(row)
 
 # horizons.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "horizons.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY, "horizons.tab"), "w") as \
         horizons_tab_file:
     writer = csv.writer(horizons_tab_file, delimiter="\t")
 
@@ -219,7 +354,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "horizons.tab"), "w") as \
         writer.writerow(row)
 
 # timepoints.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "timepoints.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY, "timepoints.tab"), "w") as \
         timepoints_tab_file:
     writer = csv.writer(timepoints_tab_file, delimiter="\t")
 
@@ -241,7 +376,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "timepoints.tab"), "w") as \
         writer.writerow(row)
 
 # load_zones.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "load_zones.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY, "load_zones.tab"), "w") as \
         load_zones_tab_file:
     writer = csv.writer(load_zones_tab_file, delimiter="\t")
 
@@ -262,7 +397,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "load_zones.tab"), "w") as \
         writer.writerow(row)
 
 # load_following_up_balancing_areas.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "load_following_up_balancing_areas.tab"),
           "w") as \
         lf_up_bas_tab_file:
@@ -284,7 +419,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # load_following_down_balancing_areas.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "load_following_down_balancing_areas.tab"),
           "w") as \
         lf_down_bas_tab_file:
@@ -307,7 +442,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # rps_zones.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "rps_zones.tab"),
+with open(os.path.join(INPUTS_DIRECTORY, "rps_zones.tab"),
           "w") as \
         rps_zones_tab_file:
     writer = csv.writer(rps_zones_tab_file, delimiter="\t")
@@ -333,7 +468,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "rps_zones.tab"),
 # TODO: if fuel specified, can't have '.' -- must be 0 instead
 # TODO: why is there a startup cost for CAISO_Nuclear and CAISO_CHP
 # projects.tab
-with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY, "projects.tab"), "w") as \
         projects_tab_file:
     writer = csv.writer(projects_tab_file, delimiter="\t")
 
@@ -346,10 +481,9 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
          "min_stable_level_fraction", "unit_size_mw", "startup_cost",
          "shutdown_cost", "min_up_time_hours", "min_down_time_hours",
          "charging_efficiency", "discharging_efficiency",
-         "minimum_duration_hours", "variable_om_cost_per_mwh"]
+         "minimum_duration_hours", "variable_om_cost_per_mwh", "technology"]
     )
 
-    # TODO: add variable
     projects = c.execute(
         """SELECT project, load_zone, lf_reserves_up_ba, lf_reserves_down_ba,
         rps_zone, capacity_type, operational_type, fuel,
@@ -357,7 +491,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
         min_stable_level, unit_size_mw, startup_cost, shutdown_cost,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, 10
+        minimum_duration_hours, variable_cost_per_mwh, technology
         FROM all_projects
         JOIN project_operational_chars
         USING (project)
@@ -388,7 +522,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs", "projects.tab"), "w") as \
         writer.writerow(replace_nulls)
 
 # existing_generation_period_params.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "existing_generation_period_params.tab"), "w") as \
         existing_project_capacity_tab_file:
     writer = csv.writer(existing_project_capacity_tab_file, delimiter="\t")
@@ -414,7 +548,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # storage_specified_capacities.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "storage_specified_capacities.tab"), "w") as \
         storage_specified_capacities_tab_file:
     writer = csv.writer(storage_specified_capacities_tab_file, delimiter="\t")
@@ -444,7 +578,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # new_build_generator_vintage_costs.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "new_build_generator_vintage_costs.tab"), "w") as \
         new_gen_costs_tab_file:
     writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
@@ -480,7 +614,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(replace_nulls)
 
 # new_build_storage_vintage_costs.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "new_build_storage_vintage_costs.tab"), "w") as \
         new_storage_costs_tab_file:
     writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
@@ -510,7 +644,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # fuels.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "fuels.tab"), "w") as \
         fuels_tab_file:
     writer = csv.writer(fuels_tab_file, delimiter="\t")
@@ -531,7 +665,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # hydro_conventional_horizon_params.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "hydro_conventional_horizon_params.tab"), "w") as \
         hydro_chars_tab_file:
     writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
@@ -560,7 +694,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # variable_generator_profiles.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "variable_generator_profiles.tab"), "w") as \
         variable_profiles_tab_file:
     writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
@@ -591,7 +725,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # load_mw.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "load_mw.tab"), "w") as \
         load_tab_file:
     writer = csv.writer(load_tab_file, delimiter="\t")
@@ -618,7 +752,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # lf_reserves_up_requirement.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "lf_reserves_up_requirement.tab"), "w") as \
         lf_reserves_up_tab_file:
     writer = csv.writer(lf_reserves_up_tab_file, delimiter="\t")
@@ -649,7 +783,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
         
 # lf_reserves_down_requirement.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "lf_reserves_down_requirement.tab"), "w") as \
         lf_reserves_down_tab_file:
     writer = csv.writer(lf_reserves_down_tab_file, delimiter="\t")
@@ -680,7 +814,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # transmission_lines.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "transmission_lines.tab"), "w") as \
         transmission_lines_tab_file:
     writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
@@ -705,7 +839,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # specified_transmission_line_capacities.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "specified_transmission_line_capacities.tab"), "w") as \
         transmission_lines_specified_capacities_tab_file:
     writer = csv.writer(transmission_lines_specified_capacities_tab_file,
@@ -735,7 +869,7 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 
 # TODO: how to deal with optional modules
 # rps_targets.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
+with open(os.path.join(INPUTS_DIRECTORY,
                        "rps_targets.tab"), "w") as \
         rps_targets_tab_file:
     writer = csv.writer(rps_targets_tab_file,
@@ -766,8 +900,8 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
 
 # Simultaneous flow
 # transmission_simultaneous_flow_group_lines.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
-                       "transmission_simultaneous_flow_group_lines.tab.tab"),
+with open(os.path.join(INPUTS_DIRECTORY,
+                       "transmission_simultaneous_flow_group_lines.tab"),
           "w") as \
         sim_flow_group_lines_file:
     writer = csv.writer(sim_flow_group_lines_file,
@@ -795,8 +929,8 @@ with open(os.path.join(os.getcwd(), "temp_inputs",
         writer.writerow(row)
 
 # transmission_simultaneous_flows.tab
-with open(os.path.join(os.getcwd(), "temp_inputs",
-                       "transmission_simultaneous_flows.tab.tab"), "w") as \
+with open(os.path.join(INPUTS_DIRECTORY,
+                       "transmission_simultaneous_flows.tab"), "w") as \
         sim_flows_file:
     writer = csv.writer(sim_flows_file, delimiter="\t")
 
