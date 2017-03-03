@@ -194,6 +194,18 @@ RPS_TARGET_SCENARIO_ID = c.execute(
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
 
+CARBON_CAP_ZONE_SCENARIO_ID = c.execute(
+    """SELECT carbon_cap_zone_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+CARBON_CAP_TARGET_SCENARIO_ID = c.execute(
+    """SELECT carbon_cap_target_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
 PROJECT_LOAD_ZONE_SCENARIO_ID = c.execute(
     """SELECT project_load_zone_scenario_id
        FROM scenarios
@@ -214,6 +226,12 @@ PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID = c.execute(
 
 PROJECT_RPS_ZONE_SCENARIO_ID = c.execute(
     """SELECT project_rps_zone_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+PROJECT_CARBON_CAP_ZONE_SCENARIO_ID = c.execute(
+    """SELECT project_carbon_cap_zone_scenario_id
        FROM scenarios
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
@@ -310,6 +328,12 @@ TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID = c.execute(
 
 TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID = c.execute(
     """SELECT transmission_simultaneous_flow_limit_scenario_id
+       FROM scenarios
+       WHERE scenario_id = {};""".format(SCENARIO_ID)
+).fetchone()[0]
+
+TRANSMISSION_LINE_CARBON_CAP_ZONE_SCENARIO_ID = c.execute(
+    """SELECT transmission_line_carbon_cap_zone_scenario_id
        FROM scenarios
        WHERE scenario_id = {};""".format(SCENARIO_ID)
 ).fetchone()[0]
@@ -479,8 +503,10 @@ if OPTIONAL_MODULE_LF_RESERVES_UP:
     prj_db_table_optional_select["lf_reserves_up"] = {
         "db_column_name": ", lf_reserves_up_ba",
         "db_join_statement": "\nJOIN project_lf_reserves_up_bas "
-                               "USING (existing_project_scenario_id, "
-                               "new_project_scenario_id, project) "
+                             "USING (existing_project_scenario_id, "
+                             "new_project_scenario_id, project) ",
+        "db_and_statement": "\nAND lf_reserves_up_ba_scenario_id = {} "
+                            "AND project_lf_reserves_up_ba_scenario_id = {}"
         }
     prj_file_optional_headers.append("lf_reserves_up_zone")
 else:
@@ -494,7 +520,10 @@ if OPTIONAL_MODULE_LF_RESERVES_DOWN:
         "db_column_name": ", lf_reserves_down_ba",
         "db_join_statement": "\nJOIN project_lf_reserves_down_bas "
                                "USING (existing_project_scenario_id, "
-                               "new_project_scenario_id, project) "
+                               "new_project_scenario_id, project) ",
+        "db_and_statement": "\nAND lf_reserves_down_ba_scenario_id = {} "
+                            "AND project_lf_reserves_down_ba_scenario_id = "
+                            "{}"
         }
     prj_file_optional_headers.append("lf_reserves_down_zone")
 else:
@@ -508,7 +537,9 @@ if OPTIONAL_MODULE_RPS:
         "db_column_name": ", rps_zone",
         "db_join_statement": "\nJOIN project_rps_zones "
                              "USING (existing_project_scenario_id, "
-                             "new_project_scenario_id, project) "
+                             "new_project_scenario_id, project) ",
+        "db_and_statement": "\nAND rps_zone_scenario_id = {} "
+                            "AND project_rps_zone_scenario_id = {}"
     }
     prj_file_optional_headers.append("rps_zone")
 else:
@@ -516,6 +547,23 @@ else:
         "db_column_name": "",
         "db_join_statement": ""
     }
+
+if OPTIONAL_MODULE_CARBON_CAP:
+    prj_db_table_optional_select["carbon_cap"] = {
+        "db_column_name": ", carbon_cap_zone",
+        "db_join_statement": "\nJOIN project_carbon_cap_zones "
+                             "USING (existing_project_scenario_id, "
+                             "new_project_scenario_id, project) ",
+        "db_and_statement": "\nAND carbon_cap_zone_scenario_id = {} "
+                            "AND project_carbon_cap_zone_scenario_id = {}"
+    }
+    prj_file_optional_headers.append("carbon_cap_zone")
+else:
+    prj_db_table_optional_select["carbon_cap"] = {
+        "db_column_name": "",
+        "db_join_statement": ""
+    }
+
 
 with open(os.path.join(INPUTS_DIRECTORY, "projects.tab"), "w") as \
         projects_tab_file:
@@ -533,40 +581,59 @@ with open(os.path.join(INPUTS_DIRECTORY, "projects.tab"), "w") as \
         + prj_file_optional_headers
     )
 
-    projects = c.execute(
-        """SELECT project, load_zone,
-        rps_zone, capacity_type, operational_type, fuel,
+    query = \
+        """SELECT project, load_zone, capacity_type, operational_type, fuel,
         minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
         min_stable_level, unit_size_mw, startup_cost, shutdown_cost,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
-        minimum_duration_hours, variable_cost_per_mwh, technology""" +
-        prj_db_table_optional_select["lf_reserves_up"]["db_column_name"] +
-        prj_db_table_optional_select["lf_reserves_down"]["db_column_name"] +
-        prj_db_table_optional_select["rps"]["db_column_name"] +
+        minimum_duration_hours, variable_cost_per_mwh, technology""" + \
+        prj_db_table_optional_select["lf_reserves_up"]["db_column_name"] + \
+        prj_db_table_optional_select["lf_reserves_down"]["db_column_name"] +\
+        prj_db_table_optional_select["rps"]["db_column_name"] + \
+        prj_db_table_optional_select["carbon_cap"]["db_column_name"] +\
         """ FROM all_projects
         JOIN project_operational_chars
         USING (project)
         JOIN project_load_zones
         USING (existing_project_scenario_id, new_project_scenario_id,
-        project)""" +
-        prj_db_table_optional_select["lf_reserves_up"]["db_join_statement"] +
-        prj_db_table_optional_select["lf_reserves_down"]["db_join_statement"] +
-        prj_db_table_optional_select["rps"]["db_join_statement"] +
+        project)""" + \
+        prj_db_table_optional_select["lf_reserves_up"]["db_join_statement"] + \
+        prj_db_table_optional_select["lf_reserves_down"][
+            "db_join_statement"] \
+        + \
+        prj_db_table_optional_select["rps"]["db_join_statement"] + \
+        prj_db_table_optional_select["carbon_cap"]["db_join_statement"] + \
         """
-        WHERE existing_project_scenario_id = {}
+        WHERE load_zone_scenario_id = {}
+        AND existing_project_scenario_id = {}
         AND new_project_scenario_id = {}
         AND project_operational_chars_scenario_id = {}
-        AND project_load_zone_scenario_id = {}
-        AND project_rps_zone_scenario_id = {};""".format(
-            EXISTING_PROJECT_SCENARIO_ID, NEW_PROJECT_SCENARIO_ID,
+        AND project_load_zone_scenario_id = {}""" + \
+        prj_db_table_optional_select["lf_reserves_up"]["db_and_statement"] + \
+        prj_db_table_optional_select["lf_reserves_down"]["db_and_statement"] \
+        + \
+        prj_db_table_optional_select["rps"]["db_and_statement"] + \
+        prj_db_table_optional_select["carbon_cap"]["db_and_statement"] + \
+        """;"""
+
+    projects = c.execute(query.format(
+            LOAD_ZONE_SCENARIO_ID,
+            EXISTING_PROJECT_SCENARIO_ID,
+            NEW_PROJECT_SCENARIO_ID,
             PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             PROJECT_LOAD_ZONE_SCENARIO_ID,
+            LF_RESERVES_UP_BA_SCENARIO_ID,
             PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID,
+            LF_RESERVES_DOWN_BA_SCENARIO_ID,
             PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID,
-            PROJECT_RPS_ZONE_SCENARIO_ID
+            RPS_ZONE_SCENARIO_ID,
+            PROJECT_RPS_ZONE_SCENARIO_ID,
+            CARBON_CAP_ZONE_SCENARIO_ID,
+            PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
         )
     ).fetchall()
+
 
     for row in projects:
         replace_nulls = ["." if i is None else i for i in row]
@@ -875,29 +942,64 @@ if OPTIONAL_MODULE_TRANSMISSION:
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
 
+        # Are we tracking carbon?
+        line_file_optional_headers = list()
+        line_db_table_optional_args = {}
+
+        if OPTIONAL_MODULE_CARBON_CAP and OPTIONAL_MODULE_TRACK_CARBON_IMPORTS:
+            line_file_optional_headers = [
+                "carbon_cap_zone", "carbon_cap_zone_import_direction",
+                "tx_co2_intensity_tons_per_mwh"
+            ]
+            line_db_table_optional_args["select"] = \
+                """, carbon_cap_zone, carbon_cap_zone_import_direction,
+                tx_co2_intensity_tons_per_mwh """
+            line_db_table_optional_args["join"] = \
+                """\nJOIN transmission_line_carbon_cap_zones
+                USING (load_zone_scenario_id, transmission_line_scenario_id,
+                transmission_line)"""
+            line_db_table_optional_args["and"] = \
+                """\nAND carbon_cap_zone_scenario_id = {}
+                AND transmission_line_carbon_cap_zone_scenario_id = {}"""
+        else:
+            prj_db_table_optional_select["lf_reserves_up"] = {
+                "db_column_name": "",
+                "db_join_statement": ""
+            }
+
         # Write header
         writer.writerow(
             ["TRANSMISSION_LINES", "tx_capacity_type", "load_zone_from",
-             "load_zone_to"]
+             "load_zone_to"] + line_file_optional_headers
         )
 
-        transmission_lines = c.execute(
-            """SELECT transmission_line, tx_capacity_type, load_zone_from,
-            load_zone_to
-            FROM transmission_lines
+        tx_query = \
+            """SELECT transmission_lines.transmission_line, tx_capacity_type,
+            load_zone_from, load_zone_to""" \
+            + line_db_table_optional_args["select"] + \
+            """FROM transmission_lines""" + \
+            line_db_table_optional_args["join"] + \
+            """
             WHERE load_zone_scenario_id = {}
-            AND transmission_line_scenario_id = {};
-            """.format(
-                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID
+            AND transmission_line_scenario_id = {} """ + \
+            line_db_table_optional_args["and"] + \
+            """;"""
+
+        transmission_lines = c.execute(
+            tx_query.format(
+                LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
+                CARBON_CAP_ZONE_SCENARIO_ID,
+                TRANSMISSION_LINE_CARBON_CAP_ZONE_SCENARIO_ID
             )
-        )
+        ).fetchall()
         for row in transmission_lines:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
     # specified_transmission_line_capacities.tab
     with open(os.path.join(INPUTS_DIRECTORY,
-                           "specified_transmission_line_capacities.tab"), "w") as \
-            transmission_lines_specified_capacities_tab_file:
+                           "specified_transmission_line_capacities.tab"), "w")\
+            as transmission_lines_specified_capacities_tab_file:
         writer = csv.writer(transmission_lines_specified_capacities_tab_file,
                             delimiter="\t")
 
@@ -916,14 +1018,14 @@ if OPTIONAL_MODULE_TRANSMISSION:
             AND transmission_line_existing_capacity_scenario_id = {};
             """.format(
                 LOAD_ZONE_SCENARIO_ID, TRANSMISSION_LINE_SCENARIO_ID,
-                PERIOD_SCENARIO_ID, TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+                PERIOD_SCENARIO_ID,
+                TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
             )
         )
         for row in transmission_lines_specified_capacities:
             writer.writerow(row)
 
 
-# TODO: how to deal with optional modules
 # rps_targets.tab
 # part of optional rps module
 if OPTIONAL_MODULE_RPS:
@@ -1014,4 +1116,52 @@ if OPTIONAL_MODULE_TRANSMISSION and OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS:
             )
         )
         for row in flow_limits:
+            writer.writerow(row)
+
+if OPTIONAL_MODULE_CARBON_CAP:
+    # carbon_cap_zones.tab
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "carbon_cap_zones.tab"), "w") as \
+            carbon_cap_zones_file:
+        writer = csv.writer(carbon_cap_zones_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["carbon_cap_zone"]
+        )
+
+        carbon_cap_zone = c.execute(
+            """SELECT carbon_cap_zone
+            FROM carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {};
+            """.format(
+                CARBON_CAP_ZONE_SCENARIO_ID
+            )
+        )
+        for row in carbon_cap_zone:
+            writer.writerow(row)
+
+    # carbon_cap.tab
+    with open(os.path.join(INPUTS_DIRECTORY,
+                           "carbon_cap.tab"), "w") as \
+            carbon_cap_file:
+        writer = csv.writer(carbon_cap_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
+        )
+
+        carbon_cap = c.execute(
+            """SELECT carbon_cap_zone, period, carbon_cap_target_mmt
+            FROM carbon_cap_targets
+            WHERE period_scenario_id = {}
+            AND carbon_cap_zone_scenario_id = {}
+            AND carbon_cap_target_scenario_id = {};
+            """.format(
+                PERIOD_SCENARIO_ID, CARBON_CAP_ZONE_SCENARIO_ID,
+                CARBON_CAP_TARGET_SCENARIO_ID
+            )
+        )
+        for row in carbon_cap:
             writer.writerow(row)

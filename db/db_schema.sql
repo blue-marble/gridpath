@@ -29,6 +29,7 @@ project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
+project_carbon_cap_zone_scenario_id INTEGER,
 existing_project_capacity_scenario_id INTEGER,
 new_project_cost_scenario_id INTEGER,
 new_project_potential_scenario_id INTEGER,
@@ -45,6 +46,7 @@ transmission_line_scenario_id INTEGER,
 transmission_line_existing_capacity_scenario_id INTEGER,
 transmission_simultaneous_flow_group_lines_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
+transmission_line_carbon_cap_zone_scenario_id INTEGER,
 FOREIGN KEY (period_scenario_id) REFERENCES subscenarios_periods
 (period_scenario_id),
 FOREIGN KEY (period_scenario_id, horizon_scenario_id) REFERENCES
@@ -86,6 +88,11 @@ new_project_scenario_id, project_rps_zone_scenario_id)
 REFERENCES subscenarios_project_rps_zones
 (rps_zone_scenario_id, existing_project_scenario_id,
 new_project_scenario_id, project_rps_zone_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id, existing_project_scenario_id,
+new_project_scenario_id, project_carbon_cap_zone_scenario_id)
+REFERENCES subscenarios_project_carbon_cap_zones
+(carbon_cap_zone_scenario_id, existing_project_scenario_id,
+new_project_scenario_id, project_carbon_cap_zone_scenario_id),
 FOREIGN KEY (existing_project_scenario_id, period_scenario_id,
 existing_project_capacity_scenario_id) REFERENCES
 subscenarios_existing_project_capacity (existing_project_scenario_id,
@@ -164,7 +171,12 @@ REFERENCES subscenarios_transmission_simultaneous_flow_limits
 (load_zone_scenario_id,
 transmission_line_scenario_id,
 transmission_simultaneous_flow_group_lines_scenario_id, period_scenario_id,
-transmission_simultaneous_flow_limit_scenario_id)
+transmission_simultaneous_flow_limit_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id, transmission_line_carbon_cap_zone_scenario_id)
+REFERENCES subscenarios_transmission_line_carbon_cap_zones
+(carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id, transmission_line_carbon_cap_zone_scenario_id)
 );
 
 
@@ -468,6 +480,41 @@ FOREIGN KEY (existing_project_scenario_id) REFERENCES
 subscenarios_existing_projects (existing_project_scenario_id),
 FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
 (new_project_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
+CREATE TABLE subscenarios_project_carbon_cap_zones(
+carbon_cap_zone_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_carbon_cap_zone_scenario_id INTEGER,
+project_carbon_cap_zone_scenario_name VARCHAR(64),
+description VARCHAR(128),
+PRIMARY KEY (carbon_cap_zone_scenario_id, existing_project_scenario_id,
+new_project_scenario_id, project_carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
+subscenarios_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (existing_project_scenario_id) REFERENCES
+subscenarios_existing_projects (existing_project_scenario_id),
+FOREIGN KEY (new_project_scenario_id) REFERENCES subscenarios_new_projects
+(new_project_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_transmission_line_carbon_cap_zones;
+CREATE TABLE subscenarios_transmission_line_carbon_cap_zones(
+carbon_cap_zone_scenario_id INTEGER,
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_line_carbon_cap_zone_scenario_id INTEGER,
+transmission_line_carbon_cap_zone_scenario_name VARCHAR(64),
+description VARCHAR(128),
+PRIMARY KEY (carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id, transmission_line_carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
+subscenarios_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
+subscenarios_transmission_lines
+(load_zone_scenario_id, transmission_line_scenario_id)
 );
 
 -- Loads
@@ -1041,6 +1088,25 @@ FOREIGN KEY (rps_zone_scenario_id) REFERENCES subscenarios_rps_zones
 (rps_zone_scenario_id)
 );
 
+-- Project-carbon_cap zones
+DROP TABLE IF EXISTS project_carbon_cap_zones;
+CREATE TABLE project_carbon_cap_zones(
+carbon_cap_zone_scenario_id INTEGER,
+existing_project_scenario_id INTEGER,
+new_project_scenario_id INTEGER,
+project_carbon_cap_zone_scenario_id INTEGER,
+project VARCHAR(64),
+carbon_cap_zone VARCHAR(32),
+PRIMARY KEY (carbon_cap_zone_scenario_id, existing_project_scenario_id,
+new_project_scenario_id, project_carbon_cap_zone_scenario_id, project),
+FOREIGN KEY (existing_project_scenario_id, new_project_scenario_id, project)
+ REFERENCES all_projects (existing_project_scenario_id,
+ new_project_scenario_id,
+  project),
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES subscenarios_carbon_cap_zones
+(carbon_cap_zone_scenario_id)
+);
+
 
 -- Project capacity/availability
 
@@ -1333,6 +1399,32 @@ FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
 subscenarios_transmission_lines (load_zone_scenario_id,
 transmission_line_scenario_id)
 );
+
+DROP TABLE IF EXISTS transmission_line_carbon_cap_zones;
+CREATE TABLE transmission_line_carbon_cap_zones(
+carbon_cap_zone_scenario_id INTEGER,
+load_zone_scenario_id INTEGER,
+transmission_line_scenario_id INTEGER,
+transmission_line_carbon_cap_zone_scenario_id INTEGER,
+transmission_line INTEGER,
+carbon_cap_zone VARCHAR(32),
+carbon_cap_zone_import_direction VARCHAR(8),
+tx_co2_intensity_tons_per_mwh FLOAT,
+PRIMARY KEY (carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id,
+transmission_line_carbon_cap_zone_scenario_id, transmission_line),
+FOREIGN KEY (carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id, transmission_line_carbon_cap_zone_scenario_id)
+REFERENCES subscenarios_transmission_line_carbon_cap_zones
+(carbon_cap_zone_scenario_id, load_zone_scenario_id,
+transmission_line_scenario_id,  transmission_line_carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
+subscenarios_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, transmission_line_scenario_id) REFERENCES
+subscenarios_transmission_lines (load_zone_scenario_id,
+transmission_line_scenario_id)
+);
+
 
 -- POLICY --
 
