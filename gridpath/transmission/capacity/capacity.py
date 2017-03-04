@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 from functools import reduce
 import os.path
-from pyomo.environ import Set, Param, Expression
+from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules, \
     total_cost_components
@@ -162,3 +163,17 @@ def export_results(scenario_directory, horizon, stage, m, d):
         os.path.join(scenario_directory, horizon, stage, "results",
                      "transmission_capacity.csv"),
         header=True, index=True)
+
+    # Export transmission capacity costs
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+              "costs_transmission_capacity.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            ["tx_line", "period", "annualized_capacity_cost"]
+        )
+        for (l, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
+            writer.writerow([
+                l,
+                p,
+                value(m.Transmission_Capacity_Cost_in_Period[l, p])
+            ])

@@ -255,17 +255,19 @@ def get_modules(scenario_directory):
         'project',
         "project.capacity.capacity",
         "project.capacity.costs",
+        "project.fuels",
+        "project.operations",
         "project.operations.reserves.lf_reserves_up",
         "project.operations.reserves.lf_reserves_down",
         "project.operations.reserves.regulation_up",
         "project.operations.reserves.regulation_down",
         "project.operations.operational_types",
-        "project.operations.fuels",
         "project.operations.aggregate_power",
         "project.operations.fix_commitment",
         "project.operations.aggregate_costs",
         "project.operations.aggregate_recs",
         "project.operations.aggregate_carbon_emissions",
+        "project.operations.fuel_burn",
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
@@ -285,7 +287,7 @@ def get_modules(scenario_directory):
     # Names of groups of optional modules
     optional_modules = {
         "fuels":
-            ["project.operations.fuels"],
+            ["project.fuels",  "project.operations.fuel_burn"],
         "multi_stage":
             ["project.operations.fix_commitment"],
         "transmission":

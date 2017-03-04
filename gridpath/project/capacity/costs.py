@@ -4,7 +4,10 @@
 """
 Describe capacity costs.
 """
-from pyomo.environ import Expression
+
+import csv
+import os.path
+from pyomo.environ import Expression, value
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     total_cost_components
@@ -47,3 +50,27 @@ def add_model_components(m, d):
                    for (g, p) in mod.PROJECT_OPERATIONAL_PERIODS)
     m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
     getattr(d, total_cost_components).append("Total_Capacity_Costs")
+
+
+def export_results(scenario_directory, horizon, stage, m, d):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "costs_capacity_all_projects.csv"), "wb") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            ["project", "period", "annualized_capacity_cost"]
+        )
+        for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
+            writer.writerow([
+                prj,
+                p,
+                value(m.Capacity_Cost_in_Period[prj, p])
+            ])

@@ -18,10 +18,10 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
-    "project", "project.capacity.capacity", "project.operations.fuels",
+    "project", "project.capacity.capacity", "project.fuels",
+    "project.operations",
     "project.operations.operational_types",
-    "project.operations.aggregate_power",
-    "project.operations.aggregate_costs"]
+    "project.operations.aggregate_power"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.aggregate_carbon_emissions"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:

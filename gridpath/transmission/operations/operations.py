@@ -111,15 +111,38 @@ def export_results(scenario_directory, horizon, stage, m, d):
                            "transmission_operations.csv"), "wb") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
-        writer.writerow(["tx_line", "timepoint", "period",
+        writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",
                          "horizon", "horizon_weight",
                          "transmission_flow_mw"])
         for (l, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 l,
+                m.load_zone_from[l],
+                m.load_zone_to[l],
                 tmp,
                 m.period[tmp],
                 m.horizon[tmp],
                 m.horizon_weight[m.horizon[tmp]],
                 value(m.Transmit_Power_MW[l, tmp])
             ])
+
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "imports_exports.csv"), "wb") as imp_exp_file:
+        writer = csv.writer(imp_exp_file)
+        writer.writerow(
+            ["load_zone", "timepoint", "period", "horizon", "horizon_weight",
+             "imports_mw", "exports_mw", "net_imports_mw"]
+        )
+        for z in m.LOAD_ZONES:
+            for tmp in m.TIMEPOINTS:
+                writer.writerow([
+                    z,
+                    tmp,
+                    m.period[tmp],
+                    m.horizon[tmp],
+                    m.horizon_weight[m.horizon[tmp]],
+                    value(m.Transmission_to_Zone_MW[z, tmp]),
+                    value(m.Transmission_from_Zone_MW[z, tmp]),
+                    (value(m.Transmission_to_Zone_MW[z, tmp]) -
+                        value(m.Transmission_from_Zone_MW[z, tmp]))
+                ])
