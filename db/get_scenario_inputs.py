@@ -561,7 +561,8 @@ if OPTIONAL_MODULE_CARBON_CAP:
 else:
     prj_db_table_optional_select["carbon_cap"] = {
         "db_column_name": "",
-        "db_join_statement": ""
+        "db_join_statement": "",
+        "db_and_statement": ""
     }
 
 
@@ -962,9 +963,10 @@ if OPTIONAL_MODULE_TRANSMISSION:
                 """\nAND carbon_cap_zone_scenario_id = {}
                 AND transmission_line_carbon_cap_zone_scenario_id = {}"""
         else:
-            prj_db_table_optional_select["lf_reserves_up"] = {
-                "db_column_name": "",
-                "db_join_statement": ""
+            line_db_table_optional_args = {
+                "select": "",
+                "join": "",
+                "and": ""
             }
 
         # Write header
@@ -974,10 +976,10 @@ if OPTIONAL_MODULE_TRANSMISSION:
         )
 
         tx_query = \
-            """SELECT transmission_lines.transmission_line, tx_capacity_type,
+            """SELECT transmission_line, tx_capacity_type,
             load_zone_from, load_zone_to""" \
             + line_db_table_optional_args["select"] + \
-            """FROM transmission_lines""" + \
+            """ FROM transmission_lines""" + \
             line_db_table_optional_args["join"] + \
             """
             WHERE load_zone_scenario_id = {}
