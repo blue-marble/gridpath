@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, Expression, \
-    NonNegativeReals
+    NonNegativeReals, value
 
 from gridpath.auxiliary.auxiliary import make_project_time_var_df, is_number
 from gridpath.auxiliary.dynamic_components import \
@@ -179,33 +180,58 @@ def load_module_specific_data(
         determine_period_params()[2]
 
 
-def export_module_specific_results(m, d):
+def export_module_specific_results(scenario_directory, horizon, stage, m, d):
     """
-
+    Export existing gen linear economic retirement results.
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param m:
     :param d:
     :return:
     """
-    existing_lin_retirement_option_df = \
-        make_project_time_var_df(
-            m,
-            "EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
-            "Retire_MW",
-            ["project", "period"],
-            "retire_mw"
-        )
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "capacity_existing_gen_linear_economic_retirement"
+                           ".csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "technology", "load_zone",
+                         "retire_mw"])
+        for (prj, p) in \
+                m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
+            writer.writerow([
+                prj,
+                p,
+                m.technology[prj],
+                m.load_zone[prj],
+                value(m.Retire_MW[prj, p])
+            ])
 
-    d.module_specific_df.append(existing_lin_retirement_option_df)
 
-
-def summarize_module_specific_results(capacity_results_agg_df,
-                                      summary_results_file):
+def summarize_module_specific_results(
+    problem_directory, horizon, stage, summary_results_file
+):
     """
-    Summarize new build generation capacity results.
-    :param capacity_results_agg_df:
+    Summarize existing gen linear economic retirement capacity results.
+    :param problem_directory:
+    :param horizon:
+    :param stage:
     :param summary_results_file:
     :return:
     """
+
+    # Get the results CSV as dataframe
+    capacity_results_df = \
+        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+                                 "capacity_existing_gen_linear_economic_"
+                                 "retirement.csv")
+                    )
+
+    capacity_results_agg_df = \
+        capacity_results_df.groupby(by=["load_zone", "technology",
+                                        'period'],
+                                    as_index=True
+                                    ).sum()
+
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
 

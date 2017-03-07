@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
-    Constraint
+    Constraint, value
 
 from gridpath.auxiliary.auxiliary import make_project_time_var_df
 from gridpath.auxiliary.dynamic_components import \
@@ -162,7 +163,7 @@ def load_module_specific_data(m,
                          sep="\t", header=None, nrows=1).values[0]
 
     optional_columns = ["min_cumulative_new_build_mw",
-                       "max_cumulative_new_build_mw"]
+                        "max_cumulative_new_build_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
     dynamic_components = \
@@ -225,23 +226,30 @@ def load_module_specific_data(m,
         max_cumulative_mw
 
 
-def export_module_specific_results(m, d):
+def export_module_specific_results(scenario_directory, horizon, stage, m, d):
     """
-
+    Export new build generation results.
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param m:
     :param d:
     :return:
     """
-    build_option_df = \
-        make_project_time_var_df(
-            m,
-            "NEW_BUILD_GENERATOR_VINTAGES",
-            "Build_MW",
-            ["project", "period"],
-            "new_build_option_mw"
-        )
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "capacity_new_build_generator.csv"), "w") as f:
 
-    d.module_specific_df.append(build_option_df)
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "technology", "load_zone",
+                         "new_build_mw"])
+        for (prj, p) in m.NEW_BUILD_GENERATOR_VINTAGES:
+            writer.writerow([
+                prj,
+                p,
+                m.technology[prj],
+                m.load_zone[prj],
+                value(m.Build_MW[prj, p])
+            ])
 
 
 def operational_periods_by_generator_vintage(mod, prj, v):
@@ -268,30 +276,46 @@ def new_build_option_vintages_operational_in_period(mod, p):
     )
 
 
-def summarize_module_specific_results(capacity_results_agg_df,
-                                      summary_results_file):
+def summarize_module_specific_results(
+    problem_directory, horizon, stage, summary_results_file
+):
     """
     Summarize new build generation capacity results.
-    :param capacity_results_agg_df:
+    :param problem_directory:
+    :param horizon:
+    :param stage:
     :param summary_results_file:
     :return:
     """
+
+    # Get the results CSV as dataframe
+    capacity_results_df = \
+        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+                                 "capacity_new_build_generator.csv")
+                    )
+
+    capacity_results_agg_df = \
+        capacity_results_df.groupby(by=["load_zone", "technology",
+                                        'period'],
+                                    as_index=True
+                                    ).sum()
+
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
 
     # Get all technologies with the new build capacity
-    new_build_option_df = pd.DataFrame(
+    new_build_df = pd.DataFrame(
         capacity_results_agg_df[
-            capacity_results_agg_df["new_build_option_mw"] > 0
-        ]["new_build_option_mw"]
+            capacity_results_agg_df["new_build_mw"] > 0
+        ]["new_build_mw"]
     )
 
-    new_build_option_df.columns = ["New Capacity (MW)"]
+    new_build_df.columns = ["New Capacity (MW)"]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Generation Capacity <--\n")
-        if new_build_option_df.empty:
-            outfile.write("No new storage was built.\n")
+        if new_build_df.empty:
+            outfile.write("No new generation was built.\n")
         else:
-            new_build_option_df.to_string(outfile)
+            new_build_df.to_string(outfile)
             outfile.write("\n")

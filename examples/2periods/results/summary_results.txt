@@ -1,6 +1,11 @@
 ##### SUMMARY RESULTS FOR SCENARIO *2periods* #####
 
 ### CAPACITY RESULTS ###
-...skipping aggregating capacity results: column 'technology' not found in projects.tab
+
 ### OPERATIONAL RESULTS ###
-...skipping aggregating operational results: column 'technology' not found in projects.tab
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                 30.0          100.0
+          2030   unspecified                 30.0          100.0

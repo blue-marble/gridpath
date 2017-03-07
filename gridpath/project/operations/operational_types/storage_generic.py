@@ -423,6 +423,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
+                         "technology", "load_zone",
                          "starting_energy_mwh",
                          "charge_mw", "discharge_mw"])
         for (p, tmp) in mod.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS:
@@ -433,6 +434,8 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 tmp,
                 mod.horizon_weight[mod.horizon[tmp]],
                 mod.number_of_hours_in_timepoint[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
                 value(mod.Starting_Energy_in_Generic_Storage_MWh[p, tmp]),
                 value(mod.Generic_Storage_Charge_MW[p, tmp]),
                 value(mod.Generic_Storage_Discharge_MW[p, tmp])

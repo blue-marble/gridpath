@@ -1,6 +1,16 @@
 ##### SUMMARY RESULTS FOR SCENARIO *test_new_solar_carbon_cap_2zones_dont_count_tx* #####
 
 ### CAPACITY RESULTS ###
-...skipping aggregating capacity results: column 'technology' not found in projects.tab
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology  period                   
+Zone1     unspecified 2020                    2
+
 ### OPERATIONAL RESULTS ###
-...skipping aggregating operational results: column 'technology' not found in projects.tab
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                   28            100
+Zone2     2020   unspecified                   22            100

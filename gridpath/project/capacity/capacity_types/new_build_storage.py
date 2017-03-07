@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
-    Constraint
+    Constraint, value
 
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
@@ -410,34 +411,30 @@ def load_module_specific_data(m,
         max_cumulative_mwh
 
 
-def export_module_specific_results(m, d):
+def export_module_specific_results(scenario_directory, horizon, stage, m, d):
     """
-
+    Export new build storage results.
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
     :param m:
     :param d:
     :return:
     """
-
-    build_storage_capacity_df = \
-        make_project_time_var_df(
-            m,
-            "NEW_BUILD_STORAGE_VINTAGES",
-            "Build_Storage_Power_MW",
-            ["project", "period"],
-            "new_build_storage_mw"
-        )
-
-    build_storage_energy_df = \
-        make_project_time_var_df(
-            m,
-            "NEW_BUILD_STORAGE_VINTAGES",
-            "Build_Storage_Energy_MWh",
-            ["project", "period"],
-            "new_build_storage_mwh"
-        )
-
-    d.module_specific_df.append(build_storage_capacity_df)
-    d.module_specific_df.append(build_storage_energy_df)
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "capacity_new_build_storage.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "technology", "load_zone",
+                         "new_build_mw", "new_build_mwh"])
+        for (prj, p) in m.NEW_BUILD_STORAGE_VINTAGES:
+            writer.writerow([
+                prj,
+                p,
+                m.technology[prj],
+                m.load_zone[prj],
+                value(m.Build_Storage_Power_MW[prj, p]),
+                value(m.Build_Storage_Energy_MWh[prj, p])
+            ])
 
 
 def operational_periods_by_storage_vintage(mod, prj, v):
@@ -463,30 +460,46 @@ def new_build_storage_vintages_operational_in_period(mod, p):
     )
 
 
-def summarize_module_specific_results(capacity_results_agg_df,
-                                      summary_results_file):
+def summarize_module_specific_results(
+    problem_directory, horizon, stage, summary_results_file
+):
     """
-    Summarize new build storage results.
-    :param capacity_results_agg_df:
+    Summarize new build storage capacity results.
+    :param problem_directory:
+    :param horizon:
+    :param stage:
     :param summary_results_file:
     :return:
     """
+
+    # Get the results CSV as dataframe
+    capacity_results_df = \
+        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+                                 "capacity_new_build_storage.csv")
+                    )
+
+    capacity_results_agg_df = \
+        capacity_results_df.groupby(by=["load_zone", "technology",
+                                        'period'],
+                                    as_index=True
+                                    ).sum()
+
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
     # Get all technologies with new build storage power OR energy capacity
-    new_build_storage_df = pd.DataFrame(
+    new_build_df = pd.DataFrame(
         capacity_results_agg_df[
-            (capacity_results_agg_df["new_build_storage_mw"] > 0) |
-            (capacity_results_agg_df["new_build_storage_mwh"] > 0)
-        ][["new_build_storage_mw", "new_build_storage_mwh"]]
+            (capacity_results_agg_df["new_build_mw"] > 0) |
+            (capacity_results_agg_df["new_build_mwh"] > 0)
+        ][["new_build_mw", "new_build_mwh"]]
     )
-    new_build_storage_df.columns =["New Storage Power Capacity (MW)",
-                                   "New Storage Energy Capacity (MWh)"]
+    new_build_df.columns =["New Storage Power Capacity (MW)",
+                           "New Storage Energy Capacity (MWh)"]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> New Storage Capacity <--\n")
-        if new_build_storage_df.empty:
+        if new_build_df.empty:
             outfile.write("No new storage was built.\n")
         else:
-            new_build_storage_df.to_string(outfile)
+            new_build_df.to_string(outfile)
             outfile.write("\n")

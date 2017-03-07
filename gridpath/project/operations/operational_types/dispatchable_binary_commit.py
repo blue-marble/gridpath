@@ -273,6 +273,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
+                         "technology", "load_zone",
                          "power_mw", "committed_mw", "committed_units"
                          ])
 
@@ -284,8 +285,10 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 mod.period[tmp],
                 mod.horizon[tmp],
                 tmp,
-                mod.horizon_weight[m.horizon[tmp]],
+                mod.horizon_weight[mod.horizon[tmp]],
                 mod.number_of_hours_in_timepoint[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
                 value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp]),
                 value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp])
                 * value(mod.Commit_Binary[p, tmp]),

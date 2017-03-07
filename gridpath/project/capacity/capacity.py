@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Expression
+from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, join_sets, \
-    make_project_time_var_df, check_if_technology_column_exists
+    load_gen_storage_capacity_type_modules, join_sets, make_project_time_var_df
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -130,8 +130,24 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
 
-    d.module_specific_df = []
+    # Total capacity for all projects
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "capacity_all.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "technology", "load_zone",
+                         "capacity_mw", "capacity_mwh"])
+        for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
+            writer.writerow([
+                prj,
+                p,
+                m.technology[prj],
+                m.load_zone[prj],
+                value(m.Capacity_MW[prj, p]),
+                value(m.Energy_Capacity_MWh[prj, p])
+                if (prj, p) in m.STORAGE_OPERATIONAL_PERIODS else None
+            ])
 
+    # Module-specific capacity results
     imported_capacity_modules = \
         load_gen_storage_capacity_type_modules(
             getattr(d, required_capacity_modules)
@@ -140,41 +156,11 @@ def export_results(scenario_directory, horizon, stage, m, d):
         if hasattr(imported_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_capacity_modules[
-                op_m].export_module_specific_results(m, d)
+                op_m].export_module_specific_results(
+                scenario_directory, horizon, stage, m, d
+            )
         else:
             pass
-
-    capacity_df = make_project_time_var_df(
-        m,
-        "PROJECT_OPERATIONAL_PERIODS",
-        "Capacity_MW",
-        ["project", "period"],
-        "capacity_mw"
-    )
-
-    # Storage is not required, so only make this dataframe if
-    # STORAGE_OPERATIONAL_PERIODS set is not empty
-    if len(getattr(m, "STORAGE_OPERATIONAL_PERIODS")) > 0:
-        energy_capacity_df = make_project_time_var_df(
-            m,
-            "STORAGE_OPERATIONAL_PERIODS",
-            "Energy_Capacity_MWh",
-            ["project", "period"],
-            "energy_capacity_mwh"
-        )
-    else:
-        energy_capacity_df = []
-
-    # Merge and export dataframes
-    dfs_to_merge = [capacity_df] + [energy_capacity_df] + d.module_specific_df
-
-    df_for_export = reduce(lambda left, right:
-                           left.join(right, how="outer"),
-                           dfs_to_merge)
-    df_for_export.to_csv(
-        os.path.join(scenario_directory, horizon, stage, "results",
-                     "capacity.csv"),
-        header=True, index=True)
 
 
 def summarize_results(d, problem_directory, horizon, stage):
@@ -200,54 +186,31 @@ def summarize_results(d, problem_directory, horizon, stage):
             "\n### CAPACITY RESULTS ###\n"
         )
 
-    if not check_if_technology_column_exists(problem_directory):
-        with open(summary_results_file, "a") as outfile:
-            outfile.write(
-                "...skipping aggregating capacity results: column '"
-                "technology' not found in projects.tab"
+    # Get the results CSV as dataframe
+    capacity_results_df = \
+        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+                                 "capacity_all.csv")
+                    )
+
+    capacity_results_agg_df = \
+        capacity_results_df.groupby(by=["load_zone", "technology",
+                                        'period'],
+                                    as_index=True
+                                    ).sum()
+
+    imported_capacity_modules = \
+        load_gen_storage_capacity_type_modules(
+            getattr(d, required_capacity_modules)
+        )
+    for op_m in getattr(d, required_capacity_modules):
+        if hasattr(imported_capacity_modules[op_m],
+                   "summarize_module_specific_results"):
+            imported_capacity_modules[
+                op_m].summarize_module_specific_results(
+                problem_directory, horizon, stage, summary_results_file
             )
-    else:
-        # Get the technology for each project by which we'll aggregate
-        project_tech = \
-            pd.read_csv(
-                os.path.join(problem_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project", "load_zone",
-                                   "technology"]
-            )
-        project_tech.set_index(["project"], inplace=True,
-                               verify_integrity=True)
-
-        # Get the results CSV as dataframe
-        capacity_results = \
-            pd.read_csv(os.path.join(problem_directory, "results",
-                                     "capacity.csv")
-                        )
-        capacity_results.set_index(["project"], inplace=True)
-
-        # Join the two dataframes (i.e. add technology column)
-        capacity_results_df = \
-            pd.merge(left=capacity_results, right=project_tech, how="left",
-                     left_index=True, right_index=True)
-
-        capacity_results_agg_df = \
-            capacity_results_df.groupby(by=["load_zone", "technology",
-                                            'period'],
-                                        as_index=True
-                                        ).sum()
-
-        imported_capacity_modules = \
-            load_gen_storage_capacity_type_modules(
-                getattr(d, required_capacity_modules)
-            )
-        for op_m in getattr(d, required_capacity_modules):
-            if hasattr(imported_capacity_modules[op_m],
-                       "summarize_module_specific_results"):
-                imported_capacity_modules[
-                    op_m].summarize_module_specific_results(
-                    capacity_results_agg_df, summary_results_file
-                )
-            else:
-                pass
+        else:
+            pass
 
 
 def operational_periods_by_project(prj, project_operational_periods):

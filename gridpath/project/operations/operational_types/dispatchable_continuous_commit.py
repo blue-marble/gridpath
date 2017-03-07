@@ -277,6 +277,7 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
+                         "technology", "load_zone",
                          "power_mw", "committed_mw", "committed_units"
                          ])
 
@@ -291,6 +292,8 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.technology[p],
+                m.load_zone[p],
                 value(m.Provide_Power_DispContinuousCommit_MW[p, tmp]),
                 value(m.Provide_Power_DispContinuousCommit_MW[p, tmp])
                 * value(m.Commit_Continuous[p, tmp]),

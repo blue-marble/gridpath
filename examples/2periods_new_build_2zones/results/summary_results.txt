@@ -1,6 +1,21 @@
 ##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_2zones* #####
 
 ### CAPACITY RESULTS ###
-...skipping aggregating capacity results: column 'technology' not found in projects.tab
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology  period                   
+Zone1     unspecified 2020                   26
+                      2030                    3
+Zone2     unspecified 2020                   26
+                      2030                    3
+
 ### OPERATIONAL RESULTS ###
-...skipping aggregating operational results: column 'technology' not found in projects.tab
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                   90            100
+          2030   unspecified                   90            100
+Zone2     2020   unspecified                   90            100
+          2030   unspecified                   90            100

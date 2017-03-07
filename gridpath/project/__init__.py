@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 import os.path
-from pandas import read_csv
+import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
@@ -20,7 +20,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
 
     project_dynamic_data = \
-        read_csv(
+        pd.read_csv(
             os.path.join(scenario_directory, "inputs", "projects.tab"),
             sep="\t", usecols=["project",
                                "capacity_type",
@@ -72,6 +72,10 @@ def add_model_components(m, d):
     # TODO: all projects have this for now; is that what makes the most sense?
     m.variable_om_cost_per_mwh = Param(m.PROJECTS, within=NonNegativeReals)
 
+    # Technology
+    # This is only used for aggregation purposes in results
+    m.technology = Param(m.PROJECTS, default="unspecified")
+
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     data_portal.load(filename=os.path.join(scenario_directory,
@@ -82,3 +86,15 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      param=(m.load_zone, m.capacity_type,
                             m.operational_type, m.variable_om_cost_per_mwh)
                      )
+
+    # Technology column is optional (default param value is 'unspecified')
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "projects.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+
+    if "technology" in header:
+        data_portal.load(filename=os.path.join(scenario_directory,
+                                               "inputs", "projects.tab"),
+                         select=("project", "technology"),
+                         param=m.technology
+                         )

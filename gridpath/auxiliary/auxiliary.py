@@ -201,19 +201,3 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
             )
 
     return results_df
-
-
-def check_if_technology_column_exists(problem_directory):
-    """
-
-    :param problem_directory:
-    :return:
-    """
-    try:
-        # If this works, we'll continue; otherwise, we'll skip summarizing
-        # results
-        pd.read_csv(os.path.join(problem_directory, "inputs", "projects.tab"),
-                    sep="\t", usecols=["technology"])
-        return True
-    except ValueError:
-        return False

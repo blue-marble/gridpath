@@ -111,9 +111,12 @@ def load_module_specific_data(
                 pass
 
         return generator_period_list, \
-               existing_no_econ_ret_capacity_mw_dict, existing_no_econ_ret_fixed_cost_per_mw_yr_dict
+            existing_no_econ_ret_capacity_mw_dict, \
+            existing_no_econ_ret_fixed_cost_per_mw_yr_dict
 
-    data_portal.data()["EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"] = {
+    data_portal.data()[
+        "EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
+    ] = {
         None: determine_period_params()[0]
     }
 
