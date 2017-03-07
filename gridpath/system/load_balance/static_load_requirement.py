@@ -38,3 +38,42 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                                            "inputs", "load_mw.tab"),
                      param=m.static_load_mw
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # load_mw.tab
+    with open(os.path.join(inputs_directory,
+                           "load_mw.tab"), "w") as \
+            load_tab_file:
+        writer = csv.writer(load_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["LOAD_ZONES", "TIMEPOINTS", "load_mw"]
+        )
+
+        loads = c.execute(
+            """SELECT load_zone, timepoint, load_mw
+            FROM loads
+            WHERE period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND timepoint_scenario_id = {}
+            AND load_zone_scenario_id = {}
+            AND load_scenario_id = {}
+            """.format(
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.HORIZON_SCENARIO_ID,
+                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.LOAD_ZONE_SCENARIO_ID,
+                subscenarios.LOAD_SCENARIO_ID
+            )
+        )
+        for row in loads:
+            writer.writerow(row)

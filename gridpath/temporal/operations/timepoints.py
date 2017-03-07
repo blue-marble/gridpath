@@ -5,6 +5,7 @@
 Smallest unit of temporal over which operational variables are defined
 """
 
+import csv
 import os.path
 
 from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers
@@ -30,3 +31,35 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      select=("TIMEPOINTS", "number_of_hours_in_timepoint")
                      )
 
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios:
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # timepoints.tab
+    with open(os.path.join(inputs_directory, "timepoints.tab"), "w") as \
+            timepoints_tab_file:
+        writer = csv.writer(timepoints_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(["TIMEPOINTS", "period", "horizon",
+                         "number_of_hours_in_timepoint"])
+
+        timepoints = c.execute(
+            """SELECT timepoint, period, horizon, number_of_hours_in_timepoint
+               FROM timepoints
+               WHERE period_scenario_id = {}
+               AND horizon_scenario_id = {}
+               AND timepoint_scenario_id = {};""".format(
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.HORIZON_SCENARIO_ID,
+                subscenarios.TIMEPOINT_SCENARIO_ID
+            )
+        ).fetchall()
+
+        for row in timepoints:
+            writer.writerow(row)

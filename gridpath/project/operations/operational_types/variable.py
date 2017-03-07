@@ -339,3 +339,46 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                           p, tmp]),
                 value(mod.Total_Variable_Generator_Curtailment_MW[p, tmp])
             ])
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # variable_generator_profiles.tab
+    with open(os.path.join(inputs_directory,
+                           "variable_generator_profiles.tab"), "w") as \
+            variable_profiles_tab_file:
+        writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["GENERATORS", "TIMEPOINTS", "cap_factor"]
+        )
+
+        variable_profiles = c.execute(
+            """SELECT project, timepoint, cap_factor
+            FROM variable_generator_profiles
+            WHERE existing_project_scenario_id = {}
+            AND new_project_scenario_id = {}
+            AND project_operational_chars_scenario_id = {}
+            AND period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND timepoint_scenario_id = {}
+            AND variable_generator_profiles_scenario_id = {}
+            """.format(
+                subscenarios.EXISTING_PROJECT_SCENARIO_ID,
+                subscenarios.NEW_PROJECT_SCENARIO_ID,
+                subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.HORIZON_SCENARIO_ID,
+                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.VARIABLE_GENERATOR_PROFILES_SCENARIO_ID
+            )
+        )
+        for row in variable_profiles:
+            writer.writerow(row)

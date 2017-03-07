@@ -45,3 +45,38 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      select=("carbon_cap_zone", "period",
                              "carbon_cap_target_mmt")
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # carbon_cap.tab
+    with open(os.path.join(inputs_directory,
+                           "carbon_cap.tab"), "w") as \
+            carbon_cap_file:
+        writer = csv.writer(carbon_cap_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
+        )
+
+        carbon_cap = c.execute(
+            """SELECT carbon_cap_zone, period, carbon_cap_target_mmt
+            FROM carbon_cap_targets
+            WHERE period_scenario_id = {}
+            AND carbon_cap_zone_scenario_id = {}
+            AND carbon_cap_target_scenario_id = {};
+            """.format(
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+                subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
+            )
+        )
+        for row in carbon_cap:
+            writer.writerow(row)

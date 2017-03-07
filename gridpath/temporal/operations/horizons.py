@@ -5,6 +5,7 @@
 Describes the relationships among timepoints in the optimization
 """
 
+import csv
 import os.path
 
 from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals
@@ -82,3 +83,34 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      index=m.TIMEPOINTS,
                      param=m.horizon
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios:
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    # horizons.tab
+    with open(os.path.join(inputs_directory, "horizons.tab"), "w") as \
+            horizons_tab_file:
+        writer = csv.writer(horizons_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(["HORIZONS", "boundary", "horizon_weight"])
+
+        horizons = c.execute(
+            """SELECT horizon, boundary, horizon_weight
+               FROM horizons
+               WHERE period_scenario_id = {}
+               AND horizon_scenario_id = {};""".format(
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.HORIZON_SCENARIO_ID
+            )
+        ).fetchall()
+
+        for row in horizons:
+            writer.writerow(row)

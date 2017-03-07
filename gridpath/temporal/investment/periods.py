@@ -5,6 +5,7 @@
 Describes the relationships among timepoints in the optimization
 """
 
+import csv
 import os.path
 
 from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
@@ -40,6 +41,7 @@ def add_model_components(m, d):
                               list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
                               )
 
+
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
     """
@@ -57,3 +59,32 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      index=m.TIMEPOINTS,
                      param=m.period
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    with open(os.path.join(inputs_directory, "periods.tab"), "w") as \
+            periods_tab_file:
+        writer = csv.writer(periods_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["PERIODS", "discount_factor", "number_years_represented"])
+
+        periods = c.execute(
+            """SELECT period, discount_factor, number_years_represented
+               FROM periods
+               WHERE period_scenario_id = {};""".format(
+                subscenarios.PERIOD_SCENARIO_ID
+            )
+        ).fetchall()
+
+        for row in periods:
+            writer.writerow(row)

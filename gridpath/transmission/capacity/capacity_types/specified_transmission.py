@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 from pyomo.environ import Set, Param, Reals
 
@@ -53,3 +54,42 @@ def load_module_specific_data(m, data_portal, scenario_directory,
                      param=(m.specified_tx_min_mw,
                             m.specified_tx_max_mw)
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # specified_transmission_line_capacities.tab
+    with open(os.path.join(inputs_directory,
+                           "specified_transmission_line_capacities.tab"), "w") \
+            as transmission_lines_specified_capacities_tab_file:
+        writer = csv.writer(transmission_lines_specified_capacities_tab_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["transmission_line", "period", "specified_tx_min_mw",
+             "specified_tx_max_mw"]
+        )
+
+        transmission_lines_specified_capacities = c.execute(
+            """SELECT transmission_line, period, min_mw, max_mw
+            FROM transmission_line_existing_capacity
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND period_scenario_id = {}
+            AND transmission_line_existing_capacity_scenario_id = {};
+            """.format(
+                subscenarios.LOAD_ZONE_SCENARIO_ID,
+                subscenarios.TRANSMISSION_LINE_SCENARIO_ID,
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+            )
+        )
+        for row in transmission_lines_specified_capacities:
+            writer.writerow(row)

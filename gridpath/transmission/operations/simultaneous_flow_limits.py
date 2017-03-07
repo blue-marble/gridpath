@@ -146,3 +146,74 @@ def export_results(scenario_directory, horizon, stage, m, d):
 def save_duals(m):
     m.constraint_indices["Simultaneous_Flow_Constraint"] = \
         ["simultaneous_flow_group", "timepoint", "dual"]
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # Simultaneous flow
+    with open(os.path.join(inputs_directory,
+                           "transmission_simultaneous_flow_group_lines.tab"),
+              "w") as \
+            sim_flow_group_lines_file:
+        writer = csv.writer(sim_flow_group_lines_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["simultaneous_flow_group", "transmission_line",
+             "simultaneous_flow_direction"]
+        )
+
+        group_lines = c.execute(
+            """SELECT transmission_simultaneous_flow_group, transmission_line,
+            simultaneous_flow_direction
+            FROM transmission_simultaneous_flow_group_lines
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND transmission_simultaneous_flow_group_lines_scenario_id = {};
+            """.format(
+                subscenarios.LOAD_ZONE_SCENARIO_ID,
+                subscenarios.TRANSMISSION_LINE_SCENARIO_ID,
+                subscenarios.
+                    TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID
+            )
+        )
+        for row in group_lines:
+            writer.writerow(row)
+
+    # transmission_simultaneous_flows.tab
+    with open(os.path.join(inputs_directory,
+                           "transmission_simultaneous_flows.tab"), "w") as \
+            sim_flows_file:
+        writer = csv.writer(sim_flows_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["simultaneous_flow_group", "period", "simultaneous_flow_limit_mw"]
+        )
+
+        flow_limits = c.execute(
+            """SELECT transmission_simultaneous_flow_group, period, max_flow_mw
+            FROM transmission_simultaneous_flow_limits
+            WHERE load_zone_scenario_id = {}
+            AND transmission_line_scenario_id = {}
+            AND transmission_simultaneous_flow_group_lines_scenario_id = {}
+            AND period_scenario_id = {}
+            AND transmission_simultaneous_flow_limit_scenario_id = {};
+            """.format(
+                subscenarios.LOAD_ZONE_SCENARIO_ID,
+                subscenarios.TRANSMISSION_LINE_SCENARIO_ID,
+                subscenarios.
+                    TRANSMISSION_SIMULTANEOUS_FLOW_GROUP_LINES_SCENARIO_ID,
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
+            )
+        )
+        for row in flow_limits:
+            writer.writerow(row)

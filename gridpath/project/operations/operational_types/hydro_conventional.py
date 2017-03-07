@@ -5,6 +5,7 @@
 Operations of generic storage
 """
 
+import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals
 
@@ -231,3 +232,42 @@ def load_module_specific_data(m,
                             m.hydro_specified_min_power_mw,
                             m.hydro_specified_max_power_mw)
                      )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # hydro_conventional_horizon_params.tab
+    with open(os.path.join(inputs_directory,
+                           "hydro_conventional_horizon_params.tab"), "w") as \
+            hydro_chars_tab_file:
+        writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["hydro_project", "horizon", "hydro_specified_average_power_mwa",
+             "hydro_specified_min_power_mw", "hydro_specified_max_power_mw"]
+        )
+
+        hydro_chars = c.execute(
+            """SELECT project, horizon, average_power_mwa, min_power_mw,
+            max_power_mw
+            FROM hydro_operational_chars
+            WHERE existing_project_scenario_id = {}
+            AND period_scenario_id = {}
+            AND horizon_scenario_id = {}
+            AND hydro_operational_chars_scenario_id = {}
+            """.format(
+                subscenarios.EXISTING_PROJECT_SCENARIO_ID,
+                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.HORIZON_SCENARIO_ID,
+                subscenarios.HYDRO_OPERATIONAL_CHARS_SCENARIO_ID
+            )
+        )
+        for row in hydro_chars:
+            writer.writerow(row)
