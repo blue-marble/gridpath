@@ -96,7 +96,8 @@ class TestCapacity(unittest.TestCase):
             ("Disp_Cont_Commit", 2030),
             ("Disp_No_Commit", 2020),
             ("Disp_No_Commit", 2030),
-            ("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030)
+            ("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030),
+            ("Customer_PV", 2020), ("Customer_PV", 2030)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
@@ -129,7 +130,8 @@ class TestCapacity(unittest.TestCase):
                  "Disp_Binary_Commit": [2020, 2030],
                  "Disp_Cont_Commit": [2020, 2030],
                  "Disp_No_Commit": [2020, 2030],
-                 "Clunky_Old_Gen": [2020, 2030]}.items()
+                 "Clunky_Old_Gen": [2020, 2030],
+                 "Customer_PV": [2020, 2030]}.items()
             )
         )
         actual_operational_periods_by_project = OrderedDict(
@@ -1007,7 +1009,55 @@ class TestCapacity(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Customer_PV", 20200101), ("Customer_PV", 20200102),
+            ("Customer_PV", 20200103), ("Customer_PV", 20200104),
+            ("Customer_PV", 20200105), ("Customer_PV", 20200106),
+            ("Customer_PV", 20200107), ("Customer_PV", 20200108),
+            ("Customer_PV", 20200109), ("Customer_PV", 20200110),
+            ("Customer_PV", 20200111), ("Customer_PV", 20200112),
+            ("Customer_PV", 20200113), ("Customer_PV", 20200114),
+            ("Customer_PV", 20200115), ("Customer_PV", 20200116),
+            ("Customer_PV", 20200117), ("Customer_PV", 20200118),
+            ("Customer_PV", 20200119), ("Customer_PV", 20200120),
+            ("Customer_PV", 20200121), ("Customer_PV", 20200122),
+            ("Customer_PV", 20200123), ("Customer_PV", 20200124),
+            ("Customer_PV", 20200201), ("Customer_PV", 20200202),
+            ("Customer_PV", 20200203), ("Customer_PV", 20200204),
+            ("Customer_PV", 20200205), ("Customer_PV", 20200206),
+            ("Customer_PV", 20200207), ("Customer_PV", 20200208),
+            ("Customer_PV", 20200209), ("Customer_PV", 20200210),
+            ("Customer_PV", 20200211), ("Customer_PV", 20200212),
+            ("Customer_PV", 20200213), ("Customer_PV", 20200214),
+            ("Customer_PV", 20200215), ("Customer_PV", 20200216),
+            ("Customer_PV", 20200217), ("Customer_PV", 20200218),
+            ("Customer_PV", 20200219), ("Customer_PV", 20200220),
+            ("Customer_PV", 20200221), ("Customer_PV", 20200222),
+            ("Customer_PV", 20200223), ("Customer_PV", 20200224),
+            ("Customer_PV", 20300101), ("Customer_PV", 20300102),
+            ("Customer_PV", 20300103), ("Customer_PV", 20300104),
+            ("Customer_PV", 20300105), ("Customer_PV", 20300106),
+            ("Customer_PV", 20300107), ("Customer_PV", 20300108),
+            ("Customer_PV", 20300109), ("Customer_PV", 20300110),
+            ("Customer_PV", 20300111), ("Customer_PV", 20300112),
+            ("Customer_PV", 20300113), ("Customer_PV", 20300114),
+            ("Customer_PV", 20300115), ("Customer_PV", 20300116),
+            ("Customer_PV", 20300117), ("Customer_PV", 20300118),
+            ("Customer_PV", 20300119), ("Customer_PV", 20300120),
+            ("Customer_PV", 20300121), ("Customer_PV", 20300122),
+            ("Customer_PV", 20300123), ("Customer_PV", 20300124),
+            ("Customer_PV", 20300201), ("Customer_PV", 20300202),
+            ("Customer_PV", 20300203), ("Customer_PV", 20300204),
+            ("Customer_PV", 20300205), ("Customer_PV", 20300206),
+            ("Customer_PV", 20300207), ("Customer_PV", 20300208),
+            ("Customer_PV", 20300209), ("Customer_PV", 20300210),
+            ("Customer_PV", 20300211), ("Customer_PV", 20300212),
+            ("Customer_PV", 20300213), ("Customer_PV", 20300214),
+            ("Customer_PV", 20300215), ("Customer_PV", 20300216),
+            ("Customer_PV", 20300217), ("Customer_PV", 20300218),
+            ("Customer_PV", 20300219), ("Customer_PV", 20300220),
+            ("Customer_PV", 20300221), ("Customer_PV", 20300222),
+            ("Customer_PV", 20300223), ("Customer_PV", 20300224)
         ])
         actual_operational_timepoints_by_project = sorted([
             (g, tmp) for (g, tmp) in instance.PROJECT_OPERATIONAL_TIMEPOINTS
@@ -1021,14 +1071,16 @@ class TestCapacity(unittest.TestCase):
              "Gas_CCGT_New", "Nuclear_z2", "Gas_CCGT_z2",
              "Coal_z2", "Gas_CT_z2", "Wind_z2", "Battery",
              "Battery_Specified", "Hydro", "Disp_Binary_Commit",
-             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"]
+             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen",
+             "Customer_PV"]
         )
         projects_2030 = sorted(
             ["Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Wind",
              "Gas_CCGT_New", "Nuclear_z2", "Gas_CCGT_z2",
              "Coal_z2", "Gas_CT_z2", "Wind_z2", "Battery",
              "Gas_CT_New", "Hydro", "Disp_Binary_Commit",
-             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"]
+             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen",
+             "Customer_PV"]
         )
         expected_operational_projects_in_tmp = OrderedDict(sorted({
             20200101: projects_2020,
@@ -1159,7 +1211,8 @@ class TestCapacity(unittest.TestCase):
             ("Disp_Binary_Commit", 2030), ("Disp_Cont_Commit", 2020),
             ("Disp_Cont_Commit", 2030), ("Disp_No_Commit", 2020),
             ("Disp_No_Commit", 2030), ("Clunky_Old_Gen", 2020),
-            ("Clunky_Old_Gen", 2030)
+            ("Clunky_Old_Gen", 2030),
+            ("Customer_PV", 2020), ("Customer_PV", 2030)
         ]
 
         expected_nuclear_periods = [2020, 2030]

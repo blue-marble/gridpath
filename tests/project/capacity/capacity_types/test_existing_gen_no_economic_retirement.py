@@ -91,7 +91,8 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
             ("Hydro", 2030), ("Disp_Binary_Commit", 2020),
             ("Disp_Binary_Commit", 2030), ("Disp_Cont_Commit", 2020),
             ("Disp_Cont_Commit", 2030), ("Disp_No_Commit", 2020),
-            ("Disp_No_Commit", 2030)
+            ("Disp_No_Commit", 2030),
+            ("Customer_PV", 2020), ("Customer_PV", 2030)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period) in
@@ -117,7 +118,8 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
                  ("Disp_Binary_Commit", 2020): 6,
                  ("Disp_Binary_Commit", 2030): 6,
                  ("Disp_Cont_Commit", 2020): 6, ("Disp_Cont_Commit", 2030): 6,
-                 ("Disp_No_Commit", 2020): 6, ("Disp_No_Commit", 2030): 6
+                 ("Disp_No_Commit", 2020): 6, ("Disp_No_Commit", 2030): 6,
+                 ("Customer_PV", 2020): 1, ("Customer_PV", 2030): 1
         }.items()
             )
         )
@@ -149,7 +151,8 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
                  ("Disp_Binary_Commit", 2020): 0,
                  ("Disp_Binary_Commit", 2030): 0,
                  ("Disp_Cont_Commit", 2020): 0, ("Disp_Cont_Commit", 2030): 0,
-                 ("Disp_No_Commit", 2020): 0, ("Disp_No_Commit", 2030): 0
+                 ("Disp_No_Commit", 2020): 0, ("Disp_No_Commit", 2030): 0,
+                 ("Customer_PV", 2020): 0, ("Customer_PV", 2030): 0
         }.items()
             )
         )

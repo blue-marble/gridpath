@@ -8,11 +8,11 @@ Can provide reserves.
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    make_project_time_var_df
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import \
     footroom_variables, headroom_variables, reserve_variable_derate_params
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
@@ -292,12 +292,49 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs",
-                                           "variable_generator_profiles.tab"),
-                     index=mod.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                     param=mod.cap_factor
-                     )
+    # Determine list of projects
+    projects = list()
+
+    prj_op_type_df = \
+        pd.read_csv(
+            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            sep="\t", usecols=["project",
+                               "operational_type"]
+        )
+
+    for row in zip(prj_op_type_df["project"],
+                   prj_op_type_df["operational_type"]):
+        if row[1] == 'variable':
+            projects.append(row[0])
+        else:
+            pass
+
+    # Determine subset of project-timepoints in variable profiles file
+    project_timepoints = list()
+    cap_factor = dict()
+
+    prj_tmp_cf_df = \
+        pd.read_csv(
+            os.path.join(scenario_directory, horizon, stage, "inputs",
+                         "variable_generator_profiles.tab"),
+            sep="\t", usecols=["GENERATORS", "TIMEPOINTS", "cap_factor"]
+        )
+    for row in zip(prj_tmp_cf_df["GENERATORS"],
+                   prj_tmp_cf_df["TIMEPOINTS"],
+                   prj_tmp_cf_df["cap_factor"]):
+        if row[0] in projects:
+            project_timepoints.append((row[0], row[1]))
+            cap_factor[(row[0], row[1])] = float(row[2])
+        else:
+            pass
+
+    # Load data
+    data_portal.data()[
+        "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS"
+    ] = {
+        None: project_timepoints
+    }
+    data_portal.data()["cap_factor"] = cap_factor
 
 
 def export_module_specific_results(mod, d, scenario_directory, horizon, stage):

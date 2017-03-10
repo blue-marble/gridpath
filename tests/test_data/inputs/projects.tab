@@ -18,3 +18,4 @@ Disp_Binary_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_bina
 Disp_Cont_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
 Disp_No_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	.	.	.	Gas	500	8	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
 Clunky_Old_Gen	Zone1	existing_gen_linear_economic_retirement	1	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Coal	5000	15	5	.	.	da	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
+Customer_PV	Zone1	existing_gen_no_economic_retirement	0	variable_no_curtailment	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
