@@ -1044,3 +1044,35 @@ subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 -- Sim Tx flow limits, sim Tx flow limit groups, Tx lines
 
 -- Project operational chars ID and fuel ID
+
+
+-------------------
+-- -- RESULTS -- --
+-------------------
+
+DROP TABLE IF EXISTS results_capacity_all;
+CREATE TABLE results_capacity_all(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+capacity_mw FLOAT,
+energy_capacity_mwh FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_dispatch_all;
+CREATE TABLE results_dispatch_all(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
