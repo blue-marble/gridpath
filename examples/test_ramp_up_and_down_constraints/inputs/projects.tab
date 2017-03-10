@@ -1,4 +1,4 @@
-project	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up_zone	regulation_up_zone	lf_reserves_down_zone	regulation_down_zone	min_stable_level_fraction	startup_cost	shutdown_cost	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	ramp_rate_up_frac_of_capacity_per_hour	ramp_rate_down_frac_of_capacity_per_hour
+project	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up_ba	regulation_up_zone	lf_reserves_down_ba	regulation_down_zone	min_stable_level_fraction	startup_cost_per_mw	shutdown_cost_per_mw	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	ramp_rate_up_frac_of_capacity_per_hour	ramp_rate_down_frac_of_capacity_per_hour
 Nuclear	Zone1	existing_gen_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	0	1666.67	.	.	.
 Gas_CCGT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	Zone1	Zone1	Zone1	Zone1	0	1	2	Gas	1500	6	6	0.3	0.5
 Coal	Zone1	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone1	.	Zone1	0.4	1	0	Coal	3000	10	6	0.3	0.5

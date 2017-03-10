@@ -56,9 +56,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
                          "violation_penalty_per_mw"])
 
         lf_down_bas = c.execute(
-            """SELECT lf_reserves_down_ba,
-            lf_reserves_down_violation_penalty_per_mw
-               FROM lf_reserves_down_bas
+            """SELECT lf_reserves_down_ba, violation_penalty_per_mw
+               FROM inputs_geography_lf_reserves_down_bas
                WHERE lf_reserves_down_ba_scenario_id = {};""".format(
                 subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID
             )

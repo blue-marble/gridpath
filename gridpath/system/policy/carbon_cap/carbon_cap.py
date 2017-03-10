@@ -66,17 +66,25 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
         )
 
-        carbon_cap = c.execute(
-            """SELECT carbon_cap_zone, period, carbon_cap_target_mmt
-            FROM carbon_cap_targets
-            WHERE period_scenario_id = {}
-            AND carbon_cap_zone_scenario_id = {}
-            AND carbon_cap_target_scenario_id = {};
+        carbon_cap_targets = c.execute(
+            """SELECT carbon_cap_zone, period, carbon_cap_mmt
+            FROM inputs_system_carbon_cap_targets
+            JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE timepoint_scenario_id = {}) as relevant_periods
+            USING (period)
+            JOIN
+            (SELECT carbon_cap_zone
+            FROM inputs_geography_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {}) as relevant_zones
+            using (carbon_cap_zone)
+            WHERE carbon_cap_target_scenario_id = {};
             """.format(
-                subscenarios.PERIOD_SCENARIO_ID,
+                subscenarios.TIMEPOINT_SCENARIO_ID,
                 subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
                 subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
             )
         )
-        for row in carbon_cap:
+        for row in carbon_cap_targets:
             writer.writerow(row)

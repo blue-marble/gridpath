@@ -51,7 +51,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         carbon_cap_zone = c.execute(
             """SELECT carbon_cap_zone
-            FROM carbon_cap_zones
+            FROM inputs_geography_carbon_cap_zones
             WHERE carbon_cap_zone_scenario_id = {};
             """.format(
                 subscenarios.CARBON_CAP_ZONE_SCENARIO_ID

@@ -1,0 +1,6 @@
+set logfile /Users/ana/Dropbox/dev/gridpath/examples/test/logs/tmpl94Sk8.cplex.log
+read /Users/ana/Dropbox/dev/gridpath/examples/test/logs/tmpc44vUq.pyomo.lp
+display problem stats
+optimize
+write /Users/ana/Dropbox/dev/gridpath/examples/test/logs/tmp1jVISV.cplex.sol
+quit

@@ -172,3 +172,63 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 value(m.Import_Carbon_Emissions_Tons[tx, tmp])
             ])
 
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    transmission_zones = c.execute(
+        """SELECT transmission_line, carbon_cap_zone, import_direction,
+        tx_co2_intensity_tons_per_mwh
+        FROM inputs_transmission_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {}
+            AND transmission_carbon_cap_zone_scenario_id = {}""".format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Make a dict for easy access
+    prj_zone_dict = dict()
+    for (prj, zone, direction, intensity) in transmission_zones:
+        prj_zone_dict[str(prj)] = \
+            (".", ".", ".") if zone is None \
+            else (str(zone), str(direction), intensity)
+
+    with open(os.path.join(inputs_directory, "transmission_lines.tab"), "r"
+              ) as tx_file_in:
+        reader = csv.reader(tx_file_in, delimiter="\t")
+
+        new_rows = list()
+
+        # Append column header
+        header = reader.next()
+        header.append("carbon_cap_zone")
+        header.append("carbon_cap_zone_import_direction")
+        header.append("tx_co2_intensity_tons_per_mwh")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If project specified, check if zone specified or not
+            if row[0] in prj_zone_dict.keys():
+                row.append(prj_zone_dict[row[0]][0])
+                row.append(prj_zone_dict[row[0]][1])
+                row.append(prj_zone_dict[row[0]][2])
+                new_rows.append(row)
+            # If project not specified, specify no zone
+            else:
+                row.append(".")
+                row.append(".")
+                row.append(".")
+                new_rows.append(row)
+
+    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+              "w") as tx_file_out:
+        writer = csv.writer(tx_file_out, delimiter="\t")
+        writer.writerows(new_rows)

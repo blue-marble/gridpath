@@ -64,7 +64,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         fuels = c.execute(
             """SELECT fuel, fuel_price_per_mmbtu, co2_intensity_tons_per_mmbtu
-            FROM fuels
+            FROM inputs_project_fuels
             WHERE fuel_scenario_id = {}""".format(
                 subscenarios.FUEL_SCENARIO_ID
             )

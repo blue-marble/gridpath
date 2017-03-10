@@ -93,20 +93,20 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         lf_reserves_down = c.execute(
             """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
-            FROM lf_reserves_down
-            WHERE period_scenario_id = {}
-            AND horizon_scenario_id = {}
-            AND timepoint_scenario_id = {}
-            AND existing_project_scenario_id = {}
-            AND new_project_scenario_id = {}
-            AND lf_reserves_down_ba_scenario_id = {}
-            AND lf_reserves_down_scenario_id = {}
+            FROM inputs_system_lf_reserves_down
+            INNER JOIN
+            (SELECT timepoint
+            FROM inputs_temporal_timepoints
+            WHERE timepoint_scenario_id = {}) as relevant_timepoints
+            USING (timepoint)
+            INNER JOIN
+            (SELECT lf_reserves_down_ba
+            FROM inputs_geography_lf_reserves_down_bas
+            WHERE lf_reserves_down_ba_scenario_id = {}) as relevant_bas
+            USING (lf_reserves_down_ba)
+            WHERE lf_reserves_down_scenario_id = {}
             """.format(
-                subscenarios.PERIOD_SCENARIO_ID, 
-                subscenarios.HORIZON_SCENARIO_ID,
                 subscenarios.TIMEPOINT_SCENARIO_ID,
-                subscenarios.EXISTING_PROJECT_SCENARIO_ID,
-                subscenarios.NEW_PROJECT_SCENARIO_ID,
                 subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID,
                 subscenarios.LF_RESERVES_DOWN_SCENARIO_ID
             )

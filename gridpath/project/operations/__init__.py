@@ -82,23 +82,23 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         :return:
         """
         startup_cost_projects = list()
-        startup_cost_per_unit = dict()
+        startup_cost_per_mw = dict()
 
         dynamic_components = \
             read_csv(
                 os.path.join(scenario_directory, "inputs", "projects.tab"),
                 sep="\t", usecols=["project",
-                                   "startup_cost"]
+                                   "startup_cost_per_mw"]
                 )
         for row in zip(dynamic_components["project"],
-                       dynamic_components["startup_cost"]):
+                       dynamic_components["startup_cost_per_mw"]):
             if is_number(row[1]) and float(row[1]) > 0:
                 startup_cost_projects.append(row[0])
-                startup_cost_per_unit[row[0]] = float(row[1])
+                startup_cost_per_mw[row[0]] = float(row[1])
             else:
                 pass
 
-        return startup_cost_projects, startup_cost_per_unit
+        return startup_cost_projects, startup_cost_per_mw
 
     data_portal.data()["STARTUP_COST_PROJECTS"] = {
         None: determine_startup_cost_projects()[0]
@@ -119,23 +119,23 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         """
 
         shutdown_cost_projects = list()
-        shutdown_cost_per_unit = dict()
+        shutdown_cost_per_mw = dict()
 
         dynamic_components = \
             read_csv(
                 os.path.join(scenario_directory, "inputs", "projects.tab"),
                 sep="\t", usecols=["project",
-                                   "shutdown_cost"]
+                                   "shutdown_cost_per_mw"]
                 )
         for row in zip(dynamic_components["project"],
-                       dynamic_components["shutdown_cost"]):
+                       dynamic_components["shutdown_cost_per_mw"]):
             if is_number(row[1]) and float(row[1]) > 0:
                 shutdown_cost_projects.append(row[0])
-                shutdown_cost_per_unit[row[0]] = float(row[1])
+                shutdown_cost_per_mw[row[0]] = float(row[1])
             else:
                 pass
 
-        return shutdown_cost_projects, shutdown_cost_per_unit
+        return shutdown_cost_projects, shutdown_cost_per_mw
 
     data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
         None: determine_shutdown_cost_projects()[0]

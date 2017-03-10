@@ -79,16 +79,16 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Set: SIMULTANEOUS_FLOW_LIMIT_GROUP_PERIODS
-        expected_group_periods = sorted(
+        # Set: SIMULTANEOUS_FLOW_LIMIT_PERIODS
+        expected_limit_periods = sorted(
             [("Zone1_Exports", 2020), ("Zone1_Exports", 2030),
              ("Zone1_Imports", 2030)]
         )
-        actual_group_periods = sorted(
+        actual_limit_periods = sorted(
             [(g, p) for (g, p) in
-             instance.SIMULTANEOUS_FLOW_LIMIT_GROUP_PERIODS]
+             instance.SIMULTANEOUS_FLOW_LIMIT_PERIODS]
         )
-        self.assertListEqual(expected_group_periods, actual_group_periods)
+        self.assertListEqual(expected_limit_periods, actual_limit_periods)
 
         # Param: simultaneous_flow_limit_mw
         expected_sim_flow_lim = OrderedDict(
@@ -101,13 +101,13 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
             sorted(
                 {(g, p): instance.simultaneous_flow_limit_mw[g, p]
                  for (g, p)
-                 in instance.SIMULTANEOUS_FLOW_LIMIT_GROUP_PERIODS}.items()
+                 in instance.SIMULTANEOUS_FLOW_LIMIT_PERIODS}.items()
             )
         )
         self.assertDictEqual(expected_sim_flow_lim, actual_sim_flow_lim)
 
-        # Set: SIMULTANEOUS_FLOW_LIMIT_GROUP_TIMEPOINTS
-        expected_group_tmps = sorted(
+        # Set: SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS
+        expected_limit_tmps = sorted(
             [("Zone1_Exports", 20200101), ("Zone1_Exports", 20200102),
              ("Zone1_Exports", 20200103), ("Zone1_Exports", 20200104),
              ("Zone1_Exports", 20200105), ("Zone1_Exports", 20200106),
@@ -182,30 +182,30 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
              ("Zone1_Imports", 20300223), ("Zone1_Imports", 20300224)
              ]
         )
-        actual_group_tmps = sorted(
+        actual_limit_tmps = sorted(
             (g, tmp) for (g, tmp)
-            in instance.SIMULTANEOUS_FLOW_LIMIT_GROUP_TIMEPOINTS
+            in instance.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS
         )
-        self.assertListEqual(expected_group_tmps, actual_group_tmps)
+        self.assertListEqual(expected_limit_tmps, actual_limit_tmps)
 
-        # Set: SIMULTANEOUS_FLOW_GROUPS
-        expected_groups = sorted(
+        # Set: SIMULTANEOUS_FLOW_LIMITS
+        expected_limits = sorted(
             ["Zone1_Exports", "Zone1_Imports"]
         )
-        actual_groups = sorted(
-            [g for g in instance.SIMULTANEOUS_FLOW_GROUPS]
+        actual_limits = sorted(
+            [g for g in instance.SIMULTANEOUS_FLOW_LIMITS]
         )
-        self.assertListEqual(expected_groups, actual_groups)
+        self.assertListEqual(expected_limits, actual_limits)
 
-        # Set: SIMULTANEOUS_FLOW_GROUP_LINES
-        expected_group_lines = sorted(
+        # Set: SIMULTANEOUS_FLOW_LIMIT_LINES
+        expected_limit_lines = sorted(
             [("Zone1_Exports", "Tx1"), ("Zone1_Exports", "Tx_New"),
              ("Zone1_Imports", "Tx1"), ("Zone1_Imports", "Tx_New")]
         )
-        actual_group_lines = sorted(
-            [(g, tx) for (g, tx) in instance.SIMULTANEOUS_FLOW_GROUP_LINES]
+        actual_limit_lines = sorted(
+            [(g, tx) for (g, tx) in instance.SIMULTANEOUS_FLOW_LIMIT_LINES]
         )
-        self.assertListEqual(expected_group_lines, actual_group_lines)
+        self.assertListEqual(expected_limit_lines, actual_limit_lines)
 
         # Param: simultaneous_flow_direction
         expected_dir = OrderedDict(
@@ -219,13 +219,13 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
         actual_dir = OrderedDict(
             sorted(
                 {(g, tx): instance.simultaneous_flow_direction[g, tx]
-                 for (g, tx) in instance.SIMULTANEOUS_FLOW_GROUP_LINES
+                 for (g, tx) in instance.SIMULTANEOUS_FLOW_LIMIT_LINES
                  }.items()
             )
         )
         self.assertDictEqual(expected_dir, actual_dir)
 
-        # Set: TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_GROUP
+        # Set: TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_LIMIT
         expected_tx_by_g = OrderedDict(
             sorted(
                 {"Zone1_Exports": sorted(["Tx1", "Tx_New"]),
@@ -236,9 +236,9 @@ class TestTxSimultaneousFlowLimits(unittest.TestCase):
             sorted(
                 {g: sorted(
                     [tx for tx in
-                     instance.TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_GROUP[g]
+                     instance.TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_LIMIT[g]
                      ]
-                ) for g in instance.SIMULTANEOUS_FLOW_GROUPS}.items()
+                ) for g in instance.SIMULTANEOUS_FLOW_LIMITS}.items()
             )
         )
         self.assertDictEqual(expected_tx_by_g, actual_tx_by_g)

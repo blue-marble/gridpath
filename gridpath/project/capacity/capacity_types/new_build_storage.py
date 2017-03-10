@@ -246,19 +246,19 @@ def load_module_specific_data(m,
         new_build_storage_projects = list()
         storage_min_duration = dict()
 
-        dynamic_components = \
+        dynamic = \
             pd.read_csv(
                 os.path.join(scenario_directory, "inputs", "projects.tab"),
                 sep="\t", usecols=["project", "capacity_type",
                                    "minimum_duration_hours"]
             )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["capacity_type"],
-                       dynamic_components["minimum_duration_hours"]):
-            if row[1] == "new_build_storage":
-                new_build_storage_projects.append(row[0])
-                storage_min_duration[row[0]] \
-                    = float(row[2])
+        for r in zip(dynamic["project"],
+                     dynamic["capacity_type"],
+                     dynamic["minimum_duration_hours"]):
+            if r[1] == "new_build_storage":
+                new_build_storage_projects.append(r[0])
+                storage_min_duration[r[0]] \
+                    = float(r[2])
             else:
                 pass
 

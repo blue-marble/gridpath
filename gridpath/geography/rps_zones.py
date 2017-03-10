@@ -50,7 +50,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         rps_zones = c.execute(
             """SELECT rps_zone
-               FROM rps_zones
+               FROM inputs_geography_rps_zones
                WHERE rps_zone_scenario_id = {};""".format(
                 subscenarios.RPS_ZONE_SCENARIO_ID
             )

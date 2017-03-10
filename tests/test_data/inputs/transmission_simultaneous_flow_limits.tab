@@ -1,4 +1,4 @@
-simultaneous_flow_group	period	simultaneous_flow_limit_mw
+simultaneous_flow_limit	period	simultaneous_flow_limit_mw
 Zone1_Exports	2020	5
 Zone1_Exports	2030	10
 Zone1_Imports	2030	8

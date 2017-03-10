@@ -61,15 +61,19 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         loads = c.execute(
             """SELECT load_zone, timepoint, load_mw
-            FROM loads
-            WHERE period_scenario_id = {}
-            AND horizon_scenario_id = {}
-            AND timepoint_scenario_id = {}
-            AND load_zone_scenario_id = {}
-            AND load_scenario_id = {}
+            FROM inputs_system_load
+            INNER JOIN
+            (SELECT timepoint
+            FROM inputs_temporal_timepoints
+            WHERE timepoint_scenario_id = {}) as relevant_timepoints
+            USING (timepoint)
+            INNER JOIN
+            (SELECT load_zone
+            FROM inputs_geography_load_zones
+            WHERE load_zone_scenario_id = {}) as relevant_load_zones
+            USING (load_zone)
+            WHERE load_scenario_id = {}
             """.format(
-                subscenarios.PERIOD_SCENARIO_ID,
-                subscenarios.HORIZON_SCENARIO_ID,
                 subscenarios.TIMEPOINT_SCENARIO_ID,
                 subscenarios.LOAD_ZONE_SCENARIO_ID,
                 subscenarios.LOAD_SCENARIO_ID

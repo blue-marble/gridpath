@@ -5,6 +5,9 @@
 Add project-level components for upward load-following reserves
 """
 
+import csv
+import os.path
+
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results
@@ -14,7 +17,7 @@ MODULE_NAME = "lf_reserves_up"
 # Dynamic components
 HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
 # Inputs
-BA_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_zone"
+BA_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "lf_reserves_up_derate"
 RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
     "load_following_up_balancing_areas.tab"
@@ -133,3 +136,55 @@ def export_results(scenario_directory, horizon, stage, m, d):
         RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME
     )
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    project_bas = c.execute(
+        """SELECT project, lf_reserves_up_ba
+        FROM inputs_project_lf_reserves_up_bas
+            WHERE lf_reserves_up_ba_scenario_id = {}
+            AND project_lf_reserves_up_ba_scenario_id = {}""".format(
+            subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
+            subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Make a dict for easy access
+    prj_ba_dict = dict()
+    for (prj, ba) in project_bas:
+        prj_ba_dict[str(prj)] = "." if ba is None else str(ba)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+              ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t")
+
+        new_rows = list()
+
+        # Append column header
+        header = reader.next()
+        header.append("lf_reserves_up_ba")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If project specified, check if BA specified or not
+            if row[0] in prj_ba_dict.keys():
+                row.append(prj_ba_dict[row[0]])
+                new_rows.append(row)
+            # If project not specified, specify no BA
+            else:
+                row.append(".")
+                new_rows.append(row)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+            projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer.writerows(new_rows)

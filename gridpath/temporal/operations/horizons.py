@@ -104,11 +104,9 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         horizons = c.execute(
             """SELECT horizon, boundary, horizon_weight
-               FROM horizons
-               WHERE period_scenario_id = {}
-               AND horizon_scenario_id = {};""".format(
-                subscenarios.PERIOD_SCENARIO_ID,
-                subscenarios.HORIZON_SCENARIO_ID
+               FROM inputs_temporal_horizons
+               WHERE timepoint_scenario_id = {};""".format(
+                subscenarios.TIMEPOINT_SCENARIO_ID
             )
         ).fetchall()
 

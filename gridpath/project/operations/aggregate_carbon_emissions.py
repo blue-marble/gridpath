@@ -144,3 +144,55 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.horizon_weight[m.horizon[tmp]],
                 value(m.Carbon_Emissions_Tons[p, tmp])
             ])
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    project_zones = c.execute(
+        """SELECT project, carbon_cap_zone
+        FROM inputs_project_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {}
+            AND project_carbon_cap_zone_scenario_id = {}""".format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Make a dict for easy access
+    prj_zone_dict = dict()
+    for (prj, zone) in project_zones:
+        prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+              ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t")
+
+        new_rows = list()
+
+        # Append column header
+        header = reader.next()
+        header.append("carbon_cap_zone")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If project specified, check if BA specified or not
+            if row[0] in prj_zone_dict.keys():
+                row.append(prj_zone_dict[row[0]])
+                new_rows.append(row)
+            # If project not specified, specify no BA
+            else:
+                row.append(".")
+                new_rows.append(row)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+            projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer.writerows(new_rows)
