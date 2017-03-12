@@ -66,11 +66,99 @@ def export_results(scenario_directory, horizon, stage, m, d):
                            "costs_capacity_all_projects.csv"), "wb") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "annualized_capacity_cost"]
+            ["project", "period", "technology", "load_zone", "annualized_capacity_cost"]
         )
         for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
             writer.writerow([
                 prj,
                 p,
+                m.technology[prj],
+                m.load_zone[prj],
                 value(m.Capacity_Cost_in_Period[prj, p])
             ])
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Capacity cost results
+    print("project capacity costs")
+    c.execute(
+        """DELETE FROM results_project_capacity_costs WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_capacity_costs"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_capacity_costs"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        project VARCHAR(64),
+        period INTEGER,
+        technology VARCHAR(32),
+        load_zone VARCHAR(32),
+        annualized_capacity_cost FLOAT,
+        PRIMARY KEY (scenario_id, project, period)
+        );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_capacity_all_projects.csv"), "r") as \
+            capacity_costs_file:
+        reader = csv.reader(capacity_costs_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            technology = row[2]
+            load_zone = row[3]
+            annualized_capacity_cost = row[4]
+
+            c.execute(
+                """INSERT INTO temp_results_project_capacity_costs"""
+                + str(scenario_id) + """
+                (scenario_id, project, period, technology, load_zone,
+                annualized_capacity_cost)
+                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
+                    scenario_id, project, period, technology, load_zone,
+                    annualized_capacity_cost,
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_capacity_costs
+        (scenario_id, project, period, technology, load_zone,
+        annualized_capacity_cost)
+        SELECT
+        scenario_id, project, period, technology, load_zone,
+        annualized_capacity_cost
+        FROM temp_results_project_capacity_costs""" + str(scenario_id) + """
+        ORDER BY scenario_id, project, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_capacity_costs""" + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

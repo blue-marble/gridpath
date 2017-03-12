@@ -196,14 +196,19 @@ class SubScenarios:
         ).fetchone()[0]
 
 
-def get_inputs_from_database(loaded_modules):
+def get_inputs_from_database(loaded_modules, subscenarios, cursor,
+                             inputs_directory):
     """
 
+    :param loaded_modules:
+    :param subscenarios:
+    :param cursor:
+    :param inputs_directory:
     :return:
     """
     for m in loaded_modules:
         if hasattr(m, "get_inputs_from_database"):
-            m.get_inputs_from_database(SUBSCENARIOS, c, INPUTS_DIRECTORY)
+            m.get_inputs_from_database(subscenarios, cursor, inputs_directory)
         else:
             pass
 
@@ -356,4 +361,4 @@ if __name__ == "__main__":
     MODULES_TO_USE = get_modules(SCENARIO_DIRECTORY)
     LOADED_MODULES = load_modules(MODULES_TO_USE)
     SUBSCENARIOS = SubScenarios(cursor=c)
-    get_inputs_from_database(LOADED_MODULES)
+    get_inputs_from_database(LOADED_MODULES, SUBSCENARIOS, c, INPUTS_DIRECTORY)

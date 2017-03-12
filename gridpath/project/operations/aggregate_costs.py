@@ -238,7 +238,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
-             "number_of_hours_in_timepoint", "variable_om_cost"]
+             "number_of_hours_in_timepoint", "load_zone",
+             "technology", "variable_om_cost"]
         )
         for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -248,6 +249,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
                 value(m.Variable_OM_Cost[p, tmp])
             ])
 
@@ -256,7 +259,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
-             "number_of_hours_in_timepoint", "fuel_cost"]
+             "number_of_hours_in_timepoint", "load_zone",
+             "technology", "fuel_cost"]
         )
         for (p, tmp) in m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -266,6 +270,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
                 value(m.Fuel_Cost[p, tmp])
             ])
 
@@ -274,7 +280,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
-             "number_of_hours_in_timepoint", "startup_cost"]
+             "number_of_hours_in_timepoint", "load_zone",
+             "technology", "startup_cost"]
         )
         for (p, tmp) in m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -284,6 +291,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
                 value(m.Startup_Cost[p, tmp])
             ])
 
@@ -292,7 +301,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
-             "number_of_hours_in_timepoint", "shutdown_cost"]
+             "number_of_hours_in_timepoint", "load_zone",
+             "technology", "shutdown_cost"]
         )
         for (p, tmp) in m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -302,5 +312,385 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
                 value(m.Shutdown_Cost[p, tmp])
             ])
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("project costs operations")
+    
+    # costs_operations_variable_om.csv
+    c.execute(
+        """DELETE FROM results_project_costs_operations_variable_om
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_costs_operations_variable_om"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_costs_operations_variable_om"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        project VARCHAR(64),
+        period INTEGER,
+        horizon INTEGER,
+        timepoint INTEGER,
+        horizon_weight FLOAT,
+        number_of_hours_in_timepoint FLOAT,
+        load_zone VARCHAR(32),
+        technology VARCHAR(32),
+        variable_om_cost FLOAT,
+        PRIMARY KEY (scenario_id, project, timepoint)
+            );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_operations_variable_om.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[6]
+            technology = row[7]
+            variable_om_cost = row[8]
+            c.execute(
+                """INSERT INTO
+                temp_results_project_costs_operations_variable_om"""
+                + str(scenario_id) + """
+                (scenario_id, project, period, horizon, timepoint,
+                horizon_weight, number_of_hours_in_timepoint,
+                load_zone, technology, variable_om_cost)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, variable_om_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_costs_operations_variable_om
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, variable_om_cost)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, variable_om_cost
+        FROM temp_results_project_costs_operations_variable_om""" + str(scenario_id) + """
+        ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_costs_operations_variable_om""" + str(scenario_id) +
+        """;"""
+    )
+    db.commit()
+
+    # costs_operations_fuel.csv
+    c.execute(
+        """DELETE FROM results_project_costs_operations_fuel
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_costs_operations_fuel"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_costs_operations_fuel"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            technology VARCHAR(32),
+            fuel_cost FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_operations_fuel.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[6]
+            technology = row[7]
+            fuel_cost = row[8]
+            c.execute(
+                """INSERT INTO
+                temp_results_project_costs_operations_fuel"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, fuel_cost)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, fuel_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_costs_operations_fuel
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, fuel_cost)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, fuel_cost
+        FROM temp_results_project_costs_operations_fuel""" + str(
+            scenario_id) + """
+            ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_costs_operations_fuel""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()
+
+    # costs_operations_startup.csv
+    c.execute(
+        """DELETE FROM results_project_costs_operations_startup
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_costs_operations_startup"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_costs_operations_startup"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            technology VARCHAR(32),
+            startup_cost FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_operations_startup.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[6]
+            technology = row[7]
+            startup_cost = row[8]
+            c.execute(
+                """INSERT INTO
+                temp_results_project_costs_operations_startup"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, startup_cost)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, startup_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_costs_operations_startup
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, startup_cost)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, startup_cost
+        FROM temp_results_project_costs_operations_startup""" + str(
+            scenario_id) + """
+            ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_costs_operations_startup""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()
+
+    # costs_operations_shutdown.csv
+    c.execute(
+        """DELETE FROM results_project_costs_operations_shutdown
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_costs_operations_shutdown"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_costs_operations_shutdown"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            technology VARCHAR(32),
+            shutdown_cost FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_operations_shutdown.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[6]
+            technology = row[7]
+            shutdown_cost = row[8]
+            c.execute(
+                """INSERT INTO
+                temp_results_project_costs_operations_shutdown"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, shutdown_cost)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, shutdown_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_costs_operations_shutdown
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, shutdown_cost)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, shutdown_cost
+        FROM temp_results_project_costs_operations_shutdown""" + str(
+            scenario_id) + """
+            ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_costs_operations_shutdown""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()

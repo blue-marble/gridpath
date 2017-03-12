@@ -2,9 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from argparse import ArgumentParser
-import csv
 import os.path
-import pandas as pd
 import sqlite3
 import sys
 

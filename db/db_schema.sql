@@ -83,7 +83,7 @@ PRIMARY KEY (timepoint_scenario_id, period),
 FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
 (timepoint_scenario_id),
 -- Make sure period exists in this timepoint_id
-FOREIGN KEY (timepoint_scenario_id, period) REFERENCES 
+FOREIGN KEY (timepoint_scenario_id, period) REFERENCES
 inputs_temporal_timepoints (timepoint_scenario_id, period)
 );
 
@@ -128,7 +128,7 @@ load_zone VARCHAR(32),
 overgeneration_penalty_per_mw FLOAT,
 unserved_energy_penalty_per_mw FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES 
+FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id)
 );
 
@@ -149,7 +149,7 @@ lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
 PRIMARY KEY (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
 
@@ -166,7 +166,7 @@ lf_reserves_down_ba_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
 PRIMARY KEY (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
 
@@ -185,7 +185,7 @@ CREATE TABLE inputs_geography_rps_zones(
 rps_zone_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 PRIMARY KEY (rps_zone_scenario_id, rps_zone),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES 
+FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
 );
 
@@ -204,7 +204,7 @@ CREATE TABLE inputs_geography_carbon_cap_zones(
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES 
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
@@ -239,7 +239,7 @@ existing INTEGER,
 new_build INTEGER,
 capacity_type VARCHAR(32),
 PRIMARY KEY (project_portfolio_scenario_id, project),
-FOREIGN KEY (project_portfolio_scenario_id) REFERENCES 
+FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
 subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (capacity_type) REFERENCES capacity_types (capacity_type)
 );
@@ -281,8 +281,8 @@ period INTEGER,
 annual_fixed_cost_per_mw_year FLOAT,
 annual_fixed_cost_per_mwh_year FLOAT,
 PRIMARY KEY (project_existing_fixed_cost_scenario_id, project, period),
-FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES 
-subscenarios_project_existing_fixed_cost 
+FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
+subscenarios_project_existing_fixed_cost
 (project_existing_fixed_cost_scenario_id)
 );
 
@@ -459,9 +459,9 @@ project VARCHAR(64),
 load_zone VARCHAR(32),
 PRIMARY KEY (load_zone_scenario_id, project_load_zone_scenario_id, project),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
- subscenarios_project_load_zones 
+ subscenarios_project_load_zones
  (load_zone_scenario_id, project_load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES 
+FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id)
 );
 
@@ -476,7 +476,7 @@ lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
-PRIMARY KEY (lf_reserves_up_ba_scenario_id, 
+PRIMARY KEY (lf_reserves_up_ba_scenario_id,
 project_lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
@@ -490,11 +490,11 @@ project VARCHAR(64),
 lf_reserves_up_ba VARCHAR(32),
 PRIMARY KEY (lf_reserves_up_ba_scenario_id,
 project_lf_reserves_up_ba_scenario_id, project),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id, 
-project_lf_reserves_up_ba_scenario_id) 
-REFERENCES subscenarios_project_lf_reserves_up_bas 
+FOREIGN KEY (lf_reserves_up_ba_scenario_id,
+project_lf_reserves_up_ba_scenario_id)
+REFERENCES subscenarios_project_lf_reserves_up_bas
  (lf_reserves_up_ba_scenario_id, project_lf_reserves_up_ba_scenario_id),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
 
@@ -504,7 +504,7 @@ lf_reserves_down_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
-PRIMARY KEY (lf_reserves_down_ba_scenario_id, 
+PRIMARY KEY (lf_reserves_down_ba_scenario_id,
 project_lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
@@ -518,11 +518,11 @@ project VARCHAR(64),
 lf_reserves_down_ba VARCHAR(32),
 PRIMARY KEY (lf_reserves_down_ba_scenario_id,
 project_lf_reserves_down_ba_scenario_id, project),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id, 
-project_lf_reserves_down_ba_scenario_id) 
-REFERENCES subscenarios_project_lf_reserves_down_bas 
+FOREIGN KEY (lf_reserves_down_ba_scenario_id,
+project_lf_reserves_down_ba_scenario_id)
+REFERENCES subscenarios_project_lf_reserves_down_bas
  (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
 
@@ -538,7 +538,7 @@ rps_zone_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
-PRIMARY KEY (rps_zone_scenario_id, 
+PRIMARY KEY (rps_zone_scenario_id,
 project_rps_zone_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
@@ -552,9 +552,9 @@ project VARCHAR(64),
 rps_zone VARCHAR(32),
 PRIMARY KEY (rps_zone_scenario_id, project_rps_zone_scenario_id, project),
 FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
- subscenarios_project_rps_zones 
+ subscenarios_project_rps_zones
  (rps_zone_scenario_id, project_rps_zone_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES 
+FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
 );
 
@@ -585,9 +585,9 @@ PRIMARY KEY (carbon_cap_zone_scenario_id,
 project_carbon_cap_zone_scenario_id, project),
 FOREIGN KEY (carbon_cap_zone_scenario_id,
 project_carbon_cap_zone_scenario_id) REFERENCES
- subscenarios_project_carbon_cap_zones 
+ subscenarios_project_carbon_cap_zones
  (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES 
+FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
@@ -828,7 +828,7 @@ lf_reserves_up_ba VARCHAR(32),
 timepoint INTEGER,
 lf_reserves_up_mw FLOAT,
 PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, timepoint),
-FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 );
 
@@ -850,7 +850,7 @@ lf_reserves_down_ba VARCHAR(32),
 timepoint INTEGER,
 lf_reserves_down_mw FLOAT,
 PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, timepoint),
-FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES 
+FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
@@ -967,23 +967,23 @@ FOREIGN KEY (fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (fuel_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
 subscenarios_project_portfolios (project_portfolio_scenario_id),
-FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES 
-subscenarios_project_load_zones 
+FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
+subscenarios_project_load_zones
 (load_zone_scenario_id, project_load_zone_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id,
 project_lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_project_lf_reserves_up_bas 
+subscenarios_project_lf_reserves_up_bas
 (lf_reserves_up_ba_scenario_id, project_lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id,
 project_lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_project_lf_reserves_down_bas 
+subscenarios_project_lf_reserves_down_bas
 (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES 
-subscenarios_project_rps_zones 
+FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
+subscenarios_project_rps_zones
 (rps_zone_scenario_id, project_rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id,
 project_carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_project_carbon_cap_zones 
+subscenarios_project_carbon_cap_zones
 (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
@@ -1050,8 +1050,8 @@ subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 -- -- RESULTS -- --
 -------------------
 
-DROP TABLE IF EXISTS results_capacity_all;
-CREATE TABLE results_capacity_all(
+DROP TABLE IF EXISTS results_project_capacity_all;
+CREATE TABLE results_project_capacity_all(
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1062,8 +1062,8 @@ energy_capacity_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period)
 );
 
-DROP TABLE IF EXISTS results_dispatch_all;
-CREATE TABLE results_dispatch_all(
+DROP TABLE IF EXISTS results_project_dispatch_all;
+CREATE TABLE results_project_dispatch_all(
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1075,4 +1075,127 @@ load_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_dispatch_variable;
+CREATE TABLE results_project_dispatch_variable(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+scheduled_curtailment_mw FLOAT,
+subhourly_curtailment_mw FLOAT,
+subhourly_energy_delivered_mw FLOAT,
+total_curtailment_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_dispatch_capacity_commit;
+CREATE TABLE results_project_dispatch_capacity_commit(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+committed_mw FLOAT,
+committed_units FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_costs_capacity;
+CREATE TABLE results_project_costs_capacity(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+annualized_capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_costs_operations_variable_om;
+CREATE TABLE results_project_costs_operations_variable_om(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+variable_om_cost FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_costs_operations_fuel;
+CREATE TABLE results_project_costs_operations_fuel(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+fuel_cost FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_costs_operations_startup;
+CREATE TABLE results_project_costs_operations_startup(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+startup_cost FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_costs_operations_shutdown;
+CREATE TABLE results_project_costs_operations_shutdown(
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+technology VARCHAR(32),
+shutdown_cost FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_transmission_imports_exports;
+CREATE TABLE results_transmission_imports_exports(
+scenario_id INTEGER,
+load_zone VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+imports_mw FLOAT,
+exports_mw FLOAT,
+net_imports_mw FLOAT,
+PRIMARY KEY (scenario_id, load_zone, timepoint)
 );

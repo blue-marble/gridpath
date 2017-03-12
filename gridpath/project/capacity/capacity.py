@@ -223,9 +223,9 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     :return:
     """
     # Capacity results
-    print("capacity")
+    print("project capacity")
     c.execute(
-        """DELETE FROM results_capacity_all WHERE scenario_id = {};""".format(
+        """DELETE FROM results_project_capacity_all WHERE scenario_id = {};""".format(
             scenario_id
         )
     )
@@ -233,13 +233,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Create temporary table, which we'll use to sort results and then drop
     c.execute(
-        """DROP TABLE IF EXISTS temp_results_capacity_all"""
+        """DROP TABLE IF EXISTS temp_results_project_capacity_all"""
         + str(scenario_id) + """;"""
     )
     db.commit()
 
     c.execute(
-        """CREATE TABLE temp_results_capacity_all""" + str(scenario_id) + """(
+        """CREATE TABLE temp_results_project_capacity_all""" + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
@@ -267,7 +267,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             energy_capacity_mwh = 'NULL' if row[5] == "" else row[5]
 
             c.execute(
-                """INSERT INTO temp_results_capacity_all"""
+                """INSERT INTO temp_results_project_capacity_all"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, technology, load_zone,
                 capacity_mw, energy_capacity_mwh)
@@ -280,20 +280,20 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Insert sorted results into permanent results table
     c.execute(
-        """INSERT INTO results_capacity_all
+        """INSERT INTO results_project_capacity_all
         (scenario_id, project, period, technology, load_zone,
         capacity_mw, energy_capacity_mwh)
         SELECT
         scenario_id, project, period, technology, load_zone,
         capacity_mw, energy_capacity_mwh
-        FROM temp_results_capacity_all""" + str(scenario_id) + """
+        FROM temp_results_project_capacity_all""" + str(scenario_id) + """
         ORDER BY scenario_id, project, period;"""
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
-        """DROP TABLE temp_results_capacity_all""" + str(scenario_id) +
+        """DROP TABLE temp_results_project_capacity_all""" + str(scenario_id) +
         """;"""
     )
     db.commit()

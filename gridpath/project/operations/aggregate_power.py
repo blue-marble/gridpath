@@ -175,10 +175,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     :param results_directory:
     :return:
     """
-    print("dispatch all")
+    print("project dispatch all")
     # dispatch_all.csv
     c.execute(
-        """DELETE FROM results_dispatch_all WHERE scenario_id = {};""".format(
+        """DELETE FROM results_project_dispatch_all WHERE scenario_id = {};""".format(
             scenario_id
         )
     )
@@ -186,13 +186,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Create temporary table, which we'll use to sort results and then drop
     c.execute(
-        """DROP TABLE IF EXISTS temp_results_dispatch_all"""
+        """DROP TABLE IF EXISTS temp_results_project_dispatch_all"""
         + str(scenario_id) + """;"""
     )
     db.commit()
 
     c.execute(
-        """CREATE TABLE temp_results_dispatch_all""" + str(scenario_id) + """(
+        """CREATE TABLE temp_results_project_dispatch_all""" + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
@@ -210,8 +210,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Load results into the temporary table
     with open(os.path.join(results_directory, "dispatch_all.csv"), "r") as \
-            capacity_file:
-        reader = csv.reader(capacity_file)
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
 
         reader.next()  # skip header
         for row in reader:
@@ -225,7 +225,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             technology = row[7]
             power_mw = row[8]
             c.execute(
-                """INSERT INTO temp_results_dispatch_all"""
+                """INSERT INTO temp_results_project_dispatch_all"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, horizon, timepoint,
                 horizon_weight, number_of_hours_in_timepoint,
@@ -241,7 +241,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Insert sorted results into permanent results table
     c.execute(
-        """INSERT INTO results_dispatch_all
+        """INSERT INTO results_project_dispatch_all
         (scenario_id, project, period, horizon, timepoint,
         horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
@@ -249,14 +249,14 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id, project, period, horizon, timepoint,
         horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw
-        FROM temp_results_dispatch_all""" + str(scenario_id) + """
+        FROM temp_results_project_dispatch_all""" + str(scenario_id) + """
         ORDER BY scenario_id, project, timepoint;"""
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
-        """DROP TABLE temp_results_dispatch_all""" + str(scenario_id) +
+        """DROP TABLE temp_results_project_dispatch_all""" + str(scenario_id) +
         """;"""
     )
     db.commit()
