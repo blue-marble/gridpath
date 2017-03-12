@@ -195,7 +195,9 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             (SELECT project, variable_generator_profile_scenario_id
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {}
-            AND operational_type = 'variable') AS op_char
+            AND (operational_type = 'variable'
+            OR operational_type = 'variable_no_curtailment')
+            ) AS op_char
             USING (project)
             CROSS JOIN
             (SELECT timepoint, period
