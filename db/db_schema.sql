@@ -68,7 +68,7 @@ period INTEGER,
 horizon INTEGER,
 number_of_hours_in_timepoint INTEGER,
 PRIMARY KEY (timepoint_scenario_id, timepoint),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
+FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
 (timepoint_scenario_id)
 );
 
@@ -241,7 +241,7 @@ capacity_type VARCHAR(32),
 PRIMARY KEY (project_portfolio_scenario_id, project),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
 subscenarios_project_portfolios (project_portfolio_scenario_id),
-FOREIGN KEY (capacity_type) REFERENCES capacity_types (capacity_type)
+FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types (capacity_type)
 );
 
 -- Existing project capacity and fixed costs
@@ -735,6 +735,25 @@ subscenarios_transmission_operational_chars
 (transmission_operational_chars_scenario_id)
 );
 
+-- Hurdle rates
+DROP TABLE IF EXISTS subscenarios_transmission_hurdle_rates;
+CREATE TABLE subscenarios_transmission_hurdle_rates (
+transmission_hurdle_rate_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_hurdle_rates;
+CREATE TABLE inputs_transmission_hurdle_rates (
+transmission_hurdle_rate_scenario_id INTEGER,
+transmission_line INTEGER,
+hurdle_rate_positive_direction_per_mwh FLOAT,
+hurdle_rate_negative_direction_per_mwh FLOAT,
+PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line),
+FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
+subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
+);
+
 -- Simultaneous flows
 -- Limits on net flows on groups of lines (e.g. all lines connected to a zone)
 DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_limits;
@@ -911,6 +930,7 @@ scenario_name VARCHAR(64) UNIQUE,
 om_fuels INTEGER,
 om_multi_stage INTEGER,
 om_transmission INTEGER,
+om_transmission_hurdle_rates INTEGER,
 om_simultaneous_flow_limits INTEGER,
 om_lf_reserves_up INTEGER,
 om_lf_reserves_down INTEGER,
@@ -941,6 +961,7 @@ transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
+transmission_hurdle_rate_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
@@ -993,7 +1014,7 @@ subscenarios_project_existing_fixed_cost
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
-subscenarios_project_new_potential (project_new_potential_scenario_id)
+subscenarios_project_new_potential (project_new_potential_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 subscenarios_transmission_portfolios
 (transmission_portfolio_scenario_id),
@@ -1006,6 +1027,8 @@ subscenarios_transmission_existing_capacity
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 subscenarios_transmission_operational_chars
 (transmission_operational_chars_scenario_id),
+FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
+subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id,
 transmission_carbon_cap_zone_scenario_id)
 REFERENCES subscenarios_transmission_carbon_cap_zones

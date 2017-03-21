@@ -119,8 +119,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
 
-    # existing_generation_period_params.tab
-    # TODO: storage currently excluded by selecting NULL energy capacity values
+    # specified_transmission_line_capacities.tab
     with open(os.path.join(inputs_directory,
                            "specified_transmission_line_capacities.tab"),
               "w") as existing_tx_capacity_tab_file:

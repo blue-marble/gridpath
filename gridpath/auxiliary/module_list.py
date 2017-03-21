@@ -42,6 +42,7 @@ def all_modules_list():
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
+        "transmission.operations.aggregate_costs",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.aggregate_carbon_emissions",
         "system.load_balance.load_balance",
@@ -68,6 +69,8 @@ def optional_modules_list():
             ["transmission",
              "transmission.capacity.capacity",
              "transmission.operations.operations"],
+        "transmission_hurdle_rates":
+             ["transmission.operations.aggregate_costs"],
         "lf_reserves_up":
             ["geography.load_following_up_balancing_areas",
              "project.operations.reserves.lf_reserves_up",

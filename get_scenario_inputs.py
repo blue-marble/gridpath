@@ -145,6 +145,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.TRANSMISSION_HURDLE_RATE_SCENARIO_ID = cursor.execute(
+            """SELECT transmission_hurdle_rate_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID = cursor.execute(
             """SELECT transmission_carbon_cap_zone_scenario_id
                FROM scenarios
@@ -282,6 +288,14 @@ if __name__ == "__main__":
     ).fetchone()[0]
     if OPTIONAL_MODULE_TRANSMISSION:
         MODULE_LIST.append("transmission")
+
+    OPTIONAL_MODULE_TRANSMISSION_HURDLE_RATES = c.execute(
+        """SELECT om_transmission_hurdle_rates
+           FROM scenarios
+           WHERE scenario_id = {};""".format(SCENARIO_ID)
+    ).fetchone()[0]
+    if OPTIONAL_MODULE_TRANSMISSION_HURDLE_RATES:
+        MODULE_LIST.append("transmission_hurdle_rates")
 
     OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS = c.execute(
         """SELECT om_simultaneous_flow_limits

@@ -1,3 +1,3 @@
-TRANSMISSION_LINES	tx_capacity_type	load_zone_from	load_zone_to	carbon_cap_zone	carbon_cap_zone_import_direction	tx_co2_intensity_tons_per_mwh
-Tx1	specified_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.6
-Tx_New	new_build_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.8
+TRANSMISSION_LINES	tx_capacity_type	load_zone_from	load_zone_to	hurdle_rate_positive_direction_per_mwh	hurdle_rate_negative_direction_per_mwh	carbon_cap_zone	carbon_cap_zone_import_direction	tx_co2_intensity_tons_per_mwh
+Tx1	specified_transmission	Zone1	Zone2	1.0	2.0	Carbon_Cap_Zone1	negative	0.6
+Tx_New	new_build_transmission	Zone1	Zone2	0.0	1.0	Carbon_Cap_Zone1	negative	0.8
