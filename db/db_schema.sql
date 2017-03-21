@@ -6,7 +6,7 @@
 
 -- Implemented horizon boundary types
 DROP TABLE IF EXISTS mod_horizon_boundary_types;
-CREATE TABLE mod_horizon_boundary_types(
+CREATE TABLE mod_horizon_boundary_types (
 horizon_boundary_type VARCHAR(16) PRIMARY KEY,
 description VARCHAR(128)
 );
@@ -20,7 +20,7 @@ VALUES
 
 -- Implemented capacity types
 DROP TABLE IF EXISTS mod_capacity_types;
-CREATE TABLE mod_capacity_types(
+CREATE TABLE mod_capacity_types (
 capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
@@ -33,7 +33,7 @@ VALUES ('existing_gen_linear_economic_retirement'),
 
 -- Implemented operational types
 DROP TABLE IF EXISTS mod_operational_types;
-CREATE TABLE mod_operational_types(
+CREATE TABLE mod_operational_types (
 operational_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
@@ -54,14 +54,14 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 -- Usually, this a timepoint_scenario_id is a subset of a much larger set of
 -- timepoints
 DROP TABLE IF EXISTS subscenarios_temporal_timepoints;
-CREATE TABLE subscenarios_temporal_timepoints(
+CREATE TABLE subscenarios_temporal_timepoints (
 timepoint_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints(
+CREATE TABLE inputs_temporal_timepoints (
 timepoint_scenario_id INTEGER,
 timepoint INTEGER,
 period INTEGER,
@@ -74,7 +74,7 @@ FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_timepoints
 
 -- Periods
 DROP TABLE IF EXISTS inputs_temporal_periods;
-CREATE TABLE inputs_temporal_periods(
+CREATE TABLE inputs_temporal_periods (
 timepoint_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
@@ -89,7 +89,7 @@ inputs_temporal_timepoints (timepoint_scenario_id, period)
 
 -- Horizons
 DROP TABLE IF EXISTS inputs_temporal_horizons;
-CREATE TABLE inputs_temporal_horizons(
+CREATE TABLE inputs_temporal_horizons (
 timepoint_scenario_id INTEGER,
 horizon INTEGER,
 period INTEGER,
@@ -115,14 +115,14 @@ FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
 -- This is the unit at which load is met in the model: it could be one zone
 -- or many zones
 DROP TABLE IF EXISTS subscenarios_geography_load_zones;
-CREATE TABLE subscenarios_geography_load_zones(
+CREATE TABLE subscenarios_geography_load_zones (
 load_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_load_zones;
-CREATE TABLE inputs_geography_load_zones(
+CREATE TABLE inputs_geography_load_zones (
 load_zone_scenario_id INTEGER,
 load_zone VARCHAR(32),
 overgeneration_penalty_per_mw FLOAT,
@@ -137,14 +137,14 @@ subscenarios_geography_load_zones (load_zone_scenario_id)
 -- This is the unit at which reserves are met at the model; it can be
 -- different from the load zones
 DROP TABLE IF EXISTS subscenarios_geography_lf_reserves_up_bas;
-CREATE TABLE subscenarios_geography_lf_reserves_up_bas(
+CREATE TABLE subscenarios_geography_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_lf_reserves_up_bas;
-CREATE TABLE inputs_geography_lf_reserves_up_bas(
+CREATE TABLE inputs_geography_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
@@ -154,14 +154,14 @@ subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_geography_lf_reserves_down_bas;
-CREATE TABLE subscenarios_geography_lf_reserves_down_bas(
+CREATE TABLE subscenarios_geography_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_lf_reserves_down_bas;
-CREATE TABLE inputs_geography_lf_reserves_down_bas(
+CREATE TABLE inputs_geography_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
@@ -174,14 +174,14 @@ subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 -- This is the unit at which RPS requirements are met in the model; it can be
 -- different from the load zones
 DROP TABLE IF EXISTS subscenarios_geography_rps_zones;
-CREATE TABLE subscenarios_geography_rps_zones(
+CREATE TABLE subscenarios_geography_rps_zones (
 rps_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_rps_zones;
-CREATE TABLE inputs_geography_rps_zones(
+CREATE TABLE inputs_geography_rps_zones (
 rps_zone_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 PRIMARY KEY (rps_zone_scenario_id, rps_zone),
@@ -193,14 +193,14 @@ subscenarios_geography_rps_zones (rps_zone_scenario_id)
 -- This is the unit at which the carbon cap is applied in the model; it can be
 -- different from the load zones
 DROP TABLE IF EXISTS subscenarios_geography_carbon_cap_zones;
-CREATE TABLE subscenarios_geography_carbon_cap_zones(
+CREATE TABLE subscenarios_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_geography_carbon_cap_zones;
-CREATE TABLE inputs_geography_carbon_cap_zones(
+CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
@@ -215,7 +215,7 @@ subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 
 -- All projects: a list of all projects we may model
 DROP TABLE IF EXISTS inputs_project_all;
-CREATE TABLE inputs_project_all(
+CREATE TABLE inputs_project_all (
 project VARCHAR(64) PRIMARY KEY
 );
 
@@ -225,14 +225,14 @@ project VARCHAR(64) PRIMARY KEY
 -- Subsets of projects allowed in a scenario: includes both existing and
 -- potential projects
 DROP TABLE IF EXISTS subscenarios_project_portfolios;
-CREATE TABLE subscenarios_project_portfolios(
+CREATE TABLE subscenarios_project_portfolios (
 project_portfolio_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_portfolios;
-CREATE TABLE inputs_project_portfolios(
+CREATE TABLE inputs_project_portfolios (
 project_portfolio_scenario_id INTEGER,
 project VARCHAR(64),
 existing INTEGER,
@@ -250,14 +250,14 @@ FOREIGN KEY (capacity_type) REFERENCES capacity_types (capacity_type)
 -- Retirement can be allowed, in which case the fixed cost will determine
 -- whether the economics of retirement are favorable
 DROP TABLE IF EXISTS subscenarios_project_existing_capacity;
-CREATE TABLE subscenarios_project_existing_capacity(
+CREATE TABLE subscenarios_project_existing_capacity (
 project_existing_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_existing_capacity;
-CREATE TABLE inputs_project_existing_capacity(
+CREATE TABLE inputs_project_existing_capacity (
 project_existing_capacity_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -267,14 +267,14 @@ PRIMARY KEY (project_existing_capacity_scenario_id, project, period)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_existing_fixed_cost;
-CREATE TABLE subscenarios_project_existing_fixed_cost(
+CREATE TABLE subscenarios_project_existing_fixed_cost (
 project_existing_fixed_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_existing_fixed_cost;
-CREATE TABLE inputs_project_existing_fixed_cost(
+CREATE TABLE inputs_project_existing_fixed_cost (
 project_existing_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -292,14 +292,14 @@ subscenarios_project_existing_fixed_cost
 -- In each 'period,' the minimum build required and maximum build allowed
 -- can also be specified
 DROP TABLE IF EXISTS subscenarios_project_new_cost;
-CREATE TABLE subscenarios_project_new_cost(
+CREATE TABLE subscenarios_project_new_cost (
 project_new_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_new_cost;
-CREATE TABLE inputs_project_new_cost(
+CREATE TABLE inputs_project_new_cost (
 project_new_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -313,7 +313,7 @@ subscenarios_project_new_cost (project_new_cost_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_new_potential;
-CREATE TABLE subscenarios_project_new_potential(
+CREATE TABLE subscenarios_project_new_potential (
 project_new_potential_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -322,7 +322,7 @@ description VARCHAR(128)
 -- Projects with no min or max build requirements can be included here with
 -- NULL values or excluded from this table
 DROP TABLE IF EXISTS inputs_project_new_potential;
-CREATE TABLE inputs_project_new_potential(
+CREATE TABLE inputs_project_new_potential (
 project_new_potential_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -345,14 +345,14 @@ subscenarios_project_new_potential (project_new_potential_scenario_id)
 -- For conventional hydro generators, specify a
 -- hydro_operational_chars_scenario_id
 DROP TABLE IF EXISTS subscenarios_project_operational_chars;
-CREATE TABLE subscenarios_project_operational_chars(
+CREATE TABLE subscenarios_project_operational_chars (
 project_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_operational_chars;
-CREATE TABLE inputs_project_operational_chars(
+CREATE TABLE inputs_project_operational_chars (
 project_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
 operational_type VARCHAR(32),
@@ -391,14 +391,14 @@ inputs_project_hydro_operational_chars
 -- be passed to scenarios via the project_operational_chars_scenario_id
 -- perhaps a better name is needed for this table
 DROP TABLE IF EXISTS subscenarios_project_variable_generator_profiles;
-CREATE TABLE subscenarios_project_variable_generator_profiles(
+CREATE TABLE subscenarios_project_variable_generator_profiles (
 variable_generator_profile_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
-CREATE TABLE inputs_project_variable_generator_profiles(
+CREATE TABLE inputs_project_variable_generator_profiles (
 variable_generator_profile_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -413,14 +413,14 @@ subscenarios_project_variable_generator_profiles
 
 -- Hydro operational characteristics
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
-CREATE TABLE subscenarios_project_hydro_operational_chars(
+CREATE TABLE subscenarios_project_hydro_operational_chars (
 hydro_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_hydro_operational_chars;
-CREATE TABLE inputs_project_hydro_operational_chars(
+CREATE TABLE inputs_project_hydro_operational_chars (
 hydro_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -441,7 +441,7 @@ subscenarios_project_hydro_operational_chars
 -- (project can be in one zone if modeling a single zone, but a different
 -- zone if modeling several zones, etc.)
 DROP TABLE IF EXISTS subscenarios_project_load_zones;
-CREATE TABLE subscenarios_project_load_zones(
+CREATE TABLE subscenarios_project_load_zones (
 load_zone_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 name VARCHAR(32),
@@ -452,7 +452,7 @@ subscenarios_geography_load_zones (load_zone_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_load_zones;
-CREATE TABLE inputs_project_load_zones(
+CREATE TABLE inputs_project_load_zones (
 load_zone_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project VARCHAR(64),
@@ -471,7 +471,7 @@ subscenarios_geography_load_zones (load_zone_scenario_id)
 -- This table can included all project with NULLs for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_lf_reserves_up_bas;
-CREATE TABLE subscenarios_project_lf_reserves_up_bas(
+CREATE TABLE subscenarios_project_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 name VARCHAR(32),
@@ -483,7 +483,7 @@ subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_lf_reserves_up_bas;
-CREATE TABLE inputs_project_lf_reserves_up_bas(
+CREATE TABLE inputs_project_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project VARCHAR(64),
@@ -499,7 +499,7 @@ subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_lf_reserves_down_bas;
-CREATE TABLE subscenarios_project_lf_reserves_down_bas(
+CREATE TABLE subscenarios_project_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 name VARCHAR(32),
@@ -511,7 +511,7 @@ subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_lf_reserves_down_bas;
-CREATE TABLE inputs_project_lf_reserves_down_bas(
+CREATE TABLE inputs_project_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 project VARCHAR(64),
@@ -533,7 +533,7 @@ subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 -- contributing or just the contributing projects
 
 DROP TABLE IF EXISTS subscenarios_project_rps_zones;
-CREATE TABLE subscenarios_project_rps_zones(
+CREATE TABLE subscenarios_project_rps_zones (
 rps_zone_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 name VARCHAR(32),
@@ -545,7 +545,7 @@ subscenarios_geography_rps_zones (rps_zone_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_rps_zones;
-CREATE TABLE inputs_project_rps_zones(
+CREATE TABLE inputs_project_rps_zones (
 rps_zone_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project VARCHAR(64),
@@ -564,7 +564,7 @@ subscenarios_geography_rps_zones (rps_zone_scenario_id)
 -- This table can included all project with NULLs for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
-CREATE TABLE subscenarios_project_carbon_cap_zones(
+CREATE TABLE subscenarios_project_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 name VARCHAR(32),
@@ -576,7 +576,7 @@ subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_carbon_cap_zones;
-CREATE TABLE inputs_project_carbon_cap_zones(
+CREATE TABLE inputs_project_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project VARCHAR(64),
@@ -593,14 +593,14 @@ subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
-CREATE TABLE subscenarios_project_fuels(
+CREATE TABLE subscenarios_project_fuels (
 fuel_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_fuels;
-CREATE TABLE inputs_project_fuels(
+CREATE TABLE inputs_project_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
 fuel_price_per_mmbtu FLOAT,
@@ -618,14 +618,14 @@ FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_project_fuels
 
 -- Transmission portfolios
 DROP TABLE IF EXISTS subscenarios_transmission_portfolios;
-CREATE TABLE subscenarios_transmission_portfolios(
+CREATE TABLE subscenarios_transmission_portfolios (
 transmission_portfolio_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_portfolios;
-CREATE TABLE inputs_transmission_portfolios(
+CREATE TABLE inputs_transmission_portfolios (
 transmission_portfolio_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 capacity_type VARCHAR(32),
@@ -638,7 +638,7 @@ subscenarios_transmission_portfolios
 -- Transmission geography
 -- Load zones
 DROP TABLE IF EXISTS subscenarios_transmission_load_zones;
-CREATE TABLE subscenarios_transmission_load_zones(
+CREATE TABLE subscenarios_transmission_load_zones (
 load_zone_scenario_id INTEGER,
 transmission_load_zone_scenario_id,
 name VARCHAR(32),
@@ -649,7 +649,7 @@ subscenarios_geography_load_zones (load_zone_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_load_zones;
-CREATE TABLE inputs_transmission_load_zones(
+CREATE TABLE inputs_transmission_load_zones (
 load_zone_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_line VARCHAR(64),
@@ -666,7 +666,7 @@ subscenarios_geography_load_zones
 -- This is needed if the carbon cap module is enabled and we want to track
 -- emission imports
 DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_zones;
-CREATE TABLE subscenarios_transmission_carbon_cap_zones(
+CREATE TABLE subscenarios_transmission_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 name VARCHAR(32),
@@ -678,7 +678,7 @@ subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_carbon_cap_zones;
-CREATE TABLE inputs_transmission_carbon_cap_zones(
+CREATE TABLE inputs_transmission_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_line VARCHAR(64),
@@ -695,14 +695,14 @@ subscenarios_geography_carbon_cap_zones
 
 -- Existing transmission capacity
 DROP TABLE IF EXISTS subscenarios_transmission_existing_capacity;
-CREATE TABLE subscenarios_transmission_existing_capacity(
+CREATE TABLE subscenarios_transmission_existing_capacity (
 transmission_existing_capacity_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_existing_capacity;
-CREATE TABLE inputs_transmission_existing_capacity(
+CREATE TABLE inputs_transmission_existing_capacity (
 transmission_existing_capacity_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 period INTEGER,
@@ -719,14 +719,14 @@ subscenarios_transmission_existing_capacity
 -- This currently makes no difference, as we only have one operational type
 -- for transmission
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
-CREATE TABLE subscenarios_transmission_operational_chars(
+CREATE TABLE subscenarios_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_operational_chars;
-CREATE TABLE inputs_transmission_operational_chars(
+CREATE TABLE inputs_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
@@ -738,7 +738,7 @@ subscenarios_transmission_operational_chars
 -- Simultaneous flows
 -- Limits on net flows on groups of lines (e.g. all lines connected to a zone)
 DROP TABLE IF EXISTS subscenarios_transmission_simultaneous_flow_limits;
-CREATE TABLE subscenarios_transmission_simultaneous_flow_limits(
+CREATE TABLE subscenarios_transmission_simultaneous_flow_limits (
 transmission_simultaneous_flow_limit_scenario_id INTEGER
 PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
@@ -746,7 +746,7 @@ description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_simultaneous_flow_limits;
-CREATE TABLE inputs_transmission_simultaneous_flow_limits(
+CREATE TABLE inputs_transmission_simultaneous_flow_limits (
 transmission_simultaneous_flow_limit_scenario_id INTEGER,
 transmission_simultaneous_flow_limit VARCHAR(64),
 period INTEGER,
@@ -761,7 +761,7 @@ subscenarios_transmission_simultaneous_flow_limits
 
 DROP TABLE IF EXISTS
 subscenarios_transmission_simultaneous_flow_limit_line_groups;
-CREATE TABLE subscenarios_transmission_simultaneous_flow_limit_line_groups(
+CREATE TABLE subscenarios_transmission_simultaneous_flow_limit_line_groups (
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER PRIMARY KEY
 AUTOINCREMENT,
 name VARCHAR(32),
@@ -769,7 +769,7 @@ description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_simultaneous_flow_limit_line_groups;
-CREATE TABLE inputs_transmission_simultaneous_flow_limit_line_groups(
+CREATE TABLE inputs_transmission_simultaneous_flow_limit_line_groups (
 transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
 transmission_simultaneous_flow_limit VARCHAR(64),
 transmission_line VARCHAR(64),
@@ -788,7 +788,7 @@ REFERENCES subscenarios_transmission_simultaneous_flow_limit_line_groups
 
 -- -- Load balance -- --
 DROP TABLE IF EXISTS subscenarios_system_load;
-CREATE TABLE subscenarios_system_load(
+CREATE TABLE subscenarios_system_load (
 load_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -798,7 +798,7 @@ description VARCHAR(128)
 -- correct timepoints and zones will be pulled depending on
 -- timepoint_scenario_id and load_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_load;
-CREATE TABLE inputs_system_load(
+CREATE TABLE inputs_system_load (
 load_scenario_id INTEGER,
 load_zone VARCHAR(32),
 timepoint INTEGER,
@@ -812,7 +812,7 @@ FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 
 -- LF reserves up
 DROP TABLE IF EXISTS subscenarios_system_lf_reserves_up;
-CREATE TABLE subscenarios_system_lf_reserves_up(
+CREATE TABLE subscenarios_system_lf_reserves_up (
 lf_reserves_up_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -822,7 +822,7 @@ description VARCHAR(128)
 -- correct timepoints and zones will be pulled depending on
 -- timepoint_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up;
-CREATE TABLE inputs_system_lf_reserves_up(
+CREATE TABLE inputs_system_lf_reserves_up (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 timepoint INTEGER,
@@ -834,7 +834,7 @@ subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 
 -- LF reserves down
 DROP TABLE IF EXISTS subscenarios_system_lf_reserves_down;
-CREATE TABLE subscenarios_system_lf_reserves_down(
+CREATE TABLE subscenarios_system_lf_reserves_down (
 lf_reserves_down_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -844,7 +844,7 @@ description VARCHAR(128)
 -- correct timepoints and zones will be pulled depending on
 -- timepoint_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down;
-CREATE TABLE inputs_system_lf_reserves_down(
+CREATE TABLE inputs_system_lf_reserves_down (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 timepoint INTEGER,
@@ -859,7 +859,7 @@ subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 -- RPS requirements
 
 DROP TABLE IF EXISTS subscenarios_system_rps_targets;
-CREATE TABLE subscenarios_system_rps_targets(
+CREATE TABLE subscenarios_system_rps_targets (
 rps_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -869,7 +869,7 @@ description VARCHAR(128)
 -- periods and zones will be pulled depending on timepoint_scenario_id and
 -- rps_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_rps_targets;
-CREATE TABLE inputs_system_rps_targets(
+CREATE TABLE inputs_system_rps_targets (
 rps_target_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 period INTEGER,
@@ -882,7 +882,7 @@ inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
 
 -- Carbon cap
 DROP TABLE IF EXISTS subscenarios_system_carbon_cap_targets;
-CREATE TABLE subscenarios_system_carbon_cap_targets(
+CREATE TABLE subscenarios_system_carbon_cap_targets (
 carbon_cap_target_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -892,7 +892,7 @@ description VARCHAR(128)
 -- periods and zones will be pulled depending on timepoint_scenario_id and
 -- carbon_cap_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_carbon_cap_targets;
-CREATE TABLE inputs_system_carbon_cap_targets(
+CREATE TABLE inputs_system_carbon_cap_targets (
 carbon_cap_target_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 period INTEGER,
@@ -905,9 +905,9 @@ PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period)
 -- -- SCENARIOS -- --
 ---------------------
 DROP TABLE IF EXISTS scenarios;
-CREATE TABLE scenarios(
+CREATE TABLE scenarios (
 scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
-scenario_name VARCHAR(64),
+scenario_name VARCHAR(64) UNIQUE,
 om_fuels INTEGER,
 om_multi_stage INTEGER,
 om_transmission INTEGER,
@@ -1051,7 +1051,7 @@ subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 -------------------
 
 DROP TABLE IF EXISTS results_project_capacity_all;
-CREATE TABLE results_project_capacity_all(
+CREATE TABLE results_project_capacity_all (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1063,7 +1063,7 @@ PRIMARY KEY (scenario_id, project, period)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_all;
-CREATE TABLE results_project_dispatch_all(
+CREATE TABLE results_project_dispatch_all (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1078,7 +1078,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_variable;
-CREATE TABLE results_project_dispatch_variable(
+CREATE TABLE results_project_dispatch_variable (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1097,7 +1097,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_capacity_commit;
-CREATE TABLE results_project_dispatch_capacity_commit(
+CREATE TABLE results_project_dispatch_capacity_commit (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1114,7 +1114,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_capacity;
-CREATE TABLE results_project_costs_capacity(
+CREATE TABLE results_project_costs_capacity (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1125,7 +1125,7 @@ PRIMARY KEY (scenario_id, project, period)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_variable_om;
-CREATE TABLE results_project_costs_operations_variable_om(
+CREATE TABLE results_project_costs_operations_variable_om (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1140,7 +1140,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_fuel;
-CREATE TABLE results_project_costs_operations_fuel(
+CREATE TABLE results_project_costs_operations_fuel (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1155,7 +1155,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_startup;
-CREATE TABLE results_project_costs_operations_startup(
+CREATE TABLE results_project_costs_operations_startup (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1170,7 +1170,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_shutdown;
-CREATE TABLE results_project_costs_operations_shutdown(
+CREATE TABLE results_project_costs_operations_shutdown (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -1186,7 +1186,7 @@ PRIMARY KEY (scenario_id, project, timepoint)
 
 
 DROP TABLE IF EXISTS results_transmission_imports_exports;
-CREATE TABLE results_transmission_imports_exports(
+CREATE TABLE results_transmission_imports_exports (
 scenario_id INTEGER,
 load_zone VARCHAR(64),
 period INTEGER,
