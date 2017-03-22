@@ -21,7 +21,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project", "project.capacity.capacity",
     "project.operations.operational_types",
     "project.operations.power"]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.aggregate_recs"
+NAME_OF_MODULE_BEING_TESTED = "project.operations.recs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestAggregateRECs(unittest.TestCase):
+class TestRECs(unittest.TestCase):
     """
 
     """

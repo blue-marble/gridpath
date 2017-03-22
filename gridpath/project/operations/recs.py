@@ -2,12 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate delivered RPS-eligible power from the project-timepoint level to
-the RPS zone - period level.
+Get RECs for each project
 """
 import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Param, Set, Expression, value
 
 from gridpath.auxiliary.dynamic_components import required_operational_modules
@@ -116,57 +114,6 @@ def add_model_components(m, d):
         m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=subhourly_recs_delivered_rule
     )
-
-    def rps_energy_provision_rule(mod, z, p):
-        """
-        Calculate the delivered RPS energy for each zone and period
-        Scheduled power provision (available energy minus reserves minus
-        scheduled curtailment) + subhourly delivered energy (from
-        providing upward reserves) - subhourly curtailment (from providing
-        downward reserves)
-        :param mod:
-        :param z:
-        :param p:
-        :return:
-        """
-        return \
-            sum((mod.Scheduled_RPS_Energy_MW[g, tmp]
-                 - mod.Subhourly_Curtailment_MW[g, tmp]
-                 + mod.Subhourly_RPS_Energy_Delivered_MW[g,tmp])
-                * mod.number_of_hours_in_timepoint[tmp]
-                * mod.horizon_weight[mod.horizon[tmp]]
-                for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-                )
-
-    m.Total_Delivered_RPS_Energy_MWh = \
-        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
-                   rule=rps_energy_provision_rule)
-
-    def total_curtailed_rps_energy_rule(mod, z, p):
-        """
-        Calculate how much RPS-eligible energy was curtailed in each RPS zone
-        in each period
-        :param mod:
-        :param z:
-        :param p:
-        :return:
-        """
-        return sum((mod.Scheduled_Curtailment_MW[g, tmp] +
-                    mod.Subhourly_Curtailment_MW[g, tmp] -
-                    mod.Subhourly_RPS_Energy_Delivered_MW[g, tmp])
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
-                   if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-                   )
-    # TODO: is this only needed for export and, if so, should it be created on
-    # export?
-    m.Total_Curtailed_RPS_Energy_MWh = \
-        Expression(m.RPS_ZONE_PERIODS_WITH_RPS,
-                   rule=total_curtailed_rps_energy_rule)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

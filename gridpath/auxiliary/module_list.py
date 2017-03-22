@@ -36,7 +36,7 @@ def all_modules_list():
         "project.operations.power",
         "project.operations.fix_commitment",
         "project.operations.costs",
-        "project.operations.aggregate_recs",
+        "project.operations.recs",
         "project.operations.aggregate_carbon_emissions",
         "project.operations.fuel_burn",
         "transmission",
@@ -52,6 +52,7 @@ def all_modules_list():
         "system.reserves.regulation_up",
         "system.reserves.lf_reserves_down",
         "system.reserves.regulation_down",
+        "system.policy.rps.aggregate_recs",
         "system.policy.rps.rps_balance",
         "system.policy.carbon_cap.carbon_balance",
         "objective.project.aggregate_capacity_costs",
@@ -97,7 +98,8 @@ def optional_modules_list():
         "rps":
             ["geography.rps_zones",
              "system.policy.rps.rps_requirement",
-             "project.operations.aggregate_recs",
+             "project.operations.recs",
+             "system.policy.rps.aggregate_recs",
              "system.policy.rps.rps_balance"],
         "carbon_cap":
             ["geography.carbon_cap_zones",

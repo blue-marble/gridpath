@@ -14,18 +14,14 @@ TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "temporal.operations.horizons",
-                             "temporal.investment.periods",
-                             "geography.load_zones",
-                             "geography.rps_zones",
-                             "system.policy.rps.rps_requirement",
-                             "project", "project.capacity.capacity",
-                             "project.operations.operational_types",
-                             "project.operations.power",
-                             "project.operations.recs",
-                             "system.policy.rps.aggregate_recs"]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_balance"
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones",
+    "geography.rps_zones", "system.policy.rps.rps_requirement",
+    "project", "project.capacity.capacity",
+    "project.operations.operational_types",
+    "project.operations.power", "project.operations.recs"]
+NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.aggregate_recs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -43,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestRPSBalance(unittest.TestCase):
+class TestAggregateRECs(unittest.TestCase):
     """
 
     """
@@ -84,6 +80,7 @@ class TestRPSBalance(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
 
 if __name__ == "__main__":
     unittest.main()
