@@ -6,13 +6,10 @@ Describe operational costs.
 """
 
 import csv
-from pandas import read_csv
 import os.path
-from pyomo.environ import Var, Set, Param, Expression, Constraint, \
-    NonNegativeReals, PositiveReals, value
+from pyomo.environ import Var, Expression, Constraint, NonNegativeReals, value
 
-from gridpath.auxiliary.dynamic_components import \
-    required_operational_modules, total_cost_components
+from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 
@@ -37,23 +34,6 @@ def add_model_components(m, d):
     m.Variable_OM_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
                                     rule=variable_om_cost_rule)
 
-    # Power production variable costs
-    def total_variable_om_cost_rule(mod):
-        """
-        Power production cost for all generators across all timepoints
-        :param mod:
-        :return:
-        """
-        return sum(mod.Variable_OM_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS)
-
-    m.Total_Variable_OM_Cost = Expression(rule=total_variable_om_cost_rule)
-    getattr(d, total_cost_components).append("Total_Variable_OM_Cost")
-
     # From here, the operational modules determine how the model components are
     # formulated
     # Import needed operational modules
@@ -71,29 +51,14 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            fuel_burn_rule(mod, g, tmp, "Error calling fuel_cost_rule "
-                                        "function in aggregate_costs.py") * \
-            mod.fuel_price_per_mmbtu[
-            mod.fuel[g]]
+                   fuel_burn_rule(mod, g, tmp, "Error calling fuel_cost_rule "
+                                               "function in "
+                                               "aggregate_operational_costs.py") * \
+               mod.fuel_price_per_mmbtu[
+                   mod.fuel[g]]
 
     m.Fuel_Cost = Expression(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
-
-    def total_fuel_cost_rule(mod):
-        """
-        Fuel costs for all generators across all timepoints
-        :param mod:
-        :return:
-        """
-        return sum(mod.Fuel_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp) in mod.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS)
-
-    m.Total_Fuel_Cost = Expression(rule=total_fuel_cost_rule)
-    getattr(d, total_cost_components).append("Total_Fuel_Cost")
 
     # ### Startup and shutdown costs ### #
     def startup_rule(mod, g, tmp):
@@ -108,6 +73,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             startup_rule(mod, g, tmp)
+
     m.Startup_Expression = Expression(
         m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=startup_rule)
@@ -124,6 +90,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
             shutdown_rule(mod, g, tmp)
+
     m.Shutdown_Expression = Expression(
         m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_rule)
@@ -153,8 +120,9 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
-                >= mod.Startup_Expression[g, tmp] \
-                * mod.startup_cost_per_unit[g]
+                   >= mod.Startup_Expression[g, tmp] \
+                      * mod.startup_cost_per_unit[g]
+
     m.Startup_Cost_Constraint = \
         Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
                    rule=startup_cost_rule)
@@ -180,44 +148,13 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
-                >= mod.Shutdown_Expression[g, tmp] \
-                * mod.shutdown_cost_per_unit[g]
+                   >= mod.Shutdown_Expression[g, tmp] \
+                      * mod.shutdown_cost_per_unit[g]
+
     m.Shutdown_Cost_Constraint = Constraint(
         m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_cost_rule)
 
-    # Startup and shutdown costs
-    def total_startup_cost_rule(mod):
-        """
-        Sum startup costs for the objective function term.
-        :param mod:
-        :return:
-        """
-        return sum(mod.Startup_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp)
-                   in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
-    m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
-    getattr(d, total_cost_components).append("Total_Startup_Cost")
-
-    def total_shutdown_cost_rule(mod):
-        """
-        Sum shutdown costs for the objective function term.
-        :param mod:
-        :return:
-        """
-        return sum(mod.Shutdown_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp)
-                   in mod.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
-    m.Total_Shutdown_Cost = Expression(rule=total_shutdown_cost_rule)
-    getattr(d, total_cost_components).append("Total_Shutdown_Cost")
 
 
 def export_results(scenario_directory, horizon, stage, m, d):
@@ -234,7 +171,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-              "costs_operations_variable_om.csv"), "wb") as f:
+                           "costs_operations_variable_om.csv"), "wb") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -328,7 +265,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     :return:
     """
     print("project costs operations")
-    
+
     # costs_operations_variable_om.csv
     c.execute(
         """DELETE FROM results_project_costs_operations_variable_om
@@ -407,14 +344,16 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id, project, period, horizon, timepoint,
         horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, variable_om_cost
-        FROM temp_results_project_costs_operations_variable_om""" + str(scenario_id) + """
+        FROM temp_results_project_costs_operations_variable_om""" + str(
+            scenario_id) + """
         ORDER BY scenario_id, project, timepoint;"""
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
-        """DROP TABLE temp_results_project_costs_operations_variable_om""" + str(scenario_id) +
+        """DROP TABLE temp_results_project_costs_operations_variable_om""" + str(
+            scenario_id) +
         """;"""
     )
     db.commit()

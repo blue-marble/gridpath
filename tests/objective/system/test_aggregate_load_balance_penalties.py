@@ -16,9 +16,10 @@ TEST_DATA_DIRECTORY = \
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity"]
-NAME_OF_MODULE_BEING_TESTED = "project.capacity.costs"
+     "temporal.investment.periods", "geography.load_zones",
+     "system.load_balance.load_balance"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "objective.system.aggregate_load_balance_penalties"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -36,7 +37,7 @@ except ImportError:
           " to test.")
 
 
-class TestCapacityCosts(unittest.TestCase):
+class TestCosts(unittest.TestCase):
     """
 
     """
@@ -57,17 +58,16 @@ class TestCapacityCosts(unittest.TestCase):
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-            )
+        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
+                                     module_to_test=MODULE_BEING_TESTED,
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
+                                     )
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with expected data
         :return:
         """
         m, data = add_components_and_load_data(

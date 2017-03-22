@@ -42,15 +42,6 @@ def add_model_components(m, d):
         Expression(m.PROJECT_OPERATIONAL_PERIODS,
                    rule=capacity_cost_rule)
 
-    # Add costs to objective function
-    def total_capacity_cost_rule(mod):
-        return sum(mod.Capacity_Cost_in_Period[g, p]
-                   * mod.discount_factor[p]
-                   * mod.number_years_represented[p]
-                   for (g, p) in mod.PROJECT_OPERATIONAL_PERIODS)
-    m.Total_Capacity_Costs = Expression(rule=total_capacity_cost_rule)
-    getattr(d, total_cost_components).append("Total_Capacity_Costs")
-
 
 def export_results(scenario_directory, horizon, stage, m, d):
     """
@@ -66,7 +57,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                            "costs_capacity_all_projects.csv"), "wb") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "technology", "load_zone", "annualized_capacity_cost"]
+            ["project", "period", "technology", "load_zone",
+             "annualized_capacity_cost"]
         )
         for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
             writer.writerow([
@@ -90,7 +82,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Capacity cost results
     print("project capacity costs")
     c.execute(
-        """DELETE FROM results_project_capacity_costs WHERE scenario_id = {};""".format(
+        """DELETE FROM results_project_costs_capacity
+        WHERE scenario_id = {};""".format(
             scenario_id
         )
     )
@@ -98,13 +91,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Create temporary table, which we'll use to sort results and then drop
     c.execute(
-        """DROP TABLE IF EXISTS temp_results_project_capacity_costs"""
+        """DROP TABLE IF EXISTS temp_results_project_costs_capacity"""
         + str(scenario_id) + """;"""
     )
     db.commit()
 
     c.execute(
-        """CREATE TABLE temp_results_project_capacity_costs"""
+        """CREATE TABLE temp_results_project_costs_capacity"""
         + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
@@ -132,33 +125,33 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             annualized_capacity_cost = row[4]
 
             c.execute(
-                """INSERT INTO temp_results_project_capacity_costs"""
+                """INSERT INTO temp_results_project_costs_capacity"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, technology, load_zone,
                 annualized_capacity_cost)
                 VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
                     scenario_id, project, period, technology, load_zone,
-                    annualized_capacity_cost,
+                    annualized_capacity_cost
                 )
             )
     db.commit()
 
     # Insert sorted results into permanent results table
     c.execute(
-        """INSERT INTO results_project_capacity_costs
+        """INSERT INTO results_project_costs_capacity
         (scenario_id, project, period, technology, load_zone,
         annualized_capacity_cost)
         SELECT
         scenario_id, project, period, technology, load_zone,
         annualized_capacity_cost
-        FROM temp_results_project_capacity_costs""" + str(scenario_id) + """
+        FROM temp_results_project_costs_capacity""" + str(scenario_id) + """
         ORDER BY scenario_id, project, period;"""
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
-        """DROP TABLE temp_results_project_capacity_costs""" + str(scenario_id) +
+        """DROP TABLE temp_results_project_costs_capacity""" + str(scenario_id) +
         """;"""
     )
     db.commit()

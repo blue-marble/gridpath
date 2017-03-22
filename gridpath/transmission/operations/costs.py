@@ -11,8 +11,6 @@ import os.path
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, \
     Expression, value
 
-from gridpath.auxiliary.dynamic_components import total_cost_components
-
 
 def add_model_components(m, d):
     """
@@ -76,24 +74,6 @@ def add_model_components(m, d):
         m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
         rule=hurdle_cost_negative_direction_rule
     )
-
-    def total_hurdle_cost_rule(mod):
-        """
-        Hurdle costs for all transmission lines across all timepoints
-        :param mod:
-        :return:
-        """
-        return sum(
-            (mod.Hurdle_Cost_Positive_Direction[tx, tmp] +
-             mod.Hurdle_Cost_Negative_Direction[tx, tmp])
-            * mod.number_of_hours_in_timepoint[tmp]
-            * mod.horizon_weight[mod.horizon[tmp]]
-            * mod.number_years_represented[mod.period[tmp]]
-            * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)
-
-    m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
-    getattr(d, total_cost_components).append("Total_Hurdle_Cost")
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

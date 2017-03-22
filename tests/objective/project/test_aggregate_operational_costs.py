@@ -15,10 +15,14 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones",
-     "system.load_balance.load_balance"]
-NAME_OF_MODULE_BEING_TESTED = "system.load_balance.costs"
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones", "project",
+    "project.capacity.capacity", "project.fuels",
+    "project.operations",
+    "project.operations.operational_types",
+    "project.operations.aggregate_power", "project.operations.costs"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "objective.project.aggregate_operational_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -36,7 +40,7 @@ except ImportError:
           " to test.")
 
 
-class TestCosts(unittest.TestCase):
+class TestOperationalCostsAgg(unittest.TestCase):
     """
 
     """
@@ -66,7 +70,7 @@ class TestCosts(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with expected data
+        Test that the data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -77,35 +81,6 @@ class TestCosts(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
-
-        # Param: overgeneration_penalty_per_mw
-        expected_overgen_penalty = OrderedDict(sorted({
-            "Zone1": 99999999, "Zone2": 99999999
-                                                      }.items()
-                                                      )
-                                               )
-        actual_overgen_penalty = OrderedDict(sorted({
-            z: instance.overgeneration_penalty_per_mw[z]
-            for z in instance.LOAD_ZONES
-                                                      }.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_overgen_penalty, actual_overgen_penalty)
-
-        # Param: unserved_energy_penalty_per_mw
-        expected_unserved_energy_penalty = OrderedDict(sorted({
-             "Zone1": 99999999, "Zone2": 99999999
-                                                      }.items()
-                                                      )
-                                               )
-        actual_unserved_energy_penalty = OrderedDict(sorted({
-            z: instance.unserved_energy_penalty_per_mw[z]
-            for z in instance.LOAD_ZONES
-                                                        }.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_unserved_energy_penalty,
-                             actual_unserved_energy_penalty)
 
 if __name__ == "__main__":
     unittest.main()

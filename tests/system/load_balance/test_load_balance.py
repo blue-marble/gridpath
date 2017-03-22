@@ -62,5 +62,49 @@ class TestLoadBalance(unittest.TestCase):
                                      stage=""
                                      )
 
+    def test_data_loaded_correctly(self):
+        """
+        Test components initialized with expected data
+        :return:
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            horizon="",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        # Param: overgeneration_penalty_per_mw
+        expected_overgen_penalty = OrderedDict(sorted({
+            "Zone1": 99999999, "Zone2": 99999999
+                                                      }.items()
+                                                      )
+                                               )
+        actual_overgen_penalty = OrderedDict(sorted({
+            z: instance.overgeneration_penalty_per_mw[z]
+            for z in instance.LOAD_ZONES
+                                                      }.items()
+                                                    )
+                                             )
+        self.assertDictEqual(expected_overgen_penalty, actual_overgen_penalty)
+
+        # Param: unserved_energy_penalty_per_mw
+        expected_unserved_energy_penalty = OrderedDict(sorted({
+             "Zone1": 99999999, "Zone2": 99999999
+                                                      }.items()
+                                                      )
+                                               )
+        actual_unserved_energy_penalty = OrderedDict(sorted({
+            z: instance.unserved_energy_penalty_per_mw[z]
+            for z in instance.LOAD_ZONES
+                                                        }.items()
+                                                    )
+                                             )
+        self.assertDictEqual(expected_unserved_energy_penalty,
+                             actual_unserved_energy_penalty)
+
+
 if __name__ == "__main__":
     unittest.main()

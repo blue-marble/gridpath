@@ -16,6 +16,12 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
+
+    m.overgeneration_penalty_per_mw = \
+        Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.unserved_energy_penalty_per_mw = \
+        Param(m.LOAD_ZONES, within=NonNegativeReals)
+
     # Penalty variables
     m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
                               within=NonNegativeReals)
@@ -48,6 +54,24 @@ def add_model_components(m, d):
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TIMEPOINTS,
                                         rule=meet_load_rule)
+
+
+def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :return:
+    """
+    data_portal.load(filename=os.path.join(scenario_directory,
+                                           "inputs", "load_zones.tab"),
+                     param=(m.overgeneration_penalty_per_mw,
+                            m.unserved_energy_penalty_per_mw)
+                     )
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

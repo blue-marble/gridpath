@@ -21,7 +21,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations",
     "project.operations.operational_types",
     "project.operations.aggregate_power"]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.aggregate_costs"
+NAME_OF_MODULE_BEING_TESTED = "project.operations.costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
