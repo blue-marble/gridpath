@@ -15,26 +15,15 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints",
-    "temporal.operations.horizons",
-    "temporal.investment.periods",
-    "geography.load_zones",
-    "geography.carbon_cap_zones",
-    "system.policy.carbon_cap.carbon_cap",
-    "project", "project.capacity.capacity",
-    "project.fuels",
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones",
+    "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
+    "project", "project.capacity.capacity", "project.fuels",
     "project.operations",
     "project.operations.operational_types",
-    "project.operations.power",
-    "project.operations.carbon_emissions",
-    "transmission",
-    "transmission.capacity", "transmission.capacity.capacity",
-    "transmission.operations.operations",
-    "transmission.operations.carbon_emissions",
-    "system.policy.carbon_cap.aggregate_project_carbon_emissions",
-    "system.policy.carbon_cap.aggregate_transmission_carbon_emissions"
-]
-NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_cap.carbon_balance"
+    "project.operations.power", "project.operations.carbon_emissions"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "system.policy.carbon_cap.aggregate_project_carbon_emissions"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -52,7 +41,7 @@ except ImportError:
           " to test.")
 
 
-class TestCarbonBalance(unittest.TestCase):
+class TestAggregateProjectCarbonEmissions(unittest.TestCase):
     """
 
     """
@@ -93,6 +82,7 @@ class TestCarbonBalance(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
 
 if __name__ == "__main__":
     unittest.main()

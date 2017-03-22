@@ -37,14 +37,14 @@ def all_modules_list():
         "project.operations.fix_commitment",
         "project.operations.costs",
         "project.operations.recs",
-        "project.operations.aggregate_carbon_emissions",
+        "project.operations.carbon_emissions",
         "project.operations.fuel_burn",
         "transmission",
         "transmission.capacity.capacity",
         "transmission.operations.operations",
         "transmission.operations.costs",
         "transmission.operations.simultaneous_flow_limits",
-        "transmission.operations.aggregate_carbon_emissions",
+        "transmission.operations.carbon_emissions",
         "system.load_balance.aggregate_project_power",
         "system.load_balance.aggregate_transmission_power",
         "system.load_balance.load_balance",
@@ -54,6 +54,8 @@ def all_modules_list():
         "system.reserves.regulation_down",
         "system.policy.rps.aggregate_recs",
         "system.policy.rps.rps_balance",
+        "system.policy.carbon_cap.aggregate_project_carbon_emissions",
+        "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_operational_costs",
@@ -104,7 +106,8 @@ def optional_modules_list():
         "carbon_cap":
             ["geography.carbon_cap_zones",
              "system.policy.carbon_cap.carbon_cap",
-             "project.operations.aggregate_carbon_emissions",
+             "project.operations.carbon_emissions",
+             "system.policy.carbon_cap.aggregate_project_carbon_emissions",
              "system.policy.carbon_cap.carbon_balance"]
     }
     return optional_modules
@@ -115,7 +118,8 @@ def cross_modules_list():
     # Currently, these are: track_carbon_imports and simultaneous_flow_limits
     cross_modules = {
         ("transmission", "carbon_cap", "track_carbon_imports"):
-            ["transmission.operations.aggregate_carbon_emissions"],
+        ["system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
+         "transmission.operations.carbon_emissions"],
         ("transmission", "simultaneous_flow_limits"):
             ["transmission.operations.simultaneous_flow_limits"]
     }

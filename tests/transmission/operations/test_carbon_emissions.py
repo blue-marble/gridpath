@@ -22,7 +22,7 @@ PREREQUISITE_MODULE_NAMES = [
     "transmission.capacity", "transmission.capacity.capacity",
     "transmission.operations.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "transmission.operations.aggregate_carbon_emissions"
+    "transmission.operations.carbon_emissions"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -258,3 +258,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
              in instance.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
+
+
+if __name__ == "__main__":
+    unittest.main()
