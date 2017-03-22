@@ -23,7 +23,7 @@ PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "project", "project.capacity.capacity",
                              "project.fuels", "project.operations",
                              "project.operations.operational_types",
-                             "project.operations.aggregate_power",
+                             "project.operations.power",
                              "project.operations.aggregate_carbon_emissions"]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.carbon_cap.carbon_balance"
 IMPORTED_PREREQ_MODULES = list()

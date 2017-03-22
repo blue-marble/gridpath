@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -15,13 +14,10 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.fuels",
-    "project.operations",
-    "project.operations.operational_types",
-    "project.operations.power"]
-NAME_OF_MODULE_BEING_TESTED = "project.operations.costs"
+     "temporal.operations.timepoints", "temporal.operations.horizons",
+     "temporal.investment.periods", "geography.load_zones", "project",
+     "project.capacity.capacity", "project.operations.power"]
+NAME_OF_MODULE_BEING_TESTED = "system.load_balance.aggregate_project_power"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -39,7 +35,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperationalCosts(unittest.TestCase):
+class TestOperations(unittest.TestCase):
     """
 
     """
@@ -66,20 +62,6 @@ class TestOperationalCosts(unittest.TestCase):
                                      horizon="",
                                      stage=""
                                      )
-
-    def test_data_loaded_correctly(self):
-        """
-        Test that the data loaded are as expected
-        :return:
-        """
-        m, data = add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-        )
-        instance = m.create_instance(data)
 
 if __name__ == "__main__":
     unittest.main()

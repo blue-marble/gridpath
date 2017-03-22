@@ -33,7 +33,7 @@ def all_modules_list():
         "project.operations.reserves.regulation_up",
         "project.operations.reserves.regulation_down",
         "project.operations.operational_types",
-        "project.operations.aggregate_power",
+        "project.operations.power",
         "project.operations.fix_commitment",
         "project.operations.costs",
         "project.operations.aggregate_recs",
@@ -45,6 +45,8 @@ def all_modules_list():
         "transmission.operations.costs",
         "transmission.operations.simultaneous_flow_limits",
         "transmission.operations.aggregate_carbon_emissions",
+        "system.load_balance.aggregate_project_power",
+        "system.load_balance.aggregate_transmission_power",
         "system.load_balance.load_balance",
         "system.reserves.lf_reserves_up",
         "system.reserves.regulation_up",
@@ -71,7 +73,8 @@ def optional_modules_list():
         "transmission":
             ["transmission",
              "transmission.capacity.capacity",
-             "transmission.operations.operations"],
+             "transmission.operations.operations",
+             "system.load_balance.aggregate_transmission_power"],
         "transmission_hurdle_rates":
              ["transmission.operations.costs",
               "objective.transmission.aggregate_operational_costs"],

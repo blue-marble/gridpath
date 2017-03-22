@@ -22,7 +22,7 @@ PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "system.policy.rps.rps_requirement",
                              "project", "project.capacity.capacity",
                              "project.operations.operational_types",
-                             "project.operations.aggregate_power",
+                             "project.operations.power",
                              "project.operations.aggregate_recs"]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.rps_balance"
 IMPORTED_PREREQ_MODULES = list()

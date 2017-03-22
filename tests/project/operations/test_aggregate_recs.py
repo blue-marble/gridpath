@@ -20,7 +20,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.rps_zones", "system.policy.rps.rps_requirement",
     "project", "project.capacity.capacity",
     "project.operations.operational_types",
-    "project.operations.aggregate_power"]
+    "project.operations.power"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.aggregate_recs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
