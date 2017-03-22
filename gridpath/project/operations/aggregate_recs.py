@@ -7,6 +7,7 @@ the RPS zone - period level.
 """
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, Expression, value
 
 from gridpath.auxiliary.dynamic_components import required_operational_modules
@@ -203,8 +204,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "rps_by_project.csv"), "wb") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["project", "timepoint", "period",
-                         "horizon", "horizon_weight",
+        writer.writerow(["project", "load_zone", "rps_zone",
+                         "timepoint", "period", "horizon", "horizon_weight",
                          "scheduled_rps_energy_mw",
                          "scheduled_curtailment_mw",
                          "subhourly_rps_energy_delivered_mw",
@@ -212,6 +213,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         for (p, tmp) in m.RPS_PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
+                m.load_zone[p],
+                m.rps_zone[p],
                 tmp,
                 m.period[tmp],
                 m.horizon[tmp],
@@ -221,6 +224,15 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 value(m.Subhourly_RPS_Energy_Delivered_MW[p, tmp]),
                 value(m.Subhourly_Curtailment_MW[p, tmp])
             ])
+
+    # Export list of RPS projects and their zones for later use
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "rps_project_zones.csv"), "wb") as \
+            rps_project_zones_file:
+        writer = csv.writer(rps_project_zones_file)
+        writer.writerow(["project", "rps_zone"])
+        for p in m.RPS_PROJECTS:
+            writer.writerow([p, m.rps_zone[p]])
 
 
 def get_inputs_from_database(subscenarios, c, inputs_directory):
@@ -273,3 +285,64 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+    Assign rps_zone to appropriate results tables
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("update rps zones")
+    # Figure out RPS zone for each project
+    prj_rps_zones = dict()
+    with open(os.path.join(results_directory, "rps_project_zones.csv"),
+              "r") as prj_rps_zones_file:
+        reader = csv.reader(prj_rps_zones_file)
+        reader.next()
+        for row in reader:
+            prj_rps_zones[row[0]] = row[1]
+
+    # Update tables with RPS zone
+    tables_to_update = [
+        "results_project_capacity_all",
+        "results_project_dispatch_all",
+        "results_project_dispatch_variable",
+        "results_project_dispatch_capacity_commit",
+        "results_project_costs_capacity",
+        "results_project_costs_operations_variable_om",
+        "results_project_costs_operations_fuel",
+        "results_project_costs_operations_startup",
+        "results_project_costs_operations_shutdown"
+    ]
+    for prj in prj_rps_zones.keys():
+        for tbl in tables_to_update:
+            c.execute(
+                """UPDATE {}
+                SET rps_zone = '{}'
+                WHERE scenario_id = {}
+                AND project = '{}';""".format(
+                    tbl,
+                    prj_rps_zones[prj],
+                    scenario_id,
+                    prj
+                )
+            )
+    db.commit()
+
+    # Set rps_zone to 'no_rps' for all other projects
+    # This helps for later joins (can't join on NULL values)
+    for tbl in tables_to_update:
+        c.execute(
+            """UPDATE {}
+                            SET rps_zone = 'no_rps'
+                            WHERE scenario_id = {}
+                            AND rps_zone IS NULL;""".format(
+                tbl,
+                scenario_id
+            )
+        )
+    db.commit()
