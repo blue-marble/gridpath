@@ -1240,3 +1240,18 @@ exports_mw FLOAT,
 net_imports_mw FLOAT,
 PRIMARY KEY (scenario_id, load_zone, timepoint)
 );
+
+DROP TABLE IF EXISTS results_transmission_operations;
+CREATE TABLE results_transmission_operations (
+scenario_id INTEGER,
+transmission_line VARCHAR(64),
+load_zone_from VARCHAR(64),
+load_zone_to VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+transmission_flow_mw FLOAT,
+PRIMARY KEY (scenario_id, transmission_line, timepoint)
+);
