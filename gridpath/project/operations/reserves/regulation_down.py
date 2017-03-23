@@ -16,11 +16,17 @@ HEADROOM_OR_FOOTROOM_DICT_NAME = "footroom_variables"
 # Inputs
 BA_COLUMN_NAME_IN_INPUT_FILE = "regulation_down_zone"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "regulation_down_derate"
+RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE = \
+    "regulation_down_ramp_rate_limit"
 RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
     "regulation_down_balancing_areas.tab"
 # Model components
 RESERVE_PROVISION_VARIABLE_NAME = "Provide_Regulation_Down_MW"
+RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME = \
+    "Regulation_Down_Provision_Ramp_Rate_Limit_Constraint"
 RESERVE_PROVISION_DERATE_PARAM_NAME = "regulation_down_derate"
+RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME = \
+    "regulation_down_ramp_rate_limit"
 RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME = \
     "regulation_down_provision_subhourly_energy_adjustment"
 RESERVE_BALANCING_AREA_PARAM_NAME = "regulation_down_zone"
@@ -75,6 +81,10 @@ def add_model_components(m, d):
         reserve_project_operational_timepoints_set=
         RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
         reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
+        reserve_provision_ramp_rate_limit_param
+        =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,
+        reserve_provision_ramp_rate_limit_constraint=
+        RESERVE_PROVISION_RAMP_RATE_LIMIT_CONSTRAINT_NAME,
         reserve_provision_subhourly_adjustment_param=
         RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME
     )
@@ -101,8 +111,12 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
         RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE,
+        ramp_rate_limit_column_name
+        =RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
         reserve_balancing_area_param=RESERVE_BALANCING_AREA_PARAM_NAME,
         reserve_provision_derate_param=RESERVE_PROVISION_DERATE_PARAM_NAME,
+        reserve_provision_ramp_rate_limit_param
+        =RESERVE_PROVISION_RAMP_RATE_LIMIT_PARAM_NAME,
         reserve_projects_set=RESERVE_PROJECTS_SET_NAME,
         reserve_provision_subhourly_adjustment_param
         =RESERVE_PROVISION_SUBHOURLY_ADJUSTMEN_PARAM_NAME,

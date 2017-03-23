@@ -1,21 +1,21 @@
-project	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up_ba	regulation_up_zone	lf_reserves_down_ba	regulation_down_zone	min_stable_level_fraction	startup_cost_per_mw	shutdown_cost_per_mw	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	charging_efficiency	discharging_efficiency	last_commitment_stage	rps_zone	minimum_duration_hours	lf_reserves_down_derate	lf_reserves_up_derate	regulation_down_derate	regulation_up_derate	ramp_rate_up_frac_of_capacity_per_hour	ramp_rate_down_frac_of_capacity_per_hour	min_up_time_hours	min_down_time_hours	carbon_cap_zone
-Nuclear	Zone1	existing_gen_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	0	1666.67	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Gas_CCGT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	Zone1	Zone1	Zone1	Zone1	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	0.3	0.5	3	7	Carbon_Cap_Zone1
-Coal	Zone1	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone1	.	Zone1	0.4	1	0	Coal	3000	10	6	.	.	da	.	.	.	.	.	.	0.2	0.3	2	10	Carbon_Cap_Zone1
-Gas_CT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	0.5	0.2	5	3	Carbon_Cap_Zone1
-Wind	Zone1	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RPS_Zone_1	.	.	.	.	.	.	.	.	.	.
-Gas_CCGT_New	Zone1	new_build_generator	2	dispatchable_capacity_commit	Zone1	Zone1	Zone1	Zone1	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	0.5	0.8	8	5	Carbon_Cap_Zone1
-Gas_CT_New	Zone1	new_build_generator	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	0.8	0.5	5	2	Carbon_Cap_Zone1
-Nuclear_z2	Zone2	existing_gen_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	10000	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Gas_CCGT_z2	Zone2	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	Zone2	Zone2	Zone2	Zone2	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2
-Coal_z2	Zone2	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone2	.	Zone2	0.4	1	0	Coal	3000	10	6	.	.	da	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2
-Gas_CT_z2	Zone2	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2
-Wind_z2	Zone2	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RPS_Zone_2	.	.	.	.	.	.	.	.	.	.
-Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	1	.	.	.	.	.	.	.	.	.
-Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	.	0.5	0.5	0.5	0.5	.	.	.	.	.
-Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_conventional	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
-Disp_Binary_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_binary_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
-Disp_Cont_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
-Disp_No_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	.	.	.	Gas	500	8	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
-Clunky_Old_Gen	Zone1	existing_gen_linear_economic_retirement	1	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Coal	5000	15	5	.	.	da	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1
-Customer_PV	Zone1	existing_gen_no_economic_retirement	0	variable_no_curtailment	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+project	load_zone	capacity_type	variable_om_cost_per_mwh	operational_type	lf_reserves_up_ba	regulation_up_zone	lf_reserves_down_ba	regulation_down_zone	min_stable_level_fraction	startup_cost_per_mw	shutdown_cost_per_mw	fuel	minimum_input_mmbtu_per_hr	inc_heat_rate_mmbtu_per_mwh	unit_size_mw	charging_efficiency	discharging_efficiency	last_commitment_stage	rps_zone	minimum_duration_hours	lf_reserves_down_derate	lf_reserves_up_derate	regulation_down_derate	regulation_up_derate	ramp_rate_up_frac_of_capacity_per_hour	ramp_rate_down_frac_of_capacity_per_hour	min_up_time_hours	min_down_time_hours	carbon_cap_zone	lf_reserves_up_ramp_rate_limit	lf_reserves_down_ramp_rate_limit	regulation_up_ramp_rate_limit	regulation_down_ramp_rate_limit
+Nuclear	Zone1	existing_gen_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	0	1666.67	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Gas_CCGT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	Zone1	Zone1	Zone1	Zone1	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	0.3	0.5	3	7	Carbon_Cap_Zone1	0.1	0.1	0.05	0.05
+Coal	Zone1	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone1	.	Zone1	0.4	1	0	Coal	3000	10	6	.	.	da	.	.	.	.	.	.	0.2	0.3	2	10	Carbon_Cap_Zone1	.	.	0.05	0.05
+Gas_CT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	0.5	0.2	5	3	Carbon_Cap_Zone1	.	.	.	.
+Wind	Zone1	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RPS_Zone_1	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Gas_CCGT_New	Zone1	new_build_generator	2	dispatchable_capacity_commit	Zone1	Zone1	Zone1	Zone1	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	0.5	0.8	8	5	Carbon_Cap_Zone1	0.2	0.2	0.05	0.05
+Gas_CT_New	Zone1	new_build_generator	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	0.8	0.5	5	2	Carbon_Cap_Zone1	.	.	.	.
+Nuclear_z2	Zone2	existing_gen_no_economic_retirement	1	must_run	.	.	.	.	.	.	.	Uranium	10000	0	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Gas_CCGT_z2	Zone2	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	Zone2	Zone2	Zone2	Zone2	0.4	1	2	Gas	1500	6	6	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2	0.1	0.1	0.05	0.05
+Coal_z2	Zone2	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone2	.	Zone2	0.4	1	0	Coal	3000	10	6	.	.	da	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2	.	.	0.05	0.05
+Gas_CT_z2	Zone2	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	6	.	.	rt	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone2	.	.	.	.
+Wind_z2	Zone2	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RPS_Zone_2	.	.	.	.	.	.	.	.	.	.	.	.	.	.
+Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	1	.	.	.	.	.	.	.	.	.	1	1	0.05	0.05
+Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	.	0.5	0.5	0.5	0.5	.	.	.	.	.	.	.	0.05	0.05
+Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_conventional	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.2	0.2	0.05	0.05
+Disp_Binary_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_binary_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.
+Disp_Cont_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.
+Disp_No_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	.	.	.	Gas	500	8	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.
+Clunky_Old_Gen	Zone1	existing_gen_linear_economic_retirement	1	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Coal	5000	15	5	.	.	da	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.
+Customer_PV	Zone1	existing_gen_no_economic_retirement	0	variable_no_curtailment	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
