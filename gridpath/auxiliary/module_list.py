@@ -68,6 +68,7 @@ def all_modules_list():
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_operational_costs",
         "objective.transmission.aggregate_operational_costs",
+        "objective.transmission.carbon_imports_tuning_costs",
         "objective.system.aggregate_load_balance_penalties",
         "objective.system.reserve_violation_penalties.lf_reserves_up",
         "objective.system.reserve_violation_penalties.lf_reserves_down",
@@ -143,7 +144,8 @@ def cross_modules_list():
     cross_modules = {
         ("transmission", "carbon_cap", "track_carbon_imports"):
         ["system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
-         "transmission.operations.carbon_emissions"],
+         "transmission.operations.carbon_emissions",
+         "objective.transmission.carbon_imports_tuning_costs"],
         ("transmission", "simultaneous_flow_limits"):
             ["transmission.operations.simultaneous_flow_limits"]
     }

@@ -50,3 +50,30 @@ def add_model_components(m, d):
     getattr(d, carbon_cap_balance_emission_components).append(
         "Total_Carbon_Emission_Imports_Tons"
     )
+
+
+def export_results(scenario_directory, horizon, stage, m, d):
+    """
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "carbon_cap_total_transmission.csv"), "wb") as \
+            rps_results_file:
+        writer = csv.writer(rps_results_file)
+        writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
+                         "transmission_carbon_emissions_mmt"])
+        for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
+            writer.writerow([
+                z,
+                p,
+                float(m.carbon_cap_target_mmt[z, p]),
+                value(
+                    m.Total_Carbon_Emission_Imports_Tons[z, p]
+                ) / 10**6  # MMT
+            ])
