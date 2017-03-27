@@ -251,14 +251,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Write header
         writer.writerow(
             ["hydro_project", "horizon",
-             "hydro_specified_average_power_mwa",
-             "hydro_specified_min_power_mw",
-             "hydro_specified_max_power_mw"]
+             "hydro_average_power_mwa",
+             "hydro_min_power_mw",
+             "hydro_max_power_mw"]
         )
 
         # Select only budgets/min/max of projects in the portfolio
-        # Select only budgets/min/max of projects with 'hydro_conventional'
-        # operational type
+        # Select only budgets/min/max of projects with 'hydro_curtailable'
+        # or 'hydro_noncurtailable' operational type
         # Select only budgets/min/max for horizons from the correct timepoint
         # scenario
         # Select only horizons on periods when the project is operational
@@ -272,7 +272,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             (SELECT project, hydro_operational_chars_scenario_id
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {}
-            AND operational_type = 'hydro_conventional') AS op_char
+            AND (operational_type = 'hydro_curtailable' OR
+            operational_type = 'hydro_noncurtailable')) AS op_char
             USING (project)
             CROSS JOIN
             (SELECT horizon

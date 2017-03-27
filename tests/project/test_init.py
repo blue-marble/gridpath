@@ -70,7 +70,8 @@ class TestProject(unittest.TestCase):
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
-            "dispatchable_capacity_commit", "hydro_conventional", "must_run",
+            "dispatchable_capacity_commit", "hydro_curtailable",
+            "hydro_noncurtailable", "must_run",
             "storage_generic", "variable", "dispatchable_binary_commit",
             "dispatchable_continuous_commit", "dispatchable_no_commit",
             "variable_no_curtailment"
@@ -85,6 +86,7 @@ class TestProject(unittest.TestCase):
             'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
             'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
             'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
+            'Hydro_NonCurtailable': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
             "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": []
@@ -98,6 +100,7 @@ class TestProject(unittest.TestCase):
             'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
             'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
             'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
+            'Hydro_NonCurtailable': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
             "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": []
@@ -150,6 +153,7 @@ class TestProject(unittest.TestCase):
             "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
+            'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
             "Clunky_Old_Gen", "Customer_PV"]
             )
@@ -168,6 +172,7 @@ class TestProject(unittest.TestCase):
                  "Nuclear_z2": "Zone2", "Wind": "Zone1",
                  "Wind_z2": "Zone2", "Battery": "Zone1",
                  "Battery_Specified": "Zone1", "Hydro": "Zone1",
+                 'Hydro_NonCurtailable': "Zone1",
                  "Disp_Binary_Commit": "Zone1", "Disp_Cont_Commit": "Zone1",
                  "Disp_No_Commit": "Zone1", "Clunky_Old_Gen": "Zone1",
                  "Customer_PV": "Zone1"}.items()
@@ -200,6 +205,7 @@ class TestProject(unittest.TestCase):
                  "Battery_Specified":
                      "storage_specified_no_economic_retirement",
                  "Hydro": "existing_gen_no_economic_retirement",
+                 "Hydro_NonCurtailable": "existing_gen_no_economic_retirement",
                  "Disp_Binary_Commit": "existing_gen_no_economic_retirement",
                  "Disp_Cont_Commit": "existing_gen_no_economic_retirement",
                  "Disp_No_Commit": "existing_gen_no_economic_retirement",
@@ -223,6 +229,7 @@ class TestProject(unittest.TestCase):
                  "Gas_CCGT_z2": 2, "Gas_CT": 2, "Gas_CT_New": 2, "Gas_CT_z2": 2,
                  "Nuclear": 1, "Nuclear_z2": 1, "Wind": 0, "Wind_z2": 0,
                  "Battery": 0, "Battery_Specified": 0, "Hydro": 0,
+                 "Hydro_NonCurtailable": 0,
                  "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
                  "Disp_No_Commit": 0, "Clunky_Old_Gen": 1,
                  "Customer_PV": 0

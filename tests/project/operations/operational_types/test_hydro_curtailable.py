@@ -19,7 +19,7 @@ PREREQUISITE_MODULE_NAMES = [
      "temporal.investment.periods", "geography.load_zones", "project",
      "project.capacity.capacity"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.hydro_conventional"
+    "project.operations.operational_types.hydro_curtailable"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -37,7 +37,7 @@ except ImportError:
           " to test.")
 
 
-class TestCapacity(unittest.TestCase):
+class TestHydroCurtailable(unittest.TestCase):
     """
 
     """
@@ -79,24 +79,24 @@ class TestCapacity(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: HYDRO_CONVENTIONAL_PROJECTS
+        # Sets: HYDRO_CURTAILABLE_PROJECTS
         expected_projects = ["Hydro"]
-        actual_projects = [p for p in instance.HYDRO_CONVENTIONAL_PROJECTS]
+        actual_projects = [p for p in instance.HYDRO_CURTAILABLE_PROJECTS]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS
+        # Sets: HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
         expected_operational_horizons = sorted(
             [("Hydro", 202001), ("Hydro", 202002),
              ("Hydro", 203001), ("Hydro", 203002)]
         )
         actual_operational_horizons = sorted(
-            [p for p in instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS
+            [p for p in instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
              ]
             )
         self.assertListEqual(expected_operational_horizons,
                              actual_operational_horizons)
 
-        # Param: hydro_specified_average_power_mwa
+        # Param: hydro_curtailable_average_power_mwa
         expected_average_power = OrderedDict(
             sorted({("Hydro", 202001): 3, ("Hydro", 202002): 3,
                     ("Hydro", 203001): 3, ("Hydro", 203002): 3}.items())
@@ -104,15 +104,15 @@ class TestCapacity(unittest.TestCase):
         actual_average_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_specified_average_power_mwa[prj, period]
+                    instance.hydro_curtailable_average_power_mwa[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS
+                 instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
             )
         )
         self.assertDictEqual(expected_average_power, actual_average_power)
 
-        # Param: hydro_specified_min_power_mw
+        # Param: hydro_curtailable_min_power_mw
         expected_min_power = OrderedDict(
             sorted({("Hydro", 202001): 1, ("Hydro", 202002): 1,
                     ("Hydro", 203001): 1, ("Hydro", 203002): 1}.items())
@@ -120,15 +120,15 @@ class TestCapacity(unittest.TestCase):
         actual_min_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_specified_min_power_mw[prj, period]
+                    instance.hydro_curtailable_min_power_mw[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS
+                 instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_power, actual_min_power)
 
-        # Param: hydro_specified_max_power_mw
+        # Param: hydro_curtailable_max_power_mw
         expected_max_power = OrderedDict(
             sorted({("Hydro", 202001): 6, ("Hydro", 202002): 6,
                     ("Hydro", 203001): 6, ("Hydro", 203002): 6}.items())
@@ -136,15 +136,15 @@ class TestCapacity(unittest.TestCase):
         actual_max_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_specified_max_power_mw[prj, period]
+                    instance.hydro_curtailable_max_power_mw[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_HORIZONS
+                 instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
             )
         )
         self.assertDictEqual(expected_max_power, actual_max_power)
 
-        # HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS
+        # HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps = sorted([
             ("Hydro", 20200101), ("Hydro", 20200102),
             ("Hydro", 20200103), ("Hydro", 20200104),
@@ -197,7 +197,7 @@ class TestCapacity(unittest.TestCase):
         ])
         actual_tmps = sorted([
             tmp for tmp in
-            instance.HYDRO_CONVENTIONAL_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 

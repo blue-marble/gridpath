@@ -84,7 +84,7 @@ class TestRegulationUpProvision(unittest.TestCase):
         # Set: REGULATION_UP_PROJECTS
         expected_projects = sorted([
             "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_z2", "Coal_z2",
-            "Battery", "Battery_Specified", "Hydro"
+            "Battery", "Battery_Specified", "Hydro", "Hydro_NonCurtailable"
         ])
         actual_projects = sorted([
             prj for prj in instance.REGULATION_UP_PROJECTS
@@ -95,7 +95,8 @@ class TestRegulationUpProvision(unittest.TestCase):
         expected_reserves_zone = OrderedDict(sorted(
             {"Gas_CCGT": "Zone1", "Coal": "Zone1", "Gas_CCGT_New": "Zone1",
              "Gas_CCGT_z2": "Zone2", "Coal_z2": "Zone2", "Battery": "Zone1",
-             "Battery_Specified": "Zone1", "Hydro": "Zone1"}.items()
+             "Battery_Specified": "Zone1", "Hydro": "Zone1",
+             "Hydro_NonCurtailable": "Zone1"}.items()
         )
         )
         actual_reserves_zone = OrderedDict(sorted(
@@ -251,6 +252,102 @@ class TestRegulationUpProvision(unittest.TestCase):
             ("Hydro", 20300219), ("Hydro", 20300220),
             ("Hydro", 20300221), ("Hydro", 20300222),
             ("Hydro", 20300223), ("Hydro", 20300224),
+            ("Hydro_NonCurtailable", 20200101),
+            ("Hydro_NonCurtailable", 20200102),
+            ("Hydro_NonCurtailable", 20200103),
+            ("Hydro_NonCurtailable", 20200104),
+            ("Hydro_NonCurtailable", 20200105),
+            ("Hydro_NonCurtailable", 20200106),
+            ("Hydro_NonCurtailable", 20200107),
+            ("Hydro_NonCurtailable", 20200108),
+            ("Hydro_NonCurtailable", 20200109),
+            ("Hydro_NonCurtailable", 20200110),
+            ("Hydro_NonCurtailable", 20200111),
+            ("Hydro_NonCurtailable", 20200112),
+            ("Hydro_NonCurtailable", 20200113),
+            ("Hydro_NonCurtailable", 20200114),
+            ("Hydro_NonCurtailable", 20200115),
+            ("Hydro_NonCurtailable", 20200116),
+            ("Hydro_NonCurtailable", 20200117),
+            ("Hydro_NonCurtailable", 20200118),
+            ("Hydro_NonCurtailable", 20200119),
+            ("Hydro_NonCurtailable", 20200120),
+            ("Hydro_NonCurtailable", 20200121),
+            ("Hydro_NonCurtailable", 20200122),
+            ("Hydro_NonCurtailable", 20200123),
+            ("Hydro_NonCurtailable", 20200124),
+            ("Hydro_NonCurtailable", 20200201),
+            ("Hydro_NonCurtailable", 20200202),
+            ("Hydro_NonCurtailable", 20200203),
+            ("Hydro_NonCurtailable", 20200204),
+            ("Hydro_NonCurtailable", 20200205),
+            ("Hydro_NonCurtailable", 20200206),
+            ("Hydro_NonCurtailable", 20200207),
+            ("Hydro_NonCurtailable", 20200208),
+            ("Hydro_NonCurtailable", 20200209),
+            ("Hydro_NonCurtailable", 20200210),
+            ("Hydro_NonCurtailable", 20200211),
+            ("Hydro_NonCurtailable", 20200212),
+            ("Hydro_NonCurtailable", 20200213),
+            ("Hydro_NonCurtailable", 20200214),
+            ("Hydro_NonCurtailable", 20200215),
+            ("Hydro_NonCurtailable", 20200216),
+            ("Hydro_NonCurtailable", 20200217),
+            ("Hydro_NonCurtailable", 20200218),
+            ("Hydro_NonCurtailable", 20200219),
+            ("Hydro_NonCurtailable", 20200220),
+            ("Hydro_NonCurtailable", 20200221),
+            ("Hydro_NonCurtailable", 20200222),
+            ("Hydro_NonCurtailable", 20200223),
+            ("Hydro_NonCurtailable", 20200224),
+            ("Hydro_NonCurtailable", 20300101),
+            ("Hydro_NonCurtailable", 20300102),
+            ("Hydro_NonCurtailable", 20300103),
+            ("Hydro_NonCurtailable", 20300104),
+            ("Hydro_NonCurtailable", 20300105),
+            ("Hydro_NonCurtailable", 20300106),
+            ("Hydro_NonCurtailable", 20300107),
+            ("Hydro_NonCurtailable", 20300108),
+            ("Hydro_NonCurtailable", 20300109),
+            ("Hydro_NonCurtailable", 20300110),
+            ("Hydro_NonCurtailable", 20300111),
+            ("Hydro_NonCurtailable", 20300112),
+            ("Hydro_NonCurtailable", 20300113),
+            ("Hydro_NonCurtailable", 20300114),
+            ("Hydro_NonCurtailable", 20300115),
+            ("Hydro_NonCurtailable", 20300116),
+            ("Hydro_NonCurtailable", 20300117),
+            ("Hydro_NonCurtailable", 20300118),
+            ("Hydro_NonCurtailable", 20300119),
+            ("Hydro_NonCurtailable", 20300120),
+            ("Hydro_NonCurtailable", 20300121),
+            ("Hydro_NonCurtailable", 20300122),
+            ("Hydro_NonCurtailable", 20300123),
+            ("Hydro_NonCurtailable", 20300124),
+            ("Hydro_NonCurtailable", 20300201),
+            ("Hydro_NonCurtailable", 20300202),
+            ("Hydro_NonCurtailable", 20300203),
+            ("Hydro_NonCurtailable", 20300204),
+            ("Hydro_NonCurtailable", 20300205),
+            ("Hydro_NonCurtailable", 20300206),
+            ("Hydro_NonCurtailable", 20300207),
+            ("Hydro_NonCurtailable", 20300208),
+            ("Hydro_NonCurtailable", 20300209),
+            ("Hydro_NonCurtailable", 20300210),
+            ("Hydro_NonCurtailable", 20300211),
+            ("Hydro_NonCurtailable", 20300212),
+            ("Hydro_NonCurtailable", 20300213),
+            ("Hydro_NonCurtailable", 20300214),
+            ("Hydro_NonCurtailable", 20300215),
+            ("Hydro_NonCurtailable", 20300216),
+            ("Hydro_NonCurtailable", 20300217),
+            ("Hydro_NonCurtailable", 20300218),
+            ("Hydro_NonCurtailable", 20300219),
+            ("Hydro_NonCurtailable", 20300220),
+            ("Hydro_NonCurtailable", 20300221),
+            ("Hydro_NonCurtailable", 20300222),
+            ("Hydro_NonCurtailable", 20300223),
+            ("Hydro_NonCurtailable", 20300224),
             ("Gas_CCGT_z2", 20200101), ("Gas_CCGT_z2", 20200102),
             ("Gas_CCGT_z2", 20200103), ("Gas_CCGT_z2", 20200104),
             ("Gas_CCGT_z2", 20200105), ("Gas_CCGT_z2", 20200106),
@@ -478,7 +575,7 @@ class TestRegulationUpProvision(unittest.TestCase):
         expected_derate = OrderedDict(sorted(
             {"Battery": 1, "Battery_Specified": 0.5, "Coal": 1,
              "Coal_z2": 1, "Gas_CCGT": 1, "Gas_CCGT_New": 1, "Gas_CCGT_z2": 1,
-             "Hydro": 1}.items()
+             "Hydro": 1, "Hydro_NonCurtailable": 1}.items()
         )
         )
         actual_derate = OrderedDict(sorted(
@@ -493,7 +590,8 @@ class TestRegulationUpProvision(unittest.TestCase):
         expected_rr_limit = OrderedDict(sorted(
             {"Battery": 0.05, "Battery_Specified": 0.05, "Coal": 0.05,
              "Coal_z2": 0.05, "Gas_CCGT": 0.05, "Gas_CCGT_New": 0.05,
-             "Gas_CCGT_z2": 0.05, "Hydro": 0.05}.items()
+             "Gas_CCGT_z2": 0.05, "Hydro": 0.05,
+             "Hydro_NonCurtailable": 0.05}.items()
         )
         )
         actual_rr_limit = OrderedDict(sorted(

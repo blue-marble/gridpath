@@ -4,4 +4,4 @@ Gas_CCGT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commi
 Coal	Zone1	existing_gen_no_economic_retirement	1	dispatchable_capacity_commit	.	Zone1	.	Zone1	0.4	1	0	Coal	3000	10	ha	6
 Gas_CT	Zone1	existing_gen_no_economic_retirement	2	dispatchable_capacity_commit	.	.	.	.	0.4	0	1	Gas	500	8	rt	6
 Wind	Zone1	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.
-Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_conventional	.	.	.	.	.	.	.	.	.	.	.	.
+Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_noncurtailable	.	.	.	.	.	.	.	.	.	.	.	.

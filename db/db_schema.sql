@@ -41,7 +41,8 @@ description VARCHAR(128)
 INSERT INTO mod_operational_types (operational_type)
 VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('dispatchable_continuous_commit'), ('dispatchable_no_commit'),
-('hydro_conventional'), ('must_run'), ('storage_generic'), ('variable');
+('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
+('storage_generic'), ('variable');
 
 
 --------------------
@@ -342,7 +343,7 @@ subscenarios_project_new_potential (project_new_potential_scenario_id)
 -- Generators that do not have certain characteristics (e.g. hydro does not
 -- have a heat rate) should be included with NULL values in these columns
 -- For variable generators, specify a variable_generator_profile_scenario_id
--- For conventional hydro generators, specify a
+-- For hydro generators (curtailable or nonocurtailable), specify a
 -- hydro_operational_chars_scenario_id
 DROP TABLE IF EXISTS subscenarios_project_operational_chars;
 CREATE TABLE subscenarios_project_operational_chars (
@@ -1122,6 +1123,24 @@ scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,
 total_curtailment_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_dispatch_hydro_curtailable;
+CREATE TABLE results_project_dispatch_hydro_curtailable (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 

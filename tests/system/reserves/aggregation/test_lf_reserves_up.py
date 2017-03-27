@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestCosts(unittest.TestCase):
+class TestLFReservesDownAgg(unittest.TestCase):
     """
 
     """
@@ -86,9 +86,10 @@ class TestCosts(unittest.TestCase):
 
         # Set: LF_RESERVES_UP_PROJECTS_OPERATIONAL_IN_TIMEPOINT
         projects_2020 = sorted(["Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
-                                "Battery", "Battery_Specified", "Hydro"])
+                                "Battery", "Battery_Specified", "Hydro",
+                                "Hydro_NonCurtailable"])
         projects_2030 = sorted(["Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
-                                "Battery", "Hydro"])
+                                "Battery", "Hydro", "Hydro_NonCurtailable"])
         expected_projects = OrderedDict(sorted(
             {
                 20200101: projects_2020,

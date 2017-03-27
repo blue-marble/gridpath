@@ -148,9 +148,9 @@ def check_if_tech_exists(c, scenario_id, horizon,
     return power_by_technology_dict
 
 
-def get_curtailment_results(c, scenario_id, load_zone, horizon):
+def get_variable_curtailment_results(c, scenario_id, load_zone, horizon):
     """
-    Get curtailment by load_zone and horizon
+    Get variable generator curtailment by load_zone and horizon
     :param c:
     :param scenario_id:
     :param load_zone:
@@ -162,6 +162,33 @@ def get_curtailment_results(c, scenario_id, load_zone, horizon):
         i[1] for i in c.execute(
             """SELECT timepoint, sum(scheduled_curtailment_mw)
             FROM results_project_dispatch_variable
+            WHERE scenario_id = {}
+            AND load_zone = '{}'
+            AND horizon = {}
+            GROUP BY timepoint
+            ORDER BY timepoint;""".format(
+                scenario_id, load_zone, horizon
+            )
+        ).fetchall()
+        ]
+
+    return curtailment
+
+
+def get_hydro_curtailment_results(c, scenario_id, load_zone, horizon):
+    """
+    Get conventional hydro curtailment by load_zone and horizon
+    :param c:
+    :param scenario_id:
+    :param load_zone:
+    :param horizon:
+    :return:
+    """
+    # TODO: export curtailment by load zone directly from model
+    curtailment = [
+        i[1] for i in c.execute(
+            """SELECT timepoint, sum(scheduled_curtailment_mw)
+            FROM results_project_dispatch_hydro_curtailable
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND horizon = {}
@@ -230,13 +257,15 @@ def get_load(c, scenario_id, load_zone, horizon):
 
 
 def make_figure(
-        power_by_tech, curtailment, imports, exports, load_, x_axis,
-        x_axis_count
+        power_by_tech, curtailment_variable, curtailment_hydro,
+        imports, exports, load_,
+        x_axis, x_axis_count
 ):
     """
 
     :param power_by_tech:
-    :param curtailment:
+    :param curtailment_variable:
+    :param curtailment_hydro:
     :param imports:
     :param exports:
     :param load_:
@@ -275,7 +304,8 @@ def make_figure(
         ("Solar", "gold"),
         ("Pumped_Storage", "darkslategrey"),
         ("Battery", "teal"),
-        ("Curtailment", "indianred")
+        ("Curtailment_Variable", "indianred"),
+        ("Curtailment_Hydro", "firebrick")
     ])
 
     # Make stack plot of power by technology
@@ -297,7 +327,12 @@ def make_figure(
                  power_by_tech["Solar"],
                  [i if i > 0 else 0 for i in power_by_tech["Pumped_Storage"]],
                  [i if i > 0 else 0 for i in power_by_tech["Battery"]],
-                 curtailment,
+                 curtailment_variable,
+                 # Not all load zones have curtailable hydro; list will be
+                 # empty if not, so replace with 0s if list is empty to
+                 # ignore in drawing the plot
+                 [0] * x_axis_count if not curtailment_hydro else
+                 curtailment_hydro,
                  colors=[
                      tech_colors["unspecified"],
                      tech_colors["Nuclear"],
@@ -316,7 +351,8 @@ def make_figure(
                      tech_colors["Solar"],
                      tech_colors["Pumped_Storage"],
                      tech_colors["Battery"],
-                     tech_colors["Curtailment"]
+                     tech_colors["Curtailment_Variable"],
+                     tech_colors["Curtailment_Hydro"]
                   ]
                  )
 
@@ -325,10 +361,9 @@ def make_figure(
     for tech in tech_colors.keys():
         power = \
             imports if tech == 'Imports' \
-            else curtailment if tech == 'Curtailment' \
+            else curtailment_variable if tech == 'Curtailment_Variable' \
+            else curtailment_hydro if tech == 'Curtailment_Hydro' \
             else power_by_tech[tech]
-        if tech == 'Peaker':
-            print power
         # Don't add to legend if tech does nothing (all 0s)
         if all(round(x, 5) == 0 for x in power):
             pass
@@ -461,7 +496,14 @@ def draw_dispatch_plot(c, scenario_id, horizon, load_zone, arguments):
         x_axis_count=x_axis_count_results
     )
 
-    curtailment_results = get_curtailment_results(
+    curtailment_variable_results = get_variable_curtailment_results(
+        c=c,
+        scenario_id=scenario_id,
+        horizon=horizon,
+        load_zone=load_zone
+    )
+
+    curtailment_hydro_results = get_hydro_curtailment_results(
         c=c,
         scenario_id=scenario_id,
         horizon=horizon,
@@ -485,7 +527,8 @@ def draw_dispatch_plot(c, scenario_id, horizon, load_zone, arguments):
     # Make figure
     figure, axes = make_figure(
         power_by_tech=power_by_tech_results,
-        curtailment=curtailment_results,
+        curtailment_variable=curtailment_variable_results,
+        curtailment_hydro=curtailment_hydro_results,
         imports=imports_results, exports=exports_results,
         load_=load_results,
         x_axis=x_axis_results,
