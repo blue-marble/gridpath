@@ -230,24 +230,25 @@ def generic_load_model_data(
     :return:
     """
 
-    # Import reserve provision headroom/footroom de-rate parameter only if
-    # column is present
-    # Otherwise, the de-rate param goes to its default of 1
-    # Import reserve provision ramp rate limit parameter only if
-    # column is present
-    # Otherwise, the ramp rate limit param goes to its default of 1
     columns_to_import = ("project", ba_column_name,)
     params_to_import = (getattr(m, reserve_balancing_area_param),)
     projects_file_header = pd.read_csv(os.path.join(scenario_directory,
                                                     "inputs", "projects.tab"),
                                        sep="\t", header=None, nrows=1
                                        ).values[0]
+
+    # Import reserve provision headroom/footroom de-rate parameter only if
+    # column is present
+    # Otherwise, the de-rate param goes to its default of 1
     if derate_column_name in projects_file_header:
         columns_to_import += (derate_column_name, )
         params_to_import += (getattr(m, reserve_provision_derate_param),)
     else:
         pass
 
+    # Import reserve provision ramp rate limit parameter only if
+    # column is present
+    # Otherwise, the ramp rate limit param goes to its default of 1
     if ramp_rate_limit_column_name in projects_file_header:
         columns_to_import += (ramp_rate_limit_column_name, )
         params_to_import += (getattr(m,

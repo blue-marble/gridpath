@@ -162,6 +162,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     :return:
     """
 
+    # Get project BA
     project_bas = c.execute(
         """SELECT project, lf_reserves_down_ba
         FROM inputs_project_lf_reserves_down_bas
@@ -171,12 +172,25 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             subscenarios.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID
         )
     ).fetchall()
-
     # Make a dict for easy access
     prj_ba_dict = dict()
     for (prj, ba) in project_bas:
         prj_ba_dict[str(prj)] = "." if ba is None else str(ba)
 
+    # Get lf_reserves_down footroom derate
+    prj_derates = c.execute(
+        """SELECT project, lf_reserves_down_derate
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {};""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
+        )
+    ).fetchall()
+    # Make a dict for easy access
+    prj_derate_dict = dict()
+    for (prj, derate) in prj_derates:
+        prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
+
+    # Add params to projects file
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
         reader = csv.reader(projects_file_in, delimiter="\t")
@@ -186,6 +200,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Append column header
         header = reader.next()
         header.append("lf_reserves_down_ba")
+        header.append("lf_reserves_down_derate")
         new_rows.append(header)
 
         # Append correct values
@@ -193,11 +208,19 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             # If project specified, check if BA specified or not
             if row[0] in prj_ba_dict.keys():
                 row.append(prj_ba_dict[row[0]])
-                new_rows.append(row)
             # If project not specified, specify no BA
             else:
                 row.append(".")
-                new_rows.append(row)
+
+            # If project specified, check if derate specified or not
+            if row[0] in prj_derate_dict.keys():
+                row.append(prj_derate_dict[row[0]])
+            # If project not specified, specify no derate
+            else:
+                row.append(".")
+
+            # Add resulting row to new_rows list
+            new_rows.append(row)
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
             projects_file_out:

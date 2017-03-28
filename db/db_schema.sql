@@ -375,6 +375,10 @@ minimum_duration_hours FLOAT,
 technology VARCHAR(32),
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max
+lf_reserves_up_derate FLOAT,
+lf_reserves_down_derate FLOAT,
+regulation_up_derate FLOAT,
+regulation_down_derate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
