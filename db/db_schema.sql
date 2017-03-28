@@ -265,7 +265,9 @@ project VARCHAR(64),
 period INTEGER,
 existing_capacity_mw FLOAT,
 existing_capacity_mwh FLOAT,
-PRIMARY KEY (project_existing_capacity_scenario_id, project, period)
+PRIMARY KEY (project_existing_capacity_scenario_id, project, period),
+FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
+subscenarios_project_existing_capacity (project_existing_capacity_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_existing_fixed_cost;
@@ -665,7 +667,7 @@ subscenarios_transmission_portfolios
 DROP TABLE IF EXISTS subscenarios_transmission_load_zones;
 CREATE TABLE subscenarios_transmission_load_zones (
 load_zone_scenario_id INTEGER,
-transmission_load_zone_scenario_id,
+transmission_load_zone_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (load_zone_scenario_id, transmission_load_zone_scenario_id),
@@ -682,6 +684,9 @@ load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 PRIMARY KEY (load_zone_scenario_id, transmission_load_zone_scenario_id,
 transmission_line),
+FOREIGN KEY (load_zone_scenario_id, transmission_load_zone_scenario_id)
+REFERENCES subscenarios_transmission_load_zones (load_zone_scenario_id,
+transmission_load_zone_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones
 (load_zone_scenario_id)
@@ -713,6 +718,10 @@ tx_co2_intensity_tons_per_mwh FLOAT,
 PRIMARY KEY (carbon_cap_zone_scenario_id,
 transmission_carbon_cap_zone_scenario_id,
 transmission_line),
+FOREIGN KEY (carbon_cap_zone_scenario_id,
+transmission_carbon_cap_zone_scenario_id) REFERENCES
+subscenarios_transmission_carbon_cap_zones (carbon_cap_zone_scenario_id,
+transmission_carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones
 (carbon_cap_zone_scenario_id)
@@ -942,7 +951,9 @@ carbon_cap_target_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 period INTEGER,
 carbon_cap_mmt FLOAT,
-PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period)
+PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period),
+FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
+subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
 
 
