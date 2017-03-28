@@ -21,11 +21,13 @@ def add_model_components(m, d):
     """
 
     m.hurdle_rate_positive_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, within=NonNegativeReals, default=0
+        m.TRANSMISSION_LINES, m.PERIODS,
+        within=NonNegativeReals, default=0
     )
 
     m.hurdle_rate_negative_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, within=NonNegativeReals, default=0
+        m.TRANSMISSION_LINES, m.PERIODS,
+        within=NonNegativeReals, default=0
     )
 
     m.Hurdle_Cost_Positive_Direction = Var(
@@ -44,12 +46,13 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if mod.hurdle_rate_positive_direction_per_mwh[tx] == 0:
+        if mod.hurdle_rate_positive_direction_per_mwh[tx, mod.period[tmp]] \
+                == 0:
             return Constraint.Skip
         else:
             return mod.Hurdle_Cost_Positive_Direction[tx, tmp] \
                 >= mod.Transmit_Power_MW[tx, tmp] * \
-                mod.hurdle_rate_positive_direction_per_mwh[tx]
+                mod.hurdle_rate_positive_direction_per_mwh[tx, mod.period[tmp]]
     m.Hurdle_Cost_Positive_Direction_Constraint = Constraint(
         m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
         rule=hurdle_cost_positive_direction_rule
@@ -64,12 +67,13 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if mod.hurdle_rate_negative_direction_per_mwh[tx] == 0:
+        if mod.hurdle_rate_negative_direction_per_mwh[tx, mod.period[tmp]] \
+                == 0:
             return Constraint.Skip
         else:
             return mod.Hurdle_Cost_Negative_Direction[tx, tmp] \
                 >= -mod.Transmit_Power_MW[tx, tmp] * \
-                mod.hurdle_rate_negative_direction_per_mwh[tx]
+                mod.hurdle_rate_negative_direction_per_mwh[tx, mod.period[tmp]]
     m.Hurdle_Cost_Negative_Direction_Constraint = Constraint(
         m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
         rule=hurdle_cost_negative_direction_rule
@@ -89,9 +93,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs",
-                                           "transmission_lines.tab"),
-                     index=m.TRANSMISSION_LINES,
-                     select=("TRANSMISSION_LINES",
+                                           "transmission_hurdle_rates.tab"),
+                     select=("transmission_line", "period",
                              "hurdle_rate_positive_direction_per_mwh",
                              "hurdle_rate_negative_direction_per_mwh"),
                      param=(m.hurdle_rate_positive_direction_per_mwh,
@@ -108,51 +111,38 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     :return:
     """
 
-    hurdle_rates = c.execute(
-        """SELECT transmission_line,
-        hurdle_rate_positive_direction_per_mwh,
-        hurdle_rate_negative_direction_per_mwh
-        FROM inputs_transmission_hurdle_rates
-            WHERE transmission_hurdle_rate_scenario_id = {}""".format(
-            subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
+    # transmission_hurdle_rates.tab
+    with open(os.path.join(inputs_directory,
+                           "transmission_hurdle_rates.tab"),
+              "w") as \
+            sim_flows_file:
+        writer = csv.writer(sim_flows_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["transmission_line", "period",
+             "hurdle_rate_positive_direction_per_mwh",
+             "hurdle_rate_negative_direction_per_mwh"]
         )
-    ).fetchall()
 
-    # Make a dict for easy access
-    hurdle_rate_dict = dict()
-    for (tx, hurdle_rate_positive, hurdle_rate_negative) in hurdle_rates:
-        hurdle_rate_dict[str(tx)] = \
-            (hurdle_rate_positive, hurdle_rate_negative)
-
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"), "r"
-              ) as tx_file_in:
-        reader = csv.reader(tx_file_in, delimiter="\t")
-
-        new_rows = list()
-
-        # Append column header
-        header = reader.next()
-        header.append("hurdle_rate_positive_direction_per_mwh")
-        header.append("hurdle_rate_negative_direction_per_mwh")
-        new_rows.append(header)
-
-        # Append correct values
-        for row in reader:
-            # If transmission line specified, assign value from dictionary
-            if row[0] in hurdle_rate_dict.keys():
-                row.append(hurdle_rate_dict[row[0]][0])
-                row.append(hurdle_rate_dict[row[0]][1])
-                new_rows.append(row)
-            # If project not specified, specify 0 hurdle rates
-            else:
-                row.append(0)
-                row.append(0)
-                new_rows.append(row)
-
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
-              "w") as tx_file_out:
-        writer = csv.writer(tx_file_out, delimiter="\t")
-        writer.writerows(new_rows)
+        hurdle_rates = c.execute(
+            """SELECT transmission_line, period, 
+            hurdle_rate_positive_direction_per_mwh,
+            hurdle_rate_negative_direction_per_mwh
+            FROM inputs_transmission_hurdle_rates
+            INNER JOIN
+            (SELECT period
+             FROM inputs_temporal_periods
+             WHERE timepoint_scenario_id = {}) as relevant_periods
+             USING (period)
+             WHERE transmission_hurdle_rate_scenario_id = {};
+            """.format(
+                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
+            )
+        )
+        for row in hurdle_rates:
+            writer.writerow(row)
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

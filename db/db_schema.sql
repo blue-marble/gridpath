@@ -767,9 +767,10 @@ DROP TABLE IF EXISTS inputs_transmission_hurdle_rates;
 CREATE TABLE inputs_transmission_hurdle_rates (
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_line INTEGER,
+period INTEGER,
 hurdle_rate_positive_direction_per_mwh FLOAT,
 hurdle_rate_negative_direction_per_mwh FLOAT,
-PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line),
+PRIMARY KEY (transmission_hurdle_rate_scenario_id, transmission_line, period),
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
 subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id)
 );
