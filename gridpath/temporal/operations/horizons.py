@@ -8,7 +8,8 @@ Describes the relationships among timepoints in the optimization
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals
+from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals,\
+    PositiveIntegers
 
 
 def add_model_components(m, d):
@@ -22,6 +23,12 @@ def add_model_components(m, d):
     m.boundary = Param(m.HORIZONS)
     m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
+    # Make a months set to use as index for some params
+    m.MONTHS = Set(within=PositiveIntegers, initialize=range(1, 12 + 1))
+
+    m.month = Param(m.HORIZONS, within=m.MONTHS)
+
+    # Assign horizons to timepoints
     m.horizon = Param(m.TIMEPOINTS, within=m.HORIZONS)
 
     m.TIMEPOINTS_ON_HORIZON = \
@@ -72,9 +79,10 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, horizon,
                                            "inputs", "horizons.tab"),
-                     select=("HORIZONS", "boundary", "horizon_weight"),
+                     select=("HORIZONS", "boundary", "horizon_weight",
+                             "month"),
                      index=m.HORIZONS,
-                     param=(m.boundary, m.horizon_weight)
+                     param=(m.boundary, m.horizon_weight, m.month)
                      )
 
     data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
@@ -100,10 +108,10 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["HORIZONS", "boundary", "horizon_weight"])
+        writer.writerow(["HORIZONS", "boundary", "horizon_weight", "month"])
 
         horizons = c.execute(
-            """SELECT horizon, boundary, horizon_weight
+            """SELECT horizon, boundary, horizon_weight, month
                FROM inputs_temporal_horizons
                WHERE timepoint_scenario_id = {};""".format(
                 subscenarios.TIMEPOINT_SCENARIO_ID

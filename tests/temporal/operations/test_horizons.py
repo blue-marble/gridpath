@@ -147,6 +147,19 @@ class TestHorizons(unittest.TestCase):
                              msg="Data for param 'horizon' not loaded correctly"
                              )
 
+        # Set: MONTHS
+        self.assertListEqual([m for m in instance.MONTHS],
+                             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        # Param: month
+        expected_months = {202001: 5, 202002: 9,
+                           203001: 4, 203002: 7}
+
+        actual_months = {
+            h: instance.month[h] for h in instance.HORIZONS
+        }
+        self.assertDictEqual(expected_months, actual_months)
+
     def test_derived_data(self):
         """
         Check the in-model parameter calculations

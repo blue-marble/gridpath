@@ -96,6 +96,7 @@ horizon INTEGER,
 period INTEGER,
 boundary VARCHAR(16),
 horizon_weight FLOAT,
+month INTEGER,
 PRIMARY KEY (timepoint_scenario_id, horizon),
 FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
 (timepoint_scenario_id),
@@ -604,11 +605,29 @@ DROP TABLE IF EXISTS inputs_project_fuels;
 CREATE TABLE inputs_project_fuels (
 fuel_scenario_id INTEGER,
 fuel VARCHAR(32),
-fuel_price_per_mmbtu FLOAT,
 co2_intensity_tons_per_mmbtu FLOAT,
 PRIMARY KEY (fuel_scenario_id, fuel),
 FOREIGN KEY (fuel_scenario_id) REFERENCES subscenarios_project_fuels
 (fuel_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_fuel_prices;
+CREATE TABLE subscenarios_project_fuel_prices (
+fuel_price_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_fuel_prices;
+CREATE TABLE inputs_project_fuel_prices (
+fuel_price_scenario_id INTEGER,
+fuel VARCHAR(32),
+period INTEGER,
+month INTEGER,
+fuel_price_per_mmbtu FLOAT,
+PRIMARY KEY (fuel_price_scenario_id, fuel, period, month),
+FOREIGN KEY (fuel_price_scenario_id) REFERENCES
+subscenarios_project_fuel_prices (fuel_price_scenario_id)
 );
 
 
@@ -956,6 +975,7 @@ project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 fuel_scenario_id INTEGER,
+fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
@@ -987,6 +1007,8 @@ FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (fuel_scenario_id),
+FOREIGN KEY (fuel_price_scenario_id) REFERENCES
+subscenarios_project_fuel_prices (fuel_price_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
 subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES

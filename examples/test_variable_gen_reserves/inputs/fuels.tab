@@ -1,4 +1,4 @@
-FUELS	fuel_price_per_mmbtu	co2_intensity_tons_per_mmbtu
-Gas	5	0.05306
-Coal	4	0.09552
-Uranium	2	0
+FUELS	co2_intensity_tons_per_mmbtu
+Gas	0.05306
+Coal	0.09552
+Uranium	0

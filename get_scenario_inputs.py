@@ -121,6 +121,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.FUEL_PRICE_SCENARIO_ID = cursor.execute(
+            """SELECT fuel_price_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.TRANSMISSION_PORTFOLIO_SCENARIO_ID = cursor.execute(
             """SELECT transmission_portfolio_scenario_id
                FROM scenarios

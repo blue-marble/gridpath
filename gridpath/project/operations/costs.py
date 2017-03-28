@@ -50,12 +50,12 @@ def add_model_components(m, d):
         :return:
         """
         gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-                   fuel_burn_rule(mod, g, tmp, "Error calling fuel_cost_rule "
-                                               "function in "
-                                               "aggregate_operational_costs.py") * \
-               mod.fuel_price_per_mmbtu[
-                   mod.fuel[g]]
+        return imported_operational_modules[gen_op_type].\
+            fuel_burn_rule(mod, g, tmp,
+                           "Error calling fuel_cost_rule function in "
+                           "aggregate_operational_costs.py") * \
+            mod.fuel_price_per_mmbtu[
+                mod.fuel[g], mod.period[tmp], mod.month[mod.horizon[tmp]]]
 
     m.Fuel_Cost = Expression(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)
