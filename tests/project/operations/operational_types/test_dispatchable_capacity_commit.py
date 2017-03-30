@@ -488,34 +488,64 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
-        # Param: dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour
-        expected_ramp_up_rate = {
+        # Param: dispcapcommit_startup_plus_ramp_up_rate
+        expected_startup_plus_ramp_up_rate = {
+            "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
+            "Gas_CT_New": 0.6, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+            "Gas_CT_z2": 1
+        }
+        actual_startup_plus_ramp_up_rate = {
+            prj: instance.dispcapcommit_startup_plus_ramp_up_rate[
+                prj]
+            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
+                             actual_startup_plus_ramp_up_rate
+                             )
+
+        # Param: dispcapcommit_shutdown_plus_ramp_down_rate
+        expected_shutdown_plus_ramp_down_rate = {
+            "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
+            "Gas_CT_New": 0.6, "Gas_CCGT_z2": 1, "Coal_z2": 1,
+            "Gas_CT_z2": 1
+        }
+        actual_shutdown_plus_ramp_down_rate = {
+            prj: instance.dispcapcommit_shutdown_plus_ramp_down_rate[
+                prj]
+            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
+                             actual_shutdown_plus_ramp_down_rate
+                             )
+
+        # Param: dispcapcommit_ramp_up_when_on_rate
+        expected_ramp_up_when_on_rate = {
             "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,
             "Gas_CT_New": 0.8, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
-        actual_ramp_down_rate = {
-            prj: instance.dispcapcommit_ramp_rate_up_frac_of_capacity_per_hour[
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispcapcommit_ramp_up_when_on_rate[
                 prj]
             for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
         }
-        self.assertDictEqual(expected_ramp_up_rate,
-                             actual_ramp_down_rate
+        self.assertDictEqual(expected_ramp_up_when_on_rate,
+                             actual_ramp_down_when_on_rate
                              )
         
-        # Param: dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour
-        expected_ramp_down_rate = {
+        # Param: dispcapcommit_ramp_down_when_on_rate
+        expected_ramp_down_when_on_rate = {
             "Gas_CCGT": 0.5, "Coal": 0.3, "Gas_CT": 0.2, "Gas_CCGT_New": 0.8,
             "Gas_CT_New": 0.5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
-        actual_ramp_down_rate = {
-            prj: instance.dispcapcommit_ramp_rate_down_frac_of_capacity_per_hour[
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispcapcommit_ramp_down_when_on_rate[
                 prj]
             for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
         }
-        self.assertDictEqual(expected_ramp_down_rate,
-                             actual_ramp_down_rate
+        self.assertDictEqual(expected_ramp_down_when_on_rate,
+                             actual_ramp_down_when_on_rate
                              )
 
         # Param: dispcapcommit_min_up_time_hours
