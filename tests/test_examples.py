@@ -26,7 +26,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 65494.41333
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_build_storage(self):
         """
@@ -41,7 +41,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 102403.6400000600
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_build_storage_cumulative_min_max(self):
         """
@@ -58,7 +58,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 105922.15516955667
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_no_reserves(self):
         """
@@ -73,7 +73,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 53362.74667
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_w_hydro(self):
         """
@@ -88,7 +88,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 49049.58000
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_w_storage(self):
         """
@@ -103,7 +103,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 54702.61516952667
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2horizons(self):
         """
@@ -118,7 +118,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 130988.82664
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2periods(self):
         """
@@ -133,7 +133,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 1309888.26636
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2periods_new_build(self):
         """
@@ -150,7 +150,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 110443853.65676
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_2zones(self):
         """
@@ -167,7 +167,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 220087705.71354377
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_2zones_new_build_transmission(self
                                                                            ):
@@ -187,7 +187,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 1941106539.6260998
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_2zones_singleBA(self):
         """
@@ -207,7 +207,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 220044845.63243133
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_2zones_transmission(self):
         """
@@ -226,7 +226,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 50552825288.93714
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2periods_new_build_rps(self):
         """
@@ -246,7 +246,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 972816048.46947
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_cumulative_min_max(self):
         """
@@ -265,7 +265,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 6295817377.201665
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_single_stage_prod_cost(self):
         """
@@ -287,7 +287,7 @@ class TestExamples(unittest.TestCase):
             self.assertAlmostEqual(
                 expected_objectives[horizon],
                 actual_objectives[str(horizon)],
-                places=5
+                places=1
             )
 
     def test_example_multi_stage_prod_cost(self):
@@ -317,7 +317,7 @@ class TestExamples(unittest.TestCase):
                 self.assertAlmostEqual(
                     expected_objectives[horizon][stage],
                     actual_objectives[str(horizon)][stage],
-                    places=5
+                    places=1
                 )
 
     def test_example_multi_stage_prod_cost_w_hydro(self):
@@ -348,7 +348,7 @@ class TestExamples(unittest.TestCase):
                 self.assertAlmostEqual(
                     expected_objectives[horizon][stage],
                     actual_objectives[str(horizon)][stage],
-                    places=5
+                    places=1
                 )
 
     def test_example_2periods_gen_lin_econ_retirement(self):
@@ -369,7 +369,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 1309888.26159
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_variable_gen_reserves(self):
         """
@@ -389,7 +389,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 64739.31331
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_rps_variable_reserves(self):
         """
@@ -410,7 +410,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 844035398.4650549
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_2periods_new_build_rps_variable_reserves_subhourly_adj(
             self):
@@ -432,7 +432,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 845531663.8130196
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=3)
+                               places=0)
 
     def test_example_test_ramp_up_constraints(self):
         """
@@ -451,7 +451,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 68087.36333333331
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_ramp_up_and_down_constraints(self):
         """
@@ -471,7 +471,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 80071268.56333333
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2periods_new_build_rps_w_rps_ineligible_storage(self):
         """
@@ -490,7 +490,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 940371813.2294321
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_2periods_new_build_rps_w_rps_eligible_storage(self):
         """
@@ -509,7 +509,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 945001614.7954971
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_solar(self):
         """
@@ -527,7 +527,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 62127.27439170666
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_solar_carbon_cap(self):
         """
@@ -545,7 +545,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 271066533.40358055
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_solar_carbon_cap_2zones_tx(self):
         """
@@ -564,7 +564,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 159168636.89700875
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
     def test_example_test_new_solar_carbon_cap_2zones_dont_count_tx(self):
         """
@@ -583,7 +583,7 @@ class TestExamples(unittest.TestCase):
         expected_objective = 142694316.98004726
 
         self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=5)
+                               places=1)
 
 if __name__ == "__main__":
     unittest.main()
