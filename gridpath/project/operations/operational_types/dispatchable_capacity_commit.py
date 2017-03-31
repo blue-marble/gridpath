@@ -575,6 +575,17 @@ def commitment_rule(mod, g, tmp):
     return mod.Commit_Capacity_MW[g, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    Capacity online in each timepoint
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    return mod.Commit_Capacity_MW[g, tmp]
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down and use energy (fuel) later

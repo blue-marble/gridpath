@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of must-run generators. Can't provide reserves.
+Operations of binary commit generators.
 """
 import csv
 import os.path
@@ -117,6 +117,16 @@ def commitment_rule(mod, g, tmp):
     return mod.Commit_Binary[g, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    Capacity online in each timepoint
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[g, tmp]
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down
@@ -131,7 +141,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:
@@ -142,7 +152,7 @@ def subhourly_curtailment_rule(mod, g, tmp):
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:

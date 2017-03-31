@@ -359,6 +359,7 @@ DROP TABLE IF EXISTS inputs_project_operational_chars;
 CREATE TABLE inputs_project_operational_chars (
 project_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
+technology VARCHAR(32),
 operational_type VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
@@ -377,13 +378,16 @@ min_down_time_hours INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
-technology VARCHAR(32),
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max
 lf_reserves_up_derate FLOAT,
 lf_reserves_down_derate FLOAT,
 regulation_up_derate FLOAT,
 regulation_down_derate FLOAT,
+lf_reserves_up_ramp_rate FLOAT,
+lf_reserves_down_ramp_rate FLOAT,
+regulation_up_ramp_rate FLOAT,
+regulation_down_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),

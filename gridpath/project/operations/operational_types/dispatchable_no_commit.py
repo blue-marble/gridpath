@@ -87,6 +87,17 @@ def power_provision_rule(mod, g, tmp):
     return mod.Provide_Power_DispNoCommit_MW[g, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    Since no commitment, all capacity assumed online
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]]
+
+
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision from dispatchable generators, if eligible, is an endogenous
@@ -113,7 +124,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:
@@ -124,7 +135,7 @@ def subhourly_curtailment_rule(mod, g, tmp):
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:

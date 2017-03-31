@@ -99,8 +99,6 @@ def generic_add_model_components(m, d,
                                  reserve_balancing_areas_set,
                                  reserve_project_operational_timepoints_set,
                                  reserve_provision_variable_name,
-                                 reserve_provision_ramp_rate_limit_param,
-                                 reserve_provision_ramp_rate_limit_constraint,
                                  reserve_provision_subhourly_adjustment_param):
     """
     Reserve-related components that will be used by the operational_type
@@ -113,8 +111,6 @@ def generic_add_model_components(m, d,
     :param reserve_balancing_areas_set:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
-    :param reserve_provision_ramp_rate_limit_param:
-    :param reserve_provision_ramp_rate_limit_constraint:
     :param reserve_provision_subhourly_adjustment_param:
     :return:
     """
@@ -152,42 +148,6 @@ def generic_add_model_components(m, d,
                   within=PercentFraction, default=1)
             )
 
-    # Ramp rate reserve limit (response time reserve limit)
-    # Some reserve products may require that generators respond within a
-    # certain amount of time, e.g. 1 minute, 10 minutes, etc.
-    # The maximum amount of reserves that a generator can provide is
-    # therefore limited by its ramp rate, e.g. if it can ramp up 60 MW an hour,
-    # then it will only be able to provide 10 MW of upward reserve for a
-    # reserve product with a 10-minute response requirement \
-    # Here, this derate param is specified as a fraction of generator capacity
-    # Defaults to 1 if not specified
-    setattr(m, reserve_provision_ramp_rate_limit_param,
-            Param(getattr(m, reserve_projects_set),
-                  within=PercentFraction, default=1)
-            )
-
-    def reserve_provision_ramp_rate_limit_rule(mod, p, tmp):
-        """
-        Don't create constraint if the project can ramp its full capacity in
-        the timepoint
-        :param mod:
-        :param p:
-        :param tmp:
-        :return:
-        """
-        if getattr(m, reserve_provision_ramp_rate_limit_param) == 1:
-            return Constraint.Skip
-        else:
-            return getattr(mod, reserve_provision_variable_name)[p, tmp] <= \
-                getattr(mod, reserve_provision_ramp_rate_limit_param)[p] \
-                * mod.Capacity_MW[p, mod.period[tmp]]
-    setattr(m, reserve_provision_ramp_rate_limit_constraint,
-            Constraint(
-                getattr(m, reserve_project_operational_timepoints_set),
-                rule=reserve_provision_ramp_rate_limit_rule
-            )
-            )
-
     # Energy adjustment from subhourly reserve provision
     # (e.g. for storage state of charge or how much variable RPS energy is
     # delivered because of subhourly reserve provision)
@@ -203,10 +163,8 @@ def generic_load_model_data(
         m, d, data_portal, scenario_directory, horizon, stage,
         ba_column_name,
         derate_column_name,
-        ramp_rate_limit_column_name,
         reserve_balancing_area_param,
         reserve_provision_derate_param,
-        reserve_provision_ramp_rate_limit_param,
         reserve_projects_set,
         reserve_provision_subhourly_adjustment_param,
         reserve_balancing_areas_input_file):
@@ -220,10 +178,8 @@ def generic_load_model_data(
     :param stage:
     :param ba_column_name:
     :param derate_column_name:
-    :param ramp_rate_limit_column_name:
     :param reserve_balancing_area_param:
     :param reserve_provision_derate_param:
-    :param reserve_provision_ramp_rate_limit_param:
     :param reserve_projects_set:
     :param reserve_provision_subhourly_adjustment_param:
     :param reserve_balancing_areas_input_file:
@@ -243,16 +199,6 @@ def generic_load_model_data(
     if derate_column_name in projects_file_header:
         columns_to_import += (derate_column_name, )
         params_to_import += (getattr(m, reserve_provision_derate_param),)
-    else:
-        pass
-
-    # Import reserve provision ramp rate limit parameter only if
-    # column is present
-    # Otherwise, the ramp rate limit param goes to its default of 1
-    if ramp_rate_limit_column_name in projects_file_header:
-        columns_to_import += (ramp_rate_limit_column_name, )
-        params_to_import += (getattr(m,
-                                     reserve_provision_ramp_rate_limit_param),)
     else:
         pass
 

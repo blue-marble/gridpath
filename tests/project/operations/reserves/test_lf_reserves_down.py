@@ -489,21 +489,6 @@ class TestLFReservesDownProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_derate, actual_derate)
 
-        # Param: lf_reserves_down_ramp_rate_limit (defaults to 1 if not
-        # specified)
-        expected_rr_limit = OrderedDict(sorted(
-            {"Battery": 1, "Battery_Specified": 1, "Gas_CCGT": 0.1,
-             "Gas_CCGT_New": 0.2, "Gas_CCGT_z2": 0.1, "Hydro": 0.2,
-             "Hydro_NonCurtailable": 0.2}.items()
-        )
-        )
-        actual_rr_limit = OrderedDict(sorted(
-            {prj: instance.lf_reserves_down_ramp_rate_limit[prj]
-             for prj in instance.LF_RESERVES_DOWN_PROJECTS}.items()
-        )
-        )
-        self.assertDictEqual(expected_rr_limit, actual_rr_limit)
-
         # Param: lf_reserves_down_provision_subhourly_energy_adjustment
         # (defaults to 0 if not specified)
         expected_adjustment = OrderedDict(sorted(

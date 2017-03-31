@@ -178,6 +178,17 @@ def power_provision_rule(mod, g, tmp):
     return mod.Provide_Variable_Power_MW[g, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    Since no commitment, all capacity assumed online
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]]
+
+
 # RPS
 def rec_provision_rule(mod, g, tmp):
     """

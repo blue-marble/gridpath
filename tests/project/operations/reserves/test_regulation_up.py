@@ -585,22 +585,6 @@ class TestRegulationUpProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_derate, actual_derate)
 
-        # Param: regulation_up_ramp_rate_limit (defaults to 1 if not
-        # specified)
-        expected_rr_limit = OrderedDict(sorted(
-            {"Battery": 0.05, "Battery_Specified": 0.05, "Coal": 0.05,
-             "Coal_z2": 0.05, "Gas_CCGT": 0.05, "Gas_CCGT_New": 0.05,
-             "Gas_CCGT_z2": 0.05, "Hydro": 0.05,
-             "Hydro_NonCurtailable": 0.05}.items()
-        )
-        )
-        actual_rr_limit = OrderedDict(sorted(
-            {prj: instance.regulation_up_ramp_rate_limit[prj]
-             for prj in instance.REGULATION_UP_PROJECTS}.items()
-        )
-        )
-        self.assertDictEqual(expected_rr_limit, actual_rr_limit)
-
         # Param: regulation_up_provision_subhourly_energy_adjustment
         # (defaults to 0 if not specified)
         expected_adjustment = OrderedDict(sorted(

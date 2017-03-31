@@ -263,6 +263,17 @@ def power_provision_rule(mod, s, tmp):
         - mod.Generic_Storage_Charge_MW[s, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    """
+    Since no commitment, all capacity assumed online
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]]
+
+
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Curtailment not allowed

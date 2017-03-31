@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of must-run generators. Can't provide reserves.
+Operations of continuous generators.
 """
 import csv
 import os.path
@@ -108,6 +108,10 @@ def commitment_rule(mod, g, tmp):
     return mod.Commit_Continuous[g, tmp]
 
 
+def online_capacity_rule(mod, g, tmp):
+    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Continuous[g, tmp]
+
+
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision from dispatchable generators is an endogenous variable.
@@ -133,7 +137,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:
@@ -144,7 +148,7 @@ def subhourly_curtailment_rule(mod, g, tmp):
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    Can't provide reserves
+    
     :param mod:
     :param g:
     :param tmp:
