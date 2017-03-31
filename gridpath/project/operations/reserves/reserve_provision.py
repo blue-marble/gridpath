@@ -13,7 +13,7 @@ from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
 
 from gridpath.auxiliary.dynamic_components import required_reserve_modules, \
     reserve_variable_derate_params, \
-    reserve_provision_subhourly_adjustment_params
+    reserve_to_energy_adjustment_params
 from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
     find_list_item_position
 
@@ -25,7 +25,7 @@ def generic_determine_dynamic_components(
         ba_column_name,
         reserve_provision_variable_name,
         reserve_provision_derate_param_name,
-        reserve_provision_subhourly_adjustment_param_name,
+        reserve_to_energy_adjustment_param_name,
         reserve_balancing_area_param_name
 ):
     """
@@ -39,7 +39,7 @@ def generic_determine_dynamic_components(
     :param ba_column_name:
     :param reserve_provision_variable_name:
     :param reserve_provision_derate_param_name:
-    :param reserve_provision_subhourly_adjustment_param_name:
+    :param reserve_to_energy_adjustment_param_name:
     :param reserve_balancing_area_param_name:
     :return:
     """
@@ -86,9 +86,9 @@ def generic_determine_dynamic_components(
     #  reserve type and by balancing area within each reserve type)
     # Will be used to get the right adjustment for each project providing a
     # particular reserve
-    getattr(d, reserve_provision_subhourly_adjustment_params)[
+    getattr(d, reserve_to_energy_adjustment_params)[
         reserve_provision_variable_name] = \
-        (reserve_provision_subhourly_adjustment_param_name,
+        (reserve_to_energy_adjustment_param_name,
          reserve_balancing_area_param_name)
 
 
@@ -99,7 +99,7 @@ def generic_add_model_components(m, d,
                                  reserve_balancing_areas_set,
                                  reserve_project_operational_timepoints_set,
                                  reserve_provision_variable_name,
-                                 reserve_provision_subhourly_adjustment_param):
+                                 reserve_to_energy_adjustment_param):
     """
     Reserve-related components that will be used by the operational_type
     modules
@@ -111,7 +111,7 @@ def generic_add_model_components(m, d,
     :param reserve_balancing_areas_set:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
-    :param reserve_provision_subhourly_adjustment_param:
+    :param reserve_to_energy_adjustment_param:
     :return:
     """
 
@@ -153,7 +153,7 @@ def generic_add_model_components(m, d,
     # delivered because of subhourly reserve provision)
     # This is an optional param, which will default to 0 if not specified
     # This param is used by the operational_type modules
-    setattr(m, reserve_provision_subhourly_adjustment_param,
+    setattr(m, reserve_to_energy_adjustment_param,
             Param(getattr(m, reserve_balancing_areas_set),
                   within=PercentFraction, default=0)
             )
@@ -166,7 +166,7 @@ def generic_load_model_data(
         reserve_balancing_area_param,
         reserve_provision_derate_param,
         reserve_projects_set,
-        reserve_provision_subhourly_adjustment_param,
+        reserve_to_energy_adjustment_param,
         reserve_balancing_areas_input_file):
     """
 
@@ -181,7 +181,7 @@ def generic_load_model_data(
     :param reserve_balancing_area_param:
     :param reserve_provision_derate_param:
     :param reserve_projects_set:
-    :param reserve_provision_subhourly_adjustment_param:
+    :param reserve_to_energy_adjustment_param:
     :param reserve_balancing_areas_input_file:
     :return:
     """
@@ -220,12 +220,12 @@ def generic_load_model_data(
         scenario_directory, "inputs", reserve_balancing_areas_input_file),
         sep="\t", header=None, nrows=1).values[0]
 
-    if "reserve_provision_subhourly_adjustment" in ba_file_header:
+    if "reserve_to_energy_adjustment" in ba_file_header:
         data_portal.load(filename=os.path.join(
             scenario_directory, "inputs", reserve_balancing_areas_input_file),
             select=("balancing_area",
-                    "reserve_provision_subhourly_adjustment"),
-            param=reserve_provision_subhourly_adjustment_param
+                    "reserve_to_energy_adjustment"),
+            param=reserve_to_energy_adjustment_param
                          )
 
 

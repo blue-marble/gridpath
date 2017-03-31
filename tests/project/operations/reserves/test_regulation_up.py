@@ -585,7 +585,7 @@ class TestRegulationUpProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_derate, actual_derate)
 
-        # Param: regulation_up_provision_subhourly_energy_adjustment
+        # Param: regulation_up_reserve_to_energy_adjustment
         # (defaults to 0 if not specified)
         expected_adjustment = OrderedDict(sorted(
             {"Zone1": 0, "Zone2": 0}.items()
@@ -593,7 +593,7 @@ class TestRegulationUpProvision(unittest.TestCase):
         )
         actual_adjustment = OrderedDict(sorted(
             {z: instance.
-                regulation_up_provision_subhourly_energy_adjustment[z]
+                regulation_up_reserve_to_energy_adjustment[z]
              for z in instance.REGULATION_UP_ZONES}.items()
         )
         )

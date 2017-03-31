@@ -150,6 +150,7 @@ CREATE TABLE inputs_geography_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
@@ -167,6 +168,7 @@ CREATE TABLE inputs_geography_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)

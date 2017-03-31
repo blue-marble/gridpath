@@ -1,2 +1,2 @@
-balancing_area	violation_penalty_per_mw	reserve_provision_subhourly_adjustment
+balancing_area	violation_penalty_per_mw	reserve_to_energy_adjustment
 Zone1	999999999	.1

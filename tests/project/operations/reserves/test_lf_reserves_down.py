@@ -489,7 +489,7 @@ class TestLFReservesDownProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_derate, actual_derate)
 
-        # Param: lf_reserves_down_provision_subhourly_energy_adjustment
+        # Param: lf_reserves_down_reserve_to_energy_adjustment
         # (defaults to 0 if not specified)
         expected_adjustment = OrderedDict(sorted(
             {"Zone1": .1, "Zone2": 0}.items()
@@ -497,7 +497,7 @@ class TestLFReservesDownProvision(unittest.TestCase):
         )
         actual_adjustment = OrderedDict(sorted(
             {z: instance.
-                lf_reserves_down_provision_subhourly_energy_adjustment[z]
+                lf_reserves_down_reserve_to_energy_adjustment[z]
              for z in instance.LF_RESERVES_DOWN_ZONES}.items()
         )
         )

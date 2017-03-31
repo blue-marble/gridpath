@@ -53,10 +53,12 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         # Write header
         writer.writerow(["balancing_area",
-                         "violation_penalty_per_mw"])
+                         "violation_penalty_per_mw",
+                         "reserve_to_energy_adjustment"])
 
         lf_up_bas = c.execute(
-            """SELECT lf_reserves_up_ba, violation_penalty_per_mw
+            """SELECT lf_reserves_up_ba, 
+            violation_penalty_per_mw, reserve_to_energy_adjustment
                FROM inputs_geography_lf_reserves_up_bas
                WHERE lf_reserves_up_ba_scenario_id = {};""".format(
                 subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID
@@ -64,4 +66,5 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         ).fetchall()
 
         for row in lf_up_bas:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 from gridpath.auxiliary.dynamic_components import \
     headroom_variables, footroom_variables, \
-    reserve_provision_subhourly_adjustment_params
+    reserve_to_energy_adjustment_params
 
 
 def footroom_subhourly_energy_adjustment_rule(d, mod, g, tmp):
@@ -33,13 +33,13 @@ def footroom_subhourly_energy_adjustment_rule(d, mod, g, tmp):
             # subhourly_adjustment_param[this type of reserve][
             getattr(mod,
                     getattr(d,
-                            reserve_provision_subhourly_adjustment_params
+                            reserve_to_energy_adjustment_params
                             )[c][0]  # this is the adjustment param name
                     )[
                 getattr(mod,
                         getattr(
                             d,
-                            reserve_provision_subhourly_adjustment_params
+                            reserve_to_energy_adjustment_params
                         )[c][1]  # this is the balancing area param name
                         )[g]  # the balancing area (value) varies by g
             ]  # the index of the adjustment param is a balancing area
@@ -77,13 +77,13 @@ def headroom_subhourly_energy_adjustment_rule(d, mod, g, tmp):
             # subhourly_adjustment_param[this type of reserve][
             getattr(mod,
                     getattr(d,
-                            reserve_provision_subhourly_adjustment_params
+                            reserve_to_energy_adjustment_params
                             )[c][0]  # this is the adjustment param name
                     )[
                 getattr(mod,
                         getattr(
                             d,
-                            reserve_provision_subhourly_adjustment_params
+                            reserve_to_energy_adjustment_params
                         )[c][1]  # this is the balancing area param name
                         )[g]  # the balancing area (value) varies by g
             ]  # the index of the adjustment param is a balancing area
