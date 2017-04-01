@@ -16,16 +16,7 @@ def generic_add_model_components(
     """
     Generic treatment of reserves. This function creates model components
     related to a particular reserve requirement, including
-    2) the reserve zone param name
-    3) the 2-dimensional set of reserve zones and timepoints for the requirement
-    4) a variable for violating the requirement and a penalty for violation
-    5) the reserve requirement (currently by zone and timepoint)
-    6) the set of generators that can provide reserves
-    7) the name of the generator-level reserve provision variable
-    8) an expression aggregating generator-level provision to total provision
-    9) the constraint ensuring total provision exceeds the requirement
-    10) an expression for total penalty costs that may have been incurred to add
-    to the objective function
+    1) an expression aggregating generator-level provision to total provision
     :param m:
     :param d:
     :param reserve_zone_param:

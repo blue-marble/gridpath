@@ -37,6 +37,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
+            """SELECT frequency_response_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.RPS_ZONE_SCENARIO_ID = cursor.execute(
             """SELECT rps_zone_scenario_id
                FROM scenarios
@@ -69,6 +75,12 @@ class SubScenarios:
 
         self.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID = cursor.execute(
             """SELECT project_lf_reserves_down_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
+        self.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
+            """SELECT project_frequency_response_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
@@ -191,6 +203,12 @@ class SubScenarios:
 
         self.LF_RESERVES_DOWN_SCENARIO_ID = cursor.execute(
             """SELECT lf_reserves_down_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
+        self.FREQUENCY_RESPONSE_SCENARIO_ID = cursor.execute(
+            """SELECT frequency_response_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
@@ -342,6 +360,14 @@ if __name__ == "__main__":
     ).fetchone()[0]
     if OPTIONAL_MODULE_REGULATION_DOWN:
         MODULE_LIST.append("regulation_down")
+
+    OPTIONAL_MODULE_FREQUENCY_RESPONSE = c.execute(
+        """SELECT om_frequency_response
+           FROM scenarios
+           WHERE scenario_id = {};""".format(SCENARIO_ID)
+    ).fetchone()[0]
+    if OPTIONAL_MODULE_FREQUENCY_RESPONSE:
+        MODULE_LIST.append("frequency_response")
 
     OPTIONAL_MODULE_RPS = c.execute(
         """SELECT om_rps

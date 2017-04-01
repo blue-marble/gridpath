@@ -174,6 +174,25 @@ FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_geography_frequency_response_bas;
+CREATE TABLE subscenarios_geography_frequency_response_bas (
+frequency_response_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_frequency_response_bas;
+CREATE TABLE inputs_geography_frequency_response_bas (
+frequency_response_ba_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
+PRIMARY KEY (frequency_response_ba_scenario_id, frequency_response_ba),
+FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
+subscenarios_geography_frequency_response_bas
+(frequency_response_ba_scenario_id)
+);
+
 -- RPS
 -- This is the unit at which RPS requirements are met in the model; it can be
 -- different from the load zones
@@ -386,10 +405,12 @@ lf_reserves_up_derate FLOAT,
 lf_reserves_down_derate FLOAT,
 regulation_up_derate FLOAT,
 regulation_down_derate FLOAT,
+frequency_response_derate FLOAT,
 lf_reserves_up_ramp_rate FLOAT,
 lf_reserves_down_ramp_rate FLOAT,
 regulation_up_ramp_rate FLOAT,
 regulation_down_ramp_rate FLOAT,
+frequency_response_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -541,6 +562,37 @@ REFERENCES subscenarios_project_lf_reserves_down_bas
  (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_frequency_response_bas;
+CREATE TABLE subscenarios_project_frequency_response_bas (
+frequency_response_ba_scenario_id INTEGER,
+project_frequency_response_ba_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (frequency_response_ba_scenario_id,
+project_frequency_response_ba_scenario_id),
+FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
+subscenarios_geography_frequency_response_bas
+(frequency_response_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_frequency_response_bas;
+CREATE TABLE inputs_project_frequency_response_bas (
+frequency_response_ba_scenario_id INTEGER,
+project_frequency_response_ba_scenario_id INTEGER,
+project VARCHAR(64),
+frequency_response_ba VARCHAR(32),
+contribute_to_partial INTEGER,
+PRIMARY KEY (frequency_response_ba_scenario_id,
+project_frequency_response_ba_scenario_id, project),
+FOREIGN KEY (frequency_response_ba_scenario_id,
+project_frequency_response_ba_scenario_id)
+REFERENCES subscenarios_project_frequency_response_bas
+ (frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
+FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
+subscenarios_geography_frequency_response_bas
+(frequency_response_ba_scenario_id)
 );
 
 -- Project RPS zones
@@ -916,6 +968,30 @@ FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
+
+-- Frequency response
+DROP TABLE IF EXISTS subscenarios_system_frequency_response;
+CREATE TABLE subscenarios_system_frequency_response (
+frequency_response_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- timepoint_scenario_id and reserves_scenario_id
+DROP TABLE IF EXISTS inputs_system_frequency_response;
+CREATE TABLE inputs_system_frequency_response (
+frequency_response_scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+timepoint INTEGER,
+frequency_response_mw FLOAT,
+frequency_response_partial_mw FLOAT,
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, timepoint),
+FOREIGN KEY (frequency_response_scenario_id) REFERENCES
+subscenarios_system_frequency_response (frequency_response_scenario_id)
+);
+
 -- -- Policy -- --
 
 -- RPS requirements
@@ -981,6 +1057,7 @@ om_lf_reserves_up INTEGER,
 om_lf_reserves_down INTEGER,
 om_regulation_up INTEGER,
 om_regulation_down INTEGER,
+om_frequency_response INTEGER,
 om_rps INTEGER,
 om_carbon_cap INTEGER,
 om_track_carbon_imports INTEGER,
@@ -988,12 +1065,14 @@ timepoint_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_down_ba_scenario_id INTEGER,
+frequency_response_ba_scenario_id INTEGER,
 rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
+project_frequency_response_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
@@ -1014,6 +1093,7 @@ transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
 load_scenario_id INTEGER,
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_down_scenario_id INTEGER,
+frequency_response_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 FOREIGN KEY (timepoint_scenario_id) REFERENCES
@@ -1024,6 +1104,9 @@ FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
+subscenarios_geography_frequency_response_bas
+(frequency_response_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
@@ -1047,6 +1130,10 @@ FOREIGN KEY (lf_reserves_down_ba_scenario_id,
 project_lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_project_lf_reserves_down_bas
 (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (frequency_response_ba_scenario_id,
+project_frequency_response_ba_scenario_id) REFERENCES
+subscenarios_project_frequency_response_bas
+(frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
 subscenarios_project_rps_zones
 (rps_zone_scenario_id, project_rps_zone_scenario_id),
@@ -1093,6 +1180,8 @@ FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id),
 FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id),
+FOREIGN KEY (frequency_response_scenario_id) REFERENCES
+subscenarios_system_frequency_response (frequency_response_scenario_id),
 FOREIGN KEY (rps_target_scenario_id) REFERENCES
 subscenarios_system_rps_targets (rps_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
