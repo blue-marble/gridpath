@@ -8,7 +8,8 @@ Operations of curtailable conventional hydro generators
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, value
+from pyomo.environ import Var, Set, Param, Constraint, \
+    Expression, NonNegativeReals, PercentFraction, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -48,6 +49,12 @@ def add_module_specific_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.HYDRO_CURTAILABLE_PROJECTS))
+
+    # Ramp rates can be optionally specified and will default to 1 if not
+    m.hydro_curtailable_ramp_up_rate = \
+        Param(m.HYDRO_CURTAILABLE_PROJECTS, within=PercentFraction, default=1)
+    m.hydro_curtailable_ramp_down_rate = \
+        Param(m.HYDRO_CURTAILABLE_PROJECTS, within=PercentFraction, default=1)
 
     # Variables
     m.Hydro_Curtailable_Provide_Power_MW = \
@@ -117,6 +124,74 @@ def add_module_specific_components(m, d):
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=min_power_rule
+        )
+
+    # Constrain ramps
+    def ramp_expression_rule(mod, g, tmp):
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            pass
+        else:
+            return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
+                        mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
+                       (mod.Hydro_Curtailable_Provide_Power_MW[
+                        g, mod.previous_timepoint[tmp]
+                        ]
+                        + mod.Hydro_Curtailable_Curtail_MW[
+                            g, mod.previous_timepoint[tmp]
+                        ])
+
+    m.Hydro_Curtailable_Ramp_MW = Expression(
+        m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_expression_rule
+    )
+
+    def ramp_up_rule(mod, g, tmp):
+        """
+        
+        :param mod: 
+        :param g: 
+        :param tmp: 
+        :return: 
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        elif mod.hydro_curtailable_ramp_up_rate[g] == 1:
+            return Constraint.Skip
+        else:
+            return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
+                <= \
+                mod.hydro_curtailable_ramp_up_rate[g] \
+                * mod.Capacity_MW[g, mod.period[tmp]]
+    m.Hydro_Curtailable_Ramp_Up_Constraint = \
+        Constraint(
+            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=ramp_up_rule
+        )
+
+    def ramp_down_rule(mod, g, tmp):
+        """
+
+        :param mod: 
+        :param g: 
+        :param tmp: 
+        :return: 
+        """
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        elif mod.hydro_curtailable_ramp_down_rate[g] == 1:
+            return Constraint.Skip
+        else:
+            return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
+                >= \
+                - mod.hydro_curtailable_ramp_down_rate[g] \
+                * mod.Capacity_MW[g, mod.period[tmp]]
+    m.Hydro_Curtailable_Ramp_Down_Constraint = \
+        Constraint(
+            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=ramp_down_rule
         )
 
 
@@ -250,13 +325,13 @@ def load_module_specific_data(m,
         else:
             pass
 
-    # Determine subset of project-timepoints in variable profiles file
+    # Determine subset of project-horizons in hydro budgets file
     project_horizons = list()
     mwa = dict()
     min_mw = dict()
     max_mw = dict()
 
-    prj_tmp_cf_df = \
+    prj_hor_opchar_df = \
         pd.read_csv(
             os.path.join(scenario_directory, horizon, "inputs",
                          "hydro_conventional_horizon_params.tab"),
@@ -267,11 +342,11 @@ def load_module_specific_data(m,
                 "hydro_max_power_mw"
             ]
         )
-    for row in zip(prj_tmp_cf_df["hydro_project"],
-                   prj_tmp_cf_df["horizon"],
-                   prj_tmp_cf_df["hydro_average_power_mwa"],
-                   prj_tmp_cf_df["hydro_min_power_mw"],
-                   prj_tmp_cf_df["hydro_max_power_mw"]):
+    for row in zip(prj_hor_opchar_df["hydro_project"],
+                   prj_hor_opchar_df["horizon"],
+                   prj_hor_opchar_df["hydro_average_power_mwa"],
+                   prj_hor_opchar_df["hydro_min_power_mw"],
+                   prj_hor_opchar_df["hydro_max_power_mw"]):
         if row[0] in projects:
             project_horizons.append((row[0], row[1]))
             mwa[(row[0], row[1])] = float(row[2])
@@ -289,6 +364,52 @@ def load_module_specific_data(m,
     data_portal.data()["hydro_curtailable_average_power_mwa"] = mwa
     data_portal.data()["hydro_curtailable_min_power_mw"] = min_mw
     data_portal.data()["hydro_curtailable_max_power_mw"] = max_mw
+
+    # Ramp rate limits are optional, will default to 1 if not specified
+    ramp_up_rate = dict()
+    ramp_down_rate = dict()
+    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+                                      "projects.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+
+    optional_columns = ["ramp_up_when_on_rate",
+                        "ramp_down_when_on_rate"]
+    used_columns = [c for c in optional_columns if c in header]
+
+    dynamic_components = \
+        pd.read_csv(
+            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            sep="\t",
+            usecols=["project", "operational_type"] + used_columns
+            )
+
+    if "ramp_up_when_on_rate" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "ramp_up_when_on_rate"]
+                       ):
+            if row[1] == "hydro_curtailable" and row[2] != ".":
+                ramp_up_rate[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "hydro_curtailable_ramp_up_rate"] = \
+            ramp_up_rate
+
+    if "ramp_down_when_on_rate" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components[
+                           "ramp_down_when_on_rate"]
+                       ):
+            if row[1] == "hydro_curtailable" and row[2] != ".":
+                ramp_down_rate[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()[
+            "hydro_curtailable_ramp_down_rate"] = \
+            ramp_down_rate
 
 
 def export_module_specific_results(mod, d, scenario_directory, horizon, stage):

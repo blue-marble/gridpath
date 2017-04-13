@@ -13,8 +13,8 @@ Gas_CT_z2	Zone2	existing_gen_no_economic_retirement	2	dispatchable_capacity_comm
 Wind_z2	Zone2	existing_gen_no_economic_retirement	0	variable	.	.	.	.	.	.	.	.	.	.	.	.	.	.	RPS_Zone_2	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Battery	Zone1	new_build_storage	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	1	.	.	.	.	.	.	.	.	.	.	.	1	1	0.05	0.05	Zone1	0	.	1
 Battery_Specified	Zone1	storage_specified_no_economic_retirement	0	storage_generic	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	0.8	0.8	.	.	.	0.5	0.5	0.5	0.5	.	.	.	.	.	.	.	.	.	0.05	0.05	Zone1	0	0.5	.
-Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_curtailable	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.2	0.2	0.05	0.05	Zone1	0	.	0.2
-Hydro_NonCurtailable	Zone1	existing_gen_no_economic_retirement	0	hydro_noncurtailable	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.2	0.2	0.05	0.05	Zone1	0	.	0.2
+Hydro	Zone1	existing_gen_no_economic_retirement	0	hydro_curtailable	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.5	0.5	.	.	.	0.2	0.2	0.05	0.05	Zone1	0	.	0.2
+Hydro_NonCurtailable	Zone1	existing_gen_no_economic_retirement	0	hydro_noncurtailable	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	0.5	0.5	.	.	.	0.2	0.2	0.05	0.05	Zone1	0	.	0.2
 Disp_Binary_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_binary_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.	.	.	.	.
 Disp_Cont_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Gas	500	8	.	.	.	ha	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.	.	.	.	.
 Disp_No_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_no_commit	.	.	.	.	.	.	.	Gas	500	8	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.	.	.	.	.

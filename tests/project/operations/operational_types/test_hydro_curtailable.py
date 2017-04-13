@@ -201,5 +201,31 @@ class TestHydroCurtailable(unittest.TestCase):
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
+        # Param: hydro_curtailable_ramp_up_rate
+        expected_ramp_up = OrderedDict(
+            sorted({"Hydro": 0.5}.items())
+        )
+        actual_ramp_up = OrderedDict(
+            sorted(
+                {prj: instance.hydro_curtailable_ramp_up_rate[prj]
+                 for prj in instance.HYDRO_CURTAILABLE_PROJECTS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_ramp_up, actual_ramp_up)
+
+        # Param: hydro_curtailable_ramp_down_rate
+        expected_ramp_down = OrderedDict(
+            sorted({"Hydro": 0.5}.items())
+        )
+        actual_ramp_down = OrderedDict(
+            sorted(
+                {prj: instance.hydro_curtailable_ramp_down_rate[prj]
+                 for prj in instance.HYDRO_CURTAILABLE_PROJECTS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_ramp_down, actual_ramp_down)
+
 if __name__ == "__main__":
     unittest.main()

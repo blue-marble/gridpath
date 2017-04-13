@@ -37,7 +37,7 @@ except ImportError:
           " to test.")
 
 
-class TestHydroCurtailable(unittest.TestCase):
+class TestHydroNonCurtailable(unittest.TestCase):
     """
 
     """
@@ -256,6 +256,32 @@ class TestHydroCurtailable(unittest.TestCase):
             instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
+
+        # Param: hydro_noncurtailable_ramp_up_rate
+        expected_ramp_up = OrderedDict(
+            sorted({"Hydro_NonCurtailable": 0.5}.items())
+        )
+        actual_ramp_up = OrderedDict(
+            sorted(
+                {prj: instance.hydro_noncurtailable_ramp_up_rate[prj]
+                 for prj in instance.HYDRO_NONCURTAILABLE_PROJECTS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_ramp_up, actual_ramp_up)
+
+        # Param: hydro_noncurtailable_ramp_down_rate
+        expected_ramp_down = OrderedDict(
+            sorted({"Hydro_NonCurtailable": 0.5}.items())
+        )
+        actual_ramp_down = OrderedDict(
+            sorted(
+                {prj: instance.hydro_noncurtailable_ramp_down_rate[prj]
+                 for prj in instance.HYDRO_NONCURTAILABLE_PROJECTS
+                 }.items()
+            )
+        )
+        self.assertDictEqual(expected_ramp_down, actual_ramp_down)
 
 if __name__ == "__main__":
     unittest.main()
