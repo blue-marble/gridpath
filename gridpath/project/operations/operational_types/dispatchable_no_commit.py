@@ -163,8 +163,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-# TODO: what should these return -- what is the no-commit modeling?
-def startup_rule(mod, g, tmp):
+def startup_shutdown_rule(mod, g, tmp):
     """
     No commit variables, so shouldn't happen
     :param mod:
@@ -172,23 +171,6 @@ def startup_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise(ValueError(
-        "ERROR! No-commit generators should not incur startup costs." + "\n" +
-        "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup costs to '.' (no value).")
-    )
+    return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
+        mod.Provide_Power_DispNoCommit_MW[g, mod.previous_timepoint[tmp]]
 
-
-def shutdown_rule(mod, g, tmp):
-    """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    raise(ValueError(
-        "ERROR! No-commit generators should not incur shutdown costs." + "\n" +
-        "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its shutdown costs to '.' (no value).")
-    )

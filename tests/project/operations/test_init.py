@@ -92,7 +92,7 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_startup_projects,
                              actual_startup_projects)
 
-        # Param: startup_cost_per_unit
+        # Param: startup_cost_per_mw
         expected_startup_costs = OrderedDict(sorted({
             "Gas_CCGT": 1,
             "Coal": 1,
@@ -106,7 +106,7 @@ class TestOperationsInit(unittest.TestCase):
                                                     )
                                              )
         actual_startup_costs = OrderedDict(sorted(
-            {prj: instance.startup_cost_per_unit[prj]
+            {prj: instance.startup_cost_per_mw[prj]
              for prj in instance.STARTUP_COST_PROJECTS}.items()
                                                   )
                                            )
@@ -124,7 +124,7 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_shutdown_projects,
                              actual_shutdown_projects)
 
-        # Param: shutdown_cost_per_unit
+        # Param: shutdown_cost_per_mw
         expected_shutdown_costs = OrderedDict(sorted({
             "Gas_CCGT": 2,
             "Gas_CT": 1,
@@ -138,7 +138,7 @@ class TestOperationsInit(unittest.TestCase):
                                                      )
                                               )
         actual_shutdown_costs = OrderedDict(sorted(
-            {prj: instance.shutdown_cost_per_unit[prj]
+            {prj: instance.shutdown_cost_per_mw[prj]
              for prj in instance.SHUTDOWN_COST_PROJECTS}.items()
                                                    )
                                             )

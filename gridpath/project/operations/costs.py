@@ -61,7 +61,7 @@ def add_model_components(m, d):
                              rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
-    def startup_rule(mod, g, tmp):
+    def startup_shutdown_rule(mod, g, tmp):
         """
         Track units started up from timepoint to timepoint; get appropriate
         expression from the generator's operational module.
@@ -72,28 +72,13 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            startup_rule(mod, g, tmp)
+            startup_shutdown_rule(mod, g, tmp)
 
-    m.Startup_Expression = Expression(
-        m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=startup_rule)
+    m.Startup_Shutdown_Expression = Expression(
+        m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS
+        | m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=startup_shutdown_rule)
 
-    def shutdown_rule(mod, g, tmp):
-        """
-        Track units shut down from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            shutdown_rule(mod, g, tmp)
-
-    m.Shutdown_Expression = Expression(
-        m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=shutdown_rule)
     m.Startup_Cost = Var(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
     m.Shutdown_Cost = Var(m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -120,8 +105,8 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
-                   >= mod.Startup_Expression[g, tmp] \
-                      * mod.startup_cost_per_unit[g]
+                   >= mod.Startup_Shutdown_Expression[g, tmp] \
+                   * mod.startup_cost_per_mw[g]
 
     m.Startup_Cost_Constraint = \
         Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -148,13 +133,12 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
-                   >= mod.Shutdown_Expression[g, tmp] \
-                      * mod.shutdown_cost_per_unit[g]
+                   >= mod.Startup_Shutdown_Expression[g, tmp] \
+                   * mod.shutdown_cost_per_mw[g]
 
     m.Shutdown_Cost_Constraint = Constraint(
         m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_cost_rule)
-
 
 
 def export_results(scenario_directory, horizon, stage, m, d):

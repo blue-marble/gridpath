@@ -19,5 +19,5 @@ Zone1     2020   unspecified                   80            100
 ### RPS RESULTS ###
                  rps_target_mwh  delivered_rps_energy_mwh  curtailed_rps_energy_mwh  percent_curtailed       dual  rps_marginal_cost_per_mwh
 rps_zone period                                                                                                                             
-RPSZone1 2020                50                        50                        -0                 -0  7,128,258                    712,826
-         2030                50                        50                        23                 31 18,599,740                  1,859,974
+RPSZone1 2020                50                        50                        -0                 -0  7,128,255                    712,826
+         2030                50                        50                        23                 31 18,599,730                  1,859,973

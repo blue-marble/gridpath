@@ -23,8 +23,8 @@ def add_model_components(m, d):
 
     # Generators that incur startup/shutdown costs
     m.STARTUP_COST_PROJECTS = Set(within=m.PROJECTS)
-    m.startup_cost_per_unit = Param(m.STARTUP_COST_PROJECTS,
-                                    within=PositiveReals)
+    m.startup_cost_per_mw = Param(m.STARTUP_COST_PROJECTS,
+                                  within=PositiveReals)
 
     m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
@@ -33,8 +33,8 @@ def add_model_components(m, d):
                 if g in mod.STARTUP_COST_PROJECTS))
 
     m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS)
-    m.shutdown_cost_per_unit = Param(m.SHUTDOWN_COST_PROJECTS,
-                                     within=PositiveReals)
+    m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PROJECTS,
+                                   within=PositiveReals)
 
     m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
@@ -104,7 +104,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         None: determine_startup_cost_projects()[0]
     }
 
-    data_portal.data()["startup_cost_per_unit"] = \
+    data_portal.data()["startup_cost_per_mw"] = \
         determine_startup_cost_projects()[1]
 
     # SHUTDOWN_COST_PROJECTS
@@ -141,7 +141,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         None: determine_shutdown_cost_projects()[0]
     }
 
-    data_portal.data()["shutdown_cost_per_unit"] = \
+    data_portal.data()["shutdown_cost_per_mw"] = \
         determine_shutdown_cost_projects()[1]
 
     # FUEL_PROJECTS

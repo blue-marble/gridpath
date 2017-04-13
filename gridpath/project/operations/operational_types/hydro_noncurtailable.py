@@ -201,7 +201,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_rule(mod, g, tmp):
+def startup_shutdown_rule(mod, g, tmp):
     """
 
     :param mod:
@@ -209,18 +209,12 @@ def startup_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return 0
-
-
-def shutdown_rule(mod, g, tmp):
-    """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
-    """
-    return 0
+    raise (ValueError(
+        "ERROR! Hydro generators should not incur startup/shutdown costs." +
+        "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its startup/shutdown costs to '.' (no value).")
+    )
 
 
 def load_module_specific_data(m,

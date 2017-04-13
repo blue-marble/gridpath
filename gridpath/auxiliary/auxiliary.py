@@ -6,7 +6,6 @@ Various auxiliary functions used in other modules
 """
 
 from importlib import import_module
-import os.path
 import pandas as pd
 from pyomo.environ import value
 
@@ -66,7 +65,7 @@ def load_operational_type_modules(required_operational_modules):
         required_operational_modules,
         "gridpath.project.operations.operational_types",
         ["power_provision_rule", "fuel_burn_rule",
-         "startup_rule", "shutdown_rule"]
+         "startup_shutdown_rule"]
          )
 
 
