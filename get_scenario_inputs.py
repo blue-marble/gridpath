@@ -7,7 +7,7 @@ import os.path
 import sqlite3
 import sys
 
-from gridpath.auxiliary.module_list import get_modules, load_modules
+from gridpath.auxiliary.module_list import get_features, load_modules
 
 
 # Get subscenarios
@@ -310,125 +310,125 @@ if __name__ == "__main__":
             scenario_id_file:
         scenario_id_file.write(str(SCENARIO_ID))
 
-    # Get modules we'll be using
-    MODULE_LIST = list()
+    # Get names of features we'll be using
+    FEATURE_LIST = list()
 
-    OPTIONAL_MODULE_FUELS = c.execute(
-        """SELECT om_fuels
+    OPTIONAL_FEATURE_FUELS = c.execute(
+        """SELECT of_fuels
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_FUELS:
-        MODULE_LIST.append("fuels")
+    if OPTIONAL_FEATURE_FUELS:
+        FEATURE_LIST.append("fuels")
 
     OPTIONAL_MULTI_STAGE = c.execute(
-        """SELECT om_multi_stage
+        """SELECT of_multi_stage
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
     if OPTIONAL_MULTI_STAGE:
-        MODULE_LIST.append("multi_stage")
+        FEATURE_LIST.append("multi_stage")
 
-    OPTIONAL_MODULE_TRANSMISSION = c.execute(
-        """SELECT om_transmission
+    OPTIONAL_FEATURE_TRANSMISSION = c.execute(
+        """SELECT of_transmission
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_TRANSMISSION:
-        MODULE_LIST.append("transmission")
+    if OPTIONAL_FEATURE_TRANSMISSION:
+        FEATURE_LIST.append("transmission")
 
-    OPTIONAL_MODULE_TRANSMISSION_HURDLE_RATES = c.execute(
-        """SELECT om_transmission_hurdle_rates
+    OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES = c.execute(
+        """SELECT of_transmission_hurdle_rates
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_TRANSMISSION_HURDLE_RATES:
-        MODULE_LIST.append("transmission_hurdle_rates")
+    if OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES:
+        FEATURE_LIST.append("transmission_hurdle_rates")
 
-    OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS = c.execute(
-        """SELECT om_simultaneous_flow_limits
+    OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS = c.execute(
+        """SELECT of_simultaneous_flow_limits
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_SIMULTANEOUS_FLOW_LIMITS:
-        MODULE_LIST.append("simultaneous_flow_limits")
+    if OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS:
+        FEATURE_LIST.append("simultaneous_flow_limits")
 
-    OPTIONAL_MODULE_LF_RESERVES_UP = c.execute(
-        """SELECT om_lf_reserves_up
+    OPTIONAL_FEATURE_LF_RESERVES_UP = c.execute(
+        """SELECT of_lf_reserves_up
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_LF_RESERVES_UP:
-        MODULE_LIST.append("lf_reserves_up")
+    if OPTIONAL_FEATURE_LF_RESERVES_UP:
+        FEATURE_LIST.append("lf_reserves_up")
 
-    OPTIONAL_MODULE_LF_RESERVES_DOWN = c.execute(
-        """SELECT om_lf_reserves_down
+    OPTIONAL_FEATURE_LF_RESERVES_DOWN = c.execute(
+        """SELECT of_lf_reserves_down
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_LF_RESERVES_DOWN:
-        MODULE_LIST.append("lf_reserves_down")
+    if OPTIONAL_FEATURE_LF_RESERVES_DOWN:
+        FEATURE_LIST.append("lf_reserves_down")
 
-    OPTIONAL_MODULE_REGULATION_UP = c.execute(
-        """SELECT om_regulation_up
+    OPTIONAL_FEATURE_REGULATION_UP = c.execute(
+        """SELECT of_regulation_up
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_REGULATION_UP:
-        MODULE_LIST.append("regulation_up")
+    if OPTIONAL_FEATURE_REGULATION_UP:
+        FEATURE_LIST.append("regulation_up")
 
-    OPTIONAL_MODULE_REGULATION_DOWN = c.execute(
-        """SELECT om_regulation_down
+    OPTIONAL_FEATURE_REGULATION_DOWN = c.execute(
+        """SELECT of_regulation_down
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_REGULATION_DOWN:
-        MODULE_LIST.append("regulation_down")
+    if OPTIONAL_FEATURE_REGULATION_DOWN:
+        FEATURE_LIST.append("regulation_down")
 
-    OPTIONAL_MODULE_FREQUENCY_RESPONSE = c.execute(
-        """SELECT om_frequency_response
+    OPTIONAL_FEATURE_FREQUENCY_RESPONSE = c.execute(
+        """SELECT of_frequency_response
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_FREQUENCY_RESPONSE:
-        MODULE_LIST.append("frequency_response")
+    if OPTIONAL_FEATURE_FREQUENCY_RESPONSE:
+        FEATURE_LIST.append("frequency_response")
 
-    OPTIONAL_MODULE_RPS = c.execute(
-        """SELECT om_rps
+    OPTIONAL_FEATURE_RPS = c.execute(
+        """SELECT of_rps
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_RPS:
-        MODULE_LIST.append("rps")
+    if OPTIONAL_FEATURE_RPS:
+        FEATURE_LIST.append("rps")
 
-    OPTIONAL_MODULE_CARBON_CAP = c.execute(
-        """SELECT om_carbon_cap
+    OPTIONAL_FEATURE_CARBON_CAP = c.execute(
+        """SELECT of_carbon_cap
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_CARBON_CAP:
-        MODULE_LIST.append("carbon_cap")
+    if OPTIONAL_FEATURE_CARBON_CAP:
+        FEATURE_LIST.append("carbon_cap")
 
-    OPTIONAL_MODULE_TRACK_CARBON_IMPORTS = c.execute(
-        """SELECT om_track_carbon_imports
+    OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS = c.execute(
+        """SELECT of_track_carbon_imports
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MODULE_TRACK_CARBON_IMPORTS:
-        MODULE_LIST.append("track_carbon_imports")
+    if OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS:
+        FEATURE_LIST.append("track_carbon_imports")
 
-    # modules.csv
-    with open(os.path.join(SCENARIO_DIRECTORY, "modules.csv"), "w") as \
-            modules_csv_file:
-        writer = csv.writer(modules_csv_file, delimiter=",")
+    # features.csv
+    with open(os.path.join(SCENARIO_DIRECTORY, "features.csv"), "w") as \
+            features_csv_file:
+        writer = csv.writer(features_csv_file, delimiter=",")
 
         # Write header
-        writer.writerow(["modules"])
+        writer.writerow(["features"])
 
-        for module in MODULE_LIST:
-            writer.writerow([module])
+        for feature in FEATURE_LIST:
+            writer.writerow([feature])
 
-    MODULES_TO_USE = get_modules(SCENARIO_DIRECTORY)
-    LOADED_MODULES = load_modules(MODULES_TO_USE)
+    FEATURES_TO_USE = get_features(SCENARIO_DIRECTORY)
+    LOADED_MODULES = load_modules(FEATURES_TO_USE)
     SUBSCENARIOS = SubScenarios(cursor=c)
     get_inputs_from_database(LOADED_MODULES, SUBSCENARIOS, c, INPUTS_DIRECTORY)

@@ -93,7 +93,7 @@ def all_modules_list():
 
 
 def optional_modules_list():
-    # Names of groups of optional modules
+    # Names of groups of optional modules (features as keys)
     optional_modules = {
         "fuels":
             ["project.fuels", "project.operations.fuel_burn"],
@@ -163,7 +163,7 @@ def optional_modules_list():
     return optional_modules
 
 
-def cross_modules_list():
+def cross_feature_modules_list():
     # Some modules depend on more than one supermodule
     # Currently, these are: track_carbon_imports and simultaneous_flow_limits
     cross_modules = {
@@ -177,40 +177,40 @@ def cross_modules_list():
     return cross_modules
 
 
-def get_modules(scenario_directory):
+def get_features(scenario_directory):
     """
     Modules needed for scenario
     :param scenario_directory:
     :return:
     """
-    modules_file = os.path.join(scenario_directory, "modules.csv")
+    features_file = os.path.join(scenario_directory, "features.csv")
     try:
-        requested_modules = pd.read_csv(modules_file)["modules"].tolist()
+        requested_features = pd.read_csv(features_file)["features"].tolist()
     except IOError:
-        print("ERROR! Modules file {} not found".format(modules_file))
+        print("ERROR! Features file {} not found".format(features_file))
         sys.exit(1)
 
     # Remove any modules not requested by user
     modules_to_use = all_modules_list()
 
     optional_modules = optional_modules_list()
-    for supermodule in optional_modules.keys():
-        if supermodule in requested_modules:
+    for feature in optional_modules.keys():
+        if feature in requested_features:
             pass
         else:
-            for m in optional_modules[supermodule]:
+            for m in optional_modules[feature]:
                 modules_to_use.remove(m)
 
-    # Some modules depend on more than one supermodule
-    # We have to check if all supermodules that the module depends on are
+    # Some modules depend on more than one feature
+    # We have to check if all features that the module depends on are
     # specified before removing it
-    cross_modules = cross_modules_list()
-    for supermodule_group in cross_modules.keys():
-        if all(supermodule in requested_modules
-               for supermodule in supermodule_group ):
+    cross_feature_modules = cross_feature_modules_list()
+    for feature_group in cross_feature_modules.keys():
+        if all(feature in requested_features
+               for feature in feature_group):
             pass
         else:
-            for m in cross_modules[supermodule_group]:
+            for m in cross_feature_modules[feature_group]:
                 modules_to_use.remove(m)
 
     return modules_to_use

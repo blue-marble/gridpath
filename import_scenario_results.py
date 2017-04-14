@@ -6,7 +6,7 @@ import os.path
 import sqlite3
 import sys
 
-from gridpath.auxiliary.module_list import get_modules, load_modules
+from gridpath.auxiliary.module_list import get_features, load_modules
 
 
 def import_results_into_database(
@@ -65,8 +65,8 @@ if __name__ == "__main__":
         SCENARIO_ID = scenario_id_file.read()
 
     # Go through modules
-    MODULES_TO_USE = get_modules(SCENARIO_DIRECTORY)
-    LOADED_MODULES = load_modules(MODULES_TO_USE)
+    FEATURES_TO_USE = get_features(SCENARIO_DIRECTORY)
+    LOADED_MODULES = load_modules(FEATURES_TO_USE)
 
     import_results_into_database(
         loaded_modules=LOADED_MODULES, scenario_id=SCENARIO_ID, cursor=c,
