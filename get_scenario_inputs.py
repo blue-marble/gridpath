@@ -321,12 +321,12 @@ if __name__ == "__main__":
     if OPTIONAL_FEATURE_FUELS:
         FEATURE_LIST.append("fuels")
 
-    OPTIONAL_MULTI_STAGE = c.execute(
+    OPTIONAL_FEATURE_MULTI_STAGE = c.execute(
         """SELECT of_multi_stage
            FROM scenarios
            WHERE scenario_id = {};""".format(SCENARIO_ID)
     ).fetchone()[0]
-    if OPTIONAL_MULTI_STAGE:
+    if OPTIONAL_FEATURE_MULTI_STAGE:
         FEATURE_LIST.append("multi_stage")
 
     OPTIONAL_FEATURE_TRANSMISSION = c.execute(
@@ -432,3 +432,110 @@ if __name__ == "__main__":
     LOADED_MODULES = load_modules(FEATURES_TO_USE)
     SUBSCENARIOS = SubScenarios(cursor=c)
     get_inputs_from_database(LOADED_MODULES, SUBSCENARIOS, c, INPUTS_DIRECTORY)
+
+    # Write full scenario description
+    with open(os.path.join(SCENARIO_DIRECTORY, "scenario_description.csv"),
+              "w") as \
+            scenario_description_file:
+        writer = csv.writer(scenario_description_file, delimiter=",")
+
+        writer.writerow(["scenario_id", SCENARIO_ID])
+        writer.writerow(["scenario_name", SCENARIO_NAME])
+        writer.writerow(["of_fuels", OPTIONAL_FEATURE_FUELS])
+        writer.writerow(["of_multi_stage", OPTIONAL_FEATURE_MULTI_STAGE])
+        writer.writerow(["of_transmission", OPTIONAL_FEATURE_TRANSMISSION])
+        writer.writerow(["of_transmission_hurdle_rates",
+                         OPTIONAL_FEATURE_TRANSMISSION_HURDLE_RATES])
+        writer.writerow(["of_simultaneous_flow_limits",
+                         OPTIONAL_FEATURE_SIMULTANEOUS_FLOW_LIMITS])
+        writer.writerow(["of_lf_reserves_up", OPTIONAL_FEATURE_LF_RESERVES_UP])
+        writer.writerow(["of_lf_reserves_down",
+                         OPTIONAL_FEATURE_LF_RESERVES_DOWN])
+        writer.writerow(["of_regulation_up", OPTIONAL_FEATURE_REGULATION_UP])
+        writer.writerow(["of_regulation_down",
+                         OPTIONAL_FEATURE_REGULATION_DOWN])
+        writer.writerow(["of_frequency_response",
+                         OPTIONAL_FEATURE_FREQUENCY_RESPONSE])
+        writer.writerow(["of_rps", OPTIONAL_FEATURE_RPS])
+        writer.writerow(["of_carbon_cap", OPTIONAL_FEATURE_CARBON_CAP])
+        writer.writerow(["of_track_carbon_imports",
+                         OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS])
+        writer.writerow(["timepoint_scenario_id",
+                         SUBSCENARIOS.TIMEPOINT_SCENARIO_ID])
+        writer.writerow(["load_zone_scenario_id",
+                         SUBSCENARIOS.LOAD_ZONE_SCENARIO_ID])
+        writer.writerow(["lf_reserves_up_ba_scenario_id",
+                         SUBSCENARIOS.LF_RESERVES_UP_BA_SCENARIO_ID])
+        writer.writerow(["lf_reserves_down_ba_scenario_id",
+                         SUBSCENARIOS.LF_RESERVES_DOWN_BA_SCENARIO_ID])
+        writer.writerow(["frequency_response_ba_scenario_id",
+                         SUBSCENARIOS.FREQUENCY_RESPONSE_BA_SCENARIO_ID])
+        writer.writerow(["rps_zone_scenario_id",
+                         SUBSCENARIOS.RPS_ZONE_SCENARIO_ID])
+        writer.writerow(["carbon_cap_zone_scenario_id",
+                         SUBSCENARIOS.CARBON_CAP_ZONE_SCENARIO_ID])
+        writer.writerow(["project_portfolio_scenario_id",
+                         SUBSCENARIOS.PROJECT_PORTFOLIO_SCENARIO_ID])
+        writer.writerow(["project_load_zone_scenario_id",
+                         SUBSCENARIOS.PROJECT_LOAD_ZONE_SCENARIO_ID])
+        writer.writerow(["project_lf_reserves_up_ba_scenario_id",
+                         SUBSCENARIOS.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID])
+        writer.writerow(["project_lf_reserves_down_ba_scenario_id",
+                         SUBSCENARIOS.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID])
+        writer.writerow(["project_frequency_response_ba_scenario_id",
+                         SUBSCENARIOS.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID
+                         ])
+        writer.writerow(["project_rps_zone_scenario_id",
+                         SUBSCENARIOS.PROJECT_RPS_ZONE_SCENARIO_ID])
+        writer.writerow(["project_carbon_cap_zone_scenario_id",
+                         SUBSCENARIOS.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID])
+        writer.writerow(["project_existing_capacity_scenario_id",
+                         SUBSCENARIOS.PROJECT_EXISTING_CAPACITY_SCENARIO_ID])
+        writer.writerow(["project_existing_fixed_cost_scenario_id",
+                         SUBSCENARIOS.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID])
+        writer.writerow(["project_operational_chars_scenario_id",
+                         SUBSCENARIOS.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID])
+        writer.writerow(["fuel_scenario_id",
+                         SUBSCENARIOS.FUEL_SCENARIO_ID])
+        writer.writerow(["fuel_price_scenario_id",
+                         SUBSCENARIOS.FUEL_PRICE_SCENARIO_ID])
+        writer.writerow(["project_new_cost_scenario_id",
+                         SUBSCENARIOS.PROJECT_NEW_COST_SCENARIO_ID])
+        writer.writerow(["project_new_potential_scenario_id",
+                         SUBSCENARIOS.PROJECT_NEW_POTENTIAL_SCENARIO_ID])
+        writer.writerow(["transmission_portfolio_scenario_id",
+                         SUBSCENARIOS.TRANSMISSION_PORTFOLIO_SCENARIO_ID])
+        writer.writerow(["transmission_load_zone_scenario_id",
+                         SUBSCENARIOS.TRANSMISSION_LOAD_ZONE_SCENARIO_ID])
+        writer.writerow(["transmission_existing_capacity_scenario_id",
+                         SUBSCENARIOS.
+                        TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID])
+        writer.writerow(["transmission_operational_chars_scenario_id",
+                         SUBSCENARIOS.
+                        TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID])
+        writer.writerow(["transmission_hurdle_rate_scenario_id",
+                         SUBSCENARIOS.TRANSMISSION_HURDLE_RATE_SCENARIO_ID])
+        writer.writerow(["transmission_carbon_cap_zone_scenario_id",
+                         SUBSCENARIOS.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID]
+                        )
+        writer.writerow(["transmission_simultaneous_flow_limit_scenario_id",
+                         SUBSCENARIOS.
+                        TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID])
+        writer.writerow([
+            "transmission_simultaneous_flow_limit_line_group_scenario_id",
+            SUBSCENARIOS.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID]
+        )
+        writer.writerow(["load_scenario_id",
+                         SUBSCENARIOS.LOAD_SCENARIO_ID])
+        writer.writerow(["lf_reserves_up_scenario_id",
+                         SUBSCENARIOS.LF_RESERVES_UP_SCENARIO_ID])
+        writer.writerow(["lf_reserves_down_scenario_id",
+                         SUBSCENARIOS.LF_RESERVES_DOWN_SCENARIO_ID])
+        writer.writerow(["frequency_response_scenario_id",
+                         SUBSCENARIOS.FREQUENCY_RESPONSE_SCENARIO_ID])
+        writer.writerow(["rps_target_scenario_id",
+                         SUBSCENARIOS.RPS_TARGET_SCENARIO_ID])
+        writer.writerow(["carbon_cap_target_scenario_id",
+                         SUBSCENARIOS.CARBON_CAP_TARGET_SCENARIO_ID])
+        writer.writerow(["tuning_scenario_id",
+                         SUBSCENARIOS.TUNING_SCENARIO_ID])
