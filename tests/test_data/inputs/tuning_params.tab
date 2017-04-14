@@ -1,2 +1,2 @@
-import_carbon_tuning_cost
-10e-10
+import_carbon_tuning_cost	hydro_ramp_tuning_cost
+10e-10	10e-10

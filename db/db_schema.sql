@@ -1040,6 +1040,22 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
 
+-- Case tuning
+DROP TABLE IF EXISTS subscenarios_tuning;
+CREATE TABLE subscenarios_tuning (
+tuning_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_tuning;
+CREATE TABLE inputs_tuning (
+tuning_scenario_id INTEGER PRIMARY KEY,
+import_carbon_tuning_cost DOUBLE,
+hydro_ramp_tuning_cost DOUBLE,
+FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
+(tuning_scenario_id)
+);
 
 ---------------------
 -- -- SCENARIOS -- --
@@ -1096,6 +1112,7 @@ lf_reserves_down_scenario_id INTEGER,
 frequency_response_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
+tuning_scenario_id INTEGER,
 FOREIGN KEY (timepoint_scenario_id) REFERENCES
 subscenarios_temporal_timepoints (timepoint_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
@@ -1185,7 +1202,9 @@ subscenarios_system_frequency_response (frequency_response_scenario_id),
 FOREIGN KEY (rps_target_scenario_id) REFERENCES
 subscenarios_system_rps_targets (rps_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
-subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
+subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
+FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
+(tuning_scenario_id)
 );
 
 --------------------------

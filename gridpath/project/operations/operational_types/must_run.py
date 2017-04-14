@@ -130,3 +130,14 @@ def startup_shutdown_rule(mod, g, tmp):
         "Check input data for generator '{}'".format(g) + "\n" +
         "and change its startup/shutdown costs to '.' (no value).")
     )
+
+
+def ramp_rule(mod, g, tmp):
+    """
+
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    return 0

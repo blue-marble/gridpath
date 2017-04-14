@@ -5,9 +5,9 @@
 --> New Generation Capacity <--
                               New Capacity (MW)
 load_zone technology  period                   
-Zone1     unspecified 2020                   25
+Zone1     unspecified 2020                   27
+Zone2     unspecified 2020                   25
                       2030                    6
-Zone2     unspecified 2020                   27
 
 ### OPERATIONAL RESULTS ###
 

@@ -207,6 +207,24 @@ def startup_shutdown_rule(mod, g, tmp):
                mod.Capacity_MW[g, mod.period[tmp]]
 
 
+def ramp_rule(mod, g, tmp):
+    """
+    
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        pass
+    else:
+        return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] - \
+               mod.Provide_Power_DispBinaryCommit_MW[
+                    g, mod.previous_timepoint[tmp]
+                ]
+
+
 def fix_commitment(mod, g, tmp):
     """
 

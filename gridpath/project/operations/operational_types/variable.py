@@ -277,6 +277,27 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
+def ramp_rule(mod, g, tmp):
+    """
+    Curtailment is counted as part of the ramp here
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        pass
+    else:
+        return \
+            (mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]) - \
+            (mod.Capacity_MW[
+                 g, mod.period[mod.previous_timepoint[tmp]]
+             ] * mod.cap_factor[
+                g, mod.previous_timepoint[tmp]
+            ])
+
+
 def load_module_specific_data(mod, data_portal, scenario_directory,
                               horizon, stage):
     """

@@ -365,6 +365,28 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
+def ramp_rule(mod, g, tmp):
+    """
+
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        pass
+    else:
+        return (mod.Generic_Storage_Discharge_MW[g, tmp] -
+                mod.Generic_Storage_Charge_MW[g, tmp]) - \
+               (mod.Generic_Storage_Discharge_MW[
+                    g, mod.previous_timepoint[tmp]
+                ] -
+                mod.Generic_Storage_Charge_MW[
+                    g, mod.previous_timepoint[tmp]
+                ])
+
+
 def load_module_specific_data(mod, data_portal, scenario_directory,
                               horizon, stage):
     """

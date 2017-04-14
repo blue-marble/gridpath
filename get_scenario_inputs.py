@@ -225,6 +225,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.TUNING_SCENARIO_ID = cursor.execute(
+            """SELECT tuning_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
 
 def get_inputs_from_database(loaded_modules, subscenarios, cursor,
                              inputs_directory):
@@ -241,6 +247,21 @@ def get_inputs_from_database(loaded_modules, subscenarios, cursor,
             m.get_inputs_from_database(subscenarios, cursor, inputs_directory)
         else:
             pass
+
+
+def delete_prior_inputs(inputs_directory):
+    """
+    Delete all .tab files that may exist in the inputs directory
+    :param inputs_directory: 
+    :return: 
+    """
+    prior_input_tab_files = [
+        f for f in os.listdir(inputs_directory) if f.endswith('.tab')
+    ]
+
+    for f in prior_input_tab_files:
+        os.remove(os.path.join(inputs_directory, f))
+
 
 if __name__ == "__main__":
     arguments = sys.argv[1:]
@@ -280,6 +301,9 @@ if __name__ == "__main__":
         SCENARIO_DIRECTORY, "inputs")
     if not os.path.exists(INPUTS_DIRECTORY):
         os.makedirs(INPUTS_DIRECTORY)
+
+    # Delete input files that may have existed before to avoid phantom inputs
+    delete_prior_inputs(INPUTS_DIRECTORY)
 
     # Save scenario_id
     with open(os.path.join(SCENARIO_DIRECTORY, "scenario_id.txt"), "w") as \

@@ -127,23 +127,9 @@ def add_module_specific_components(m, d):
         )
 
     # Constrain ramps
-    def ramp_expression_rule(mod, g, tmp):
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
-            pass
-        else:
-            return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
-                        mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
-                       (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp]
-                        ]
-                        + mod.Hydro_Curtailable_Curtail_MW[
-                            g, mod.previous_timepoint[tmp]
-                        ])
-
     m.Hydro_Curtailable_Ramp_MW = Expression(
         m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_expression_rule
+        rule=ramp_rule
     )
 
     def ramp_up_rule(mod, g, tmp):
@@ -295,6 +281,28 @@ def startup_shutdown_rule(mod, g, tmp):
         "Check input data for generator '{}'".format(g) + "\n" +
         "and change its startup/shutdown costs to '.' (no value).")
     )
+
+
+def ramp_rule(mod, g, tmp):
+    """
+    
+    :param mod: 
+    :param g: 
+    :param tmp: 
+    :return: 
+    """
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+            and mod.boundary[mod.horizon[tmp]] == "linear":
+        pass
+    else:
+        return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
+                    mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
+                   (mod.Hydro_Curtailable_Provide_Power_MW[
+                    g, mod.previous_timepoint[tmp]
+                    ]
+                    + mod.Hydro_Curtailable_Curtail_MW[
+                        g, mod.previous_timepoint[tmp]
+                    ])
 
 
 def load_module_specific_data(m,
