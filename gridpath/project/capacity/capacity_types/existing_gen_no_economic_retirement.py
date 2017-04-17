@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
@@ -32,6 +33,7 @@ def add_module_specific_components(m, d):
 
 def capacity_rule(mod, g, p):
     return mod.existing_gen_no_econ_ret_capacity_mw[g, p]
+
 
 def capacity_cost_rule(mod, g, p):
     """
@@ -96,8 +98,8 @@ def load_module_specific_data(
                 sep="\t"
                 )
 
-        for row in zip(dynamic_components["GENERATORS"],
-                       dynamic_components["PERIODS"],
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["period"],
                        dynamic_components["existing_capacity_mw"],
                        dynamic_components["fixed_cost_per_mw_yr"]):
             if row[0] in generators_list:
@@ -126,3 +128,75 @@ def load_module_specific_data(
     data_portal.data()["existing_no_econ_ret_fixed_cost_per_mw_yr"] = \
         determine_period_params()[2]
 
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    existing_generation_period_params.tab
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+
+    # Select generators of 'existing_gen_no_economic_retirement' capacity
+    # type only
+    ep_capacities = c.execute(
+        """SELECT project, period, existing_capacity_mw,
+        annual_fixed_cost_per_mw_year
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period, existing_capacity_mw
+        FROM inputs_project_existing_capacity
+        WHERE project_existing_capacity_scenario_id = {}
+        AND existing_capacity_mw > 0) as capacity
+        USING (project, period)
+        LEFT OUTER JOIN
+        (SELECT project, period, annual_fixed_cost_per_mw_year
+        FROM inputs_project_existing_fixed_cost
+        WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = 'existing_gen_no_economic_retirement';""".format(
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    # If existing_generation_period_params.tab file already exists, append
+    # rows to it
+    if os.path.isfile(os.path.join(inputs_directory,
+                                   "existing_generation_period_params.tab")
+                      ):
+        with open(os.path.join(inputs_directory,
+                               "existing_generation_period_params.tab"), "w") \
+                as existing_project_capacity_tab_file:
+            writer = csv.writer(existing_project_capacity_tab_file,
+                                delimiter="\t")
+            for row in ep_capacities:
+                writer.writerow(row)
+    # If existing_generation_period_params.tab file does not exist,
+    # write header first, then add input data
+    else:
+        with open(os.path.join(inputs_directory,
+                               "existing_generation_period_params.tab"), "w") \
+                as existing_project_capacity_tab_file:
+            writer = csv.writer(existing_project_capacity_tab_file,
+                                delimiter="\t")
+
+            # Write header
+            writer.writerow(
+                ["project", "period", "existing_capacity_mw",
+                 "fixed_cost_per_mw_yr"]
+            )
+
+            # Write input data
+            for row in ep_capacities:
+                writer.writerow(row)

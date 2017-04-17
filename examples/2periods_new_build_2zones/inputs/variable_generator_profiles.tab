@@ -1,4 +1,4 @@
-GENERATORS	TIMEPOINTS	cap_factor
+project	timepoint	cap_factor
 Wind	1	.9
 Wind	2	.5
 Wind	3	.9

@@ -11,6 +11,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
+import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import \
@@ -310,8 +311,12 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     :param stage:
     :return:
     """
-    # Determine list of projects
+    # Determine list of 'variable' projects
     projects = list()
+    # Also get a list of the projects of the 'variable_no_curtailment'
+    # operational_type, needed for the data check below
+    # (to avoid throwing warning unnecessarily)
+    var_no_curt_proj = list()
 
     prj_op_type_df = \
         pd.read_csv(
@@ -324,6 +329,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                    prj_op_type_df["operational_type"]):
         if row[1] == 'variable':
             projects.append(row[0])
+        elif row[1] == 'variable_no_curtailment':
+            var_no_curt_proj.append(row[0])
         else:
             pass
 
@@ -335,16 +342,25 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         pd.read_csv(
             os.path.join(scenario_directory, horizon, stage, "inputs",
                          "variable_generator_profiles.tab"),
-            sep="\t", usecols=["GENERATORS", "TIMEPOINTS", "cap_factor"]
+            sep="\t", usecols=["project", "timepoint", "cap_factor"]
         )
-    for row in zip(prj_tmp_cf_df["GENERATORS"],
-                   prj_tmp_cf_df["TIMEPOINTS"],
+    for row in zip(prj_tmp_cf_df["project"],
+                   prj_tmp_cf_df["timepoint"],
                    prj_tmp_cf_df["cap_factor"]):
         if row[0] in projects:
             project_timepoints.append((row[0], row[1]))
             cap_factor[(row[0], row[1])] = float(row[2])
-        else:
+        # Profile could be for a 'variable' project, in which case ignore
+        elif row[0] in var_no_curt_proj:
             pass
+        else:
+            warnings.warn(
+                """WARNING: Profiles are specified for '{}' in 
+                variable_generator_profiles.tab, but '{}' is not in 
+                projects.tab.""".format(
+                    row[0], row[0]
+                )
+            )
 
     # Load data
     data_portal.data()[
@@ -394,3 +410,98 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                           p, tmp]),
                 value(mod.Total_Variable_Generator_Curtailment_MW[p, tmp])
             ])
+
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    Write profiles to variable_generator_profiles.tab
+    If file does not yet exist, write header first
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+    # Select only profiles of projects in the portfolio
+    # Select only profiles of projects with 'variable'
+    # operational type
+    # Select only profiles for timepoints from the correct timepoint
+    # scenario
+    # Select only timepoints on periods when the project is operational
+    # (periods with existing project capacity for existing projects or
+    # with costs specified for new projects)
+    variable_profiles = c.execute(
+        """SELECT project, timepoint, cap_factor
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, variable_generator_profile_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = 'variable'
+        ) AS op_char
+        USING (project)
+        CROSS JOIN
+        (SELECT timepoint, period
+        FROM inputs_temporal_timepoints
+        WHERE timepoint_scenario_id = {})
+        LEFT OUTER JOIN
+        inputs_project_variable_generator_profiles
+        USING (variable_generator_profile_scenario_id, project, timepoint)
+        INNER JOIN
+        (SELECT project, period
+        FROM
+        (SELECT project, period
+        FROM inputs_project_existing_capacity
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {})
+        USING (period)
+        WHERE project_existing_capacity_scenario_id = {}
+        AND existing_capacity_mw > 0) as existing
+        UNION
+        SELECT project, period
+        FROM inputs_project_new_cost
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {})
+        USING (period)
+        WHERE project_new_cost_scenario_id = {})
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    # If variable_generator_profiles.tab file already exists, append rows to it
+    if os.path.isfile(os.path.join(inputs_directory,
+                                   "variable_generator_profiles.tab")
+                      ):
+        with open(os.path.join(inputs_directory,
+                               "variable_generator_profiles.tab"), "a") as \
+                variable_profiles_tab_file:
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+            for row in variable_profiles:
+                writer.writerow(row)
+    # If variable_generator_profiles.tab does not exist, write header first,
+    # then add profiles data
+    else:
+        with open(os.path.join(inputs_directory,
+                               "variable_generator_profiles.tab"), "w") as \
+                variable_profiles_tab_file:
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+
+            # Write header
+            writer.writerow(
+                ["project", "timepoint", "cap_factor"]
+            )
+            for row in variable_profiles:
+                writer.writerow(row)

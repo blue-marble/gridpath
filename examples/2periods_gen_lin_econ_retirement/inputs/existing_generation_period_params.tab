@@ -1,4 +1,4 @@
-GENERATORS	PERIODS	existing_capacity_mw	fixed_cost_per_mw_yr
+project	period	existing_capacity_mw	fixed_cost_per_mw_yr
 Clunky_Old_Gen	2020	10	1000
 Clunky_Old_Gen	2030	10	1000
 Nuclear	2020	6	0

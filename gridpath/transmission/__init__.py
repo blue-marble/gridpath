@@ -118,37 +118,3 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         for row in transmission_lines:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
-
-    # specified_transmission_line_capacities.tab
-    with open(os.path.join(inputs_directory,
-                           "specified_transmission_line_capacities.tab"),
-              "w") as existing_tx_capacity_tab_file:
-        writer = csv.writer(existing_tx_capacity_tab_file,
-                            delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["transmission_line", "period", "specified_tx_min_mw",
-             "specified_tx_max_mw"]
-        )
-
-        tx_capacities = c.execute(
-            """SELECT transmission_line, period, min_mw, max_mw
-            FROM inputs_transmission_portfolios
-            CROSS JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
-            WHERE timepoint_scenario_id = {}) as relevant_periods
-            INNER JOIN
-            (SELECT transmission_line, period, min_mw, max_mw
-            FROM inputs_transmission_existing_capacity
-            WHERE transmission_existing_capacity_scenario_id = {} ) as capacity
-            USING (transmission_line, period)
-            WHERE transmission_portfolio_scenario_id = {};""".format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
-                subscenarios.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID,
-                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
-            )
-        )
-        for row in tx_capacities:
-            writer.writerow(row)

@@ -1,4 +1,4 @@
-GENERATORS	PERIODS	existing_capacity_mw	fixed_cost_per_mw_yr
+project	period	existing_capacity_mw	fixed_cost_per_mw_yr
 Nuclear	2020	6	0
 Gas_CCGT	2020	6	0
 Coal	2020	6	0

@@ -56,19 +56,20 @@ def load_module_specific_data(m, data_portal, scenario_directory,
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
     """
-
+    specified_transmission_line_capacities.tab
     :param subscenarios
     :param c:
     :param inputs_directory:
     :return:
     """
-    # specified_transmission_line_capacities.tab
     with open(os.path.join(inputs_directory,
-                           "specified_transmission_line_capacities.tab"), "w") \
-            as transmission_lines_specified_capacities_tab_file:
-        writer = csv.writer(transmission_lines_specified_capacities_tab_file,
+                           "specified_transmission_line_capacities.tab"),
+              "w") as existing_tx_capacity_tab_file:
+        writer = csv.writer(existing_tx_capacity_tab_file,
                             delimiter="\t")
 
         # Write header
@@ -77,19 +78,23 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
              "specified_tx_max_mw"]
         )
 
-        transmission_lines_specified_capacities = c.execute(
+        tx_capacities = c.execute(
             """SELECT transmission_line, period, min_mw, max_mw
-            FROM transmission_line_existing_capacity
-            WHERE load_zone_scenario_id = {}
-            AND transmission_line_scenario_id = {}
-            AND period_scenario_id = {}
-            AND transmission_line_existing_capacity_scenario_id = {};
-            """.format(
-                subscenarios.LOAD_ZONE_SCENARIO_ID,
-                subscenarios.TRANSMISSION_LINE_SCENARIO_ID,
-                subscenarios.PERIOD_SCENARIO_ID,
-                subscenarios.TRANSMISSION_LINE_EXISTING_CAPACITY_SCENARIO_ID
+            FROM inputs_transmission_portfolios
+            CROSS JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE timepoint_scenario_id = {}) as relevant_periods
+            INNER JOIN
+            (SELECT transmission_line, period, min_mw, max_mw
+            FROM inputs_transmission_existing_capacity
+            WHERE transmission_existing_capacity_scenario_id = {} ) as capacity
+            USING (transmission_line, period)
+            WHERE transmission_portfolio_scenario_id = {};""".format(
+                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID,
+                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
             )
         )
-        for row in transmission_lines_specified_capacities:
+        for row in tx_capacities:
             writer.writerow(row)

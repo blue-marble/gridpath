@@ -89,7 +89,6 @@ def capacity_rule(mod, g, p):
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p]
 
 
-# TODO: give the option to add an exogenous param here instead of 0
 def capacity_cost_rule(mod, g, p):
     """
     Capacity cost for existing capacity generators with no economic retirements
@@ -152,8 +151,8 @@ def load_module_specific_data(
                 sep="\t"
                 )
 
-        for row in zip(dynamic_components["GENERATORS"],
-                       dynamic_components["PERIODS"],
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["period"],
                        dynamic_components["existing_capacity_mw"],
                        dynamic_components["fixed_cost_per_mw_yr"]):
             if row[0] in generators_list:
@@ -167,9 +166,12 @@ def load_module_specific_data(
                 pass
 
         return generator_period_list, \
-               existing_lin_econ_ret_capacity_mw_dict, existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
+               existing_lin_econ_ret_capacity_mw_dict, \
+               existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
 
-    data_portal.data()["EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"] = {
+    data_portal.data()[
+        "EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
+    ] = {
         None: determine_period_params()[0]
     }
 
@@ -221,9 +223,10 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
-                                 "capacity_existing_gen_linear_economic_"
-                                 "retirement.csv")
+        pd.read_csv(os.path.join(
+            problem_directory, horizon, stage, "results",
+            "capacity_existing_gen_linear_economic_retirement.csv"
+        )
                     )
 
     capacity_results_agg_df = \
@@ -251,3 +254,77 @@ def summarize_module_specific_results(
         else:
             lin_retirement_df.to_string(outfile)
             outfile.write("\n")
+
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    existing_generation_period_params.tab
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+
+    # Select generators of 'existing_gen_linear_economic_retirement' capacity
+    # type only
+    ep_capacities = c.execute(
+        """SELECT project, period, existing_capacity_mw,
+        annual_fixed_cost_per_mw_year
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period, existing_capacity_mw
+        FROM inputs_project_existing_capacity
+        WHERE project_existing_capacity_scenario_id = {}
+        AND existing_capacity_mw > 0) as capacity
+        USING (project, period)
+        LEFT OUTER JOIN
+        (SELECT project, period, annual_fixed_cost_per_mw_year
+        FROM inputs_project_existing_fixed_cost
+        WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = 
+        'existing_gen_linear_economic_retirement';""".format(
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    # If existing_generation_period_params.tab file already exists, append
+    # rows to it
+    if os.path.isfile(os.path.join(inputs_directory,
+                                   "existing_generation_period_params.tab")
+                      ):
+        with open(os.path.join(inputs_directory,
+                               "existing_generation_period_params.tab"), "w") \
+                as existing_project_capacity_tab_file:
+            writer = csv.writer(existing_project_capacity_tab_file,
+                                delimiter="\t")
+            for row in ep_capacities:
+                writer.writerow(row)
+    # If existing_generation_period_params.tab file does not exist,
+    # write header first, then add input data
+    else:
+        with open(os.path.join(inputs_directory,
+                               "existing_generation_period_params.tab"), "w") \
+                as existing_project_capacity_tab_file:
+            writer = csv.writer(existing_project_capacity_tab_file,
+                                delimiter="\t")
+
+            # Write header
+            writer.writerow(
+                ["project", "period", "existing_capacity_mw",
+                 "fixed_cost_per_mw_yr"]
+            )
+
+            # Write input data
+            for row in ep_capacities:
+                writer.writerow(row)

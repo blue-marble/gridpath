@@ -7,6 +7,7 @@ Describe operational constraints on the generation infrastructure.
 
 import csv
 import os.path
+import pandas as pd
 
 from gridpath.auxiliary.dynamic_components import required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
@@ -66,7 +67,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
 
-    # Next, export module-specific results
+    # Export module-specific results
     # Operational type modules
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
@@ -76,6 +77,46 @@ def export_results(scenario_directory, horizon, stage, m, d):
             imported_operational_modules[op_m].\
                 export_module_specific_results(
                 m, d, scenario_directory, horizon, stage,
+            )
+        else:
+            pass
+
+
+def get_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+
+    project_op_types = \
+        pd.read_csv(
+            os.path.join(inputs_directory, "projects.tab"),
+            sep="\t", usecols=["project",
+                               "operational_type"]
+        )
+
+    # Required modules are the unique set of generator operational types
+    # This list will be used to know which operational modules to load
+    required_operational_modules = \
+            project_op_types.operational_type.unique()
+
+    # Get module-specific inputs
+    # Load in the required operational modules
+    imported_operational_modules = \
+        load_operational_type_modules(required_operational_modules)
+
+    # Get module-specific results
+    for op_m in required_operational_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "get_module_specific_inputs_from_database"):
+            imported_operational_modules[op_m]. \
+                get_module_specific_inputs_from_database(
+                subscenarios, c, inputs_directory
             )
         else:
             pass

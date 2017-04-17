@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
 from pyomo.environ import Set, Param, NonNegativeReals
 
@@ -63,9 +64,69 @@ def load_module_specific_data(m,
                                   "storage_specified_capacities.tab"),
                      index=
                      m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-                     select=("storage_project", "period",
+                     select=("project", "period",
                              "storage_specified_power_capacity_mw",
                              "storage_specified_energy_capacity_mwh"),
                      param=(m.storage_specified_power_capacity_mw,
                             m.storage_specified_energy_capacity_mwh)
                      )
+
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    storage_specified_capacities.tab
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+
+    stor_capacities = c.execute(
+        """SELECT project, period, existing_capacity_mw,
+        existing_capacity_mwh,
+        annual_fixed_cost_per_mw_year, annual_fixed_cost_per_mwh_year
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period, existing_capacity_mw,
+        existing_capacity_mwh
+        FROM inputs_project_existing_capacity
+        WHERE project_existing_capacity_scenario_id = {}
+        AND existing_capacity_mw > 0) as capacity
+        USING (project, period)
+        LEFT OUTER JOIN
+        (SELECT project, period, annual_fixed_cost_per_mw_year,
+        annual_fixed_cost_per_mwh_year
+        FROM inputs_project_existing_fixed_cost
+        WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = 
+        'storage_specified_no_economic_retirement';""".format(
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    with open(os.path.join(inputs_directory,
+                           "storage_specified_capacities.tab"), "w") as \
+            storage_specified_capacities_tab_file:
+        writer = csv.writer(storage_specified_capacities_tab_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "period",
+             "storage_specified_power_capacity_mw",
+             "storage_specified_energy_capacity_mwh"]
+        )
+
+        for row in stor_capacities:
+            writer.writerow(row)

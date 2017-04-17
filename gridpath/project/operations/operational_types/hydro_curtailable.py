@@ -344,13 +344,13 @@ def load_module_specific_data(m,
             os.path.join(scenario_directory, horizon, "inputs",
                          "hydro_conventional_horizon_params.tab"),
             sep="\t", usecols=[
-                "hydro_project", "horizon",
+                "project", "horizon",
                 "hydro_average_power_mwa",
                 "hydro_min_power_mw",
                 "hydro_max_power_mw"
             ]
         )
-    for row in zip(prj_hor_opchar_df["hydro_project"],
+    for row in zip(prj_hor_opchar_df["project"],
                    prj_hor_opchar_df["horizon"],
                    prj_hor_opchar_df["hydro_average_power_mwa"],
                    prj_hor_opchar_df["hydro_min_power_mw"],
@@ -453,3 +453,105 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 value(mod.Hydro_Curtailable_Provide_Power_MW[p, tmp]),
                 value(mod.Hydro_Curtailable_Curtail_MW[p, tmp])
             ])
+
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    Write operational chars to  hydro_conventional_horizon_params.tab
+    If file does not yet exist, write header first
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    # Select only budgets/min/max of projects in the portfolio
+    # Select only budgets/min/max of projects with 'hydro_curtailable'
+    # Select only budgets/min/max for horizons from the correct timepoint
+    # scenario
+    # Select only horizons on periods when the project is operational
+    # (periods with existing project capacity for existing projects or
+    # with costs specified for new projects)
+    hydro_chars = c.execute(
+        """SELECT project, horizon, average_power_mwa, min_power_mw,
+        max_power_mw
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, hydro_operational_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = 'hydro_curtailable') AS op_char
+        USING (project)
+        CROSS JOIN
+        (SELECT horizon
+        FROM inputs_temporal_horizons
+        WHERE timepoint_scenario_id = {})
+        LEFT OUTER JOIN
+        inputs_project_hydro_operational_chars
+        USING (hydro_operational_chars_scenario_id, project, horizon)
+        INNER JOIN
+        (SELECT project, period
+        FROM
+        (SELECT project, period
+        FROM inputs_project_existing_capacity
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {})
+        USING (period)
+        WHERE project_existing_capacity_scenario_id = {}
+        AND existing_capacity_mw > 0) as existing
+        UNION
+        SELECT project, period
+        FROM inputs_project_new_cost
+        INNER JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {})
+        USING (period)
+        WHERE project_new_cost_scenario_id = {})
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    # If hydro_conventional_horizon_params.tab file already exists,
+    # append rows to it
+    if os.path.isfile(os.path.join(inputs_directory,
+                                   "hydro_conventional_horizon_params.tab")
+                      ):
+        with open(os.path.join(inputs_directory,
+                               "hydro_conventional_horizon_params.tab"),
+                  "a") as \
+                hydro_chars_tab_file:
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+            for row in hydro_chars:
+                writer.writerow(row)
+    else:
+    # If hydro_conventional_horizon_params.tab does not exist, write header
+    # first, then add inputs data
+        with open(os.path.join(inputs_directory,
+                               "hydro_conventional_horizon_params.tab"),
+                  "w") as \
+                hydro_chars_tab_file:
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+
+            # Write header
+            writer.writerow(
+                ["project", "horizon",
+                 "hydro_average_power_mwa",
+                 "hydro_min_power_mw",
+                 "hydro_max_power_mw"]
+            )
+            for row in hydro_chars:
+                writer.writerow(row)

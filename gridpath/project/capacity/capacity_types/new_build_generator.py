@@ -146,7 +146,7 @@ def load_module_specific_data(m,
                                   "new_build_generator_vintage_costs.tab"),
                      index=
                      m.NEW_BUILD_GENERATOR_VINTAGES,
-                     select=("new_build_generator", "vintage",
+                     select=("project", "vintage",
                              "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
                      param=(m.lifetime_yrs_by_new_build_vintage,
                             m.annualized_real_cost_per_mw_yr)
@@ -170,7 +170,7 @@ def load_module_specific_data(m,
         pd.read_csv(
             os.path.join(scenario_directory, "inputs",
                          "new_build_generator_vintage_costs.tab"),
-            sep="\t", usecols=["new_build_generator",
+            sep="\t", usecols=["project",
                                "vintage"] + used_columns
             )
 
@@ -179,7 +179,7 @@ def load_module_specific_data(m,
     # and min_cumulative_new_build_mw simply won't be initialized if
     # min_cumulative_new_build_mw does not exist in the input file
     if "min_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["new_build_generator"],
+        for row in zip(dynamic_components["project"],
                        dynamic_components["vintage"],
                        dynamic_components["min_cumulative_new_build_mw"]):
             if row[2] != ".":
@@ -195,7 +195,7 @@ def load_module_specific_data(m,
     # and max_cumulative_new_build_mw simply won't be initialized if
     # max_cumulative_new_build_mw does not exist in the input file
     if "max_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["new_build_generator"],
+        for row in zip(dynamic_components["project"],
                        dynamic_components["vintage"],
                        dynamic_components["max_cumulative_new_build_mw"]):
             if row[2] != ".":
@@ -319,3 +319,61 @@ def summarize_module_specific_results(
         else:
             new_build_df.to_string(outfile)
             outfile.write("\n")
+
+
+def get_module_specific_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+    new_build_generator_vintage_costs.tab
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+
+    new_gen_costs = c.execute(
+        """SELECT project, period, lifetime_yrs,
+        annualized_real_cost_per_kw_yr * 1000,
+        minimum_cumulative_new_build_mw, maximum_cumulative_new_build_mw
+        FROM inputs_project_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE timepoint_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT project, period, lifetime_yrs,
+        annualized_real_cost_per_kw_yr
+        FROM inputs_project_new_cost
+        WHERE project_new_cost_scenario_id = {}) as cost
+        USING (project, period)
+        LEFT OUTER JOIN
+        (SELECT project, period, minimum_cumulative_new_build_mw,
+        maximum_cumulative_new_build_mw
+        FROM inputs_project_new_potential
+        WHERE project_new_potential_scenario_id = {}) as potential
+        USING (project, period)
+        WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = 'new_build_generator';""".format(
+            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    with open(os.path.join(inputs_directory,
+                           "new_build_generator_vintage_costs.tab"), "w") as \
+            new_gen_costs_tab_file:
+        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "vintage", "lifetime_yrs",
+             "annualized_real_cost_per_mw_yr", "min_cumulative_new_build_mw",
+             "max_cumulative_new_build_mw"]
+        )
+
+        for row in new_gen_costs:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
