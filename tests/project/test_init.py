@@ -74,7 +74,7 @@ class TestProject(unittest.TestCase):
             "hydro_noncurtailable", "must_run",
             "storage_generic", "variable", "dispatchable_binary_commit",
             "dispatchable_continuous_commit", "dispatchable_no_commit",
-            "variable_no_curtailment"
+            "variable_no_curtailment", "always_on"
         ])
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))
@@ -89,7 +89,8 @@ class TestProject(unittest.TestCase):
             'Hydro_NonCurtailable': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": []
+            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": [],
+            "Nuclear_Flexible": []
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -103,7 +104,8 @@ class TestProject(unittest.TestCase):
             'Hydro_NonCurtailable': [],
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": []
+            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": [],
+            "Nuclear_Flexible": []
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -155,7 +157,7 @@ class TestProject(unittest.TestCase):
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Customer_PV"]
+            "Clunky_Old_Gen", "Customer_PV", "Nuclear_Flexible"]
             )
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
@@ -175,7 +177,8 @@ class TestProject(unittest.TestCase):
                  'Hydro_NonCurtailable': "Zone1",
                  "Disp_Binary_Commit": "Zone1", "Disp_Cont_Commit": "Zone1",
                  "Disp_No_Commit": "Zone1", "Clunky_Old_Gen": "Zone1",
-                 "Customer_PV": "Zone1"}.items()
+                 "Customer_PV": "Zone1",
+                 "Nuclear_Flexible": "Zone1"}.items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -210,7 +213,8 @@ class TestProject(unittest.TestCase):
                  "Disp_Cont_Commit": "existing_gen_no_economic_retirement",
                  "Disp_No_Commit": "existing_gen_no_economic_retirement",
                  "Clunky_Old_Gen": "existing_gen_linear_economic_retirement",
-                 "Customer_PV": "existing_gen_no_economic_retirement"
+                 "Customer_PV": "existing_gen_no_economic_retirement",
+                 "Nuclear_Flexible": "existing_gen_no_economic_retirement"
                  }.items()
             )
         )
@@ -232,7 +236,7 @@ class TestProject(unittest.TestCase):
                  "Hydro_NonCurtailable": 0,
                  "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
                  "Disp_No_Commit": 0, "Clunky_Old_Gen": 1,
-                 "Customer_PV": 0
+                 "Customer_PV": 0, "Nuclear_Flexible": 1
                  }.items()
             )
         )

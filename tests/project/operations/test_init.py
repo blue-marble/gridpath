@@ -150,7 +150,7 @@ class TestOperationsInit(unittest.TestCase):
             "Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
             "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Gas_CT_New",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen"
+            "Clunky_Old_Gen", "Nuclear_Flexible"
         ])
         actual_fuel_projects = sorted([
             prj for prj in instance.FUEL_PROJECTS
@@ -173,7 +173,8 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Binary_Commit": "Gas",
             "Disp_Cont_Commit": "Gas",
             "Disp_No_Commit": "Gas",
-            "Clunky_Old_Gen": "Coal"}.items()
+            "Clunky_Old_Gen": "Coal",
+            "Nuclear_Flexible": "Uranium"}.items()
                                            )
                                     )
         actual_fuel = OrderedDict(sorted(
@@ -197,7 +198,8 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Binary_Commit": 500,
             "Disp_Cont_Commit": 500,
             "Disp_No_Commit": 500,
-            "Clunky_Old_Gen": 5000}.items()
+            "Clunky_Old_Gen": 5000,
+            "Nuclear_Flexible": 5500}.items()
                                                 )
                                          )
         actual_min_input = OrderedDict(sorted(
@@ -222,7 +224,8 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Binary_Commit": 8,
             "Disp_Cont_Commit": 8,
             "Disp_No_Commit": 8,
-            "Clunky_Old_Gen": 15}.items()
+            "Clunky_Old_Gen": 15,
+            "Nuclear_Flexible": 450}.items()
                                                     )
                                              )
         actual_inc_heat_rate = OrderedDict(sorted(
@@ -881,7 +884,31 @@ class TestOperationsInit(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Nuclear_Flexible", 20300101), ("Nuclear_Flexible", 20300102),
+            ("Nuclear_Flexible", 20300103), ("Nuclear_Flexible", 20300104),
+            ("Nuclear_Flexible", 20300105), ("Nuclear_Flexible", 20300106),
+            ("Nuclear_Flexible", 20300107), ("Nuclear_Flexible", 20300108),
+            ("Nuclear_Flexible", 20300109), ("Nuclear_Flexible", 20300110),
+            ("Nuclear_Flexible", 20300111), ("Nuclear_Flexible", 20300112),
+            ("Nuclear_Flexible", 20300113), ("Nuclear_Flexible", 20300114),
+            ("Nuclear_Flexible", 20300115), ("Nuclear_Flexible", 20300116),
+            ("Nuclear_Flexible", 20300117), ("Nuclear_Flexible", 20300118),
+            ("Nuclear_Flexible", 20300119), ("Nuclear_Flexible", 20300120),
+            ("Nuclear_Flexible", 20300121), ("Nuclear_Flexible", 20300122),
+            ("Nuclear_Flexible", 20300123), ("Nuclear_Flexible", 20300124),
+            ("Nuclear_Flexible", 20300201), ("Nuclear_Flexible", 20300202),
+            ("Nuclear_Flexible", 20300203), ("Nuclear_Flexible", 20300204),
+            ("Nuclear_Flexible", 20300205), ("Nuclear_Flexible", 20300206),
+            ("Nuclear_Flexible", 20300207), ("Nuclear_Flexible", 20300208),
+            ("Nuclear_Flexible", 20300209), ("Nuclear_Flexible", 20300210),
+            ("Nuclear_Flexible", 20300211), ("Nuclear_Flexible", 20300212),
+            ("Nuclear_Flexible", 20300213), ("Nuclear_Flexible", 20300214),
+            ("Nuclear_Flexible", 20300215), ("Nuclear_Flexible", 20300216),
+            ("Nuclear_Flexible", 20300217), ("Nuclear_Flexible", 20300218),
+            ("Nuclear_Flexible", 20300219), ("Nuclear_Flexible", 20300220),
+            ("Nuclear_Flexible", 20300221), ("Nuclear_Flexible", 20300222),
+            ("Nuclear_Flexible", 20300223), ("Nuclear_Flexible", 20300224)
         ])
         actual_tmps_by_fuel_project = sorted([
             (prj, tmp) for (prj, tmp) in

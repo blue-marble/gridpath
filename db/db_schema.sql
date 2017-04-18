@@ -42,7 +42,7 @@ INSERT INTO mod_operational_types (operational_type)
 VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('dispatchable_continuous_commit'), ('dispatchable_no_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
-('storage_generic'), ('variable');
+('storage_generic'), ('variable'), ('always_on');
 
 
 --------------------
