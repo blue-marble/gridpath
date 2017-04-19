@@ -26,6 +26,9 @@ load_balance_consumption_components = "load_balance_consumption_components"
 carbon_cap_balance_emission_components = \
     "carbon_cap_balance_emission_components"
 
+prm_balance_provision_components = \
+    "prm_balance_provision_components"
+
 total_cost_components = "total_cost_components"
 
 
@@ -70,6 +73,10 @@ class DynamicComponents(object):
         # Carbon cap constraint
         # Modules will add component names to these lists
         setattr(self, carbon_cap_balance_emission_components, list())
+
+        # PRM constraint
+        # Modules will add component names to this list
+        setattr(self, prm_balance_provision_components, list())
 
         # Objective function
         # Modules will add component names to this list

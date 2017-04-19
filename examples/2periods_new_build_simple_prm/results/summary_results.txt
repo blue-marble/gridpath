@@ -1,0 +1,17 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_simple_prm* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                              New Capacity (MW)
+load_zone technology  period                   
+Zone1     unspecified 2020                   49
+                      2030                    0
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                   90            100
+          2030   unspecified                   90            100

@@ -585,5 +585,22 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
+    def test_example_2periods_new_build_simple_prm(self):
+        """
+        Check objective function value of "2periods_new_build_simple_prm" 
+        example; this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario", "2periods_new_build_simple_prm",
+                               "--scenario_location", "examples",
+                               "--solver", "ipopt", "--quiet",
+                               "--mute_solver_output", "--testing"])
+
+        expected_objective = 197078051.086
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
 if __name__ == "__main__":
     unittest.main()

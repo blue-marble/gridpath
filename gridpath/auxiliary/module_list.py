@@ -21,6 +21,7 @@ def all_modules_list():
         "geography.frequency_response_balancing_areas",
         "geography.rps_zones",
         "geography.carbon_cap_zones",
+        "geography.prm_zones",
         "system.load_balance.static_load_requirement",
         "system.reserves.requirement.lf_reserves_up",
         "system.reserves.requirement.lf_reserves_down",
@@ -29,6 +30,7 @@ def all_modules_list():
         "system.reserves.requirement.frequency_response",
         "system.policy.rps.rps_requirement",
         "system.policy.carbon_cap.carbon_cap",
+        "system.prm.prm_requirement",
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
@@ -53,6 +55,8 @@ def all_modules_list():
         "project.operations.recs",
         "project.operations.carbon_emissions",
         "project.operations.fuel_burn",
+        "project.prm",
+        "project.prm.prm_simple",
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
@@ -78,6 +82,8 @@ def all_modules_list():
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
+        "system.prm.aggregate_project_simple_prm_contribution",
+        "system.prm.prm_balance",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_operational_costs",
         "objective.project.aggregate_operational_tuning_costs",
@@ -160,7 +166,14 @@ def optional_modules_list():
              "system.policy.carbon_cap.carbon_cap",
              "project.operations.carbon_emissions",
              "system.policy.carbon_cap.aggregate_project_carbon_emissions",
-             "system.policy.carbon_cap.carbon_balance"]
+             "system.policy.carbon_cap.carbon_balance"],
+        "prm":
+            ["geography.prm_zones",
+             "system.prm.prm_requirement",
+             "project.prm",
+             "project.prm.prm_simple",
+             "system.prm.aggregate_project_simple_prm_contribution",
+             "system.prm.prm_balance"]
     }
     return optional_modules
 
