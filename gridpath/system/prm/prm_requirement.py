@@ -49,10 +49,42 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
 def get_inputs_from_database(subscenarios, c, inputs_directory):
     """
-
+    prm_requirement.tab
     :param subscenarios
     :param c:
     :param inputs_directory:
     :return:
     """
-    pass
+    with open(os.path.join(inputs_directory,
+                           "prm_requirement.tab"), "w") as \
+            prm_requirement_tab_file:
+        writer = csv.writer(prm_requirement_tab_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["prm_zone", "period", "prm_requirement_mw"]
+        )
+
+        prm_requirement = c.execute(
+            """SELECT prm_zone, period, prm_requirement_mw
+            FROM inputs_system_prm_requirement
+            JOIN
+            (SELECT period
+            FROM inputs_temporal_periods
+            WHERE timepoint_scenario_id = {}) as relevant_periods
+            USING (period)
+            JOIN
+            (SELECT prm_zone
+            FROM inputs_geography_prm_zones
+            WHERE prm_zone_scenario_id = {}) as relevant_zones
+            using (prm_zone)
+            WHERE prm_requirement_scenario_id = {};
+            """.format(
+                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.PRM_ZONE_SCENARIO_ID,
+                subscenarios.PRM_REQUIREMENT_SCENARIO_ID
+            )
+        )
+        for row in prm_requirement:
+            writer.writerow(row)

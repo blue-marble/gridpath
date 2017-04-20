@@ -81,3 +81,55 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 value(m.prm_simple_fraction[prj]),
                 value(m.PRM_Simple_Contribution_MW[prj, period])
             ])
+
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    project_zones = c.execute(
+        """SELECT project, prm_simple_fraction
+        FROM inputs_project_prm_zones
+            WHERE prm_zone_scenario_id = {}
+            AND project_prm_zone_scenario_id = {}""".format(
+            subscenarios.PRM_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Make a dict for easy access
+    prj_zone_dict = dict()
+    for (prj, zone) in project_zones:
+        prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+              ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t")
+
+        new_rows = list()
+
+        # Append column header
+        header = reader.next()
+        header.append("prm_simple_fraction")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If project specified, check if BA specified or not
+            if row[0] in prj_zone_dict.keys():
+                row.append(prj_zone_dict[row[0]])
+                new_rows.append(row)
+            # If project not specified, specify no BA
+            else:
+                row.append(".")
+                new_rows.append(row)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+            projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer.writerows(new_rows)

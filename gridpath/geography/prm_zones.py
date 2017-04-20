@@ -6,6 +6,7 @@ Zones where PRM is enforced; these can be different from the load
 zones and other balancing areas.
 """
 
+import csv
 import os.path
 from pyomo.environ import Set
 
@@ -40,10 +41,29 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
 def get_inputs_from_database(subscenarios, c, inputs_directory):
     """
-
+    prm_zones.tab
     :param subscenarios
     :param c:
     :param inputs_directory:
     :return:
     """
-    pass
+    with open(os.path.join(inputs_directory,
+                           "prm_zones.tab"), "w") as \
+            prm_zones_file:
+        writer = csv.writer(prm_zones_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["prm_zone"]
+        )
+
+        prm_zones = c.execute(
+            """SELECT prm_zone
+            FROM inputs_geography_prm_zones
+            WHERE prm_zone_scenario_id = {};
+            """.format(
+                subscenarios.PRM_ZONE_SCENARIO_ID
+            )
+        )
+        for row in prm_zones:
+            writer.writerow(row)

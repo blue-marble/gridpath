@@ -231,6 +231,25 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
 
+-- PRM
+-- This is the unit at which PRM requirements are met in the model; it can be
+-- different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_prm_zones;
+CREATE TABLE subscenarios_geography_prm_zones (
+prm_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_prm_zones;
+CREATE TABLE inputs_geography_prm_zones (
+prm_zone_scenario_id INTEGER,
+prm_zone VARCHAR(32),
+PRIMARY KEY (prm_zone_scenario_id, prm_zone),
+FOREIGN KEY (prm_zone_scenario_id) REFERENCES
+subscenarios_geography_prm_zones (prm_zone_scenario_id)
+);
+
 
 -------------------
 -- -- PROJECT -- --
@@ -598,9 +617,8 @@ subscenarios_geography_frequency_response_bas
 -- Project RPS zones
 -- Which projects can contribute to RPS requirements
 -- Depends on how RPS zones are specified
--- This table can included all project with NULLs for projects not
+-- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
-
 DROP TABLE IF EXISTS subscenarios_project_rps_zones;
 CREATE TABLE subscenarios_project_rps_zones (
 rps_zone_scenario_id INTEGER,
@@ -630,7 +648,7 @@ subscenarios_geography_rps_zones (rps_zone_scenario_id)
 -- Project carbon cap zones
 -- Which projects count toward the carbon cap
 -- Depends on carbon cap zone geography
--- This table can included all project with NULLs for projects not
+-- This table can include all project with NULLs for projects not
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
 CREATE TABLE subscenarios_project_carbon_cap_zones (
@@ -659,6 +677,42 @@ project_carbon_cap_zone_scenario_id) REFERENCES
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
 );
+
+-- Project PRM zones
+-- Which projects can contribute to PRM requirements
+-- Depends on how PRM zones are specified
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+
+DROP TABLE IF EXISTS subscenarios_project_prm_zones;
+CREATE TABLE subscenarios_project_prm_zones (
+prm_zone_scenario_id INTEGER,
+project_prm_zone_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (prm_zone_scenario_id,
+project_prm_zone_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id) REFERENCES
+subscenarios_geography_prm_zones (prm_zone_scenario_id)
+);
+
+-- TODO: where does it make the most sense to keep the 'prm_simple_fraction'
+-- param? It's not really an 'operational characteristic,' so here for now
+DROP TABLE IF EXISTS inputs_project_prm_zones;
+CREATE TABLE inputs_project_prm_zones (
+prm_zone_scenario_id INTEGER,
+project_prm_zone_scenario_id INTEGER,
+project VARCHAR(64),
+prm_zone VARCHAR(32),
+prm_simple_fraction FLOAT,
+PRIMARY KEY (prm_zone_scenario_id, project_prm_zone_scenario_id, project),
+FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
+ subscenarios_project_prm_zones
+ (prm_zone_scenario_id, project_prm_zone_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id) REFERENCES
+subscenarios_geography_prm_zones (prm_zone_scenario_id)
+);
+
 
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
@@ -1040,6 +1094,29 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
 
+-- PRM requirements
+DROP TABLE IF EXISTS subscenarios_system_prm_requirement;
+CREATE TABLE subscenarios_system_prm_requirement (
+prm_requirement_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on timepoint_scenario_id and
+-- prm_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_prm_requirement;
+CREATE TABLE inputs_system_prm_requirement (
+prm_requirement_scenario_id INTEGER,
+prm_zone VARCHAR(32),
+period INTEGER,
+prm_requirement_mw FLOAT,
+prm_zone_scenario_id INTEGER,
+PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period),
+FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
+inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
+);
+
 -- Case tuning
 DROP TABLE IF EXISTS subscenarios_tuning;
 CREATE TABLE subscenarios_tuning (
@@ -1077,6 +1154,7 @@ of_frequency_response INTEGER,
 of_rps INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
+of_prm INTEGER,
 timepoint_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
@@ -1084,6 +1162,7 @@ lf_reserves_down_ba_scenario_id INTEGER,
 frequency_response_ba_scenario_id INTEGER,
 rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
+prm_zone_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
@@ -1091,6 +1170,7 @@ project_lf_reserves_down_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
+project_prm_zone_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
@@ -1112,6 +1192,7 @@ lf_reserves_down_scenario_id INTEGER,
 frequency_response_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
+prm_requirement_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 FOREIGN KEY (timepoint_scenario_id) REFERENCES
 subscenarios_temporal_timepoints (timepoint_scenario_id),
@@ -1128,6 +1209,8 @@ FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id) REFERENCES
+subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES
@@ -1158,6 +1241,9 @@ FOREIGN KEY (carbon_cap_zone_scenario_id,
 project_carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_project_carbon_cap_zones
 (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
+subscenarios_project_prm_zones
+(prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
@@ -1203,6 +1289,8 @@ FOREIGN KEY (rps_target_scenario_id) REFERENCES
 subscenarios_system_rps_targets (rps_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
+FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
+subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );
