@@ -696,21 +696,85 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
 );
 
--- TODO: where does it make the most sense to keep the 'prm_simple_fraction'
--- param? It's not really an 'operational characteristic,' so here for now
 DROP TABLE IF EXISTS inputs_project_prm_zones;
 CREATE TABLE inputs_project_prm_zones (
 prm_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project VARCHAR(64),
 prm_zone VARCHAR(32),
-prm_simple_fraction FLOAT,
 PRIMARY KEY (prm_zone_scenario_id, project_prm_zone_scenario_id, project),
 FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
  subscenarios_project_prm_zones
  (prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
+);
+
+-- Project capacity contribution characteristics (simple ELCC treatment or
+-- treatment via an ELCC surface
+DROP TABLE IF EXISTS subscenarios_project_elcc_chars;
+CREATE TABLE subscenarios_project_elcc_chars (
+project_elcc_chars_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_elcc_chars;
+CREATE TABLE inputs_project_elcc_chars (
+project_elcc_chars_scenario_id INTEGER,
+project VARCHAR(64),
+elcc_simple_fraction FLOAT,
+contributes_to_elcc_surface INTEGER,
+PRIMARY KEY (project_elcc_chars_scenario_id, project),
+FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
+subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
+);
+
+-- ELCC surface
+-- Depends on how PRM zones are defined
+DROP TABLE IF EXISTS subscenarios_system_elcc_surface;
+CREATE TABLE subscenarios_system_elcc_surface (
+prm_zone_scenario_id INTEGER,
+elcc_surface_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (prm_zone_scenario_id, elcc_surface_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id) REFERENCES
+subscenarios_geography_prm_zones (prm_zone_scenario_id)
+);
+
+-- ELCC surface intercept by PRM zone
+DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface;
+CREATE TABLE inputs_system_prm_zone_elcc_surface (
+prm_zone_scenario_id INTEGER,
+elcc_surface_scenario_id INTEGER,
+prm_zone VARCHAR(32),
+period INTEGER,
+facet INTEGER,
+elcc_surface_intercept FLOAT,
+PRIMARY KEY (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone, period,
+facet),
+FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
+subscenarios_system_elcc_surface (prm_zone_scenario_id,
+elcc_surface_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
+inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
+);
+
+DROP TABLE IF EXISTS inputs_project_elcc_surface;
+CREATE TABLE inputs_project_elcc_surface (
+prm_zone_scenario_id,
+project_prm_zone_scenario_id INTEGER,
+elcc_surface_scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+facet INTEGER,
+elcc_surface_coefficient FLOAT,
+PRIMARY KEY (project_prm_zone_scenario_id, elcc_surface_scenario_id,
+project, period, facet),
+FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
+subscenarios_project_prm_zones
+(prm_zone_scenario_id, project_prm_zone_scenario_id)
 );
 
 
@@ -1130,6 +1194,7 @@ CREATE TABLE inputs_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY,
 import_carbon_tuning_cost DOUBLE,
 hydro_ramp_tuning_cost DOUBLE,
+dynamic_elcc_tuning_cost DOUBLE,
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );
@@ -1155,6 +1220,7 @@ of_rps INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_prm INTEGER,
+of_elcc_surface INTEGER,
 timepoint_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
@@ -1171,6 +1237,7 @@ project_frequency_response_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
+project_elcc_chars_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
@@ -1193,6 +1260,7 @@ frequency_response_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
+elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 FOREIGN KEY (timepoint_scenario_id) REFERENCES
 subscenarios_temporal_timepoints (timepoint_scenario_id),
@@ -1244,6 +1312,8 @@ subscenarios_project_carbon_cap_zones
 FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
 subscenarios_project_prm_zones
 (prm_zone_scenario_id, project_prm_zone_scenario_id),
+FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
+subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
@@ -1291,6 +1361,9 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
 subscenarios_system_prm_requirement (prm_requirement_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
+subscenarios_system_elcc_surface
+(prm_zone_scenario_id, elcc_surface_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );

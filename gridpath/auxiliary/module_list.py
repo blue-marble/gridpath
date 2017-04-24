@@ -57,6 +57,7 @@ def all_modules_list():
         "project.operations.fuel_burn",
         "project.prm",
         "project.prm.prm_simple",
+        "project.prm.elcc_surface",
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
@@ -83,6 +84,7 @@ def all_modules_list():
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
         "system.prm.aggregate_project_simple_prm_contribution",
+        "system.prm.elcc_surface",
         "system.prm.prm_balance",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_operational_costs",
@@ -95,6 +97,7 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.regulation_up",
         "objective.system.reserve_violation_penalties.regulation_down",
         "objective.system.reserve_violation_penalties.frequency_response",
+        "objective.system.prm.dynamic_elcc_tuning_penalties",
         "objective.min_total_cost"
     ]
     return all_modules
@@ -187,7 +190,10 @@ def cross_feature_modules_list():
          "transmission.operations.carbon_emissions",
          "objective.transmission.carbon_imports_tuning_costs"],
         ("transmission", "simultaneous_flow_limits"):
-            ["transmission.operations.simultaneous_flow_limits"]
+            ["transmission.operations.simultaneous_flow_limits"],
+        ("prm", "elcc_surface"):
+            ["project.prm.elcc_surface", "system.prm.elcc_surface",
+             "objective.system.prm.dynamic_elcc_tuning_penalties"]
     }
     return cross_modules
 

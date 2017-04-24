@@ -109,6 +109,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.PROJECT_ELCC_CHARS_SCENARIO_ID = cursor.execute(
+            """SELECT project_elcc_chars_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.PROJECT_EXISTING_CAPACITY_SCENARIO_ID = cursor.execute(
             """SELECT project_existing_capacity_scenario_id
                FROM scenarios
@@ -239,6 +245,12 @@ class SubScenarios:
 
         self.PRM_REQUIREMENT_SCENARIO_ID = cursor.execute(
             """SELECT prm_requirement_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
+        self.ELCC_SURFACE_SCENARIO_ID = cursor.execute(
+            """SELECT elcc_surface_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
@@ -443,6 +455,14 @@ if __name__ == "__main__":
     if OPTIONAL_FEATURE_PRM:
         FEATURE_LIST.append("prm")
 
+    OPTIONAL_FEATURE_ELCC_SURFACE = c.execute(
+        """SELECT of_elcc_surface
+           FROM scenarios
+           WHERE scenario_id = {};""".format(SCENARIO_ID)
+    ).fetchone()[0]
+    if OPTIONAL_FEATURE_ELCC_SURFACE:
+        FEATURE_LIST.append("elcc_surface")
+
     # features.csv
     with open(os.path.join(SCENARIO_DIRECTORY, "features.csv"), "w") as \
             features_csv_file:
@@ -487,6 +507,7 @@ if __name__ == "__main__":
         writer.writerow(["of_track_carbon_imports",
                          OPTIONAL_FEATURE_TRACK_CARBON_IMPORTS])
         writer.writerow(["of_prm", OPTIONAL_FEATURE_PRM])
+        writer.writerow(["of_elcc_surface", OPTIONAL_FEATURE_ELCC_SURFACE])
         writer.writerow(["timepoint_scenario_id",
                          SUBSCENARIOS.TIMEPOINT_SCENARIO_ID])
         writer.writerow(["load_zone_scenario_id",
@@ -520,6 +541,8 @@ if __name__ == "__main__":
                          SUBSCENARIOS.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID])
         writer.writerow(["project_prm_zone_scenario_id",
                          SUBSCENARIOS.PROJECT_PRM_ZONE_SCENARIO_ID])
+        writer.writerow(["project_elcc_chars_scenario_id",
+                         SUBSCENARIOS.PROJECT_ELCC_CHARS_SCENARIO_ID])
         writer.writerow(["project_existing_capacity_scenario_id",
                          SUBSCENARIOS.PROJECT_EXISTING_CAPACITY_SCENARIO_ID])
         writer.writerow(["project_existing_fixed_cost_scenario_id",
@@ -570,5 +593,7 @@ if __name__ == "__main__":
                          SUBSCENARIOS.CARBON_CAP_TARGET_SCENARIO_ID])
         writer.writerow(["prm_requirement_scenario_id",
                          SUBSCENARIOS.PRM_REQUIREMENT_SCENARIO_ID])
+        writer.writerow(["elcc_surface_scenario_id",
+                         SUBSCENARIOS.ELCC_SURFACE_SCENARIO_ID])
         writer.writerow(["tuning_scenario_id",
                          SUBSCENARIOS.TUNING_SCENARIO_ID])

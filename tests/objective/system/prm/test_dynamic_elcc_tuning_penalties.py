@@ -11,16 +11,20 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.prm_zones", "project", "project.capacity.capacity",
-    "project.prm"
-]
-NAME_OF_MODULE_BEING_TESTED = "project.prm.prm_simple"
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
+                             "temporal.operations.horizons",
+                             "temporal.investment.periods",
+                             "geography.load_zones",
+                             "geography.prm_zones",
+                             "project", "project.capacity.capacity",
+                             "system.prm.prm_requirement",
+                             "project.prm", "project.prm.elcc_surface",
+                             "system.prm.elcc_surface"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "objective.system.prm.dynamic_elcc_tuning_penalties"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -38,11 +42,10 @@ except ImportError:
           " to test.")
 
 
-class TestProjPRMSimple(unittest.TestCase):
+class TestDynamicELCCTuningPenalties(unittest.TestCase):
     """
 
     """
-
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -69,39 +72,20 @@ class TestProjPRMSimple(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+
         :return:
         """
-        m, data = add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-        )
+        m, data = \
+            add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
+                                         module_to_test=MODULE_BEING_TESTED,
+                                         test_data_dir=TEST_DATA_DIRECTORY,
+                                         horizon="",
+                                         stage="")
         instance = m.create_instance(data)
-        
-        # Params: prm_simple_fraction
-        expected_prm_frac = OrderedDict(
-            sorted(
-                {"Coal": 0.8, "Coal_z2": 0.8,
-                 "Gas_CCGT": 0.8, "Gas_CCGT_New": 0.8,
-                 "Gas_CCGT_z2": 0.8, "Gas_CT": 0.8,
-                 "Gas_CT_New": 0.8, "Gas_CT_z2": 0.8,
-                 "Nuclear": 0.8, "Nuclear_z2": 0.8,
-                 "Wind": 0.8, "Wind_z2": 0.8,
-                 "Battery": 0.8, "Battery_Specified": 0.8,
-                 "Hydro": 0.8, 'Hydro_NonCurtailable': 0.8,
-                 "Disp_Binary_Commit": 0.8,
-                 "Disp_Cont_Commit": 0.8,
-                 "Disp_No_Commit": 0.8, "Clunky_Old_Gen": 0.8,
-                 "Nuclear_Flexible": 0.8}.items()
-            )
-        )
-        actual_prm_frac = OrderedDict(
-            sorted(
-                {prj: instance.elcc_simple_fraction[prj] for prj in
-                 instance.PRM_PROJECTS}.items()
-            )
-        )
-        self.assertDictEqual(expected_prm_frac, actual_prm_frac)
+
+        # Param: dynamic_elcc_tuning_cost
+        self.assertEqual(instance.dynamic_elcc_tuning_cost, 10e-10)
+
+
+if __name__ == "__main__":
+    unittest.main()
