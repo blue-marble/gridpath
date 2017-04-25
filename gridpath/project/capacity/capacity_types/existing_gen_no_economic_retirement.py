@@ -73,6 +73,7 @@ def load_module_specific_data(
                 sep="\t", usecols=["project",
                                    "capacity_type"]
                 )
+
         for row in zip(dynamic_components["project"],
                        dynamic_components["capacity_type"]):
             if row[1] == "existing_gen_no_economic_retirement":
@@ -176,7 +177,7 @@ def get_module_specific_inputs_from_database(
                                    "existing_generation_period_params.tab")
                       ):
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "w") \
+                               "existing_generation_period_params.tab"), "a") \
                 as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")

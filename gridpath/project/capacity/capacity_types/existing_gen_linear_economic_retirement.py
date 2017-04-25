@@ -304,7 +304,7 @@ def get_module_specific_inputs_from_database(
                                    "existing_generation_period_params.tab")
                       ):
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "w") \
+                               "existing_generation_period_params.tab"), "a") \
                 as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")
