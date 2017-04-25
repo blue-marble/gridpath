@@ -379,6 +379,28 @@ FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
 );
 
+-- Capacity threshold costs
+DROP TABLE IF EXISTS subscenarios_project_capacity_threshold_costs;
+CREATE TABLE subscenarios_project_capacity_threshold_costs (
+capacity_threshold_cost_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_capacity_threshold_costs;
+CREATE TABLE inputs_project_capacity_threshold_costs (
+capacity_threshold_cost_scenario_id INTEGER,
+capacity_threshold_group VARCHAR(64),
+capacity_threshold_mw FLOAT,
+capacity_threshold_cost_per_mw FLOAT,
+PRIMARY KEY (capacity_threshold_cost_scenario_id, capacity_threshold_group),
+FOREIGN KEY (capacity_threshold_cost_scenario_id) REFERENCES
+subscenarios_project_capacity_threshold_costs
+(capacity_threshold_cost_scenario_id)
+);
+
+
 -- -- Operations -- --
 
 -- Project operational characteristics
@@ -514,6 +536,7 @@ load_zone_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project VARCHAR(64),
 load_zone VARCHAR(32),
+interconnection_capacity_threshold_group VARCHAR(64),  --optional
 PRIMARY KEY (load_zone_scenario_id, project_load_zone_scenario_id, project),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
  subscenarios_project_load_zones
@@ -1245,6 +1268,7 @@ fuel_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
+capacity_threshold_cost_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
@@ -1323,6 +1347,9 @@ FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id),
+FOREIGN KEY (capacity_threshold_cost_scenario_id) REFERENCES
+subscenarios_project_capacity_threshold_costs
+(capacity_threshold_cost_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 subscenarios_transmission_portfolios
 (transmission_portfolio_scenario_id),

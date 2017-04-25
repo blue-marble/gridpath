@@ -139,6 +139,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.CAPACITY_THRESHOLD_COST_SCENARIO_ID = cursor.execute(
+            """SELECT capacity_threshold_cost_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = cursor.execute(
             """SELECT project_operational_chars_scenario_id
                FROM scenarios
@@ -557,6 +563,8 @@ if __name__ == "__main__":
                          SUBSCENARIOS.PROJECT_NEW_COST_SCENARIO_ID])
         writer.writerow(["project_new_potential_scenario_id",
                          SUBSCENARIOS.PROJECT_NEW_POTENTIAL_SCENARIO_ID])
+        writer.writerow(["capacity_threshold_cost_scenario_id",
+                         SUBSCENARIOS.CAPACITY_THRESHOLD_COST_SCENARIO_ID])
         writer.writerow(["transmission_portfolio_scenario_id",
                          SUBSCENARIOS.TRANSMISSION_PORTFOLIO_SCENARIO_ID])
         writer.writerow(["transmission_load_zone_scenario_id",
