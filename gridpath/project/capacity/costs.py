@@ -9,8 +9,7 @@ import csv
 import os.path
 from pyomo.environ import Expression, value
 
-from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    total_cost_components
+from gridpath.auxiliary.dynamic_components import required_capacity_modules
 from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
 

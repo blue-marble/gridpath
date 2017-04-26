@@ -35,7 +35,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperations(unittest.TestCase):
+class TestOperationalTypes(unittest.TestCase):
     """
 
     """

@@ -110,7 +110,6 @@ def get_inputs_from_database(
     imported_operational_modules = \
         load_operational_type_modules(required_operational_modules)
 
-    # Get module-specific results
     for op_m in required_operational_modules:
         if hasattr(imported_operational_modules[op_m],
                    "get_module_specific_inputs_from_database"):

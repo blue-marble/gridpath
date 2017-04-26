@@ -21,8 +21,6 @@ def add_model_components(m, d):
     :return:
     """
 
-    # ### Aggregate operational costs for objective function ### #
-    # Add cost to objective function
     def variable_om_cost_rule(m, g, tmp):
         """
         Power production cost for each generator.
@@ -117,12 +115,13 @@ def add_model_components(m, d):
         Shutdown expression is positive when more units were on in the previous
         timepoint that are on in the current timepoint. Shutdown_Cost is
         defined to be non-negative, so if Shutdown_Expression is 0 or negative
-        (i.e. no units shut down or units started since the previous timepoint),
+        (i.e. no units shut down or units started since the previous 
+        timepoint),
         Shutdown_Cost will be 0.
         If horizon is circular, the last timepoint of the horizon is the
         previous_timepoint for the first timepoint if the horizon;
-        if the horizon is linear, no previous_timepoint is defined for the first
-        timepoint of the horizon, so skip constraint.
+        if the horizon is linear, no previous_timepoint is defined for the 
+        first timepoint of the horizon, so skip constraint.
         :param mod:
         :param g:
         :param tmp:

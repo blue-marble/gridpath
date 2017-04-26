@@ -386,7 +386,7 @@ def make_figure(
             str('' if inactive_exports else ' + Exports') + \
             str('' if inactive_pumped_storage else ' + Pumped Storage') + \
             ' + Battery'
-        print battery_label
+
         ax.plot(range(1, x_axis_count + 1),
                 [load_[i][0] + exports[i] +
                  [-x if x < 0 else 0 for x in power_by_tech["Pumped_Storage"]][

@@ -106,6 +106,16 @@ def add_model_components(m, d):
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+    """
+    
+    :param m: 
+    :param d: 
+    :param data_portal: 
+    :param scenario_directory: 
+    :param horizon: 
+    :param stage: 
+    :return: 
+    """
     imported_capacity_modules = \
         load_gen_storage_capacity_type_modules(
             getattr(d, required_capacity_modules)
@@ -225,7 +235,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Capacity results
     print("project capacity")
     c.execute(
-        """DELETE FROM results_project_capacity_all WHERE scenario_id = {};""".format(
+        """DELETE FROM results_project_capacity_all 
+        WHERE scenario_id = {};""".format(
             scenario_id
         )
     )
@@ -239,7 +250,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     db.commit()
 
     c.execute(
-        """CREATE TABLE temp_results_project_capacity_all""" + str(scenario_id) + """(
+        """CREATE TABLE temp_results_project_capacity_all"""
+        + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,

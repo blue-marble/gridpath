@@ -8,7 +8,7 @@ Operational subsets (that can include more than one operational type)
 import csv
 from pandas import read_csv
 import os.path
-from pyomo.environ import Var, Set, Param, PositiveReals
+from pyomo.environ import Var, Set, Param, PositiveReals, PercentFraction
 
 from gridpath.auxiliary.auxiliary import is_number
 
@@ -55,6 +55,12 @@ def add_model_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.FUEL_PROJECTS))
+
+    # Availability derate (e.g. for maintenance/planned outages)
+    # This can be optionally loaded from external data, but defaults to 1
+    m.availability_derate = Param(
+        m.PROJECTS, m.HORIZONS, within=PercentFraction, default=1
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
@@ -190,3 +196,51 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         determine_fuel_projects()[2]
     data_portal.data()["inc_heat_rate_mmbtu_per_mwh"] = \
         determine_fuel_projects()[3]
+
+    # Availability derates
+    availability_file = os.path.join(
+        scenario_directory, horizon, stage, "inputs",
+        "project_availability.tab"
+    )
+
+    if os.path.exists(availability_file):
+        data_portal.load(
+            filename=availability_file,
+            param=m.availability_derate
+        )
+    else:
+        pass
+
+
+def get_inputs_from_database(
+        subscenarios, c, inputs_directory
+):
+    """
+
+    :param subscenarios: 
+    :param c: 
+    :param inputs_directory: 
+    :return: 
+    """
+    # Project availabilities
+    availabilities = c.execute(
+        """SELECT project, horizon, availability
+        FROM inputs_project_availability
+        INNER JOIN inputs_project_portfolios
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_availability_scenario_id = {}""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
+        )
+    )
+
+    with open(os.path.join(inputs_directory, "project_availability.tab"),
+              "w") as \
+            availability_tab_file:
+        writer = csv.writer(availability_tab_file, delimiter="\t")
+
+        writer.writerow(["project", "horizon", "availability_derate"])
+
+        for row in availabilities:
+            writer.writerow(row)
