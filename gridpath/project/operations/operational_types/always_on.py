@@ -5,6 +5,7 @@
 Operations of always-on generators. These are generators that area always 
 committed but can ramp up and down between a minimum stable level above 0 and 
 full output.
+No reserves.
 """
 
 import os.path
@@ -51,6 +52,42 @@ def add_module_specific_components(m, d):
     m.Provide_Power_AlwaysOn_MW = Var(
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
     )
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Always-on generators must provide power at at least minimum stable 
+        level at all times
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            >= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.always_on_min_stable_level_fraction[g]
+    m.AlwaysOn_Min_Power_Constraint = \
+        Constraint(
+            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=min_power_rule
+        )
+
+    def max_power_rule(mod, g, tmp):
+        """
+        Power provision can't exceed capacity
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]]
+    m.AlwaysOn_Max_Power_Constraint = \
+        Constraint(
+            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
 
     # Optional ramp constraints
     # Constrain ramps
