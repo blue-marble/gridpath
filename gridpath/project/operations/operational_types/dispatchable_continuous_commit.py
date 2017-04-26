@@ -64,8 +64,9 @@ def add_module_specific_components(m, d):
         return mod.Provide_Power_DispContinuousCommit_MW[g, tmp] + \
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, headroom_variables)[g]) \
-            <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Continuous[
-            g, tmp]
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.Commit_Continuous[g, tmp]
     m.DispContCommit_Max_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -83,7 +84,9 @@ def add_module_specific_components(m, d):
         return mod.Provide_Power_DispContinuousCommit_MW[g, tmp] - \
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, footroom_variables)[g]) \
-            >= mod.Commit_Continuous[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
+            >= mod.Commit_Continuous[g, tmp] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
             * mod.disp_cont_commit_min_stable_level_fraction[g]
     m.DispContCommit_Min_Power_Constraint = \
         Constraint(
@@ -109,7 +112,9 @@ def commitment_rule(mod, g, tmp):
 
 
 def online_capacity_rule(mod, g, tmp):
-    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Continuous[g, tmp]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]] \
+        * mod.Commit_Continuous[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
@@ -176,6 +181,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
             + (mod.Provide_Power_DispContinuousCommit_MW[g, tmp] -
                (mod.Commit_Continuous[g, tmp]
                 * mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.availability_derate[g, mod.horizon[tmp]]
                 * mod.disp_cont_commit_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
     else:
@@ -201,7 +207,8 @@ def startup_shutdown_rule(mod, g, tmp):
     else:
         return (mod.Commit_Continuous[g, tmp]
                 - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]) * \
-               mod.Capacity_MW[g, mod.period[tmp]]
+               mod.Capacity_MW[g, mod.period[tmp]] \
+               * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def ramp_rule(mod, g, tmp):

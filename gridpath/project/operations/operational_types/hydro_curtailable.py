@@ -149,7 +149,8 @@ def add_module_specific_components(m, d):
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 <= \
                 mod.hydro_curtailable_ramp_up_rate[g] \
-                * mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Curtailable_Ramp_Up_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -173,7 +174,8 @@ def add_module_specific_components(m, d):
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 >= \
                 - mod.hydro_curtailable_ramp_down_rate[g] \
-                * mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Curtailable_Ramp_Down_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -200,7 +202,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def rec_provision_rule(mod, g, tmp):

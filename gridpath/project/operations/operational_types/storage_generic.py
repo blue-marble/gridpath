@@ -67,7 +67,8 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Generic_Storage_Discharge_MW[s, tmp] \
-            <= mod.Capacity_MW[s, mod.period[tmp]]
+            <= mod.Capacity_MW[s, mod.period[tmp]] \
+            * mod.availability_derate[s, mod.horizon[tmp]]
 
     m.Storage_Max_Discharge_Constraint = \
         Constraint(
@@ -84,7 +85,8 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Generic_Storage_Charge_MW[s, tmp] \
-            <= mod.Capacity_MW[s, mod.period[tmp]]
+            <= mod.Capacity_MW[s, mod.period[tmp]]\
+            * mod.availability_derate[s, mod.horizon[tmp]]
 
     m.Storage_Generic_Max_Charge_Constraint = \
         Constraint(
@@ -106,6 +108,7 @@ def add_module_specific_components(m, d):
                    for c in getattr(d, headroom_variables)[s]) \
             <= \
             mod.Capacity_MW[s, mod.period[tmp]] \
+            * mod.availability_derate[s, mod.horizon[tmp]] \
             - mod.Generic_Storage_Discharge_MW[s, tmp] \
             + mod.Generic_Storage_Charge_MW[s, tmp]
 
@@ -127,6 +130,7 @@ def add_module_specific_components(m, d):
                    for c in getattr(d, footroom_variables)[s]) \
             <= mod.Generic_Storage_Discharge_MW[s, tmp] \
             + mod.Capacity_MW[s, mod.period[tmp]] \
+            * mod.availability_derate[s, mod.horizon[tmp]] \
             - mod.Generic_Storage_Charge_MW[s, tmp]
 
     m.Storage_Generic_Max_Footroom_Power_Constraint = \
@@ -189,7 +193,8 @@ def add_module_specific_components(m, d):
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
             <= \
-            mod.Capacity_MW[s, mod.period[tmp]] - \
+            mod.Capacity_MW[s, mod.period[tmp]] \
+            * mod.availability_derate[s, mod.horizon[tmp]] - \
             mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
             - mod.Generic_Storage_Charge_MW[s, tmp] \
             * mod.number_of_hours_in_timepoint[tmp] \
@@ -245,7 +250,8 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
-            <= mod.Energy_Capacity_MWh[s, mod.period[tmp]]
+            <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
+            * mod.availability_derate[s, mod.horizon[tmp]]
     m.Max_Energy_in_Generic_Storage_Constraint = \
         Constraint(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
                    rule=max_energy_in_storage_rule)
@@ -271,7 +277,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):

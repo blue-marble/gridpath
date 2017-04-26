@@ -146,7 +146,8 @@ def add_module_specific_components(m, d):
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
                    <= \
                    mod.hydro_noncurtailable_ramp_up_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]]
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Hydro_Noncurtailable_Ramp_Up_Constraint = \
         Constraint(
@@ -171,7 +172,8 @@ def add_module_specific_components(m, d):
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
                    >= \
                    - mod.hydro_noncurtailable_ramp_down_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]]
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Hydro_Noncurtailable_Ramp_Down_Constraint = \
         Constraint(
@@ -199,7 +201,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def rec_provision_rule(mod, g, tmp):

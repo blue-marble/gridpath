@@ -19,6 +19,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods", "geography.load_zones",
     "geography.rps_zones", "system.policy.rps.rps_requirement",
     "project", "project.capacity.capacity",
+    "project.fuels", "project.operations",
     "project.operations.operational_types",
     "project.operations.power", "project.operations.recs"]
 NAME_OF_MODULE_BEING_TESTED = "system.policy.rps.aggregate_recs"

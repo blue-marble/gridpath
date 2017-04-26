@@ -66,7 +66,9 @@ def add_module_specific_components(m, d):
             )[g]
             for c in getattr(d, headroom_variables)[g]
         ) \
-            <= mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.cap_factor[g, tmp]
     m.Variable_Max_Power_Constraint = \
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                    rule=max_power_rule)
@@ -95,12 +97,16 @@ def add_module_specific_components(m, d):
     def scheduled_curtailment_expression_rule(mod, g, tmp):
         """
         Scheduled curtailment
+        Assume cap factors don't incorporate availability derates, 
+        so don't multply capacity by availability_derate here (will count 
+        as curtailment)
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] - \
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.cap_factor[g, tmp] - \
             mod.Provide_Variable_Power_MW[g, tmp]
 
     m.Scheduled_Variable_Generator_Curtailment_MW = \
@@ -148,13 +154,19 @@ def add_module_specific_components(m, d):
         they will be called upon occasionally, so power provision will have to
         increase and less curtailment will be incurred
         The subhourly adjustment here is a simple linear function of reserve
+        
+        Assume cap factors don't incorporate availability derates, 
+        so don't multply capacity by availability_derate here (will count 
+        as curtailment)
+        
         provision.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp] - \
+        return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.cap_factor[g, tmp] - \
             mod.Provide_Variable_Power_MW[g, tmp] \
             + mod.Subhourly_Variable_Generator_Curtailment_MW[g, tmp] \
             - mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
@@ -187,7 +199,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 # RPS
@@ -291,12 +304,15 @@ def ramp_rule(mod, g, tmp):
         pass
     else:
         return \
-            (mod.Capacity_MW[g, mod.period[tmp]] * mod.cap_factor[g, tmp]) - \
+            (mod.Capacity_MW[g, mod.period[tmp]]
+             * mod.availability_derate[g, mod.horizon[tmp]]
+             * mod.cap_factor[g, tmp]) - \
             (mod.Capacity_MW[
                  g, mod.period[mod.previous_timepoint[tmp]]
-             ] * mod.cap_factor[
-                g, mod.previous_timepoint[tmp]
-            ])
+             ] * mod.availability_derate[
+                g, mod.horizon[mod.previous_timepoint[tmp]]
+            ] * mod.cap_factor[g, mod.previous_timepoint[tmp]]
+            )
 
 
 def load_module_specific_data(mod, data_portal, scenario_directory,

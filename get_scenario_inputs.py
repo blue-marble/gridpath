@@ -151,6 +151,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(SCENARIO_ID)
         ).fetchone()[0]
 
+        self.PROJECT_AVAILABILITY_SCENARIO_ID = cursor.execute(
+            """SELECT project_availability_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(SCENARIO_ID)
+        ).fetchone()[0]
+
         self.FUEL_SCENARIO_ID = cursor.execute(
             """SELECT fuel_scenario_id
                FROM scenarios
@@ -555,6 +561,8 @@ if __name__ == "__main__":
                          SUBSCENARIOS.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID])
         writer.writerow(["project_operational_chars_scenario_id",
                          SUBSCENARIOS.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID])
+        writer.writerow(["project_availability_scenario_id",
+                         SUBSCENARIOS.PROJECT_AVAILABILITY_SCENARIO_ID])
         writer.writerow(["fuel_scenario_id",
                          SUBSCENARIOS.FUEL_SCENARIO_ID])
         writer.writerow(["fuel_price_scenario_id",

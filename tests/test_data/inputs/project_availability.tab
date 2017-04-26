@@ -1,0 +1,17 @@
+project	horizon	availability_derate
+Nuclear	202001	1	
+Nuclear	202002	0.5
+Nuclear	203001	0.75
+Nuclear	203002	1
+Coal	202001	0.5	
+Coal	202002	1
+Coal	203001	0.75
+Coal	203002	1
+Nuclear_z2	202001	1	
+Nuclear_z2	202002	0.5
+Nuclear_z2	203001	0.75
+Nuclear_z2	203002	1
+Coal_z2	202001	0.5	
+Coal_z2	202002	1
+Coal_z2	203001	0.75
+Coal_z2	203002	1

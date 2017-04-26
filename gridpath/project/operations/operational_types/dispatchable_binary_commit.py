@@ -59,10 +59,11 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] + \
-           sum(getattr(mod, c)[g, tmp]
-               for c in getattr(d, headroom_variables)[g]) \
-            <= mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[
-            g, tmp]
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, headroom_variables)[g]) \
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.Commit_Binary[g, tmp]
     m.DispBinCommit_Max_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -78,9 +79,11 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Power_DispBinaryCommit_MW[g, tmp] - \
-           sum(getattr(mod, c)[g, tmp]
-               for c in getattr(d, footroom_variables)[g]) \
-            >= mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]] \
+            sum(getattr(mod, c)[g, tmp]
+                for c in getattr(d, footroom_variables)[g]) \
+            >= mod.Commit_Binary[g, tmp] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
             * mod.disp_binary_commit_min_stable_level_fraction[g]
     m.DispBinCommit_Min_Power_Constraint = \
         Constraint(
@@ -125,7 +128,9 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp: 
     :return: 
     """
-    return mod.Capacity_MW[g, mod.period[tmp]] * mod.Commit_Binary[g, tmp]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]] \
+        * mod.Commit_Binary[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
@@ -178,7 +183,9 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         return mod.Commit_Binary[g, tmp] \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispBinaryCommit_MW[g, tmp] -
-               (mod.Commit_Binary[g, tmp] * mod.Capacity_MW[g, mod.period[tmp]]
+               (mod.Commit_Binary[g, tmp]
+                * mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.availability_derate[g, mod.horizon[tmp]]
                 * mod.disp_binary_commit_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
     else:
@@ -204,7 +211,8 @@ def startup_shutdown_rule(mod, g, tmp):
     else:
         return (mod.Commit_Binary[g, tmp]
                 - mod.Commit_Binary[g, mod.previous_timepoint[tmp]]) * \
-               mod.Capacity_MW[g, mod.period[tmp]]
+               mod.Capacity_MW[g, mod.period[tmp]] \
+               * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def ramp_rule(mod, g, tmp):

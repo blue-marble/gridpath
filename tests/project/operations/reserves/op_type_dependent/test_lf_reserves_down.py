@@ -20,6 +20,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods", "geography.load_zones",
     "geography.load_following_down_balancing_areas", "project",
     "project.capacity.capacity",
+    "project.fuels", "project.operations",
     "project.operations.reserves.lf_reserves_down",
     "project.operations.operational_types"]
 NAME_OF_MODULE_BEING_TESTED = \

@@ -76,7 +76,8 @@ def add_module_specific_components(m, d):
             return mod.Always_On_Ramp_MW[g, tmp] \
                    <= \
                    mod.always_on_ramp_up_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]]
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Always_On_Ramp_Up_Constraint = \
         Constraint(
@@ -101,7 +102,8 @@ def add_module_specific_components(m, d):
             return mod.Always_On_Ramp_MW[g, tmp] \
                    >= \
                    - mod.always_on_ramp_down_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]]
+                   * mod.Capacity_MW[g, mod.period[tmp]] \
+                   * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Always_On_Ramp_Down_Constraint = \
         Constraint(
@@ -129,7 +131,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def rec_provision_rule(mod, g, tmp):
@@ -189,11 +192,13 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (mod.Capacity_MW[g, mod.period[tmp]] /
-                mod.always_on_unit_size_mw[g]) \
+        return (mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.availability_derate[g, mod.horizon[tmp]]
+                / mod.always_on_unit_size_mw[g]) \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_AlwaysOn_MW[g, tmp] -
                 (mod.Capacity_MW[g, mod.period[tmp]]
+                 * mod.availability_derate[g, mod.horizon[tmp]]
                  * mod.always_on_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
     else:

@@ -50,7 +50,8 @@ def add_module_specific_components(m, d):
         return mod.Provide_Power_DispNoCommit_MW[g, tmp] + \
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, headroom_variables)[g]) \
-            <= mod.Capacity_MW[g, mod.period[tmp]]
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]]
     m.DispNoCommit_Max_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -95,7 +96,8 @@ def online_capacity_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.Capacity_MW[g, mod.period[tmp]]
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.availability_derate[g, mod.horizon[tmp]]
 
 
 def rec_provision_rule(mod, g, tmp):

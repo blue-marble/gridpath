@@ -513,6 +513,25 @@ subscenarios_project_hydro_operational_chars
 (hydro_operational_chars_scenario_id)
 );
 
+-- Project availability (e.g. due to planned outages/maintenance)
+DROP TABLE IF EXISTS subscenarios_project_availability;
+CREATE TABLE subscenarios_project_availability (
+project_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability;
+CREATE TABLE inputs_project_availability (
+project_availability_scenario_id INTEGER,
+project VARCHAR(64),
+horizon INTEGER,
+availability FLOAT,
+PRIMARY KEY (project_availability_scenario_id, project, horizon),
+FOREIGN KEY (project_availability_scenario_id) REFERENCES
+subscenarios_project_availability (project_availability_scenario_id)
+);
+
 
 -- Project load zones
 -- Where projects are modeled to be physically located
@@ -786,7 +805,7 @@ inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
 
 DROP TABLE IF EXISTS inputs_project_elcc_surface;
 CREATE TABLE inputs_project_elcc_surface (
-prm_zone_scenario_id,
+prm_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 project VARCHAR(64),
@@ -1264,6 +1283,7 @@ project_elcc_chars_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
+project_availability_scenario_id INTEGER,
 fuel_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
@@ -1305,6 +1325,8 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
+FOREIGN KEY (project_availability_scenario_id) REFERENCES
+subscenarios_project_availability (project_availability_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (fuel_scenario_id),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES

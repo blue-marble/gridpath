@@ -1729,6 +1729,72 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_tmps_by_shutdown_project,
                              actual_tmps_by_shutdown_project)
 
+        # Param: availability_derate
+        expected_availability = OrderedDict(sorted(
+            {("Nuclear", 202001): 1, ("Nuclear", 202002): 0.5,
+             ("Nuclear", 203001): 0.75, ("Nuclear", 203002): 1,
+             ("Gas_CCGT", 202001): 1, ("Gas_CCGT", 202002): 1,
+             ("Gas_CCGT", 203001): 1, ("Gas_CCGT", 203002): 1,
+             ("Coal", 202001): 0.5, ("Coal", 202002): 1,
+             ("Coal", 203001): 0.75, ("Coal", 203002): 1,
+             ("Gas_CT", 202001): 1, ("Gas_CT", 202002): 1,
+             ("Gas_CT", 203001): 1, ("Gas_CT", 203002): 1,
+             ("Wind", 202001): 1, ("Wind", 202002): 1,
+             ("Wind", 203001): 1, ("Wind", 203002): 1,
+             ("Gas_CCGT_New", 202001): 1, ("Gas_CCGT_New", 202002): 1,
+             ("Gas_CCGT_New", 203001): 1, ("Gas_CCGT_New", 203002): 1,
+             ("Gas_CT_New", 202001): 1, ("Gas_CT_New", 202002): 1,
+             ("Gas_CT_New", 203001): 1, ("Gas_CT_New", 203002): 1,
+             ("Nuclear_z2", 202001): 1, ("Nuclear_z2", 202002): 0.5,
+             ("Nuclear_z2", 203001): 0.75, ("Nuclear_z2", 203002): 1,
+             ("Gas_CCGT_z2", 202001): 1, ("Gas_CCGT_z2", 202002): 1,
+             ("Gas_CCGT_z2", 203001): 1, ("Gas_CCGT_z2", 203002): 1,
+             ("Coal_z2", 202001): 0.5, ("Coal_z2", 202002): 1,
+             ("Coal_z2", 203001): 0.75, ("Coal_z2", 203002): 1,
+             ("Gas_CT_z2", 202001): 1, ("Gas_CT_z2", 202002): 1,
+             ("Gas_CT_z2", 203001): 1, ("Gas_CT_z2", 203002): 1,
+             ("Wind_z2", 202001): 1, ("Wind_z2", 202002): 1,
+             ("Wind_z2", 203001): 1, ("Wind_z2", 203002): 1,
+             ("Battery", 202001): 1, ("Battery", 202002): 1,
+             ("Battery", 203001): 1, ("Battery", 203002): 1,
+             ("Battery_Specified", 202001): 1,
+             ("Battery_Specified", 202002): 1,
+             ("Battery_Specified", 203001): 1,
+             ("Battery_Specified", 203002): 1,
+             ("Battery", 202001): 1, ("Battery", 202002): 1,
+             ("Battery", 203001): 1, ("Battery", 203002): 1,
+             ("Hydro", 202001): 1, ("Hydro", 202002): 1,
+             ("Hydro", 203001): 1, ("Hydro", 203002): 1,
+             ("Hydro_NonCurtailable", 202001): 1,
+             ("Hydro_NonCurtailable", 202002): 1,
+             ("Hydro_NonCurtailable", 203001): 1,
+             ("Hydro_NonCurtailable", 203002): 1,
+             ("Disp_Binary_Commit", 202001): 1,
+             ("Disp_Binary_Commit", 202002): 1,
+             ("Disp_Binary_Commit", 203001): 1,
+             ("Disp_Binary_Commit", 203002): 1,
+             ("Disp_Cont_Commit", 202001): 1, ("Disp_Cont_Commit", 202002): 1,
+             ("Disp_Cont_Commit", 203001): 1, ("Disp_Cont_Commit", 203002): 1,
+             ("Disp_No_Commit", 202001): 1, ("Disp_No_Commit", 202002): 1,
+             ("Disp_No_Commit", 203001): 1, ("Disp_No_Commit", 203002): 1,
+             ("Clunky_Old_Gen", 202001): 1, ("Clunky_Old_Gen", 202002): 1,
+             ("Clunky_Old_Gen", 203001): 1, ("Clunky_Old_Gen", 203002): 1,
+             ("Customer_PV", 202001): 1, ("Customer_PV", 202002): 1,
+             ("Customer_PV", 203001): 1, ("Customer_PV", 203002): 1,
+             ("Nuclear_Flexible", 202001): 1, ("Nuclear_Flexible", 202002): 1,
+             ("Nuclear_Flexible", 203001): 1, ("Nuclear_Flexible", 203002): 1
+             }.items()
+        )
+        )
+
+        actual_availability = OrderedDict(sorted(
+            {(p, h): instance.availability_derate[p, h] for p in
+             instance.PROJECTS for h in instance.HORIZONS}.items()
+        )
+        )
+
+        self.assertDictEqual(expected_availability, actual_availability)
+
 
 if __name__ == "__main__":
     unittest.main()
