@@ -12,6 +12,7 @@ from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyutilib.services import TempfileManager
 import sys
 
+from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import get_features, load_modules
 
@@ -161,21 +162,8 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     # Make results and logs directories
     results_directory = os.path.join(scenario_directory, horizon, stage,
                                      "results")
-    logs_directory = os.path.join(scenario_directory, horizon, stage,
-                                  "logs")
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
-
-    if not os.path.exists(logs_directory):
-        os.makedirs(logs_directory)
-
-    # Write temporary files to logs directory if directed to do so
-    # This can be useful for debugging in conjunction with the --keepfiles
-    # and --symbolic arguments
-    if parsed_arguments.write_solver_files_to_logs_dir:
-        TempfileManager.tempdir = logs_directory
-    else:
-        pass
 
     modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
         create_and_solve_problem(scenario_directory, horizon, stage,
@@ -325,6 +313,37 @@ def solve(instance, parsed_arguments):
     return results
 
 
+def log_run(scenario_directory, horizon, stage, parsed_arguments):
+    """
+    Log run output to a logs file and/or write temporary files in logs dir
+    :param scenario_directory: 
+    :param horizon: 
+    :param stage: 
+    :param parsed_arguments: 
+    :return: 
+    """
+    logs_directory = os.path.join(scenario_directory, horizon, stage,
+                                  "logs")
+
+    if not os.path.exists(logs_directory):
+        os.makedirs(logs_directory)
+
+    # Write temporary files to logs directory if directed to do so
+    # This can be useful for debugging in conjunction with the --keepfiles
+    # and --symbolic arguments
+    if parsed_arguments.write_solver_files_to_logs_dir:
+        TempfileManager.tempdir = logs_directory
+    else:
+        pass
+
+    # Log output to assigned destinations (terminal and a log file in the
+    # logs directory) if directed to do so
+    if parsed_arguments.log:
+        sys.stdout = Logging(logs_dir=logs_directory)
+    else:
+        pass
+
+
 def export_results(problem_directory, horizon, stage, instance,
                    dynamic_inputs, loaded_modules, parsed_arguments):
     if not parsed_arguments.quiet:
@@ -440,9 +459,13 @@ def run_scenario(structure, parsed_arguments):
     :param parsed_arguments:
     :return:
     """
+    # Log output to file if instructed
+    stdout_original = sys.stdout  # will return sys.stdout to original
 
     # If no horizon subproblems (empty list), run main problem
     if not structure.horizon_subproblems:
+        log_run(structure.main_scenario_directory, "", "",
+                parsed_arguments)
         # If we're testing, get the objective function value
         if parsed_arguments.testing:
             objective_values = run_optimization(
@@ -452,6 +475,8 @@ def run_scenario(structure, parsed_arguments):
         else:
             run_optimization(structure.main_scenario_directory, "", "",
                              parsed_arguments)
+        # Return sys.stdout to original (i.e. stop writing to log file)
+        sys.stdout = stdout_original
     else:
         # If this is a test run, create dictionary with which we'll keep track
         # of subproblem objective function values
@@ -460,6 +485,8 @@ def run_scenario(structure, parsed_arguments):
         for h in structure.horizon_subproblems:
             # If no stage subproblems (empty list), run horizon problem
             if not structure.stage_subproblems[h]:
+                log_run(structure.main_scenario_directory, h, "",
+                        parsed_arguments)
                 if not parsed_arguments.quiet:
                     print("Running horizon {}".format(h))
                 if parsed_arguments.testing:
@@ -470,10 +497,14 @@ def run_scenario(structure, parsed_arguments):
                     run_optimization(
                         structure.main_scenario_directory, h, "",
                         parsed_arguments)
+                # Return sys.stdout to original (i.e. stop writing to log file)
+                sys.stdout = stdout_original
             else:
                 if parsed_arguments.testing:
                     objective_values[h] = {}
                 for s in structure.stage_subproblems[h]:
+                    log_run(structure.main_scenario_directory, h, s,
+                            parsed_arguments)
                     if not parsed_arguments.quiet:
                         print("Running horizon {}, stage {}".format(h, s))
                     if parsed_arguments.testing:
@@ -485,6 +516,9 @@ def run_scenario(structure, parsed_arguments):
                         run_optimization(
                             structure.main_scenario_directory,
                             h, s, parsed_arguments)
+                    # Return sys.stdout to original
+                    # (i.e. stop writing to log file)
+                    sys.stdout = stdout_original
 
     if parsed_arguments.testing:
         return objective_values
@@ -542,6 +576,9 @@ def parse_arguments(arguments):
                              "run_scenario.py.")
 
     # Output options
+    parser.add_argument("--log", default=False, action="store_true",
+                        help="Log output to a file in the logs directory as "
+                             "well as the terminal.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print run output.")
 
@@ -580,6 +617,7 @@ def main(args=None):
         args = sys.argv[1:]
     # Parse arguments
     parsed_args = parse_arguments(args)
+
     # Figure out the scenario structure (i.e. horizons and stages)
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
@@ -590,6 +628,7 @@ def main(args=None):
         return expected_objective_values
     else:
         run_scenario(scenario_structure, parsed_args)
+
 
 if __name__ == "__main__":
     main()

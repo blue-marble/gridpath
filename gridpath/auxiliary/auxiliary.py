@@ -5,9 +5,12 @@
 Various auxiliary functions used in other modules
 """
 
+import datetime
 from importlib import import_module
+import os.path
 import pandas as pd
 from pyomo.environ import value
+import sys
 
 
 def load_subtype_modules(
@@ -200,3 +203,48 @@ def make_project_time_var_df(m, project_time_set, var, index, header):
             )
 
     return results_df
+
+
+class Logging:
+    """
+    Log output to both standard output and a log file. This will be 
+    accomplished by assigning this class to sys.stdout.
+    """
+
+    def __init__(self, logs_dir):
+        """
+        Assign sys.stdout and a log file as output destinations
+        :param logs_dir: 
+        """
+        self.terminal = sys.stdout
+        self.log_file_path = \
+            os.path.join(
+                logs_dir, datetime.datetime.now().strftime(
+                                              '%Y-%m-%d_%H-%M-%S') + ".log"
+            )
+        self.log_file = open(self.log_file_path, "w", buffering=1)
+
+    def __getattr__(self, attr):
+        """
+        Default to sys.stdout when calling attributes for this class
+        :param attr: 
+        :return: 
+        """
+        return getattr(self.terminal, attr)
+
+    def write(self, message):
+        """
+        Output to both terminal and a log file
+        :param message: 
+        :return: 
+        """
+        self.terminal.write(message)
+        self.log_file.write(message)
+
+    def flush(self):
+        """
+        Flush both the terminal and the log file
+        :return: 
+        """
+        self.terminal.flush()
+        self.log_file.flush()
