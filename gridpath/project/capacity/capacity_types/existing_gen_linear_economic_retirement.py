@@ -7,7 +7,6 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, Expression, \
     NonNegativeReals, value
 
-from gridpath.auxiliary.auxiliary import make_project_time_var_df, is_number
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 
@@ -75,13 +74,18 @@ def add_module_specific_components(m, d):
         :param p: 
         :return: 
         """
-        if p == mod.first_period:
+        if p == value(mod.first_period):
             return Constraint.Skip
-        return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
-            <= \
-            mod.Existing_Linear_Econ_Ret_Capacity_MW[g, mod.previous_period[p]]
+        else:
+            return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
+                <= \
+                mod.Existing_Linear_Econ_Ret_Capacity_MW[
+                       g, mod.previous_period[p]
+                   ]
+
     m.Retire_Forever_Constraint = Constraint(
-        m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+        m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        rule=retire_forever_rule
     )
         
 
