@@ -873,3 +873,113 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 value(mod.Commit_Capacity_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp])/mod.unit_size_mw[p]
             ])
+
+def import_module_specific_results_to_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory: 
+    :return: 
+    """
+    print("project dispatch capacity commit")
+    # dispatch_capacity_commit.csv
+    c.execute(
+        """DELETE FROM results_project_dispatch_capacity_commit
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_dispatch_capacity_commit"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_dispatch_capacity_commit"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            technology VARCHAR(32),
+            power_mw FLOAT,
+            committed_mw FLOAT,
+            committed_units FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(
+            results_directory, "dispatch_capacity_commit.csv"), "r") \
+            as cc_dispatch_file:
+        reader = csv.reader(cc_dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[7]
+            technology = row[6]
+            power_mw = row[8]
+            committed_mw = row[9]
+            committed_units = row[10]
+            c.execute(
+                """INSERT INTO temp_results_project_dispatch_capacity_commit"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw, committed_mw,
+                    committed_units)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    {}, {}, {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw, committed_mw,
+                    committed_units
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_dispatch_capacity_commit
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, committed_mw,
+        committed_units)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, committed_mw, committed_units
+        FROM temp_results_project_dispatch_capacity_commit""" + str(
+            scenario_id) + """
+            ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_dispatch_capacity_commit""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()

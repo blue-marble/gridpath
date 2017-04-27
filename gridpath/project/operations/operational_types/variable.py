@@ -521,3 +521,121 @@ def get_module_specific_inputs_from_database(
             )
             for row in variable_profiles:
                 writer.writerow(row)
+
+
+def import_module_specific_results_to_database(
+        scenario_id, c, db, results_directory
+):
+    """
+    
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory: 
+    :return: 
+    """
+
+    print("project dispatch variable")
+    # dispatch_variable.csv
+    c.execute(
+        """DELETE FROM results_project_dispatch_variable
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_dispatch_variable"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_dispatch_variable"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        project VARCHAR(64),
+        period INTEGER,
+        horizon INTEGER,
+        timepoint INTEGER,
+        horizon_weight FLOAT,
+        number_of_hours_in_timepoint FLOAT,
+        load_zone VARCHAR(32),
+        technology VARCHAR(32),
+        power_mw FLOAT,
+        scheduled_curtailment_mw FLOAT,
+        subhourly_curtailment_mw FLOAT,
+        subhourly_energy_delivered_mw FLOAT,
+        total_curtailment_mw FLOAT,
+        PRIMARY KEY (scenario_id, project, timepoint)
+            );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "dispatch_variable.csv"), "r") as v_dispatch_file:
+        reader = csv.reader(v_dispatch_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[7]
+            technology = row[6]
+            power_mw = row[8]
+            scheduled_curtailment_mw = row[9]
+            subhourly_curtailment_mw = row[10]
+            subhourly_energy_delivered_mw = row[11]
+            total_curtailment_mw = row[12]
+            c.execute(
+                """INSERT INTO temp_results_project_dispatch_variable"""
+                + str(scenario_id) + """
+                (scenario_id, project, period, horizon, timepoint,
+                horizon_weight, number_of_hours_in_timepoint,
+                load_zone, technology, power_mw, scheduled_curtailment_mw,
+                subhourly_curtailment_mw, subhourly_energy_delivered_mw,
+                total_curtailment_mw)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                {}, {}, {}, {}, {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw, scheduled_curtailment_mw,
+                    subhourly_curtailment_mw, subhourly_energy_delivered_mw,
+                    total_curtailment_mw
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_dispatch_variable
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, scheduled_curtailment_mw,
+        subhourly_curtailment_mw, subhourly_energy_delivered_mw,
+        total_curtailment_mw)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, scheduled_curtailment_mw,
+        subhourly_curtailment_mw, subhourly_energy_delivered_mw,
+        total_curtailment_mw
+        FROM temp_results_project_dispatch_variable""" + str(scenario_id) + """
+        ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_dispatch_variable"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()
