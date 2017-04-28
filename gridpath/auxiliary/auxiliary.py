@@ -273,9 +273,9 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     elif scenario_id_arg is None and scenario_name_arg is not None:
         scenario_name = scenario_name_arg
         scenario_id = c.execute(
-            """SELECT scenario_name
+            """SELECT scenario_id
                FROM scenarios
-               WHERE scenario_name = {};""".format(scenario_name)
+               WHERE scenario_name = '{}';""".format(scenario_name)
         ).fetchone()[0]
     else:
         # If both scenario_id and scenario_name
