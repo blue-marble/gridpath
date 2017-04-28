@@ -7,6 +7,7 @@ import os.path
 import sqlite3
 import sys
 
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import get_features, load_modules
 
 
@@ -310,9 +311,12 @@ if __name__ == "__main__":
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--scenario_id",
                         help="The scenario_id from the database.")
+    parser.add_argument("--scenario",
+                        help="The scenario_name from the database.")
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
-    SCENARIO_ID = parsed_arguments.scenario_id
+    scenario_id_arg = parsed_arguments.scenario_id
+    scenario_name_arg = parsed_arguments.scenario
 
     # For now, assume script is run from root directory and the the
     # database is ./db and named io.db
@@ -321,13 +325,11 @@ if __name__ == "__main__":
     )
     c = io.cursor()
 
-    # Get scenario name and make inputs directory
-    SCENARIO_NAME = c.execute(
-        """SELECT scenario_name
-           FROM scenarios
-           WHERE scenario_id = {};""".format(SCENARIO_ID)
-    ).fetchone()[0]
+    SCENARIO_ID, SCENARIO_NAME = get_scenario_id_and_name(
+        scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
+        c=c, script="get_scenario_inputs")
 
+    # Make inputs directory
     SCENARIOS_MAIN_DIRECTORY = os.path.join(
         os.getcwd(), "scenarios")
     if not os.path.exists(SCENARIOS_MAIN_DIRECTORY):

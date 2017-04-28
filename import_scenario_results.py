@@ -6,6 +6,7 @@ import os.path
 import sqlite3
 import sys
 
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import get_features, load_modules
 
 
@@ -35,9 +36,12 @@ if __name__ == "__main__":
     parser.add_argument("--scenario",
                         help="The name of the scenario (the same as "
                              "the directory name)")
+    parser.add_argument("--scenario_id",
+                        help="The scenario_id from the database.")
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
-    SCENARIO_NAME = parsed_arguments.scenario
+    scenario_id_arg = parsed_arguments.scenario_id
+    scenario_name_arg = parsed_arguments.scenario
 
     # Database
     # Assume script is run from root directory and that the database is named
@@ -46,6 +50,10 @@ if __name__ == "__main__":
         os.path.join(os.getcwd(), 'db', 'io.db')
     )
     c = io.cursor()
+
+    SCENARIO_ID, SCENARIO_NAME = get_scenario_id_and_name(
+        scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
+        c=c, script="import_scenario_results")
 
     # Directory structure
     SCENARIOS_MAIN_DIRECTORY = os.path.join(
@@ -59,10 +67,12 @@ if __name__ == "__main__":
         SCENARIO_DIRECTORY, "results"
     )
 
-    # Get the scenario_id to pass to modules
+    # Check that the saved scenario_id matches
     with open(os.path.join(SCENARIO_DIRECTORY, "scenario_id.txt")) as \
             scenario_id_file:
-        SCENARIO_ID = scenario_id_file.read()
+        scenario_id_saved = scenario_id_file.read()
+        if scenario_id_saved != SCENARIO_ID:
+            raise AssertionError("ERROR: saved scenario_id does not match")
 
     # Go through modules
     FEATURES_TO_USE = get_features(SCENARIO_DIRECTORY)
