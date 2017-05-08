@@ -17,19 +17,25 @@ def get_inputs_from_database(
     :param inputs_directory: 
     :return: 
     """
-
-    # TODO: get this directly from database
-    project_cap_types = \
-        pd.read_csv(
-            os.path.join(inputs_directory, "projects.tab"),
-            sep="\t", usecols=["project",
-                               "capacity_type"]
-        )
-
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
-    required_capacity_type_modules = \
-        project_cap_types.capacity_type.unique()
+    # Get the list based on the project_portfoio_scenario_id of this
+    # scenario_id
+    project_portfolio_scenario_id = c.execute(
+        """SELECT project_portfolio_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
+    ).fetchone()[0]
+
+    required_capacity_type_modules = [
+        p[0] for p in c.execute(
+            """SELECT DISTINCT capacity_type 
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}""".format(
+                project_portfolio_scenario_id
+            )
+        ).fetchall()
+    ]
 
     # Load in the required capacity type modules
     imported_capacity_type_modules = \

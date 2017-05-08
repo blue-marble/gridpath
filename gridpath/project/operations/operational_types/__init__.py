@@ -93,25 +93,43 @@ def get_inputs_from_database(
     :return: 
     """
 
-    # TODO: get these directly from database
-    project_op_types = \
-        pd.read_csv(
-            os.path.join(inputs_directory, "projects.tab"),
-            sep="\t", usecols=["project",
-                               "operational_type"]
-        )
+    # Required modules are the unique set of generator operational types in
+    # the scenario's portfolio
+    # This list will be used to know which operational type modules to load
+    # Get the list based on the project_operational_chars_scenario_id of this
+    # scenario_id
+    project_portfolio_scenario_id = c.execute(
+        """SELECT project_portfolio_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
+    ).fetchone()[0]
 
-    # Required modules are the unique set of generator operational types
-    # This list will be used to know which operational modules to load
-    required_operational_modules = \
-            project_op_types.operational_type.unique()
+    project_opchars_scenario_id = c.execute(
+        """SELECT project_operational_chars_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
+    ).fetchone()[0]
+
+    required_opchar_modules = [
+        p[0] for p in c.execute(
+            """SELECT DISTINCT operational_type 
+            FROM inputs_project_portfolios
+            LEFT OUTER JOIN inputs_project_operational_chars
+            USING (project)
+            WHERE project_portfolio_scenario_id = {}
+            AND project_operational_chars_scenario_id = {}""".format(
+                project_portfolio_scenario_id,
+                project_opchars_scenario_id
+            )
+        ).fetchall()
+    ]
 
     # Get module-specific inputs
     # Load in the required operational modules
     imported_operational_modules = \
-        load_operational_type_modules(required_operational_modules)
+        load_operational_type_modules(required_opchar_modules)
 
-    for op_m in required_operational_modules:
+    for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m],
                    "get_module_specific_inputs_from_database"):
             imported_operational_modules[op_m]. \

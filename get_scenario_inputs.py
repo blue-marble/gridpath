@@ -14,6 +14,13 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 # Optional features
 class OptionalFeatures:
     def __init__(self, cursor, scenario_id):
+        """
+        
+        :param cursor: 
+        :param scenario_id: 
+        """
+        self.SCENARIO_ID = scenario_id
+
         self.OPTIONAL_FEATURE_FUELS = cursor.execute(
             """SELECT of_fuels
                FROM scenarios
@@ -148,6 +155,13 @@ class OptionalFeatures:
 # Subscenarios
 class SubScenarios:
     def __init__(self, cursor, scenario_id):
+        """
+        
+        :param cursor: 
+        :param scenario_id: 
+        """
+        self.SCENARIO_ID = scenario_id
+
         self.TIMEPOINT_SCENARIO_ID = cursor.execute(
             """SELECT timepoint_scenario_id
                FROM scenarios
@@ -421,7 +435,10 @@ def get_inputs_from_database(loaded_modules, subscenarios, cursor,
     """
     for m in loaded_modules:
         if hasattr(m, "get_inputs_from_database"):
-            m.get_inputs_from_database(subscenarios, cursor, inputs_directory)
+            m.get_inputs_from_database(
+                subscenarios=subscenarios, c=cursor,
+                inputs_directory=inputs_directory
+            )
         else:
             pass
 
