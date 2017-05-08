@@ -200,9 +200,9 @@ def cross_feature_modules_list():
     return cross_modules
 
 
-def get_features(scenario_directory):
+def determine_modules(scenario_directory):
     """
-    Modules needed for scenario
+    Determine modules needed based on features specified for scenario
     :param scenario_directory:
     :return:
     """

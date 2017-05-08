@@ -14,7 +14,7 @@ import sys
 
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
-from gridpath.auxiliary.module_list import get_features, load_modules
+from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
 class ScenarioStructure(object):
@@ -110,7 +110,7 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     # Initialize the dynamic components class
     dynamic_inputs = DynamicComponents()
 
-    modules_to_use = get_features(scenario_directory)
+    modules_to_use = determine_modules(scenario_directory)
 
     loaded_modules = load_modules(modules_to_use)
 

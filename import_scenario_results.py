@@ -7,7 +7,7 @@ import sqlite3
 import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from gridpath.auxiliary.module_list import get_features, load_modules
+from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 
 def import_results_into_database(
@@ -94,8 +94,8 @@ def main(args=None):
             raise AssertionError("ERROR: saved scenario_id does not match")
 
     # Go through modules
-    features_to_use = get_features(scenario_directory)
-    loaded_modules = load_modules(features_to_use)
+    modules_to_use = determine_modules(scenario_directory)
+    loaded_modules = load_modules(modules_to_use)
 
     import_results_into_database(
         loaded_modules=loaded_modules, scenario_id=scenario_id, cursor=c,
