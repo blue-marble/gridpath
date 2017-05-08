@@ -50,14 +50,24 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period", "rps_target_mwh",
                          "delivered_rps_energy_mwh",
-                         "curtailed_rps_energy_mwh"])
+                         "curtailed_rps_energy_mwh",
+                         "total_rps_energy_mwh",
+                         "fraction_of_rps_target_met",
+                         "fraction_of_rps_energy_curtailed"])
         for (z, p) in m.RPS_ZONE_PERIODS_WITH_RPS:
             writer.writerow([
                 z,
                 p,
                 float(m.rps_target_mwh[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, p])
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
+                value(m.Total_Delivered_RPS_Energy_MWh[z, p]) +
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
+                value(m.Total_Delivered_RPS_Energy_MWh[z, p]) /
+                float(m.rps_target_mwh[z, p]),
+                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
+                (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
+                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p]))
             ])
 
 
@@ -151,6 +161,9 @@ def summarize_results(d, problem_directory, horizon, stage):
     results_df.drop("PERIODS", axis=1, inplace=True)
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
+    results_df.drop("total_rps_energy_mwh", axis=1, inplace=True)
+    results_df.drop("fraction_of_rps_target_met", axis=1, inplace=True)
+    results_df.drop("fraction_of_rps_energy_curtailed", axis=1, inplace=True)
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
@@ -160,3 +173,109 @@ def summarize_results(d, problem_directory, horizon, stage):
     with open(summary_results_file, "a") as outfile:
         results_df.to_string(outfile)
         outfile.write("\n")
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Carbon emissions by in-zone projects
+    print("system rps")
+    c.execute(
+        """DELETE FROM results_system_rps 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_system_rps"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_system_rps"""
+        + str(scenario_id) + """(
+         scenario_id INTEGER,
+         rps_zone VARCHAR(64),
+         period INTEGER,
+         rps_target_mwh FLOAT,
+         delivered_rps_energy_mwh FLOAT,
+         curtailed_rps_energy_mwh FLOAT,
+         total_rps_energy_mwh FLOAT,
+         fraction_of_rps_target_met FLOAT,
+         fraction_of_rps_energy_curtailed FLOAT,
+         PRIMARY KEY (scenario_id, rps_zone, period)
+         );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "rps.csv"), "r") as \
+            emissions_file:
+        reader = csv.reader(emissions_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            rps_zone = row[0]
+            period = row[1]
+            rps_target = row[2]
+            rps_provision = row[3]
+            curtailment = row[4]
+            total = row[5]
+            fraction_met = row[6]
+            fraction_curtailed = row[7]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_system_rps"""
+                + str(scenario_id) + """
+                 (scenario_id, rps_zone, period, rps_target_mwh, 
+                 delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
+                 total_rps_energy_mwh,
+                 fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
+                    scenario_id, rps_zone, period, rps_target,
+                    rps_provision, curtailment, total, fraction_met,
+                    fraction_curtailed
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_system_rps
+        (scenario_id, rps_zone, period, rps_target_mwh, 
+        delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
+        total_rps_energy_mwh,
+        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
+        SELECT scenario_id, rps_zone, period, rps_target_mwh, 
+        delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
+        total_rps_energy_mwh,
+        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed
+        FROM temp_results_system_rps"""
+        + str(scenario_id)
+        + """
+         ORDER BY scenario_id, rps_zone, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_system_rps"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

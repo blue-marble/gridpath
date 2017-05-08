@@ -8,8 +8,7 @@ from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules, \
     total_cost_components
-from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
-    make_project_time_var_df
+from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules
 
 
 def add_model_components(m, d):
@@ -124,56 +123,217 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :param d:
     :return:
     """
-    d.tx_module_specific_df = []
 
+    # Module-specific results
     imported_tx_capacity_modules = \
         load_tx_capacity_type_modules(getattr(d, required_tx_capacity_modules))
     for op_m in getattr(d, required_tx_capacity_modules):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
-                m, d)
+                m, d, scenario_directory, horizon, stage
+            )
         else:
             pass
 
     # Export transmission capacity
-    min_cap_df = \
-        make_project_time_var_df(
-            m,
-            "TRANSMISSION_OPERATIONAL_PERIODS",
-            "Transmission_Min_Capacity_MW",
-            ["transmission_line", "period"],
-            "transmission_min_capacity_mw"
-        )
-
-    max_cap_df = \
-        make_project_time_var_df(
-            m,
-            "TRANSMISSION_OPERATIONAL_PERIODS",
-            "Transmission_Max_Capacity_MW",
-            ["transmission_line", "period"],
-            "transmission_max_capacity_mw"
-        )
-
-    cap_dfs_to_merge = [min_cap_df] + [max_cap_df] + d.tx_module_specific_df
-    cap_df_for_export = reduce(lambda left, right:
-                               left.join(right, how="outer"),
-                               cap_dfs_to_merge)
-    cap_df_for_export.to_csv(
-        os.path.join(scenario_directory, horizon, stage, "results",
-                     "transmission_capacity.csv"),
-        header=True, index=True)
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "transmission_capacity.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
+                         "transmission_min_capacity_mw",
+                         "transmission_max_capacity_mw"])
+        for (tx_line, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
+            writer.writerow([
+                tx_line,
+                p,
+                m.load_zone_from[tx_line],
+                m.load_zone_to[tx_line],
+                value(m.Transmission_Min_Capacity_MW[tx_line, p]),
+                value(m.Transmission_Max_Capacity_MW[tx_line, p])
+            ])
 
     # Export transmission capacity costs
     with open(os.path.join(scenario_directory, horizon, stage, "results",
               "costs_transmission_capacity.csv"), "wb") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["tx_line", "period", "annualized_capacity_cost"]
+            ["tx_line", "period", "load_zone_from",
+             "load_zone_to", "annualized_capacity_cost"]
         )
         for (l, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
             writer.writerow([
                 l,
                 p,
+                m.load_zone_from[l],
+                m.load_zone_to[l],
                 value(m.Transmission_Capacity_Cost_in_Period[l, p])
             ])
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Tx capacity results
+    print("transmission capacity")
+    c.execute(
+        """DELETE FROM results_transmission_capacity
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_transmission_capacity"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_transmission_capacity"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            tx_line VARCHAR(64),
+            period INTEGER,
+            load_zone_from VARCHAR(32),
+            load_zone_to VARCHAR(32),
+            min_mw FLOAT,
+            max_mw FLOAT,
+            PRIMARY KEY (scenario_id, tx_line, period)
+            );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "transmission_capacity.csv"), "r") as \
+            capacity_costs_file:
+        reader = csv.reader(capacity_costs_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            tx_line = row[0]
+            period = row[1]
+            load_zone_from = row[2]
+            load_zone_to = row[3]
+            min_mw = row[4]
+            max_mw = row[5]
+
+            c.execute(
+                """INSERT INTO temp_results_transmission_capacity"""
+                + str(scenario_id) + """
+                    (scenario_id, tx_line, period, 
+                    load_zone_from, load_zone_to,
+                    min_mw, max_mw)
+                    VALUES ({}, '{}', {}, '{}', '{}', {}, {});""".format(
+                    scenario_id, tx_line, period, load_zone_from, load_zone_to,
+                    min_mw, max_mw
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_transmission_capacity
+        (scenario_id, tx_line, period, load_zone_from, load_zone_to,
+        min_mw, max_mw)
+        SELECT
+        scenario_id, tx_line, period, load_zone_from, load_zone_to,
+        min_mw, max_mw
+        FROM temp_results_transmission_capacity""" + str(scenario_id) + """
+            ORDER BY scenario_id, tx_line, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_transmission_capacity""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()
+
+    # Capacity cost results
+    print("transmission capacity costs")
+    c.execute(
+        """DELETE FROM results_transmission_costs_capacity
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_transmission_costs_capacity"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_transmission_costs_capacity"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        tx_line VARCHAR(64),
+        period INTEGER,
+        load_zone_from VARCHAR(32),
+        load_zone_to VARCHAR(32),
+        annualized_capacity_cost FLOAT,
+        PRIMARY KEY (scenario_id, tx_line, period)
+        );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_transmission_capacity.csv"), "r") as \
+            capacity_costs_file:
+        reader = csv.reader(capacity_costs_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            tx_line = row[0]
+            period = row[1]
+            load_zone_from = row[2]
+            load_zone_to = row[3]
+            annualized_capacity_cost = row[4]
+
+            c.execute(
+                """INSERT INTO temp_results_transmission_costs_capacity"""
+                + str(scenario_id) + """
+                (scenario_id, tx_line, period, load_zone_from, load_zone_to,
+                annualized_capacity_cost)
+                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
+                    scenario_id, tx_line, period, load_zone_from, load_zone_to,
+                    annualized_capacity_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_transmission_costs_capacity
+        (scenario_id, tx_line, period, load_zone_from, load_zone_to,
+        annualized_capacity_cost)
+        SELECT
+        scenario_id, tx_line, period, load_zone_from, load_zone_to,
+        annualized_capacity_cost
+        FROM temp_results_transmission_costs_capacity""" + str(scenario_id) + """
+        ORDER BY scenario_id, tx_line, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_transmission_costs_capacity""" + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

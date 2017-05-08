@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from reserve_balance import generic_add_model_components, \
-    generic_export_results, generic_save_duals
+    generic_export_results, generic_save_duals, \
+    generic_import_results_to_database
 
 
 def add_model_components(m, d):
@@ -49,3 +50,24 @@ def save_duals(m):
     :return:
     """
     generic_save_duals(m, "Meet_LF_Reserves_Down_Constraint")
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+
+    print("system lf reserves down balance")
+
+    generic_import_results_to_database(
+        scenario_id=scenario_id,
+        c=c,
+        db=db,
+        results_directory=results_directory,
+        reserve_type="lf_reserves_down"
+    )

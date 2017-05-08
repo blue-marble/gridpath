@@ -10,7 +10,8 @@ import os.path
 
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
-    generic_load_model_data, generic_export_module_specific_results
+    generic_load_model_data, generic_export_module_specific_results, \
+    generic_import_results_into_database
 
 
 # Reserve-module variables
@@ -135,7 +136,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         module_name=MODULE_NAME,
         reserve_project_operational_timepoints_set=
         RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME,
-        reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME
+        reserve_provision_variable_name=RESERVE_PROVISION_VARIABLE_NAME,
+        reserve_ba_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
     )
 
 
@@ -212,3 +214,25 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory:
+    :return: 
+    """
+    print("project lf reserves up provision")
+
+    generic_import_results_into_database(
+        scenario_id=scenario_id,
+        c=c,
+        db=db,
+        results_directory=results_directory,
+        reserve_type="lf_reserves_up"
+    )

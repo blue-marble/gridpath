@@ -150,3 +150,53 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Write data
         for row in intercepts:
             writer.writerow(row)
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("system prm elcc surface")
+    # PRM contribution from the ELCC surface
+    # Prior results should have already been cleared by
+    # system.prm.aggregate_project_simple_prm_contribution,
+    # then elcc_simple_mw imported
+    # Update results_system_prm with NULL for surface contribution just in
+    # case (instead of clearing prior results)
+    c.execute(
+        """UPDATE results_system_prm
+        SET elcc_surface_mw = NULL
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    with open(os.path.join(results_directory,
+                           "prm_elcc_surface.csv"), "r") as \
+            surface_file:
+        reader = csv.reader(surface_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            prm_zone = row[0]
+            period = row[1]
+            elcc = row[2]
+
+            c.execute(
+                """UPDATE results_system_prm
+                SET elcc_surface_mw = {}
+                WHERE scenario_id = {}
+                AND prm_zone = '{}'
+                AND period = {}""".format(
+                    elcc, scenario_id, prm_zone, period
+                )
+            )
+    db.commit()

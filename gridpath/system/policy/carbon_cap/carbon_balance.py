@@ -58,8 +58,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "carbon_cap.csv"), "wb") as rps_results_file:
-        writer = csv.writer(rps_results_file)
+                           "carbon_cap.csv"), "wb") as carbon_cap_results_file:
+        writer = csv.writer(carbon_cap_results_file)
         writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
                          "carbon_emissions_mmt"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
@@ -76,3 +76,53 @@ def export_results(scenario_directory, horizon, stage, m, d):
 def save_duals(m):
     m.constraint_indices["Carbon_Cap_Constraint"] = \
         ["carbon_cap_zone", "period", "dual"]
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("system carbon emissions (total)")
+    # Carbon emissions from imports
+    # Prior results should have already been cleared by
+    # system.policy.carbon_cap.aggregate_project_carbon_emissions,
+    # then project total emissions imported
+    # Update results_system_carbon_emissions with NULL just in case (instead of
+    # clearing prior results)
+    c.execute(
+        """UPDATE results_system_carbon_emissions
+        SET total_emissions_mmt = NULL
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    with open(os.path.join(results_directory,
+                           "carbon_cap.csv"), "r") as \
+            emissions_file:
+        reader = csv.reader(emissions_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            carbon_cap_zone = row[0]
+            period = row[1]
+            total_emissions_mmt = row[3]
+
+            c.execute(
+                """UPDATE results_system_carbon_emissions
+                SET total_emissions_mmt = {}
+                WHERE scenario_id = {}
+                AND carbon_cap_zone = '{}'
+                AND period = {}""".format(
+                    total_emissions_mmt, scenario_id, carbon_cap_zone, period
+                )
+            )
+    db.commit()

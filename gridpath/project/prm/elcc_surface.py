@@ -116,16 +116,19 @@ def export_results(scenario_directory, horizon, stage, m, d):
               "wb") as \
             results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["project", "period",
-                         "capacity_mw",
-                         "facet", "elcc_surface_coefficient",
+        writer.writerow(["project", "period", "prm_zone", "facet",
+                         "load_zone", "technology", "capacity_mw",
+                         "elcc_surface_coefficient",
                          "elcc_mw"])
         for (prj, period, facet) in m.PROJECT_PERIOD_ELCC_SURFACE_FACETS:
             writer.writerow([
                 prj,
                 period,
-                value(m.Capacity_MW[prj, period]),
+                m.prm_zone[prj],
                 facet,
+                m.load_zone[prj],
+                m.technology[prj],
+                value(m.Capacity_MW[prj, period]),
                 value(m.elcc_surface_coefficient[prj, period, facet]),
                 value(m.ELCC_Surface_Contribution_MW[prj, period, facet])
             ])
@@ -210,3 +213,102 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Write data
         for row in coefficients:
             writer.writerow(row)
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory:
+    :return: 
+    """
+    print("project elcc surface")
+
+    c.execute(
+        """DELETE FROM results_project_elcc_surface 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_elcc_surface"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_elcc_surface""" + str(
+            scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            prm_zone VARCHAR(32),
+            facet INTEGER,
+            technology VARCHAR(32),
+            load_zone VARCHAR(32),
+            capacity_mw FLOAT,
+            elcc_surface_coefficient FLOAT,
+            elcc_mw FLOAT,
+            PRIMARY KEY (scenario_id, project, period, facet)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "prm_project_elcc_surface_contribution.csv"), "r") \
+            as elcc_file:
+        reader = csv.reader(elcc_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            prm_zone = row[2]
+            facet = row[3]
+            load_zone = row[4]
+            technology = row[5]
+            capacity = row[6]
+            coefficient = row[7]
+            elcc = row[8]
+
+            c.execute(
+                """INSERT INTO temp_results_project_elcc_surface"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, prm_zone, facet, 
+                    technology, load_zone, capacity_mw, 
+                    elcc_surface_coefficient, elcc_mw)
+                    VALUES ({}, '{}', {}, '{}', {}, '{}', '{}',  
+                    {}, {}, {});""".format(
+                    scenario_id, project, period, prm_zone, facet, technology,
+                    load_zone, capacity, coefficient, elcc
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_elcc_surface
+        (scenario_id, project, period, prm_zone, facet, technology, load_zone, 
+        capacity_mw, elcc_surface_coefficient, elcc_mw)
+        SELECT
+        scenario_id, project, period, prm_zone, facet, technology, load_zone, 
+        capacity_mw, elcc_surface_coefficient, elcc_mw
+        FROM temp_results_project_elcc_surface""" + str(scenario_id) +
+        """ ORDER BY scenario_id, project, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_elcc_surface"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()

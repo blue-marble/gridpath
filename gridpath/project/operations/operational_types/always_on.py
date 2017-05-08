@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of always-on generators. These are generators that area always 
+Operations of always-on generators. These are generators that are always 
 committed but can ramp up and down between a minimum stable level above 0 and 
 full output.
 No reserves.

@@ -77,3 +77,53 @@ def export_results(scenario_directory, horizon, stage, m, d):
                     m.Total_Carbon_Emission_Imports_Tons[z, p]
                 ) / 10**6  # MMT
             ])
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("system carbon emissions (imports)")
+    # Carbon emissions from imports
+    # Prior results should have already been cleared by
+    # system.policy.carbon_cap.aggregate_project_carbon_emissions,
+    # then project total emissions imported
+    # Update results_system_carbon_emissions with NULL just in case (instead of
+    # clearing prior results)
+    c.execute(
+        """UPDATE results_system_carbon_emissions
+        SET import_emissions_mmt = NULL
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    with open(os.path.join(results_directory,
+                           "carbon_cap_total_transmission.csv"), "r") as \
+            emissions_file:
+        reader = csv.reader(emissions_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            carbon_cap_zone = row[0]
+            period = row[1]
+            tx_carbon_emissions_mmt = row[3]
+
+            c.execute(
+                """UPDATE results_system_carbon_emissions
+                SET import_emissions_mmt = {}
+                WHERE scenario_id = {}
+                AND carbon_cap_zone = '{}'
+                AND period = {}""".format(
+                    tx_carbon_emissions_mmt, scenario_id, carbon_cap_zone, period
+                )
+            )
+    db.commit()

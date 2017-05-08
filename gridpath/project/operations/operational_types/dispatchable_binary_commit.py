@@ -10,8 +10,7 @@ from pandas import read_csv
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Binary, PercentFraction, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    make_project_time_var_df
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 

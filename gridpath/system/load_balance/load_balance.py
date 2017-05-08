@@ -87,7 +87,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "load_balance.csv"), "wb") as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["zone", "timepoint",
+        writer.writerow(["zone", "period", "horizo", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepiont",
                          "overgeneration_mw",
                          "unserved_energy_mw"]
                         )
@@ -95,7 +96,11 @@ def export_results(scenario_directory, horizon, stage, m, d):
             for tmp in getattr(m, "TIMEPOINTS"):
                 writer.writerow([
                     z,
+                    m.period[tmp],
+                    m.horizon[tmp],
                     tmp,
+                    m.horizon_weight[m.horizon[tmp]],
+                    m.number_of_hours_in_timepoint[tmp],
                     m.Overgeneration_MW[z, tmp].value,
                     m.Unserved_Energy_MW[z, tmp].value]
                 )
@@ -104,3 +109,102 @@ def export_results(scenario_directory, horizon, stage, m, d):
 def save_duals(m):
     m.constraint_indices["Meet_Load_Constraint"] = \
         ["zone", "timepoint", "dual"]
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("system load balance")
+    
+    c.execute(
+        """DELETE FROM results_system_load_balance
+        WHERE scenario_id = {};""".format(scenario_id)
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_system_load_balance"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_system_load_balance"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        load_zone VARCHAR(32),
+        period INTEGER,
+        horizon INTEGER,
+        timepoint INTEGER,
+        horizon_weight FLOAT,
+        number_of_hours_in_timepoint FLOAT,
+        overgeneration_mw FLOAT,
+        unserved_energy_mw FLOAT,
+        PRIMARY KEY (scenario_id, load_zone, timepoint)
+            );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory, "load_balance.csv"),
+              "r") as load_balance_file:
+        reader = csv.reader(load_balance_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            ba = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            overgen = row[6]
+            unserved_energy = row[7]
+            c.execute(
+                """INSERT INTO 
+                temp_results_system_load_balance"""
+                + str(scenario_id) + """
+                (scenario_id, load_zone, period, horizon, 
+                timepoint, horizon_weight, number_of_hours_in_timepoint,
+                overgeneration_mw, unserved_energy_mw)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
+                    scenario_id, ba, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    overgen, unserved_energy
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_system_load_balance
+        (scenario_id, load_zone, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        overgeneration_mw, unserved_energy_mw)
+        SELECT
+        scenario_id, load_zone, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        overgeneration_mw, unserved_energy_mw
+        FROM temp_results_system_load_balance"""
+        + str(scenario_id) + """
+        ORDER BY scenario_id, load_zone, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_system_load_balance"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

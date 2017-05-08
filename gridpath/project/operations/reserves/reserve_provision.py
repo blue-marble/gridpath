@@ -233,7 +233,8 @@ def generic_export_module_specific_results(
         m, d, scenario_directory, horizon, stage,
         module_name,
         reserve_project_operational_timepoints_set,
-        reserve_provision_variable_name):
+        reserve_provision_variable_name,
+        reserve_ba_param_name):
     """
     Export project-level reserves results
     :param m:
@@ -244,6 +245,7 @@ def generic_export_module_specific_results(
     :param module_name:
     :param reserve_project_operational_timepoints_set:
     :param reserve_provision_variable_name:
+    :param reserve_ba_param_name:
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
@@ -252,6 +254,7 @@ def generic_export_module_specific_results(
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
+                         "balancing_area", "load_zone", "technology",
                          "reserve_provision_mw"])
         for (p, tmp) in getattr(m, reserve_project_operational_timepoints_set):
             writer.writerow([
@@ -261,5 +264,112 @@ def generic_export_module_specific_results(
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                getattr(m, reserve_ba_param_name)[p],
+                m.load_zone[p],
+                m.technology[p],
                 value(getattr(m, reserve_provision_variable_name)[p, tmp])
             ])
+
+
+def generic_import_results_into_database(
+    scenario_id, c, db, results_directory, reserve_type
+):
+    """
+    
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory: 
+    :param reserve_type: 
+    :return: 
+    """
+    c.execute(
+        """DELETE FROM results_project_""" + reserve_type +
+        """ WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_""" + reserve_type
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_""" + reserve_type
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),""" +
+        reserve_type + """_ba VARCHAR(32),
+            technology VARCHAR(32),
+            reserve_provision_mw FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "reserves_provision_" + reserve_type + ".csv"
+                           ), "r") as reserve_provision_file:
+        reader = csv.reader(reserve_provision_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            ba = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            reserve_provision = row[9]
+            c.execute(
+                """INSERT INTO temp_results_project_""" + reserve_type
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, """ + reserve_type + """_ba, technology, 
+                    reserve_provision_mw)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}',
+                    {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint, ba,
+                    load_zone, technology, reserve_provision
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_""" + reserve_type + """
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint, """
+        + reserve_type + """_ba, load_zone, technology, reserve_provision_mw)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint, """
+        + reserve_type + """_ba, load_zone, technology, reserve_provision_mw
+        FROM temp_results_project_""" + reserve_type + str(scenario_id) +
+        """ ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_""" + reserve_type
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

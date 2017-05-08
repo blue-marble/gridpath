@@ -228,3 +228,99 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
     # TODO: append to this input file if other types of thresholds are
     # implemented
+
+
+def import_results_into_database(scenario_id, c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Capacity cost results
+    print("project capacity threshold costs")
+    c.execute(
+        """DELETE FROM results_project_costs_capacity_thresholds
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_costs_capacity_thresholds"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_costs_capacity_thresholds"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        capacity_threshold_group VARCHAR(64),
+        period INTEGER,
+        capacity_threshold_mw FLOAT,
+        capacity_threshold_cost_per_mw FLOAT,
+        total_capacity_mw FLOAT,
+        capacity_threshold_cost FLOAT,
+        PRIMARY KEY (scenario_id, capacity_threshold_group, period)
+        );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "costs_capacity_thresholds.csv"), "r") as \
+            capacity_costs_file:
+        reader = csv.reader(capacity_costs_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            group = row[0]
+            period = row[1]
+            capacity_threshold_mw = row[2]
+            capacity_threshold_cost_per_mw = row[3]
+            total_capacity_mw = row[4]
+            capacity_threshold_cost = row[5]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_project_costs_capacity_thresholds"""
+                + str(scenario_id) + """
+                (scenario_id, capacity_threshold_group, period, 
+                capacity_threshold_mw, capacity_threshold_cost_per_mw,
+                total_capacity_mw, capacity_threshold_cost)
+                VALUES ({}, '{}', {}, {}, {}, {}, {});""".format(
+                    scenario_id, group, period, capacity_threshold_mw,
+                    capacity_threshold_cost_per_mw, total_capacity_mw,
+                    capacity_threshold_cost
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_costs_capacity_thresholds
+        (scenario_id, capacity_threshold_group, period, 
+        capacity_threshold_mw, capacity_threshold_cost_per_mw,
+        total_capacity_mw, capacity_threshold_cost)
+        SELECT
+        scenario_id, capacity_threshold_group, period, 
+        capacity_threshold_mw, capacity_threshold_cost_per_mw,
+        total_capacity_mw, capacity_threshold_cost
+        FROM temp_results_project_costs_capacity_thresholds"""
+        + str(scenario_id) + """
+        ORDER BY scenario_id, capacity_threshold_group, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_costs_capacity_thresholds"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

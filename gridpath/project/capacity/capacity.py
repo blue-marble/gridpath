@@ -7,7 +7,7 @@ import pandas as pd
 from pyomo.environ import Set, Expression, value
 
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, join_sets, make_project_time_var_df
+    load_gen_storage_capacity_type_modules, join_sets
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets

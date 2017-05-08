@@ -12,8 +12,7 @@ from pyomo.environ import Set, value
 
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
-    generic_load_model_data, generic_export_module_specific_results
-
+    generic_load_model_data
 
 # Reserve-module variables
 MODULE_NAME = "frequency_response"
@@ -189,6 +188,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.frequency_response_ba[p],
+                m.technology[p],
                 value(m.Provide_Frequency_Response_MW[p, tmp]),
                 partial_proj[p]
             ])
@@ -274,3 +276,107 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id: 
+    :param c: 
+    :param db: 
+    :param results_directory:
+    :return: 
+    """
+    c.execute(
+        """DELETE FROM results_project_frequency_response 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS temp_results_project_frequency_response"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_frequency_response""" + str(
+            scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            frequency_response_ba VARCHAR(32),
+            technology VARCHAR(32),
+            reserve_provision_mw FLOAT,
+            partial INTEGER,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "reserves_provision_frequency_response.csv"), "r") \
+            as reserve_provision_file:
+        reader = csv.reader(reserve_provision_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            ba = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            reserve_provision = row[9]
+            partial = row[10]
+            c.execute(
+                """INSERT INTO temp_results_project_frequency_response"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint, 
+                    frequency_response_ba,
+                    load_zone, technology, reserve_provision_mw, partial)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}',
+                    {}, {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint, ba,
+                    load_zone, technology, reserve_provision, partial
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_frequency_response
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint, frequency_response_ba, 
+        load_zone, technology, reserve_provision_mw, partial)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint, frequency_response_ba, 
+        load_zone, technology, reserve_provision_mw, partial
+        FROM temp_results_project_frequency_response""" + str(scenario_id) +
+        """ ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_frequency_response"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()

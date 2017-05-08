@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
 import os.path
-import pandas as pd
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
-
-from gridpath.auxiliary.auxiliary import make_project_time_var_df
 
 
 def add_module_specific_components(m, d):
@@ -70,9 +68,11 @@ def add_module_specific_components(m, d):
         :param p:
         :return:
         """
-        return sum(mod.Build_Transmission_MW[g, v] for (gen, v)
-                   in mod.NEW_BUILD_TRANSMISSION_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-                   if gen == g)
+        return sum(
+            mod.Build_Transmission_MW[g, v] for (gen, v)
+            in mod.NEW_BUILD_TRANSMISSION_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+            if gen == g
+        )
 
     m.New_Build_Transmission_Capacity_MW = \
         Expression(m.NEW_BUILD_TRANSMISSION_OPERATIONAL_PERIODS,
@@ -134,7 +134,7 @@ def load_module_specific_data(m,
                      )
 
 
-def export_module_specific_results(m, d):
+def export_module_specific_results(m, d, scenario_directory, horizon, stage):
     """
 
     :param m:
@@ -142,13 +142,17 @@ def export_module_specific_results(m, d):
     :return:
     """
 
-    new_tx_cap_df = \
-        make_project_time_var_df(
-            m,
-            "NEW_BUILD_TRANSMISSION_VINTAGES",
-            "Build_Transmission_MW",
-            ["transmission_line", "period"],
-            "transmission_new_capacity_mw"
-        )
-
-    d.tx_module_specific_df.append(new_tx_cap_df)
+    # Export transmission capacity
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "transmission_new_capacity.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
+                         "new_build_transmission_capacity_mw"])
+        for (tx_line, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
+            writer.writerow([
+                tx_line,
+                p,
+                m.load_zone_from[tx_line],
+                m.load_zone_to[tx_line],
+                value(m.Build_Transmission_MW[tx_line, p])
+            ])

@@ -74,3 +74,58 @@ def export_results(scenario_directory, horizon, stage, m, d):
 def save_duals(m):
     m.constraint_indices["PRM_Constraint"] = \
         ["prm_zone", "period", "dual"]
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+
+    print("system prm total")
+
+    # PRM contribution from the ELCC surface
+    # Prior results should have already been cleared by
+    # system.prm.aggregate_project_simple_prm_contribution,
+    # then elcc_simple_mw imported
+    # Update results_system_prm with NULL for requirement and total just in
+    # case (instead of clearing prior results)
+    c.execute(
+        """UPDATE results_system_prm
+        SET prm_requirement_mw = NULL,
+        elcc_total_mw = NULL
+        WHERE scenario_id = {}""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    with open(os.path.join(results_directory,
+                           "prm.csv"), "r") as \
+            surface_file:
+        reader = csv.reader(surface_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            prm_zone = row[0]
+            period = row[1]
+            prm_req_mw = row[2]
+            prm_prov_mw = row[3]
+
+            c.execute(
+                """UPDATE results_system_prm
+                SET prm_requirement_mw = {},
+                elcc_total_mw = {}
+                WHERE scenario_id = {}
+                AND prm_zone = '{}'
+                AND period = {}""".format(
+                    prm_req_mw, prm_prov_mw, scenario_id, prm_zone, period
+                )
+            )
+    db.commit()

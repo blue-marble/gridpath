@@ -75,3 +75,95 @@ def export_results(scenario_directory, horizon, stage, m, d):
                     m.Total_Carbon_Emissions_Tons[z, p]
                 ) / 10**6  # MMT
             ])
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Carbon emissions by in-zone projects
+    print("system carbon emissions (project)")
+    c.execute(
+        """DELETE FROM results_system_carbon_emissions 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_system_carbon_emissions"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_system_carbon_emissions"""
+        + str(scenario_id) + """(
+         scenario_id INTEGER,
+         carbon_cap_zone VARCHAR(64),
+         period INTEGER,
+         carbon_cap_mmt FLOAT,
+         in_zone_project_emissions_mmt FLOAT,
+         PRIMARY KEY (scenario_id, carbon_cap_zone, period)
+         );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "carbon_cap_total_project.csv"), "r") as \
+            emissions_file:
+        reader = csv.reader(emissions_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            carbon_cap_zone = row[0]
+            period = row[1]
+            carbon_cap_mmt = row[2]
+            project_carbon_emissions_mmt = row[3]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_system_carbon_emissions"""
+                + str(scenario_id) + """
+                 (scenario_id, carbon_cap_zone, period, carbon_cap_mmt, 
+                 in_zone_project_emissions_mmt)
+                 VALUES ({}, '{}', {}, {}, {});""".format(
+                    scenario_id, carbon_cap_zone, period, carbon_cap_mmt,
+                    project_carbon_emissions_mmt
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_system_carbon_emissions
+        (scenario_id, carbon_cap_zone, period, carbon_cap_mmt, 
+        in_zone_project_emissions_mmt)
+        SELECT
+        scenario_id, carbon_cap_zone, period, carbon_cap_mmt, 
+        in_zone_project_emissions_mmt
+        FROM temp_results_system_carbon_emissions"""
+        + str(scenario_id)
+        + """
+         ORDER BY scenario_id, carbon_cap_zone, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_system_carbon_emissions"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

@@ -332,3 +332,98 @@ def get_module_specific_inputs_from_database(
             # Write input data
             for row in ep_capacities:
                 writer.writerow(row)
+
+
+def import_module_specific_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # New build capacity results
+    print("project linear economic retirements")
+    c.execute(
+        """DELETE FROM results_project_capacity_linear_economic_retirement 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_project_capacity_linear_economic_retirement"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE 
+        temp_results_project_capacity_linear_economic_retirement"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        project VARCHAR(64),
+        period INTEGER,
+        technology VARCHAR(32),
+        load_zone VARCHAR(32),
+        retired_mw FLOAT,
+        PRIMARY KEY (scenario_id, project, period)
+        );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(
+            results_directory,
+            "capacity_existing_gen_linear_economic_retirement.csv"), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            technology = row[2]
+            load_zone = row[3]
+            retired_mw = row[4]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_project_capacity_linear_economic_retirement"""
+                + str(scenario_id) + """
+                (scenario_id, project, period, technology, load_zone,
+                retired_mw)
+                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
+                    scenario_id, project, period, technology, load_zone,
+                    retired_mw
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_capacity_linear_economic_retirement
+        (scenario_id, project, period, technology, load_zone, retired_mw)
+        SELECT
+        scenario_id, project, period, technology, load_zone, retired_mw
+        FROM temp_results_project_capacity_linear_economic_retirement"""
+        + str(scenario_id)
+        + """
+        ORDER BY scenario_id, project, period;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE 
+        temp_results_project_capacity_linear_economic_retirement"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

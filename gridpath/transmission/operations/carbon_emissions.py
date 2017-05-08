@@ -127,17 +127,18 @@ def export_results(scenario_directory, horizon, stage, m, d):
                            "carbon_emission_imports_by_tx_line.csv"), "wb") \
             as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
-        writer.writerow(["tx_line", "timepoint", "period",
-                         "horizon", "horizon_weight",
+        writer.writerow(["tx_line", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
                          "carbon_emission_imports_tons"])
         for (tx, tmp) in \
                 m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 tx,
-                tmp,
                 m.period[tmp],
                 m.horizon[tmp],
+                tmp,
                 m.horizon_weight[m.horizon[tmp]],
+                m.number_of_hours_in_timepoint[tmp],
                 value(m.Import_Carbon_Emissions_Tons[tx, tmp])
             ])
 
@@ -201,3 +202,105 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
               "w") as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t")
         writer.writerows(new_rows)
+
+
+def import_results_into_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Carbon emission imports by transmission line and timepoint
+    print("transmission carbon emissions")
+    c.execute(
+        """DELETE FROM results_transmission_carbon_emissions 
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_transmission_carbon_emissions"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_transmission_carbon_emissions"""
+        + str(scenario_id) + """(
+         scenario_id INTEGER,
+         tx_line VARCHAR(64),
+         period INTEGER,
+         horizon INTEGER,
+         timepoint INTEGER,
+         horizon_weight FLOAT,
+         number_of_hours_in_timepoint FLOAT,
+         carbon_emission_imports_tons FLOAT,
+         PRIMARY KEY (scenario_id, tx_line, timepoint)
+         );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "carbon_emission_imports_by_tx_line.csv"), "r") as \
+            emissions_file:
+        reader = csv.reader(emissions_file)
+
+        reader.next()  # skip header
+        for row in reader:
+            tx_line = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            carbon_emission_imports_tons = row[6]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_transmission_carbon_emissions"""
+                + str(scenario_id) + """
+                 (scenario_id, tx_line, period, horizon, timepoint, 
+                 horizon_weight, number_of_hours_in_timepoint, 
+                 carbon_emission_imports_tons)
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {});""".format(
+                    scenario_id, tx_line, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    carbon_emission_imports_tons
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_transmission_carbon_emissions
+        (scenario_id, tx_line, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint, 
+        carbon_emission_imports_tons)
+        SELECT
+        scenario_id, tx_line, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint, 
+        carbon_emission_imports_tons
+        FROM temp_results_transmission_carbon_emissions"""
+        + str(scenario_id)
+        + """
+         ORDER BY scenario_id, tx_line, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_transmission_carbon_emissions"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

@@ -158,53 +158,6 @@ def is_number(s):
         return False
 
 
-def make_project_time_var_df(m, project_time_set, var, index, header):
-    """
-    Create a pandas dataframe with the two-dimensional project_time_set as a
-    two-column index and the values of x, a variable indexed by
-    project_time_set, as the value column. A 'project' can be a generator,
-    a storage project, a transmission line, etc. 'Time' can be timepoints,
-    periods, etc.
-    :param m:
-    The abstract model
-    :param project_time_set:
-    A two-dimensional set of project (e.g. generator, transmission line, etc.)
-    and temporal index (e.g. timepoint, period, etc.)
-    :param var:
-    The variable indexed by project_time_set that we will get values for
-    :param index:
-    The names of the DataFrame columns we'll index by
-    :param header:
-    The header of the value column of the DataFrame we'll create
-    :return:
-    Nothing
-    """
-
-    # Create a multi-index from the relevant project-time set
-    multi_index = pd.MultiIndex.from_tuples(
-        tuples=[(p, time) for (p, time) in getattr(m, project_time_set)],
-        names=index
-    )
-    results_df = pd.DataFrame(
-        index=multi_index, columns=[header]
-    )
-
-    # Populate indexed dataframe with the variable results values
-    for indx in multi_index:
-        try:
-            results_df[header][indx] = value(getattr(m, var)[indx])
-        except ValueError:
-            results_df[header][indx] = None
-            print(
-                "WARNING: The following variable was not initialized: "
-                + "\n" + str(var) + "\n"
-                + "The uninitialized index of set " + project_time_set
-                + " is (" + str((indx)) + ")."
-            )
-
-    return results_df
-
-
 class Logging:
     """
     Log output to both standard output and a log file. This will be 

@@ -461,7 +461,9 @@ inputs_project_variable_generator_profiles
 (variable_generator_profile_scenario_id, project),
 FOREIGN KEY (hydro_operational_chars_scenario_id, project) REFERENCES
 inputs_project_hydro_operational_chars
-(hydro_operational_chars_scenario_id, project)
+(hydro_operational_chars_scenario_id, project),
+FOREIGN KEY (operational_type) REFERENCES mod_operational_types
+(operational_type)
 );
 
 -- Variable generator profiles
@@ -1453,6 +1455,46 @@ energy_capacity_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period)
 );
 
+DROP TABLE IF EXISTS results_project_capacity_new_build_generator;
+CREATE TABLE results_project_capacity_new_build_generator (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+new_build_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_new_build_storage;
+CREATE TABLE results_project_capacity_new_build_storage (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+new_build_mw FLOAT,
+new_build_mwh FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_linear_economic_retirement;
+CREATE TABLE results_project_capacity_linear_economic_retirement (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+retired_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
 DROP TABLE IF EXISTS results_project_dispatch_all;
 CREATE TABLE results_project_dispatch_all (
 scenario_id INTEGER,
@@ -1528,6 +1570,131 @@ committed_units FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
+DROP TABLE IF EXISTS results_project_lf_reserves_up;
+CREATE TABLE results_project_lf_reserves_up (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+lf_reserves_up_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_lf_reserves_down;
+CREATE TABLE results_project_lf_reserves_down (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+lf_reserves_down_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_regulation_up;
+CREATE TABLE results_project_regulation_up (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+regulation_up_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_regulation_down;
+CREATE TABLE results_project_regulation_down (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+regulation_down_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_frequency_response;
+CREATE TABLE results_project_frequency_response (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+frequency_response_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+partial INTEGER,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_project_elcc_simple;
+CREATE TABLE results_project_elcc_simple (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+prm_zone VARCHAR(32),
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+capacity_mw FLOAT,
+elcc_simple_contribution_fraction FLOAT,
+elcc_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_elcc_surface;
+CREATE TABLE results_project_elcc_surface (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+prm_zone VARCHAR(32),
+facet INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+capacity_mw FLOAT,
+elcc_surface_coefficient FLOAT,
+elcc_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period, facet)
+);
+
 DROP TABLE IF EXISTS results_project_costs_capacity;
 CREATE TABLE results_project_costs_capacity (
 scenario_id INTEGER,
@@ -1539,6 +1706,18 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 annualized_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_costs_capacity_thresholds;
+CREATE TABLE results_project_costs_capacity_thresholds (
+scenario_id INTEGER,
+capacity_threshold_group VARCHAR(64),
+period INTEGER,
+capacity_threshold_mw FLOAT,
+capacity_threshold_cost_per_mw FLOAT,
+total_capacity_mw FLOAT,
+capacity_threshold_cost FLOAT,
+PRIMARY KEY (scenario_id, capacity_threshold_group, period)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_variable_om;
@@ -1609,6 +1788,84 @@ shutdown_cost FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
+DROP TABLE IF EXISTS results_project_fuel_burn;
+CREATE TABLE results_project_fuel_burn (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+fuel VARCHAR(32),
+fuel_burn_mmbtu FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_project_carbon_emissions;
+CREATE TABLE results_project_carbon_emissions (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+carbon_emission_tons FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_rps;
+CREATE TABLE results_project_rps (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+scheduled_rps_energy_mw FLOAT,
+scheduled_curtailment_mw FLOAT,
+subhourly_rps_energy_delivered_mw FLOAT,
+subhourly_curtailment_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_transmission_capacity;
+CREATE TABLE results_transmission_capacity (
+scenario_id INTEGER,
+tx_line VARCHAR(64),
+period INTEGER,
+load_zone_from VARCHAR(32),
+load_zone_to VARCHAR(32),
+min_mw FLOAT,
+max_mw FLOAT,
+PRIMARY KEY (scenario_id, tx_line, period)
+);
+
+DROP TABLE IF EXISTS results_transmission_costs_capacity;
+CREATE TABLE results_transmission_costs_capacity (
+scenario_id INTEGER,
+tx_line VARCHAR(64),
+period INTEGER,
+load_zone_from VARCHAR(32),
+load_zone_to VARCHAR(32),
+annualized_capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, tx_line, period)
+);
 
 DROP TABLE IF EXISTS results_transmission_imports_exports;
 CREATE TABLE results_transmission_imports_exports (
@@ -1638,4 +1895,169 @@ horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 transmission_flow_mw FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, timepoint)
+);
+
+DROP TABLE IF EXISTS results_transmission_hurdle_costs;
+CREATE TABLE results_transmission_hurdle_costs (
+scenario_id INTEGER,
+transmission_line VARCHAR(64),
+load_zone_from VARCHAR(64),
+load_zone_to VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+hurdle_cost_positive_direction FLOAT,
+hurdle_cost_negative_direction FLOAT,
+PRIMARY KEY (scenario_id, transmission_line, timepoint)
+);
+
+DROP TABLE IF EXISTS results_transmission_carbon_emissions;
+CREATE TABLE results_transmission_carbon_emissions (
+scenario_id INTEGER,
+tx_line VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+carbon_emission_imports_tons FLOAT,
+PRIMARY KEY (scenario_id, tx_line, timepoint)
+);
+
+
+DROP TABLE IF EXISTS results_system_load_balance;
+CREATE TABLE results_system_load_balance (
+scenario_id INTEGER,
+load_zone VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+overgeneration_mw FLOAT,
+unserved_energy_mw FLOAT,
+PRIMARY KEY (scenario_id, load_zone, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
+CREATE TABLE results_system_lf_reserves_up_balance (
+scenario_id INTEGER,
+lf_reserves_up_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, lf_reserves_up_ba, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_lf_reserves_down_balance;
+CREATE TABLE results_system_lf_reserves_down_balance (
+scenario_id INTEGER,
+lf_reserves_down_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, lf_reserves_down_ba, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_regulation_up_balance;
+CREATE TABLE results_system_regulation_up_balance (
+scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, regulation_up_ba, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_regulation_down_balance;
+CREATE TABLE results_system_regulation_down_balance (
+scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, regulation_down_ba, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_frequency_response_balance;
+CREATE TABLE results_system_frequency_response_balance (
+scenario_id INTEGER,
+frequency_response_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, frequency_response_ba, timepoint)
+);
+
+-- TODO: frequency_response_partial_ba is the same as frequency_response_ba
+-- _partial included to simplify results import
+DROP TABLE IF EXISTS results_system_frequency_response_partial_balance;
+CREATE TABLE results_system_frequency_response_partial_balance (
+scenario_id INTEGER,
+frequency_response_partial_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+PRIMARY KEY (scenario_id, frequency_response_partial_ba, timepoint)
+);
+
+-- Carbon emissions
+DROP TABLE IF EXISTS results_system_carbon_emissions;
+CREATE TABLE results_system_carbon_emissions (
+scenario_id INTEGER,
+carbon_cap_zone VARCHAR(64),
+period INTEGER,
+carbon_cap_mmt FLOAT,
+in_zone_project_emissions_mmt FLOAT,
+import_emissions_mmt FLOAT,
+total_emissions_mmt FLOAT,
+PRIMARY KEY (scenario_id, carbon_cap_zone, period)
+);
+
+-- RPS balance
+DROP TABLE IF EXISTS results_system_rps;
+CREATE TABLE  results_system_rps (
+scenario_id INTEGER,
+rps_zone VARCHAR(64),
+period INTEGER,
+rps_target_mwh FLOAT,
+delivered_rps_energy_mwh FLOAT,
+curtailed_rps_energy_mwh FLOAT,
+total_rps_energy_mwh FLOAT,
+fraction_of_rps_target_met FLOAT,
+fraction_of_rps_energy_curtailed FLOAT,
+PRIMARY KEY (scenario_id, rps_zone, period)
+);
+
+-- PRM balance
+DROP TABLE IF EXISTS results_system_prm;
+CREATE TABLE  results_system_prm (
+scenario_id INTEGER,
+prm_zone VARCHAR(64),
+period INTEGER,
+prm_requirement_mw FLOAT,
+elcc_simple_mw FLOAT,
+elcc_surface_mw FLOAT,
+elcc_total_mw FLOAT,
+PRIMARY KEY (scenario_id, prm_zone, period)
 );
