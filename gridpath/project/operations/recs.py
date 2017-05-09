@@ -239,7 +239,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
 def import_results_into_database(scenario_id, c, db, results_directory):
     """
-    Assign rps_zone to appropriate results tables
+    
     :param scenario_id:
     :param c:
     :param db:
@@ -356,16 +356,26 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     )
     db.commit()
 
-    # TODO: move this update to a post-import results processing script
+
+def process_results(db, c, subscenarios):
+    """
+    
+    :param db: 
+    :param c: 
+    :param subscenarios: 
+    :return: 
+    """
     print("update rps zones")
     # Figure out RPS zone for each project
-    prj_rps_zones = dict()
-    with open(os.path.join(results_directory, "rps_project_zones.csv"),
-              "r") as prj_rps_zones_file:
-        reader = csv.reader(prj_rps_zones_file)
-        reader.next()
-        for row in reader:
-            prj_rps_zones[row[0]] = row[1]
+    project_zones = c.execute(
+        """SELECT project, rps_zone
+        FROM inputs_project_rps_zones
+            WHERE rps_zone_scenario_id = {}
+            AND project_rps_zone_scenario_id = {}""".format(
+            subscenarios.RPS_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
 
     # Update tables with RPS zone
     tables_to_update = [
@@ -376,6 +386,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         "results_project_dispatch_all",
         "results_project_dispatch_variable",
         "results_project_dispatch_capacity_commit",
+        "results_project_dispatch_hydro_curtailable",
+        "results_project_fuel_burn",
         "results_project_frequency_response",
         "results_project_lf_reserves_up",
         "results_project_lf_reserves_down",
@@ -386,9 +398,12 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         "results_project_costs_operations_fuel",
         "results_project_costs_operations_startup",
         "results_project_costs_operations_shutdown",
-        "results_project_rps"
+        "results_project_carbon_emissions",
+        "results_project_elcc_simple",
+        "results_project_elcc_surface"
     ]
-    for prj in prj_rps_zones.keys():
+
+    for (prj, zone) in project_zones:
         for tbl in tables_to_update:
             c.execute(
                 """UPDATE {}
@@ -396,23 +411,9 @@ def import_results_into_database(scenario_id, c, db, results_directory):
                 WHERE scenario_id = {}
                 AND project = '{}';""".format(
                     tbl,
-                    prj_rps_zones[prj],
-                    scenario_id,
+                    zone,
+                    subscenarios.SCENARIO_ID,
                     prj
                 )
             )
-    db.commit()
-
-    # Set rps_zone to 'no_rps' for all other projects
-    # This helps for later joins (can't join on NULL values)
-    for tbl in tables_to_update:
-        c.execute(
-            """UPDATE {}
-            SET rps_zone = 'no_rps'
-            WHERE scenario_id = {}
-            AND rps_zone IS NULL;""".format(
-                tbl,
-                scenario_id
-            )
-        )
     db.commit()

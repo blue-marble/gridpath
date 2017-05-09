@@ -209,6 +209,7 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     :param scenario_id_arg: 
     :param scenario_name_arg: 
     :param c: 
+    :param script: 
     :return: 
     """
     if scenario_id_arg is None and scenario_name_arg is None:

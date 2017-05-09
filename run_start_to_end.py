@@ -11,6 +11,7 @@ import sys
 import get_scenario_inputs
 import run_scenario
 import import_scenario_results
+import process_results
 
 
 def parse_arguments(arguments):
@@ -66,3 +67,4 @@ if __name__ == "__main__":
     get_scenario_inputs.main(args=args)
     run_scenario.main(args=args)
     import_scenario_results.main(args=args)
+    process_results.main(args=args)

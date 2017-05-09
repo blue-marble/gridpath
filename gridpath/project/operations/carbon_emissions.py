@@ -274,3 +274,79 @@ def import_results_into_database(
         """;"""
     )
     db.commit()
+
+
+def process_results(db, c, subscenarios):
+    """
+
+    :param db: 
+    :param c: 
+    :param subscenarios: 
+    :return: 
+    """
+    print("update carbon cap zones")
+    # Figure out carbon_cap zone for each project
+    project_zones = c.execute(
+        """SELECT project, carbon_cap_zone
+        FROM inputs_project_carbon_cap_zones
+            WHERE carbon_cap_zone_scenario_id = {}
+            AND project_carbon_cap_zone_scenario_id = {}""".format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    # Update tables with carbon cap zone
+    tables_to_update = [
+        "results_project_capacity_all",
+        "results_project_capacity_new_build_generator",
+        "results_project_capacity_new_build_storage",
+        "results_project_capacity_linear_economic_retirement",
+        "results_project_dispatch_all",
+        "results_project_dispatch_variable",
+        "results_project_dispatch_capacity_commit",
+        "results_project_dispatch_hydro_curtailable",
+        "results_project_fuel_burn",
+        "results_project_frequency_response",
+        "results_project_lf_reserves_up",
+        "results_project_lf_reserves_down",
+        "results_project_regulation_up",
+        "results_project_regulation_down",
+        "results_project_costs_capacity",
+        "results_project_costs_operations_variable_om",
+        "results_project_costs_operations_fuel",
+        "results_project_costs_operations_startup",
+        "results_project_costs_operations_shutdown",
+        "results_project_carbon_emissions",
+        "results_project_elcc_simple",
+        "results_project_elcc_surface"
+    ]
+
+    for (prj, zone) in project_zones:
+        for tbl in tables_to_update:
+            c.execute(
+                """UPDATE {}
+                SET carbon_cap_zone = '{}'
+                WHERE scenario_id = {}
+                AND project = '{}';""".format(
+                    tbl,
+                    zone,
+                    subscenarios.SCENARIO_ID,
+                    prj
+                )
+            )
+    db.commit()
+
+    # Set carbon_cap_zone to 'no_carbon_cap' for all other projects
+    # This helps for later joins (can't join on NULL values)
+    for tbl in tables_to_update:
+        c.execute(
+            """UPDATE {}
+            SET carbon_cap_zone = 'no_carbon_cap'
+            WHERE scenario_id = {}
+            AND carbon_cap_zone IS NULL;""".format(
+                tbl,
+                subscenarios.SCENARIO_ID
+            )
+        )
+    db.commit()
