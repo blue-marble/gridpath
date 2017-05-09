@@ -60,12 +60,16 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "carbon_cap.csv"), "wb") as carbon_cap_results_file:
         writer = csv.writer(carbon_cap_results_file)
-        writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
+        writer.writerow(["carbon_cap_zone", "period",
+                         "discount_factor", "number_years_represented",
+                         "carbon_cap_target_mmt",
                          "carbon_emissions_mmt"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
                 p,
+                m.discount_factor[p],
+                m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
                 value(
                     m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
@@ -114,15 +118,50 @@ def import_results_into_database(
         for row in reader:
             carbon_cap_zone = row[0]
             period = row[1]
-            total_emissions_mmt = row[3]
+            discount_factor = row[2]
+            number_years = row[3]
+            total_emissions_mmt = row[5]
 
             c.execute(
                 """UPDATE results_system_carbon_emissions
-                SET total_emissions_mmt = {}
+                SET total_emissions_mmt = {},
+                discount_factor = {},
+                number_years_represented = {}
                 WHERE scenario_id = {}
                 AND carbon_cap_zone = '{}'
                 AND period = {}""".format(
-                    total_emissions_mmt, scenario_id, carbon_cap_zone, period
+                    total_emissions_mmt, discount_factor, number_years,
+                    scenario_id, carbon_cap_zone, period
                 )
             )
+    db.commit()
+
+    # Update duals
+    with open(os.path.join(results_directory, "Carbon_Cap_Constraint.csv"),
+              "r") as carbon_cap_duals_file:
+        reader = csv.reader(carbon_cap_duals_file)
+
+        reader.next()  # skip header
+
+        for row in reader:
+            c.execute(
+                """UPDATE results_system_carbon_emissions
+                SET dual = {}
+                WHERE carbon_cap_zone = '{}'
+                AND period = {}
+                AND scenario_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id
+                )
+            )
+    db.commit()
+
+    # Calculate marginal carbon cost per MMt
+    c.execute(
+        """UPDATE results_system_carbon_emissions
+        SET carbon_cap_marginal_cost_per_mmt = 
+        dual / (discount_factor * number_years_represented)
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
     db.commit()

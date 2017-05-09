@@ -60,12 +60,16 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "prm.csv"), "wb") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["prm_zone", "period", "prm_requirement_mw",
+        writer.writerow(["prm_zone", "period",
+                         "discount_factor", "number_years_represented",
+                         "prm_requirement_mw",
                          "prm_provision_mw"])
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow([
                 z,
                 p,
+                m.discount_factor[p],
+                m.number_years_represented[p],
                 float(m.prm_requirement_mw[z, p]),
                 value(m.Total_PRM_from_All_Sources_Expression[z, p])
             ])
@@ -115,17 +119,53 @@ def import_results_into_database(
         for row in reader:
             prm_zone = row[0]
             period = row[1]
-            prm_req_mw = row[2]
-            prm_prov_mw = row[3]
+            discount_factor = row[2]
+            number_years = row[3]
+            prm_req_mw = row[4]
+            prm_prov_mw = row[5]
 
             c.execute(
                 """UPDATE results_system_prm
                 SET prm_requirement_mw = {},
-                elcc_total_mw = {}
+                elcc_total_mw = {},
+                discount_factor = {},
+                number_years_represented = {}
                 WHERE scenario_id = {}
                 AND prm_zone = '{}'
                 AND period = {}""".format(
-                    prm_req_mw, prm_prov_mw, scenario_id, prm_zone, period
+                    prm_req_mw, prm_prov_mw,
+                    discount_factor, number_years,
+                    scenario_id, prm_zone, period
                 )
             )
+    db.commit()
+
+    # Update duals
+    with open(os.path.join(results_directory, "PRM_Constraint.csv"),
+              "r") as prm_duals_file:
+        reader = csv.reader(prm_duals_file)
+
+        reader.next()  # skip header
+
+        for row in reader:
+            c.execute(
+                """UPDATE results_system_prm
+                SET dual = {}
+                WHERE prm_zone = '{}'
+                AND period = {}
+                AND scenario_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id
+                )
+            )
+    db.commit()
+
+    # Calculate marginal carbon cost per MMt
+    c.execute(
+        """UPDATE results_system_prm
+        SET prm_marginal_cost_per_mw = 
+        dual / (discount_factor * number_years_represented)
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
     db.commit()

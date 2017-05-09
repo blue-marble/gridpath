@@ -64,12 +64,16 @@ def export_results(scenario_directory, horizon, stage, m, d):
                            "carbon_cap_total_project.csv"), "wb") as \
             rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
+        writer.writerow(["carbon_cap_zone", "period",
+                         "discount_factor", "number_years_represented",
+                         "carbon_cap_target_mmt",
                          "project_carbon_emissions_mmt"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
                 p,
+                m.discount_factor[p],
+                m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
                 value(
                     m.Total_Carbon_Emissions_Tons[z, p]

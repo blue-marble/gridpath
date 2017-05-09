@@ -87,7 +87,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "load_balance.csv"), "wb") as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["zone", "period", "horizo", "timepoint",
+        writer.writerow(["zone", "period", "horizon", "timepoint",  "horizon",
+                         "discount_factor", "number_years_represented",
                          "horizon_weight", "number_of_hours_in_timepiont",
                          "overgeneration_mw",
                          "unserved_energy_mw"]
@@ -99,6 +100,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                     m.period[tmp],
                     m.horizon[tmp],
                     tmp,
+                    m.discount_factor[m.period[tmp]],
+                    m.number_years_represented[m.period[tmp]],
                     m.horizon_weight[m.horizon[tmp]],
                     m.number_of_hours_in_timepoint[tmp],
                     m.Overgeneration_MW[z, tmp].value,
@@ -146,6 +149,8 @@ def import_results_into_database(
         period INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
+        discount_factor FLOAT,
+        number_years_represented FLOAT,
         horizon_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         overgeneration_mw FLOAT,
@@ -166,19 +171,24 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            overgen = row[6]
-            unserved_energy = row[7]
+            discount_factor = row[4]
+            number_years = row[5]
+            horizon_weight = row[6]
+            number_of_hours_in_timepoint = row[7]
+            overgen = row[8]
+            unserved_energy = row[9]
             c.execute(
                 """INSERT INTO 
                 temp_results_system_load_balance"""
                 + str(scenario_id) + """
                 (scenario_id, load_zone, period, horizon, 
-                timepoint, horizon_weight, number_of_hours_in_timepoint,
+                timepoint, discount_factor, number_years_represented,
+                horizon_weight, number_of_hours_in_timepoint,
                 overgeneration_mw, unserved_energy_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, 
+                {});""".format(
                     scenario_id, ba, period, horizon, timepoint,
+                    discount_factor, number_years,
                     horizon_weight, number_of_hours_in_timepoint,
                     overgen, unserved_energy
                 )
@@ -189,10 +199,12 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_system_load_balance
         (scenario_id, load_zone, period, horizon, timepoint,
+        discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
         overgeneration_mw, unserved_energy_mw)
         SELECT
         scenario_id, load_zone, period, horizon, timepoint,
+        discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
         overgeneration_mw, unserved_energy_mw
         FROM temp_results_system_load_balance"""
@@ -206,5 +218,36 @@ def import_results_into_database(
         """DROP TABLE temp_results_system_load_balance"""
         + str(scenario_id) +
         """;"""
+    )
+    db.commit()
+
+    # Update duals
+    with open(os.path.join(results_directory, "Meet_Load_Constraint.csv"),
+              "r") as load_balance_duals_file:
+        reader = csv.reader(load_balance_duals_file)
+
+        reader.next()  # skip header
+
+        for row in reader:
+            c.execute(
+                """UPDATE results_system_load_balance
+                SET dual = {}
+                WHERE load_zone = '{}'
+                AND timepoint = {}
+                AND scenario_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id
+                )
+            )
+    db.commit()
+
+    # Calculate marginal cost per MW
+    c.execute(
+        """UPDATE results_system_load_balance
+        SET marginal_price_per_mw = 
+        dual / (discount_factor * number_years_represented * horizon_weight 
+        * number_of_hours_in_timepoint)
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
     )
     db.commit()

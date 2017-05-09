@@ -48,7 +48,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "rps.csv"), "wb") as rps_results_file:
         writer = csv.writer(rps_results_file)
-        writer.writerow(["rps_zone", "period", "rps_target_mwh",
+        writer.writerow(["rps_zone", "period",
+                         "discount_factor", "number_years_represented",
+                         "rps_target_mwh",
                          "delivered_rps_energy_mwh",
                          "curtailed_rps_energy_mwh",
                          "total_rps_energy_mwh",
@@ -58,6 +60,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
             writer.writerow([
                 z,
                 p,
+                m.discount_factor[p],
+                m.number_years_represented[p],
                 float(m.rps_target_mwh[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]),
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
@@ -111,24 +115,19 @@ def summarize_results(d, problem_directory, horizon, stage):
                                  "RPS_Target_Constraint.csv")
                     )
 
-    # Get the input metadata for periods
-    periods_df = \
-        pd.read_csv(os.path.join(problem_directory, "inputs", "periods.tab"),
-                    sep="\t")
+    # # Get the input metadata for periods
+    # periods_df = \
+    #     pd.read_csv(os.path.join(problem_directory, "inputs", "periods.tab"),
+    #                 sep="\t")
 
     # Join the above
     results_df = pd.DataFrame(
         pd.merge(
-            left=pd.merge(left=rps_df,
-                          right=rps_duals_df,
-                          how="left",
-                          left_on=["rps_zone", "period"],
-                          right_on=["rps_zone", "period"]
-                          ),
-            right=periods_df,
+            left=rps_df,
+            right=rps_duals_df,
             how="left",
-            left_on="period",
-            right_on="PERIODS"
+            left_on=["rps_zone", "period"],
+            right_on=["rps_zone", "period"]
         )
     )
 
@@ -158,7 +157,6 @@ def summarize_results(d, problem_directory, horizon, stage):
     pd.options.display.float_format = "{:,.0f}".format
 
     # Drop unnecessary columns before exporting
-    results_df.drop("PERIODS", axis=1, inplace=True)
     results_df.drop("discount_factor", axis=1, inplace=True)
     results_df.drop("number_years_represented", axis=1, inplace=True)
     results_df.drop("total_rps_energy_mwh", axis=1, inplace=True)
@@ -210,6 +208,8 @@ def import_results_into_database(
          scenario_id INTEGER,
          rps_zone VARCHAR(64),
          period INTEGER,
+         discount_factor FLOAT,
+         number_years_represented FLOAT,
          rps_target_mwh FLOAT,
          delivered_rps_energy_mwh FLOAT,
          curtailed_rps_energy_mwh FLOAT,
@@ -221,35 +221,39 @@ def import_results_into_database(
     )
     db.commit()
 
-    # Load results into the temporary table
     with open(os.path.join(results_directory,
                            "rps.csv"), "r") as \
-            emissions_file:
-        reader = csv.reader(emissions_file)
+            rps_file:
+        reader = csv.reader(rps_file)
 
         reader.next()  # skip header
         for row in reader:
             rps_zone = row[0]
             period = row[1]
-            rps_target = row[2]
-            rps_provision = row[3]
-            curtailment = row[4]
-            total = row[5]
-            fraction_met = row[6]
-            fraction_curtailed = row[7]
+            discount_factor = row[2]
+            number_years = row[3]
+            rps_target = row[4]
+            rps_provision = row[5]
+            curtailment = row[6]
+            total = row[7]
+            fraction_met = row[8]
+            fraction_curtailed = row[9]
 
+            # Load results into the temporary table
             c.execute(
                 """INSERT INTO 
                 temp_results_system_rps"""
                 + str(scenario_id) + """
-                 (scenario_id, rps_zone, period, rps_target_mwh, 
+                 (scenario_id, rps_zone, period, 
+                 discount_factor, number_years_represented, rps_target_mwh, 
                  delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
                  total_rps_energy_mwh,
                  fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
-                    scenario_id, rps_zone, period, rps_target,
-                    rps_provision, curtailment, total, fraction_met,
-                    fraction_curtailed
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}
+                 );""".format(
+                    scenario_id, rps_zone, period, discount_factor,
+                    number_years, rps_target, rps_provision, curtailment,
+                    total, fraction_met, fraction_curtailed
                 )
             )
     db.commit()
@@ -257,11 +261,13 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_rps
-        (scenario_id, rps_zone, period, rps_target_mwh, 
+        (scenario_id, rps_zone, period,
+        discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
-        SELECT scenario_id, rps_zone, period, rps_target_mwh, 
+        SELECT scenario_id, rps_zone, period,
+        discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed
@@ -277,5 +283,35 @@ def import_results_into_database(
         """DROP TABLE temp_results_system_rps"""
         + str(scenario_id) +
         """;"""
+    )
+    db.commit()
+
+    # Update duals
+    with open(os.path.join( results_directory, "RPS_Target_Constraint.csv"),
+              "r") as rps_duals_file:
+        reader = csv.reader(rps_duals_file)
+
+        reader.next()  # skip header
+
+        for row in reader:
+            c.execute(
+                """UPDATE results_system_rps
+                SET dual = {}
+                WHERE rps_zone = '{}'
+                AND period = {}
+                AND scenario_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id
+                )
+            )
+    db.commit()
+
+    # Calculate marginal RPS cost per MWh
+    c.execute(
+        """UPDATE results_system_rps
+        SET rps_marginal_cost_per_mwh = 
+        dual / (discount_factor * number_years_represented)
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
     )
     db.commit()

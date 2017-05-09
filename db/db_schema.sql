@@ -1934,10 +1934,14 @@ load_zone VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, load_zone, timepoint)
 );
 
@@ -1948,9 +1952,13 @@ lf_reserves_up_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_up_ba, timepoint)
 );
 
@@ -1961,9 +1969,13 @@ lf_reserves_down_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, lf_reserves_down_ba, timepoint)
 );
 
@@ -1974,9 +1986,13 @@ regulation_up_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_up_ba, timepoint)
 );
 
@@ -1987,9 +2003,13 @@ regulation_down_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, regulation_down_ba, timepoint)
 );
 
@@ -2000,9 +2020,13 @@ frequency_response_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, frequency_response_ba, timepoint)
 );
 
@@ -2015,9 +2039,13 @@ frequency_response_partial_ba VARCHAR(32),
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, frequency_response_partial_ba, timepoint)
 );
 
@@ -2027,10 +2055,14 @@ CREATE TABLE results_system_carbon_emissions (
 scenario_id INTEGER,
 carbon_cap_zone VARCHAR(64),
 period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 carbon_cap_mmt FLOAT,
 in_zone_project_emissions_mmt FLOAT,
 import_emissions_mmt FLOAT,
 total_emissions_mmt FLOAT,
+dual FLOAT,
+carbon_cap_marginal_cost_per_mmt FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, period)
 );
 
@@ -2040,14 +2072,19 @@ CREATE TABLE  results_system_rps (
 scenario_id INTEGER,
 rps_zone VARCHAR(64),
 period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 rps_target_mwh FLOAT,
 delivered_rps_energy_mwh FLOAT,
 curtailed_rps_energy_mwh FLOAT,
 total_rps_energy_mwh FLOAT,
 fraction_of_rps_target_met FLOAT,
 fraction_of_rps_energy_curtailed FLOAT,
+dual FLOAT,
+rps_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, rps_zone, period)
 );
+
 
 -- PRM balance
 DROP TABLE IF EXISTS results_system_prm;
@@ -2055,9 +2092,14 @@ CREATE TABLE  results_system_prm (
 scenario_id INTEGER,
 prm_zone VARCHAR(64),
 period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
 prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
+dual FLOAT,
+prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period)
 );
+
