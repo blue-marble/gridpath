@@ -114,6 +114,7 @@ def optional_modules_list():
             ["project.operations.fix_commitment"],
         "transmission":
             ["transmission",
+             "transmission.capacity.capacity_types",
              "transmission.capacity.capacity",
              "transmission.operations.operations",
              "system.load_balance.aggregate_transmission_power"],
