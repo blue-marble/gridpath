@@ -222,25 +222,30 @@ def get_inputs_from_database(
     :param inputs_directory: 
     :return: 
     """
+    # Write project availability file if project_availability_scenario_id is
+    #  not NULL
+    if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
+        pass
+    else:
     # Project availabilities
-    availabilities = c.execute(
-        """SELECT project, horizon, availability
-        FROM inputs_project_availability
-        INNER JOIN inputs_project_portfolios
-        USING (project)
-        WHERE project_portfolio_scenario_id = {}
-        AND project_availability_scenario_id = {}""".format(
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
+        availabilities = c.execute(
+            """SELECT project, horizon, availability
+            FROM inputs_project_availability
+            INNER JOIN inputs_project_portfolios
+            USING (project)
+            WHERE project_portfolio_scenario_id = {}
+            AND project_availability_scenario_id = {}""".format(
+                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+                subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
+            )
         )
-    )
 
-    with open(os.path.join(inputs_directory, "project_availability.tab"),
-              "w") as \
-            availability_tab_file:
-        writer = csv.writer(availability_tab_file, delimiter="\t")
+        with open(os.path.join(inputs_directory, "project_availability.tab"),
+                  "w") as \
+                availability_tab_file:
+            writer = csv.writer(availability_tab_file, delimiter="\t")
 
-        writer.writerow(["project", "horizon", "availability_derate"])
+            writer.writerow(["project", "horizon", "availability_derate"])
 
-        for row in availabilities:
-            writer.writerow(row)
+            for row in availabilities:
+                writer.writerow(row)
