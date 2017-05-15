@@ -515,13 +515,30 @@ def get_module_specific_inputs_from_database(
     :return: 
     """
 
+    get_potentials = \
+        (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \
+        else (
+            """, minimum_cumulative_new_build_mw, 
+            minimum_cumulative_new_build_mwh,
+            maximum_cumulative_new_build_mw, 
+            maximum_cumulative_new_build_mwh """,
+            """LEFT OUTER JOIN
+            (SELECT project, period,
+            minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
+            maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh
+            FROM inputs_project_new_potential
+            WHERE project_new_potential_scenario_id = {}) as potential
+            USING (project, period) """.format(
+                subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID
+            )
+        )
+
     new_stor_costs = c.execute(
         """SELECT project, period, lifetime_yrs,
         annualized_real_cost_per_kw_yr * 1000,
-        annualized_real_cost_per_kwh_yr * 1000,
-        minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
-        maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh
-        FROM inputs_project_portfolios
+        annualized_real_cost_per_kwh_yr * 1000"""
+        + get_potentials[0] +
+        """FROM inputs_project_portfolios
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
@@ -531,19 +548,13 @@ def get_module_specific_inputs_from_database(
         annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
-        USING (project, period)
-        LEFT OUTER JOIN
-        (SELECT project, period,
-        minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
-        maximum_cumulative_new_build_mw, maximum_cumulative_new_build_mwh
-        FROM inputs_project_new_potential
-        WHERE project_new_potential_scenario_id = {}) as potential
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_build_storage';""".format(
+        USING (project, period)""".format(
             subscenarios.TIMEPOINT_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
+        )
+        + get_potentials[1] +
+        """WHERE project_portfolio_scenario_id = {}
+        AND capacity_type = 'new_build_storage';""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
@@ -557,9 +568,12 @@ def get_module_specific_inputs_from_database(
         writer.writerow(
             ["project", "vintage", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr",
-             "annualized_real_cost_per_mwh_yr",
+             "annualized_real_cost_per_mwh_yr"] +
+            [] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
+            else [
              "min_cumulative_new_build_mw", "min_cumulative_new_build_mwh",
-             "max_cumulative_new_build_mw", "max_cumulative_new_build_mwh"]
+             "max_cumulative_new_build_mw", "max_cumulative_new_build_mwh"
+            ]
         )
 
         for row in new_stor_costs:
