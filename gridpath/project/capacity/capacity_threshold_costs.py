@@ -172,59 +172,61 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     :param inputs_directory:
     :return:
     """
+    if subscenarios.CAPACITY_THRESHOLD_COST_SCENARIO_ID is None:
+        pass
+    else:
+        # Threshold groups with threshold and cost
+        group_threshold_costs = c.execute(
+            """SELECT capacity_threshold_group, capacity_threshold_mw, 
+            capacity_threshold_cost_per_mw
+            FROM inputs_project_capacity_threshold_costs
+            WHERe capacity_threshold_cost_scenario_id = {}""".format(
+                subscenarios.CAPACITY_THRESHOLD_COST_SCENARIO_ID
+            )
+        ).fetchall()
 
-    # Threshold groups with threshold and cost
-    group_threshold_costs = c.execute(
-        """SELECT capacity_threshold_group, capacity_threshold_mw, 
-        capacity_threshold_cost_per_mw
-        FROM inputs_project_capacity_threshold_costs
-        WHERe capacity_threshold_cost_scenario_id = {}""".format(
-            subscenarios.CAPACITY_THRESHOLD_COST_SCENARIO_ID
+        with open(os.path.join(inputs_directory,
+                               "capacity_threshold_group_costs.tab"), "w") as \
+                capacity_threshold_costs_file:
+            writer = csv.writer(capacity_threshold_costs_file, delimiter="\t")
+
+            # Write header
+            writer.writerow(["capacity_threshold_group",
+                             "capacity_threshold_mw",
+                             "capacity_threshold_cost_per_mw"])
+
+            # Input data
+            for row in group_threshold_costs:
+                writer.writerow(row)
+
+        # Projects by group
+        project_capacity_threshold_interconnection_cost_groups = c.execute(
+            """SELECT interconnection_capacity_threshold_group, project
+            FROM inputs_project_portfolios
+            LEFT OUTER JOIN inputs_project_load_zones
+            USING (project)
+            WHERE load_zone_scenario_id = {}
+            AND project_load_zone_scenario_id = {}
+            AND project_portfolio_scenario_id = {}
+            AND interconnection_capacity_threshold_group IS NOT NULL
+            ORDER BY interconnection_capacity_threshold_group, project""".format(
+                subscenarios.LOAD_SCENARIO_ID,
+                subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
+                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            )
         )
-    ).fetchall()
 
-    with open(os.path.join(inputs_directory,
-                           "capacity_threshold_group_costs.tab"), "w") as \
-            capacity_threshold_costs_file:
-        writer = csv.writer(capacity_threshold_costs_file, delimiter="\t")
+        with open(os.path.join(inputs_directory,
+                               "capacity_threshold_group_projects.tab"), "w") as \
+                group_projects_file:
+            writer = csv.writer(group_projects_file, delimiter="\t")
 
-        # Write header
-        writer.writerow(["capacity_threshold_group",
-                         "capacity_threshold_mw",
-                         "capacity_threshold_cost_per_mw"])
+            # Write header
+            writer.writerow(["capacity_threshold_group", "project"])
 
-        # Input data
-        for row in group_threshold_costs:
-            writer.writerow(row)
-
-    # Projects by group
-    project_capacity_threshold_interconnection_cost_groups = c.execute(
-        """SELECT interconnection_capacity_threshold_group, project
-        FROM inputs_project_portfolios
-        LEFT OUTER JOIN inputs_project_load_zones
-        USING (project)
-        WHERE load_zone_scenario_id = {}
-        AND project_load_zone_scenario_id = {}
-        AND project_portfolio_scenario_id = {}
-        AND interconnection_capacity_threshold_group IS NOT NULL
-        ORDER BY interconnection_capacity_threshold_group, project""".format(
-            subscenarios.LOAD_SCENARIO_ID,
-            subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
-        )
-    )
-
-    with open(os.path.join(inputs_directory,
-                           "capacity_threshold_group_projects.tab"), "w") as \
-            group_projects_file:
-        writer = csv.writer(group_projects_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(["capacity_threshold_group", "project"])
-
-        # Input data
-        for row in project_capacity_threshold_interconnection_cost_groups:
-            writer.writerow(row)
+            # Input data
+            for row in project_capacity_threshold_interconnection_cost_groups:
+                writer.writerow(row)
 
     # TODO: append to this input file if other types of thresholds are
     # implemented
