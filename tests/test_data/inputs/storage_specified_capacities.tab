@@ -1,2 +1,2 @@
-project	period	storage_specified_power_capacity_mw	storage_specified_energy_capacity_mwh
-Battery_Specified	2020	6	6
+project	period	storage_specified_power_capacity_mw	storage_specified_energy_capacity_mwh	storage_specified_fixed_cost_per_mw_yr	storage_specified_fixed_cost_per_mwh_yr	
+Battery_Specified	2020	6	6	10000	5000

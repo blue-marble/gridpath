@@ -36,6 +36,14 @@ def add_module_specific_components(m, d):
         Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
 
+    m.storage_specified_fixed_cost_per_mw_yr = \
+        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
+              within=NonNegativeReals)
+
+    m.storage_specified_fixed_cost_per_mwh_yr = \
+        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
+              within=NonNegativeReals)
+
 
 def capacity_rule(mod, g, p):
     return mod.storage_specified_power_capacity_mw[g, p]
@@ -45,15 +53,18 @@ def energy_capacity_rule(mod, g, p):
     return mod.storage_specified_energy_capacity_mwh[g, p]
 
 
-# TODO: give the option to add an exogenous param here instead of 0
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for specified capacity generators with no economic retirements
-    is 0
-    :param mod:
-    :return:
+    
+    :param mod: 
+    :param g: 
+    :param p: 
+    :return: 
     """
-    return 0
+    return mod.storage_specified_power_capacity_mw[g, p] \
+        * mod.storage_specified_fixed_cost_per_mw_yr[g, p] \
+        + mod.storage_specified_energy_capacity_mwh[g, p] \
+        * mod.storage_specified_fixed_cost_per_mwh_yr[g, p]
 
 
 def load_module_specific_data(m,
@@ -66,9 +77,13 @@ def load_module_specific_data(m,
                      m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
                      select=("project", "period",
                              "storage_specified_power_capacity_mw",
-                             "storage_specified_energy_capacity_mwh"),
+                             "storage_specified_energy_capacity_mwh",
+                             "storage_specified_fixed_cost_per_mw_yr",
+                             "storage_specified_fixed_cost_per_mwh_yr"),
                      param=(m.storage_specified_power_capacity_mw,
-                            m.storage_specified_energy_capacity_mwh)
+                            m.storage_specified_energy_capacity_mwh,
+                            m.storage_specified_fixed_cost_per_mw_yr,
+                            m.storage_specified_fixed_cost_per_mwh_yr)
                      )
 
 
@@ -100,8 +115,9 @@ def get_module_specific_inputs_from_database(
         AND existing_capacity_mw > 0) as capacity
         USING (project, period)
         LEFT OUTER JOIN
-        (SELECT project, period, annual_fixed_cost_per_mw_year,
-        annual_fixed_cost_per_mwh_year
+        (SELECT project, period,
+        annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year,
+        annual_fixed_cost_per_kwh_year * 1000 AS annual_fixed_cost_per_mwh_year
         FROM inputs_project_existing_fixed_cost
         WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
@@ -125,7 +141,9 @@ def get_module_specific_inputs_from_database(
         writer.writerow(
             ["project", "period",
              "storage_specified_power_capacity_mw",
-             "storage_specified_energy_capacity_mwh"]
+             "storage_specified_energy_capacity_mwh",
+             "storage_specified_fixed_cost_per_mw_yr",
+             "storage_specified_fixed_cost_pr_mwh_yr"]
         )
 
         for row in stor_capacities:
