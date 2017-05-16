@@ -5,14 +5,10 @@
 Make results dispatch plot (by load zone and horizon)
 """
 
-from argparse import ArgumentParser
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
-import os.path
-import sqlite3
-import sys
 
 
 def determine_x_axis(c, scenario_id, horizon, load_zone):
@@ -81,7 +77,8 @@ def get_power_by_tech_results(c, scenario_id, horizon, load_zone):
            WHERE scenario_id = {}
            AND horizon = {}
            AND load_zone = '{}'
-           GROUP BY load_zone, technology, timepoint;""".format(
+           GROUP BY load_zone, technology, timepoint
+           ORDER BY technology, timepoint;""".format(
             scenario_id, horizon, load_zone
         )
     ).fetchall()
@@ -320,17 +317,21 @@ def make_figure(
                  power_by_tech["Steam"],
                  power_by_tech["CCGT"],
                  power_by_tech["Hydro"],
-                 imports,
+                 # If no imports (i.e. no imports in scenario), fill in with 0s
+                 [0] * x_axis_count if not imports else imports,
                  power_by_tech["Peaker"],
                  power_by_tech["Wind"],
                  power_by_tech["Solar_BTM"],
                  power_by_tech["Solar"],
+                 # Get just the positive values (dicharging) for storage here
                  [i if i > 0 else 0 for i in power_by_tech["Pumped_Storage"]],
                  [i if i > 0 else 0 for i in power_by_tech["Battery"]],
+                 # If no curtailable variable generators, list will be empty
+                 # so replace with 0s and ignore in drawing the plot
+                 [0] * x_axis_count if not curtailment_variable else
                  curtailment_variable,
-                 # Not all load zones have curtailable hydro; list will be
-                 # empty if not, so replace with 0s if list is empty to
-                 # ignore in drawing the plot
+                 # If no curtailable hydro, list will be empty,
+                 # so replace with 0s and ignore in drawing the plot
                  [0] * x_axis_count if not curtailment_hydro else
                  curtailment_hydro,
                  colors=[
@@ -388,10 +389,12 @@ def make_figure(
             ' + Battery'
 
         ax.plot(range(1, x_axis_count + 1),
-                [load_[i][0] + exports[i] +
-                 [-x if x < 0 else 0 for x in power_by_tech["Pumped_Storage"]][
-                     i] +
-                 [-x if x < 0 else 0 for x in power_by_tech["Battery"]][i]
+                [load_[i][0] + (exports[i] if exports else 0) +
+                 ([-x if x < 0 else 0 for x in power_by_tech[
+                     "Pumped_Storage"]][
+                     i] if power_by_tech["Pumped_Storage"] else 0) +
+                 ([-x if x < 0 else 0 for x in power_by_tech["Battery"]][i]
+                 if power_by_tech["Battery"] else 0)
                  for i in range(0, x_axis_count)],
                 color=tech_colors["Battery"],
                 label=battery_label,
@@ -407,9 +410,11 @@ def make_figure(
             str('' if inactive_exports else ' + Exports') + \
             ' + Pumped_Storage'
         ax.plot(range(1, x_axis_count + 1),
-                 [load_[i][0] + exports[i] +
-                  [-x if x < 0 else 0 for x in power_by_tech["Pumped_Storage"]][i]
-                  for i in range(0, x_axis_count)],
+                [load_[i][0] + (exports[i] if exports else 0) +
+                 ([-x if x < 0 else 0
+                  for x in power_by_tech["Pumped_Storage"]][i]
+                  if power_by_tech["Pumped_Storage"] else 0)
+                for i in range(0, x_axis_count)],
                 color=tech_colors["Pumped_Storage"],
                 label=ps_label,
                 linewidth=2, linestyle="--")
@@ -551,90 +556,3 @@ def draw_dispatch_plot(c, scenario_id, horizon, load_zone, arguments):
                 str(load_zone), str(horizon)
             )
         )
-
-# if __name__ == "__main__":
-#     args = sys.argv[1:]
-#     parsed_args = parse_arguments(arguments=args)
-#
-#     # Which dispatch plot are we making
-#     SCENARIO_NAME = parsed_args.scenario
-#     HORIZON = parsed_args.horizon
-#     LOAD_ZONE = parsed_args.load_zone
-#
-#     # Connect to database
-#     io = connect_to_database(parsed_args)
-#     cursor = io.cursor()
-#
-#     # Get the scenario ID
-#     SCENARIO_ID = cursor.execute(
-#         """SELECT scenario_id
-#         FROM scenarios
-#         WHERE scenario_name = '{}';""".format(SCENARIO_NAME)
-#     ).fetchone()[0]
-#
-#     draw_dispatch_plot(
-#         c=cursor,
-#         scenario_id=SCENARIO_ID,
-#         horizon=HORIZON,
-#         load_zone=LOAD_ZONE,
-#         arguments=parsed_args
-#     )
-#
-#     # # X axis
-#     # x_axis_count_results, x_axis_results = determine_x_axis(
-#     #     c=cursor,
-#     #     scenario_id=SCENARIO_ID,
-#     #     horizon=HORIZON,
-#     #     load_zone=LOAD_ZONE
-#     # )
-#     #
-#     # # Data values
-#     # power_by_tech_results = check_if_tech_exists(
-#     #     power_by_technology_dict=get_power_by_tech_results(
-#     #         c=cursor,
-#     #         scenario_id=SCENARIO_ID,
-#     #         horizon=HORIZON,
-#     #         load_zone=LOAD_ZONE
-#     #     ),
-#     #     x_axis_count=x_axis_count_results
-#     # )
-#     #
-#     # imports_results, exports_results = get_imports_exports_results(
-#     #     c=cursor,
-#     #     scenario_id=SCENARIO_ID,
-#     #     horizon=HORIZON,
-#     #     load_zone=LOAD_ZONE
-#     # )
-#     #
-#     # load_results = get_load(
-#     #     c=cursor,
-#     #     scenario_id=SCENARIO_ID,
-#     #     horizon=HORIZON,
-#     #     load_zone=LOAD_ZONE
-#     # )
-#     #
-#     # # Make figure
-#     # figure, axes = make_figure(
-#     #     power_by_tech=power_by_tech_results,
-#     #     imports=imports_results, exports=exports_results,
-#     #     load_=load_results,
-#     #     x_axis=x_axis_results,
-#     #     x_axis_count=x_axis_count_results
-#     # )
-#     #
-#     # # Make figure nicer
-#     # pretty_figure, pretty_axes = prettify_figure(
-#     #     load_zone=LOAD_ZONE, horizon=HORIZON,
-#     #     fig=figure, ax=axes, x_axis_count=x_axis_count_results
-#     # )
-#     #
-#     # # Show and/or save the figure
-#     # if not parsed_args.save_only:
-#     #     plt.show()
-#     #
-#     # if parsed_args.save or parsed_args.save_only:
-#     #     plt.savefig(
-#     #         "dispatch_plot_{}_{}".format(
-#     #             str(LOAD_ZONE), str(HORIZON)
-#     #         )
-#     #     )
