@@ -170,8 +170,8 @@ def load_module_specific_data(
                 pass
 
         return generator_period_list, \
-               existing_lin_econ_ret_capacity_mw_dict, \
-               existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
+            existing_lin_econ_ret_capacity_mw_dict, \
+            existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
 
     data_portal.data()[
         "EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
@@ -288,7 +288,8 @@ def get_module_specific_inputs_from_database(
         AND existing_capacity_mw > 0) as capacity
         USING (project, period)
         LEFT OUTER JOIN
-        (SELECT project, period, annual_fixed_cost_per_mw_year
+        (SELECT project, period, 
+        annual_fixed_cost_per_kw_year * 1000 AS annual_fixed_cost_per_mw_year
         FROM inputs_project_existing_fixed_cost
         WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)

@@ -322,8 +322,8 @@ CREATE TABLE inputs_project_existing_fixed_cost (
 project_existing_fixed_cost_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
-annual_fixed_cost_per_mw_year FLOAT,
-annual_fixed_cost_per_mwh_year FLOAT,
+annual_fixed_cost_per_kw_year FLOAT,
+annual_fixed_cost_per_kwh_year FLOAT,
 PRIMARY KEY (project_existing_fixed_cost_scenario_id, project, period),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
 subscenarios_project_existing_fixed_cost
@@ -2102,4 +2102,3 @@ dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period)
 );
-
