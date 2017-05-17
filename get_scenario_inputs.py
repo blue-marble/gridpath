@@ -157,6 +157,10 @@ def write_scenario_description(
              optional_features.OPTIONAL_FEATURE_FREQUENCY_RESPONSE]
         )
         writer.writerow(
+            ["of_spinning_reserves",
+             optional_features.OPTIONAL_FEATURE_SPINNING_RESERVES]
+        )
+        writer.writerow(
             ["of_rps", optional_features.OPTIONAL_FEATURE_RPS]
         )
         writer.writerow(
@@ -202,6 +206,9 @@ def write_scenario_description(
         writer.writerow(["project_frequency_response_ba_scenario_id",
                          subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID
                          ])
+        writer.writerow(["project_spinning_reserves_ba_scenario_id",
+                         subscenarios.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID]
+                        )
         writer.writerow(["project_rps_zone_scenario_id",
                          subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID])
         writer.writerow(["project_carbon_cap_zone_scenario_id",
@@ -258,6 +265,8 @@ def write_scenario_description(
                          subscenarios.LF_RESERVES_DOWN_SCENARIO_ID])
         writer.writerow(["frequency_response_scenario_id",
                          subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID])
+        writer.writerow(["spinning_reserves_scenario_id",
+                         subscenarios.SPINNING_RESERVES_SCENARIO_ID])
         writer.writerow(["rps_target_scenario_id",
                          subscenarios.RPS_TARGET_SCENARIO_ID])
         writer.writerow(["carbon_cap_target_scenario_id",

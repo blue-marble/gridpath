@@ -75,6 +75,12 @@ class OptionalFeatures:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.OPTIONAL_FEATURE_SPINNING_RESERVES = cursor.execute(
+            """SELECT of_spinning_reserves
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.OPTIONAL_FEATURE_RPS = cursor.execute(
             """SELECT of_rps
                FROM scenarios
@@ -132,6 +138,8 @@ class OptionalFeatures:
             feature_list.append("regulation_down")
         if self.OPTIONAL_FEATURE_FREQUENCY_RESPONSE:
             feature_list.append("frequency_response")
+        if self.OPTIONAL_FEATURE_SPINNING_RESERVES:
+            feature_list.append("spinning_reserves")
         if self.OPTIONAL_FEATURE_RPS:
             feature_list.append("rps")
         if self.OPTIONAL_FEATURE_CARBON_CAP:
@@ -185,6 +193,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.SPINNING_RESERVES_BA_SCENARIO_ID = cursor.execute(
+            """SELECT spinning_reserves_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.RPS_ZONE_SCENARIO_ID = cursor.execute(
             """SELECT rps_zone_scenario_id
                FROM scenarios
@@ -229,6 +243,12 @@ class SubScenarios:
 
         self.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
             """SELECT project_frequency_response_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID = cursor.execute(
+            """SELECT project_spinning_reserves_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
@@ -381,6 +401,12 @@ class SubScenarios:
 
         self.FREQUENCY_RESPONSE_SCENARIO_ID = cursor.execute(
             """SELECT frequency_response_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.SPINNING_RESERVES_SCENARIO_ID = cursor.execute(
+            """SELECT spinning_reserves_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

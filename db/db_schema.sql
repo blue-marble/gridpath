@@ -193,6 +193,24 @@ subscenarios_geography_frequency_response_bas
 (frequency_response_ba_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_geography_spinning_reserves_bas;
+CREATE TABLE subscenarios_geography_spinning_reserves_bas (
+spinning_reserves_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_spinning_reserves_bas;
+CREATE TABLE inputs_geography_spinning_reserves_bas (
+spinning_reserves_ba_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
+PRIMARY KEY (spinning_reserves_ba_scenario_id, spinning_reserves_ba),
+FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
+subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
+);
+
 -- RPS
 -- This is the unit at which RPS requirements are met in the model; it can be
 -- different from the load zones
@@ -447,11 +465,13 @@ lf_reserves_down_derate FLOAT,
 regulation_up_derate FLOAT,
 regulation_down_derate FLOAT,
 frequency_response_derate FLOAT,
+spinning_reserves_derate FLOAT,
 lf_reserves_up_ramp_rate FLOAT,
 lf_reserves_down_ramp_rate FLOAT,
 regulation_up_ramp_rate FLOAT,
 regulation_down_ramp_rate FLOAT,
 frequency_response_ramp_rate FLOAT,
+spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
@@ -656,6 +676,34 @@ REFERENCES subscenarios_project_frequency_response_bas
 FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
 subscenarios_geography_frequency_response_bas
 (frequency_response_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_spinning_reserves_bas;
+CREATE TABLE subscenarios_project_spinning_reserves_bas (
+spinning_reserves_ba_scenario_id INTEGER,
+project_spinning_reserves_ba_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (spinning_reserves_ba_scenario_id,
+project_spinning_reserves_ba_scenario_id),
+FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
+subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_spinning_reserves_bas;
+CREATE TABLE inputs_project_spinning_reserves_bas (
+spinning_reserves_ba_scenario_id INTEGER,
+project_spinning_reserves_ba_scenario_id INTEGER,
+project VARCHAR(64),
+spinning_reserves_ba VARCHAR(32),
+PRIMARY KEY (spinning_reserves_ba_scenario_id,
+project_spinning_reserves_ba_scenario_id, project),
+FOREIGN KEY (spinning_reserves_ba_scenario_id,
+project_spinning_reserves_ba_scenario_id)
+REFERENCES subscenarios_project_spinning_reserves_bas
+ (spinning_reserves_ba_scenario_id, project_spinning_reserves_ba_scenario_id),
+FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
+subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
 );
 
 -- Project RPS zones
@@ -1130,7 +1178,6 @@ FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
-
 -- Frequency response
 DROP TABLE IF EXISTS subscenarios_system_frequency_response;
 CREATE TABLE subscenarios_system_frequency_response (
@@ -1152,6 +1199,28 @@ frequency_response_partial_mw FLOAT,
 PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, timepoint),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id)
+);
+
+-- Spinning reserves
+DROP TABLE IF EXISTS subscenarios_system_spinning_reserves;
+CREATE TABLE subscenarios_system_spinning_reserves (
+spinning_reserves_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- timepoint_scenario_id and reserves_scenario_id
+DROP TABLE IF EXISTS inputs_system_spinning_reserves;
+CREATE TABLE inputs_system_spinning_reserves (
+spinning_reserves_scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+timepoint INTEGER,
+spinning_reserves_mw FLOAT,
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, timepoint),
+FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
+subscenarios_system_spinning_reserves (spinning_reserves_scenario_id)
 );
 
 -- -- Policy -- --
@@ -1260,6 +1329,7 @@ of_lf_reserves_down INTEGER,
 of_regulation_up INTEGER,
 of_regulation_down INTEGER,
 of_frequency_response INTEGER,
+of_spinning_reserves INTEGER,
 of_rps INTEGER,
 of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
@@ -1270,23 +1340,25 @@ load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_down_ba_scenario_id INTEGER,
 frequency_response_ba_scenario_id INTEGER,
+spinning_reserves_ba_scenario_id INTEGER,
 rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
+project_operational_chars_scenario_id INTEGER,
+project_availability_scenario_id INTEGER,
+fuel_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
+project_spinning_reserves_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
-project_operational_chars_scenario_id INTEGER,
-project_availability_scenario_id INTEGER,
-fuel_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
@@ -1303,6 +1375,7 @@ load_scenario_id INTEGER,
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_down_scenario_id INTEGER,
 frequency_response_scenario_id INTEGER,
+spinning_reserves_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
@@ -1319,12 +1392,16 @@ subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
 subscenarios_geography_frequency_response_bas
 (frequency_response_ba_scenario_id),
+FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
+subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id),
+FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
+subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
@@ -1333,8 +1410,6 @@ FOREIGN KEY (fuel_scenario_id) REFERENCES
 subscenarios_project_fuels (fuel_scenario_id),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
 subscenarios_project_fuel_prices (fuel_price_scenario_id),
-FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
-subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
 subscenarios_project_load_zones
 (load_zone_scenario_id, project_load_zone_scenario_id),
@@ -1350,6 +1425,10 @@ FOREIGN KEY (frequency_response_ba_scenario_id,
 project_frequency_response_ba_scenario_id) REFERENCES
 subscenarios_project_frequency_response_bas
 (frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
+FOREIGN KEY (spinning_reserves_ba_scenario_id,
+project_spinning_reserves_ba_scenario_id) REFERENCES
+subscenarios_project_spinning_reserves_bas
+(spinning_reserves_ba_scenario_id, project_spinning_reserves_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
 subscenarios_project_rps_zones
 (rps_zone_scenario_id, project_rps_zone_scenario_id),
@@ -1661,6 +1740,23 @@ partial INTEGER,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
+DROP TABLE IF EXISTS results_project_spinning_reserves;
+CREATE TABLE results_project_spinning_reserves (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+spinning_reserves_ba VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+reserve_provision_mw FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
 
 DROP TABLE IF EXISTS results_project_elcc_simple;
 CREATE TABLE results_project_elcc_simple (
@@ -2047,6 +2143,23 @@ violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
 PRIMARY KEY (scenario_id, frequency_response_partial_ba, timepoint)
+);
+
+DROP TABLE IF EXISTS results_system_spinning_reserves_balance;
+CREATE TABLE results_system_spinning_reserves_balance (
+scenario_id INTEGER,
+spinning_reserves_ba VARCHAR(32),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+violation_mw FLOAT,
+dual FLOAT,
+marginal_price_per_mw FLOAT,
+PRIMARY KEY (scenario_id, spinning_reserves_ba, timepoint)
 );
 
 -- Carbon emissions
