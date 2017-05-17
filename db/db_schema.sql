@@ -174,6 +174,42 @@ FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
 );
 
+DROP TABLE IF EXISTS subscenarios_geography_regulation_up_bas;
+CREATE TABLE subscenarios_geography_regulation_up_bas (
+regulation_up_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_regulation_up_bas;
+CREATE TABLE inputs_geography_regulation_up_bas (
+regulation_up_ba_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
+PRIMARY KEY (regulation_up_ba_scenario_id, regulation_up_ba),
+FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_geography_regulation_down_bas;
+CREATE TABLE subscenarios_geography_regulation_down_bas (
+regulation_down_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_regulation_down_bas;
+CREATE TABLE inputs_geography_regulation_down_bas (
+regulation_down_ba_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+violation_penalty_per_mw FLOAT,
+reserve_to_energy_adjustment FLOAT,
+PRIMARY KEY (regulation_down_ba_scenario_id, regulation_down_ba),
+FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id)
+);
+
 DROP TABLE IF EXISTS subscenarios_geography_frequency_response_bas;
 CREATE TABLE subscenarios_geography_frequency_response_bas (
 frequency_response_ba_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -645,6 +681,63 @@ REFERENCES subscenarios_project_lf_reserves_down_bas
  (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
+);
+
+
+DROP TABLE IF EXISTS subscenarios_project_regulation_up_bas;
+CREATE TABLE subscenarios_project_regulation_up_bas (
+regulation_up_ba_scenario_id INTEGER,
+project_regulation_up_ba_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (regulation_up_ba_scenario_id,
+project_regulation_up_ba_scenario_id),
+FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_regulation_up_bas;
+CREATE TABLE inputs_project_regulation_up_bas (
+regulation_up_ba_scenario_id INTEGER,
+project_regulation_up_ba_scenario_id INTEGER,
+project VARCHAR(64),
+regulation_up_ba VARCHAR(32),
+PRIMARY KEY (regulation_up_ba_scenario_id,
+project_regulation_up_ba_scenario_id, project),
+FOREIGN KEY (regulation_up_ba_scenario_id,
+project_regulation_up_ba_scenario_id)
+REFERENCES subscenarios_project_regulation_up_bas
+ (regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id),
+FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_regulation_down_bas;
+CREATE TABLE subscenarios_project_regulation_down_bas (
+regulation_down_ba_scenario_id INTEGER,
+project_regulation_down_ba_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (regulation_down_ba_scenario_id,
+project_regulation_down_ba_scenario_id),
+FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_regulation_down_bas;
+CREATE TABLE inputs_project_regulation_down_bas (
+regulation_down_ba_scenario_id INTEGER,
+project_regulation_down_ba_scenario_id INTEGER,
+project VARCHAR(64),
+regulation_down_ba VARCHAR(32),
+PRIMARY KEY (regulation_down_ba_scenario_id,
+project_regulation_down_ba_scenario_id, project),
+FOREIGN KEY (regulation_down_ba_scenario_id,
+project_regulation_down_ba_scenario_id)
+REFERENCES subscenarios_project_regulation_down_bas
+ (regulation_down_ba_scenario_id, project_regulation_down_ba_scenario_id),
+FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_frequency_response_bas;
@@ -1178,6 +1271,50 @@ FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
 
+-- Regulation up
+DROP TABLE IF EXISTS subscenarios_system_regulation_up;
+CREATE TABLE subscenarios_system_regulation_up (
+regulation_up_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- timepoint_scenario_id and reserves_scenario_id
+DROP TABLE IF EXISTS inputs_system_regulation_up;
+CREATE TABLE inputs_system_regulation_up (
+regulation_up_scenario_id INTEGER,
+regulation_up_ba VARCHAR(32),
+timepoint INTEGER,
+regulation_up_mw FLOAT,
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, timepoint),
+FOREIGN KEY (regulation_up_scenario_id) REFERENCES
+subscenarios_system_regulation_up (regulation_up_scenario_id)
+);
+
+-- Regulation down
+DROP TABLE IF EXISTS subscenarios_system_regulation_down;
+CREATE TABLE subscenarios_system_regulation_down (
+regulation_down_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include timepoints and zones other than the ones in a scenario, as
+-- correct timepoints and zones will be pulled depending on
+-- timepoint_scenario_id and reserves_scenario_id
+DROP TABLE IF EXISTS inputs_system_regulation_down;
+CREATE TABLE inputs_system_regulation_down (
+regulation_down_scenario_id INTEGER,
+regulation_down_ba VARCHAR(32),
+timepoint INTEGER,
+regulation_down_mw FLOAT,
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, timepoint),
+FOREIGN KEY (regulation_down_scenario_id) REFERENCES
+subscenarios_system_regulation_down (regulation_down_scenario_id)
+);
+
 -- Frequency response
 DROP TABLE IF EXISTS subscenarios_system_frequency_response;
 CREATE TABLE subscenarios_system_frequency_response (
@@ -1339,6 +1476,8 @@ timepoint_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_down_ba_scenario_id INTEGER,
+regulation_up_ba_scenario_id INTEGER,
+regulation_down_ba_scenario_id INTEGER,
 frequency_response_ba_scenario_id INTEGER,
 spinning_reserves_ba_scenario_id INTEGER,
 rps_zone_scenario_id INTEGER,
@@ -1351,6 +1490,8 @@ fuel_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
+project_regulation_up_ba_scenario_id INTEGER,
+project_regulation_down_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
 project_spinning_reserves_ba_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
@@ -1374,6 +1515,8 @@ transmission_simultaneous_flow_limit_line_group_scenario_id INTEGER,
 load_scenario_id INTEGER,
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_down_scenario_id INTEGER,
+regulation_up_scenario_id INTEGER,
+regulation_down_scenario_id INTEGER,
 frequency_response_scenario_id INTEGER,
 spinning_reserves_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
@@ -1389,6 +1532,10 @@ FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id),
+FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
+subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
 subscenarios_geography_frequency_response_bas
 (frequency_response_ba_scenario_id),
@@ -1421,6 +1568,14 @@ FOREIGN KEY (lf_reserves_down_ba_scenario_id,
 project_lf_reserves_down_ba_scenario_id) REFERENCES
 subscenarios_project_lf_reserves_down_bas
 (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (regulation_up_ba_scenario_id,
+project_regulation_up_ba_scenario_id) REFERENCES
+subscenarios_project_regulation_up_bas
+(regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id),
+FOREIGN KEY (regulation_down_ba_scenario_id,
+project_regulation_down_ba_scenario_id) REFERENCES
+subscenarios_project_regulation_down_bas
+(regulation_down_ba_scenario_id, project_regulation_down_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id,
 project_frequency_response_ba_scenario_id) REFERENCES
 subscenarios_project_frequency_response_bas
@@ -1483,6 +1638,10 @@ FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id),
 FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id),
+FOREIGN KEY (regulation_up_scenario_id) REFERENCES
+subscenarios_system_regulation_up (regulation_up_scenario_id),
+FOREIGN KEY (regulation_down_scenario_id) REFERENCES
+subscenarios_system_regulation_down (regulation_down_scenario_id),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id),
 FOREIGN KEY (rps_target_scenario_id) REFERENCES

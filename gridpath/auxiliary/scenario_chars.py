@@ -186,6 +186,18 @@ class SubScenarios:
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        
+        self.REGULATION_UP_BA_SCENARIO_ID = cursor.execute(
+            """SELECT regulation_up_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.REGULATION_DOWN_BA_SCENARIO_ID = cursor.execute(
+            """SELECT regulation_down_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
 
         self.FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
             """SELECT frequency_response_ba_scenario_id
@@ -237,6 +249,18 @@ class SubScenarios:
 
         self.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID = cursor.execute(
             """SELECT project_lf_reserves_down_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        
+        self.PROJECT_REGULATION_UP_BA_SCENARIO_ID = cursor.execute(
+            """SELECT project_regulation_up_ba_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID = cursor.execute(
+            """SELECT project_regulation_down_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
@@ -395,6 +419,18 @@ class SubScenarios:
 
         self.LF_RESERVES_DOWN_SCENARIO_ID = cursor.execute(
             """SELECT lf_reserves_down_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        
+        self.REGULATION_UP_SCENARIO_ID = cursor.execute(
+            """SELECT regulation_up_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.REGULATION_DOWN_SCENARIO_ID = cursor.execute(
+            """SELECT regulation_down_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

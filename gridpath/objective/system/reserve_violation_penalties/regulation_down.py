@@ -28,6 +28,6 @@ def add_model_components(m, d):
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     generic_load_model_data(m, d, data_portal,
                             scenario_directory, horizon, stage,
-                            "load_following_down_balancing_areas.tab",
+                            "regulation_down_balancing_areas.tab",
                             "regulation_down_violation_penalty_per_mw"
                             )

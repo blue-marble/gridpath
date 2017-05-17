@@ -5,6 +5,9 @@
 Add project-level components for downward regulation reserves
 """
 
+import csv
+import os.path
+
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data, generic_export_module_specific_results, \
@@ -15,7 +18,7 @@ MODULE_NAME = "regulation_down"
 # Dynamic components
 HEADROOM_OR_FOOTROOM_DICT_NAME = "footroom_variables"
 # Inputs
-BA_COLUMN_NAME_IN_INPUT_FILE = "regulation_down_zone"
+BA_COLUMN_NAME_IN_INPUT_FILE = "regulation_down_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = "regulation_down_derate"
 RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
     "regulation_down_balancing_areas.tab"
@@ -136,6 +139,81 @@ def export_results(scenario_directory, horizon, stage, m, d):
         reserve_ba_param_name=RESERVE_BALANCING_AREA_PARAM_NAME
     )
 
+
+def get_inputs_from_database(subscenarios, c, inputs_directory):
+    """
+
+    :param subscenarios
+    :param c:
+    :param inputs_directory:
+    :return:
+    """
+
+    # Get project BA
+    project_bas = c.execute(
+        """SELECT project, regulation_down_ba
+        FROM inputs_project_regulation_down_bas
+            WHERE regulation_down_ba_scenario_id = {}
+            AND project_regulation_down_ba_scenario_id = {}""".format(
+            subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
+            subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID
+        )
+    ).fetchall()
+    # Make a dict for easy access
+    prj_ba_dict = dict()
+    for (prj, ba) in project_bas:
+        prj_ba_dict[str(prj)] = "." if ba is None else str(ba)
+
+    # Get regulation_down footroom derate
+    prj_derates = c.execute(
+        """SELECT project, regulation_down_derate
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {};""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
+        )
+    ).fetchall()
+    # Make a dict for easy access
+    prj_derate_dict = dict()
+    for (prj, derate) in prj_derates:
+        prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
+
+    # Add params to projects file
+    with open(os.path.join(inputs_directory, "projects.tab"), "r"
+              ) as projects_file_in:
+        reader = csv.reader(projects_file_in, delimiter="\t")
+
+        new_rows = list()
+
+        # Append column header
+        header = reader.next()
+        header.append("regulation_down_ba")
+        header.append("regulation_down_derate")
+        new_rows.append(header)
+
+        # Append correct values
+        for row in reader:
+            # If project specified, check if BA specified or not
+            if row[0] in prj_ba_dict.keys():
+                row.append(prj_ba_dict[row[0]])
+            # If project not specified, specify no BA
+            else:
+                row.append(".")
+
+            # If project specified, check if derate specified or not
+            if row[0] in prj_derate_dict.keys():
+                row.append(prj_derate_dict[row[0]])
+            # If project not specified, specify no derate
+            else:
+                row.append(".")
+
+            # Add resulting row to new_rows list
+            new_rows.append(row)
+
+    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+            projects_file_out:
+        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer.writerows(new_rows)
+        
 
 def import_results_into_database(
         scenario_id, c, db, results_directory

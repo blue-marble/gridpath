@@ -22,8 +22,6 @@ HEADROOM_OR_FOOTROOM_DICT_NAME = "headroom_variables"
 BA_COLUMN_NAME_IN_INPUT_FILE = "frequency_response_ba"
 RESERVE_PROVISION_DERATE_COLUMN_NAME_IN_INPUT_FILE = \
     "frequency_response_derate"
-RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE = \
-    "frequency_response_ramp_rate_limit"
 RESERVE_BALANCING_AREAS_INPUT_FILE_NAME = \
     "load_following_down_balancing_areas.tab"
 # Model components
