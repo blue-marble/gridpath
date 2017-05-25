@@ -6,7 +6,7 @@ PRM projects and the zone they contribute to
 """
 import csv
 import os.path
-from pyomo.environ import Param, Set
+from pyomo.environ import Param, Set, Var, NonNegativeReals, Constraint
 
 
 def add_model_components(m, d):
@@ -32,6 +32,33 @@ def add_model_components(m, d):
         rule=lambda mod: [(prj, p) for (prj, p) in
                           mod.PROJECT_OPERATIONAL_PERIODS
                           if prj in mod.PRM_PROJECTS]
+    )
+
+    # We can allow the ELCC capacity to be different from the total capacity
+    # (e.g. 'fully deliverable' vs 'energy only' in CA) since in some cases
+    # ELCC eligibility may require additional costs to be incurred
+    m.ELCC_Eligible_Capacity_MW = Var(
+        m.PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
+    )
+    m.Energy_Only_Capacity_MW = Var(
+        m.PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
+    )
+
+    def elcc_is_less_than_capacity_rule(mod, g, p):
+        """
+        The ELCC capacity can't exceed the total project capacity
+        :param mod: 
+        :param g: 
+        :param p: 
+        :return: 
+        """
+        return mod.ELCC_Eligible_Capacity_MW[g, p] + \
+            mod.Energy_Only_Capacity_MW[g, p] \
+            == mod.Capacity_MW[g, p]
+
+    m.Max_ELCC_Constraint = Constraint(
+        m.PRM_PROJECT_OPERATIONAL_PERIODS,
+        rule=elcc_is_less_than_capacity_rule
     )
 
 

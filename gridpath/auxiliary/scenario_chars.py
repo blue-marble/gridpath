@@ -325,8 +325,8 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
-        self.CAPACITY_THRESHOLD_COST_SCENARIO_ID = cursor.execute(
-            """SELECT capacity_threshold_cost_scenario_id
+        self.ELCC_ELIGIBILITY_THRESHOLD_SCENARIO_ID = cursor.execute(
+            """SELECT elcc_eligibility_threshold_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

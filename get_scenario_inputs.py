@@ -234,7 +234,7 @@ def write_scenario_description(
         writer.writerow(["project_new_potential_scenario_id",
                          subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID])
         writer.writerow(["capacity_threshold_cost_scenario_id",
-                         subscenarios.CAPACITY_THRESHOLD_COST_SCENARIO_ID])
+                         subscenarios.ELCC_ELIGIBILITY_THRESHOLD_SCENARIO_ID])
         writer.writerow(["transmission_portfolio_scenario_id",
                          subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID])
         writer.writerow(["transmission_load_zone_scenario_id",

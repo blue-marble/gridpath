@@ -433,28 +433,6 @@ FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id)
 );
 
--- Capacity threshold costs
-DROP TABLE IF EXISTS subscenarios_project_capacity_threshold_costs;
-CREATE TABLE subscenarios_project_capacity_threshold_costs (
-capacity_threshold_cost_scenario_id INTEGER PRIMARY KEY
-AUTOINCREMENT,
-name VARCHAR(32),
-description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_project_capacity_threshold_costs;
-CREATE TABLE inputs_project_capacity_threshold_costs (
-capacity_threshold_cost_scenario_id INTEGER,
-capacity_threshold_group VARCHAR(64),
-capacity_threshold_mw FLOAT,
-capacity_threshold_cost_per_mw FLOAT,
-PRIMARY KEY (capacity_threshold_cost_scenario_id, capacity_threshold_group),
-FOREIGN KEY (capacity_threshold_cost_scenario_id) REFERENCES
-subscenarios_project_capacity_threshold_costs
-(capacity_threshold_cost_scenario_id)
-);
-
-
 -- -- Operations -- --
 
 -- Project operational characteristics
@@ -613,7 +591,6 @@ load_zone_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project VARCHAR(64),
 load_zone VARCHAR(32),
-interconnection_capacity_threshold_group VARCHAR(64),  --optional
 PRIMARY KEY (load_zone_scenario_id, project_load_zone_scenario_id, project),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
  subscenarios_project_load_zones
@@ -910,6 +887,7 @@ project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
+elcc_eligibility_threshold_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
@@ -962,6 +940,27 @@ subscenarios_project_prm_zones
 (prm_zone_scenario_id, project_prm_zone_scenario_id)
 );
 
+-- ELCC eligibility threshold costs
+DROP TABLE IF EXISTS subscenarios_project_elcc_eligibility_thresholds;
+CREATE TABLE subscenarios_project_elcc_eligibility_thresholds (
+elcc_eligibility_threshold_scenario_id INTEGER PRIMARY KEY
+AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_elcc_eligibility_thresholds;
+CREATE TABLE inputs_project_elcc_eligibility_thresholds (
+elcc_eligibility_threshold_scenario_id INTEGER,
+elcc_eligibility_threshold_group VARCHAR(64),
+elcc_eligibility_threshold_mw FLOAT,
+elcc_eligibility_threshold_cost_per_mw FLOAT,
+elcc_energy_only_limit_mw FLOAT,
+PRIMARY KEY (elcc_eligibility_threshold_scenario_id, elcc_eligibility_threshold_group),
+FOREIGN KEY (elcc_eligibility_threshold_scenario_id) REFERENCES
+subscenarios_project_elcc_eligibility_thresholds
+(elcc_eligibility_threshold_scenario_id)
+);
 
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
@@ -1498,12 +1497,12 @@ project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
+elcc_eligibility_threshold_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
-capacity_threshold_cost_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
@@ -1596,6 +1595,9 @@ subscenarios_project_prm_zones
 (prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
+FOREIGN KEY (elcc_eligibility_threshold_scenario_id) REFERENCES
+subscenarios_project_elcc_eligibility_thresholds
+(elcc_eligibility_threshold_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
@@ -1605,9 +1607,6 @@ FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
 subscenarios_project_new_potential (project_new_potential_scenario_id),
-FOREIGN KEY (capacity_threshold_cost_scenario_id) REFERENCES
-subscenarios_project_capacity_threshold_costs
-(capacity_threshold_cost_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 subscenarios_transmission_portfolios
 (transmission_portfolio_scenario_id),
@@ -1928,6 +1927,8 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
+elcc_eligible_capacity_mw FLOAT,
+energy_only_capacity_mw FLOAT,
 elcc_simple_contribution_fraction FLOAT,
 elcc_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period)
@@ -1945,6 +1946,8 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
+elcc_eligible_capacity_mw FLOAT,
+energy_only_capacity_mw FLOAT,
 elcc_surface_coefficient FLOAT,
 elcc_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, facet)
@@ -1963,16 +1966,18 @@ annualized_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period)
 );
 
-DROP TABLE IF EXISTS results_project_costs_capacity_thresholds;
-CREATE TABLE results_project_costs_capacity_thresholds (
+DROP TABLE IF EXISTS results_project_costs_elcc_eligibility_thresholds;
+CREATE TABLE results_project_costs_elcc_eligibility_thresholds (
 scenario_id INTEGER,
-capacity_threshold_group VARCHAR(64),
+elcc_eligibility_threshold_group VARCHAR(64),
 period INTEGER,
-capacity_threshold_mw FLOAT,
-capacity_threshold_cost_per_mw FLOAT,
+elcc_eligibility_threshold_mw FLOAT,
+elcc_eligibility_threshold_cost_per_mw FLOAT,
 total_capacity_mw FLOAT,
-capacity_threshold_cost FLOAT,
-PRIMARY KEY (scenario_id, capacity_threshold_group, period)
+elcc_eligible_capacity_mw FLOAT,
+energy_only_capacity_mw FLOAT,
+elcc_eligibility_threshold_cost FLOAT,
+PRIMARY KEY (scenario_id, elcc_eligibility_threshold_group, period)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_variable_om;

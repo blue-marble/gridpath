@@ -37,7 +37,6 @@ def all_modules_list():
         "project.capacity.capacity_types",
         "project.capacity.capacity",
         "project.capacity.costs",
-        "project.capacity.capacity_threshold_costs",
         "project.fuels",
         "project.operations",
         "project.operations.reserves.lf_reserves_up",
@@ -63,6 +62,7 @@ def all_modules_list():
         "project.prm",
         "project.prm.prm_simple",
         "project.prm.elcc_surface",
+        "project.prm.elcc_eligibility_threshold_costs",
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
@@ -94,7 +94,7 @@ def all_modules_list():
         "system.prm.elcc_surface",
         "system.prm.prm_balance",
         "objective.project.aggregate_capacity_costs",
-        "objective.project.aggregate_capacity_threshold_costs",
+        "objective.project.aggregate_elcc_eligible_capacity_threshold_costs",
         "objective.project.aggregate_operational_costs",
         "objective.project.aggregate_operational_tuning_costs",
         "objective.transmission.aggregate_operational_costs",
@@ -195,8 +195,11 @@ def optional_modules_list():
              "system.prm.prm_requirement",
              "project.prm",
              "project.prm.prm_simple",
+             "project.prm.elcc_eligibility_threshold_costs",
              "system.prm.aggregate_project_simple_prm_contribution",
-             "system.prm.prm_balance"]
+             "system.prm.prm_balance",
+             "objective.project."
+             "aggregate_elcc_eligible_capacity_threshold_costs",]
     }
     return optional_modules
 

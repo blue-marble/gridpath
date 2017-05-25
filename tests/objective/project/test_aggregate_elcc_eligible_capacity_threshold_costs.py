@@ -15,11 +15,13 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity", "project.capacity.capacity_threshold_costs"]
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones",
+    "geography.prm_zones", "project",
+    "project.capacity.capacity", "project.prm",
+    "project.prm.elcc_eligibility_threshold_costs"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.project.aggregate_capacity_threshold_costs"
+    "objective.project.aggregate_elcc_eligible_capacity_threshold_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

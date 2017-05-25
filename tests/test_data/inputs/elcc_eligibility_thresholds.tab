@@ -1,0 +1,3 @@
+elcc_eligibility_threshold_group	elcc_eligibility_threshold_mw	elcc_eligibility_threshold_cost_per_mw	energy_only_limit_mw
+Threshold_Group_1	2000.0	37.0	4000
+Threshold_Group_2	1140.0	147.0	5000

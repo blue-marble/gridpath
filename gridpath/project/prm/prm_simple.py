@@ -30,7 +30,8 @@ def add_model_components(m, d):
         :param p: 
         :return: 
         """
-        return mod.Capacity_MW[g, p] * mod.elcc_simple_fraction[g]
+        return mod.ELCC_Eligible_Capacity_MW[g, p] \
+            * mod.elcc_simple_fraction[g]
 
     m.PRM_Simple_Contribution_MW = Expression(
         m.PRM_PROJECT_OPERATIONAL_PERIODS, rule=elcc_simple_rule
@@ -73,6 +74,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer.writerow(["project", "period", "prm_zone", "technology",
                          "load_zone",
                          "capacity_mw",
+                         "elcc_eligible_capacity_mw",
+                         "energy_only_capacity_mw",
                          "elcc_simple_fraction",
                          "elcc_mw"])
         for (prj, period) in m.PRM_PROJECT_OPERATIONAL_PERIODS:
@@ -83,6 +86,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.technology[prj],
                 m.load_zone[prj],
                 value(m.Capacity_MW[prj, period]),
+                value(m.ELCC_Eligible_Capacity_MW[prj, period]),
+                value(m.Energy_Only_Capacity_MW[prj, period]),
                 value(m.elcc_simple_fraction[prj]),
                 value(m.PRM_Simple_Contribution_MW[prj, period])
             ])
@@ -176,6 +181,8 @@ def import_results_into_database(
             technology VARCHAR(32),
             load_zone VARCHAR(32),
             capacity_mw FLOAT,
+            elcc_eligible_capacity_mw FLOAT,
+            energy_only_capacity_mw FLOAT,
             elcc_simple_contribution_fraction FLOAT,
             elcc_mw FLOAT,
             PRIMARY KEY (scenario_id, project, period)
@@ -197,19 +204,26 @@ def import_results_into_database(
             technology = row[3]
             load_zone = row[4]
             capacity = row[5]
-            prm_fraction = row[6]
-            elcc = row[7]
+            elcc_eligible_capacity = row[6]
+            energy_only_capacity = row[7]
+            prm_fraction = row[8]
+            elcc = row[9]
 
             c.execute(
                 """INSERT INTO temp_results_project_elcc_simple"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, prm_zone, technology, 
-                    load_zone, capacity_mw, elcc_simple_contribution_fraction,
+                    load_zone, capacity_mw, 
+                    elcc_eligible_capacity_mw, 
+                    energy_only_capacity_mw,
+                    elcc_simple_contribution_fraction,
                     elcc_mw)
                     VALUES ({}, '{}', {}, '{}', '{}', 
-                    '{}', {}, {}, {});""".format(
+                    '{}', {}, {}, {}, {}, {});""".format(
                     scenario_id, project, period, prm_zone, technology,
-                    load_zone, capacity, prm_fraction, elcc
+                    load_zone, capacity, elcc_eligible_capacity,
+                    energy_only_capacity,
+                    prm_fraction, elcc
                 )
             )
     db.commit()
@@ -218,10 +232,12 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_elcc_simple
         (scenario_id, project, period, prm_zone, technology, load_zone, 
-        capacity_mw, elcc_simple_contribution_fraction, elcc_mw)
+        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw,
+        elcc_simple_contribution_fraction, elcc_mw)
         SELECT
         scenario_id, project, period, prm_zone, technology, load_zone, 
-        capacity_mw, elcc_simple_contribution_fraction, elcc_mw
+        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw,
+        elcc_simple_contribution_fraction, elcc_mw
         FROM temp_results_project_elcc_simple""" + str(scenario_id) +
         """ ORDER BY scenario_id, project, period;"""
     )
