@@ -569,11 +569,11 @@ def get_module_specific_inputs_from_database(
             ["project", "vintage", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr",
              "annualized_real_cost_per_mwh_yr"] +
-            [] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
+            ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
             else [
              "min_cumulative_new_build_mw", "min_cumulative_new_build_mwh",
              "max_cumulative_new_build_mw", "max_cumulative_new_build_mwh"
-            ]
+            ])
         )
 
         for row in new_stor_costs:

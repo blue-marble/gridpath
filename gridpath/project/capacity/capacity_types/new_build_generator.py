@@ -115,8 +115,10 @@ def capacity_cost_rule(mod, g, p):
     """
     Capacity cost for new builds in each period (sum over all vintages
     operational in current period)
-    :param mod:
-    :return:
+    :param mod: 
+    :param g: 
+    :param p: 
+    :return: 
     """
     return sum(mod.Build_MW[g, v]
                * mod.annualized_real_cost_per_mw_yr[g, v]
@@ -125,8 +127,9 @@ def capacity_cost_rule(mod, g, p):
                if gen == g)
 
 
-def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+def load_module_specific_data(
+        m, data_portal, scenario_directory, horizon, stage
+):
     """
 
     :param m:
@@ -380,8 +383,9 @@ def get_module_specific_inputs_from_database(
         writer.writerow(
             ["project", "vintage", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr"] +
-            [] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-            else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+            ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
+            else ["min_cumulative_new_build_mw",
+                  "max_cumulative_new_build_mw"])
         )
 
         for row in new_gen_costs:

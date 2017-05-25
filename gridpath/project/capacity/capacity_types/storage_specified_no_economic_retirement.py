@@ -143,7 +143,7 @@ def get_module_specific_inputs_from_database(
              "storage_specified_power_capacity_mw",
              "storage_specified_energy_capacity_mwh",
              "storage_specified_fixed_cost_per_mw_yr",
-             "storage_specified_fixed_cost_pr_mwh_yr"]
+             "storage_specified_fixed_cost_per_mwh_yr"]
         )
 
         for row in stor_capacities:
