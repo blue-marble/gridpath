@@ -22,7 +22,7 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.prm_zones",
     "project", "project.capacity.capacity",
     "system.prm.prm_requirement",
-    "project.prm", "project.prm.prm_simple",
+    "project.prm", "project.prm.prm_types", "project.prm.prm_simple",
     "system.prm.aggregate_project_simple_prm_contribution"]
 NAME_OF_MODULE_BEING_TESTED = \
     "system.prm.prm_balance"

@@ -8,13 +8,12 @@ Various auxiliary functions used in other modules
 import datetime
 from importlib import import_module
 import os.path
-import pandas as pd
-from pyomo.environ import value
 import sys
 
 
 def load_subtype_modules(
-        required_subtype_modules, package, required_attributes):
+        required_subtype_modules, package, required_attributes
+):
     """
     Load subtype modules (e.g. capacity types, operational types, etc).
     This function will also check that the subtype module have certain
@@ -25,23 +24,23 @@ def load_subtype_modules(
     :return:
     """
     imported_subtype_modules = dict()
-    for op_m in required_subtype_modules:
+    for m in required_subtype_modules:
         try:
-            imp_op_m = \
+            imp_m = \
                 import_module(
-                    "." + op_m,
+                    "." + m,
                     package=package
                 )
-            imported_subtype_modules[op_m] = imp_op_m
+            imported_subtype_modules[m] = imp_m
             for a in required_attributes:
-                if hasattr(imp_op_m, a):
+                if hasattr(imp_m, a):
                     pass
                 else:
                     raise Exception(
                         "ERROR! No " + str(a) + " function in subtype module "
-                        + str(imp_op_m) + ".")
+                        + str(imp_m) + ".")
         except ImportError:
-            print("ERROR! Subtype module " + op_m + " not found.")
+            print("ERROR! Subtype module " + m + " not found.")
 
     return imported_subtype_modules
 
@@ -69,6 +68,14 @@ def load_operational_type_modules(required_operational_modules):
         "gridpath.project.operations.operational_types",
         ["power_provision_rule", "fuel_burn_rule",
          "startup_shutdown_rule"]
+         )
+
+
+def load_prm_type_modules(required_prm_modules):
+    return load_subtype_modules(
+        required_prm_modules,
+        "gridpath.project.prm.prm_types",
+        ["elcc_eligible_capacity_rule",]
          )
 
 

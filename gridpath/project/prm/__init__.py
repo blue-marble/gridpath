@@ -19,6 +19,7 @@ def add_model_components(m, d):
     # First figure out which projects we need to track for PRM contribution
     m.PRM_PROJECTS = Set(within=m.PROJECTS)
     m.prm_zone = Param(m.PRM_PROJECTS, within=m.PRM_ZONES)
+    m.prm_type = Param(m.PRM_PROJECTS)
 
     m.PRM_PROJECTS_BY_PRM_ZONE = \
         Set(m.PRM_ZONES, within=m.PRM_PROJECTS,
@@ -32,33 +33,6 @@ def add_model_components(m, d):
         rule=lambda mod: [(prj, p) for (prj, p) in
                           mod.PROJECT_OPERATIONAL_PERIODS
                           if prj in mod.PRM_PROJECTS]
-    )
-
-    # We can allow the ELCC capacity to be different from the total capacity
-    # (e.g. 'fully deliverable' vs 'energy only' in CA) since in some cases
-    # ELCC eligibility may require additional costs to be incurred
-    m.ELCC_Eligible_Capacity_MW = Var(
-        m.PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
-    )
-    m.Energy_Only_Capacity_MW = Var(
-        m.PRM_PROJECT_OPERATIONAL_PERIODS, within=NonNegativeReals
-    )
-
-    def elcc_is_less_than_capacity_rule(mod, g, p):
-        """
-        The ELCC capacity can't exceed the total project capacity
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
-        """
-        return mod.ELCC_Eligible_Capacity_MW[g, p] + \
-            mod.Energy_Only_Capacity_MW[g, p] \
-            == mod.Capacity_MW[g, p]
-
-    m.Max_ELCC_Constraint = Constraint(
-        m.PRM_PROJECT_OPERATIONAL_PERIODS,
-        rule=elcc_is_less_than_capacity_rule
     )
 
 
@@ -75,8 +49,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory,
                                            "inputs", "projects.tab"),
-                     select=("project", "prm_zone"),
-                     param=(m.prm_zone,)
+                     select=("project", "prm_zone", "prm_type"),
+                     param=(m.prm_zone, m.prm_type)
                      )
 
     data_portal.data()['PRM_PROJECTS'] = {
@@ -94,19 +68,26 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     """
 
     project_zones = c.execute(
-        """SELECT project, prm_zone
+        """SELECT project, prm_zone, prm_type
         FROM inputs_project_prm_zones
-            WHERE prm_zone_scenario_id = {}
-            AND project_prm_zone_scenario_id = {}""".format(
+        LEFT OUTER JOIN inputs_project_elcc_chars
+        USING (project)
+        WHERE prm_zone_scenario_id = {}
+        AND project_prm_zone_scenario_id = {}
+        AND project_elcc_chars_scenario_id = {};""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID
+            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
     ).fetchall()
 
     # Make a dict for easy access
-    prj_zone_dict = dict()
-    for (prj, zone) in project_zones:
-        prj_zone_dict[str(prj)] = "." if zone is None else str(zone)
+    # Only assign a type to projects that contribute to a PRM zone in case
+    # we have projects with missing zones here
+    prj_zone_type_dict = dict()
+    for (prj, zone, prm_type) in project_zones:
+        prj_zone_type_dict[str(prj)] = \
+            (".", ".") if zone is None else (str(zone), str(prm_type))
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
@@ -116,18 +97,24 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         # Append column header
         header = reader.next()
-        header.append("prm_zone")
+        for new_column in ["prm_zone", "prm_type"]:
+            header.append(new_column)
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_zone_dict.keys():
-                row.append(prj_zone_dict[row[0]])
+            if row[0] in prj_zone_type_dict.keys():
+                for new_column_value in [
+                    prj_zone_type_dict[row[0]][0],
+                    prj_zone_type_dict[row[0]][1]
+                ]:
+                    row.append(new_column_value)
                 new_rows.append(row)
             # If project not specified, specify no BA
             else:
-                row.append(".")
+                for new_column in range(2):
+                    row.append(".")
                 new_rows.append(row)
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w") as \

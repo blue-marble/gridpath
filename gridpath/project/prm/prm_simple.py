@@ -18,9 +18,9 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    # The fraction of installed capacity that counts for the PRM
-    # Set this to 0 if project is included in an endogenous method for
-    # determining ELCC
+    # The fraction of ELCC-eligible capacity that counts for the PRM via the
+    # simple PRM method (whether or not project also contributes through the
+    # ELCC surface)
     m.elcc_simple_fraction = Param(m.PRM_PROJECTS, within=PercentFraction)
 
     def elcc_simple_rule(mod, g, p):
@@ -75,7 +75,6 @@ def export_results(scenario_directory, horizon, stage, m, d):
                          "load_zone",
                          "capacity_mw",
                          "elcc_eligible_capacity_mw",
-                         "energy_only_capacity_mw",
                          "elcc_simple_fraction",
                          "elcc_mw"])
         for (prj, period) in m.PRM_PROJECT_OPERATIONAL_PERIODS:
@@ -87,7 +86,6 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.load_zone[prj],
                 value(m.Capacity_MW[prj, period]),
                 value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                value(m.Energy_Only_Capacity_MW[prj, period]),
                 value(m.elcc_simple_fraction[prj]),
                 value(m.PRM_Simple_Contribution_MW[prj, period])
             ])
@@ -104,8 +102,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
     project_zones = c.execute(
         """SELECT project, elcc_simple_fraction
-        FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}""".format(
+        FROM inputs_project_prm_zones
+        LEFT OUTER JOIN inputs_project_elcc_chars
+        USING (project)
+        WHERE prm_zone_scenario_id = {}
+        AND project_prm_zone_scenario_id = {}
+        AND project_elcc_chars_scenario_id = {};""".format(
+            subscenarios.PRM_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
     ).fetchall()
@@ -182,7 +186,6 @@ def import_results_into_database(
             load_zone VARCHAR(32),
             capacity_mw FLOAT,
             elcc_eligible_capacity_mw FLOAT,
-            energy_only_capacity_mw FLOAT,
             elcc_simple_contribution_fraction FLOAT,
             elcc_mw FLOAT,
             PRIMARY KEY (scenario_id, project, period)
@@ -205,24 +208,21 @@ def import_results_into_database(
             load_zone = row[4]
             capacity = row[5]
             elcc_eligible_capacity = row[6]
-            energy_only_capacity = row[7]
-            prm_fraction = row[8]
-            elcc = row[9]
+            prm_fraction = row[7]
+            elcc = row[8]
 
             c.execute(
                 """INSERT INTO temp_results_project_elcc_simple"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, prm_zone, technology, 
                     load_zone, capacity_mw, 
-                    elcc_eligible_capacity_mw, 
-                    energy_only_capacity_mw,
+                    elcc_eligible_capacity_mw,
                     elcc_simple_contribution_fraction,
                     elcc_mw)
                     VALUES ({}, '{}', {}, '{}', '{}', 
-                    '{}', {}, {}, {}, {}, {});""".format(
+                    '{}', {}, {}, {}, {});""".format(
                     scenario_id, project, period, prm_zone, technology,
                     load_zone, capacity, elcc_eligible_capacity,
-                    energy_only_capacity,
                     prm_fraction, elcc
                 )
             )
@@ -232,11 +232,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_elcc_simple
         (scenario_id, project, period, prm_zone, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw,
+        capacity_mw, elcc_eligible_capacity_mw,
         elcc_simple_contribution_fraction, elcc_mw)
         SELECT
         scenario_id, project, period, prm_zone, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw,
+        capacity_mw, elcc_eligible_capacity_mw,
         elcc_simple_contribution_fraction, elcc_mw
         FROM temp_results_project_elcc_simple""" + str(scenario_id) +
         """ ORDER BY scenario_id, project, period;"""

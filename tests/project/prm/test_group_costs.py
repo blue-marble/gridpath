@@ -18,8 +18,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.prm_zones", "project",
-    "project.capacity.capacity", "project.prm"]
-NAME_OF_MODULE_BEING_TESTED = "project.prm.elcc_eligibility_threshold_costs"
+    "project.capacity.capacity", "project.prm", "project.prm.prm_types"]
+NAME_OF_MODULE_BEING_TESTED = "project.prm.group_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -80,81 +80,26 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: ELCC_ELIGIBILITY_THRESHOLD_GROUPS
+        # Set: PRM_COST_GROUPS
         expected_groups = sorted(["Threshold_Group_1", "Threshold_Group_2"])
         actual_groups = sorted([
-            g for g in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUPS
+            g for g in instance.PRM_COST_GROUPS
         ])
         self.assertListEqual(expected_groups, actual_groups)
 
-        # Param: elcc_eligibility_threshold_mw
+        # Param: group_prm_type
         expected_thresholds = OrderedDict(
-            sorted({"Threshold_Group_1": 2000.0,
-                    "Threshold_Group_2": 1140.0}.items()
+            sorted({"Threshold_Group_1": "energy_only_allowed",
+                    "Threshold_Group_2": "energy_only_allowed"}.items()
                    )
         )
         actual_thresholds = OrderedDict(
-            sorted({g: instance.elcc_eligibility_threshold_mw[g]
-                    for g in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUPS}.items()
+            sorted({g: instance.group_prm_type[g]
+                    for g in
+                    instance.PRM_COST_GROUPS}.items()
                    )
         )
         self.assertDictEqual(expected_thresholds, actual_thresholds)
-
-        # Param: elcc_eligibility_threshold_cost_per_mw
-        expected_costs = OrderedDict(
-            sorted({"Threshold_Group_1": 37.0,
-                    "Threshold_Group_2": 147.0}.items()
-                   )
-        )
-        actual_costs = OrderedDict(
-            sorted({g: instance.elcc_eligibility_threshold_cost_per_mw[g]
-                    for g in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUPS
-                    }.items()
-                   )
-        )
-        self.assertDictEqual(expected_costs, actual_costs)
-
-        # Param: energy_only_limit_mw
-        expected_costs = OrderedDict(
-            sorted({"Threshold_Group_1": 4000.0,
-                    "Threshold_Group_2": 5000.0}.items()
-                   )
-        )
-        actual_costs = OrderedDict(
-            sorted({g: instance.energy_only_limit_mw[g]
-                    for g in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUPS
-                    }.items()
-                   )
-        )
-        self.assertDictEqual(expected_costs, actual_costs)
-
-        # Set: ELCC_ELIGIBILITY_THRESHOLD_GROUP_PROJECTS
-        expected_group_projects = sorted(
-            [("Threshold_Group_1", "Wind"),
-             ("Threshold_Group_1", "Battery"),
-             ("Threshold_Group_2", "Wind_z2")])
-        actual_group_projects = sorted(
-            [(g, p) for (g, p)
-             in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUP_PROJECTS])
-        self.assertListEqual(expected_group_projects, actual_group_projects)
-
-        # Set: PROJECTS_BY_ELCC_ELIGIBILITY_THRESHOLD_GROUP
-        expected_projects_by_group = OrderedDict(
-            sorted(
-                {"Threshold_Group_1": sorted(["Wind", "Battery"]),
-                 "Threshold_Group_2": sorted(["Wind_z2"])}.items()
-            )
-        )
-        actual_projets_by_group = OrderedDict(
-            sorted(
-                {g: sorted([p for p in
-                            instance.
-                           PROJECTS_BY_ELCC_ELIGIBILITY_THRESHOLD_GROUP[g]])
-                 for g in instance.ELCC_ELIGIBILITY_THRESHOLD_GROUPS}.items()
-            )
-        )
-        self.assertDictEqual(expected_projects_by_group,
-                             actual_projets_by_group)
 
 
 if __name__ == "__main__":

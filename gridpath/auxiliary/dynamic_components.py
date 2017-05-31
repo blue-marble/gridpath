@@ -10,6 +10,7 @@ capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \
     "storage_only_capacity_type_operational_period_sets"
 required_operational_modules = "required_operational_modules"
+required_prm_modules = "required_prm_modules"
 required_reserve_modules = "required_reserve_modules"
 
 headroom_variables = "headroom_variables"
@@ -17,6 +18,9 @@ footroom_variables = "footroom_variables"
 reserve_variable_derate_params = "reserve_variable_derate_params"
 reserve_to_energy_adjustment_params = \
     "reserve_to_energy_adjustment_params"
+
+prm_cost_group_sets = "prm_cost_groups"
+prm_cost_group_prm_type = "prm_cost_group_prm_type"
 
 required_tx_capacity_modules = "required_tx_capacity_modules"
 
@@ -52,6 +56,9 @@ class DynamicComponents(object):
         # Operational type modules
         setattr(self, required_operational_modules, list())
 
+        # PRM type modules
+        setattr(self, required_prm_modules, list())
+
         # Reserve types
         # Will be determined based on whether the user has specified a module
         setattr(self, required_reserve_modules, list())
@@ -61,6 +68,10 @@ class DynamicComponents(object):
         setattr(self, footroom_variables, dict())
         setattr(self, reserve_variable_derate_params, dict())
         setattr(self, reserve_to_energy_adjustment_params, dict())
+
+        # PRM cost groups
+        setattr(self, prm_cost_group_sets, list())
+        setattr(self, prm_cost_group_prm_type, dict())
 
         # Transmission
         setattr(self, required_tx_capacity_modules, list())

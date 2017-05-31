@@ -119,6 +119,39 @@ class TestProjPRMInit(unittest.TestCase):
         )
         self.assertDictEqual(expected_prm_zone, actual_prm_zone)
 
+        # Params: prm_type
+        expected_prm_type = OrderedDict(
+            sorted(
+                {"Coal": "fully_deliverable", "Coal_z2": "fully_deliverable",
+                 "Gas_CCGT": "fully_deliverable",
+                 "Gas_CCGT_New": "fully_deliverable",
+                 "Gas_CCGT_z2": "fully_deliverable",
+                 "Gas_CT": "fully_deliverable",
+                 "Gas_CT_New": "fully_deliverable",
+                 "Gas_CT_z2": "fully_deliverable",
+                 "Nuclear": "fully_deliverable",
+                 "Nuclear_z2": "fully_deliverable",
+                 "Wind": "energy_only_allowed",
+                 "Wind_z2": "energy_only_allowed",
+                 "Battery": "fully_deliverable_energy_limited",
+                 "Battery_Specified": "fully_deliverable_energy_limited",
+                 "Hydro": "fully_deliverable",
+                 'Hydro_NonCurtailable': "fully_deliverable",
+                 "Disp_Binary_Commit": "fully_deliverable",
+                 "Disp_Cont_Commit": "fully_deliverable",
+                 "Disp_No_Commit": "fully_deliverable",
+                 "Clunky_Old_Gen": "fully_deliverable",
+                 "Nuclear_Flexible": "fully_deliverable"}.items()
+            )
+        )
+        actual_prm_type = OrderedDict(
+            sorted(
+                {prj: instance.prm_type[prj] for prj in
+                 instance.PRM_PROJECTS}.items()
+            )
+        )
+        self.assertDictEqual(expected_prm_type, actual_prm_type)
+
         # Set: PRM_PROJECTS_BY_PRM_ZONE
         expected_projects_by_zone = {
             "PRM_Zone1": sorted([

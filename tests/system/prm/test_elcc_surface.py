@@ -21,7 +21,9 @@ PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "geography.prm_zones",
                              "project", "project.capacity.capacity",
                              "system.prm.prm_requirement",
-                             "project.prm", "project.prm.elcc_surface"]
+                             "project.prm",
+                             "project.prm.prm_types",
+                             "project.prm.elcc_surface"]
 NAME_OF_MODULE_BEING_TESTED = \
     "system.prm.elcc_surface"
 IMPORTED_PREREQ_MODULES = list()

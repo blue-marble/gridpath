@@ -12,21 +12,22 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 
 def add_model_components(m, d):
     """
-    Sum up all capacity costs and add to the objective function.
+    Sum up all PRM group costs and add to the objective function.
     :param m:
     :param d:
     :return:
     """
 
+    # TODO: change the name of the expression and of this module
     # Add costs to objective function
     def total_capacity_threshold_cost_rule(mod):
-        return sum(mod.ELCC_Eligible_Capacity_Threshold_Cost[g, p]
+        return sum(mod.PRM_Group_Costs[g, p]
                    * mod.discount_factor[p]
                    * mod.number_years_represented[p]
-                   for g in mod.ELCC_ELIGIBILITY_THRESHOLD_GROUPS
+                   for g in mod.PRM_COST_GROUPS
                    for p in mod.PERIODS)
-    m.Total_ELCC_Eligible_Capacity_Threshold_Costs = Expression(
+    m.Total_PRM_Group_Costs = Expression(
         rule=total_capacity_threshold_cost_rule)
     getattr(d, total_cost_components).append(
-        "Total_ELCC_Eligible_Capacity_Threshold_Costs"
+        "Total_PRM_Group_Costs"
     )

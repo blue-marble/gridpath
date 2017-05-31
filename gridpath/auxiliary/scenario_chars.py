@@ -325,8 +325,8 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
-        self.ELCC_ELIGIBILITY_THRESHOLD_SCENARIO_ID = cursor.execute(
-            """SELECT elcc_eligibility_threshold_scenario_id
+        self.PRM_ENERGY_ONLY_SCENARIO_ID = cursor.execute(
+            """SELECT prm_energy_only_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

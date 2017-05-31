@@ -885,9 +885,11 @@ DROP TABLE IF EXISTS inputs_project_elcc_chars;
 CREATE TABLE inputs_project_elcc_chars (
 project_elcc_chars_scenario_id INTEGER,
 project VARCHAR(64),
+prm_type VARCHAR(32),
 elcc_simple_fraction FLOAT,
 contributes_to_elcc_surface INTEGER,
-elcc_eligibility_threshold_group VARCHAR(64),  --optional
+min_duration_for_full_capacity_credit_hours FLOAT,
+deliverability_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
@@ -940,26 +942,26 @@ subscenarios_project_prm_zones
 (prm_zone_scenario_id, project_prm_zone_scenario_id)
 );
 
--- ELCC eligibility threshold costs
-DROP TABLE IF EXISTS subscenarios_project_elcc_eligibility_thresholds;
-CREATE TABLE subscenarios_project_elcc_eligibility_thresholds (
-elcc_eligibility_threshold_scenario_id INTEGER PRIMARY KEY
+-- Energy-only parameters
+DROP TABLE IF EXISTS subscenarios_project_prm_energy_only;
+CREATE TABLE subscenarios_project_prm_energy_only (
+prm_energy_only_scenario_id INTEGER PRIMARY KEY
 AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_elcc_eligibility_thresholds;
-CREATE TABLE inputs_project_elcc_eligibility_thresholds (
-elcc_eligibility_threshold_scenario_id INTEGER,
-elcc_eligibility_threshold_group VARCHAR(64),
-elcc_eligibility_threshold_mw FLOAT,
-elcc_eligibility_threshold_cost_per_mw FLOAT,
-elcc_energy_only_limit_mw FLOAT,
-PRIMARY KEY (elcc_eligibility_threshold_scenario_id, elcc_eligibility_threshold_group),
-FOREIGN KEY (elcc_eligibility_threshold_scenario_id) REFERENCES
-subscenarios_project_elcc_eligibility_thresholds
-(elcc_eligibility_threshold_scenario_id)
+DROP TABLE IF EXISTS inputs_project_prm_energy_only;
+CREATE TABLE inputs_project_prm_energy_only (
+prm_energy_only_scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
+deliverability_group_deliverability_cost_per_mw FLOAT,
+deliverability_group_energy_only_capacity_limit_mw FLOAT,
+PRIMARY KEY (prm_energy_only_scenario_id, deliverability_group),
+FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
+subscenarios_project_prm_energy_only
+(prm_energy_only_scenario_id)
 );
 
 -- Fuels
@@ -1497,7 +1499,7 @@ project_rps_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
-elcc_eligibility_threshold_scenario_id INTEGER,
+prm_energy_only_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -1595,9 +1597,9 @@ subscenarios_project_prm_zones
 (prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
-FOREIGN KEY (elcc_eligibility_threshold_scenario_id) REFERENCES
-subscenarios_project_elcc_eligibility_thresholds
-(elcc_eligibility_threshold_scenario_id),
+FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
+subscenarios_project_prm_energy_only
+(prm_energy_only_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
@@ -1916,6 +1918,37 @@ reserve_provision_mw FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
+DROP TABLE IF EXISTS results_project_prm_deliverability;
+CREATE TABLE results_project_prm_deliverability (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+prm_zone VARCHAR(32),
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+capacity_mw FLOAT,
+deliverable_capacity_mw FLOAT,
+energy_only_capacity_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS
+results_project_prm_deliverability_group_capacity_and_costs;
+CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs (
+scenario_id INTEGER,
+deliverability_group VARCHAR(64),
+period INTEGER,
+deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
+deliverability_group_deliverability_cost_per_mw FLOAT,
+total_capacity_mw FLOAT,
+deliverable_capacity_mw FLOAT,
+energy_only_capacity_mw FLOAT,
+deliverable_capacity_cost FLOAT,
+PRIMARY KEY (scenario_id, deliverability_group, period)
+);
+
 DROP TABLE IF EXISTS results_project_elcc_simple;
 CREATE TABLE results_project_elcc_simple (
 scenario_id INTEGER,
@@ -1966,19 +1999,6 @@ annualized_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period)
 );
 
-DROP TABLE IF EXISTS results_project_costs_elcc_eligibility_thresholds;
-CREATE TABLE results_project_costs_elcc_eligibility_thresholds (
-scenario_id INTEGER,
-elcc_eligibility_threshold_group VARCHAR(64),
-period INTEGER,
-elcc_eligibility_threshold_mw FLOAT,
-elcc_eligibility_threshold_cost_per_mw FLOAT,
-total_capacity_mw FLOAT,
-elcc_eligible_capacity_mw FLOAT,
-energy_only_capacity_mw FLOAT,
-elcc_eligibility_threshold_cost FLOAT,
-PRIMARY KEY (scenario_id, elcc_eligibility_threshold_group, period)
-);
 
 DROP TABLE IF EXISTS results_project_costs_operations_variable_om;
 CREATE TABLE results_project_costs_operations_variable_om (

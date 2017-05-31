@@ -18,7 +18,7 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    # Which projects contribute to the PRM surface
+    # Which projects contribute to the ELCC surface
     m.contributes_to_elcc_surface = Param(m.PRM_PROJECTS, within=Binary)
     m.ELCC_SURFACE_PROJECTS = Set(
         within=m.PRM_PROJECTS,
@@ -119,7 +119,6 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer.writerow(["project", "period", "prm_zone", "facet",
                          "load_zone", "technology", "capacity_mw",
                          "elcc_eligible_capacity_mw",
-                         "energy_only_capacity_mw",
                          "elcc_surface_coefficient",
                          "elcc_mw"])
         for (prj, period, facet) in m.PROJECT_PERIOD_ELCC_SURFACE_FACETS:
@@ -132,7 +131,6 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.technology[prj],
                 value(m.Capacity_MW[prj, period]),
                 value(m.ELCC_Eligible_Capacity_MW[prj, period]),
-                value(m.Energy_Only_Capacity_MW[prj, period]),
                 value(m.elcc_surface_coefficient[prj, period, facet]),
                 value(m.ELCC_Surface_Contribution_MW[prj, period, facet])
             ])
@@ -150,8 +148,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     # Which projects will contribute to the surface
     project_contr = c.execute(
         """SELECT project, contributes_to_elcc_surface
-        FROM inputs_project_elcc_chars
-            WHERE project_elcc_chars_scenario_id = {}""".format(
+        FROM inputs_project_prm_zones
+        LEFT OUTER JOIN inputs_project_elcc_chars
+        USING (project)
+        WHERE prm_zone_scenario_id = {}
+        AND project_prm_zone_scenario_id = {}
+        AND project_elcc_chars_scenario_id = {};""".format(
+            subscenarios.PRM_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
     ).fetchall()
@@ -259,7 +263,6 @@ def import_results_into_database(
             load_zone VARCHAR(32),
             capacity_mw FLOAT,
             elcc_eligible_capacity_mw FLOAT,
-            energy_only_capacity_mw FLOAT,
             elcc_surface_coefficient FLOAT,
             elcc_mw FLOAT,
             PRIMARY KEY (scenario_id, project, period, facet)
@@ -283,22 +286,21 @@ def import_results_into_database(
             technology = row[5]
             capacity = row[6]
             elcc_eligible_capacity = row[7]
-            energy_only_capacity_mw = row[8]
-            coefficient = row[9]
-            elcc = row[10]
+            coefficient = row[8]
+            elcc = row[9]
 
             c.execute(
                 """INSERT INTO temp_results_project_elcc_surface"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, prm_zone, facet, 
                     technology, load_zone, capacity_mw, 
-                    elcc_eligible_capacity_mw, energy_only_capacity_mw,
+                    elcc_eligible_capacity_mw,
                     elcc_surface_coefficient, elcc_mw)
                     VALUES ({}, '{}', {}, '{}', {}, '{}', '{}',  
-                    {}, {}, {}, {}, {});""".format(
+                    {}, {}, {}, {});""".format(
                     scenario_id, project, period, prm_zone, facet, technology,
                     load_zone, capacity, elcc_eligible_capacity,
-                    energy_only_capacity_mw, coefficient, elcc
+                    coefficient, elcc
                 )
             )
     db.commit()
@@ -307,11 +309,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_elcc_surface
         (scenario_id, project, period, prm_zone, facet, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw, 
+        capacity_mw, elcc_eligible_capacity_mw, 
         elcc_surface_coefficient, elcc_mw)
         SELECT
         scenario_id, project, period, prm_zone, facet, technology, load_zone, 
-        capacity_mw, elcc_eligible_capacity_mw, energy_only_capacity_mw,
+        capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw
         FROM temp_results_project_elcc_surface""" + str(scenario_id) +
         """ ORDER BY scenario_id, project, period;"""
