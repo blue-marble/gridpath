@@ -133,8 +133,8 @@ def import_results_into_database(
         for row in reader:
             carbon_cap_zone = row[0]
             period = row[1]
-            carbon_cap_mmt = row[2]
-            project_carbon_emissions_mmt = row[3]
+            carbon_cap_mmt = row[4]
+            project_carbon_emissions_mmt = row[5]
 
             c.execute(
                 """INSERT INTO 

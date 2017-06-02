@@ -210,7 +210,8 @@ def generic_import_results_to_database(
         "regulation_down": "Meet_Regulation_Down_Constraint.csv",
         "frequency_response": "Meet_Frequency_Response_Constraint.csv",
         "frequency_response_partial":
-            "Meet_Frequency_Response_Partial_Constraint.csv"
+            "Meet_Frequency_Response_Partial_Constraint.csv",
+        "spinning_reserves": "Meet_Spinning_Reserves_Constraint.csv"
     }
 
     with open(os.path.join(results_directory, dual_files[reserve_type]),

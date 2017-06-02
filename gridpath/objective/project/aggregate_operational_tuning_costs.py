@@ -29,7 +29,7 @@ def add_model_components(m, d):
         :return:
         """
         return sum(
-            (mod.Ramp_Down_Tuning_Cost[g, tmp] +
+            (mod.Ramp_Up_Tuning_Cost[g, tmp] +
              mod.Ramp_Down_Tuning_Cost[g, tmp])
             * mod.number_of_hours_in_timepoint[tmp]
             * mod.horizon_weight[mod.horizon[tmp]]
