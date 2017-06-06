@@ -113,11 +113,14 @@ def get_inputs_from_database(
     required_opchar_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT operational_type 
-            FROM inputs_project_portfolios
-            LEFT OUTER JOIN inputs_project_operational_chars
-            USING (project)
-            WHERE project_portfolio_scenario_id = {}
-            AND project_operational_chars_scenario_id = {}""".format(
+            FROM 
+            (SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, operational_type
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {}) as op_type_tbl
+            USING (project);""".format(
                 project_portfolio_scenario_id,
                 project_opchars_scenario_id
             )
@@ -169,11 +172,14 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     required_opchar_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT operational_type 
-            FROM inputs_project_portfolios
-            LEFT OUTER JOIN inputs_project_operational_chars
-            USING (project)
-            WHERE project_portfolio_scenario_id = {}
-            AND project_operational_chars_scenario_id = {}""".format(
+            FROM 
+            (SELECT project FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, operational_type
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {}) as op_type_tbl
+            USING (project);""".format(
                 project_portfolio_scenario_id,
                 project_opchars_scenario_id
             )

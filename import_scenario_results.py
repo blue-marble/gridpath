@@ -90,7 +90,7 @@ def main(args=None):
     with open(os.path.join(scenario_directory, "scenario_id.txt")) as \
             scenario_id_file:
         scenario_id_saved = scenario_id_file.read()
-        if int(scenario_id_saved) != scenario_id:
+        if scenario_id_saved != scenario_id:
             raise AssertionError("ERROR: saved scenario_id does not match")
 
     # Go through modules

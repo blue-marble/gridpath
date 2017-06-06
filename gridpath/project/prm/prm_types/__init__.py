@@ -135,13 +135,17 @@ def get_inputs_from_database(
     required_prm_type_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT(prm_type)
+            FROM 
+            (SELECT project
             FROM inputs_project_prm_zones
-            LEFT OUTER JOIN inputs_project_elcc_chars
-            USING (project)
             WHERE prm_zone_scenario_id = {}
-            AND project_prm_zone_scenario_id = {}
-            AND project_elcc_chars_scenario_id = {}
-            AND prm_type IS NOT NULL;""".format(
+            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, prm_type
+            FROM inputs_project_elcc_chars
+            WHERE project_elcc_chars_scenario_id = {}
+            AND prm_type IS NOT NULL) as prm_type_tbl
+            USING (project);""".format(
                 subscenarios.PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
@@ -175,7 +179,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     :return:
     """
 
-    (prm_zone_scenario_id, project_prm_scenario_id,
+    (prm_zone_scenario_id, project_prm_zone_scenario_id,
      project_elcc_chars_scenario_id) = c.execute(
         """SELECT prm_zone_scenario_id, project_prm_zone_scenario_id, 
         project_elcc_chars_scenario_id
@@ -189,18 +193,22 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     required_prm_type_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT(prm_type)
-        FROM inputs_project_prm_zones
-        LEFT OUTER JOIN inputs_project_elcc_chars
-        USING (project)
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND project_elcc_chars_scenario_id = {}
-        AND prm_type IS NOT NULL;""".format(
-            prm_zone_scenario_id,
-            project_prm_scenario_id,
-            project_elcc_chars_scenario_id
-        )
-    ).fetchall()
+            FROM 
+            (SELECT project
+            FROM inputs_project_prm_zones
+            WHERE prm_zone_scenario_id = {}
+            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, prm_type
+            FROM inputs_project_elcc_chars
+            WHERE project_elcc_chars_scenario_id = {}
+            AND prm_type IS NOT NULL) as prm_type_tbl
+            USING (project);""".format(
+                prm_zone_scenario_id,
+                project_prm_zone_scenario_id,
+                project_elcc_chars_scenario_id
+            )
+        ).fetchall()
     ]
 
     # Import module-specific results
@@ -233,13 +241,17 @@ def process_results(db, c, subscenarios):
     required_prm_type_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT(prm_type)
-        FROM inputs_project_prm_zones
-        LEFT OUTER JOIN inputs_project_elcc_chars
-        USING (project)
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND project_elcc_chars_scenario_id = {}
-        AND prm_type IS NOT NULL;""".format(
+            FROM 
+            (SELECT project
+            FROM inputs_project_prm_zones
+            WHERE prm_zone_scenario_id = {}
+            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            LEFT OUTER JOIN 
+            (SELECT project, prm_type
+            FROM inputs_project_elcc_chars
+            WHERE project_elcc_chars_scenario_id = {}
+            AND prm_type IS NOT NULL) as prm_type_tbl
+            USING (project);""".format(
                 subscenarios.PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID

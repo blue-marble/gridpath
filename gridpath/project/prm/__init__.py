@@ -69,12 +69,17 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
     project_zones = c.execute(
         """SELECT project, prm_zone, prm_type
+        FROM 
+        (SELECT project, prm_zone
         FROM inputs_project_prm_zones
-        LEFT OUTER JOIN inputs_project_elcc_chars
-        USING (project)
         WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND project_elcc_chars_scenario_id = {};""".format(
+        AND project_prm_zone_scenario_id = {}) as prm_zone_tbl
+        LEFT OUTER JOIN
+        (SELECT project, prm_type
+        FROM inputs_project_elcc_chars
+        WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
+        USING (project)
+        """.format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID

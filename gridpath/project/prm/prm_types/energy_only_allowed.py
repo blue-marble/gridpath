@@ -17,6 +17,8 @@ from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 
 
+# TODO: rename deliverability_group_deliverability_cost_per_mw --> deliverability_group_deliverability_cost_per_mw_yr
+
 def add_module_specific_components(m, d):
     """
     EOA: Energy-Only Allowed
@@ -396,17 +398,19 @@ def get_module_specific_inputs_from_database(
         project_deliverability_groups \
             = c.execute(
                 """SELECT deliverability_group, project 
+                FROM 
+                (SELECT project
                 FROM inputs_project_portfolios
-                LEFT OUTER JOIN inputs_project_elcc_chars
-                USING (project)
+                WHERE project_portfolio_scenario_id = {}) as prj_tbl
+                LEFT OUTER JOIN 
+                (SELECT deliverability_group, project 
+                FROM inputs_project_elcc_chars
                 WHERE project_elcc_chars_scenario_id = {}
-                AND project_portfolio_scenario_id = {}
-                AND deliverability_group 
-                IS NOT NULL
-                ORDER BY deliverability_group, 
-                project""".format(
-                    subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID,
-                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+                AND deliverability_group IS NOT NULL
+                ORDER BY deliverability_group, project) as grp_tbl
+                USING (project) """.format(
+                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+                    subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
                 )
             )
 

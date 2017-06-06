@@ -129,12 +129,16 @@ def get_module_specific_inputs_from_database(
     project_zone_dur = c.execute(
         """SELECT project, prm_zone, 
         min_duration_for_full_capacity_credit_hours
+        FROM 
+        (SELECT project, prm_zone
         FROM inputs_project_prm_zones
-        LEFT OUTER JOIN inputs_project_elcc_chars
-        USING (project)
         WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND project_elcc_chars_scenario_id = {};""".format(
+        AND project_prm_zone_scenario_id = {}) as prj_tbl
+        LEFT OUTER JOIN 
+        (SELECT project, min_duration_for_full_capacity_credit_hours 
+        FROM inputs_project_elcc_chars
+        WHERE project_elcc_chars_scenario_id = {}) as min_dur_tbl
+        USING (project);""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID

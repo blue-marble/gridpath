@@ -148,12 +148,16 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     # Which projects will contribute to the surface
     project_contr = c.execute(
         """SELECT project, contributes_to_elcc_surface
+        FROM 
+        (SELECT project
         FROM inputs_project_prm_zones
-        LEFT OUTER JOIN inputs_project_elcc_chars
-        USING (project)
         WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND project_elcc_chars_scenario_id = {};""".format(
+        AND project_prm_zone_scenario_id = {}) as prj_tbl
+        LEFT OUTER JOIN 
+        (SELECT project, contributes_to_elcc_surface
+        FROM inputs_project_elcc_chars
+        WHERE project_elcc_chars_scenario_id = {}) as contr_tbl
+        USING (project);""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
