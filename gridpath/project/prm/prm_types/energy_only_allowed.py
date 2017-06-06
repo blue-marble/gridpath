@@ -406,9 +406,9 @@ def get_module_specific_inputs_from_database(
                 (SELECT deliverability_group, project 
                 FROM inputs_project_elcc_chars
                 WHERE project_elcc_chars_scenario_id = {}
-                AND deliverability_group IS NOT NULL
                 ORDER BY deliverability_group, project) as grp_tbl
-                USING (project) """.format(
+                USING (project)
+                WHERE deliverability_group IS NOT NULL;""".format(
                     subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                     subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
                 )
