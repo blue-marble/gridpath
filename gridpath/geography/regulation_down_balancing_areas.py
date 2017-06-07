@@ -61,7 +61,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
                violation_penalty_per_mw, reserve_to_energy_adjustment
                FROM inputs_geography_regulation_down_bas
                WHERE regulation_down_ba_scenario_id = {};""".format(
-                subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID
+                subscenarios.REGULATION_DOWN_BA_SCENARIO_ID
             )
         ).fetchall()
 

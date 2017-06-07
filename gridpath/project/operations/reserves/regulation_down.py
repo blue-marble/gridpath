@@ -155,8 +155,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         FROM inputs_project_regulation_down_bas
             WHERE regulation_down_ba_scenario_id = {}
             AND project_regulation_down_ba_scenario_id = {}""".format(
-            subscenarios.LF_RESERVES_UP_BA_SCENARIO_ID,
-            subscenarios.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID
+            subscenarios.REGULATION_DOWN_BA_SCENARIO_ID,
+            subscenarios.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID
         )
     ).fetchall()
     # Make a dict for easy access
