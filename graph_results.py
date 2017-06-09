@@ -47,7 +47,7 @@ def parse_arguments(arguments):
     parser.add_argument("--save",
                         default=False, action="store_true",
                         help="Save figure to "
-                             "results/figures/dispatch directory "
+                             "results/figures directory "
                              "under scenario directory.")
     parser.add_argument("--save_only",
                         default=False, action="store_true",
@@ -58,6 +58,10 @@ def parse_arguments(arguments):
     parser.add_argument("--dispatch_plot", default=False, action="store_true",
                         help="Draw a dispatch plot. Requires specifying a "
                              "horizon and load zone.")
+    parser.add_argument("--xmin", help="Minimum value for the x axis.")
+    parser.add_argument("--xmax", help="Maximum value for the x axis.")
+    parser.add_argument("--ymin", help="Minimum value for the y axis.")
+    parser.add_argument("--ymax", help="Maximum value for the y axis.")
 
     # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]

@@ -9,6 +9,7 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
+import os.path
 
 
 def determine_x_axis(c, scenario_id, horizon, load_zone):
@@ -546,13 +547,32 @@ def draw_dispatch_plot(c, scenario_id, horizon, load_zone, arguments):
         fig=figure, ax=axes, x_axis_count=x_axis_count_results
     )
 
+    # Adjust axis limits (if specified, otherwise limits will be 'None' and
+    # the defaults will be used)
+    axes.set_xlim([
+        None if arguments.xmin is None else float(arguments.xmin),
+        None if arguments.xmax is None else float(arguments.xmax)
+    ])
+    axes.set_ylim([
+        None if arguments.ymin is None else float(arguments.ymin),
+        None if arguments.ymax is None else float(arguments.ymax)])
+
     # Show and/or save the figure
     if not arguments.save_only:
         plt.show()
 
     if arguments.save or arguments.save_only:
+        figures_directory = \
+            os.path.join(
+                os.getcwd(), "scenarios", arguments.scenario,
+                "results/figures"
+            )
+        if not os.path.exists(figures_directory):
+            os.makedirs(figures_directory)
+
         plt.savefig(
-            "dispatch_plot_{}_{}".format(
-                str(load_zone), str(horizon)
+            os.path.join(
+                figures_directory,
+                "dispatch_plot_{}_{}".format(str(load_zone), str(horizon))
             )
         )
