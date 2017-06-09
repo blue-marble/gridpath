@@ -185,9 +185,9 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             WHERE project_operational_chars_scenario_id = {}) as prj_chars
             USING (project)
             WHERE project_portfolio_scenario_id = {}""".format(
-                subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                 subscenarios.LOAD_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
+                subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
             )
         )
