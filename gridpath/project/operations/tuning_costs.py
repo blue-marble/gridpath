@@ -22,7 +22,7 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.hydro_ramp_tuning_cost = Param(default=0)
+    m.ramp_tuning_cost = Param(default=0)
 
     # Import needed operational modules
     imported_operational_modules = \
@@ -61,9 +61,9 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
-            mod.hydro_ramp_tuning_cost \
-            if gen_op_type in ["hydro_curtailable", "hydro_noncurtailable"] \
-            else 0
+            mod.ramp_tuning_cost if gen_op_type in [
+                "hydro_curtailable", "hydro_noncurtailable", "storage_generic"
+            ] else 0
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
@@ -87,7 +87,7 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
-            mod.hydro_ramp_tuning_cost \
+            mod.ramp_tuning_cost \
             if gen_op_type in ["hydro_curtailable", "hydro_noncurtailable"] \
             else 0
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
@@ -122,8 +122,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
     if os.path.exists(tuning_param_file):
         data_portal.load(filename=tuning_param_file,
-                         select=("hydro_ramp_tuning_cost",),
-                         param=m.hydro_ramp_tuning_cost
+                         select=("ramp_tuning_cost",),
+                         param=m.ramp_tuning_cost
                          )
     else:
         pass
@@ -138,8 +138,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     :return:
     """
 
-    hydro_ramp_tuning_cost = c.execute(
-        """SELECT hydro_ramp_tuning_cost
+    ramp_tuning_cost = c.execute(
+        """SELECT ramp_tuning_cost
         FROM inputs_tuning
         WHERE tuning_scenario_id = {}""".format(
             subscenarios.TUNING_SCENARIO_ID
@@ -162,7 +162,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
             # Append tuning param value
             param_value = reader.next()
-            param_value.append(hydro_ramp_tuning_cost)
+            param_value.append(ramp_tuning_cost)
             new_rows.append(param_value)
 
         with open(os.path.join(inputs_directory, "tuning_params.tab"),
@@ -176,5 +176,5 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
                   "w") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
-            writer.writerow(["hydro_ramp_tuning_cost"])
-            writer.writerow([hydro_ramp_tuning_cost])
+            writer.writerow(["ramp_tuning_cost"])
+            writer.writerow([ramp_tuning_cost])

@@ -1444,7 +1444,7 @@ DROP TABLE IF EXISTS inputs_tuning;
 CREATE TABLE inputs_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY,
 import_carbon_tuning_cost DOUBLE,
-hydro_ramp_tuning_cost DOUBLE,
+ramp_tuning_cost DOUBLE,
 dynamic_elcc_tuning_cost DOUBLE,
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
