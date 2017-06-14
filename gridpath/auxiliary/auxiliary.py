@@ -18,6 +18,7 @@ def load_subtype_modules(
     Load subtype modules (e.g. capacity types, operational types, etc).
     This function will also check that the subtype module have certain
     required attributes.
+
     :param required_subtype_modules:
     :param package:
     :param required_attributes:
@@ -92,6 +93,7 @@ def join_sets(mod, set_list):
     """
     Join sets in a list.
     If list contains only a single set, return just that set.
+
     :param mod:
     :param set_list:
     :return:
@@ -115,6 +117,7 @@ def generator_subset_init(generator_parameter, expected_type):
     because we can only iterate over the
     generators after data is loaded; then we can pass the abstract model to the
     initialization function.
+
     :param generator_parameter:
     :param expected_type:
     :return:
@@ -144,6 +147,7 @@ def find_list_item_position(l, item):
 def check_list_items_are_unique(l):
     """
     Check if items in a list are unique
+
     :param l:
     A list
     :return:
@@ -174,6 +178,7 @@ class Logging:
     def __init__(self, logs_dir):
         """
         Assign sys.stdout and a log file as output destinations
+
         :param logs_dir: 
         """
         self.terminal = sys.stdout
@@ -187,6 +192,7 @@ class Logging:
     def __getattr__(self, attr):
         """
         Default to sys.stdout when calling attributes for this class
+
         :param attr: 
         :return: 
         """
@@ -195,6 +201,7 @@ class Logging:
     def write(self, message):
         """
         Output to both terminal and a log file
+
         :param message: 
         :return: 
         """
@@ -204,6 +211,7 @@ class Logging:
     def flush(self):
         """
         Flush both the terminal and the log file
+
         :return: 
         """
         self.terminal.flush()
@@ -212,7 +220,8 @@ class Logging:
 
 def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     """
-    
+    huh
+
     :param scenario_id_arg: 
     :param scenario_name_arg: 
     :param c: 
