@@ -202,14 +202,18 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         FROM inputs_project_elcc_surface
         JOIN inputs_project_portfolios
         USING (project)
+        INNER JOIN inputs_temporal_periods
+        USING (period)
         WHERE prm_zone_scenario_id = {}
         AND project_prm_zone_scenario_id = {}
         AND elcc_surface_scenario_id = {}
-        AND project_portfolio_scenario_id = {}""".format(
+        AND project_portfolio_scenario_id = {}
+        AND timepoint_scenario_id = {};""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID
         )
     ).fetchall()
 

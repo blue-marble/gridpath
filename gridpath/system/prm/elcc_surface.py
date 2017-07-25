@@ -131,10 +131,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     intercepts = c.execute(
         """SELECT prm_zone, period, facet, elcc_surface_intercept
         FROM inputs_system_prm_zone_elcc_surface
+        INNER JOIN inputs_temporal_periods
+        USING (period)
         WHERE prm_zone_scenario_id = {}
-        AND elcc_surface_scenario_id = {}""".format(
+        AND elcc_surface_scenario_id = {}
+        AND timepoint_scenario_id = {}""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID
+            subscenarios.ELCC_SURFACE_SCENARIO_ID,
+            subscenarios.TIMEPOINT_SCENARIO_ID
         )
     ).fetchall()
 

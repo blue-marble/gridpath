@@ -227,16 +227,20 @@ def get_inputs_from_database(
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
         pass
     else:
-    # Project availabilities
+        # Project availabilities
         availabilities = c.execute(
             """SELECT project, horizon, availability
             FROM inputs_project_availability
             INNER JOIN inputs_project_portfolios
             USING (project)
+            INNER JOIN inputs_temporal_horizons
+            USING (horizon)
             WHERE project_portfolio_scenario_id = {}
-            AND project_availability_scenario_id = {}""".format(
+            AND project_availability_scenario_id = {}
+            AND timepoint_scenario_id = {};""".format(
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
+                subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
+                subscenarios.TIMEPOINT_SCENARIO_ID
             )
         )
 
