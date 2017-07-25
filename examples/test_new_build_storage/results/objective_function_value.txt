@@ -1,1 +1,1 @@
-Objective function: 102426.48
+Objective function: 102420.064

@@ -155,7 +155,8 @@ def add_module_specific_components(m, d):
     # timepoint
     def max_headroom_energy_rule(mod, s, tmp):
         """
-        How much energy do we have available
+        Must have enough energy available to be at the new set point (for
+        the full duration of the timepoint)
         :param mod:
         :param s:
         :param tmp:
@@ -182,18 +183,20 @@ def add_module_specific_components(m, d):
 
     def max_footroom_energy_rule(mod, s, tmp):
         """
-        How much room is left in the tank
+        Must have enough 'room is left in the tank' (remaining energy
+        capacity) to be at the new set point (for the full duration of the
+        timepoint)
         :param mod:
         :param s:
         :param tmp:
         :return:
         """
         return sum(getattr(mod, c)[s, tmp]
-                   for c in getattr(d, headroom_variables)[s]) \
+                   for c in getattr(d, footroom_variables)[s]) \
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
             <= \
-            mod.Capacity_MW[s, mod.period[tmp]] \
+            mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
             * mod.availability_derate[s, mod.horizon[tmp]] - \
             mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
             - mod.Generic_Storage_Charge_MW[s, tmp] \

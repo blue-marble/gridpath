@@ -5,8 +5,8 @@
 --> New Storage Capacity <--
                              New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
 load_zone technology period                                                                    
-Zone1     Storage    2020                                 10                                 10
-                     2030                                 10                                 10
+Zone1     Storage    2020                                  6                                 10
+                     2030                                  6                                 10
 
 ### OPERATIONAL RESULTS ###
 
