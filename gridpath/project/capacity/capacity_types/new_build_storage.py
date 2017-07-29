@@ -218,10 +218,10 @@ def capacity_cost_rule(mod, g, p):
     :param mod:
     :return:
     """
-    return sum(mod.Build_Storage_Power_MW[g, v]
+    return sum((mod.Build_Storage_Power_MW[g, v]
                * mod.new_build_storage_annualized_real_cost_per_mw_yr[g, v]
                + mod.Build_Storage_Energy_MWh[g, v]
-               * mod.new_build_storage_annualized_real_cost_per_mwh_yr[g, v]
+               * mod.new_build_storage_annualized_real_cost_per_mwh_yr[g, v])
                for (gen, v)
                in mod.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
                if gen == g)
