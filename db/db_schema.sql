@@ -2203,6 +2203,7 @@ timepoint INTEGER,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 carbon_emission_imports_tons FLOAT,
+carbon_emission_imports_tons_degen FLOAT,
 PRIMARY KEY (scenario_id, tx_line, timepoint)
 );
 
@@ -2358,6 +2359,8 @@ carbon_cap_mmt FLOAT,
 in_zone_project_emissions_mmt FLOAT,
 import_emissions_mmt FLOAT,
 total_emissions_mmt FLOAT,
+import_emissions_mmt_degen FLOAT,
+total_emissions_mmt_degen FLOAT,
 dual FLOAT,
 carbon_cap_marginal_cost_per_mmt FLOAT,
 PRIMARY KEY (scenario_id, carbon_cap_zone, period)

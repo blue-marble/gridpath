@@ -113,6 +113,29 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     }
 
 
+def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
+    """
+    In case of degeneracy where the Import_Carbon_Emissions_Tons variable
+    can take a value larger than the actual import emissions (when the
+    carbon cap is non-binding), we can upost-process to figure out what the
+    actual imported emissions are (e.g. instead of applying a tuning cost)
+    :param mod:
+    :param tx_line:
+    :param timepoint:
+    :return:
+    """
+    if mod.carbon_cap_zone_import_direction[tx_line] == "positive" \
+            and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return value(mod.Transmit_Power_MW[tx_line, timepoint]) * \
+               mod.tx_co2_intensity_tons_per_mwh[tx_line]
+    elif mod.carbon_cap_zone_import_direction[tx_line] == "negative" \
+            and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) * \
+               mod.tx_co2_intensity_tons_per_mwh[tx_line]
+    else:
+        return 0
+
+
 def export_results(scenario_directory, horizon, stage, m, d):
     """
 
@@ -129,7 +152,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
         writer = csv.writer(carbon_emission_imports__results_file)
         writer.writerow(["tx_line", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
-                         "carbon_emission_imports_tons"])
+                         "carbon_emission_imports_tons",
+                         "carbon_emission_imports_tons_degen"])
         for (tx, tmp) in \
                 m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -139,7 +163,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 tmp,
                 m.horizon_weight[m.horizon[tmp]],
                 m.number_of_hours_in_timepoint[tmp],
-                value(m.Import_Carbon_Emissions_Tons[tx, tmp])
+                value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
+                calculate_carbon_emissions_imports(m, tx, tmp)
             ])
 
 
@@ -244,6 +269,7 @@ def import_results_into_database(
          horizon_weight FLOAT,
          number_of_hours_in_timepoint FLOAT,
          carbon_emission_imports_tons FLOAT,
+         carbon_emission_imports_tons_degen FLOAT,
          PRIMARY KEY (scenario_id, tx_line, timepoint)
          );"""
     )
@@ -264,6 +290,7 @@ def import_results_into_database(
             horizon_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             carbon_emission_imports_tons = row[6]
+            carbon_emission_imports_tons_degen = row[7]
 
             c.execute(
                 """INSERT INTO 
@@ -271,11 +298,13 @@ def import_results_into_database(
                 + str(scenario_id) + """
                  (scenario_id, tx_line, period, horizon, timepoint, 
                  horizon_weight, number_of_hours_in_timepoint, 
-                 carbon_emission_imports_tons)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {});""".format(
+                 carbon_emission_imports_tons,
+                 carbon_emission_imports_tons_degen)
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
                     scenario_id, tx_line, period, horizon, timepoint,
                     horizon_weight, number_of_hours_in_timepoint,
-                    carbon_emission_imports_tons
+                    carbon_emission_imports_tons,
+                    carbon_emission_imports_tons_degen
                 )
             )
     db.commit()
@@ -285,11 +314,11 @@ def import_results_into_database(
         """INSERT INTO results_transmission_carbon_emissions
         (scenario_id, tx_line, period, horizon, timepoint, 
         horizon_weight, number_of_hours_in_timepoint, 
-        carbon_emission_imports_tons)
+        carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
         SELECT
         scenario_id, tx_line, period, horizon, timepoint, 
         horizon_weight, number_of_hours_in_timepoint, 
-        carbon_emission_imports_tons
+        carbon_emission_imports_tons, carbon_emission_imports_tons_degen
         FROM temp_results_transmission_carbon_emissions"""
         + str(scenario_id)
         + """

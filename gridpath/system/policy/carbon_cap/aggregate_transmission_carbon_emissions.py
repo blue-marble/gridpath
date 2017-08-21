@@ -13,6 +13,8 @@ from pyomo.environ import Param, Set, Var, Constraint, Expression, \
 
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
+from gridpath.transmission.operations.carbon_emissions import \
+    calculate_carbon_emissions_imports
 
 
 def add_model_components(m, d):
@@ -52,6 +54,28 @@ def add_model_components(m, d):
     )
 
 
+def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
+    """
+    In case of degeneracy where the Import_Carbon_Emissions_Tons variable
+    can take a value larger than the actual import emissions (when the
+    carbon cap is non-binding), we can upost-process to figure out what the
+    actual imported emissions are (e.g. instead of applying a tuning cost)
+    :param mod:
+    :param z:
+    :param p:
+    :return:
+    """
+    return sum(calculate_carbon_emissions_imports(mod, tx, tmp)
+               * mod.number_of_hours_in_timepoint[tmp]
+               * mod.horizon_weight[mod.horizon[tmp]]
+               for (tx, tmp) in
+               mod.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS
+               if tx in
+               mod.CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE[z]
+               and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+               )
+
+
 def export_results(scenario_directory, horizon, stage, m, d):
     """
 
@@ -67,7 +91,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
             rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
-                         "transmission_carbon_emissions_mmt"])
+                         "transmission_carbon_emissions_mmt",
+                         "transmission_carbon_emissions_mmt_degen"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
@@ -75,7 +100,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 float(m.carbon_cap_target_mmt[z, p]),
                 value(
                     m.Total_Carbon_Emission_Imports_Tons[z, p]
-                ) / 10**6  # MMT
+                ) / 10**6,  # MMT
+                total_carbon_emissions_imports_degen_expr_rule(m, z, p)
+                / 10**6 # MMT
             ])
 
 
@@ -116,14 +143,31 @@ def import_results_into_database(
             carbon_cap_zone = row[0]
             period = row[1]
             tx_carbon_emissions_mmt = row[3]
+            tx_carbon_emissions_mmt_degen = row[4]
 
             c.execute(
                 """UPDATE results_system_carbon_emissions
-                SET import_emissions_mmt = {}
+                SET import_emissions_mmt = {},
+                import_emissions_mmt_degen = {}
                 WHERE scenario_id = {}
                 AND carbon_cap_zone = '{}'
                 AND period = {}""".format(
-                    tx_carbon_emissions_mmt, scenario_id, carbon_cap_zone, period
+                    tx_carbon_emissions_mmt,
+                    tx_carbon_emissions_mmt_degen,
+                    scenario_id, carbon_cap_zone, period
                 )
             )
+
+    db.commit()
+
+    # Update the total emissions in case of degeneracy
+    c.execute(
+        """UPDATE results_system_carbon_emissions
+           SET total_emissions_mmt_degen = 
+           in_zone_project_emissions_mmt + import_emissions_mmt_degen
+           WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+
     db.commit()
