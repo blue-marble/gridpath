@@ -874,6 +874,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 value(mod.Commit_Capacity_MW[p, tmp])/mod.unit_size_mw[p]
             ])
 
+
 def import_module_specific_results_to_database(
         scenario_id, c, db, results_directory
 ):

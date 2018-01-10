@@ -21,6 +21,7 @@ def add_module_specific_components(m, d):
     Add a capacity commit variable to represent the amount of capacity that is
     on.
     :param m:
+    :param d:
     :return:
     """
     # Sets and params
