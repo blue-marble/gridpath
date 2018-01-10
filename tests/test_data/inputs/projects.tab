@@ -21,3 +21,4 @@ Disp_No_Commit	Zone1	existing_gen_no_economic_retirement	0	dispatchable_no_commi
 Clunky_Old_Gen	Zone1	existing_gen_linear_economic_retirement	1	dispatchable_continuous_commit	.	.	.	.	0.4	1	1	Coal	5000	15	5	.	.	da	.	.	.	.	.	.	.	.	.	.	.	.	Carbon_Cap_Zone1	.	.	.	.	.	.	.	.	PRM_Zone1	fully_deliverable	0.8	0	.	.	.	.
 Customer_PV	Zone1	existing_gen_no_economic_retirement	0	variable_no_curtailment	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.
 Nuclear_Flexible	Zone1	existing_gen_no_economic_retirement	1	always_on	.	.	.	.	0.72	.	.	Uranium	5500	450	584	.	.	.	.	.	.	.	.	.	.	.	0.18	0.18	.	.	.	.	.	.	.	.	.	.	.	PRM_Zone1	fully_deliverable	0.8	0	.	.	.	.
+Shift_DR	Zone1	new_shiftable_load_supply_curve	0	shiftable_load_generic	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	6	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.	.

@@ -1782,7 +1782,9 @@ class TestOperationsInit(unittest.TestCase):
              ("Customer_PV", 202001): 1, ("Customer_PV", 202002): 1,
              ("Customer_PV", 203001): 1, ("Customer_PV", 203002): 1,
              ("Nuclear_Flexible", 202001): 1, ("Nuclear_Flexible", 202002): 1,
-             ("Nuclear_Flexible", 203001): 1, ("Nuclear_Flexible", 203002): 1
+             ("Nuclear_Flexible", 203001): 1, ("Nuclear_Flexible", 203002): 1,
+             ("Shift_DR", 202001): 1, ("Shift_DR", 202002): 1,
+             ("Shift_DR", 203001): 1, ("Shift_DR", 203002): 1,
              }.items()
         )
         )

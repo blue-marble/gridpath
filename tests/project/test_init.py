@@ -61,7 +61,8 @@ class TestProject(unittest.TestCase):
             "new_build_generator", "new_build_storage",
             "existing_gen_no_economic_retirement",
             "storage_specified_no_economic_retirement",
-            "existing_gen_linear_economic_retirement"
+            "existing_gen_linear_economic_retirement",
+            "new_shiftable_load_supply_curve"
         ])
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
@@ -74,7 +75,7 @@ class TestProject(unittest.TestCase):
             "hydro_noncurtailable", "must_run",
             "storage_generic", "variable", "dispatchable_binary_commit",
             "dispatchable_continuous_commit", "dispatchable_no_commit",
-            "variable_no_curtailment", "always_on"
+            "variable_no_curtailment", "always_on", "shiftable_load_generic"
         ])
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))
@@ -90,7 +91,8 @@ class TestProject(unittest.TestCase):
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
             "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": [],
-            "Nuclear_Flexible": []
+            "Nuclear_Flexible": [],
+            "Shift_DR": []
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -105,7 +107,7 @@ class TestProject(unittest.TestCase):
             'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
             'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
             "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Customer_PV": [],
-            "Nuclear_Flexible": []
+            "Nuclear_Flexible": [], "Shift_DR": []
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -157,7 +159,7 @@ class TestProject(unittest.TestCase):
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Customer_PV", "Nuclear_Flexible"]
+            "Clunky_Old_Gen", "Customer_PV", "Nuclear_Flexible", "Shift_DR"]
             )
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
@@ -178,7 +180,8 @@ class TestProject(unittest.TestCase):
                  "Disp_Binary_Commit": "Zone1", "Disp_Cont_Commit": "Zone1",
                  "Disp_No_Commit": "Zone1", "Clunky_Old_Gen": "Zone1",
                  "Customer_PV": "Zone1",
-                 "Nuclear_Flexible": "Zone1"}.items()
+                 "Nuclear_Flexible": "Zone1",
+                 "Shift_DR": "Zone1"}.items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -214,16 +217,19 @@ class TestProject(unittest.TestCase):
                  "Disp_No_Commit": "existing_gen_no_economic_retirement",
                  "Clunky_Old_Gen": "existing_gen_linear_economic_retirement",
                  "Customer_PV": "existing_gen_no_economic_retirement",
-                 "Nuclear_Flexible": "existing_gen_no_economic_retirement"
+                 "Nuclear_Flexible": "existing_gen_no_economic_retirement",
+                 "Shift_DR": "new_shiftable_load_supply_curve"
                  }.items()
             )
         )
+
         actual_cap_type = OrderedDict(
             sorted(
                 {prj: instance.capacity_type[prj] for prj in
                  instance.PROJECTS}.items()
             )
         )
+
         self.assertDictEqual(expected_cap_type, actual_cap_type)
 
         # Params: variable_om_cost_per_mwh
@@ -236,7 +242,8 @@ class TestProject(unittest.TestCase):
                  "Hydro_NonCurtailable": 0,
                  "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
                  "Disp_No_Commit": 0, "Clunky_Old_Gen": 1,
-                 "Customer_PV": 0, "Nuclear_Flexible": 1
+                 "Customer_PV": 0, "Nuclear_Flexible": 1,
+                 "Shift_DR": 0
                  }.items()
             )
         )

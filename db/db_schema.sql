@@ -405,10 +405,24 @@ lifetime_yrs INTEGER,
 annualized_real_cost_per_kw_yr FLOAT,
 annualized_real_cost_per_kwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
+supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, period),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
 );
+
+
+-- Shiftable load supply curve
+DROP TABLE IF EXISTS inputs_project_shiftable_load_supply_curve;
+CREATE TABLE inputs_project_shiftable_load_supply_curve (
+supply_curve_scenario_id INTEGER,
+project VARCHAR(64),
+supply_curve_point INTEGER,
+supply_curve_slope FLOAT,
+supply_curve_intercept FLOAT,
+PRIMARY KEY (supply_curve_scenario_id, project, supply_curve_point)
+);
+
 
 DROP TABLE IF EXISTS subscenarios_project_new_potential;
 CREATE TABLE subscenarios_project_new_potential (
