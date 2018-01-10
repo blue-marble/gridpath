@@ -13,6 +13,16 @@ Background
 
    introduction
 
+=====================
+GridPath Architecture
+=====================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Topics:
+
+   overview
+
 =======
 Modules
 =======
