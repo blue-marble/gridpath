@@ -11,16 +11,18 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..",
+                 "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.prm_zones", "project", "project.capacity.capacity",
-    "project.prm"
+    "project.reliability.prm"
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.prm.prm_types.fully_deliverable"
+NAME_OF_MODULE_BEING_TESTED = \
+    "project.reliability.prm.prm_types.fully_deliverable_energy_limited"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -81,19 +83,40 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: FULLY_DELIVERABLE_PRM_PROJECTS
+        # Set: FDDL_PRM_PROJECTS
         expected_projects = sorted([
-            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
-            "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
-            "Hydro", 'Hydro_NonCurtailable',
-            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Nuclear_Flexible"]
+            "Battery", "Battery_Specified"]
         )
         actual_projects = sorted([
-            prj for prj in instance.FULLY_DELIVERABLE_PRM_PROJECTS
+            prj for prj in instance.FDDL_PRM_PROJECTS
+        ])
+        self.assertListEqual(expected_projects, actual_projects)
+
+        # Set: FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
+        expected_proj_period_set = sorted([
+            ("Battery", 2020), ("Battery_Specified", 2020),
+            ("Battery", 2030)
+        ])
+        actual_proj_period_set = sorted([
+            (prj, period) for (prj, period)
+            in instance.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
         ])
 
-        self.assertListEqual(expected_projects, actual_projects)
+        self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
+
+        # Param: min_duration_for_full_capacity_credit
+        expected_dur = OrderedDict(
+            sorted({
+                       "Battery": 4, "Battery_Specified": 4
+                   }.items()
+                   )
+        )
+        actual_dur = OrderedDict(sorted(
+            {p: instance.min_duration_for_full_capacity_credit[p]
+             for p in instance.FDDL_PRM_PROJECTS}.items()
+        )
+        )
+        self.assertDictEqual(expected_dur, actual_dur)
 
 
 if __name__ == "__main__":

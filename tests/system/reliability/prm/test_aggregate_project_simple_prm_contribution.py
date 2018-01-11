@@ -11,18 +11,21 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.prm_zones", "project",
-    "project.capacity.capacity", "project.reliability.prm",
-    "project.reliability.prm.prm_types",
-    "project.reliability.prm.group_costs"]
+PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
+                             "temporal.operations.horizons",
+                             "temporal.investment.periods",
+                             "geography.load_zones",
+                             "geography.prm_zones",
+                             "project", "project.capacity.capacity",
+                             "system.reliability.prm.prm_requirement",
+                             "project.reliability.prm",
+                             "project.reliability.prm.prm_types",
+                             "project.reliability.prm.prm_simple"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.project.aggregate_prm_group_costs"
+    "system.reliability.prm.aggregate_project_simple_prm_contribution"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -40,7 +43,7 @@ except ImportError:
           " to test.")
 
 
-class TestCapacityThresholdCostsAgg(unittest.TestCase):
+class TestAggPrjSimplePRM(unittest.TestCase):
     """
 
     """
@@ -61,17 +64,16 @@ class TestCapacityThresholdCostsAgg(unittest.TestCase):
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-            )
+        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
+                                     module_to_test=MODULE_BEING_TESTED,
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
+                                     )
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(

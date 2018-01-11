@@ -75,7 +75,7 @@ def load_operational_type_modules(required_operational_modules):
 def load_prm_type_modules(required_prm_modules):
     return load_subtype_modules(
         required_prm_modules,
-        "gridpath.project.prm.prm_types",
+        "gridpath.project.reliability.prm.prm_types",
         ["elcc_eligible_capacity_rule",]
          )
 

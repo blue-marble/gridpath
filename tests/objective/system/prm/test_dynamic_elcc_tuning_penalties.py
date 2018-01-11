@@ -20,11 +20,11 @@ PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
                              "geography.load_zones",
                              "geography.prm_zones",
                              "project", "project.capacity.capacity",
-                             "system.prm.prm_requirement",
-                             "project.prm",
-                             "project.prm.prm_types",
-                             "project.prm.elcc_surface",
-                             "system.prm.elcc_surface"]
+                             "system.reliability.prm.prm_requirement",
+                             "project.reliability.prm",
+                             "project.reliability.prm.prm_types",
+                             "project.reliability.prm.elcc_surface",
+                             "system.reliability.prm.elcc_surface"]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.system.prm.dynamic_elcc_tuning_penalties"
 IMPORTED_PREREQ_MODULES = list()

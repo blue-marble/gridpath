@@ -11,15 +11,22 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.prm_zones", "project",
-    "project.capacity.capacity", "project.prm", "project.prm.prm_types"]
-NAME_OF_MODULE_BEING_TESTED = "project.prm.group_costs"
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "geography.prm_zones",
+    "project", "project.capacity.capacity",
+    "system.reliability.prm.prm_requirement",
+    "project.reliability.prm", "project.reliability.prm.prm_types",
+    "project.reliability.prm.prm_simple",
+    "system.reliability.prm.aggregate_project_simple_prm_contribution"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "system.reliability.prm.prm_balance"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -37,7 +44,7 @@ except ImportError:
           " to test.")
 
 
-class TestELCCEligibilityThresholds(unittest.TestCase):
+class TestPRMBalance(unittest.TestCase):
     """
 
     """
@@ -58,17 +65,16 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-            )
+        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
+                                     module_to_test=MODULE_BEING_TESTED,
+                                     test_data_dir=TEST_DATA_DIRECTORY,
+                                     horizon="",
+                                     stage=""
+                                     )
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -79,27 +85,6 @@ class TestELCCEligibilityThresholds(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
-
-        # Set: PRM_COST_GROUPS
-        expected_groups = sorted(["Threshold_Group_1", "Threshold_Group_2"])
-        actual_groups = sorted([
-            g for g in instance.PRM_COST_GROUPS
-        ])
-        self.assertListEqual(expected_groups, actual_groups)
-
-        # Param: group_prm_type
-        expected_thresholds = OrderedDict(
-            sorted({"Threshold_Group_1": "energy_only_allowed",
-                    "Threshold_Group_2": "energy_only_allowed"}.items()
-                   )
-        )
-        actual_thresholds = OrderedDict(
-            sorted({g: instance.group_prm_type[g]
-                    for g in
-                    instance.PRM_COST_GROUPS}.items()
-                   )
-        )
-        self.assertDictEqual(expected_thresholds, actual_thresholds)
 
 
 if __name__ == "__main__":

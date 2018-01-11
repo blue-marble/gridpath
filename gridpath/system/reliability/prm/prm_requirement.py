@@ -7,9 +7,8 @@ PRM requirement for each PRM zone
 
 import csv
 import os.path
-import pandas as pd
 
-from pyomo.environ import Set, Param, NonNegativeReals, value
+from pyomo.environ import Set, Param, NonNegativeReals
 
 
 def add_model_components(m, d):

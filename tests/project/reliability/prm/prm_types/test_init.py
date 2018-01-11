@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -11,21 +10,17 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..",
+                 "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints",
-    "temporal.operations.horizons",
-    "temporal.investment.periods",
-    "geography.load_zones",
-    "geography.prm_zones",
-    "project", "project.capacity.capacity",
-    "system.prm.prm_requirement",
-    "project.prm", "project.prm.prm_types", "project.prm.prm_simple",
-    "system.prm.aggregate_project_simple_prm_contribution"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "system.prm.prm_balance"
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones",
+    "geography.prm_zones", "project", "project.capacity.capacity",
+    "project.reliability.prm"
+]
+NAME_OF_MODULE_BEING_TESTED = "project.reliability.prm.prm_types"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -43,10 +38,11 @@ except ImportError:
           " to test.")
 
 
-class TestPRMBalance(unittest.TestCase):
+class TestProjPRMTypesInit(unittest.TestCase):
     """
 
     """
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -73,7 +69,7 @@ class TestPRMBalance(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with data as expected
+        Test that the data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -84,6 +80,7 @@ class TestPRMBalance(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ def all_modules_list():
         "system.reserves.requirement.spinning_reserves",
         "system.policy.rps.rps_requirement",
         "system.policy.carbon_cap.carbon_cap",
-        "system.prm.prm_requirement",
+        "system.reliability.prm.prm_requirement",
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
@@ -59,11 +59,11 @@ def all_modules_list():
         "project.operations.recs",
         "project.operations.carbon_emissions",
         "project.operations.fuel_burn",
-        "project.prm",
-        "project.prm.prm_types",
-        "project.prm.prm_simple",
-        "project.prm.elcc_surface",
-        "project.prm.group_costs",
+        "project.reliability.prm",
+        "project.reliability.prm.prm_types",
+        "project.reliability.prm.prm_simple",
+        "project.reliability.prm.elcc_surface",
+        "project.reliability.prm.group_costs",
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
@@ -91,9 +91,9 @@ def all_modules_list():
         "system.policy.carbon_cap.aggregate_project_carbon_emissions",
         "system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
         "system.policy.carbon_cap.carbon_balance",
-        "system.prm.aggregate_project_simple_prm_contribution",
-        "system.prm.elcc_surface",
-        "system.prm.prm_balance",
+        "system.reliability.prm.aggregate_project_simple_prm_contribution",
+        "system.reliability.prm.elcc_surface",
+        "system.reliability.prm.prm_balance",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_prm_group_costs",
         "objective.project.aggregate_operational_costs",
@@ -193,13 +193,13 @@ def optional_modules_list():
              "system.policy.carbon_cap.carbon_balance"],
         "prm":
             ["geography.prm_zones",
-             "system.prm.prm_requirement",
-             "project.prm",
-             "project.prm.prm_types",
-             "project.prm.prm_simple",
-             "project.prm.group_costs",
-             "system.prm.aggregate_project_simple_prm_contribution",
-             "system.prm.prm_balance",
+             "system.reliability.prm.prm_requirement",
+             "project.reliability.prm",
+             "project.reliability.prm.prm_types",
+             "project.reliability.prm.prm_simple",
+             "project.reliability.prm.group_costs",
+             "system.reliability.prm.aggregate_project_simple_prm_contribution",
+             "system.reliability.prm.prm_balance",
              "objective.project."
              "aggregate_prm_group_costs",]
     }
@@ -217,7 +217,8 @@ def cross_feature_modules_list():
         ("transmission", "simultaneous_flow_limits"):
             ["transmission.operations.simultaneous_flow_limits"],
         ("prm", "elcc_surface"):
-            ["project.prm.elcc_surface", "system.prm.elcc_surface",
+            ["project.reliability.prm.elcc_surface",
+             "system.reliability.prm.elcc_surface",
              "objective.system.prm.dynamic_elcc_tuning_penalties"]
     }
     return cross_modules

@@ -11,7 +11,7 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -19,7 +19,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods", "geography.load_zones",
     "geography.prm_zones", "project", "project.capacity.capacity"
 ]
-NAME_OF_MODULE_BEING_TESTED = "project.prm"
+NAME_OF_MODULE_BEING_TESTED = "project.reliability.prm"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

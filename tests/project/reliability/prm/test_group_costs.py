@@ -17,11 +17,10 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
-    "geography.prm_zones", "project", "project.capacity.capacity",
-    "project.prm"
-]
-NAME_OF_MODULE_BEING_TESTED = \
-    "project.prm.prm_types.fully_deliverable_energy_limited"
+    "geography.prm_zones", "project",
+    "project.capacity.capacity", "project.reliability.prm",
+    "project.reliability.prm.prm_types"]
+NAME_OF_MODULE_BEING_TESTED = "project.reliability.prm.group_costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -39,11 +38,10 @@ except ImportError:
           " to test.")
 
 
-class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
+class TestELCCEligibilityThresholds(unittest.TestCase):
     """
 
     """
-
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -61,12 +59,13 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         Test that data are loaded with no errors
         :return:
         """
-        add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                     module_to_test=MODULE_BEING_TESTED,
-                                     test_data_dir=TEST_DATA_DIRECTORY,
-                                     horizon="",
-                                     stage=""
-                                     )
+        add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            horizon="",
+            stage=""
+            )
 
     def test_data_loaded_correctly(self):
         """
@@ -82,40 +81,26 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: FDDL_PRM_PROJECTS
-        expected_projects = sorted([
-            "Battery", "Battery_Specified"]
-        )
-        actual_projects = sorted([
-            prj for prj in instance.FDDL_PRM_PROJECTS
+        # Set: PRM_COST_GROUPS
+        expected_groups = sorted(["Threshold_Group_1", "Threshold_Group_2"])
+        actual_groups = sorted([
+            g for g in instance.PRM_COST_GROUPS
         ])
-        self.assertListEqual(expected_projects, actual_projects)
+        self.assertListEqual(expected_groups, actual_groups)
 
-        # Set: FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
-        expected_proj_period_set = sorted([
-            ("Battery", 2020), ("Battery_Specified", 2020),
-            ("Battery", 2030)
-        ])
-        actual_proj_period_set = sorted([
-            (prj, period) for (prj, period)
-            in instance.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
-        ])
-
-        self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
-
-        # Param: min_duration_for_full_capacity_credit
-        expected_dur = OrderedDict(
-            sorted({
-                       "Battery": 4, "Battery_Specified": 4
-                   }.items()
+        # Param: group_prm_type
+        expected_thresholds = OrderedDict(
+            sorted({"Threshold_Group_1": "energy_only_allowed",
+                    "Threshold_Group_2": "energy_only_allowed"}.items()
                    )
         )
-        actual_dur = OrderedDict(sorted(
-            {p: instance.min_duration_for_full_capacity_credit[p]
-             for p in instance.FDDL_PRM_PROJECTS}.items()
+        actual_thresholds = OrderedDict(
+            sorted({g: instance.group_prm_type[g]
+                    for g in
+                    instance.PRM_COST_GROUPS}.items()
+                   )
         )
-        )
-        self.assertDictEqual(expected_dur, actual_dur)
+        self.assertDictEqual(expected_thresholds, actual_thresholds)
 
 
 if __name__ == "__main__":

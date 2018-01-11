@@ -11,21 +11,18 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..",
+                 "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "temporal.operations.horizons",
-                             "temporal.investment.periods",
-                             "geography.load_zones",
-                             "geography.prm_zones",
-                             "project", "project.capacity.capacity",
-                             "system.prm.prm_requirement",
-                             "project.prm",
-                             "project.prm.prm_types",
-                             "project.prm.prm_simple"]
+PREREQUISITE_MODULE_NAMES = [
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones",
+    "geography.prm_zones", "project", "project.capacity.capacity",
+    "project.reliability.prm"
+]
 NAME_OF_MODULE_BEING_TESTED = \
-    "system.prm.aggregate_project_simple_prm_contribution"
+    "project.reliability.prm.prm_types.fully_deliverable"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -43,10 +40,11 @@ except ImportError:
           " to test.")
 
 
-class TestAggPrjSimplePRM(unittest.TestCase):
+class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
     """
 
     """
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -73,7 +71,7 @@ class TestAggPrjSimplePRM(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with data as expected
+        Test that the data loaded are as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -84,6 +82,20 @@ class TestAggPrjSimplePRM(unittest.TestCase):
             stage=""
         )
         instance = m.create_instance(data)
+
+        # Set: FULLY_DELIVERABLE_PRM_PROJECTS
+        expected_projects = sorted([
+            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
+            "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
+            "Hydro", 'Hydro_NonCurtailable',
+            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
+            "Clunky_Old_Gen", "Nuclear_Flexible"]
+        )
+        actual_projects = sorted([
+            prj for prj in instance.FULLY_DELIVERABLE_PRM_PROJECTS
+        ])
+
+        self.assertListEqual(expected_projects, actual_projects)
 
 
 if __name__ == "__main__":
