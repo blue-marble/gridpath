@@ -23,6 +23,7 @@ def all_modules_list():
         "geography.rps_zones",
         "geography.carbon_cap_zones",
         "geography.prm_zones",
+        "geography.local_capacity_zones",
         "system.load_balance.static_load_requirement",
         "system.reserves.requirement.lf_reserves_up",
         "system.reserves.requirement.lf_reserves_down",
@@ -33,6 +34,7 @@ def all_modules_list():
         "system.policy.rps.rps_requirement",
         "system.policy.carbon_cap.carbon_cap",
         "system.reliability.prm.prm_requirement",
+        "system.reliability.local_capacity.local_capacity_requirement",
         "project",
         "project.capacity.capacity_types",
         "project.capacity.capacity",
@@ -64,6 +66,8 @@ def all_modules_list():
         "project.reliability.prm.prm_simple",
         "project.reliability.prm.elcc_surface",
         "project.reliability.prm.group_costs",
+        "project.reliability.local_capacity",
+        "project.reliability.local_capacity.local_capacity_contribution",
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
@@ -94,6 +98,9 @@ def all_modules_list():
         "system.reliability.prm.aggregate_project_simple_prm_contribution",
         "system.reliability.prm.elcc_surface",
         "system.reliability.prm.prm_balance",
+        "system.reliability.local_capacity"
+        ".aggregate_local_capacity_contribution",
+        "system.reliability.local_capacity.local_capacity_balance",
         "objective.project.aggregate_capacity_costs",
         "objective.project.aggregate_prm_group_costs",
         "objective.project.aggregate_operational_costs",
@@ -108,6 +115,8 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.frequency_response",
         "objective.system.reserve_violation_penalties.spinning_reserves",
         "objective.system.prm.dynamic_elcc_tuning_penalties",
+        "objective.system.local_capacity"
+        ".aggregate_local_capacity_shortage_penalties",
         "objective.min_total_cost"
     ]
     return all_modules
@@ -198,10 +207,22 @@ def optional_modules_list():
              "project.reliability.prm.prm_types",
              "project.reliability.prm.prm_simple",
              "project.reliability.prm.group_costs",
-             "system.reliability.prm.aggregate_project_simple_prm_contribution",
+             "system.reliability.prm."
+             "aggregate_project_simple_prm_contribution",
              "system.reliability.prm.prm_balance",
              "objective.project."
-             "aggregate_prm_group_costs",]
+             "aggregate_prm_group_costs"],
+        "local_capacity":
+            ["geography.local_capacity_zones",
+             "system.reliability.local_capacity.local_capacity_requirement",
+             "project.reliability.local_capacity",
+             "project.reliability.local_capacity.local_capacity_contribution",
+             "system.reliability.local_capacity"
+             ".aggregate_local_capacity_contribution",
+             "system.reliability.local_capacity.local_capacity_balance",
+             "objective.system.local_capacity"
+             ".aggregate_local_capacity_shortage_penalties",
+             ]
     }
     return optional_modules
 

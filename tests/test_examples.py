@@ -602,5 +602,24 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_example_2periods_new_build_local_capacity(self):
+        """
+        Check objective function value of "2periods_new_build_local_capacity"
+        example; this example requires a non-linear solver
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "2periods_new_build_local_capacity",
+                               "--scenario_location", "examples",
+                               "--solver", "ipopt", "--quiet",
+                               "--mute_solver_output", "--testing"])
+
+        expected_objective = 113868138.8006254
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
+
 if __name__ == "__main__":
     unittest.main()

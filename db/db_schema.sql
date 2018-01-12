@@ -304,6 +304,26 @@ FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
 );
 
+-- Local capacity
+-- This is the unit at which local capacity requirements are met in the model;
+-- it can be different from the load zones
+DROP TABLE IF EXISTS subscenarios_geography_local_capacity_zones;
+CREATE TABLE subscenarios_geography_local_capacity_zones (
+local_capacity_zone_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_geography_local_capacity_zones;
+CREATE TABLE inputs_geography_local_capacity_zones (
+local_capacity_zone_scenario_id INTEGER,
+local_capacity_zone VARCHAR(32),
+local_capacity_shortage_penalty_per_mw FLOAT,
+PRIMARY KEY (local_capacity_zone_scenario_id, local_capacity_zone),
+FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
+subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+);
+
 
 -------------------
 -- -- PROJECT -- --
@@ -978,6 +998,61 @@ subscenarios_project_prm_energy_only
 (prm_energy_only_scenario_id)
 );
 
+
+-- Project local capacity zones and chars
+-- Which projects can contribute to local capacity requirements
+-- Depends on how local capacity zones are specified
+-- This table can include all project with NULLs for projects not
+-- contributing or just the contributing projects
+
+DROP TABLE IF EXISTS subscenarios_project_local_capacity_zones;
+CREATE TABLE subscenarios_project_local_capacity_zones (
+local_capacity_zone_scenario_id INTEGER,
+project_local_capacity_zone_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (local_capacity_zone_scenario_id,
+project_local_capacity_zone_scenario_id),
+FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
+subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_local_capacity_zones;
+CREATE TABLE inputs_project_local_capacity_zones (
+local_capacity_zone_scenario_id INTEGER,
+project_local_capacity_zone_scenario_id INTEGER,
+project VARCHAR(64),
+local_capacity_zone VARCHAR(32),
+PRIMARY KEY (local_capacity_zone_scenario_id,
+project_local_capacity_zone_scenario_id, project),
+FOREIGN KEY (local_capacity_zone_scenario_id,
+project_local_capacity_zone_scenario_id) REFERENCES
+ subscenarios_project_local_capacity_zones
+ (local_capacity_zone_scenario_id, project_local_capacity_zone_scenario_id),
+FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
+subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+);
+
+-- Project capacity contribution characteristics
+DROP TABLE IF EXISTS subscenarios_project_local_capacity_chars;
+CREATE TABLE subscenarios_project_local_capacity_chars (
+project_local_capacity_chars_scenario_id INTEGER PRIMARY KEY,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_local_capacity_chars;
+CREATE TABLE inputs_project_local_capacity_chars (
+project_local_capacity_chars_scenario_id INTEGER,
+project VARCHAR(64),
+local_capacity_fraction FLOAT,
+min_duration_for_full_capacity_credit_hours FLOAT,
+PRIMARY KEY (project_local_capacity_chars_scenario_id, project),
+FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
+subscenarios_project_local_capacity_chars
+(project_local_capacity_chars_scenario_id)
+);
+
 -- Fuels
 DROP TABLE IF EXISTS subscenarios_project_fuels;
 CREATE TABLE subscenarios_project_fuels (
@@ -1446,6 +1521,31 @@ FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
 inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
 );
 
+-- Local capacity requirements
+DROP TABLE IF EXISTS subscenarios_system_local_capacity_requirement;
+CREATE TABLE subscenarios_system_local_capacity_requirement (
+local_capacity_requirement_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+-- Can include periods and zones other than the ones in a scenario, as correct
+-- periods and zones will be pulled depending on timepoint_scenario_id and
+-- local_capacity_zone_scenario_id
+DROP TABLE IF EXISTS inputs_system_local_capacity_requirement;
+CREATE TABLE inputs_system_local_capacity_requirement (
+local_capacity_requirement_scenario_id INTEGER,
+local_capacity_zone VARCHAR(32),
+period INTEGER,
+local_capacity_requirement_mw FLOAT,
+local_capacity_zone_scenario_id INTEGER,
+PRIMARY KEY (local_capacity_requirement_scenario_id, local_capacity_zone,
+period),
+FOREIGN KEY (local_capacity_zone_scenario_id, local_capacity_zone) REFERENCES
+inputs_geography_local_capacity_zones (local_capacity_zone_scenario_id,
+local_capacity_zone)
+);
+
 -- Case tuning
 DROP TABLE IF EXISTS subscenarios_tuning;
 CREATE TABLE subscenarios_tuning (
@@ -1487,6 +1587,7 @@ of_carbon_cap INTEGER,
 of_track_carbon_imports INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
+of_local_capacity INTEGER,
 timepoint_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
@@ -1498,6 +1599,7 @@ spinning_reserves_ba_scenario_id INTEGER,
 rps_zone_scenario_id INTEGER,
 carbon_cap_zone_scenario_id INTEGER,
 prm_zone_scenario_id INTEGER,
+local_capacity_zone_scenario_id INTEGER,
 project_portfolio_scenario_id INTEGER,
 project_operational_chars_scenario_id INTEGER,
 project_availability_scenario_id INTEGER,
@@ -1514,6 +1616,8 @@ project_carbon_cap_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project_elcc_chars_scenario_id INTEGER,
 prm_energy_only_scenario_id INTEGER,
+project_local_capacity_zone_scenario_id INTEGER,
+project_local_capacity_chars_scenario_id INTEGER,
 project_existing_capacity_scenario_id INTEGER,
 project_existing_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
@@ -1537,6 +1641,7 @@ spinning_reserves_scenario_id INTEGER,
 rps_target_scenario_id INTEGER,
 carbon_cap_target_scenario_id INTEGER,
 prm_requirement_scenario_id INTEGER,
+local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 FOREIGN KEY (timepoint_scenario_id) REFERENCES
@@ -1562,6 +1667,8 @@ FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id),
+FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
+subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
 subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
@@ -1614,6 +1721,13 @@ subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
 subscenarios_project_prm_energy_only
 (prm_energy_only_scenario_id),
+FOREIGN KEY (local_capacity_zone_scenario_id,
+project_local_capacity_zone_scenario_id) REFERENCES
+subscenarios_project_local_capacity_zones
+(local_capacity_zone_scenario_id, project_local_capacity_zone_scenario_id),
+FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
+subscenarios_project_local_capacity_chars
+(project_local_capacity_chars_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
 subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
@@ -1668,6 +1782,9 @@ subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
 subscenarios_system_elcc_surface
 (prm_zone_scenario_id, elcc_surface_scenario_id),
+FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
+subscenarios_system_local_capacity_requirement
+(local_capacity_requirement_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );
@@ -2000,6 +2117,25 @@ elcc_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, facet)
 );
 
+-- Local capacity
+DROP TABLE IF EXISTS results_project_local_capacity;
+CREATE TABLE results_project_local_capacity (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+local_capacity_zone VARCHAR(32),
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+capacity_mw FLOAT,
+local_capacity_fraction FLOAT,
+local_capacity_contribution_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+
+-- Capacity costs
 DROP TABLE IF EXISTS results_project_costs_capacity;
 CREATE TABLE results_project_costs_capacity (
 scenario_id INTEGER,
@@ -2415,4 +2551,19 @@ elcc_total_mw FLOAT,
 dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period)
+);
+
+-- Local capacity balance
+DROP TABLE IF EXISTS results_system_local_capacity;
+CREATE TABLE  results_system_local_capacity (
+scenario_id INTEGER,
+local_capacity_zone VARCHAR(64),
+period INTEGER,
+discount_factor FLOAT,
+number_years_represented FLOAT,
+local_capacity_requirement_mw FLOAT,
+local_capacity_provision_mw FLOAT,
+dual FLOAT,
+local_capacity_marginal_cost_per_mw FLOAT,
+PRIMARY KEY (scenario_id, local_capacity_zone, period)
 );

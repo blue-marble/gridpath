@@ -111,6 +111,12 @@ class OptionalFeatures:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.OPTIONAL_FEATURE_LOCAL_CAPACITY = cursor.execute(
+            """SELECT of_local_capacity
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
     def determine_feature_list(self):
         """
         Get list of requested features
@@ -150,6 +156,8 @@ class OptionalFeatures:
             feature_list.append("prm")
         if self.OPTIONAL_FEATURE_ELCC_SURFACE:
             feature_list.append("elcc_surface")
+        if self.OPTIONAL_FEATURE_LOCAL_CAPACITY:
+            feature_list.append("local_capacity")
 
         return feature_list
 
@@ -229,6 +237,12 @@ class SubScenarios:
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.LOCAL_CAPACITY_ZONE_SCENARIO_ID = cursor.execute(
+            """SELECT local_capacity_zone_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.PROJECT_PORTFOLIO_SCENARIO_ID = cursor.execute(
             """SELECT project_portfolio_scenario_id
                FROM scenarios
@@ -297,6 +311,18 @@ class SubScenarios:
 
         self.PROJECT_ELCC_CHARS_SCENARIO_ID = cursor.execute(
             """SELECT project_elcc_chars_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID = cursor.execute(
+            """SELECT project_local_capacity_zone_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID = cursor.execute(
+            """SELECT project_local_capacity_chars_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
@@ -467,6 +493,12 @@ class SubScenarios:
 
         self.ELCC_SURFACE_SCENARIO_ID = cursor.execute(
             """SELECT elcc_surface_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
+        self.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID = cursor.execute(
+            """SELECT local_capacity_requirement_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

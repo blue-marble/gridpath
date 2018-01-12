@@ -1,0 +1,3 @@
+local_capacity_zone local_capacity_shortage_penalty
+Local_Capacity_Zone1    10000
+Local_Capacity_Zone2    10000

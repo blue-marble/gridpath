@@ -15,12 +15,17 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.prm_zones", "project", "project.capacity.capacity",
-    "project.reliability.prm.prm_types"
-]
-NAME_OF_MODULE_BEING_TESTED = "project.reliability.prm.prm_simple"
+    "temporal.operations.timepoints",
+    "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones",
+    "geography.local_capacity_zones",
+    "project", "project.capacity.capacity",
+    "system.reliability.local_capacity.local_capacity_requirement",
+    "project.reliability.local_capacity",
+    "project.reliability.local_capacity.local_capacity_contribution"]
+NAME_OF_MODULE_BEING_TESTED = \
+    "system.reliability.local_capacity.aggregate_local_capacity_contribution"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -38,11 +43,10 @@ except ImportError:
           " to test.")
 
 
-class TestProjPRMSimple(unittest.TestCase):
+class TestAggPrjSimpleLocalCapacity(unittest.TestCase):
     """
 
     """
-
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -69,7 +73,7 @@ class TestProjPRMSimple(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
@@ -81,27 +85,6 @@ class TestProjPRMSimple(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Params: prm_simple_fraction
-        expected_prm_frac = OrderedDict(
-            sorted(
-                {"Coal": 0.8, "Coal_z2": 0.8,
-                 "Gas_CCGT": 0.8, "Gas_CCGT_New": 0.8,
-                 "Gas_CCGT_z2": 0.8, "Gas_CT": 0.8,
-                 "Gas_CT_New": 0.8, "Gas_CT_z2": 0.8,
-                 "Nuclear": 0.8, "Nuclear_z2": 0.8,
-                 "Wind": 0.8, "Wind_z2": 0.8,
-                 "Battery": 0.8, "Battery_Specified": 0.8,
-                 "Hydro": 0.8, 'Hydro_NonCurtailable': 0.8,
-                 "Disp_Binary_Commit": 0.8,
-                 "Disp_Cont_Commit": 0.8,
-                 "Disp_No_Commit": 0.8, "Clunky_Old_Gen": 0.8,
-                 "Nuclear_Flexible": 0.8}.items()
-            )
-        )
-        actual_prm_frac = OrderedDict(
-            sorted(
-                {prj: instance.elcc_simple_fraction[prj] for prj in
-                 instance.PRM_PROJECTS}.items()
-            )
-        )
-        self.assertDictEqual(expected_prm_frac, actual_prm_frac)
+
+if __name__ == "__main__":
+    unittest.main()

@@ -24,6 +24,7 @@ def create_scenario(
         of_carbon_cap,
         of_track_carbon_imports,
         of_prm,
+        of_local_capacity,
         of_elcc_surface,
         timepoint_scenario_id,
         load_zone_scenario_id,
@@ -36,6 +37,7 @@ def create_scenario(
         rps_zone_scenario_id,
         carbon_cap_zone_scenario_id,
         prm_zone_scenario_id,
+        local_capacity_zone_scenario_id,
         project_portfolio_scenario_id,
         project_operational_chars_scenario_id,
         project_availability_scenario_id,
@@ -52,6 +54,8 @@ def create_scenario(
         project_prm_zone_scenario_id,
         project_elcc_chars_scenario_id,
         prm_energy_only_scenario_id,
+        project_local_capacity_zone_scenario_id,
+        project_local_capacity_chars_scenario_id,
         project_existing_capacity_scenario_id,
         project_existing_fixed_cost_scenario_id,
         fuel_price_scenario_id,
@@ -75,6 +79,7 @@ def create_scenario(
         rps_target_scenario_id,
         carbon_cap_target_scenario_id,
         prm_requirement_scenario_id,
+        local_capacity_requirement_scenario_id,
         elcc_surface_scenario_id,
         tuning_scenario_id
 ):
@@ -98,6 +103,7 @@ def create_scenario(
     :param of_carbon_cap:
     :param of_track_carbon_imports:
     :param of_prm:
+    :param of_local_capacity:
     :param of_elcc_surface:
     :param timepoint_scenario_id:
     :param load_zone_scenario_id:
@@ -110,6 +116,7 @@ def create_scenario(
     :param rps_zone_scenario_id:
     :param carbon_cap_zone_scenario_id:
     :param prm_zone_scenario_id:
+    :param local_capacity_zone_scenario_id:
     :param project_portfolio_scenario_id:
     :param project_operational_chars_scenario_id:
     :param project_availability_scenario_id:
@@ -126,6 +133,8 @@ def create_scenario(
     :param project_prm_zone_scenario_id:
     :param project_elcc_chars_scenario_id:
     :param prm_energy_only_scenario_id:
+    :param project_local_capacity_zone_scenario_id:
+    :param project_local_capacity_chars_scenario_id
     :param project_existing_capacity_scenario_id:
     :param project_existing_fixed_cost_scenario_id:
     :param fuel_price_scenario_id:
@@ -150,6 +159,7 @@ def create_scenario(
     :param carbon_cap_target_scenario_id:
     :param prm_requirement_scenario_id:
     :param elcc_surface_scenario_id:
+    :param local_capacity_requirement_scenario_id:
     :param tuning_scenario_id:
     :return:
     """
@@ -173,6 +183,7 @@ def create_scenario(
         of_carbon_cap,
         of_track_carbon_imports,
         of_prm,
+        of_local_capacity,
         of_elcc_surface,
         timepoint_scenario_id,
         load_zone_scenario_id,
@@ -185,6 +196,7 @@ def create_scenario(
         rps_zone_scenario_id,
         carbon_cap_zone_scenario_id,
         prm_zone_scenario_id,
+        local_capacity_zone_scenario_id,
         project_portfolio_scenario_id,
         project_operational_chars_scenario_id,
         project_availability_scenario_id,
@@ -201,6 +213,8 @@ def create_scenario(
         project_prm_zone_scenario_id,
         project_elcc_chars_scenario_id,
         prm_energy_only_scenario_id,
+        project_local_capacity_zone_scenario_id,
+        project_local_capacity_chars_scenario_id,
         project_existing_capacity_scenario_id,
         project_existing_fixed_cost_scenario_id,
         fuel_price_scenario_id,
@@ -225,9 +239,15 @@ def create_scenario(
         carbon_cap_target_scenario_id,
         prm_requirement_scenario_id,
         elcc_surface_scenario_id,
+        local_capacity_requirement_scenario_id,
         tuning_scenario_id
         ) VALUES (
         '{}',
+        {},
+        {},
+        {},
+        {},
+        {},
         {},
         {},
         {},
@@ -313,6 +333,7 @@ def create_scenario(
             of_carbon_cap,
             of_track_carbon_imports,
             of_prm,
+            of_local_capacity,
             of_elcc_surface,
             timepoint_scenario_id,
             load_zone_scenario_id,
@@ -325,6 +346,7 @@ def create_scenario(
             rps_zone_scenario_id,
             carbon_cap_zone_scenario_id,
             prm_zone_scenario_id,
+            local_capacity_zone_scenario_id,
             project_portfolio_scenario_id,
             project_operational_chars_scenario_id,
             project_availability_scenario_id,
@@ -341,6 +363,8 @@ def create_scenario(
             project_prm_zone_scenario_id,
             project_elcc_chars_scenario_id,
             prm_energy_only_scenario_id,
+            project_local_capacity_zone_scenario_id,
+            project_local_capacity_chars_scenario_id,
             project_existing_capacity_scenario_id,
             project_existing_fixed_cost_scenario_id,
             fuel_price_scenario_id,
@@ -365,6 +389,7 @@ def create_scenario(
             carbon_cap_target_scenario_id,
             prm_requirement_scenario_id,
             elcc_surface_scenario_id,
+            local_capacity_requirement_scenario_id,
             tuning_scenario_id
         )
     )

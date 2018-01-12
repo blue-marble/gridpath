@@ -177,6 +177,10 @@ def write_scenario_description(
             ["of_elcc_surface",
              optional_features.OPTIONAL_FEATURE_ELCC_SURFACE]
         )
+        writer.writerow(
+            ["of_local_capacity",
+             optional_features.OPTIONAL_FEATURE_LOCAL_CAPACITY]
+        )
 
         # Subscenarios
         writer.writerow(["timepoint_scenario_id",
@@ -195,6 +199,8 @@ def write_scenario_description(
                          subscenarios.CARBON_CAP_ZONE_SCENARIO_ID])
         writer.writerow(["prm_zone_scenario_id",
                          subscenarios.PRM_ZONE_SCENARIO_ID])
+        writer.writerow(["local_capacity_zone_scenario_id",
+                         subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID])
         writer.writerow(["project_portfolio_scenario_id",
                          subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID])
         writer.writerow(["project_load_zone_scenario_id",
@@ -217,6 +223,11 @@ def write_scenario_description(
                          subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID])
         writer.writerow(["project_elcc_chars_scenario_id",
                          subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID])
+        writer.writerow(["project_local_capacity_zone_scenario_id",
+                         subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID])
+        writer.writerow(["project_local_capacity_chars_scenario_id",
+                         subscenarios.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID]
+                        )
         writer.writerow(["project_existing_capacity_scenario_id",
                          subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID])
         writer.writerow(["project_existing_fixed_cost_scenario_id",
@@ -273,6 +284,8 @@ def write_scenario_description(
                          subscenarios.CARBON_CAP_TARGET_SCENARIO_ID])
         writer.writerow(["prm_requirement_scenario_id",
                          subscenarios.PRM_REQUIREMENT_SCENARIO_ID])
+        writer.writerow(["local_capacity_requirement_scenario_id",
+                         subscenarios.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID])
         writer.writerow(["elcc_surface_scenario_id",
                          subscenarios.ELCC_SURFACE_SCENARIO_ID])
         writer.writerow(["tuning_scenario_id",
