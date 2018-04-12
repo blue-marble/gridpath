@@ -43,7 +43,7 @@ def add_module_specific_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
-    
+
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
                            within=NonNegativeReals)
     m.disp_cap_commit_min_stable_level_fraction = \
@@ -231,7 +231,7 @@ def add_module_specific_components(m, d):
     def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
         """
         Generators online in the previous timepoint that are still online
-        could not have ramped up above their total online capacity (more 
+        could not have ramped up above their total online capacity (more
         than their available headroom in the previous hour).
         :param mod:
         :param g:
@@ -264,8 +264,8 @@ def add_module_specific_components(m, d):
         allow the ramp of going from 0 to minimum stable level + some
         additional ramping : the dispcapcommit_startup_plus_ramp_up_rate
         parameter
-        2) Ramp_Up_When_On_MW (see Ramp_Up_When_On_Constraint and 
-        Ramp_Up_When_On_Headroom_Constraint above): 
+        2) Ramp_Up_When_On_MW (see Ramp_Up_When_On_Constraint and
+        Ramp_Up_When_On_Headroom_Constraint above):
         Units committed in both the current timepoint and the previous
         timepoint could have ramped up at a certain rate since the previous
         timepoint
@@ -449,8 +449,8 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         else:
             return mod.DispCapCommit_Shutdown_MW[g, tmp] \
-                >= mod.Commit_Capacity_MW[g, tmp] \
-                - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
+                   >= mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                   - mod.Commit_Capacity_MW[g, tmp]
 
     m.DispCapCommit_Shutdown_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -473,20 +473,20 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         else:
             relevant_tmps = list()
-            current_tmp = tmp
+            relevant_tmp = tmp
 
             for n in range(1,
                            int(mod.dispcapcommit_min_up_time_hours[g] /
                                mod.number_of_hours_in_timepoint[tmp]) + 1):
-                relevant_tmps.append(current_tmp)
+                relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
-                if current_tmp == mod.first_horizon_timepoint[mod.horizon[
+                if relevant_tmp == mod.first_horizon_timepoint[mod.horizon[
                     tmp]] \
                         and mod.boundary[mod.horizon[tmp]] == "linear":
                     return Constraint.Skip
                 else:
-                    current_tmp = mod.previous_timepoint[current_tmp]
+                    relevant_tmp = mod.previous_timepoint[relevant_tmp]
 
             units_turned_on_min_up_time_or_less_hours_ago = \
                 sum(mod.DispCapCommit_Startup_MW[g, tp]
@@ -513,29 +513,29 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         else:
             relevant_tmps = list()
-            current_tmp = tmp
+            relevant_tmp = tmp
 
             for n in range(1,
                            int(mod.dispcapcommit_min_down_time_hours[g] /
                                mod.number_of_hours_in_timepoint[tmp]) + 1):
-                relevant_tmps.append(current_tmp)
+                relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
-                if current_tmp == mod.first_horizon_timepoint[mod.horizon[
+                if relevant_tmp == mod.first_horizon_timepoint[mod.horizon[
                     tmp]] \
                         and mod.boundary[mod.horizon[tmp]] == "linear":
                     return Constraint.Skip
                 else:
-                    current_tmp = mod.previous_timepoint[current_tmp]
+                    relevant_tmp = mod.previous_timepoint[relevant_tmp]
 
-            units_turned_off_min_up_time_or_less_hours_ago = \
-                sum(mod.DispCapCommit_Shutdown_MW[g, tp]
-                    for tp in relevant_tmps)
+                units_turned_off_min_down_time_or_less_hours_ago = \
+                    sum(mod.DispCapCommit_Shutdown_MW[g, tp]
+                        for tp in relevant_tmps)
 
             return mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]] \
                 - mod.Commit_Capacity_MW[g, tmp] \
-                >= units_turned_off_min_up_time_or_less_hours_ago
+                >= units_turned_off_min_down_time_or_less_hours_ago
 
     m.DispCapCommit_Min_Down_Time_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -580,10 +580,10 @@ def commitment_rule(mod, g, tmp):
 def online_capacity_rule(mod, g, tmp):
     """
     Capacity online in each timepoint
-    :param mod: 
-    :param g: 
-    :param tmp: 
-    :return: 
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
     """
     return mod.Commit_Capacity_MW[g, tmp]
 
@@ -602,7 +602,7 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    
+
     :param mod:
     :param g:
     :param tmp:
@@ -613,7 +613,7 @@ def subhourly_curtailment_rule(mod, g, tmp):
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    
+
     :param mod:
     :param g:
     :param tmp:
@@ -670,10 +670,10 @@ def startup_shutdown_rule(mod, g, tmp):
 def ramp_rule(mod, g, tmp):
     """
 
-    :param mod: 
-    :param g: 
-    :param tmp: 
-    :return: 
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":
@@ -732,8 +732,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     dynamic_components = \
         pd.read_csv(
             os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", 
-            usecols=["project", "operational_type", "unit_size_mw", 
+            sep="\t",
+            usecols=["project", "operational_type", "unit_size_mw",
                      "min_stable_level_fraction"] + used_columns
             )
 
@@ -779,7 +779,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "dispcapcommit_shutdown_plus_ramp_down_rate"] = \
             shutdown_plus_ramp_down_rate
-        
+
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
@@ -822,7 +822,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "dispcapcommit_min_up_time_hours"] = \
             min_up_time
-        
+
     if "min_down_time_hours" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
