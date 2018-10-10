@@ -15,20 +15,47 @@ def add_module_specific_components(m, d):
     """
 
     """
-    m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
+    m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
         Set(dimen=2)
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
+        "EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
     )
 
+    # Make set of operational periods by generator
+    m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS = Set(
+        initialize=
+        lambda mod: set(
+            g for (g, p)
+            in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+        )
+    )
+    m.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS = \
+        Set(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+            initialize=
+            lambda mod, prj: set(
+                period for (project, period)
+                in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                if project == prj
+               )
+            )
+    m.ex_gen_lin_econ_ret_gen_first_period = \
+        Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+              initialize=
+              lambda mod, g: min(
+                  p for p
+                  in mod.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
+              )
+              )
+
+    # Capacity and fixed cost
     m.existing_lin_econ_ret_capacity_mw = \
-        Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        Param(m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
     m.existing_lin_econ_ret_fixed_cost_per_mw_yr = \
-        Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        Param(m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
 
     def retire_capacity_bounds(mod, g, p):
@@ -43,7 +70,7 @@ def add_module_specific_components(m, d):
 
     # Retire capacity variable
     m.Retire_MW = Var(
-        m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
         bounds=retire_capacity_bounds
     )
 
@@ -60,7 +87,7 @@ def add_module_specific_components(m, d):
             - mod.Retire_MW[g, p]
     m.Existing_Linear_Econ_Ret_Capacity_MW = \
         Expression(
-            m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+            m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
             rule=existing_existing_econ_ret_capacity_rule
         )
                    
@@ -74,7 +101,11 @@ def add_module_specific_components(m, d):
         :param p: 
         :return: 
         """
+        # Skip if we're in the first period
         if p == value(mod.first_period):
+            return Constraint.Skip
+        # Skip if this is the generator's first period
+        if p == mod.ex_gen_lin_econ_ret_gen_first_period[g]:
             return Constraint.Skip
         else:
             return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
@@ -84,7 +115,7 @@ def add_module_specific_components(m, d):
                    ]
 
     m.Retire_Forever_Constraint = Constraint(
-        m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
         rule=retire_forever_rule
     )
         
@@ -174,7 +205,7 @@ def load_module_specific_data(
             existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
 
     data_portal.data()[
-        "EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
+        "EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
     ] = {
         None: determine_period_params()[0]
     }
@@ -203,7 +234,7 @@ def export_module_specific_results(scenario_directory, horizon, stage, m, d):
         writer.writerow(["project", "period", "technology", "load_zone",
                          "retire_mw"])
         for (prj, p) in \
-                m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
+                m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
             writer.writerow([
                 prj,
                 p,
