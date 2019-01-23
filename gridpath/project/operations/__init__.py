@@ -8,7 +8,7 @@ Operational subsets (that can include more than one operational type)
 import csv
 from pandas import read_csv
 import os.path
-from pyomo.environ import Var, Set, Param, PositiveReals, PercentFraction
+from pyomo.environ import Set, Param, PositiveReals, PercentFraction
 
 from gridpath.auxiliary.auxiliary import is_number
 
@@ -56,6 +56,18 @@ def add_model_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.FUEL_PROJECTS))
 
+    # Startup fuel burn
+    m.STARTUP_FUEL_PROJECTS = Set(within=m.FUEL_PROJECTS)
+    m.startup_fuel_mmbtu_per_mw = Param(
+        m.STARTUP_FUEL_PROJECTS, within=PositiveReals
+    )
+
+    m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_FUEL_PROJECTS))
+
     # Availability derate (e.g. for maintenance/planned outages)
     # This can be optionally loaded from external data, but defaults to 1
     m.availability_derate = Param(
@@ -75,7 +87,10 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :return:
     """
 
-    # TODO: make startup, shutdown, and fuel columns optional
+    # Get column names as a few columns will be optional; won't load data if column does not exist
+    with open(os.path.join(scenario_directory, "inputs", "projects.tab")) as prj_file:
+        reader = csv.reader(prj_file, delimiter="\t")
+        headers = reader.next()
 
     # STARTUP_COST_PROJECTS
     def determine_startup_cost_projects():
@@ -106,12 +121,15 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
         return startup_cost_projects, startup_cost_per_mw
 
-    data_portal.data()["STARTUP_COST_PROJECTS"] = {
-        None: determine_startup_cost_projects()[0]
-    }
+    if "startup_cost_per_mw" in headers:
+        data_portal.data()["STARTUP_COST_PROJECTS"] = {
+            None: determine_startup_cost_projects()[0]
+        }
 
-    data_portal.data()["startup_cost_per_mw"] = \
-        determine_startup_cost_projects()[1]
+        data_portal.data()["startup_cost_per_mw"] = \
+            determine_startup_cost_projects()[1]
+    else:
+        pass
 
     # SHUTDOWN_COST_PROJECTS
     def determine_shutdown_cost_projects():
@@ -143,12 +161,15 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
         return shutdown_cost_projects, shutdown_cost_per_mw
 
-    data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
-        None: determine_shutdown_cost_projects()[0]
-    }
+    if "shutdown_cost_per_mw" in headers:
+        data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
+            None: determine_shutdown_cost_projects()[0]
+        }
 
-    data_portal.data()["shutdown_cost_per_mw"] = \
-        determine_shutdown_cost_projects()[1]
+        data_portal.data()["shutdown_cost_per_mw"] = \
+            determine_shutdown_cost_projects()[1]
+    else:
+        pass
 
     # FUEL_PROJECTS
     def determine_fuel_projects():
@@ -187,15 +208,54 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         return fuel_projects, fuel, minimum_input_mmbtu_per_hr, \
             inc_heat_rate_mmbtu_per_mwh
 
-    data_portal.data()["FUEL_PROJECTS"] = {
-        None: determine_fuel_projects()[0]
-    }
+    if "fuel" in headers:
+        data_portal.data()["FUEL_PROJECTS"] = {
+            None: determine_fuel_projects()[0]
+        }
 
-    data_portal.data()["fuel"] = determine_fuel_projects()[1]
-    data_portal.data()["minimum_input_mmbtu_per_hr"] = \
-        determine_fuel_projects()[2]
-    data_portal.data()["inc_heat_rate_mmbtu_per_mwh"] = \
-        determine_fuel_projects()[3]
+        data_portal.data()["fuel"] = determine_fuel_projects()[1]
+        data_portal.data()["minimum_input_mmbtu_per_hr"] = \
+            determine_fuel_projects()[2]
+        data_portal.data()["inc_heat_rate_mmbtu_per_mwh"] = \
+            determine_fuel_projects()[3]
+    else:
+        pass
+
+    # STARTUP FUEL_PROJECTS
+    def determine_startup_fuel_projects():
+        """
+        E.g. generators that incur fuel burn when starting up
+        :param mod:
+        :return:
+        """
+        startup_fuel_projects = list()
+        startup_fuel_mmbtu_per_mw = dict()
+
+        dynamic_components = \
+            read_csv(
+                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                sep="\t", usecols=["project",
+                                   "startup_fuel_mmbtu_per_mw"]
+                )
+
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["startup_fuel_mmbtu_per_mw"]):
+            # print row[0]
+            if row[1] != ".":
+                startup_fuel_projects.append(row[0])
+                startup_fuel_mmbtu_per_mw[row[0]] = float(row[1])
+            else:
+                pass
+
+        return startup_fuel_projects, startup_fuel_mmbtu_per_mw
+
+    if "startup_fuel_mmbtu_per_mw" in headers:
+        data_portal.data()["STARTUP_FUEL_PROJECTS"] = {
+            None: determine_startup_fuel_projects()[0]
+        }
+        data_portal.data()["startup_fuel_mmbtu_per_mw"] = determine_startup_fuel_projects()[1]
+    else:
+        pass
 
     # Availability derates
     availability_file = os.path.join(

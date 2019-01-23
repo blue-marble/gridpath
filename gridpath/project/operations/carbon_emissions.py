@@ -39,9 +39,6 @@ def add_model_components(m, d):
                           mod.PROJECT_OPERATIONAL_TIMEPOINTS
                           if p in mod.CARBONACEOUS_PROJECTS]
     )
-    # Import needed operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(getattr(d, required_operational_modules))
 
     # Get emissions for each carbon cap project
     def carbon_emissions_rule(mod, g, tmp):
@@ -53,12 +50,7 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            fuel_burn_rule(mod, g, tmp, "Project {} has no fuel, so should "
-                                        "not be labeled carbonaceous: "
-                                        "replace its carbon_cap_zone with "
-                                        "'.' in projects.tab.".format(g)) \
+        return mod.Total_Fuel_Burn_MMBtu[g, tmp] \
             * mod.co2_intensity_tons_per_mmbtu[mod.fuel[g]]
 
     m.Carbon_Emissions_Tons = Expression(

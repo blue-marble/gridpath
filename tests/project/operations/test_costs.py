@@ -20,7 +20,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity", "project.fuels",
     "project.operations",
     "project.operations.operational_types",
-    "project.operations.power"]
+    "project.operations.power", "project.operations.fuel_burn"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.costs"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
