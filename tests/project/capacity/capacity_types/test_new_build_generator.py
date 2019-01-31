@@ -231,8 +231,8 @@ class TestNewBuildGenerator(unittest.TestCase):
         # Set: NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD
         expected_gen_vintage_op_in_period = {
             2020: [("Gas_CCGT_New", 2020)],
-            2030: [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030),
-                   ("Gas_CT_New", 2030)]
+            2030: [("Gas_CCGT_New", 2020), ("Gas_CT_New", 2030),
+                   ("Gas_CCGT_New", 2030)]
         }
         actual_gen_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
@@ -241,6 +241,7 @@ class TestNewBuildGenerator(unittest.TestCase):
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
                              actual_gen_vintage_op_in_period)
+
 
 if __name__ == "__main__":
     unittest.main()
