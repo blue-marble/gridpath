@@ -4,6 +4,10 @@
 """
 PRM projects and the zone they contribute to
 """
+
+from builtins import next
+from builtins import str
+from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, NonNegativeReals, Constraint
@@ -54,7 +58,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     data_portal.data()['PRM_PROJECTS'] = {
-        None: data_portal.data()['prm_zone'].keys()
+        None: list(data_portal.data()['prm_zone'].keys())
     }
 
 
@@ -101,7 +105,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         for new_column in ["prm_zone", "prm_type"]:
             header.append(new_column)
         new_rows.append(header)
@@ -109,7 +113,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_zone_type_dict.keys():
+            if row[0] in list(prj_zone_type_dict.keys()):
                 for new_column_value in [
                     prj_zone_type_dict[row[0]][0],
                     prj_zone_type_dict[row[0]][1]

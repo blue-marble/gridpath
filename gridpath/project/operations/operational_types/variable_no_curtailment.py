@@ -6,6 +6,7 @@ Operations of variable generators that cannot be curtailed (dispatched down).
 Cannot provide reserves.
 """
 
+from builtins import zip
 import csv
 import os.path
 import pandas as pd
@@ -129,10 +130,10 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        raise (ValueError(
+        raise ValueError(
             "ERROR! Variable projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value).")
+            "and change its fuel to '.' (no value)."
         )
     else:
         raise ValueError(error_message)
@@ -146,11 +147,11 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise(ValueError(
+    raise ValueError(
         "ERROR! Variable generators should not incur startup/shutdown "
         "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value).")
+        "and change its startup/shutdown costs to '.' (no value)."
     )
 
 

@@ -4,6 +4,7 @@
 """
 Create scenario
 """
+from __future__ import print_function
 
 
 def create_scenario(

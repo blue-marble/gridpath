@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import absolute_import
+
 from pyomo.environ import Set, Expression
 
-from reserve_aggregation import generic_add_model_components
+from .reserve_aggregation import generic_add_model_components
 
 
 def add_model_components(m, d):

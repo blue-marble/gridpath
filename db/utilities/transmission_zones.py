@@ -4,6 +4,7 @@
 """
 Transmission load zones
 """
+from __future__ import print_function
 
 
 def insert_transmission_load_zones(
@@ -43,7 +44,7 @@ def insert_transmission_load_zones(
     io.commit()
 
     # Insert data
-    for tx_line in tx_line_load_zones.keys():
+    for tx_line in list(tx_line_load_zones.keys()):
         c.execute(
             """INSERT INTO inputs_transmission_load_zones
                (load_zone_scenario_id, 
@@ -98,7 +99,7 @@ def insert_transmission_carbon_cap_zones(
     io.commit()
 
     # Insert data
-    for tx_line in tx_line_carbon_cap_zones.keys():
+    for tx_line in list(tx_line_carbon_cap_zones.keys()):
         c.execute(
             """INSERT INTO inputs_transmission_carbon_cap_zones
                (carbon_cap_zone_scenario_id,

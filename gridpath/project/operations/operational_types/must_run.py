@@ -127,11 +127,11 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise(ValueError(
+    raise ValueError(
         "ERROR! Must-run generators should not incur startup/shutdown "
         "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value).")
+        "and change its startup/shutdown costs to '.' (no value)."
     )
 
 

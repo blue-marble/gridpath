@@ -4,7 +4,10 @@
 """
 Get carbon emissions on each 'carbonaceous' transmission line.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
@@ -109,7 +112,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     data_portal.data()['CARBONACEOUS_TRANSMISSION_LINES'] = {
-        None: data_portal.data()['tx_carbon_cap_zone'].keys()
+        None: list(data_portal.data()['tx_carbon_cap_zone'].keys())
     }
 
 
@@ -147,7 +150,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "carbon_emission_imports_by_tx_line.csv"), "wb") \
+                           "carbon_emission_imports_by_tx_line.csv"), "w") \
             as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
         writer.writerow(["tx_line", "period", "horizon", "timepoint",
@@ -202,7 +205,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("carbon_cap_zone")
         header.append("carbon_cap_zone_import_direction")
         header.append("tx_co2_intensity_tons_per_mwh")
@@ -211,7 +214,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Append correct values
         for row in reader:
             # If project specified, check if zone specified or not
-            if row[0] in prj_zone_dict.keys():
+            if row[0] in list(prj_zone_dict.keys()):
                 row.append(prj_zone_dict[row[0]][0])
                 row.append(prj_zone_dict[row[0]][1])
                 row.append(prj_zone_dict[row[0]][2])
@@ -281,7 +284,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             tx_line = row[0]
             period = row[1]

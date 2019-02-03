@@ -15,8 +15,11 @@ e.g. if the minimum duration specified is N hours, then the MW capacity will
 be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
 """
+from __future__ import division
 
-
+from builtins import zip
+from builtins import range
+from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -53,7 +56,7 @@ def add_module_specific_components(m, d):
     # Limit supply curve to 1000 points
     m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS = Set(
         dimen=2,
-        within=m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS*range(1, 1001)
+        within=m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS*list(range(1, 1001))
     )
     m.new_shiftable_load_supply_curve_slope = Param(
         m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS,
@@ -116,8 +119,10 @@ def add_module_specific_components(m, d):
         :param p:
         :return:
         """
-        return mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p] \
-            / mod.shiftable_load_supply_curve_min_duration[g]
+        return old_div(
+            mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p],
+            mod.shiftable_load_supply_curve_min_duration[g]
+        )
 
     m.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW = Expression(
         m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,
@@ -248,8 +253,8 @@ def get_module_specific_inputs_from_database(
     """
 
     if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None:
-        raise(ValueError("Maximum potential must be specified for new "
-                         "shiftable load supply curve projects."))
+        raise ValueError("Maximum potential must be specified for new "
+                         "shiftable load supply curve projects.")
 
     min_max_builds = c.execute(
         """SELECT project, period, 

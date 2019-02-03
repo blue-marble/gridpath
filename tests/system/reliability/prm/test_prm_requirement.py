@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -93,14 +96,12 @@ class TestPRMRequirement(unittest.TestCase):
         # Param: prm_target_mmt
         expected_target = OrderedDict(sorted({
             ("PRM_Zone1", 2020): 60, ("PRM_Zone1", 2030): 60,
-            ("PRM_Zone2", 2020): 60, ("PRM_Zone2", 2030): 60}
-                                                 .items()
+            ("PRM_Zone2", 2020): 60, ("PRM_Zone2", 2030): 60}.items()
                                                  )
                                           )
         actual_target = OrderedDict(sorted({
             (z, p): instance.prm_requirement_mw[z, p]
-            for (z, p) in instance.PRM_ZONE_PERIODS_WITH_REQUIREMENT}
-                                               .items()
+            for (z, p) in instance.PRM_ZONE_PERIODS_WITH_REQUIREMENT}.items()
                                                )
                                         )
         self.assertDictEqual(expected_target, actual_target)

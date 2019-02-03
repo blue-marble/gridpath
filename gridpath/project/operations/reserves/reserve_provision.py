@@ -5,6 +5,8 @@
 
 """
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 import pandas as pd
@@ -47,10 +49,10 @@ def generic_determine_dynamic_components(
     getattr(d, required_reserve_modules).append(reserve_module)
 
     with open(os.path.join(scenario_directory, "inputs", "projects.tab"),
-              "rb") as projects_file:
+              "r") as projects_file:
         projects_file_reader = csv.reader(projects_file, delimiter="\t")
-        headers = projects_file_reader.next()
-        # Check that columns are not repeated
+        headers = next(projects_file_reader)
+        # Check thant columns are not repeated
         check_list_items_are_unique(headers)
         for row in projects_file_reader:
             # Get generator name; we have checked that column names are unique
@@ -60,7 +62,7 @@ def generic_determine_dynamic_components(
             # If we have already added this generator to the head/footroom
             # variables dictionary, move on; otherwise, create the
             # dictionary item
-            if generator not in getattr(d, headroom_or_footroom_dict).keys():
+            if generator not in list(getattr(d, headroom_or_footroom_dict).keys()):
                 getattr(d, headroom_or_footroom_dict)[generator] = list()
             # Some generators get the variables associated with
             # provision of various services (e.g. reserves) if flagged
@@ -210,7 +212,7 @@ def generic_load_model_data(
                      )
 
     data_portal.data()[reserve_projects_set] = {
-        None: data_portal.data()[reserve_balancing_area_param].keys()
+        None: list(data_portal.data()[reserve_balancing_area_param].keys())
     }
 
     # Load reserve provision subhourly energy adjustment (e.g. for storage
@@ -250,7 +252,7 @@ def generic_export_module_specific_results(
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "reserves_provision_" + module_name + ".csv"),
-              "wb") as f:
+              "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -323,7 +325,7 @@ def generic_import_results_into_database(
                            ), "r") as reserve_provision_file:
         reader = csv.reader(reserve_provision_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

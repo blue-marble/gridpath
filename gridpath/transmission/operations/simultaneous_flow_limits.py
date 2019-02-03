@@ -128,7 +128,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "transmission_simultaneous_flow_limits.csv"),
-              "wb") as \
+              "w") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["simultaneous_flow_limit", "timepoint", "period",

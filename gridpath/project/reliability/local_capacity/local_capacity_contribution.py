@@ -5,7 +5,10 @@
 Simple local capacity contribution where each local project contributes a 
 fraction of its installed capacity.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, PercentFraction, Expression, value
@@ -68,7 +71,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "project_local_capacity_contribution.csv"),
-              "wb") as \
+              "w") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["project", "period", "local_capacity_zone", 
@@ -126,14 +129,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("local_capacity_fraction")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_frac_dict.keys():
+            if row[0] in list(prj_frac_dict.keys()):
                 row.append(prj_frac_dict[row[0]])
                 new_rows.append(row)
             # If project not specified, specify no BA
@@ -199,7 +202,7 @@ def import_results_into_database(
     ) as local_capacity_results_file:
         reader = csv.reader(local_capacity_results_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

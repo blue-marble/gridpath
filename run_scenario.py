@@ -4,6 +4,10 @@
 """
 Run model.
 """
+from __future__ import print_function
+
+from builtins import str
+from builtins import object
 from argparse import ArgumentParser
 from csv import writer
 import os.path
@@ -71,7 +75,7 @@ class ScenarioStructure(object):
                     with open(
                             os.path.join(
                                 pass_through_directory,
-                                "fixed_commitment.tab"), "wb") \
+                                "fixed_commitment.tab"), "w") \
                             as fixed_commitment_file:
                         fixed_commitment_writer = \
                             writer(fixed_commitment_file, delimiter="\t")
@@ -404,16 +408,18 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
         else:
             pass
 
-    for c in instance.constraint_indices.keys():
+    for c in list(instance.constraint_indices.keys()):
         constraint_object = getattr(instance, c)
-        duals_writer = writer(open(os.path.join(
+        with open(os.path.join(
             scenario_directory, horizon, stage, "results", str(c) + ".csv"),
-            "wb"))
-        duals_writer.writerow(instance.constraint_indices[c])
-        for index in constraint_object:
-            duals_writer.writerow(list(index) +
-                                  [instance.dual[constraint_object[index]]]
-                                  )
+            "w"
+        ) as duals_results_file:
+            duals_writer = writer(duals_results_file)
+            duals_writer.writerow(instance.constraint_indices[c])
+            for index in constraint_object:
+                duals_writer.writerow(list(index) +
+                                      [instance.dual[constraint_object[index]]]
+                                      )
 
 
 def summarize_results(problem_directory, horizon, stage, loaded_modules,

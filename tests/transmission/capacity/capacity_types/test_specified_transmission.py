@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -81,10 +84,10 @@ class TestSpecifiedTransmission(unittest.TestCase):
 
         # Set: SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
         expected_periods = [("Tx1", 2020), ("Tx1", 2030)]
-        actual_periods = [
+        actual_periods = sorted([
             (tx, p) for (tx, p)
             in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-            ]
+            ])
         self.assertListEqual(expected_periods, actual_periods)
 
         # Param: specified_tx_min_mw

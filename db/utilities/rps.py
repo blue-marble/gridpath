@@ -4,6 +4,7 @@
 """
 RPS targets
 """
+from __future__ import print_function
 
 
 def insert_rps_targets(
@@ -37,8 +38,8 @@ def insert_rps_targets(
     io.commit()
 
     # Insert data
-    for zone in zone_period_targets.keys():
-        for period in zone_period_targets[zone].keys():
+    for zone in list(zone_period_targets.keys()):
+        for period in list(zone_period_targets[zone].keys()):
             c.execute(
                 """INSERT INTO inputs_system_rps_targets
                 (rps_target_scenario_id, rps_zone, period,

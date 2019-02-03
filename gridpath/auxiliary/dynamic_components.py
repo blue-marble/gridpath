@@ -5,6 +5,8 @@
 Lists and dictionaries of the names of the model dynamic components
 """
 
+from builtins import object
+
 required_capacity_modules = "required_capacity_modules"
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \

@@ -4,6 +4,7 @@
 """
 Fuels data
 """
+from __future__ import print_function
 
 
 def update_fuels(
@@ -34,7 +35,7 @@ def update_fuels(
     io.commit()
 
     # Insert data
-    for f in fuel_chars.keys():
+    for f in list(fuel_chars.keys()):
         c.execute(
             """INSERT INTO inputs_project_fuels
             (fuel_scenario_id, fuel, co2_intensity_tons_per_mmbtu)
@@ -78,9 +79,9 @@ def update_fuel_prices(
     io.commit()
 
     # Insert data
-    for f in fuel_month_prices.keys():
-        for p in fuel_month_prices[f].keys():
-            for m in fuel_month_prices[f][p].keys():
+    for f in list(fuel_month_prices.keys()):
+        for p in list(fuel_month_prices[f].keys()):
+            for m in list(fuel_month_prices[f][p].keys()):
                 c.execute(
                     """INSERT INTO inputs_project_fuel_prices
                     (fuel_price_scenario_id, fuel, period, month, 

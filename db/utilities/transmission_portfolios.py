@@ -4,6 +4,7 @@
 """
 Transmission portfolios
 """
+from __future__ import print_function
 
 
 def insert_transmission_portfolio(
@@ -39,7 +40,7 @@ def insert_transmission_portfolio(
     io.commit()
 
     # Insert data
-    for tx_line in tx_line_cap_types.keys():
+    for tx_line in list(tx_line_cap_types.keys()):
         c.execute(
             """INSERT INTO inputs_transmission_portfolios
                (transmission_portfolio_scenario_id,

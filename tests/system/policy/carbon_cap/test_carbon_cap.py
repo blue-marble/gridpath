@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -93,14 +96,12 @@ class TestCarbonCap(unittest.TestCase):
         # Param: carbon_cap_target_mmt
         expected_cc_target = OrderedDict(sorted({
             ("Carbon_Cap_Zone1", 2020): 50, ("Carbon_Cap_Zone1", 2030): 50,
-            ("Carbon_Cap_Zone2", 2020): 10, ("Carbon_Cap_Zone2", 2030): 10}
-                                                 .items()
+            ("Carbon_Cap_Zone2", 2020): 10, ("Carbon_Cap_Zone2", 2030): 10}.items()
                                                  )
                                           )
         actual_cc_target = OrderedDict(sorted({
             (z, p): instance.carbon_cap_target_mmt[z, p]
-            for (z, p) in instance.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP}
-                                               .items()
+            for (z, p) in instance.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP}.items()
                                                )
                                         )
         self.assertDictEqual(expected_cc_target, actual_cc_target)

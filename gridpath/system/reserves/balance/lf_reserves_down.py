@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from reserve_balance import generic_add_model_components, \
+from __future__ import print_function
+from __future__ import absolute_import
+
+from .reserve_balance import generic_add_model_components, \
     generic_export_results, generic_save_duals, \
     generic_import_results_to_database
 

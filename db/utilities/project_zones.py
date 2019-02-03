@@ -4,6 +4,7 @@
 """
 Create a list of all projects
 """
+from __future__ import print_function
 
 
 def project_load_zones(
@@ -41,7 +42,7 @@ def project_load_zones(
     io.commit()
 
     # Insert all projects with their modeled load_zones
-    for project in project_load_zones.keys():
+    for project in list(project_load_zones.keys()):
         c.execute(
             """INSERT INTO inputs_project_load_zones
             (load_zone_scenario_id, project_load_zone_scenario_id, project, 
@@ -72,9 +73,8 @@ def project_load_zones(
         ).fetchall()
 
         if lz is None:
-            raise(ValueError("Project {}".format(prj)
+            raise ValueError("Project {}".format(prj)
                              + " has not been assigned a load_zone")
-                  )
 
 
 def project_reserve_bas(
@@ -103,7 +103,7 @@ def project_reserve_bas(
     io.commit()
 
     # Insert projects with BAs
-    for project in project_bas.keys():
+    for project in list(project_bas.keys()):
         c.execute(
             """INSERT INTO inputs_project_{}_bas
             ({}_ba_scenario_id, 
@@ -155,7 +155,7 @@ def project_policy_zones(
     io.commit()
 
     # Project zones data
-    for project in project_zones.keys():
+    for project in list(project_zones.keys()):
         c.execute(
             """INSERT INTO inputs_project_{}_zones
             ({}_zone_scenario_id, project_{}_zone_scenario_id, project, 

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import zip
+from builtins import str
 import csv
 import os.path
 import pandas as pd
@@ -442,7 +447,7 @@ def import_module_specific_results_into_database(
             capacity_file:
         reader = csv.reader(capacity_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

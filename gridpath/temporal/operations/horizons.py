@@ -5,6 +5,7 @@
 Describes the relationships among timepoints in the optimization
 """
 
+from builtins import range
 import csv
 import os.path
 
@@ -24,7 +25,7 @@ def add_model_components(m, d):
     m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
     # Make a months set to use as index for some params
-    m.MONTHS = Set(within=PositiveIntegers, initialize=range(1, 12 + 1))
+    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
 
     m.month = Param(m.HORIZONS, within=m.MONTHS)
 

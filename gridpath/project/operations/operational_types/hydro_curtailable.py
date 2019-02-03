@@ -4,7 +4,11 @@
 """
 Operations of curtailable conventional hydro generators
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import zip
+from builtins import str
 import csv
 import os.path
 import pandas as pd
@@ -261,10 +265,10 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        raise (ValueError(
+        raise ValueError(
             "ERROR! Curtailable hydro projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value).")
+            "and change its fuel to '.' (no value)."
         )
     else:
         raise ValueError(error_message)
@@ -278,11 +282,11 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise (ValueError(
+    raise ValueError(
         "ERROR! Hydro generators should not incur startup/shutdown costs." +
         "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value).")
+        "and change its startup/shutdown costs to '.' (no value)."
     )
 
 
@@ -435,7 +439,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "dispatch_hydro_curtailable.csv"),
-              "wb") as f:
+              "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -615,7 +619,7 @@ def import_module_specific_results_to_database(
               "r") as h_dispatch_file:
         reader = csv.reader(h_dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

@@ -5,6 +5,12 @@
 Simplest implementation with a MWh target
 """
 
+from __future__ import division
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
+from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -46,7 +52,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "rps.csv"), "wb") as rps_results_file:
+                           "rps.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period",
                          "discount_factor", "number_years_represented",
@@ -69,9 +75,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]) /
                 float(m.rps_target_mwh[z, p]),
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
+                old_div(value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
                 (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
-                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p]))
+                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])))
             ])
 
 
@@ -145,13 +151,12 @@ def summarize_results(d, problem_directory, horizon, stage):
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
         results_df.percent_curtailed[indx] = \
-            results_df.curtailed_rps_energy_mwh[indx] \
-            / (results_df.delivered_rps_energy_mwh[indx] +
-               results_df.curtailed_rps_energy_mwh[indx]) * 100
+            old_div(results_df.curtailed_rps_energy_mwh[indx], (results_df.delivered_rps_energy_mwh[indx] +
+               results_df.curtailed_rps_energy_mwh[indx])) * 100
         results_df.rps_marginal_cost_per_mwh[indx] = \
-            results_df.dual[indx] / \
+            old_div(results_df.dual[indx], \
             (results_df.discount_factor[indx] *
-             results_df.number_years_represented[indx])
+             results_df.number_years_represented[indx]))
 
     # Set float format options
     pd.options.display.float_format = "{:,.0f}".format
@@ -226,7 +231,7 @@ def import_results_into_database(
             rps_file:
         reader = csv.reader(rps_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             rps_zone = row[0]
             period = row[1]
@@ -291,7 +296,7 @@ def import_results_into_database(
               "r") as rps_duals_file:
         reader = csv.reader(rps_duals_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
 
         for row in reader:
             c.execute(

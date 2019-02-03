@@ -4,6 +4,10 @@
 """
 Total ELCC of projects on ELCC surface
 """
+from __future__ import print_function
+
+from builtins import next
+from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Var, Set, NonNegativeReals, Constraint, \
@@ -24,7 +28,7 @@ def add_model_components(m, d):
     # Surface can change by prm_zone and period
     # Limit surface to 1000 facets
     m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.PRM_ZONES * m.PERIODS * range(1, 1001)
+        dimen=3, within=m.PRM_ZONES * m.PERIODS * list(range(1, 1001))
     )
 
     # The intercept for the prm_zone/period/facet combination
@@ -102,7 +106,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "prm_elcc_surface.csv"), "wb") as \
+                           "prm_elcc_surface.csv"), "w") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])
@@ -188,7 +192,7 @@ def import_results_into_database(
             surface_file:
         reader = csv.reader(surface_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             prm_zone = row[0]
             period = row[1]

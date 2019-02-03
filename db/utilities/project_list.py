@@ -4,6 +4,7 @@
 """
 Create a list of all projects
 """
+from __future__ import print_function
 
 
 def project_list(

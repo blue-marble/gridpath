@@ -5,6 +5,7 @@
 Make results graphs.
 """
 
+from builtins import str
 import os.path
 import sqlite3
 import sys

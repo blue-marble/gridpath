@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from argparse import ArgumentParser
 import os.path
 import sqlite3

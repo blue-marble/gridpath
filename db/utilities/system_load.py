@@ -4,6 +4,7 @@
 """
 System load
 """
+from __future__ import print_function
 
 
 def insert_system_static_loads(
@@ -36,8 +37,8 @@ def insert_system_static_loads(
     io.commit()
 
     # Insert data
-    for z in zone_timepoint_static_loads.keys():
-        for tmp in zone_timepoint_static_loads[z].keys():
+    for z in list(zone_timepoint_static_loads.keys()):
+        for tmp in list(zone_timepoint_static_loads[z].keys()):
             c.execute(
                 """INSERT INTO inputs_system_load
                 (load_scenario_id, load_zone, timepoint, load_mw)

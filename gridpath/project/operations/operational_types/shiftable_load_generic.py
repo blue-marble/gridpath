@@ -152,10 +152,11 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        raise (ValueError(
+        raise ValueError(
+
             "ERROR! Shiftable load projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value).")
+            "and change its fuel to '.' (no value)."
         )
     else:
         raise ValueError(error_message)
@@ -169,11 +170,11 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise (ValueError(
+    raise ValueError(
         "ERROR! Shiftable load projects should not incur "
         "startup/shutdown costs." + "\n" +
         "Check input data for project '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value).")
+        "and change its startup/shutdown costs to '.' (no value)."
     )
 
 

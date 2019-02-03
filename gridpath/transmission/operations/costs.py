@@ -5,7 +5,10 @@
 Aggregate carbon emissions from the transmission-line-timepoint level to
 the carbon cap zone - period level.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Var, Constraint, NonNegativeReals, \
@@ -159,7 +162,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-              "costs_transmission_hurdle.csv"), "wb") as f:
+              "costs_transmission_hurdle.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["tx_line", "period", "horizon", "timepoint", "horizon_weight",
@@ -231,7 +234,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
               "r") as tx_op_file:
         reader = csv.reader(tx_op_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             tx_line = row[0]
             period = row[1]

@@ -5,7 +5,10 @@
 Aggregate simple PRM contribution from the project level to the PRM zone level 
 for each period.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value
@@ -56,7 +59,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "prm_elcc_simple.csv"), "wb") as \
+                           "prm_elcc_simple.csv"), "w") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])
@@ -115,7 +118,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             prm_zone = row[0]
             period = row[1]

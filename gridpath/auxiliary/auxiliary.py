@@ -4,7 +4,11 @@
 """
 Various auxiliary functions used in other modules
 """
+from __future__ import print_function
 
+
+from builtins import str
+from builtins import object
 import datetime
 from importlib import import_module
 import os.path
@@ -169,7 +173,7 @@ def is_number(s):
         return False
 
 
-class Logging:
+class Logging(object):
     """
     Log output to both standard output and a log file. This will be 
     accomplished by assigning this class to sys.stdout.

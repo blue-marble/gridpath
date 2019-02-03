@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-from reserve_aggregation import generic_add_model_components
+from __future__ import absolute_import
+
+from .reserve_aggregation import generic_add_model_components
 
 
 def add_model_components(m, d):

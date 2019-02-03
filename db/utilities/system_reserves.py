@@ -4,6 +4,7 @@
 """
 System reseves
 """
+from __future__ import print_function
 
 
 def insert_system_reserves(
@@ -41,8 +42,8 @@ def insert_system_reserves(
     io.commit()
 
     # Insert data
-    for ba in ba_timepoint_reserve_req.keys():
-        for tmp in ba_timepoint_reserve_req[ba].keys():
+    for ba in list(ba_timepoint_reserve_req.keys()):
+        for tmp in list(ba_timepoint_reserve_req[ba].keys()):
             c.execute(
                 """INSERT INTO inputs_system_{}
                 ({}_scenario_id, {}_ba, timepoint, {}_mw)

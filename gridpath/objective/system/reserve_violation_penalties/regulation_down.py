@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 
-from aggregate_reserve_violation_penalties import \
+from __future__ import absolute_import
+
+from .aggregate_reserve_violation_penalties import \
     generic_add_model_components, generic_load_model_data
 
 

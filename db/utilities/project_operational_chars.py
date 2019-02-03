@@ -4,6 +4,7 @@
 """
 Project operational characteristics
 """
+from __future__ import print_function
 
 
 def make_scenario_and_insert_all_projects(
@@ -59,7 +60,7 @@ def update_project_opchar_column(
 
     print("project " + column)
 
-    for project in project_char.keys():
+    for project in list(project_char.keys()):
         c.execute(
             """UPDATE inputs_project_operational_chars
             SET {} = {}
@@ -167,9 +168,9 @@ def update_project_variable_profiles(
     io.commit()
 
     # Insert data
-    for prj in proj_tmp_profiles.keys():
+    for prj in list(proj_tmp_profiles.keys()):
         print("..." + prj)
-        for tmp in proj_tmp_profiles[prj].keys():
+        for tmp in list(proj_tmp_profiles[prj].keys()):
             c.execute(
                 """INSERT INTO inputs_project_variable_generator_profiles
                 (variable_generator_profile_scenario_id, project, 
@@ -215,8 +216,8 @@ def update_project_hydro_opchar(
     io.commit()
 
     # Insert data
-    for p in proj_horizon_chars.keys():
-        for h in proj_horizon_chars[p].keys():
+    for p in list(proj_horizon_chars.keys()):
+        for h in list(proj_horizon_chars[p].keys()):
             c.execute(
                 """INSERT INTO inputs_project_hydro_operational_chars
                 (hydro_operational_chars_scenario_id, project, horizon, 

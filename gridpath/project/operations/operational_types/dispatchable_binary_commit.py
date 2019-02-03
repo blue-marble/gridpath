@@ -4,6 +4,8 @@
 """
 Operations of binary commit generators.
 """
+
+from builtins import zip
 import csv
 import os.path
 from pandas import read_csv
@@ -285,7 +287,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_binary_commit.csv"), "wb") as f:
+                           "dispatch_binary_commit.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",

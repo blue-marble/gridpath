@@ -5,7 +5,11 @@
 Storage projects with additional constraints on deliverability based on their 
 duration
 """
+from __future__ import division
 
+from builtins import next
+from builtins import str
+from past.utils import old_div
 import csv
 import os.path
 from pyomo.environ import Param, Var, Set, Constraint, NonNegativeReals
@@ -74,8 +78,8 @@ def add_module_specific_components(m, d):
         :return: 
         """
         return mod.FDDL_Project_Capacity_Credit_Eligible_Capacity_MW[g, p] \
-            <= mod.Energy_Capacity_MWh[g, p] \
-            / mod.min_duration_for_full_capacity_credit[g]
+            <= old_div(mod.Energy_Capacity_MWh[g, p],
+                       mod.min_duration_for_full_capacity_credit[g])
 
     m.FDDL_Project_Capacity_Credit_Duration_Derate_Constraint = Constraint(
         m.FDDL_PRM_PROJECT_OPERATIONAL_PERIODS,
@@ -160,13 +164,13 @@ def get_module_specific_inputs_from_database(
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("minimum_duration_for_full_capacity_credit_hours")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
-            if row[0] in prj_zone_dur_dict.keys():
+            if row[0] in list(prj_zone_dur_dict.keys()):
                 row.append(".") if prj_zone_dur_dict[row[0]] is None \
                     else row.append(prj_zone_dur_dict[row[0]])
                 new_rows.append(row)

@@ -4,6 +4,7 @@
 """
 Existing/planned project capacities
 """
+from __future__ import print_function
 
 
 def update_project_capacities(
@@ -37,8 +38,8 @@ def update_project_capacities(
     io.commit()
 
     # Insert data
-    for project in project_capacities.keys():
-        for period in project_capacities[project].keys():
+    for project in list(project_capacities.keys()):
+        for period in list(project_capacities[project].keys()):
             c.execute(
                 """INSERT INTO inputs_project_existing_capacity
                 (project_existing_capacity_scenario_id, project, period,
@@ -84,8 +85,8 @@ def update_project_fixed_costs(
     io.commit()
 
     # Insert data
-    for project in project_fixed_costs.keys():
-        for period in project_fixed_costs[project].keys():
+    for project in list(project_fixed_costs.keys()):
+        for period in list(project_fixed_costs[project].keys()):
             c.execute(
                 """INSERT INTO inputs_project_existing_fixed_cost
                 (project_existing_fixed_cost_scenario_id, project, period,

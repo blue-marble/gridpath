@@ -4,6 +4,7 @@
 """
 Simultaneous flow limits
 """
+from __future__ import print_function
 
 
 def insert_transmission_simultaneous_flow_limits(
@@ -40,8 +41,8 @@ def insert_transmission_simultaneous_flow_limits(
     io.commit()
 
     # Insert data
-    for group in group_period_limits.keys():
-        for period in group_period_limits[group].keys():
+    for group in list(group_period_limits.keys()):
+        for period in list(group_period_limits[group].keys()):
             c.execute(
                 """INSERT INTO
                 inputs_transmission_simultaneous_flow_limits

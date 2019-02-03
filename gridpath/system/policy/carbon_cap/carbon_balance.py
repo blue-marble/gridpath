@@ -4,7 +4,11 @@
 """
 Constraint total carbon emissions to be less than cap
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import next
+from past.utils import old_div
 import csv
 import os.path
 
@@ -58,7 +62,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "carbon_cap.csv"), "wb") as carbon_cap_results_file:
+                           "carbon_cap.csv"), "w") as carbon_cap_results_file:
         writer = csv.writer(carbon_cap_results_file)
         writer.writerow(["carbon_cap_zone", "period",
                          "discount_factor", "number_years_represented",
@@ -71,9 +75,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
-                value(
+                old_div(value(
                     m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
-                ) / 10**6  # MMT
+                ), 10**6)  # MMT
             ])
 
 
@@ -114,7 +118,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             carbon_cap_zone = row[0]
             period = row[1]
@@ -141,7 +145,7 @@ def import_results_into_database(
               "r") as carbon_cap_duals_file:
         reader = csv.reader(carbon_cap_duals_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
 
         for row in reader:
             c.execute(

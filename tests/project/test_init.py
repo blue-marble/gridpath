@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
+from builtins import object
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -47,7 +51,7 @@ class TestProject(unittest.TestCase):
         """
 
         # Create dynamic components class to use
-        class DynamicComponents:
+        class DynamicComponents(object):
             def __init__(self):
                 pass
         d = DynamicComponents()

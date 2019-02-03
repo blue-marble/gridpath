@@ -4,6 +4,7 @@
 """
 Existing/planned project capacities
 """
+from __future__ import print_function
 
 
 def update_project_new_costs(
@@ -25,8 +26,8 @@ def update_project_new_costs(
     )
     io.commit()
 
-    for project in project_period_lifetimes_costs.keys():
-        for period in project_period_lifetimes_costs[project].keys():
+    for project in list(project_period_lifetimes_costs.keys()):
+        for period in list(project_period_lifetimes_costs[project].keys()):
             c.execute(
                 """INSERT INTO inputs_project_new_cost
                 (project_new_cost_scenario_id, project, period, lifetime_yrs,

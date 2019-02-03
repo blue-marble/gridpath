@@ -5,6 +5,10 @@
 Carbon emissions from each carbonaceous project.
 """
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
@@ -77,7 +81,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     data_portal.data()['CARBONACEOUS_PROJECTS'] = {
-        None: data_portal.data()['carbon_cap_zone'].keys()
+        None: list(data_portal.data()['carbon_cap_zone'].keys())
     }
 
 
@@ -92,7 +96,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "carbon_emissions_by_project.csv"), "wb") as \
+                           "carbon_emissions_by_project.csv"), "w") as \
             carbon_emissions_results_file:
         writer = csv.writer(carbon_emissions_results_file)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -143,14 +147,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("carbon_cap_zone")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_zone_dict.keys():
+            if row[0] in list(prj_zone_dict.keys()):
                 row.append(prj_zone_dict[row[0]])
                 new_rows.append(row)
             # If project not specified, specify no BA
@@ -216,7 +220,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

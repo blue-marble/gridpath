@@ -4,7 +4,10 @@
 """
 Describe capacity costs.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value
@@ -53,7 +56,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "costs_capacity_all_projects.csv"), "wb") as f:
+                           "costs_capacity_all_projects.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "technology", "load_zone",
@@ -115,7 +118,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

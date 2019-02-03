@@ -4,6 +4,8 @@
 """
 Make load zones
 """
+from __future__ import print_function
+
 
 
 def geography_load_zones(

@@ -4,6 +4,8 @@
 """
 ELCC characteristics of projects
 """
+from __future__ import print_function
+
 
 import warnings
 
@@ -46,7 +48,7 @@ def project_elcc_chars(
     io.commit()
 
     # Insert data
-    for proj in proj_prm_type.keys():
+    for proj in list(proj_prm_type.keys()):
         c.execute(
             """INSERT INTO inputs_project_elcc_chars 
             (project_elcc_chars_scenario_id, project, prm_type)
@@ -59,7 +61,7 @@ def project_elcc_chars(
 
     # Update the rest of the data and warn for inconsistencies
     # ELCC simple fraction
-    for proj in proj_elcc_simple_fraction.keys():
+    for proj in list(proj_elcc_simple_fraction.keys()):
         c.execute(
             """UPDATE inputs_project_elcc_chars
             SET elcc_simple_fraction = {}
@@ -72,7 +74,7 @@ def project_elcc_chars(
     io.commit()
 
     # ELCC surface
-    for proj in proj_elcc_surface.keys():
+    for proj in list(proj_elcc_surface.keys()):
         c.execute(
             """UPDATE inputs_project_elcc_chars
             SET contributes_to_elcc_surface = {}
@@ -96,7 +98,7 @@ def project_elcc_chars(
 
     # Check if all of these projects will be assigned a min duration
     for proj in energy_limited_projects:
-        if proj not in proj_min_duration_for_full.keys():
+        if proj not in list(proj_min_duration_for_full.keys()):
             warnings.warn(
                 """Project {} is of the 'fully_deliverable_energy_limited' 
                 PRM type in project_elcc_chars_scenario_id {}, so should be 
@@ -108,7 +110,7 @@ def project_elcc_chars(
                 )
             )
 
-    for proj in proj_min_duration_for_full.keys():
+    for proj in list(proj_min_duration_for_full.keys()):
         # Check if proj is actually energy-limited, as it doesn't require
         # this param otherwise
         if proj not in energy_limited_projects:
@@ -143,7 +145,7 @@ def project_elcc_chars(
 
     # Check if all of these projects will be assigned a deliverability group
     for proj in energy_only_projects:
-        if proj not in proj_deliv_group.keys():
+        if proj not in list(proj_deliv_group.keys()):
             warnings.warn(
                 """Project {} is of the 'energy_only_allowed' 
                 PRM type in project_elcc_chars_scenario_id {}, so should be 
@@ -155,7 +157,7 @@ def project_elcc_chars(
                 )
             )
 
-    for proj in proj_deliv_group.keys():
+    for proj in list(proj_deliv_group.keys()):
         # Check if proj is actually energy-only, as it doesn't require
         # this param otherwise
         if proj not in energy_only_projects:
@@ -211,7 +213,7 @@ def deliverability_groups(
     io.commit()
 
     # Insert data
-    for group in deliv_group_params.keys():
+    for group in list(deliv_group_params.keys()):
         c.execute(
             """INSERT INTO inputs_project_prm_energy_only
             (prm_energy_only_scenario_id,
@@ -265,9 +267,9 @@ def elcc_surface(
     io.commit()
 
     # ELCC surface intercepts (by PRM zone)
-    for zone in zone_period_facet_intercepts.keys():
-        for period in zone_period_facet_intercepts[zone].keys():
-            for facet in zone_period_facet_intercepts[zone][period].keys():
+    for zone in list(zone_period_facet_intercepts.keys()):
+        for period in list(zone_period_facet_intercepts[zone].keys()):
+            for facet in list(zone_period_facet_intercepts[zone][period].keys()):
                 c.execute(
                     """INSERT INTO inputs_system_prm_zone_elcc_surface
                     (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone,
@@ -281,9 +283,9 @@ def elcc_surface(
     io.commit()
 
     # ELCC coefficients (by project)
-    for proj in proj_period_facet_coeff.keys():
-        for period in proj_period_facet_coeff[proj].keys():
-            for facet in proj_period_facet_coeff[proj][period].keys():
+    for proj in list(proj_period_facet_coeff.keys()):
+        for period in list(proj_period_facet_coeff[proj].keys()):
+            for facet in list(proj_period_facet_coeff[proj][period].keys()):
                 c.execute(
                     """INSERT INTO inputs_project_elcc_surface 
                     (prm_zone_scenario_id, 

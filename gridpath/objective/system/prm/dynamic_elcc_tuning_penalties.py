@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from builtins import next
 import csv
 import os.path
 from pyomo.environ import Param, Expression, NonNegativeReals
@@ -94,12 +95,12 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             new_rows = list()
 
             # Append column header
-            header = reader.next()
+            header = next(reader)
             header.append("dynamic_elcc_tuning_cost")
             new_rows.append(header)
 
             # Append tuning param value
-            param_value = reader.next()
+            param_value = next(reader)
             param_value.append(dynamic_elcc_tuning_cost)
             new_rows.append(param_value)
 

@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import absolute_import
+
 from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
-from aggregate_reserve_violation_penalties import \
+from .aggregate_reserve_violation_penalties import \
     generic_add_model_components, generic_load_model_data
 
 

@@ -4,6 +4,7 @@
 """
 Transmission load zones
 """
+from __future__ import print_function
 
 
 def insert_transmission_capacities(
@@ -41,8 +42,8 @@ def insert_transmission_capacities(
     io.commit()
 
     # Insert data
-    for tx_line in tx_line_period_capacities.keys():
-        for period in tx_line_period_capacities[tx_line].keys():
+    for tx_line in list(tx_line_period_capacities.keys()):
+        for period in list(tx_line_period_capacities[tx_line].keys()):
             c.execute(
                 """INSERT INTO inputs_transmission_existing_capacity
                 (transmission_existing_capacity_scenario_id,

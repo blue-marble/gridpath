@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from builtins import zip
 import csv
 import os.path
 import pandas as pd

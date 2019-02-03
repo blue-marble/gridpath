@@ -176,6 +176,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
             min_stable_level, unit_size_mw,
             startup_cost_per_mw, shutdown_cost_per_mw,
+            startup_fuel_mmbtu_per_mw,
             startup_plus_ramp_up_rate,
             shutdown_plus_ramp_down_rate,
             ramp_up_when_on_rate,

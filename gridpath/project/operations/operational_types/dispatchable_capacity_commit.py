@@ -9,7 +9,14 @@ units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
 Integer commitment is not enforced as capacity commitment with this approach is
 continuous.
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import next
+from builtins import zip
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -282,12 +289,11 @@ def add_module_specific_components(m, d):
                 (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return (
+            return old_div((
                 mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
                 g, mod.previous_timepoint[tmp]]
-                   ) \
-                / mod.number_of_hours_in_timepoint[tmp] \
+                   ), mod.number_of_hours_in_timepoint[tmp]) \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -388,12 +394,11 @@ def add_module_specific_components(m, d):
                 (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return (
+            return old_div((
                 mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
                 g, mod.previous_timepoint[tmp]]
-                   ) \
-                / mod.number_of_hours_in_timepoint[tmp] \
+                   ), mod.number_of_hours_in_timepoint[tmp]) \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -476,8 +481,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(mod.dispcapcommit_min_up_time_hours[g] /
-                               mod.number_of_hours_in_timepoint[tmp]) + 1):
+                           int(old_div(mod.dispcapcommit_min_up_time_hours[g],
+                               mod.number_of_hours_in_timepoint[tmp])) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -516,8 +521,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(mod.dispcapcommit_min_down_time_hours[g] /
-                               mod.number_of_hours_in_timepoint[tmp]) + 1):
+                           int(old_div(mod.dispcapcommit_min_down_time_hours[g],
+                               mod.number_of_hours_in_timepoint[tmp])) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -636,7 +641,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (mod.Commit_Capacity_MW[g, tmp]/mod.unit_size_mw[g]) \
+        return (old_div(mod.Commit_Capacity_MW[g, tmp],mod.unit_size_mw[g])) \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                 (mod.Commit_Capacity_MW[g, tmp]
@@ -849,7 +854,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_capacity_commit.csv"), "wb") as f:
+                           "dispatch_capacity_commit.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -871,7 +876,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 mod.load_zone[p],
                 value(mod.Provide_Power_DispCapacityCommit_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
-                value(mod.Commit_Capacity_MW[p, tmp])/mod.unit_size_mw[p]
+                old_div(value(mod.Commit_Capacity_MW[p, tmp]),mod.unit_size_mw[p])
             ])
 
 
@@ -930,7 +935,7 @@ def import_module_specific_results_to_database(
             as cc_dispatch_file:
         reader = csv.reader(cc_dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

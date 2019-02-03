@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -179,7 +182,7 @@ class TestPeriods(unittest.TestCase):
              }
         actual_tmps_in_p = {
             p: sorted([tmp for tmp in instance.TIMEPOINTS_IN_PERIOD[p]])
-            for p in instance.TIMEPOINTS_IN_PERIOD.keys()
+            for p in list(instance.TIMEPOINTS_IN_PERIOD.keys())
             }
         self.assertDictEqual(expected_tmp_in_p, actual_tmps_in_p,
                              msg="TIMEPOINTS_IN_PERIOD data do not match "

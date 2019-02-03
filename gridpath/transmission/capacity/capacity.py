@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 from functools import reduce
 import os.path
@@ -155,7 +159,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     # Export transmission capacity costs
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-              "costs_transmission_capacity.csv"), "wb") as f:
+              "costs_transmission_capacity.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["tx_line", "period", "load_zone_from",
@@ -218,7 +222,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             tx_line = row[0]
             period = row[1]
@@ -298,7 +302,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             tx_line = row[0]
             period = row[1]

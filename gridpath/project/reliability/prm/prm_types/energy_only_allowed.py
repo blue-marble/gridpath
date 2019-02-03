@@ -7,6 +7,10 @@ can have no PRM contribution (and therefore potentially incur a smaller cost),
 or partly or fully deliverable
 """
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
@@ -482,7 +486,7 @@ def import_module_specific_results_into_database(
               "r") as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]
@@ -575,7 +579,7 @@ def import_module_specific_results_into_database(
               "r") as capacity_costs_file:
         reader = csv.reader(capacity_costs_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             group = row[0]
             period = row[1]

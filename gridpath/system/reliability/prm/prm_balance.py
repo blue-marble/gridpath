@@ -5,6 +5,9 @@
 Constraint total PRM contribution to be more than or equal to the requirement.
 """
 
+from __future__ import print_function
+
+from builtins import next
 import csv
 import os.path
 
@@ -58,7 +61,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "prm.csv"), "wb") as rps_results_file:
+                           "prm.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["prm_zone", "period",
                          "discount_factor", "number_years_represented",
@@ -115,7 +118,7 @@ def import_results_into_database(
             surface_file:
         reader = csv.reader(surface_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             prm_zone = row[0]
             period = row[1]
@@ -145,7 +148,7 @@ def import_results_into_database(
               "r") as prm_duals_file:
         reader = csv.reader(prm_duals_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
 
         for row in reader:
             c.execute(

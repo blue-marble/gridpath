@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -200,7 +203,7 @@ class TestHorizons(unittest.TestCase):
              }
         actual_tmps_on_horizon = {
             h: [tmp for tmp in instance.TIMEPOINTS_ON_HORIZON[h]]
-            for h in instance.TIMEPOINTS_ON_HORIZON.keys()
+            for h in list(instance.TIMEPOINTS_ON_HORIZON.keys())
             }
         self.assertDictEqual(expected_tmps_on_horizon, actual_tmps_on_horizon,
                              msg="HORIZONS_ON_TIMEPOINT data do not match "

@@ -4,6 +4,8 @@
 """
 Local capacity projects and the zone they contribute to
 """
+
+from builtins import next
 import csv
 import os.path
 from pyomo.environ import Param, Set
@@ -56,7 +58,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     data_portal.data()['LOCAL_CAPACITY_PROJECTS'] = {
-        None: data_portal.data()['local_capacity_zone'].keys()
+        None: list(data_portal.data()['local_capacity_zone'].keys())
     }
 
 
@@ -88,14 +90,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("local_capacity_zone")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_zones_dict.keys():
+            if row[0] in list(prj_zones_dict.keys()):
                 row.append(prj_zones_dict[row[0]])
                 new_rows.append(row)
             # If project not specified, specify no BA

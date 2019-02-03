@@ -5,7 +5,9 @@
 Constraint total local capacity contribution to be more than or equal to the 
 requirement.
 """
+from __future__ import print_function
 
+from builtins import next
 import csv
 import os.path
 
@@ -89,7 +91,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "local_capacity.csv"), "wb") as rps_results_file:
+                           "local_capacity.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["local_capacity_zone", "period",
                          "discount_factor", "number_years_represented",
@@ -143,7 +145,7 @@ def import_results_into_database(
             surface_file:
         reader = csv.reader(surface_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             local_capacity_zone = row[0]
             period = row[1]
@@ -173,7 +175,7 @@ def import_results_into_database(
               "r") as local_capacity_duals_file:
         reader = csv.reader(local_capacity_duals_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
 
         for row in reader:
             c.execute(

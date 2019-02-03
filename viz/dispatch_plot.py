@@ -5,6 +5,8 @@
 Make results dispatch plot (by load zone and horizon)
 """
 
+from builtins import str
+from builtins import range
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -33,7 +35,7 @@ def determine_x_axis(c, scenario_id, horizon, load_zone):
         )
     ).fetchone()[0]
 
-    x_axis = range(1, x_axis_count + 1)
+    x_axis = list(range(1, x_axis_count + 1))
 
     return x_axis_count, x_axis
 
@@ -57,6 +59,8 @@ def determine_technologies(c, scenario_id, horizon, load_zone):
             scenario_id, horizon, load_zone
         )
     ).fetchall()]
+
+    print(technologies_)
 
     return technologies_
 
@@ -87,7 +91,7 @@ def get_power_by_tech_results(c, scenario_id, horizon, load_zone):
     power_by_technology_dict = dict()
     for i in power_by_technology_list:
         tech = i[0]
-        if tech in power_by_technology_dict.keys():
+        if tech in list(power_by_technology_dict.keys()):
             power_by_technology_dict[str(tech)].append(i[4])
         else:
             power_by_technology_dict[str(tech)] = [i[4]]
@@ -360,7 +364,7 @@ def make_figure(
 
     # Can't put stackplot categories directly on legend, so make empty lines
     # and put those on legend instead
-    for tech in tech_colors.keys():
+    for tech in list(tech_colors.keys()):
         power = \
             imports if tech == 'Imports' \
             else curtailment_variable if tech == 'Curtailment_Variable' \
@@ -389,7 +393,7 @@ def make_figure(
             str('' if inactive_pumped_storage else ' + Pumped Storage') + \
             ' + Battery'
 
-        ax.plot(range(1, x_axis_count + 1),
+        ax.plot(list(range(1, x_axis_count + 1)),
                 [load_[i][0] + (exports[i] if exports else 0) +
                  ([-x if x < 0 else 0 for x in power_by_tech[
                      "Pumped_Storage"]][
@@ -410,7 +414,7 @@ def make_figure(
             'Load' + \
             str('' if inactive_exports else ' + Exports') + \
             ' + Pumped_Storage'
-        ax.plot(range(1, x_axis_count + 1),
+        ax.plot(list(range(1, x_axis_count + 1)),
                 [load_[i][0] + (exports[i] if exports else 0) +
                  ([-x if x < 0 else 0
                   for x in power_by_tech["Pumped_Storage"]][i]
@@ -424,13 +428,13 @@ def make_figure(
     if inactive_exports:
         pass
     else:
-        ax.plot(range(1, x_axis_count + 1),
+        ax.plot(list(range(1, x_axis_count + 1)),
                 [load_[i][0] + exports[i] for i in range(0, x_axis_count)],
                 color='black', label='Load + Exports', linewidth=2,
                 linestyle="--")
 
     # Plot load
-    ax.plot(range(1, x_axis_count + 1), [l[0] for l in load_],
+    ax.plot(list(range(1, x_axis_count + 1)), [l[0] for l in load_],
             color='black', label='Load', linewidth=2)
 
     return fig, ax

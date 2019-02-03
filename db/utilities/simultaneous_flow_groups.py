@@ -5,6 +5,7 @@
 Groups of transmission lines over which simultaneous flow constraints will 
 be applied
 """
+from __future__ import print_function
 
 
 def insert_transmission_simultaneous_flow_groups(
@@ -42,7 +43,7 @@ def insert_transmission_simultaneous_flow_groups(
     io.commit()
 
     # Insert data
-    for group in group_lines.keys():
+    for group in list(group_lines.keys()):
         for tx_line in group_lines[group]:
             c.execute(
                 """INSERT INTO 

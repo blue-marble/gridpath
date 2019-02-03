@@ -4,6 +4,7 @@
 """
 Project portfolios
 """
+from __future__ import print_function
 
 
 def update_project_portfolios(
@@ -25,7 +26,7 @@ def update_project_portfolios(
     )
     io.commit()
 
-    for project in project_cap_types.keys():
+    for project in list(project_cap_types.keys()):
         c.execute(
             """INSERT INTO inputs_project_portfolios
              (project_portfolio_scenario_id, project, capacity_type)

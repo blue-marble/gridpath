@@ -4,6 +4,7 @@
 """
 Candidate project potentials
 """
+from __future__ import print_function
 
 
 def update_project_potentials(
@@ -39,8 +40,8 @@ def update_project_potentials(
     io.commit()
 
     # Insert data
-    for prj in project_period_potentials.keys():
-        for period in project_period_potentials[prj].keys():
+    for prj in list(project_period_potentials.keys()):
+        for period in list(project_period_potentials[prj].keys()):
             c.execute(
                 """INSERT INTO inputs_project_new_potential
                 (project_new_potential_scenario_id, project, period,

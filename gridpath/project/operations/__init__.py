@@ -5,6 +5,8 @@
 Operational subsets (that can include more than one operational type)
 """
 
+from builtins import next
+from builtins import zip
 import csv
 from pandas import read_csv
 import os.path
@@ -90,7 +92,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     # Get column names as a few columns will be optional; won't load data if column does not exist
     with open(os.path.join(scenario_directory, "inputs", "projects.tab")) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t")
-        headers = reader.next()
+        headers = next(reader)
 
     # STARTUP_COST_PROJECTS
     def determine_startup_cost_projects():

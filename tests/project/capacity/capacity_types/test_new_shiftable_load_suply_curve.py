@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -140,10 +143,10 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         expected_proj_points = [
             ("Shift_DR", 1), ("Shift_DR", 2), ("Shift_DR", 3)
         ]
-        actual_proj_points = [
+        actual_proj_points = sorted([
             (prj, pnt) for (prj, pnt)
             in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS
-        ]
+        ])
         self.assertListEqual(expected_proj_points, actual_proj_points)
 
         # Param: new_shiftable_load_supply_curve_slope

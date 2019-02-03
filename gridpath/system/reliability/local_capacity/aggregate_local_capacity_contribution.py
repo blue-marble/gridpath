@@ -5,7 +5,10 @@
 Aggregate simple local capacity contribution from the project level to the
 local-capacity-zone level for each period.
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value
@@ -58,7 +61,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "local_capacity_contribution.csv"), "wb") as \
+                           "local_capacity_contribution.csv"), "w") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["local_capacity_zone", "period", "contribution_mw"])
@@ -117,7 +120,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             local_capacity_zone = row[0]
             period = row[1]

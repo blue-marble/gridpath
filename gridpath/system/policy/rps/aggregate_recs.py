@@ -5,6 +5,7 @@
 Aggregate delivered RPS-eligible power from the project-timepoint level to
 the RPS zone - period level.
 """
+
 from pyomo.environ import Param, Set, Expression, value
 
 

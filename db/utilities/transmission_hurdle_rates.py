@@ -4,6 +4,7 @@
 """
 Hurdle rates
 """
+from __future__ import print_function
 
 
 def insert_transmission_hurdle_rates(
@@ -40,8 +41,8 @@ def insert_transmission_hurdle_rates(
     io.commit()
 
     # Insert data
-    for tx_line in tx_line_period_hurdle_rates.keys():
-        for period in tx_line_period_hurdle_rates[tx_line].keys():
+    for tx_line in list(tx_line_period_hurdle_rates.keys()):
+        for period in list(tx_line_period_hurdle_rates[tx_line].keys()):
             c.execute(
                 """INSERT INTO inputs_transmission_hurdle_rates
                 (transmission_hurdle_rate_scenario_id,

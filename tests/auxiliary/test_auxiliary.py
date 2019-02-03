@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+
 from pyomo.environ import AbstractModel
 import unittest
 
@@ -80,9 +81,9 @@ class TestAuxiliary(unittest.TestCase):
 
         :return:
         """
-        self.assertEquals(True, auxiliary_module_to_test.is_number(1))
-        self.assertEquals(True, auxiliary_module_to_test.is_number(100.5))
-        self.assertEquals(False, auxiliary_module_to_test.is_number("string"))
+        self.assertEqual(True, auxiliary_module_to_test.is_number(1))
+        self.assertEqual(True, auxiliary_module_to_test.is_number(100.5))
+        self.assertEqual(False, auxiliary_module_to_test.is_number("string"))
 
 
 if __name__ == "__main__":

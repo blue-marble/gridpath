@@ -4,7 +4,10 @@
 """
 Add project-level components for downward load-following reserves
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 
@@ -186,7 +189,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("lf_reserves_down_ba")
         header.append("lf_reserves_down_derate")
         new_rows.append(header)
@@ -194,14 +197,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_ba_dict.keys():
+            if row[0] in list(prj_ba_dict.keys()):
                 row.append(prj_ba_dict[row[0]])
             # If project not specified, specify no BA
             else:
                 row.append(".")
 
             # If project specified, check if derate specified or not
-            if row[0] in prj_derate_dict.keys():
+            if row[0] in list(prj_derate_dict.keys()):
                 row.append(prj_derate_dict[row[0]])
             # If project not specified, specify no derate
             else:

@@ -4,6 +4,8 @@
 """
 Create the database and make schema
 """
+
+from builtins import str
 from argparse import ArgumentParser
 import os.path
 import sqlite3

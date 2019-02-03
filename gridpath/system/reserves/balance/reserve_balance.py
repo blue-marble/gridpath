@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals
@@ -64,7 +66,7 @@ def generic_export_results(scenario_directory, horizon, stage, m, d,
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           filename), "wb") \
+                           filename), "w") \
             as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["ba", "period", "horizon", "timepoint",
@@ -149,7 +151,7 @@ def generic_import_results_to_database(
               "r") as violation_file:
         reader = csv.reader(violation_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             ba = row[0]
             period = row[1]
@@ -218,7 +220,7 @@ def generic_import_results_to_database(
               "r") as reserve_balance_duals_file:
         reader = csv.reader(reserve_balance_duals_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
 
         for row in reader:
             c.execute(

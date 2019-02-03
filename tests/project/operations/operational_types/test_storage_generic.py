@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from importlib import import_module
 import os.path
 import sys
@@ -80,7 +83,9 @@ class TestCapacity(unittest.TestCase):
 
         # Sets: STORAGE_GENERIC_PROJECTS
         expected_projects = ["Battery", "Battery_Specified"]
-        actual_projects = [p for p in instance.STORAGE_GENERIC_PROJECTS]
+        actual_projects = sorted(
+            [p for p in instance.STORAGE_GENERIC_PROJECTS]
+        )
         self.assertListEqual(expected_projects, actual_projects)
 
         # STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS

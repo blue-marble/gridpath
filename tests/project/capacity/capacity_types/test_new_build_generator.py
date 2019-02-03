@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -222,22 +224,21 @@ class TestNewBuildGenerator(unittest.TestCase):
         expected_gen_op_periods = [
             ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030)
         ]
-        actual_gen_op_periods = [
+        actual_gen_op_periods = sorted([
             (prj, period) for (prj, period) in
             instance.NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS
-        ]
+        ])
         self.assertListEqual(expected_gen_op_periods, actual_gen_op_periods)
 
         # Set: NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD
         expected_gen_vintage_op_in_period = {
             2020: [("Gas_CCGT_New", 2020)],
-            2030: [("Gas_CCGT_New", 2020), ("Gas_CT_New", 2030),
-                   ("Gas_CCGT_New", 2030)]
+            2030: [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030)]
         }
         actual_gen_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
-                instance.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-                ] for p in instance.PERIODS
+                sorted(instance.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p])
+                ] for p in sorted(instance.PERIODS)
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
                              actual_gen_vintage_op_in_period)

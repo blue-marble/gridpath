@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value
@@ -52,7 +56,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "imports_exports.csv"), "wb") as imp_exp_file:
+                           "imports_exports.csv"), "w") as imp_exp_file:
         writer = csv.writer(imp_exp_file)
         writer.writerow(
             ["load_zone", "timepoint", "period", "horizon", "horizon_weight",
@@ -122,7 +126,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
               "r") as tx_op_file:
         reader = csv.reader(tx_op_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             load_zone = row[0]
             timepoint = row[1]

@@ -5,6 +5,10 @@
 Keep track of fuel burn
 """
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Expression, value, Var, NonNegativeReals, Constraint
@@ -132,7 +136,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-              "fuel_burn.csv"), "wb") as f:
+              "fuel_burn.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -213,7 +217,7 @@ def import_results_into_database(
             fuel_burn_file:
         reader = csv.reader(fuel_burn_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

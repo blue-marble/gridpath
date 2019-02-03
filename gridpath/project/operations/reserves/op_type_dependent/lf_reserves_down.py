@@ -5,6 +5,9 @@
 Add project-level components for downward load-following reserves that also 
 depend on operational type
 """
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 
@@ -105,14 +108,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("lf_reserves_down_ramp_rate")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if ramp rate specified or not
-            if row[0] in prj_ramp_rate_dict.keys():
+            if row[0] in list(prj_ramp_rate_dict.keys()):
                 row.append(prj_ramp_rate_dict[row[0]])
             # If project not specified, specify no ramp rate
             else:

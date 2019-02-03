@@ -5,6 +5,10 @@
 Add project-level components for frequency response reserves
 """
 
+from builtins import next
+from builtins import zip
+from builtins import str
+from builtins import range
 import csv
 import os.path
 import pandas as pd
@@ -173,7 +177,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "reserves_provision_frequency_response.csv"),
-              "wb") as f:
+              "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -241,7 +245,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("frequency_response_ba")
         header.append("frequency_response_partial")
         header.append("frequency_response_derate")
@@ -250,7 +254,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_ba_dict.keys():
+            if row[0] in list(prj_ba_dict.keys()):
                 # Add BA and whether project contributes to partial freq resp
                 row.append(prj_ba_dict[row[0]][0])
                 row.append(prj_ba_dict[row[0]][1])
@@ -261,7 +265,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
                     row.append(".")
 
             # If project specified, check if derate specified or not
-            if row[0] in prj_derate_dict.keys():
+            if row[0] in list(prj_derate_dict.keys()):
                 row.append(prj_derate_dict[row[0]])
             # If project not specified, specify no derate
             else:
@@ -328,7 +332,7 @@ def import_results_into_database(
             as reserve_provision_file:
         reader = csv.reader(reserve_provision_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

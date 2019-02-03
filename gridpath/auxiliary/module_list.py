@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -262,7 +265,7 @@ def determine_modules(scenario_directory):
     modules_to_use = all_modules_list()
 
     optional_modules = optional_modules_list()
-    for feature in optional_modules.keys():
+    for feature in list(optional_modules.keys()):
         if feature in requested_features:
             pass
         else:
@@ -273,7 +276,7 @@ def determine_modules(scenario_directory):
     # We have to check if all features that the module depends on are
     # specified before removing it
     cross_feature_modules = cross_feature_modules_list()
-    for feature_group in cross_feature_modules.keys():
+    for feature_group in list(cross_feature_modules.keys()):
         if all(feature in requested_features
                for feature in feature_group):
             pass

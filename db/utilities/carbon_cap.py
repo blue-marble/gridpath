@@ -4,6 +4,7 @@
 """
 Carbon cap targets
 """
+from __future__ import print_function
 
 
 def insert_carbon_cap_targets(
@@ -37,8 +38,8 @@ def insert_carbon_cap_targets(
     io.commit()
 
     # Insert data
-    for zone in zone_period_targets.keys():
-        for period in zone_period_targets[zone].keys():
+    for zone in list(zone_period_targets.keys()):
+        for period in list(zone_period_targets[zone].keys()):
             c.execute(
                 """INSERT INTO inputs_system_carbon_cap_targets
                 (carbon_cap_target_scenario_id, carbon_cap_zone, period,

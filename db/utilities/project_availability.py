@@ -4,6 +4,7 @@
 """
 Project availability
 """
+from __future__ import print_function
 
 
 def update_project_availability(
@@ -37,8 +38,8 @@ def update_project_availability(
     )
     io.commit()
 
-    for prj in project_avail.keys():
-        for h in project_avail[prj].keys():
+    for prj in list(project_avail.keys()):
+        for h in list(project_avail[prj].keys()):
             c.execute(
                 """INSERT INTO inputs_project_availability
                 (project_availability_scenario_id, project, horizon, 

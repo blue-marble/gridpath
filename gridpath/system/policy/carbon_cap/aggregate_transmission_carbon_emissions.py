@@ -5,7 +5,11 @@
 Aggregate carbon emissions from the transmission-line-timepoint level to
 the carbon cap zone - period level.
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import next
+from past.utils import old_div
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
@@ -87,7 +91,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "carbon_cap_total_transmission.csv"), "wb") as \
+                           "carbon_cap_total_transmission.csv"), "w") as \
             rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["carbon_cap_zone", "period", "carbon_cap_target_mmt",
@@ -98,11 +102,10 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 z,
                 p,
                 float(m.carbon_cap_target_mmt[z, p]),
-                value(
+                old_div(value(
                     m.Total_Carbon_Emission_Imports_Tons[z, p]
-                ) / 10**6,  # MMT
-                total_carbon_emissions_imports_degen_expr_rule(m, z, p)
-                / 10**6 # MMT
+                ), 10**6),  # MMT
+                old_div(total_carbon_emissions_imports_degen_expr_rule(m, z, p), 10**6) # MMT
             ])
 
 
@@ -138,7 +141,7 @@ def import_results_into_database(
             emissions_file:
         reader = csv.reader(emissions_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             carbon_cap_zone = row[0]
             period = row[1]

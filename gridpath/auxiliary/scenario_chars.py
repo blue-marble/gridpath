@@ -5,8 +5,10 @@
 Scenario characteristics in database
 """
 
+from builtins import object
 
-class OptionalFeatures:
+
+class OptionalFeatures(object):
     def __init__(self, cursor, scenario_id):
         """
         
@@ -162,7 +164,7 @@ class OptionalFeatures:
         return feature_list
 
 
-class SubScenarios:
+class SubScenarios(object):
     def __init__(self, cursor, scenario_id):
         """
         

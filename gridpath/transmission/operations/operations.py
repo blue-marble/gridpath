@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
@@ -84,7 +88,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "transmission_operations.csv"), "wb") as \
+                           "transmission_operations.csv"), "w") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",
@@ -152,7 +156,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
               "r") as tx_op_file:
         reader = csv.reader(tx_op_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             tx_line = row[0]
             lz_from = row[1]

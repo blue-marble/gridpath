@@ -5,6 +5,10 @@
 Describe operational costs.
 """
 
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
 import csv
 import os.path
 from pyomo.environ import Var, Expression, Constraint, NonNegativeReals, value
@@ -150,7 +154,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "costs_operations_variable_om.csv"), "wb") as f:
+                           "costs_operations_variable_om.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -171,7 +175,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "costs_operations_fuel.csv"), "wb") as f:
+                           "costs_operations_fuel.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -192,7 +196,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "costs_operations_startup.csv"), "wb") as f:
+                           "costs_operations_startup.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -213,7 +217,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "costs_operations_shutdown.csv"), "wb") as f:
+                           "costs_operations_shutdown.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -286,7 +290,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]
@@ -378,7 +382,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]
@@ -470,7 +474,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]
@@ -562,7 +566,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

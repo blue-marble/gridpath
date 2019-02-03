@@ -5,7 +5,13 @@
 Operations of variable generators. Can be curtailed (dispatched down).
 Can provide reserves.
 """
+from __future__ import division
+from __future__ import print_function
 
+from builtins import next
+from builtins import zip
+from builtins import str
+from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -60,10 +66,9 @@ def add_module_specific_components(m, d):
         """
         return mod.Provide_Variable_Power_MW[g, tmp] + \
             sum(
-            getattr(mod, c)[g, tmp]
-            / getattr(
+            old_div(getattr(mod, c)[g, tmp], getattr(
                 mod, getattr(d, reserve_variable_derate_params)[c]
-            )[g]
+            )[g])
             for c in getattr(d, headroom_variables)[g]
         ) \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
@@ -83,10 +88,9 @@ def add_module_specific_components(m, d):
         """
         return mod.Provide_Variable_Power_MW[g, tmp] - \
             sum(
-            getattr(mod, c)[g, tmp]
-            / getattr(
+            old_div(getattr(mod, c)[g, tmp], getattr(
                 mod, getattr(d, reserve_variable_derate_params)[c]
-            )[g]
+            )[g])
             for c in getattr(d, footroom_variables)[g]
         ) \
             >= 0
@@ -266,10 +270,10 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        raise (ValueError(
+        raise ValueError(
             "ERROR! Variable projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
-            "and change its fuel to '.' (no value).")
+            "and change its fuel to '.' (no value)."
         )
     else:
         raise ValueError(error_message)
@@ -283,11 +287,11 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    raise(ValueError(
+    raise ValueError(
         "ERROR! Variable generators should not incur startup/shutdown "
         "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value).")
+        "and change its startup/shutdown costs to '.' (no value)."
     )
 
 
@@ -398,7 +402,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_variable.csv"), "wb") as f:
+                           "dispatch_variable.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -579,7 +583,7 @@ def import_module_specific_results_to_database(
                            "dispatch_variable.csv"), "r") as v_dispatch_file:
         reader = csv.reader(v_dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

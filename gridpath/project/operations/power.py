@@ -4,6 +4,13 @@
 """
 Get the dispatch of all projects
 """
+
+from __future__ import division
+from __future__ import print_function
+
+from builtins import next
+from builtins import str
+from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -58,7 +65,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
 
     # First power
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_all.csv"), "wb") as f:
+                           "dispatch_all.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -141,8 +148,10 @@ def summarize_results(d, problem_directory, horizon, stage):
     # and period)
     for indx, row in operational_results_agg_df.iterrows():
         operational_results_agg_df.percent_total_power[indx] = \
-            operational_results_agg_df.weighted_power_mwh[indx] \
-            / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]*100.0
+            old_div(
+                operational_results_agg_df.weighted_power_mwh[indx],
+                lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
+            )*100.0
 
     # Rename the columns for the final table
     operational_results_agg_df.columns = (["Annual Energy (MWh)",
@@ -201,7 +210,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

@@ -4,6 +4,8 @@
 """
 
 """
+
+from builtins import zip
 from csv import writer
 import os.path
 from pandas import read_csv
@@ -173,7 +175,7 @@ def export_pass_through_inputs(scenario_directory, horizon, stage, m, d):
     """
     with open(os.path.join(
             scenario_directory, horizon,
-            "pass_through_inputs", "fixed_commitment.tab"), "ab") \
+            "pass_through_inputs", "fixed_commitment.tab"), "a") \
             as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t")
         for (g, tmp) in m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS:

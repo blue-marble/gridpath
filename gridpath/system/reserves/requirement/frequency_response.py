@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import absolute_import
+
 import csv
 import os.path
 from pyomo.environ import Param, NonNegativeReals
 
-from reserve_requirements import generic_add_model_components, \
+from .reserve_requirements import generic_add_model_components, \
     generic_load_model_data
 
 

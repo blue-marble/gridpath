@@ -4,6 +4,8 @@
 """
 ELCC characteristics of projects
 """
+from __future__ import print_function
+
 
 import warnings
 
@@ -39,8 +41,8 @@ def prm_requirement(
     io.commit()
 
     # Insert data
-    for zone in zone_period_requirement.keys():
-        for period in zone_period_requirement[zone].keys():
+    for zone in list(zone_period_requirement.keys()):
+        for period in list(zone_period_requirement[zone].keys()):
             c.execute(
                 """INSERT INTO inputs_system_prm_requirement
                 (prm_requirement_scenario_id, 

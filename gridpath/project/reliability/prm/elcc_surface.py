@@ -4,7 +4,11 @@
 """
 Contributions to ELCC surface
 """
+from __future__ import print_function
 
+from builtins import next
+from builtins import str
+from builtins import range
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
@@ -35,7 +39,7 @@ def add_model_components(m, d):
     # The coefficient for each project contributing to the ELCC surface
     # Surface is limited to 1000 facets
     m.PROJECT_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * range(1, 1001)
+        dimen=3, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
     )
 
     # The project coefficient for the surface
@@ -113,7 +117,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "prm_project_elcc_surface_contribution.csv"),
-              "wb") as \
+              "w") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["project", "period", "prm_zone", "facet",
@@ -176,14 +180,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         new_rows = list()
 
         # Append column header
-        header = reader.next()
+        header = next(reader)
         header.append("contributes_to_elcc_surface")
         new_rows.append(header)
 
         # Append correct values
         for row in reader:
             # If project specified, check if BA specified or not
-            if row[0] in prj_contr_dict.keys():
+            if row[0] in list(prj_contr_dict.keys()):
                 row.append(prj_contr_dict[row[0]])
                 new_rows.append(row)
             # If project not specified, specify no BA
@@ -284,7 +288,7 @@ def import_results_into_database(
             as elcc_file:
         reader = csv.reader(elcc_file)
 
-        reader.next()  # skip header
+        next(reader)  # skip header
         for row in reader:
             project = row[0]
             period = row[1]

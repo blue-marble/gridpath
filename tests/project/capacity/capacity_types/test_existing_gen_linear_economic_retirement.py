@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+from __future__ import print_function
+
+from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
@@ -81,11 +84,11 @@ class TestExistingGenLinearEconRet(unittest.TestCase):
 
         # Set: EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
         expected_gen_set = [("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030)]
-        actual_gen_set = [
+        actual_gen_set = sorted([
             (g, p) for (g, p) in
             instance.
             EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
-            ]
+            ])
         self.assertListEqual(expected_gen_set, actual_gen_set)
 
         # Param: existing_lin_econ_ret_capacity_mw
