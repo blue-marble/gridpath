@@ -13,6 +13,7 @@ Background
 
    introduction
 
+
 =====================
 GridPath Architecture
 =====================
@@ -22,19 +23,56 @@ GridPath Architecture
    :caption: Topics:
 
    overview
+   packages
 
-=======
-Modules
-=======
+
+==============
+Using GridPath
+==============
 
 .. toctree::
    :maxdepth: 2
    :caption: Topics:
 
-   modules
+   approaches
+   basic_functionality
+   optional_features
+   running_the_model
+
+=================
+GridPath Database
+=================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Topics:
+
+   database
+
+=======================
+GridPath User Interface
+=======================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Topics:
+
+   ui
+
+
+===================
+GridPath Test Suite
+===================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Topics:
+
+   tests
+
 
 ==================
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`

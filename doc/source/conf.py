@@ -48,7 +48,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GridPath'
-copyright = u'2017, Blue Marble Analytics LLC'
+copyright = u'2018, Blue Marble Analytics LLC'
 author = u'Blue Marble Analytics LLC'
 
 # The version info for the project you're documenting, acts as replacement for

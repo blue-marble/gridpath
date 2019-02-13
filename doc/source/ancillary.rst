@@ -1,5 +1,13 @@
-GridPath Modules
-================
+Auxiliary Scripts
+=================
+
+-----------------
+gridpath.auxiliary
+-----------------
+.. automodule:: gridpath.ancillary.__init__
+    :members: gridpath.auxiliary.auxiliary
+    :members: gridpath.auxiliary.dynamic_components
+
 
 ----------------------------
 gridpath.auxiliary.auxiliary
@@ -12,11 +20,4 @@ gridpath.auxiliary.auxiliary
 gridpath.auxiliary.dynamic_components
 -------------------------------------
 .. automodule:: gridpath.auxiliary.dynamic_components
-   :members:
-
-
-------------------------------
-tests.auxiliary.test_auxiliary
-------------------------------
-.. automodule:: tests.auxiliary.test_auxiliary
    :members:
