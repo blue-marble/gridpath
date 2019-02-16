@@ -1,13 +1,46 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World from GridPath UI</title>
-  </head>
-  <body>
+<style>
+.btn-group button {
+  background-color: lightgrey; /* Light grey background */
+  border: 1px solid darkslategrey; /* Dark grey border */
+  color: black; /* Black text */
+  padding: 10px 24px; /* Some padding */
+  cursor: pointer; /* Pointer/hand icon */
+  width: 50%; /* Set a width if needed */
+  display: block; /* Make the buttons appear below each other */
+}
+
+.btn-group button:not(:last-child) {
+  border-bottom: none; /* Prevent double borders */
+}
+
+/* Add a background color on hover */
+.btn-group button:hover {
+  background-color: darkseagreen;
+}
+</style>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Hello World from GridPath UI</title>
+</head>
+<body>
+  <div>
     <button id="TestPythonButton">Test Python</button>
+  </div>
+  <div>
     <button id="TestSQLiteButton">Test SQLite</button>
-  </body>
+  </div>
+  <div id="scenariosButtonList"></div>
+  <div>
+    <button id="ScenarioDetailButton">Scenario Detail</button>
+  </div>
+  <div>
+    <button id="NewScenarioButton">New Scenario</button>
+  </div>
+</body>
+
 </html>
 
 <script src="./index.js"></script>

@@ -4,12 +4,11 @@ const { remote } = require('electron');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const dialog = remote.require('electron').dialog;
-
-const TestPythonButton = document.getElementById('TestPythonButton');
-const TestSQLiteButton = document.getElementById('TestSQLiteButton');
+const BrowserWindow = remote.require('electron').BrowserWindow;
 
 
 // Spawn a Python child process
+const TestPythonButton = document.getElementById('TestPythonButton');
 // We need to find the Python script when we are in both
 // a production environment and a development environment
 // We do that by looking up app.isPackaged (this is a renderer process, so we
@@ -45,6 +44,8 @@ TestPythonButton.addEventListener('click', function (event) {
 });
 
 // Create and access an SQLite database
+const TestSQLiteButton = document.getElementById('TestSQLiteButton');
+
 function createandAccessSQLite(db_dir) {
     let db_file = path.join(db_dir[0], 'hello_world_from_sqlite.db');
     let db = new sqlite3.Database(db_file);
@@ -66,3 +67,71 @@ TestSQLiteButton.addEventListener('click', function (event) {
     createandAccessSQLite(db_dir)
 
 });
+
+// Make a list of scenarios
+let scenarios = [
+    "Scenario_1", "Scenario_2", "Scenario_3", "Scenario_4", "Scenario_5"
+];
+// Create the html for an unordered list
+let unordered_list = '<ul>';
+scenarios.forEach(function(scenario) {
+  unordered_list += '<li>'+ scenario + '</li>';
+});
+unordered_list += '</ul>';
+
+// Create the html for a button group
+let scenarioListButtons = '<div class="btn-group">\n';
+scenarios.forEach(function(scenario) {
+    let button_id = "scenario"+scenario+"DetailButton";
+    let html_string =
+        '<button id='+button_id+'><b>'+ scenario + '</b></button>\n';
+  scenarioListButtons += html_string;
+});
+scenarioListButtons += '<div class="btn-group">';
+
+console.log(scenarioListButtons);
+
+document.getElementById("scenariosButtonList").innerHTML =
+    scenarioListButtons;
+
+// Open scenario detail
+function openNewWindow(html_path) {
+    let newWindow = new BrowserWindow({ width: 400, height: 400 });
+        newWindow.on('close', function () { newWindow = null });
+        newWindow.loadFile(html_path);
+        newWindow.once('ready-to-show', () => {
+            newWindow.show()
+        });
+  }
+
+function showScenarioDetail() {
+   const scenario_detail_html_path = path.join(
+      __dirname, 'scenario_detail.html'
+  );
+  console.log(scenario_detail_html_path);
+  openNewWindow(scenario_detail_html_path)
+}
+
+scenarios.forEach(function(scenario) {
+    let ScenarioDetailButton =
+    document.getElementById(('scenario'+scenario+'DetailButton'));
+    ScenarioDetailButton.addEventListener('click', function (event) {
+  showScenarioDetail()
+});
+});
+
+
+
+// New scenario
+const NewScenarioButton =
+    document.getElementById('NewScenarioButton');
+
+NewScenarioButton.addEventListener('click', function (event) {
+  const scenario_detail_html_path = path.join(
+      __dirname, 'scenario_new.html'
+  );
+  console.log(scenario_detail_html_path);
+  openNewWindow(scenario_detail_html_path)
+});
+
+
