@@ -3,13 +3,16 @@
 // This is the boilerplate Electron back-end
 
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 
-// Keep a global reference of the window object; if we don't, the window will
+
+// Keep a global reference of each window object; if we don't, the window will
 // be closed automatically when the JavaScript object is garbage-collected.
 let mainWindow;
+let scenarioDetailWindow;
 
-function createWindow () {
+// // Main window //
+function createMainWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800, height: 600, title: 'GridPath UI Sandbox', show: false
@@ -18,8 +21,8 @@ function createWindow () {
   // and load the index.html of the app.
   mainWindow.loadFile('./src/index.html');
 
-  // // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  // Open the DevTools.
+  mainWindow.webContents.openDevTools();
 
   mainWindow.once('ready-to-show', () => {
      mainWindow.show()
@@ -32,12 +35,15 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   });
+
 }
 
+
+// // App behavior //
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', createMainWindow);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -52,6 +58,46 @@ app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) {
-    createWindow()
+    createMainWindow()
   }
 });
+
+// // Other windows // //
+// Scenario Detail window //
+
+// The Scenario Detail window opens when a signal from the main window is sent
+// (i.e. a scenario button is clicked)
+ipcMain.on('User-Requests-Scenario-Detail', function(event, user_requested_scenario_name) {
+    console.log("Received user request for scenario " + user_requested_scenario_name);
+    // We need to listen for an explict request from the Scenario Detail window
+    ipcMain.on(
+        'Scenario-Detail-Window-Requests-Scenario-Name',
+        function(event) {
+        console.log("Received request from scenario detail window");
+        console.log("Scenario name is " + user_requested_scenario_name);
+        // When request received, send the message
+        event.sender.send(
+            "Main-Relays-Scenario-Name", user_requested_scenario_name)
+    });
+    scenarioDetailWindow = new BrowserWindow({
+        width: 400, height: 400, title: 'Scenario Detail', show: false});
+    // Open the DevTools.
+    scenarioDetailWindow.webContents.openDevTools();
+    // and load the index.html of the app.
+    // scenarioDetailWindow.webContents.send(
+    //     'relay-scenario-name', "here's a scenario");
+    scenarioDetailWindow.loadFile('./src/scenario_detail.html');
+    scenarioDetailWindow.once('ready-to-show', () => {scenarioDetailWindow.show()
+    });
+});
+
+//
+// ipcMain.on('asynchronous-message', (event, arg) => {
+//   console.log(arg) // prints "ping"
+//   event.reply('asynchronous-reply', 'pong')
+// });
+//
+// ipcMain.on('synchronous-message', (event, arg) => {
+//   console.log(arg) // prints "ping"
+//   event.returnValue = 'pong'
+// })
