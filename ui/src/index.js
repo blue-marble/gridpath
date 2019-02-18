@@ -90,6 +90,7 @@ function getScenarioList() {
     for (const scenario of statement.iterate()) {
         scenariosList.push(scenario.scenario_name)
     }
+    io.close();
     return scenariosList
 
 }
