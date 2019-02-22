@@ -1,22 +1,23 @@
 'use strict';
 
-
 const {ipcRenderer }= require('electron');
 const Database = require('better-sqlite3');
 const path = require('path');
 
-console.log("Scenario Detail window is associated with scenario_detail.js.");
 // Listen for a scenario name
 ipcRenderer.send("Scenario-Detail-Window-Requests-Scenario-Name");
 ipcRenderer.on('Main-Relays-Scenario-Name', (event, scenario_name) => {
     console.log("Scenario Detail Window received message.");
     console.log(scenario_name);
+
+    // Create the HTML for the scenario name
+    document.getElementById('ScenarioName').innerHTML = scenario_name;
     createScenarioDetailTable(scenario_name);
     document.getElementById("scenarioDetailTable").innerHTML =
     createScenarioDetailTable(scenario_name);
 });
 
-// Create the html for a table
+// Create the html for the scenario detail table
 function createScenarioDetailTable(scenario) {
 
     const scenario_params_dict = getScenarioDetails(scenario);

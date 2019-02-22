@@ -21,8 +21,8 @@ function createMainWindow () {
   // and load the index.html of the app.
   mainWindow.loadFile('./src/index.html');
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // // Open the DevTools.
+  // mainWindow.webContents.openDevTools();
 
   mainWindow.once('ready-to-show', () => {
      mainWindow.show()
@@ -62,7 +62,8 @@ app.on('activate', () => {
   }
 });
 
-// // Other windows // //
+// // Other views/windows // //
+
 // Scenario Detail window //
 
 // The Scenario Detail window opens when a signal from the main window is sent
@@ -74,15 +75,19 @@ ipcMain.on('User-Requests-Scenario-Detail', function(event, user_requested_scena
         'Scenario-Detail-Window-Requests-Scenario-Name',
         function(event) {
         console.log("Received request from scenario detail window");
-        console.log("Scenario name is " + user_requested_scenario_name);
+        console.log(
+            "About the send scenario name " + user_requested_scenario_name
+        );
         // When request received, send the message
         event.sender.send(
             "Main-Relays-Scenario-Name", user_requested_scenario_name)
     });
     scenarioDetailWindow = new BrowserWindow({
         width: 400, height: 400, title: 'Scenario Detail', show: false});
-    // Open the DevTools.
-    scenarioDetailWindow.webContents.openDevTools();
+
+    // // Open the DevTools.
+    // scenarioDetailWindow.webContents.openDevTools();
+
     // and load the index.html of the app.
     // scenarioDetailWindow.webContents.send(
     //     'relay-scenario-name', "here's a scenario");
@@ -91,13 +96,21 @@ ipcMain.on('User-Requests-Scenario-Detail', function(event, user_requested_scena
     });
 });
 
-//
-// ipcMain.on('asynchronous-message', (event, arg) => {
-//   console.log(arg) // prints "ping"
-//   event.reply('asynchronous-reply', 'pong')
-// });
-//
-// ipcMain.on('synchronous-message', (event, arg) => {
-//   console.log(arg) // prints "ping"
-//   event.returnValue = 'pong'
-// })
+
+// New scenario view //
+ipcMain.on(
+    'User-Requests-New-Scenario',
+    function(event, user_requested_scenario_name) {
+        console.log("Received user request for new scenario ");
+        mainWindow.loadFile('./src/scenario_new.html');
+});
+
+// Go back to index view if google requests it; maybe this can be reused
+ipcMain.on(
+    'Scenario-New-Window-Requests-Back-to-Scenarios',
+    function(event, user_requested_scenario_name) {
+        console.log("Received user request for go back to scenario list ");
+        mainWindow.loadFile('./src/index.html');
+});
+
+
