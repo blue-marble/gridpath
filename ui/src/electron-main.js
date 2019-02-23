@@ -87,8 +87,8 @@ ipcMain.on(
     scenarioDetailWindow = new BrowserWindow({
         width: 600, height: 600, title: 'Scenario Detail', show: false});
 
-    // // Open the DevTools.
-    // scenarioDetailWindow.webContents.openDevTools();
+    // Open the DevTools.
+    scenarioDetailWindow.webContents.openDevTools();
 
     // and load the index.html of the app.
     // scenarioDetailWindow.webContents.send(

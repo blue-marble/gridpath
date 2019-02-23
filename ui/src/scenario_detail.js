@@ -1,6 +1,6 @@
 'use strict';
 
-const {ipcRenderer }= require('electron');
+const { ipcRenderer, remote }= require('electron');
 const Database = require('better-sqlite3');
 const path = require('path');
 
@@ -15,6 +15,31 @@ ipcRenderer.on('Main-Relays-Scenario-Name', (event, scenario_name) => {
     createScenarioDetailTable(scenario_name);
     document.getElementById("scenarioDetailTable").innerHTML =
     createScenarioDetailTable(scenario_name);
+
+    // TODO: spawn from main process not here
+    const runScenarioButton = document.getElementById("runScenarioButton");
+    runScenarioButton.addEventListener('click', function (event) {
+    console.log("Running " + scenario_name);
+    console.log(PyScriptPath);
+    // Spawn a python child process
+    const python_child = require('child_process').spawn(
+    'python',
+    [PyScriptPath, '--scenario', scenario_name],
+    {shell: true, cwd: process.cwd(), detached: true}
+    );
+    python_child.stdout.on('data', function(data) {
+    console.log('stdout: ' + data);
+    //Here is where the output goes
+    });
+    python_child.stderr.on('data', function(data) {
+        console.log('stderr: ' + data);
+        //Here is where the error output goes
+    });
+    python_child.on('close', function(code) {
+        console.log('closing code: ' + code);
+        //Here you can get the exit code of the script
+});
+});
 });
 
 // Create the html for the scenario detail table
@@ -63,3 +88,24 @@ function getScenarioDetails(scenario) {
 
 }
 
+
+// Run scenario
+// Spawn a Python child process
+// We need to find the Python script when we are in both
+// a production environment and a development environment
+// We do that by looking up app.isPackaged (this is a renderer process, so we
+// need to do it via remote)
+// In development, the script is in the py directory under root
+// In production, we package the script in the 'py' directory under the app's
+// Contents/Resources by including extraResources under "build" in package.json
+function baseDirectoryAdjustment() {
+    if (remote.app.isPackaged) {
+      return path.join(process.resourcesPath)
+    } else {
+      return path.join(__dirname, "..")
+    }
+  }
+const baseDirectory = baseDirectoryAdjustment();
+const PyScriptPath = path.join(
+ baseDirectory, "../run_scenario.py"
+);
