@@ -43,11 +43,19 @@ function getScenarioDetails(scenario) {
     scenarioDetails["scenario_name"] = scenario;
 
 
-    const load_scenario_id = io.prepare(
-        "SELECT load_scenario_id FROM scenarios WHERE scenario_name = ?;")
+    const get_ids = io.prepare(
+        "SELECT project_portfolio_scenario_id, " +
+        "project_operational_chars_scenario_id, load_scenario_id, " +
+        "fuel_price_scenario_id" +
+        " FROM scenarios WHERE scenario_name = ?;")
         .get(scenario);
-    const load_scenario_id_value = load_scenario_id.load_scenario_id;
-    scenarioDetails["load_scenario_id"] = load_scenario_id_value;
+
+    scenarioDetails["project_portfolio_scenario_id"] =
+        get_ids.project_portfolio_scenario_id;
+    scenarioDetails["project_operational_chars_scenario_id"] =
+        get_ids.project_operational_chars_scenario_id;
+    scenarioDetails["load_scenario_id"] = get_ids.load_scenario_id;
+    scenarioDetails["fuel_price_scenario_id"] = get_ids.fuel_price_scenario_id;
 
     console.log(scenarioDetails);
     io.close();

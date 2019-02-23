@@ -85,7 +85,7 @@ ipcMain.on(
             "Main-Relays-Scenario-Name", user_requested_scenario_name)
     });
     scenarioDetailWindow = new BrowserWindow({
-        width: 400, height: 400, title: 'Scenario Detail', show: false});
+        width: 600, height: 600, title: 'Scenario Detail', show: false});
 
     // // Open the DevTools.
     // scenarioDetailWindow.webContents.openDevTools();
