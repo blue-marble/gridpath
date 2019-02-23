@@ -68,7 +68,9 @@ app.on('activate', () => {
 
 // The Scenario Detail window opens when a signal from the main window is sent
 // (i.e. a scenario button is clicked)
-ipcMain.on('User-Requests-Scenario-Detail', function(event, user_requested_scenario_name) {
+ipcMain.on(
+    'User-Requests-Scenario-Detail',
+    function(event, user_requested_scenario_name) {
     console.log("Received user request for scenario " + user_requested_scenario_name);
     // We need to listen for an explict request from the Scenario Detail window
     ipcMain.on(
@@ -94,7 +96,8 @@ ipcMain.on('User-Requests-Scenario-Detail', function(event, user_requested_scena
     scenarioDetailWindow.loadFile('./src/scenario_detail.html');
     scenarioDetailWindow.once('ready-to-show', () => {scenarioDetailWindow.show()
     });
-});
+    }
+);
 
 
 // New scenario view //
@@ -113,4 +116,11 @@ ipcMain.on(
         mainWindow.loadFile('./src/index.html');
 });
 
+// Go back to index view if google requests it; maybe this can be reused
+ipcMain.on(
+    'Save-New-Scenario',
+    function(event, params) {
+        console.log("Received save new scenario request ");
+        console.log(params);
+});
 
