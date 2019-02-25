@@ -1,7 +1,5 @@
 'use strict';
 
-// This is the boilerplate Electron back-end
-
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 
@@ -103,18 +101,12 @@ ipcMain.on(
 // New scenario view //
 ipcMain.on(
     'User-Requests-New-Scenario',
-    function(event, user_requested_scenario_name) {
+    function(event) {
         console.log("Received user request for new scenario ");
         mainWindow.loadFile('./src/scenario_new.html');
 });
 
-// Go back to index view if google requests it; maybe this can be reused
-ipcMain.on(
-    'Scenario-New-Window-Requests-Back-to-Scenarios',
-    function(event, user_requested_scenario_name) {
-        console.log("Received user request for go back to scenario list ");
-        mainWindow.loadFile('./src/index.html');
-});
+
 
 // Go back to index view if google requests it; maybe this can be reused
 ipcMain.on(
@@ -124,3 +116,23 @@ ipcMain.on(
         console.log(params);
 });
 
+
+// Settings //
+// New scenario view //
+ipcMain.on(
+    'User-Requests-Settings-View',
+    function(event) {
+        console.log("Received user request for settings view");
+        mainWindow.loadFile('./src/settings.html');
+});
+
+
+
+// General methods //
+// Go back to index view if user requests it; maybe this can be reused
+ipcMain.on(
+    'User-Requests-Index-View',
+    function(event) {
+        console.log("Received user request for index view");
+        mainWindow.loadFile('./src/index.html');
+});

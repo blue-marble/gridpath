@@ -1,9 +1,21 @@
 'use strict';
 
-const { remote } = require('electron');
 const path = require('path');
 const Database = require('better-sqlite3');
-const {ipcRenderer} = require('electron');
+const {ipcRenderer, remote} = require('electron');
+
+
+//// Settings ////
+const settingsButton = document.getElementById(('settingsButton'));
+
+function sendSettingsRequest() {
+    console.log("User requests new scenario ");
+    ipcRenderer.send('User-Requests-Settings-View');
+}
+
+settingsButton.addEventListener('click', function (event) {
+  sendSettingsRequest()
+});
 
 
 //// Make list of clickable scenarios ////
@@ -66,9 +78,6 @@ const NewScenarioButton =
     document.getElementById('NewScenarioButton');
 
 NewScenarioButton.addEventListener('click', function (event) {
-  const new_scenario_html_path = path.join(
-      __dirname, 'scenario_new.html'
-  );
   sendNewScenarioRequest()
 });
 

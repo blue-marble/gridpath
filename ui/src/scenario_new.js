@@ -7,7 +7,7 @@ const BacktoScenariosListButton =
     document.getElementById(('BacktoScenariosListButton'));
 BacktoScenariosListButton.addEventListener(
     'click', function (event) {
-        ipcRenderer.send("Scenario-New-Window-Requests-Back-to-Scenarios");
+        ipcRenderer.send("User-Requests-Index-View");
     }
 );
 
