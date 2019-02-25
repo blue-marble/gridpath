@@ -107,16 +107,6 @@ ipcMain.on(
 });
 
 
-
-// Go back to index view if google requests it; maybe this can be reused
-ipcMain.on(
-    'Save-New-Scenario',
-    function(event, params) {
-        console.log("Received save new scenario request ");
-        console.log(params);
-});
-
-
 // Settings //
 // New scenario view //
 ipcMain.on(

@@ -5,9 +5,9 @@ const storage = require('electron-json-storage');
 const dialog = remote.require('electron').dialog;
 
 // Request to go back to scenario list
-const BacktoScenariosListButton =
-    document.getElementById(('BacktoScenariosListButton'));
-BacktoScenariosListButton.addEventListener(
+const backtoScenariosListButton =
+    document.getElementById(('backtoScenariosListButton'));
+backtoScenariosListButton.addEventListener(
     'click', function (event) {
         ipcRenderer.send("User-Requests-Index-View");
     }
