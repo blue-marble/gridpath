@@ -2,7 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Smallest unit of temporal over which operational variables are defined
+gridpath.temporal.operations.timepoints
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **gridpath.temporal.operations.timepoints** module describes the smallest
+temporal unit over which operational variables are defined.
 """
 
 import csv
@@ -13,10 +16,33 @@ from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object
+    :param d: the dynamic inputs class object; not used here
 
-    :param m:
-    :param d:
-    :return:
+    The module adds the *TIMEPOINTS* set to the model formulation.
+
+    Timepoints must be non-negative integers and the set is ordered.
+
+    We will designate the *TIMEPOINTS* set with :math:`T` and the timepoints
+    index will be :math:`t`.
+
+    In addition, the *number_of_hours_in_timepoint* parameter (indexed by
+    TIMEPOINTS) is added to the formulation here. For example, a 15-minute
+    timepoint will have 0.25 hours per timepoint whereas a 4-hour timepoint
+    will have 4 hours per timepoint. This parameter is used by other modules
+    to track energy (e.g. storage state of charge).
+
+    Timepoints do not need to have the same *number_of_hours_in_timepoint*
+    value, i.e. one of them can represent a 5-minute segment and another a
+    24-hour segment.
+
+    .. TODO:: we need to check there are no exceptions to the above statement
+
+    .. warning:: The *TIMEPOINTS* set must have increments of 1, for the
+        calculations of previous timepoint to work in the **horizons** module.
+    .. TODO:: see warning above and todo in horizons module; we need to
+        enforce increments of 1 or come up with a more robust method for
+        determining previous timepoint
     """
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
     m.number_of_hours_in_timepoint = \

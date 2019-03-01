@@ -8,19 +8,17 @@ function in order to be able to take an asset-valuation approach (i.e. profit-
 maximization instead of cost-minimization) or optimize for something other
 than cost (e.g. minimize CO2 emissions).
 
---------------------------
 Production-Cost Simulation
 --------------------------
 
-------------------
 Capacity-Expansion
 ------------------
 
-
------
 Other
 -----
 
---------------------------------------------------
 Linear, Mixed-Integer, and Non-Linear Formulations
 --------------------------------------------------
+
+Depending on how modules are combined, linear, mixed-integer, and non-linear
+problem formulations are possible in GridPath.
