@@ -20,7 +20,7 @@ from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals,\
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object
+    :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
     The module adds the *HORIZONS* set to the model formulation.

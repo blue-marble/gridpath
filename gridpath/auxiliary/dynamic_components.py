@@ -40,6 +40,7 @@ local_capacity_balance_provision_components = \
 total_cost_components = "total_cost_components"
 
 
+# TODO: should we have more than one of these depending on component type
 class DynamicComponents(object):
     """
     Will contain the dynamic inputs that modules will populate, which will be

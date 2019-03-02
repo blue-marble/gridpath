@@ -25,9 +25,18 @@ Geographic Setup
 
 Projects
 --------
+.. automodule:: gridpath.project.__init__
+    :members: add_model_components
 
 Project Capacity
 ^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.__init__
+.. automodule:: gridpath.project.capacity.capacity
+    :members: add_model_components
+.. automodule:: gridpath.project.capacity.capacity_types.__init__
+.. automodule:: gridpath.project.capacity.capacity_types.existing_gen_no_economic_retirement
+    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+
 
 Project Operations
 ^^^^^^^^^^^^^^^^^^

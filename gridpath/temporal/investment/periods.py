@@ -17,7 +17,7 @@ from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object
+    :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
     The module adds the *PERIODS* set to the model formulation.
@@ -46,9 +46,9 @@ def add_model_components(m, d):
     We also derive the following set and parameters:
 
     We use :math:`period_t` to create the indexed set
-    *TIMEPOINTS_IN_PERIOD* (:math:`\{T_p\}_{p\in P}`; :math:`T_p\subset T`) that allows us
-    to determine the subsets of timepoints :math:`T_p` that occur in each
-    period :math:`p`.
+    *TIMEPOINTS_IN_PERIOD* (:math:`\{T_p\}_{p\in P}`; :math:`T_p\subset T`)
+    that allows us to determine the subsets of timepoints :math:`T_p` that
+    occur in each period :math:`p`.
 
     Finally, we determine which period is the first period
     (:math:`first\_period\in P`), which periods are in the set

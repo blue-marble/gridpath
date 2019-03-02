@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+gridpath.project
+^^^^^^^^^^^^^^^^
+The **gridpath.project** package contains modules to describe the available
+capacity and operational characteristics of generation, storage,
+and demand-side infrastructure 'projects' in the optimization problem.
+"""
+
 import csv
 import os.path
 import pandas as pd
@@ -59,10 +67,37 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the dynamic inputs class object; not used here
 
-    :param m:
-    :param d:
-    :return:
+    The **gridpath.project.__init__** module describes all projects to be
+    included in the optimization, what load zone they are located in,
+    and their 'types,' both their 'capacity type' and their 'operational
+    type.' We will designate the *PROJECTS* set with :math:`R` and the
+    projects index will be :math:`r`.
+
+    The project load zone parameter (:math:`load\_zone_r\in Z`) determines
+    which load zone's load-balance constraint the project contributes to.
+
+    The capacity type of a project is given by the *capacity_type*\ :sub:`r`\
+    param and determines things like whether the project is going to be
+    available to the optimization as “given,” whether there will there be
+    decision variables associated with building capacity at this project,
+    whether the optimization will have the option to retire the project,
+    etc. The available 'capacity types' are implemented in distinct modules
+    and are described below. Each project must have a *capacity_type*.
+
+    The operational type of a project is given by the
+    *operational_type*\ :sub:`r`\  param and determines things like whether the
+    project is a fuel-based dispatchable generator (e.g. a CCGT) or a
+    baseload project (e.g. nuclear), is it an intermittent plant, is it a
+    storage project, etc. The available 'operational types' are implemented
+    in distinct modules and are described below. Each project must have an
+    *operational_type*.
+
+    The module also adds a parameter for variable O&M cost per MWh of energy
+    production for all projects: *variable_om_cost_per_mwh*\ :sub:`r`\.
+
     """
     m.PROJECTS = Set()
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
@@ -75,6 +110,8 @@ def add_model_components(m, d):
 
     # Technology
     # This is only used for aggregation purposes in results
+    # TODO: considering this is only used on the results side, should we
+    #  keep it here
     m.technology = Param(m.PROJECTS, default="unspecified")
 
 
@@ -122,11 +159,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
     # TODO: decide how to deal with projects.tab -- currently, a large table
     #  is created with NULL values for projects that don't have certain
-    # params, so we can just get it all here without having to iterate
-    # through the modules that actually need these params
-    # This file could also potentially be split up into smaller files with
-    # just a subset of the params, which would mean that the submodules
-    # won't have to parse the large file
+    #  params, so we can just get it all here without having to iterate
+    #  through the modules that actually need these params
+    #  This file could also potentially be split up into smaller files with
+    #  just a subset of the params, which would mean that the submodules
+    #  won't have to parse the large file
     with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
             projects_tab_file:
         writer = csv.writer(projects_tab_file, delimiter="\t")

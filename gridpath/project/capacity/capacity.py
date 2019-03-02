@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+gridpath.project.capacity.capacity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The **gridpath.project.capacity.capacity** module describes the capacity of
+projects that are available to the optimization for each period. The capacity
+can be a fixed number or an expression with variables depending on the
+project's capacity type.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -19,10 +29,57 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
 
-    :param m:
-    :param d:
-    :return:
+    First, we iterate over all required capacity_types modules (this is the
+    set of distinct project capacity types) and add the components specific
+    to the respective capacity_type module. We do this by calling the
+    *add_module_specific_components* method of the capacity_type module if
+    the method exists.
+
+    The capacity_type modules will also add to the dynamic component class
+    object's *capacity_type_operational_period_sets* attribute -- the list
+    of sets we will then to get join to get the final
+    *PROJECT_OPERATIONAL_PERIODS* set over which we'll define project capacity.
+
+    The *PROJECT_OPERATIONAL_PERIODS* set is a two-dimensional set that
+    defines all project-period combinations when a project can exist (i.e.
+    either has specified capacity or can be build). We designate the
+    *PROJECT_OPERATIONAL_PERIODS* set with :math:`RP` and the index will be
+    :math:`r,p`.
+
+    The Pyomo expression *Capacity_MW*\ :sub:`r,p`\  defines the project
+    capacity in each period (in which the project can exist) in the model.
+    The exact formulation of the expression depends on the project's
+    capacity_type. For each project, we call its capacity_type module's
+    *capacity_rule* method in order to formulate the expression. E.g. a
+    project of the  *existing_gen_no_economic_retirement* capacity_type will
+    have a pre-specified capacity whereas a project of the
+    *new_build_generator* capacity_type will have a model variable (or sum of
+    variables) as its *Capacity_MW*\ :sub:`r,p`\.
+
+    Storage capacity_type modules will also add to the dynamic component class
+    object's *storage_only_capacity_type_operational_period_sets* attribute
+    -- the list of sets we will then to get join to get the final
+    *STORAGE_OPERATIONAL_PERIODS* set over which we'll define project capacity.
+
+    The *STORAGE_OPERATIONAL_PERIODS* set is a two-dimensional set that
+    defines all project-period combinations when a storage project can exist (
+    i.e. either has specified capacity or can be build). We designate the
+    *STORAGE_OPERATIONAL_PERIODS* set with :math:`SP` and the index will be
+    :math:`s,p`. *SP* is a subset of *RP*.
+
+    The Pyomo expression *Energy_Capacity_MWh*\ :sub:`s,p`\  defines the
+    storage project's energy capacity in each period (in which the project can
+    exist) in the model. The exact formulation of the expression depends on
+    the project's capacity_type. For each project, we call its capacity_type
+    module's *energy_capacity_rule* method in order to formulate the
+    expression.
+
+    .. todo:: describe derived sets
+
+
     """
     # Import needed capacity type modules
     imported_capacity_modules = \
@@ -38,7 +95,8 @@ def add_model_components(m, d):
     m.PROJECT_OPERATIONAL_PERIODS = \
         Set(dimen=2,
             initialize=lambda mod: 
-            join_sets(mod, getattr(d, capacity_type_operational_period_sets))
+            join_sets(mod, getattr(d, capacity_type_operational_period_sets),),
+            within=m.PROJECTS*m.PERIODS
             )
 
     def capacity_rule(mod, g, p):
@@ -55,7 +113,8 @@ def add_model_components(m, d):
             join_sets(
                 mod,
                 getattr(d, storage_only_capacity_type_operational_period_sets)
-            )
+            ),
+            within=m.PROJECT_OPERATIONAL_PERIODS
             )
 
     def energy_capacity_rule(mod, g, p):
