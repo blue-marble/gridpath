@@ -12,28 +12,28 @@ let scenarioDetailWindow;
 
 // // Main window //
 function createMainWindow () {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
-    width: 800, height: 600, title: 'GridPath UI Sandbox', show: false
-  });
+    // Create the browser window.
+    mainWindow = new BrowserWindow({
+        width: 800, height: 600, title: 'GridPath UI Sandbox', show: false
+    });
 
-  // and load the index.html of the app.
-  mainWindow.loadFile('./src/index.html');
+    // and load the index.html of the app.
+    mainWindow.loadFile('./src/index.html');
 
-  // // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+    // // Open the DevTools.
+    // mainWindow.webContents.openDevTools();
 
-  mainWindow.once('ready-to-show', () => {
-     mainWindow.show()
- });
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show()
+    });
 
-  // Emitted when the window is closed.
-  mainWindow.on('closed', () => {
-    // Dereference the window object, usually you would store windows
-    // in an array if your app supports multi windows, this is the time
-    // when you should delete the corresponding element.
-    mainWindow = null
-  });
+    // Emitted when the window is closed.
+    mainWindow.on('closed', () => {
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
+        mainWindow = null
+    });
 
 }
 
@@ -46,20 +46,21 @@ app.on('ready', createMainWindow);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
-  // On macOS it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+    // On macOS it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
 });
 
 app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) {
-    createMainWindow()
-  }
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (mainWindow === null) {
+        createMainWindow()
+    }
 });
+
 
 // // Other views/windows // //
 
@@ -69,32 +70,35 @@ app.on('activate', () => {
 ipcMain.on(
     'User-Requests-Scenario-Detail',
     (event, userRequestedScenarioName) => {
-    console.log("Received user request for scenario " + userRequestedScenarioName);
-    // We need to listen for an explict request for the scenario name
-    // from the scenario detail renderer (I couldn't figure out another way)
-    ipcMain.on(
-        'Scenario-Detail-Window-Requests-Scenario-Name',
-        (event) => {
-            // When request received, send the scenario name
-            event.sender.send(
-                "Main-Relays-Scenario-Name",
-                userRequestedScenarioName
-            )
-        }
-    );
+        console.log(
+            `Received request for ${userRequestedScenarioName} scenario detail`
+        );
+        // We need to listen for an explict request for the scenario name
+        // from the scenario detail renderer (I couldn't figure out another
+        // way)
+        ipcMain.on(
+            'Scenario-Detail-Window-Requests-Scenario-Name',
+            (event) => {
+                // When request received, send the scenario name
+                event.sender.send(
+                    'Main-Relays-Scenario-Name',
+                    userRequestedScenarioName
+                )
+            }
+        );
 
-    // TODO: should the scenario detail view be a separate window
-    scenarioDetailWindow = new BrowserWindow({
-        width: 600, height: 600, title: 'Scenario Detail', show: false
-    });
+        // TODO: should the scenario detail view be a separate window
+        scenarioDetailWindow = new BrowserWindow({
+            width: 600, height: 600, title: 'Scenario Detail', show: false
+        });
 
-    // // Open the DevTools.
-    // scenarioDetailWindow.webContents.openDevTools();
+        // // Open the DevTools.
+        // scenarioDetailWindow.webContents.openDevTools();
 
-    scenarioDetailWindow.loadFile('./src/scenario_detail.html');
-    scenarioDetailWindow.once('ready-to-show', () => {
-        scenarioDetailWindow.show()
-    });
+        scenarioDetailWindow.loadFile('./src/scenario_detail.html');
+        scenarioDetailWindow.once('ready-to-show', () => {
+            scenarioDetailWindow.show()
+        });
     }
 );
 
@@ -110,17 +114,15 @@ ipcMain.on(
 // In development, the script is in the py directory under root
 // In production, we package the script in the 'py' directory under the app's
 // Contents/Resources by including extraResources under "build" in package.json
-function baseDirectoryAdjustment() {
+const baseDirectory = () => {
     if (app.isPackaged) {
-      return path.join(process.resourcesPath)
+        return path.join(process.resourcesPath)
     } else {
-      return path.join(__dirname, "..")
+        return path.join(__dirname, "..")
     }
-  }
-const baseDirectory = baseDirectoryAdjustment();
-const PyScriptPath = path.join(
- baseDirectory, "../run_scenario.py"
-);
+};
+
+const PyScriptPath = path.join(baseDirectory(), '../run_scenario.py');
 
 ipcMain.on(
     'User-Requests-to-Run-Scenario',
@@ -144,7 +146,7 @@ ipcMain.on(
             'python',
             [PyScriptPath, '--scenario', userRequestedScenarioName],
             {
-                cwd: path.join(baseDirectory, ".."),
+                cwd: path.join(baseDirectory(), ".."),
                 stdio: 'inherit'
             }
         );
@@ -165,7 +167,7 @@ ipcMain.on(
 ipcMain.on(
     'User-Requests-Index-View',
     (event) => {
-        console.log("Received user request for index view");
+        console.log('Received user request for index view');
         mainWindow.loadFile('./src/index.html');
     }
 );
@@ -174,7 +176,7 @@ ipcMain.on(
 ipcMain.on(
     'User-Requests-New-Scenario-View',
     (event) => {
-        console.log("Received user request for new scenario ");
+        console.log('Received user request for new scenario');
         mainWindow.loadFile('./src/scenario_new.html');
     }
 );
@@ -184,7 +186,7 @@ ipcMain.on(
 ipcMain.on(
     'User-Requests-Settings-View',
     (event) => {
-        console.log("Received user request for settings view");
+        console.log('Received user request for settings view');
         mainWindow.loadFile('./src/settings.html');
     }
 );

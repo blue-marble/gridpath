@@ -2,12 +2,14 @@ const {ipcRenderer }= require('electron');
 const Database = require('better-sqlite3');
 const storage = require('electron-json-storage');
 
+
 // Request to go back to scenario list
 const backtoScenariosListButton =
-    document.getElementById(('backtoScenariosListButton'));
+    document.getElementById('backtoScenariosListButton');
 backtoScenariosListButton.addEventListener(
-    'click', function (event) {
-        ipcRenderer.send("User-Requests-Index-View");
+    'click',
+    (event) => {
+        ipcRenderer.send('User-Requests-Index-View');
     }
 );
 
@@ -40,7 +42,7 @@ document.getElementById('newScenarioDetailForm').addEventListener(
         // We need to get the user-defined database file path
         storage.get(
             'dbFilePath',
-            function(error, data) {
+            (error, data) => {
                 if (error) throw error;
                 const dbFilePath = data['dbFilePath'][0];
 
@@ -49,30 +51,30 @@ document.getElementById('newScenarioDetailForm').addEventListener(
                     dbFilePath, scenarioName, projPortfolio, opChars,
                     loadLevel, fuelPrices
                 );
-
-                }
-            );
-    });
+            }
+        );
+    }
+);
 
 // TODO: need to catch exceptions
-function insertNewScenariotoDatabase(
-    dbFilePath, scenario_name, project_portfolio, operating_characteristics,
-    load_level, fuel_prices
-) {
+const insertNewScenariotoDatabase = (
+    dbFilePath, scenarioName, projectPortfolio, opChars, loadProfile,
+    fuelPrices
+) => {
     console.log(dbFilePath);
     const db = new Database (dbFilePath, {fileMustExist: true});
 
     const insertValuesStmnt = db.prepare(
-        "INSERT INTO scenarios ( scenario_name, project_portfolio_scenario_id, " +
-        "project_operational_chars_scenario_id, load_scenario_id, " +
-        "fuel_price_scenario_id)" +
-        " VALUES (?, ?, ?, ?, ?);");
+        `INSERT INTO scenarios ( scenario_name, project_portfolio_scenario_id, 
+        project_operational_chars_scenario_id, load_scenario_id, 
+        fuel_price_scenario_id) 
+        VALUES (?, ?, ?, ?, ?);`
+    );
 
     insertValuesStmnt.run(
-        scenario_name, project_portfolio, operating_characteristics,
-        load_level, fuel_prices
+        scenarioName, projectPortfolio, opChars,
+        loadProfile, fuelPrices
     );
 
     db.close();
-
-}
+};
