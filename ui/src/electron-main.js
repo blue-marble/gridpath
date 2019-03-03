@@ -2,6 +2,7 @@
 
 
 const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
 
 
 // Keep a global reference of each window object; if we don't, the window will
@@ -63,66 +64,127 @@ app.on('activate', () => {
 // // Other views/windows // //
 
 // Scenario Detail window //
-
 // The Scenario Detail window opens when a signal from the main window is sent
 // (i.e. a scenario button is clicked)
 ipcMain.on(
     'User-Requests-Scenario-Detail',
-    function(event, user_requested_scenario_name) {
-    console.log("Received user request for scenario " + user_requested_scenario_name);
-    // We need to listen for an explict request from the Scenario Detail window
+    (event, userRequestedScenarioName) => {
+    console.log("Received user request for scenario " + userRequestedScenarioName);
+    // We need to listen for an explict request for the scenario name
+    // from the scenario detail renderer (I couldn't figure out another way)
     ipcMain.on(
         'Scenario-Detail-Window-Requests-Scenario-Name',
-        function(event) {
-        console.log("Received request from scenario detail window");
-        console.log(
-            "About the send scenario name " + user_requested_scenario_name
-        );
-        // When request received, send the message
-        event.sender.send(
-            "Main-Relays-Scenario-Name", user_requested_scenario_name)
-    });
+        (event) => {
+            // When request received, send the scenario name
+            event.sender.send(
+                "Main-Relays-Scenario-Name",
+                userRequestedScenarioName
+            )
+        }
+    );
+
+    // TODO: should the scenario detail view be a separate window
     scenarioDetailWindow = new BrowserWindow({
-        width: 600, height: 600, title: 'Scenario Detail', show: false});
+        width: 600, height: 600, title: 'Scenario Detail', show: false
+    });
 
-    // Open the DevTools.
-    scenarioDetailWindow.webContents.openDevTools();
+    // // Open the DevTools.
+    // scenarioDetailWindow.webContents.openDevTools();
 
-    // and load the index.html of the app.
-    // scenarioDetailWindow.webContents.send(
-    //     'relay-scenario-name', "here's a scenario");
     scenarioDetailWindow.loadFile('./src/scenario_detail.html');
-    scenarioDetailWindow.once('ready-to-show', () => {scenarioDetailWindow.show()
+    scenarioDetailWindow.once('ready-to-show', () => {
+        scenarioDetailWindow.show()
     });
     }
 );
 
 
-// New scenario view //
+// Run a scenario //
+// Spawn a Python process to run a scenario when the 'Run Scenario' button
+// in the scenario detail window is clicked
+
+// We need to find the Python script when we are in both
+// a production environment and a development environment
+// We do that by looking up app.isPackaged (this is a renderer process, so we
+// need to do it via remote)
+// In development, the script is in the py directory under root
+// In production, we package the script in the 'py' directory under the app's
+// Contents/Resources by including extraResources under "build" in package.json
+function baseDirectoryAdjustment() {
+    if (app.isPackaged) {
+      return path.join(process.resourcesPath)
+    } else {
+      return path.join(__dirname, "..")
+    }
+  }
+const baseDirectory = baseDirectoryAdjustment();
+const PyScriptPath = path.join(
+ baseDirectory, "../run_scenario.py"
+);
+
 ipcMain.on(
-    'User-Requests-New-Scenario',
-    function(event) {
-        console.log("Received user request for new scenario ");
-        mainWindow.loadFile('./src/scenario_new.html');
-});
+    'User-Requests-to-Run-Scenario',
+    (event, userRequestedScenarioName) => {
+        console.log(`Received user request for ${userRequestedScenarioName}`);
 
-
-// Settings //
-// New scenario view //
-ipcMain.on(
-    'User-Requests-Settings-View',
-    function(event) {
-        console.log("Received user request for settings view");
-        mainWindow.loadFile('./src/settings.html');
-});
-
-
+        // Spawn Python process
+        console.log(`Running ${userRequestedScenarioName}...`);
+        console.log(PyScriptPath);
+        // Spawn a python child process
+        // Options:
+        // 1) cwd changes directory to the root
+        // 2) setting stdio to 'inherit' in order to display child process
+        // stdout output 'live' (it's buffered otherwise); other options I
+        // found include flushing stdout with sys.stdout.flush() in the
+        // Python code or spawning the Python child process with the
+        // unbuffered (-u) flag (python -u python_script.py); sticking with
+        // 'inherit' for now as it's simplest and produces the most
+        // faithful output in a limited set of experiments
+        const runScenarioPythonChild = require('child_process').spawn(
+            'python',
+            [PyScriptPath, '--scenario', userRequestedScenarioName],
+            {
+                cwd: path.join(baseDirectory, ".."),
+                stdio: 'inherit'
+            }
+        );
+        // runScenarioPythonChild.stdout.on('data', function(data) {
+        //     console.log('stdout: ' + data.toString());
+        // });
+        // runScenarioPythonChild.stderr.on('data', function(data) {
+        //     console.log('stderr: ' + data.toString());
+        // });
+        runScenarioPythonChild.on('close', function(code) {
+            console.log('Python process closing code: ' + code.toString());
+        });
+    }
+);
 
 // General methods //
 // Go back to index view if user requests it; maybe this can be reused
 ipcMain.on(
     'User-Requests-Index-View',
-    function(event) {
+    (event) => {
         console.log("Received user request for index view");
         mainWindow.loadFile('./src/index.html');
-});
+    }
+);
+
+// New scenario view //
+ipcMain.on(
+    'User-Requests-New-Scenario-View',
+    (event) => {
+        console.log("Received user request for new scenario ");
+        mainWindow.loadFile('./src/scenario_new.html');
+    }
+);
+
+
+// Settings view //
+ipcMain.on(
+    'User-Requests-Settings-View',
+    (event) => {
+        console.log("Received user request for settings view");
+        mainWindow.loadFile('./src/settings.html');
+    }
+);

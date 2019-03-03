@@ -68,8 +68,8 @@ storage.get(
                 sendScenarioName(scenario)
             });
         });
-        }
-    );
+    }
+);
 
 
 // Define what to do when a scenario button is clicked (send scenario name to
@@ -82,7 +82,7 @@ function sendScenarioName(scenario_name) {
 //// Create new scenario /////
 function sendNewScenarioRequest() {
     console.log("User requests new scenario ");
-    ipcRenderer.send('User-Requests-New-Scenario');
+    ipcRenderer.send('User-Requests-New-Scenario-View');
 }
 const NewScenarioButton =
     document.getElementById('NewScenarioButton');
