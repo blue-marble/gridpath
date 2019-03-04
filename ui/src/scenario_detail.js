@@ -61,28 +61,29 @@ const createScenarioDetailTable = (scenario) => {
 const getScenarioDetails = (scenario) => {
     const io_file = path.join(__dirname, '../db/io.db');
     const io = new Database (io_file, {fileMustExist: true});
-    const scenarioDetails = {};
-    scenarioDetails.scenario_name = scenario;
 
-
-    const getIDs =
+    const getSubscenarioNames =
         io.prepare(
-            `SELECT project_portfolio_scenario_id,
-            project_operational_chars_scenario_id, load_scenario_id, 
-            fuel_price_scenario_id
-            FROM scenarios WHERE scenario_name = ?`
+            `SELECT scenario_name,
+            subscenarios_project_portfolios.name as portfolio, 
+            subscenarios_project_operational_chars.name as operating_chars, 
+            subscenarios_system_load.name as load_profile, 
+            subscenarios_project_fuel_prices.name as fuel_prices
+            FROM scenarios
+            JOIN subscenarios_project_portfolios 
+            USING (project_portfolio_scenario_id)
+            JOIN subscenarios_project_operational_chars 
+            USING (project_operational_chars_scenario_id)
+            JOIN subscenarios_system_load 
+            USING (load_scenario_id)
+            JOIN subscenarios_project_fuel_prices 
+            USING (fuel_price_scenario_id)
+            WHERE scenario_name = ?`
         ).get(scenario);
 
-    scenarioDetails.project_portfolio_scenario_id =
-        getIDs.project_portfolio_scenario_id;
-    scenarioDetails.project_operational_chars_scenario_id =
-        getIDs.project_operational_chars_scenario_id;
-    scenarioDetails.load_scenario_id = getIDs.load_scenario_id;
-    scenarioDetails.fuel_price_scenario_id = getIDs.fuel_price_scenario_id;
-
-    console.log(scenarioDetails);
+    console.log(getSubscenarioNames);
     io.close();
-    return scenarioDetails
+    return getSubscenarioNames
 };
 
 
