@@ -55,7 +55,7 @@ storage.get(
             (scenario) => {
                 const buttonID = `scenarioDetailButton${scenario}`;
                 const htmlString =
-                    `<button id=${buttonID}><b>${scenario}</b></button>`;
+                    `<button id=${buttonID} class="button"><b>${scenario}</b></button>\n`;
                 scenarioListHTML += htmlString;
             }
         );

@@ -138,7 +138,7 @@ storage.get(
         subscenarioDropdownHTML +=
             `</select>
             </div>
-            <button class="btn">Save scenario</button>`;
+            <button class="button">Save scenario</button>`;
 
         console.log(subscenarioDropdownHTML);
 

@@ -1,38 +1,21 @@
 <!DOCTYPE html>
 <html>
-<style>
-.btn-group button {
-  background-color: lightgrey; /* Light grey background */
-  border: 1px solid darkslategrey; /* Dark grey border */
-  color: black; /* Black text */
-  padding: 10px 24px; /* Some padding */
-  cursor: pointer; /* Pointer/hand icon */
-  width: 50%; /* Set a width if needed */
-  display: block; /* Make the buttons appear below each other */
-}
-
-.btn-group button:not(:last-child) {
-  border-bottom: none; /* Prevent double borders */
-}
-
-/* Add a background color on hover */
-.btn-group button:hover {
-  background-color: darkseagreen;
-}
-</style>
 
 <head>
   <meta charset="UTF-8">
   <title>Hello World from GridPath UI</title>
 </head>
 <body>
-  <button id="settingsButton">Settings</button>
+  <div>
+    <button id="settingsButton" class="button">Settings</button>
+  </div>
   <div id="scenarioListButtons"></div>
   <div>
-    <button id="newScenarioButton">New Scenario</button>
+    <button id="newScenarioButton" class="button">New Scenario</button>
   </div>
 </body>
 
 </html>
 
 <script src="./index.js"></script>
+<link rel="stylesheet" href="./styles.css">

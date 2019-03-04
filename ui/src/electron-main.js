@@ -14,7 +14,7 @@ let scenarioDetailWindow;
 function createMainWindow () {
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        width: 800, height: 600, title: 'GridPath UI Sandbox', show: false
+        width: 1200, height: 800, title: 'GridPath UI Sandbox', show: false
     });
 
     // and load the index.html of the app.
