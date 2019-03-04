@@ -1,4 +1,4 @@
-const {ipcRenderer }= require('electron');
+const { ipcRenderer } = require('electron');
 const Database = require('better-sqlite3');
 const storage = require('electron-json-storage');
 
@@ -220,14 +220,12 @@ storage.get(
                 db.close();
 
                 // Finally, switch to scenario detail view for new scenario
-                const sendScenarioName = (scenarioName) => {
-                   console.log(
-                       `Switch to detail view for new scenario ${scenarioName}`
-                   );
-                   ipcRenderer.send(
-                       'User-Requests-Scenario-Detail', scenarioName
-                   );
-                };
+               console.log(
+                   `Switch to detail view for new scenario ${scenarioName}`
+               );
+               ipcRenderer.send(
+                   'User-Requests-Scenario-Detail', scenarioName
+               );
             }
         );
     }

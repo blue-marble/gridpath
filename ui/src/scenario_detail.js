@@ -55,7 +55,7 @@ ipcRenderer.on(
 const createScenarioDetailTable = (scenario, dbFilePath) => {
     const scenarioParamsDict = getScenarioDetails(scenario, dbFilePath);
 
-    let scenarioDetailTable = '<table style="width:100%">';
+    let scenarioDetailTable = '<table align="center">';
     Object.keys(scenarioParamsDict).forEach(
         (key) => {
             scenarioDetailTable += '<tr>';
