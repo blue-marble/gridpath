@@ -87,18 +87,18 @@ ipcMain.on(
             }
         );
 
-        // TODO: should the scenario detail view be a separate window
-        scenarioDetailWindow = new BrowserWindow({
-            width: 600, height: 600, title: 'Scenario Detail', show: false
-        });
+        // // TODO: should the scenario detail view be a separate window
+        // scenarioDetailWindow = new BrowserWindow({
+        //     width: 600, height: 600, title: 'Scenario Detail', show: false
+        // });
 
         // // Open the DevTools.
         // scenarioDetailWindow.webContents.openDevTools();
 
-        scenarioDetailWindow.loadFile('./src/scenario_detail.html');
-        scenarioDetailWindow.once('ready-to-show', () => {
-            scenarioDetailWindow.show()
-        });
+        mainWindow.loadFile('./src/scenario_detail.html');
+        // mainWindow.once('ready-to-show', () => {
+        //     mainWindow.show()
+        // });
     }
 );
 

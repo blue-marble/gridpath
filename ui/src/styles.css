@@ -1,3 +1,4 @@
+/* Used in the scenario detail button group */
 .btn-group button {
   background-color: white; /* White background */
   border: 1px solid black; /* Dark grey border */
@@ -20,6 +21,7 @@
   color: white
 }
 
+/* Generic button styling for buttons with class="button" */
 .button {
     background:aliceblue;
     color:midnightblue;
@@ -37,15 +39,33 @@
     margin-right:10%;
     display:block;
     margin-top:0%;
-    margin-bottom:2%;
+    margin-bottom:2%
 
 }
-
 
 #newScenarioButton {
   margin-left:45%;
   margin-right:auto;
   display:block;
   margin-top:2%;
-  margin-bottom:auto;
+  margin-bottom:auto
+}
+
+#runScenarioButton {
+    margin-left:45%;
+    margin-right:auto;
+    display:block;
+    margin-top:2%;
+    margin-bottom:auto
+}
+
+/* Used in the scenario detail table */
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    margin-top: 1%
+}
+
+th, td {
+    padding: 5px;
 }

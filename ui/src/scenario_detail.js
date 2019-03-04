@@ -14,14 +14,13 @@ ipcRenderer.on(
 
         // Create the HTML for the scenario name
         document.getElementById('scenarioName').innerHTML =
-            scenarioName;
+            `<b>${scenarioName}</b>`;
 
         storage.get(
             'dbFilePath',
             (error, data) => {
                 if (error) throw error;
                 const dbFilePath = data['dbFilePath'][0];
-
 
                 // Create the scenario detail HTML
                 document.getElementById(
@@ -48,6 +47,16 @@ ipcRenderer.on(
                 );
             }
         );
+    }
+);
+
+// Request to go back to scenario list
+const backtoScenariosListButton =
+    document.getElementById('backtoScenariosListButton');
+backtoScenariosListButton.addEventListener(
+    'click',
+    (event) => {
+        ipcRenderer.send('User-Requests-Index-View');
     }
 );
 
