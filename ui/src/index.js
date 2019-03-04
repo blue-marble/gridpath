@@ -28,8 +28,8 @@ const getScenarioList = (dbFilePath) => {
     const db = new Database (dbFilePath, {fileMustExist: true});
     const scenariosList = [];
     // TODO: how should these be ordered
-    const statement = db.prepare('SELECT scenario_name FROM scenarios;');
-    for (const scenario of statement.iterate()) {
+    const getScenariosSQL = db.prepare('SELECT scenario_name FROM scenarios;');
+    for (const scenario of getScenariosSQL.iterate()) {
         scenariosList.push(scenario.scenario_name)
     }
     db.close();
@@ -38,7 +38,8 @@ const getScenarioList = (dbFilePath) => {
 };
 
 // Make a list of scenarios; each scenario is a button with a unique ID
-// We need to get the user-defined database file path
+// We need to get the user-defined database file path, so this is inside a
+// storage.get()
 storage.get(
     'dbFilePath',
     (error, data) => {
@@ -67,11 +68,11 @@ storage.get(
         scenarios.forEach(
             (scenario) => {
                 // Get appropriate button
-                const ScenarioDetailButton = document.getElementById(
+                const scenarioDetailButton = document.getElementById(
                     `scenarioDetailButton${scenario}`
                 );
                 // Bind the function with the correct scenario name as parameter
-                ScenarioDetailButton.addEventListener(
+                scenarioDetailButton.addEventListener(
                     'click',
                     (event) => {
                         sendScenarioName(scenario)

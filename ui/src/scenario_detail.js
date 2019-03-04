@@ -2,7 +2,7 @@
 
 const { ipcRenderer, remote }= require('electron');
 const Database = require('better-sqlite3');
-const path = require('path');
+const storage = require('electron-json-storage');
 
 // Listen for a scenario name
 ipcRenderer.send('Scenario-Detail-Window-Requests-Scenario-Name');
@@ -16,10 +16,22 @@ ipcRenderer.on(
         document.getElementById('scenarioName').innerHTML =
             scenarioName;
 
-        // Create the scenario detail HTML
-        createScenarioDetailTable(scenarioName);
-        document.getElementById('scenarioDetailTable').innerHTML =
-            createScenarioDetailTable(scenarioName);
+        storage.get(
+            'dbFilePath',
+            (error, data) => {
+                if (error) throw error;
+                const dbFilePath = data['dbFilePath'][0];
+
+
+                // Create the scenario detail HTML
+                document.getElementById(
+                    'scenarioDetailTable'
+                ).innerHTML =
+                    createScenarioDetailTable(scenarioName, dbFilePath);
+            }
+        );
+
+
 
         // TODO: create button to run scenario here, not in html file?
 
@@ -40,9 +52,9 @@ ipcRenderer.on(
 );
 
 // Create the html for the scenario detail table
-const createScenarioDetailTable = (scenario) => {
-    const scenarioParamsDict = getScenarioDetails(scenario);
-    console.log(scenarioParamsDict);
+const createScenarioDetailTable = (scenario, dbFilePath) => {
+    const scenarioParamsDict = getScenarioDetails(scenario, dbFilePath);
+
     let scenarioDetailTable = '<table style="width:100%">';
     Object.keys(scenarioParamsDict).forEach(
         (key) => {
@@ -53,23 +65,22 @@ const createScenarioDetailTable = (scenario) => {
         }
     );
     scenarioDetailTable += '</table>';
-    console.log(scenarioDetailTable);
+
     return scenarioDetailTable
 };
 
 
-const getScenarioDetails = (scenario) => {
-    const io_file = path.join(__dirname, '../db/io.db');
-    const io = new Database (io_file, {fileMustExist: true});
+const getScenarioDetails = (scenario, dbFilePath) => {
+    const db = new Database (dbFilePath, {fileMustExist: true});
 
     const getSubscenarioNames =
-        io.prepare(
-            `SELECT scenario_name,
+        db.prepare(
+            `SELECT
             subscenarios_project_portfolios.name as portfolio, 
             subscenarios_project_operational_chars.name as operating_chars, 
             subscenarios_system_load.name as load_profile, 
             subscenarios_project_fuel_prices.name as fuel_prices
-            FROM scenarios
+            FROM scenarios 
             JOIN subscenarios_project_portfolios 
             USING (project_portfolio_scenario_id)
             JOIN subscenarios_project_operational_chars 
@@ -81,10 +92,6 @@ const getScenarioDetails = (scenario) => {
             WHERE scenario_name = ?`
         ).get(scenario);
 
-    console.log(getSubscenarioNames);
-    io.close();
+    db.close();
     return getSubscenarioNames
 };
-
-
-
