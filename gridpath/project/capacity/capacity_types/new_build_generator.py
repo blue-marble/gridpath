@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+gridpath.project.capacity.capacity_types.new_build_generator
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **gridpath.project.capacity.capacity_types.new_build_generator**
+module describes the capacity of generators that can be built by the
+optimization at a cost. Once built, these generators remain available for
+the duration of their pre-specified lifetime. Minimum and maximum capacity
+constraints can be optionally implemented.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -21,16 +31,98 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    This function adds to the model a two-dimensional set of project-vintage
+    combinations to describe the periods in time when project capacity can be
+    built in the optimization: the *NEW_BUILD_GENERATOR_VINTAGES* set,
+    which we will also designate with :math:`NG\_V` and index with
+    :math:`ng, v` where :math:`ng\in R` and :math:`v\in P`. For each :math:`ng,
+    v`, we load the *lifetime_yrs_by_new_build_vintage* parameter, which is
+    the project's lifetime, i.e. how long project capacity of a particular
+    vintage remains operational. We will then use this parameter to
+    determine the operational periods :math:`p` for each :math:`ng, v`. For
+    each :math:`ng, v`, we also declare the cost to build new capacity: the
+    *annualized_real_cost_per_mw_yr* parameter.
+
+    .. note:: The cost input to the model is a levelized cost per unit
+        capacity. This annualized cost is incurred in each period of the study
+        (and multiplied by the number of years the period represents). It is up
+        to the user to ensure that the *lifetime_yrs_by_new_build_vintage* and
+        *annualized_real_cost_per_mw_yr parameters* are consistent.
+
+    For each project vintage, the user can optionally specify a minimum
+    cumulative amount of capacity that must be built by that period and/or a
+    maximum amount of cumulative capacity that can be built by that period:
+    the :math:`min\_cumulative\_new\_build\_mw_{ng,v}` and
+    :math:`max\_cumulative\_new\_build\_mw_{ng,v}` parameters respectively.
+
+    The :math:`Build\_MW_{ng,v}` variable is defined over the :math:`NG\_V`
+    set and determines how much capacity of each possible vintage :math:`v`
+    is  built at each new-build project :math:`ng`.
+
+    We use the *NEW_BUILD_GENERATOR_VINTAGES* set and the
+    *lifetime_yrs_by_new_build_vintage* parameter to determine the
+    operational periods for capacity of each possible vintage: the
+    *OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE* set indexed by
+    :math:`ng,v`.
+
+    .. note:: A period is currently defined as operational for project
+        :math:`ng` if :math:`v <= p < lifetime\_yrs\_by\_new\_build\_vintage_{
+        ng,v}`, so capacity of the 2020 vintage with lifetime of 30 years will
+        be assumed operational starting Jan 1, 2020 and through Dec 31, 2049,
+        but will not be operational in 2050.
+
+    The *NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS* set is a
+    two-dimensional set that includes the periods when project capacity of
+    any vintage *could* be operational if built.  This set
+    is then added to the list of sets to join to get the final
+    *PROJECT_OPERATIONAL_PERIODS* set defined in
+    **gridpath.project.capacity.capacity**. We will also use *NG_P* to
+    designate this set (index :math:`ng, np` where :math:`ng\in R` and
+    :math:`np\in P`).
+
+    Finally, we need to determine which project vintages could be
+    operational in each period: the
+    *NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
+    :math:`p`, this two-dimensional set :math:`\{NG\_OV_p\}_{p\in P}`
+    (:math:`NG\_OV_p\subset NG\_V`) can help us tell how much capacity we
+    have available in period :math:`p` of each new-build project :math:`ng`
+    depending on the build decisions made by the optimization.
+
+    Finally, we are ready to define the capacity expression for new-build
+    generators:
+    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np} = \sum_{(ng,ov)\in
+    NG\_OV_{np}}{Build\_MW_{ng,ov}}`. The capacity of a new-build generator in
+    a given operational period for the new-build generator is equal to the
+    sum of all capacity-build of vintages operational in that period.
+    This expression is not defined for a new-build generator's non-operational
+    periods (i.e. it's 0). E.g. if we were allowed to build capacity in 2020
+    and 2030, and the project had a 15 year lifetime, in 2020 we'd take 2020
+    capacity-build only, in 2030, we'd take the sum of 2020 capacity-build a
+    nd 2030 capacity-build, in 2040, we'd take 2030 capacity-build only, and
+    in 2050, the capacity would be undefined (i.e. 0 for the purposes of the
+    objective function).
+
+    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np}` can then be constrained
+    by :math:`min\_cumulative\_new\_build\_mw_{ng,v}` and
+    :math:`max\_cumulative\_new\_build\_mw_{ng,v}` (the set of vintages *v*
+    is a subset of the set of operational periods *np*).
 
     """
-    m.NEW_BUILD_GENERATOR_VINTAGES = Set(dimen=2)
+
+    # Indexes and param
+    m.NEW_BUILD_GENERATOR_VINTAGES = Set(dimen=2, within=m.PROJECTS*m.PERIODS)
     m.lifetime_yrs_by_new_build_vintage = \
         Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
     m.annualized_real_cost_per_mw_yr = \
         Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
 
-    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT = Set(dimen=2)
-    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT = Set(dimen=2)
+    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT = \
+        Set(dimen=2, within=m.NEW_BUILD_GENERATOR_VINTAGES)
+    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT = \
+        Set(dimen=2, within=m.NEW_BUILD_GENERATOR_VINTAGES)
     m.min_cumulative_new_build_mw = \
         Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT,
               within=NonNegativeReals)
@@ -38,8 +130,10 @@ def add_module_specific_components(m, d):
         Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT,
               within=NonNegativeReals)
 
+    # Build variable
     m.Build_MW = Var(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
 
+    # Auxiliary sets
     m.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE = \
         Set(m.NEW_BUILD_GENERATOR_VINTAGES,
             initialize=operational_periods_by_generator_vintage)
@@ -57,6 +151,7 @@ def add_module_specific_components(m, d):
         Set(m.PERIODS, dimen=2,
             initialize=new_build_option_vintages_operational_in_period)
 
+    # Expressions and constraints
     def new_build_capacity_rule(mod, g, p):
         """
         Sum all builds of vintages operational in the current period
@@ -107,23 +202,36 @@ def add_module_specific_components(m, d):
 
 def capacity_rule(mod, g, p):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the capacity of project *g* in period *p*
 
-    :param mod:
-    :param g:
-    :param p:
-    :return:
+    See the **add_module_specific_components** method above for how
+    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np}` is calculated.
     """
     return mod.New_Build_Option_Capacity_MW[g, p]
 
 
+# TODO: we need to think through where to multiply the annualized costs by
+#  number_years_represented[p]; currently, it's done downstream, but maybe
+#  the capacity cost rule is a better place?
+# TODO: it's inconsistent that the capacity available in a period is
+#  calculated in an expression in add_model_components but the cost isn't;
+#  that said, we don't really need to carry the extra cost expression
+#  around; the capacity expression is used in the min and max cumulative
+#  capacity constraints
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for new builds in each period (sum over all vintages
-    operational in current period)
-    :param mod: 
-    :param g: 
-    :param p: 
-    :return: 
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized capacity cost of *new_build_generator*
+        project *g* in period *p*
+
+    The capacity cost for new-build generators in a given period is the
+    capacity-build of a particular vintage times the annualized cost for
+    that vintage summed over all vintages operational in the period.
     """
     return sum(mod.Build_MW[g, v]
                * mod.annualized_real_cost_per_mw_yr[g, v]
@@ -146,7 +254,7 @@ def load_module_specific_data(
     """
 
     # TODO: throw an error when a generator of the 'new_build_option' capacity
-    # type is not found in new_build_option_vintage_costs.tab
+    #   type is not found in new_build_option_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",

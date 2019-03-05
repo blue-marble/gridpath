@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+gridpath.project.capacity.capacity_types.new_build_storage
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **gridpath.project.capacity.capacity_types.new_build_storage**
+module describes the capacity of storage projects that can be built by the
+optimization at a cost. The optimization determines both the power
+capacity of the storage project and its energy capacity (i.e. capacity and
+duration). Once built, these storage projects remain available for the
+duration of their pre-specified lifetime. Minimum and maximum power capacity
+and duration constraints can be optionally implemented.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -22,7 +34,13 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
+    Describes the model formulation for a new-build storage option. Detailed
+    description to be added.
+
+    .. todo:: add description
     """
     m.NEW_BUILD_STORAGE_PROJECTS = Set()
     m.minimum_duration_hours = \
@@ -196,32 +214,40 @@ def add_module_specific_components(m, d):
 
 def capacity_rule(mod, g, p):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
 
-    :param mod:
-    :param g:
-    :param p:
-    :return:
+    The total power capacity at storage project :math:`g` that is operational
+    in period :math:`p`.
     """
     return mod.New_Build_Storage_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the energy capacity of storage project *g* in period *p*
 
-    :param mod:
-    :param g:
-    :param p:
-    :return:
+    The total energy capacity at storage project :math:`g` that is operational
+    in period :math:`p`.
     """
     return mod.New_Build_Storage_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for new builds in each period (sum over all vintages
-    operational in current period)
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized capacity cost of *new_build_storage*
+        project *g* in period *p*
+
+    Power and energy capacity cost for new_build_storage projects in each
+    period (sum over all vintages operational in current period).
     """
     return sum((mod.Build_Storage_Power_MW[g, v]
                * mod.new_build_storage_annualized_real_cost_per_mw_yr[g, v]
@@ -275,7 +301,7 @@ def load_module_specific_data(m,
         determine_minimum_duration()[1]
 
     # TODO: throw an error when a generator of the 'new_build_storage' capacity
-    # type is not found in new_build_storage_vintage_costs.tab
+    #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",

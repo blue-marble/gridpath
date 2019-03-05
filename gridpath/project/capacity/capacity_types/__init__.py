@@ -12,7 +12,11 @@ be retired, etc.
 
 from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
-# TODO: Check for naming inconsistencies in the capacity_types modules
+# TODO: we should shorten the names of the capacity-type modules, e.g. to
+#   gen_specified, gen_specified_lin_ret, gen_new, stor_specified, stor_new,
+#   shift_load_supply_curve
+# TODO: We should decide on naming conventions for sets, variables, etc. in
+#  the capacity type modules
 
 
 def get_inputs_from_database(

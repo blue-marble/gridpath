@@ -5,10 +5,16 @@
 gridpath.project.capacity.capacity
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The **gridpath.project.capacity.capacity** module describes the capacity of
-projects that are available to the optimization for each period. The capacity
-can be a fixed number or an expression with variables depending on the
-project's capacity type.
+The **gridpath.project.capacity.capacity** module is a projet-level
+module that adds to the formulation components that describe the capacity of
+projects that are available to the optimization for each period. For example,
+the capacity can be a fixed number or an expression with variables depending
+on the project's *capacity_type*. The project capacity can then be used to
+constrain operations, contribute to reliability constraints, etc.
+
+.. note:: We will be renaming this *capacity_type* modules to a more
+    intuitive convention than currently used.
+
 """
 
 from __future__ import print_function
@@ -32,7 +38,7 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
-    First, we iterate over all required capacity_types modules (this is the
+    First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types) and add the components specific
     to the respective capacity_type module. We do this by calling the
     *add_module_specific_components* method of the capacity_type module if
@@ -44,10 +50,12 @@ def add_model_components(m, d):
     *PROJECT_OPERATIONAL_PERIODS* set over which we'll define project capacity.
 
     The *PROJECT_OPERATIONAL_PERIODS* set is a two-dimensional set that
-    defines all project-period combinations when a project can exist (i.e.
-    either has specified capacity or can be build). We designate the
+    defines all project-period combinations when a project can be operational
+    (i.e. either has specified capacity or can be build). We designate the
     *PROJECT_OPERATIONAL_PERIODS* set with :math:`RP` and the index will be
-    :math:`r,p`.
+    :math:`r,p`. This set is created by joining sets added by the
+    *capacity_type* modules, as how operational periods are determined
+    differs by capacity type.
 
     The Pyomo expression *Capacity_MW*\ :sub:`r,p`\  defines the project
     capacity in each period (in which the project can exist) in the model.
@@ -57,7 +65,8 @@ def add_model_components(m, d):
     project of the  *existing_gen_no_economic_retirement* capacity_type will
     have a pre-specified capacity whereas a project of the
     *new_build_generator* capacity_type will have a model variable (or sum of
-    variables) as its *Capacity_MW*\ :sub:`r,p`\.
+    variables) as its *Capacity_MW*\ :sub:`r,p`\. This expression will then
+    be used by other modules.
 
     Storage capacity_type modules will also add to the dynamic component class
     object's *storage_only_capacity_type_operational_period_sets* attribute

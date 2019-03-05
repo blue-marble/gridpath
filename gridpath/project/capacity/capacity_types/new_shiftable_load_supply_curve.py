@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Supply curve for new shiftable load capacity.
+gridpath.project.capacity.capacity_types.new_shiftable_load_supply_curve
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This module describes a supply curve for new shiftable load capacity.
 
 The supply curve does not have vintages, i.e. there are no cost differences for
 capacity built in different periods. The cost for new capacity is specified
@@ -33,10 +35,11 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_module_specific_components(m, d):
     """
-    Supply curve for shift DR, no vintages for now
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Describes the model formulation for a supply curve for shift DR. No
+    vintages for now.
     """
 
     m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS = Set()
@@ -157,19 +160,36 @@ def add_module_specific_components(m, d):
 
 
 def capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
+
+    The total power capacity of shiftable load operational in period :math:`p`.
+    """
     return mod.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
+
+    The total power capacity of shiftable load operational in period :math:`p`.
+    """
     return mod.New_Shiftable_Load_Supply_Curve_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for specified capacity generators with no economic retirements
-    is 0
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized capacity cost of
+        *new_shiftable_load_supply_curve* project *g* in period *p*
     """
     return mod.New_Shiftable_Load_Supply_Curve_Cost[g, p]
 

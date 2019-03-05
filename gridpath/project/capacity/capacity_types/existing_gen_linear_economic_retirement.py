@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+gridpath.project.capacity.capacity_types.existing_gen_linear_economic_retirement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **existing_gen_linear_economic_retirement** module describes the capacity
+of generators that are available to the optimization without having to incur an
+investment cost, but whose fixed O&M can be avoided if they are retired.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -18,7 +26,11 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
+    Detailed formulation description to be added.
+    ..todo:: describe this module for docs
     """
     m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
         Set(dimen=2)
@@ -45,7 +57,7 @@ def add_module_specific_components(m, d):
                 in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
                 if project == prj
                )
-            )
+        )
     m.ex_gen_lin_econ_ret_gen_first_period = \
         Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
               initialize=
@@ -53,7 +65,7 @@ def add_module_specific_components(m, d):
                   p for p
                   in mod.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
               )
-              )
+        )
 
     # Capacity and fixed cost
     m.existing_lin_econ_ret_capacity_mw = \
@@ -116,8 +128,8 @@ def add_module_specific_components(m, d):
             return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
                 <= \
                 mod.Existing_Linear_Econ_Ret_Capacity_MW[
-                       g, mod.previous_period[p]
-                   ]
+                    g, mod.previous_period[p]
+                ]
 
     m.Retire_Forever_Constraint = Constraint(
         m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
@@ -126,15 +138,31 @@ def add_module_specific_components(m, d):
         
 
 def capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the capacity of project *g* in period *p*
+
+    The capacity of projects of the *existing_gen_no_econoimc_retirement*
+    capacity type is a pre-specified number for each of the project's
+    operational periods minus any capacity that was retired.
+    """
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for existing capacity generators with no economic retirements
-    is 0
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized fixed cost of
+        *existing_gen_linear_economic_retirement* project *g* in period *p*
+
+    The capacity cost of projects of the
+    *existing_gen_linear_econoimc_retirement* capacity type is its net
+    capacity (pre-specified capacity minus retired capacity) times the per-mw
+    fixed cost for each of the project's operational periods.
     """
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
         * mod.existing_lin_econ_ret_fixed_cost_per_mw_yr[g, p]
@@ -165,7 +193,7 @@ def load_module_specific_data(
                 os.path.join(scenario_directory, "inputs", "projects.tab"),
                 sep="\t", usecols=["project",
                                    "capacity_type"]
-                )
+            )
         for row in zip(dynamic_components["project"],
                        dynamic_components["capacity_type"]):
             if row[1] == "existing_gen_linear_economic_retirement":
@@ -189,7 +217,7 @@ def load_module_specific_data(
                 os.path.join(scenario_directory, "inputs",
                              "existing_generation_period_params.tab"),
                 sep="\t"
-                )
+            )
 
         for row in zip(dynamic_components["project"],
                        dynamic_components["period"],
@@ -266,14 +294,13 @@ def summarize_module_specific_results(
         pd.read_csv(os.path.join(
             problem_directory, horizon, stage, "results",
             "capacity_existing_gen_linear_economic_retirement.csv"
-        )
-                    )
+        ))
 
     capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+        capacity_results_df.groupby(
+            by=["load_zone", "technology",'period'],
+            as_index=True
+        ).sum()
 
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
