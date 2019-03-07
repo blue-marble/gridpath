@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.temporal.operations
-----------------------------
 The **gridpath.temporal.operations** package contains the **timepoints** and
 **horizons** modules that describe the operational resolution of the model.
 """

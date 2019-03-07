@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.operations
----------------------------
 The **gridpath.project.operations** package contains modules to describe the
 operational capabilities, constraints, and costs of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.

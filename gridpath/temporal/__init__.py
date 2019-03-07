@@ -2,9 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.temporal
------------------
-
 The **gridpath.temporal** package describes the optimization problem's temporal
 span and resolution.
 

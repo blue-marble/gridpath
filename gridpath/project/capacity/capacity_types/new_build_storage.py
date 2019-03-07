@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity_types.new_build_storage
-----------------------------------------------------------
 The **gridpath.project.capacity.capacity_types.new_build_storage**
 module describes the capacity of storage projects that can be built by the
 optimization at a cost. The optimization determines both the power

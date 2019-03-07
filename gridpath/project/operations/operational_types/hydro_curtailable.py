@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.operational_types.hydro_curtailable
--------------------------------------------------------------
 Operations of curtailable conventional hydro generators
 """
 from __future__ import print_function

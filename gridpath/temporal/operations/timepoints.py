@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.temporal.operations.timepoints
----------------------------------------
 The **gridpath.temporal.operations.timepoints** module describes the smallest
 temporal unit over which operational variables are defined.
 """

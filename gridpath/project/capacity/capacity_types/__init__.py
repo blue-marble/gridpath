@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity_types
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The **gridpath.project.capacity.capacity_types** package contains modules to
 describe the various ways in which project capacity can be treated in the
 optimization problem, e.g. as specified, available to be built, available to

@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.temporal.investment.periods
-------------------------------------
 The **gridpath.temporal.investment.periods** module describes the temporal
 unit over which investment and retirement variables are defined. The period
 setup determines what infrastructure is available in each timepoint.

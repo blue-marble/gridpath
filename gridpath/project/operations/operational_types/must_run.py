@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.operational_types.must_run
-----------------------------------------------------
 Operations of must-run generators. Can't provide reserves.
 """
 

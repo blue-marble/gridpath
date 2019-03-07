@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.operational_types.dispatchable_binary_commit
-----------------------------------------------------------------------
 This module describes the operations of 'binary-commit' generators,
 i.e. generators with on/off commitment decisions.
 """

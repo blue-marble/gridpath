@@ -2,9 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity
-----------------------------------
-
 The **gridpath.project.capacity.capacity** module is a project-level
 module that adds to the formulation components that describe the capacity of
 projects that are available to the optimization for each period. For example,

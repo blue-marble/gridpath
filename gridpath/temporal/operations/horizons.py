@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.temporal.operations.horizons
--------------------------------------
 The **gridpath.temporal.operations.horizons** module describes the
 operational grouping of timepoints in the optimization (i.e. which
 operational decisions are linked together and which are independent). Some

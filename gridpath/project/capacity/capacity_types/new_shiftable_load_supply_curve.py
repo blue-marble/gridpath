@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity_types.new_shiftable_load_supply_curve
-------------------------------------------------------------------------
 This module describes a supply curve for new shiftable load capacity.
 
 The supply curve does not have vintages, i.e. there are no cost differences for

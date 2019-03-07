@@ -2,9 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity_types.storage_specified_no_economic_retirement
----------------------------------------------------------------------------------
-
 The **storage_specified_no_economic_retirement** module describes the power
 and energy capacity of storage projects that are available to the optimization
 without having to incur an investment cost. For example, this module can be

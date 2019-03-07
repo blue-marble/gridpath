@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.capacity_types.new_build_generator
-------------------------------------------------------------
 The **gridpath.project.capacity.capacity_types.new_build_generator**
 module describes the capacity of generators that can be built by the
 optimization at a cost. Once built, these generators remain available for

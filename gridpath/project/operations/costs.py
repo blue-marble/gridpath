@@ -2,9 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.operations.costs
----------------------------------
-
 The **gridpath.project.operations.costs** module is a project-level
 module that adds to the formulation components that describe the
 operations-related costs of projects (e.g. variable O&M costs, fuel costs,

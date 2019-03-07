@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.geography.load_zones
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The **gridpath.geography.load_zones** module describes the geographic unit
 at which load is met.
 """

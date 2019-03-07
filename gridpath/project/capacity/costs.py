@@ -2,9 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.costs
--------------------------------
-
 The **gridpath.project.capacity.costs** module is a project-level
 module that adds to the formulation components that describe the
 capacity-related costs of projects (e.g. investment capital costs and fixed

@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project.capacity.operational_types.shiftable_load_generic
-------------------------------------------------------------------
 Operations of generic shiftable load.
 
 There are two opertional variables: shift load up (add load) and shift load
