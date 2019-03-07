@@ -16,7 +16,6 @@ Introduction
 
    introduction
 
-
 ##############
 Using GridPath
 ##############
@@ -24,7 +23,16 @@ Using GridPath
 .. toctree::
    :maxdepth: 3
 
-   using_gridpath
+   usage
+
+######################
+GridPath Functionality
+######################
+
+.. toctree::
+   :maxdepth: 3
+
+   functionality
 
 
 ######################
