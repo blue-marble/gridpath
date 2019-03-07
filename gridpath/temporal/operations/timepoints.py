@@ -3,7 +3,7 @@
 
 """
 gridpath.temporal.operations.timepoints
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------
 The **gridpath.temporal.operations.timepoints** module describes the smallest
 temporal unit over which operational variables are defined.
 """

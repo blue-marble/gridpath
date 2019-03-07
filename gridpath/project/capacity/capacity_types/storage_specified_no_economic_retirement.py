@@ -3,7 +3,7 @@
 
 """
 gridpath.project.capacity.capacity_types.storage_specified_no_economic_retirement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------------------------------------------------
 
 The **storage_specified_no_economic_retirement** module describes the power
 and energy capacity of storage projects that are available to the optimization

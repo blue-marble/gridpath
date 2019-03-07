@@ -3,9 +3,9 @@
 
 """
 gridpath.project.capacity.capacity
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
-The **gridpath.project.capacity.capacity** module is a projet-level
+The **gridpath.project.capacity.capacity** module is a project-level
 module that adds to the formulation components that describe the capacity of
 projects that are available to the optimization for each period. For example,
 the capacity can be a fixed number or an expression with variables depending
@@ -40,7 +40,7 @@ def add_model_components(m, d):
 
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types) and add the components specific
-    to the respective capacity_type module. We do this by calling the
+    to the respective *capacity_type* module. We do this by calling the
     *add_module_specific_components* method of the capacity_type module if
     the method exists.
 
@@ -60,7 +60,7 @@ def add_model_components(m, d):
     The Pyomo expression *Capacity_MW*\ :sub:`r,p`\  defines the project
     capacity in each period (in which the project can exist) in the model.
     The exact formulation of the expression depends on the project's
-    capacity_type. For each project, we call its capacity_type module's
+    *capacity_type*. For each project, we call its *capacity_type* module's
     *capacity_rule* method in order to formulate the expression. E.g. a
     project of the  *existing_gen_no_economic_retirement* capacity_type will
     have a pre-specified capacity whereas a project of the
@@ -86,9 +86,21 @@ def add_model_components(m, d):
     module's *energy_capacity_rule* method in order to formulate the
     expression.
 
-    .. todo:: describe derived sets
+    Finally, we derive three more sets for later usage:
+    *OPERATIONAL_PERIODS_BY_PROJECT*, *PROJECT_OPERATIONAL_TIMEPOINTS*,
+    and *OPERATIONAL_PROJECTS_IN_TIMEPOINT*.
 
+    *OPERATIONAL_PERIODS_BY_PROJECT* (:math:`\{OP_r\}_{r\in R}`;
+    :math:`OP_r\subset P`) is an indexed set of the operational periods
+    :math:`p\in P` for each project :math:`r\in R`.
 
+    *PROJECT_OPERATIONAL_TIMEPOINTS* (:math:`RT`) is a two-dimensional set that
+    defines all project-timepoint combinations when a project can be
+    operational.
+
+    *OPERATIONAL_PROJECTS_IN_PERIOD* (:math:`\{OR_p\}_{p\in P}`;
+    :math:`OR_r\subset R`) is an indexed set of all the projects
+    :math:`r\in R` that could be operational in each period :math:`p\in P`.
     """
     # Import needed capacity type modules
     imported_capacity_modules = \

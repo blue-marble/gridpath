@@ -2,7 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of binary commit generators.
+gridpath.project.capacity.operational_types.dispatchable_binary_commit
+----------------------------------------------------------------------
+This module describes the operations of 'binary-commit' generators,
+i.e. generators with on/off commitment decisions.
 """
 
 from builtins import zip
@@ -19,11 +22,21 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a binary commit variable to represent 'on' or 'off' state of a
-    generator.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
+
+    First, we determine the project subset with 'dispatchable_binary_commit'
+    as operational type. This is the *DISPATCHABLE_BINARY_COMMIT_GENERATORS*
+    set, which we also designate with :math:`BCG\subset R` and index
+    :math:`bcg`.
+
+    *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
+    :math:`BCGT\subset RT`) is a two-dimensional set that
+    defines all project-timepoint combinations when a
+    'dispatchable_binary_commit' project can be operational.
+
+    Commit_Binary is the binary commit variable to represent 'on' or 'off'
+    state of a generator.
     """
     # Sets and params
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(

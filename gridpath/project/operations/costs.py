@@ -2,7 +2,13 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Describe operational costs.
+gridpath.project.operations.costs
+---------------------------------
+
+The **gridpath.project.operations.costs** module is a project-level
+module that adds to the formulation components that describe the
+operations-related costs of projects (e.g. variable O&M costs, fuel costs,
+startup and shutdown costs).
 """
 
 from __future__ import print_function
@@ -19,10 +25,11 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
+
     Sum up all operational costs and add to the objective function.
-    :param m:
-    :param d:
-    :return:
+
     """
 
     def variable_om_cost_rule(m, g, tmp):

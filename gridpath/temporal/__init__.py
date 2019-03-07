@@ -3,7 +3,7 @@
 
 """
 gridpath.temporal
-^^^^^^^^^^^^^^^^^
+-----------------
 
 The **gridpath.temporal** package describes the optimization problem's temporal
 span and resolution.

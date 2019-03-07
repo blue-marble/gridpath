@@ -2,6 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
+gridpath.project.capacity.operational_types.variable
+----------------------------------------------------
 Operations of variable generators. Can be curtailed (dispatched down).
 Can provide reserves.
 """
@@ -46,7 +48,7 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.VARIABLE_GENERATORS))
 
-    # TODO: allow cap factors greater than 1?
+    # TODO: allow cap factors greater than 1, but throw a warning?
     m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
 

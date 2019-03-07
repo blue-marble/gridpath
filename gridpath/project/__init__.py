@@ -2,8 +2,6 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-gridpath.project
-^^^^^^^^^^^^^^^^
 The **gridpath.project** package contains modules to describe the available
 capacity and operational characteristics of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.

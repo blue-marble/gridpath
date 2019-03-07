@@ -2,6 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
+gridpath.project.capacity.operational_types.dispatchable_capacity_commit
+------------------------------------------------------------------------
 Operations of dispatchable generators with 'capacity commitment,' i.e.
 commit some level of capacity below the total capacity. This approach can
 be good for modeling 'fleets' of generators, e.g. a total 2000 MW of 500-MW

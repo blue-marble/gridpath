@@ -3,7 +3,7 @@
 
 """
 gridpath.project.capacity.capacity_types.existing_gen_linear_economic_retirement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------------------------------------------------
 The **existing_gen_linear_economic_retirement** module describes the capacity
 of generators that are available to the optimization without having to incur an
 investment cost, but whose fixed O&M can be avoided if they are retired.
