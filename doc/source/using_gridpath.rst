@@ -13,14 +13,200 @@ desired objective (e.g. minimize cost).
 Temporal Setup
 ==============
 
+GridPath's temporal span and resolution is flexible: the user can decide on
+a temporal setup by assigning appropriate weights to and relationships among
+GridPath's temporal units.
+
+The temporal units include:
+
+**Timepoints**
+
+Timepoints are the finest resolution over which operational decisions are
+made (e.g. an hour). Generator commitment and dispatch decisions are made for
+each timepoint, with some constraints applied across timepoint (e.g. ramp
+constraints.) Most commonly, a timepoint is an hour, but the resolution is
+flexible: a timepoint could also be a 15-minute, 5-minute, 1-minute, or 4-hour
+segment. Different timepoint durations can also be mixed, so some can be
+5-minute segments and some can be hours.
+
+**Horizons**
+
+Each timepoint belongs to a 'horizon' that describes how
+timepoints are grouped together when making operational decisions, with some
+operational constraints enforced over the 'horizon,' e.g. hydro budgets or
+storage energy balance. Horizons are modeled as independent from each other
+for operational purposes (i.e operational decisions made on one horizon do
+not affect those made on another horizon). A 'horizon' is most commonly a
+day -- e.g. we usually model a year of system operations a day at a time --
+but can be any other duration, e.g. we could model the year a week at a
+time, a month at a time, etc. Horizon durations can also be mixed.
+
+In production simulation, we usually optimize a single horizon at a time (e.g.
+each of the year's 365 days is modeled individually) and sum the results. In
+a capacity-expansion model, we usually include multiple horizons in the same
+optimization (but they are independent from each other for operational
+purposes). In a capacity-expansion context, however, we usually do not model
+the full study period explicitly; instead, due to computational
+constraints, we use a sample of horizons and assign weights to them in order
+to represent the full set of horizons (e.g. use one day per month to
+represent the whole month using the number of day in that
+month for the horizon weight).
+
+GridPath also has multi-stage commitment functionality, i.e. decisions made
+for a horizon can be fixed and the feed into a next stage with some updated
+parameters (e.g. an updated load and renewable output forecast). The number
+of stages is flexible and the timepoint resolution can change from stage to
+stage.
+
+.. todo: can we change the timepoint resolution from stage to stage yet?
+
+**Periods**
+
+Each timepoint and horizon belong to a 'period' (e.g. an year),
+which describes when decisions to build or retire infrastructure can be made.
+In a production-cost simulation context, we can use the period to
+exogenously change the amount of available capacity, but the 'period'
+temporal unit is mostly used i n the capacity-expansion approach, as it
+defines when capacity decisions are made and new infrastructure becomes
+available (or is retired). That information in turn feeds into the horizon-
+and timepoint-level operational constraints, i.e. once a generator is build,
+the optimization is allowed to operate in subsequent periods (usually for the
+duration of the generators's lifetime). The 'period' resolution is also
+flexible: e.g. capacity decisions can be made every month, every year, every
+10 years, etc.
+
+
 Geographic Setup
 ================
+
+The main geographic unit in GridPath is the **load zone**. The load zone is
+the level at which the load-balance constraints are enforced. In GridPath,
+we can model a single load zone (copper plate) or multiple load zones, which
+can be connected with transmission. This flexibility makes it possible to
+apply to different regions with different geographic set-up or to take
+different geographic approaches in modeling the same region (e.g. higher or
+lower zonal resolution for the same region).
+
+Optional levels of geographic resolution include **balancing areas** for
+reserve requirements and **policy zones**. In GridPath, it is possible
+for generators in the same load zone to contribute to different reserve
+balancing areas and/or policy zones.
 
 Projects
 ========
 
+Generation, storage, and load-side resources in GridPath are called
+**projects**. Each project is associated with a *load zone* whose load-balance
+constraint it constraint it contributes to. In addition, each project is
+assigned a *capacity type* and an *operational type*. These types are
+described in more detail below.
+
 Project Capacity
 ----------------
+Each project in GridPath must be assigned a *capacity type*. The *capacity
+type* determines, the available capacity and the capacity-associated costs of
+generation, storage, and demand-side infrastructure 'projects' in the
+optimization problem. The currently implemented capacity types include:
+
+Specified Generation
+^^^^^^^^^^^^^^^^^^^^
+
+This capacity type describes generators that are available to the optimization
+without having to incur an investment cost, e.g. existing generators or
+generators that will be built in the future and whose capital costs we want
+to ignore (in the objective function). A specified generator can be available
+in all periods, or in some periods only, with no restriction on the order
+and combination of periods. The user may specify a fixed O&M cost for these
+generators, but this cost will be a fixed number in the objective function
+and will therefore not affect any of the optmization decisions.
+
+
+Specified Generation with Linear Economic Retirement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This capacity type describes generators with the same characteristics as
+*specified generation*, but whose fixed O&M cost can be avoided by
+'retiring' them. The optimization can make the decision to retire generation
+in each study period. Once retired, the generator may not become operational
+again. Retirement decisions for this capacity type are 'linearized,' i.e.
+the optimization may retire generators partially (e.g. retire only 200 MW of
+a 500-MW generator).
+
+Linear New-Build Generation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes generation that can be built by the
+optimization at a cost. These investment decisions are linearized, i.e.
+the decision is not whether to build a unit of a specific size (e.g. a
+50-MW combustion turbine), but how much capacity to build at a particular
+project. Once built, the capacity remains available for the duration of the
+project's pre-specified lifetime. Minimum and maximum capacity constraints
+can be optionally implemented.
+
+Specified Storage
+^^^^^^^^^^^^^^^^^
+
+This capacity type describes the power (i.e. charging and discharging
+capacity) and energy capacity (i.e. duration) of storage projects that are
+available to the optimization without having to incur an investment cost.
+For example, it can be applied to existing storage projects or to
+storage projects that will be built in the future and whose capital costs we
+want to ignore (in the objective function).
+
+It is not required to specify a capacity for all periods, i.e. a project can
+be operational in some periods but not in others with no restriction on the
+order and combination of periods.
+
+Linear New-Build Storage
+^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes storage projects that can be built by the
+optimization at a cost. Investment decisions made separately for the
+project's power capacity and its energy capacity, therefore endogenously
+determine the sizing of the storage. The decisions are linearized (i.e. the
+model decides how much power capacity and how much energy capacity to build
+at a project, not whether or not to built a project of pre-defined capacity).
+Once built, these storage projects remain available for the duration of their
+pre-specified lifetime. Minimum and maximum power capacity and duration
+constraints can be optionally implemented.
+
+Shiftable Load Supply Curve
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes a supply curve for new shiftable load capacity.
+This type is a custom implementation for GridPath projects in the California
+Integrated Resource Planning proceeding.
+
+Capacity types to be implemented include:
+
+Binary New-Build Generation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes pre-specified generators (i.e. generators with
+a pre-specified capacity) that can be built by the optimization at a cost.
+These investment decisions are binary, i.e. the optimization decides whether
+or not to build the project. Once built, the capacity remains available for
+the duration of the project's pre-specified lifetime.
+
+
+Binary New-Build Storage
+^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes pre-specified storage projects that can be built
+by the optimization at a cost. The decisions are binary (i.e. the
+model decides how whether or not to built a project of pre-defined power and
+energy capacity). Once built, these storage projects remain available for
+the duration of their pre-specified lifetime.
+
+Specified Generation with Binary Economic Retirement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This capacity type describes generators with the same characteristics as
+*specified generation*, but whose fixed O&M cost can be avoided by
+'retiring' them. The optimization can make the decision to retire generation
+in each study period. Once retired, the generator may not become operational
+again. Retirement decisions for this capacity type are binary, i.e.
+'partial' retirements are not allowed.
+
+Other
+^^^^^
+TBD
+
 
 Project Operations
 ------------------
@@ -102,7 +288,7 @@ we made using representative time slices can operate reliably at every time
 point of the year. The production cost model takes a given electric system
 (similar to the Greening-the-Grid study that used the CEA plans) and solves
 the model to ensure demand equals supply, and all constraints like generator
- limits, transmission flows, ramp rates, and policy constraints are all met.
+limits, transmission flows, ramp rates, and policy constraints are all met.
 
 Capacity-expansion and production cost models are therefore complementary.
 The former allows us to quickly explore many options for how the power

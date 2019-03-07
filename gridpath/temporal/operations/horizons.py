@@ -74,6 +74,9 @@ def add_model_components(m, d):
     #  but is there are more general case? Or maybe we need to be summing
     #  over the the timepoint number_of_hours_represented times the
     #  horizon_weight for the timepoint's horizon and get 8760?
+    #  Maybe think of the horizon weight as the number of (not explicitly
+    #  modeled) *days* it represents, similar to the timepoint representing
+    #  number of *hours*
     m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
     # TODO: are months used anywhere or can we remove them for now?

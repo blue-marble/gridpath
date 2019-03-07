@@ -57,6 +57,9 @@ def add_model_components(m, d):
     m.FUEL_PROJECTS = Set(within=m.PROJECTS)
 
     m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS)
+
+    # TODO: implement full heat rate curve (probably piecewise linear with
+    #  flexible  number of points)
     m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS)
     m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS)
 
