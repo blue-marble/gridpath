@@ -1,5 +1,5 @@
 .. We'll be using the following section designations based on
-https://devguide.python.org/documenting/#sections:
+   https://devguide.python.org/documenting/#sections:
    # with overline, for parts
    * with overline, for chapters
    =, for sections

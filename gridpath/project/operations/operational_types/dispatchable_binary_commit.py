@@ -18,6 +18,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
 
+# TODO: ramp rate limits, min up and down time, startups/shutdowns
 def add_module_specific_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding components to

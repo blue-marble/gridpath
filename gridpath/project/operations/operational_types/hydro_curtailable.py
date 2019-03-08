@@ -22,8 +22,7 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a capacity commit variable to represent the amount of capacity that is
-    on.
+
     :param m:
     :return:
     """

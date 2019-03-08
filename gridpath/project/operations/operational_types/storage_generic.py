@@ -145,13 +145,14 @@ def add_module_specific_components(m, d):
 
     # Headroom and footroom energy constraints
     # TODO: allow different sustained duration requirements; assumption here is
-    # that if reserves are called, new setpoint must be sustained for 1 hour
+    #  that if reserves are called, new setpoint must be sustained for 1 hour
     # TODO: allow derate of the net energy in the current timepoint in the
-    # headroom and footroom energy rules; in reality, reserves could be
-    # called at the very beginning or the very end of the timepoint (e.g. hour)
-    # If called at the end, we would have all the net energy (or
-    # resulting 'room in the tank') available, but if called in the beginning
-    # none of it would be available
+    #  headroom and footroom energy rules; in reality, reserves could be
+    #  called at the very beginning or the very end of the timepoint (e.g.
+    #  hour)
+    #  If called at the end, we would have all the net energy (or
+    #  resulting 'room in the tank') available, but if called in the beginning
+    #  none of it would be available
 
     # Can't provide more reserves (times sustained duration required) than
     # available energy in storage (for upward reserves) in that timepoint or

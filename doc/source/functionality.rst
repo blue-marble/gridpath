@@ -39,7 +39,13 @@ for operational purposes (i.e operational decisions made on one horizon do
 not affect those made on another horizon). A 'horizon' is most commonly a
 day -- e.g. we usually model a year of system operations a day at a time --
 but can be any other duration, e.g. we could model the year a week at a
-time, a month at a time, etc. Horizon durations can also be mixed.
+time, a month at a time, etc. Horizon durations can also be mixed. The
+horizon boundary condition can be 'circular' or 'linear.' With the
+'circular' approach, the last timepoint of the horizon is considered the
+previous timepoint for the first timepoint of the horizon (for the purposes
+of functionality such as ramp constraints or tracking storage state of
+charge). If the boundary is 'linear,' then we ignore constraints relating to
+the previous timepoint in the first timepoint of a horizon.
 
 In production simulation, we usually optimize a single horizon at a time (e.g.
 each of the year's 365 days is modeled individually) and sum the results. In
@@ -58,7 +64,8 @@ parameters (e.g. an updated load and renewable output forecast). The number
 of stages is flexible and the timepoint resolution can change from stage to
 stage.
 
-.. todo: can we change the timepoint resolution from stage to stage yet?
+.. todo: don't remember if we can change the timepoint resolution from stage
+    to stage yet?
 
 **Periods**
 
@@ -104,7 +111,7 @@ described in more detail below.
 Project Capacity
 ----------------
 Each project in GridPath must be assigned a *capacity type*. The *capacity
-type* determines, the available capacity and the capacity-associated costs of
+type* determines the available capacity and the capacity-associated costs of
 generation, storage, and demand-side infrastructure 'projects' in the
 optimization problem. The currently implemented capacity types include:
 
@@ -210,6 +217,153 @@ TBD
 
 Project Operations
 ------------------
+Each project in GridPath must be assigned a *operational type*. The
+*operational_type* determines the operational capabilities of a project. The
+currently implemented operational types include:
+
+Must-Run
+^^^^^^^^
+This operational type describes generators that produce constant power equal
+to their capacity in all timepoints when they are available. They cannot
+provide reserves. Costs for this operational type include fuel costs and
+variable O&M costs.
+
+Dispatchable Always-On
+^^^^^^^^^^^^^^^^^^^^^^
+This operational type describes generators that must produce power in all
+timepoints they are available; unlike the must-run generators, however, they
+can vary power output between a pre-specified minimum stable level (greater
+than 0) and their available capacity. Always-on generators cannot provide
+reserves. Ramp rate limits can be optionally specified. Costs for this
+operational type include fuel costs and variable O&M costs.
+
+Dispatchable Binary-Commit
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational types describes generators that can be turned on and off,
+i.e. that have binary commitment variables associated with them. If they are
+committed, these generators can vary power output between a pre-specified
+minimum stable level (greater than 0) and their available capacity. Heat
+rate degradation below full load is considered. If the generators are not
+committed, power output is 0. The optimization makes commitment and power
+output decisions in every timepoint. These generators can optionally be
+allowed to provide upward and/or downward reserves. Additional functionality
+will include ramp rate limits as well us minimum up and down time
+constraints. Starts and stops -- and the associated cost and emissions --
+can be tracked and constrained for these generators. Costs for this
+operational type include fuel costs, variable O&M costs, and startup and
+shutdown costs.
+
+
+Dispatchable Continuos-Commit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type is the same as the 'dispatchable binary commit' type,
+but the commitment decision are declared as continuous (with bounds of 0 to
+1) instead of binary, so 'partial' generators can be committed. This
+treatment can be helpful in situations when mixed-integer problem runtimes
+are long and is similar to loosening the MIP gap (but can target specific
+generators). The 'continuous-commit' generators can vary power output
+between a minimum loading level (specified as a fraction of committed
+capacity) and the committed capacity in every timepoint. Costs for this
+operational type include fuel costs, variable O&M costs, and startup and
+shutdown costs.
+
+Dispatchable No-Commit
+^^^^^^^^^^^^^^^^^^^^^^
+This operational type describes generators that can vary their output
+between 0 and full capacity in every timepoint in which they are available
+(i.e. they have power output variable but no commitment variables associated
+with them). The heat rate of these generators does not degrade below full
+load and they can be allowed to provide upward and/or downward reserves.
+Costs for this operational type include fuel costs, variable O&M costs, and
+startup and shutdown costs.
+
+Dispatchable Capacity-Commit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This operational type is similar to the 'dispatchable continuous commit'
+operational type but is particularly well suited for application to 'fleets'
+of generators with the same characteristics. For example, we could have a
+GridPath project with a total capacity of 2000 MW, which actually consists
+of four 500-MW units. The optimization decides how much total capacity to
+commit (i.e. turn on), e.g. if 2000 MW are committed, then four generators (x
+500 MW) are on and if 500 MW are committed, then one generator is on, etc.
+The capacity commitment decision variables are continuous. This approach
+makes it possible to reduce problem size by grouping similar generators
+together and linearizing the commitment decisions.
+
+The optimization makes the capacity-commitment and dispatch decisions in
+every timepoint. Project power output can vary between a minimum loading level
+(specified as a fraction of committed capacity) and the committed capacity
+in each timepoint when the project is available. Heat rate degradation below
+full load is considered. These projects can be allowed to provide upward
+and/or downward reserves.
+
+No standard approach exists for applying ramp rate and minimum up and down
+time constraints to this operational type. GridPath does include
+experimental functionality for doing so. Starts and stops -- and the
+associated cost and emissions -- can also be tracked and constrained for
+this operational type.
+
+Costs for this operational type include fuel costs, variable O&M costs, and
+startup and shutdown costs.
+
+
+Hydro Curtailable
+^^^^^^^^^^^^^^^^^
+This operational type describes the operations of hydro generation. These
+projects can vary power output between a minimum and maximum level specified
+for each horizon, and must produce a pre-specified amount of energy on each
+horizon when they are available, some of which may be curtailed. The
+curtailable hydro projects can be allowed to provide upward and/or downward
+reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
+Costs for this operational type include variable O&M costs.
+
+Hydro Non-Curtailable
+^^^^^^^^^^^^^^^^^^^^^
+This operational type describes the operations of hydro generation and is
+like the 'hydro curtailable' operational type except that curtailment is not
+allowed.
+
+Variable
+^^^^^^^^
+This operational type describes generators whose power output is equal to a
+pre-specified fraction of their available capacity (a capacity factor
+parameter) in every timepoint. Curtailment is allowed. GridPath includes
+experimental features to allow these generators to provide upward and/or
+downward reserves. Costs for this operational type include variable O&M costs.
+
+Variable Non-Curtailable
+^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type is like the 'variable' type except that curtailment is
+not allowed.
+
+Storage Generic
+^^^^^^^^^^^^^^^
+This operational type describes a generic storage resource. It can be
+applied to a battery or to a pumped hydro project or another storage
+technology. The type is associated with three main variables in each
+timepont when the project is available: the charging level, the discharging
+level, and the energy available in storage. The first two are constrained to
+be less than or equal to the project's power capacity. The third is
+constrained to be less than or equal to the project's energy capacity. The
+model tracks the stage of charge in each timepoint based on the charging and
+discharging decisions in the previous timepoint, with adjustments for
+charging and discharging efficiencies. Storage projects can be allowed to
+provide upward and/or downward reserves. Costs for this operational type
+include variable O&M costs.
+
+Shiftable Load Generic
+^^^^^^^^^^^^^^^^^^^^^^
+This operational type describes a generic shiftable load resource. There are
+two opertional variables in each timepoint: one for shifting load up (adding
+load) and another for shifting load down (subtracting load). These cannot
+exceed the power capacity of the project and must meet an energy balance
+constrain on each horizon. Efficiency losses are not currently implemented.
+There are two opertional variables: shift load up (add load) and shift load
+down (subtract load). These cannot exceed the power capacity of the project
+and must meet an energy balance constraint on each horizon (no efficiency
+loss implemented).
+
 
 Load Balance
 ============
