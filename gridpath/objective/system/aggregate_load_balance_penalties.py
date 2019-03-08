@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+Unserved_Energy_MW, unserved_energy_penalty_per_mw, Overgeneration_MW,
+and overgeneration_penalty_per_mw are declared in
+system/load_balance/load_balance.py
+"""
+
 import os.path
 from pyomo.environ import Param, Expression, NonNegativeReals
 

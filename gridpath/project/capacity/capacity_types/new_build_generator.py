@@ -46,8 +46,9 @@ def add_module_specific_components(m, d):
 
     .. note:: The cost input to the model is a levelized cost per unit
         capacity. This annualized cost is incurred in each period of the study
-        (and multiplied by the number of years the period represents). It is up
-        to the user to ensure that the *lifetime_yrs_by_new_build_vintage* and
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's lifetime. It is up to the user to
+        ensure that the *lifetime_yrs_by_new_build_vintage* and
         *annualized_real_cost_per_mw_yr parameters* are consistent.
 
     For each project vintage, the user can optionally specify a minimum

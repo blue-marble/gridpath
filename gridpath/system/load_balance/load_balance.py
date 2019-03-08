@@ -15,12 +15,22 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_model_components(m, d):
     """
-
     :param m:
     :param d:
     :return:
+
+    Overgen and unserved energy costs per unit costs are declared here;
+    incurred costs are added to the objective function in
+    objective/aggregate_load_balance_penalties.py
     """
 
+    # TODO: do we want to completely disallow unserved energy and/or overgen
+    #  in some cases (as opposed to assigning a very high cost) -- we could
+    #  not append to the load-balance components given a flag for example,
+    #  or overgen and unserved energy could be their own modules
+    #  This is a more general question for all potential 'soft' constraints or
+    #  constraints that could cause feasibility issues (e.g. reserves, policy,
+    #  etc.)
     m.overgeneration_penalty_per_mw = \
         Param(m.LOAD_ZONES, within=NonNegativeReals)
     m.unserved_energy_penalty_per_mw = \
