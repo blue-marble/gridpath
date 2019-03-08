@@ -455,13 +455,14 @@ zones they connect.
 For each load zone and timepoint, the net flow on all transmission lines
 connected to the load zone is aggregated and added as a production
 component to the load balance constraint (see
-:ref:`load-balance-section-ref`). Note that if there is a net flow out of a
-load zone, the load-balance constraint 'production' component is a negative
-number.
+:ref:`load-balance-section-ref`).
+
+.. note:: If there is a net flow *out* of a load zone, the load-balance
+    constraint 'production' component is a negative number.
 
 Transmission features modules also add a transmission-capacity-costs
 component and a transmission-operational-costs component to the objective
-function (see:ref:`objective-section-ref`).
+function (see :ref:`objective-section-ref`).
 
 Like with GridPath 'projects,' transmission lines must be assigned a
 capacity type, which determines their capacity availability and costs, and an
