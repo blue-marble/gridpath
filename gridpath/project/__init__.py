@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project** package contains modules to describe the available
+The 'project' package contains modules to describe the available
 capacity and operational characteristics of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.
 """
@@ -68,11 +68,10 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the dynamic inputs class object; not used here
 
-    The **gridpath.project.__init__** module describes all projects to be
-    included in the optimization, what load zone they are located in,
-    and their 'types,' both their 'capacity type' and their 'operational
-    type.' We will designate the *PROJECTS* set with :math:`R` and the
-    projects index will be :math:`r`.
+    Here, we describe all projects to be included in the optimization,
+    what load zone they are located in, and their 'types,' both their
+    'capacity type' and their 'operational type.' We will designate the
+    *PROJECTS* set with :math:`R` and the projects index will be :math:`r`.
 
     The project load zone parameter (:math:`load\_zone_r\in Z`) determines
     which load zone's load-balance constraint the project contributes to.

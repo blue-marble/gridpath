@@ -2,14 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity** module is a project-level
-module that adds to the formulation components that describe the capacity of
-projects that are available to the optimization for each period. For example,
-the capacity can be a fixed number or an expression with variables depending
-on the project's *capacity_type*. The project capacity can then be used to
-constrain operations, contribute to reliability constraints, etc.
+This is a project-level module that adds to the formulation components that
+describe the capacity of projects that are available to the optimization for
+each period. For example, the capacity can be a fixed number or an
+expression with variables depending on the project's *capacity_type*. The
+project capacity can then be used to constrain operations, contribute to
+reliability constraints, etc.
 
-.. note:: We will be renaming this *capacity_type* modules to a more
+.. note:: We will be renaming the *capacity_type* modules to a more
     intuitive convention than currently used.
 
 """
@@ -36,8 +36,9 @@ def add_model_components(m, d):
     :param d: the DynamicComponents class object we will get components from
 
     First, we iterate over all required *capacity_types* modules (this is the
-    set of distinct project capacity types) and add the components specific
-    to the respective *capacity_type* module. We do this by calling the
+    set of distinct project capacity types in the list of projects specified
+    by the user) and add the components specific to the respective
+    *capacity_type* module. We do this by calling the
     *add_module_specific_components* method of the capacity_type module if
     the method exists.
 

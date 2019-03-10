@@ -27,8 +27,40 @@ def add_module_specific_components(m, d):
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Detailed formulation description to be added.
-    ..todo:: describe this module for docs
+    This function adds to the model a two-dimensional set of project-period
+    combinations to describe the project capacity will be available to the
+    optimization in a given period: the
+    *EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS* set. This set
+    is then added to the list of sets to join to get the final
+    *PROJECT_OPERATIONAL_PERIODS* set defined in
+    **gridpath.project.capacity.capacity**. We will also use *ELR_P* to
+    designate this set (index :math:`elr, elp` where :math:`elr\in R` and
+    :math:`elp\in P`).
+
+    For each :math:`elr, elp`, we define two parameters:
+    *existing_lin_econ_ret_capacity_mw* (the specified capacity of project
+    *elr* in period *elp* if no capacity is retired) and
+    *existing_lin_econ_ret_fixed_cost_per_mw_yr* (the per-MW cost to keep
+    capacity at project *elr* operational in period *elp*.
+
+    The variable *Retire_MW* is also defined over the *ELR_P* set. This is
+    the amount of capacity that the model can retire in each operational
+    period. The project's capacity in each period is then constrained as
+    follows:
+
+    :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
+    elp}\leq existing\_lin\_econ\_ret\_capacity\_mw_{elr, elp} -
+    Retire\_MW_{elr, elp}`
+
+    The capacity expression is then constrained to be less than or equal to
+    the capacity in the previous period in order to prevent capacity from
+    coming back online after it has been retired for :math:`elp\in N\_F\_P`.
+
+    :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
+    elp}\leq Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
+    previuos\_period_{elp}}`.
+
+
     """
     m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
         Set(dimen=2)
@@ -48,21 +80,23 @@ def add_module_specific_components(m, d):
         )
     )
     m.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS = \
-        Set(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+        Set(
+            m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
             initialize=
             lambda mod, prj: set(
                 period for (project, period)
                 in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
                 if project == prj
-               )
+            )
         )
     m.ex_gen_lin_econ_ret_gen_first_period = \
-        Param(m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
-              initialize=
-              lambda mod, g: min(
-                  p for p
-                  in mod.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
-              )
+        Param(
+            m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+            initialize=
+            lambda mod, g: min(
+                p for p
+                in mod.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
+            )
         )
 
     # Capacity and fixed cost
@@ -105,7 +139,9 @@ def add_module_specific_components(m, d):
             m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
             rule=existing_existing_econ_ret_capacity_rule
         )
-                   
+
+    # TODO: we need to check that the user hasn't specified increasing
+    #  capacity to begin with
     def retire_forever_rule(mod, g, p):
         """
         Once retired, capacity cannot be brought back (i.e. in the current 
@@ -144,7 +180,9 @@ def capacity_rule(mod, g, p):
 
     The capacity of projects of the *existing_gen_no_econoimc_retirement*
     capacity type is a pre-specified number for each of the project's
-    operational periods minus any capacity that was retired.
+    operational periods minus any capacity that was retired. The expression
+    returned is :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
+    elp}`. See the *add_module_specific_components* method for constraints.
     """
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p]
 
@@ -160,7 +198,10 @@ def capacity_cost_rule(mod, g, p):
     The capacity cost of projects of the
     *existing_gen_linear_econoimc_retirement* capacity type is its net
     capacity (pre-specified capacity minus retired capacity) times the per-mw
-    fixed cost for each of the project's operational periods.
+    fixed cost for each of the project's operational periods. This method
+    returns :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{g,
+    p} \\times existing\_lin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{g,
+    p}` and it will be called for :math:`(g, p)\in ELR_P`.
     """
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
         * mod.existing_lin_econ_ret_fixed_cost_per_mw_yr[g, p]
