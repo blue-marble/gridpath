@@ -157,4 +157,4 @@ texinfo_documents = [
 # -- Other options -----------------------------------------------------
 # Don't include the full module name; just the method name is included
 # Helps with long names due to nested file structure
-add_module_names=False
+add_module_names = False

@@ -6,6 +6,7 @@ import os.path
 from pyomo.environ import Set, Param, Reals
 
 
+# TODO: add fixed O&M cost
 def add_module_specific_components(m, d):
     """
 

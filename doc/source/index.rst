@@ -30,7 +30,7 @@ GridPath Functionality
 ######################
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
    functionality
 

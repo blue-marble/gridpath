@@ -6,6 +6,7 @@ import os.path
 from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, value
 
 
+# TODO: can we have different capacities depending on the direction
 def add_module_specific_components(m, d):
     """
 
