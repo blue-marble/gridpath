@@ -25,14 +25,49 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
-    Sum up all operational costs and add to the objective function.
+    Three types of project costs are included here: variable O&M cost,
+    fuel cost, and startup and shutdown costs.
+
+    The Pyomo expression *Variable_OM_Cost*\ :sub:`r,tmp`\ (:math:`(r,
+    tmp)\in RT`) defines the variable cost of a project in all of its
+    operational timepoints, and is simply equal to the project's power
+    output times its variable cost.
+
+    The Pyomo expression *Fuel_Cost*\ :sub:`r,tmp`\ (:math:`(r,
+    tmp)\in RT`) defines the fuel cost of a project in all of its
+    operational timepoints, and is simply equal to the project's fuel burn
+    in that timepoint times the fuel price (fuel price is currently defined
+    by period and month). The fuel burn expression is formulated in the
+    gridpath.project.operations.fuel_burn module by calling the *fuel_burn*
+    method of a project's *capacity_type* module.
+
+    The variables *Startup_Cost*\ :sub:`r,tmp`\ and
+    *Shutdown_Cost*\ :sub:`r,tmp`\ (:math:`(r, tmp)\in RT`) define the
+    startup and shutdown cost of a project in all of its operational
+    timepoints, and are formulated by first calling the
+    *startup_shutdown_rule* method of a project's *capacity_type* module,
+    which calculates the number of units that were started up or shut down,
+    i.e. the *Startup_Shutdown_Expressiont*\ :sub:`r,tmp`\.
+    These variables are defined to be non-negative and further constrained
+    as follows:
+
+    .. todo: figure out how to deal with the fuel/startup/shutdown project
+        subsets and update indices and docs in general accordingly
+
+    :math:`Startup\_Cost_{r, tmp} \geq Startup\_Shutdown\_Expression_{r,
+    tmp} \\times startup\_cost\_per\_mw_r`
+
+    :math:`Shutdown\_Cost_{r, tmp} \geq -Startup\_Shutdown\_Expression_{r,
+    tmp} \\times startup\_cost\_per\_mw_r`
+
 
     """
-
     def variable_om_cost_rule(m, g, tmp):
         """
-        Power production cost for each generator.
+
         :param m:
+        :param g:
+        :param tmp:
         :return:
         """
         return m.Power_Provision_MW[g, tmp] * m.variable_om_cost_per_mwh[g]
@@ -114,6 +149,9 @@ def add_model_components(m, d):
         Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
                    rule=startup_cost_rule)
 
+    # TODO: this looks like a bug -- this constraint is missing a negative
+    #  Needs to be:
+    #  Shutdown_Cost >= - Startup_Shutdown_Expression X shutdown_cost
     def shutdown_cost_rule(mod, g, tmp):
         """
         Shutdown expression is positive when more units were on in the previous

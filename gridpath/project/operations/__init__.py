@@ -50,7 +50,7 @@ def add_model_components(m, d):
     # TODO: implement check for which generator types can have fuels
     # TODO: re-think how to deal with fuel projects; it's awkward to import
     #  fuel & heat rate params here, but use them in the operational_type
-    #  modules
+    #  modules with an 'if in FUEL_PROJECTS'
     # Fuels and heat rates
     m.FUEL_PROJECTS = Set(within=m.PROJECTS)
 

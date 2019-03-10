@@ -122,35 +122,42 @@ gridpath.project.operations.costs
 gridpath.project.capacity.operational_types.must_run
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.must_run
+    :members: power_provision_rule
 
 gridpath.project.capacity.operational_types.always_on
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.always_on
+    :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.dispatchable_binary_commit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dispatchable_binary_commit
-    :members: add_module_specific_components
+    :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.dispatchable_capacity_commit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dispatchable_capacity_commit
+    :members: add_module_specific_components, power_provision_rule
 
-gridpath.project.capacity.operational_types.hydro_curtailable
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.hydro_curtailable
+gridpath.project.capacity.operational_types.hydro_noncurtailable
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.hydro_noncurtailable
+    :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.variable
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.variable
+    :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.storage_generic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.storage_generic
+    :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.shiftable_load_generic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.shiftable_load_generic
+
 
 Load Balance
 ============

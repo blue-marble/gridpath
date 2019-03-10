@@ -2,8 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of variable generators. Can be curtailed (dispatched down).
-Can provide reserves.
+This modules describes the operational capabilities and constraints of
+variable projects. These projects can be curtailed (dispatched down) and can
+provide reserves.
 """
 from __future__ import division
 from __future__ import print_function
@@ -29,10 +30,33 @@ from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
 
 def add_module_specific_components(m, d):
     """
-    Variable generators require a capacity factor for each timepoint.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we define the set of dispatchable-capacity-commit generators:
+    *VARIABLE_GENERATORS* (:math:`VG`, index :math:`vg`) and use this set
+    to get the subset of *PROJECT_OPERATIONAL_TIMEPOINTS* with
+    :math:`g \in VG` -- the *VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS*
+    (:math:`VG\_OT`).
+
+    The main operational parameter for variable generators is their capacity
+    factor, *cap_factor* \ :sub:`vg, tmp`\  defined over :math:`VG\_OT`.
+
+    The power provision variable for dispatchable-capacity-commit generators,
+    *Provide_Variable_Power_MW*, is defined over
+    *VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    This operational type is curtailable, so power provision is defined to
+    be less than or equal to the capacity times the capacity factor in each
+    timepoint:
+
+    For :math:`(vg, tmp) \in VG\_OT`: \n
+    :math:`Provide\_Variable\_Power\_MW_{vg, tmp} \leq
+    Capacity\_MW_{vg,p^{tmp}} \\times cap\_factor_{vg, tmp}`
+
+    Advanced functionality includes allowing the variable projects to provide
+    reserves; we will document this functionality once we have fully
+    validated it.
     """
     # Sets and params
     m.VARIABLE_GENERATORS = Set(within=m.PROJECTS,
@@ -183,13 +207,13 @@ def add_module_specific_components(m, d):
 # Operations
 def power_provision_rule(mod, g, tmp):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by variable generators
+
     Power provision from variable generators is their capacity times the
     capacity factor in each timepoint minus any upward reserves/curtailment.
-    See max_power_rule above.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
 
     return mod.Provide_Variable_Power_MW[g, tmp]

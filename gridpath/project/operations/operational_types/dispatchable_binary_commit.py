@@ -29,13 +29,34 @@ def add_module_specific_components(m, d):
     set, which we also designate with :math:`BCG\subset R` and index
     :math:`bcg`.
 
+    We define the minimum stable level parameters over :math:`AGO`: \n
+    *disp_binary_commit_min_stable_level_fraction* \ :sub:`aog`\ -- the
+    minimum stable level of the dispatchable-binary-commit generator, defined
+    as a fraction its capacity \n
+
     *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
-    :math:`BCGT\subset RT`) is a two-dimensional set that
+    :math:`BCG\_OT\subset RT`) is a two-dimensional set that
     defines all project-timepoint combinations when a
     'dispatchable_binary_commit' project can be operational.
 
     Commit_Binary is the binary commit variable to represent 'on' or 'off'
-    state of a generator.
+    state of a generator. It is defined over over
+    *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    Provide_Power_DispBinaryCommit_MW is the power provision variable for
+    the generator. It is defined over is defined over
+    *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    The main constraints on dispatchable-binary-commit generator power
+    provision are as follows:
+
+    For :math:`(bcg, tmp) \in BCG\_OT`: \n
+    :math:`Provide\_Power\_DispBinaryCommit\_MW_{bcg, tmp} \geq
+    Commit\_MW_{bcg, tmp} \\times disp\_binary\_commit\_min\_stable\_level
+    \_fraction \\times Capacity\_MW_{bcg,p}` \n
+    :math:`Provide\_Power\_DispBinaryCommit\_MW_{bcg, tmp} \leq
+    Commit\_MW_{bcg, tmp} \\times Capacity\_MW_{bcg,p}`
+
     """
     # Sets and params
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
@@ -107,11 +128,15 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from dispatchable generators is an endogenous variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by dispatchable-binary-commit
+     generators
+
+    Power provision for dispatchable-binary-commit generators is a
+    variable constrained to be between the generator's minimum stable level
+    and its capacity, if the generator is committed and 0 otherwise.
     """
     return mod.Provide_Power_DispBinaryCommit_MW[g, tmp]
 

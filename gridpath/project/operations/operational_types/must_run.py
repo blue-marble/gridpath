@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of must-run generators. Can't provide reserves.
+This module describes the operations of must-run generators. These
+generators can provide power but not reserves.
 """
 
 from pyomo.environ import Constraint, Set
@@ -12,16 +13,19 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :return:
+
     """
 
+    # TODO: do we need this set or can we remove it
     m.MUST_RUN_GENERATORS = Set(within=m.PROJECTS,
                                 initialize=generator_subset_init(
                                     "operational_type", "must_run")
                                 )
 
+    # TODO: do we need this set or can we remove it?
     m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=lambda mod:
@@ -31,11 +35,13 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision for must run generators is their capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by must-run generators
+
+    Power provision for must run generators is simply their capacity in all
+    timepoints when they are operational.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.availability_derate[g, mod.horizon[tmp]]
