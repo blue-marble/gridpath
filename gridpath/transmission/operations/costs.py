@@ -2,9 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate carbon emissions from the transmission-line-timepoint level to
-the carbon cap zone - period level.
+This is a Tx-line-level module that adds to the formulation components that
+describe the operations-related costs of transmisison lines (e.g. hurdle
+rate costs).
 """
+
 from __future__ import print_function
 
 from builtins import next

@@ -215,20 +215,75 @@ Advanced Functionality
 This section describes GridPath's advanced functionality that can be included
 by selecting optional features.
 
-Multli-Stage
+Multi-Stage
 ============
+.. automodule:: gridpath.project.operations.fix_commitment
 
 Transmission
 ============
 
+gridpath.transmission
+---------------------
+.. automodule:: gridpath.transmission.__init__
+
+gridpath.transmission.capacity.capacity_types
+---------------------------------------------
+.. automodule:: gridpath.transmission.capacity.capacity_types
+
+gridpath.transmission.capacity.capacity
+---------------------------------------
+.. automodule:: gridpath.transmission.capacity.capacity
+
+gridpath.transmission.operations.operations
+-------------------------------------------
+.. automodule:: gridpath.transmission.operations.operations
+
+gridpath.system.load_balance.aggregate_transmission_power
+---------------------------------------------------------
+.. automodule:: gridpath.system.load_balance.aggregate_transmission_power
+
+Transmission Hurdle Rates
+-------------------------
+If the transmission hurdle rates feature is enabled, the following modules
+are also included:
+
+gridpath.transmission.operations.costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.transmission.operations.costs
+
+gridpath.objective.transmission.aggregate_operational_costs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.objective.transmission.aggregate_operational_costs
+
+
+
 Operating Reserves
 ==================
+GridPath can model operating reserve requirements and provision. Reserves
+currently modeled (none, any, or all can be selected, as they are additive
+in the model) include regulation up and down, spinning reserves,
+load-following up and down, and frequency response.
+
+More documentation will be included in the future.
 
 Reliability
 ===========
+GridPath currently includes the ability to require that a planning reserve
+requirement be met.
+
+More documentation will be included in the future.
 
 Policy
 ======
 
+GridPath includes the ability to model certain policies, e.g. a renewable
+portfolio standard requiring that a certain percentage of demand be met with
+renewable resources, and a carbon cap, requiring that total emissions be
+below a certain level.
+
+More documentation will be included in the future.
+
 Custom Modules
 ==============
+
+GridPath can include custom modules.

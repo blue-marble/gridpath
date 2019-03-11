@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+The **gridpath.transmission** package adds transmission-line-level
+components to the model formulation.
+"""
+
 import csv
 import os.path
 import pandas as pd

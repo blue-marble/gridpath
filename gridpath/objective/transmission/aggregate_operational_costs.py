@@ -2,8 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate carbon emissions from the transmission-line-timepoint level to
-the carbon cap zone - period level.
+This module aggregates transmission-line-timepoint-level operational costs
+for use in the objective function.
 """
 
 from pyomo.environ import Expression

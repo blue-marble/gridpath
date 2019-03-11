@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-
+This module exports the commitment variables that must be fixed in the next
+stage and imports the variables that were fixed in the previous stage.
 """
 
 from builtins import zip
