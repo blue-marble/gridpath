@@ -2,9 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Unserved_Energy_MW, unserved_energy_penalty_per_mw, Overgeneration_MW,
-and overgeneration_penalty_per_mw are declared in
-system/load_balance/load_balance.py
+This module adds load-balance penalty costs to the objective function.
+
+.. note:: Unserved_Energy_MW, unserved_energy_penalty_per_mw,
+    Overgeneration_MW, and overgeneration_penalty_per_mw are declared in
+    system/load_balance/load_balance.py
 """
 
 import os.path
@@ -15,10 +17,19 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
 
-    :param m:
-    :param d:
-    :return:
+    Here, we aggregate total unserved-energy and overgeneration costs,
+    and add them as a dynamic component to the objective function.
+
+    :math:`Total\_Load\_Balance\_Penalty\_Costs =
+    \sum_{z, tmp} {(Unserved\_Energy\_MW_{z, tmp} + Overgeneration\_MW_{z,
+    tmp})
+    \\times number\_of\_hours\_in\_timepoint_{tmp}
+    \\times horizon\_weight_{h^{tmp}}
+    \\times number\_years\_represented_{p^{tmp}}
+    \\times discount\_factor_{p^{tmp}}}`
     """
 
     def total_penalty_costs_rule(mod):

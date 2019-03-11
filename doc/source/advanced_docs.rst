@@ -180,6 +180,33 @@ gridpath.system.load_balance.load_balance
 
 Objective Function
 ==================
+.. automodule:: gridpath.objective.__init__
+
+.. automodule:: gridpath.objective.project.__init__
+
+.. automodule:: gridpath.objective.system.__init__
+
+gridpath.objective.project.aggregate_capacity_costs
+---------------------------------------------------
+.. automodule:: gridpath.objective.project.aggregate_capacity_costs
+    :members: add_model_components
+
+gridpath.objective.project.aggregate_operational_costs
+------------------------------------------------------
+.. automodule:: gridpath.objective.project.aggregate_operational_costs
+    :members: add_model_components
+
+gridpath.objective.system.aggregate_load_balance_penalties
+----------------------------------------------------------
+.. automodule:: gridpath.objective.system.aggregate_load_balance_penalties
+    :members: add_model_components
+
+gridpath.objective.min_total_cost
+---------------------------------
+.. automodule:: gridpath.objective.min_total_cost
+    :members: add_model_components
+
+
 
 **********************
 Advanced Functionality

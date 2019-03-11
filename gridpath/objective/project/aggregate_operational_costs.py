@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Describe operational costs.
+This module aggregates all project operational costs and adds them to the
+objective function.
 """
 
 from pyomo.environ import Expression
@@ -12,10 +13,27 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 
 def add_model_components(m, d):
     """
-    Sum up all operational costs and add to the objective function.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we sum up all operational costs and add them to the
+    objective-function dynamic components. Operational costs include
+    variable O&M costs, fuel costs, startup costs, and shutdown costs.
+
+    :math:`Total\_Variable\_OM\_Cost =
+    \sum_{(r, tmp)\in {RT}}{Variable\_OM\_Cost_{r, tmp}
+    \\times number\_of\_hours\_in\_timepoint_{tmp}
+    \\times horizon\_weight_{h^{tmp}}
+    \\times number\_years\_represented_{p^{tmp}}
+    \\times discount\_factor_{p^{tmp}}}`
+
+    :math:`Total\_Fuel\_Cost =
+    \sum_{(r, tmp)\in {RT}}{Fuel\_Cost_{r, tmp}
+    \\times number\_of\_hours\_in\_timepoint_{tmp}
+    \\times horizon\_weight_{h^{tmp}}
+    \\times number\_years\_represented_{p^{tmp}}
+    \\times discount\_factor_{p^{tmp}}}`
+
     """
 
     # Power production variable costs
