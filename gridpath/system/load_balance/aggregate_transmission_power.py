@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This module, aggregates the net power flow in/out of a load zone on all
+transmission lines connected to the load zone to create a load-balance
+production component, and adds it to the load-balance constraint.
+"""
+
 from __future__ import print_function
 
 from builtins import next

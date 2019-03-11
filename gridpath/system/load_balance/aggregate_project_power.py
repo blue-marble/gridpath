@@ -2,28 +2,35 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate project dispatch for load balance
+This module, aggregates the power production by all operational projects
+to create a load-balance production component, and adds it to the
+load-balance constraint.
 """
 
-import csv
-import os.path
-import pandas as pd
-from pyomo.environ import Expression, value
+from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import \
-    required_operational_modules, load_balance_production_components
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+    load_balance_production_components
 
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :param d:
-    :return:
+    Here, we add the *Power_Production_in_Zone_MW* expression -- an
+    aggregation of power production by all operational projects in each load
+    zone *z* and timepoint *tmp* --and add it to the dynamic load-balance
+    production components that will go into the load balance constraint in
+    the *load_balance* module (i.e. the constraint's lhs).
+
+    :math:`Power\_Production\_in\_Zone\_MW_{z, tmp} =
+    \sum_{r^z\in OR_{tmp}}{Power\_Provision\_MW_{r, tmp}}`
     """
 
     # Add power generation to load balance constraint
+    # TODO: is this better done with a set intersection (all projects in the
+    #  zone intersected with all operational project sin the timepoint)
     def total_power_production_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
                    for g in mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]

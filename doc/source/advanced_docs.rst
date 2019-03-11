@@ -162,6 +162,22 @@ gridpath.project.capacity.operational_types.shiftable_load_generic
 Load Balance
 ============
 
+gridpath.system.load_balance.static_load_requirement
+----------------------------------------------------
+.. automodule:: gridpath.system.load_balance.static_load_requirement
+    :members: add_model_components
+
+gridpath.system.load_balance.aggregate_project_power
+----------------------------------------------------
+.. automodule:: gridpath.system.load_balance.aggregate_project_power
+    :members: add_model_components
+
+gridpath.system.load_balance.load_balance
+-----------------------------------------
+.. automodule:: gridpath.system.load_balance.load_balance
+    :members: add_model_components
+
+
 Objective Function
 ==================
 

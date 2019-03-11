@@ -96,9 +96,10 @@ def add_model_components(m, d):
     defines all project-timepoint combinations when a project can be
     operational.
 
-    *OPERATIONAL_PROJECTS_IN_PERIOD* (:math:`\{OR_p\}_{p\in P}`;
+    *OPERATIONAL_PROJECTS_IN_TIMEPOINT* (:math:`\{OR_{tmp}\}_{{tmp}\in T}`;
     :math:`OR_r\subset R`) is an indexed set of all the projects
-    :math:`r\in R` that could be operational in each period :math:`p\in P`.
+    :math:`r\in R` that could be operational in each timepoint :math:`{
+    tmp}\in T`.
     """
     # Import needed capacity type modules
     imported_capacity_modules = \
