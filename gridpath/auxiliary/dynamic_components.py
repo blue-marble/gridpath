@@ -2,11 +2,16 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Lists and dictionaries of the names of the model dynamic components
+This module creates the DynamicComponents class, which contains the lists and
+dictionaries of the names of GridPath dynamic components. These are
+components that are populated by other GridPath modules based on the
+scenario input data.
 """
 
 from builtins import object
 
+# Create global variables for the dynamic component names, so that we can
+# more easily import the correct names into other modules
 required_capacity_modules = "required_capacity_modules"
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \
@@ -40,15 +45,22 @@ local_capacity_balance_provision_components = \
 total_cost_components = "total_cost_components"
 
 
-# TODO: should we have more than one of these depending on component type
+# TODO: should we have more than one of these depending on component type,
+#  e.g. a group for GP modules to use (e.g. capacity and operational types,
+#  prm modules, reserve modules) vs. actual optimizaton model components such
+#  as the headroom and footroom variables vs. the names of constraint
+#  components
 class DynamicComponents(object):
     """
-    Will contain the dynamic inputs that modules will populate, which will be
-    used to initialize model components
+    Here we initialize the class object and its components that will contain
+    the dynamic inputs. When called, the GridPath modules will populate the
+    various class components based on the input data, which will then be
+    used to initialize model components, keep track of required submodules,
+    keep track of components added by modules to dynamic constraints, etc.
     """
     def __init__(self):
         """
-        Initiate the dynamic components
+        Initialize the dynamic components.
         """
 
         # Capacity-type modules
@@ -81,7 +93,7 @@ class DynamicComponents(object):
         # Transmission
         setattr(self, required_tx_capacity_modules, list())
 
-        # Load balance
+        # Load balance constraint
         # Modules will add component names to these lists
         setattr(self, load_balance_production_components, list())
         setattr(self, load_balance_consumption_components, list())

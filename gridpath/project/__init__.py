@@ -76,13 +76,7 @@ def add_model_components(m, d):
     The project load zone parameter (:math:`load\_zone_r\in Z`) determines
     which load zone's load-balance constraint the project contributes to.
 
-    The capacity type of a project is given by the *capacity_type*\ :sub:`r`\
-    param and determines things like whether the project is going to be
-    available to the optimization as “given,” whether there will there be
-    decision variables associated with building capacity at this project,
-    whether the optimization will have the option to retire the project,
-    etc. The available 'capacity types' are implemented in distinct modules
-    and are described below. Each project must have a *capacity_type*.
+
 
     The operational type of a project is given by the
     *operational_type*\ :sub:`r`\  param and determines things like whether the

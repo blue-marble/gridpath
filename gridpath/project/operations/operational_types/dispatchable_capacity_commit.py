@@ -546,6 +546,9 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
+
+        units_turned_off_min_down_time_or_less_hours_ago = 0
+
         # TODO: enforce subhourly?
         if mod.dispcapcommit_min_up_time_hours[g] <= 1:
             return Constraint.Skip

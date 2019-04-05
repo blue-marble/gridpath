@@ -42,4 +42,5 @@ Advanced Documentation
 .. toctree::
    :maxdepth: 4
 
+   architecture
    advanced_docs

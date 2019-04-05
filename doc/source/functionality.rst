@@ -540,9 +540,11 @@ GridPath can optionally model a range of operating reserve types, including
 regulation up and down, spinning reserves, load-following up and down, and
 frequency response. The implementation of each reserve type is standardized.
 The user must define the reserve balancing areas along with any penalties
-for violation of the reserve-balance constraints. Each project that can
-provide the reserve type must then be assigned a balancing area to whose
-reserve-balance constraint it can contribute. The project-level
+for violation of the reserve-balance constraints. For each balancing area,
+the reserve requirement for each timepoint must be specified. Only
+exogenously-specified reserves are implmented at this stage. Each project
+that can provide the reserve type must then be assigned a balancing area to
+whose reserve-balance constraint it can contribute. The project-level
 reserve-provision variables are dynamically added to the project's operating
 constraints if the project can provide each reserve type. Total reserve
 provision by projects in each balancing area is then aggregated and
@@ -553,8 +555,9 @@ objective function.
 Reliability
 ===========
 GridPath can optionally model a planning-reserve capacity requirement (PRM).
-The user must the define the zones with a PRM requirement. Each project that
-can contribute capacity (i.e. expected load-carrying capability -- ELCC --
+The user must the define the zones with a PRM requirement and the
+requirement level for each PRM zone and period. Each project that can
+contribute capacity (i.e. expected load-carrying capability -- ELCC --
 greater than 0) must be assigned a PRM zone to whose reserve-balance
 constraint it can contribute. The PRM reserve-balance constraint is a
 period-level constraint. Projects can contribute a fraction of their
