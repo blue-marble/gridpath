@@ -33,7 +33,10 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
 def add_model_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding components to
-    :param d: the DynamicComponents class object we will get components from
+    :param d: the DynamicComponents class object we will get components from;
+        here we need the list of capacity types as well as the
+        *capacity_type_operational_period_sets* list of sets after it has
+        been populate by the capacity-type modules
 
     First, we iterate over all required *capacity_types* modules (this is the
     set of distinct project capacity types in the list of projects specified

@@ -63,28 +63,25 @@ class DynamicComponents(object):
         Initialize the dynamic components.
         """
 
-        # Capacity-type modules
+        # ### Types ### #
+
+        # Capacity-type modules (the list of unique capacity types in the
+        # project list)
         setattr(self, required_capacity_modules, list())
-        # Capacity-type modules will populate this list if called
+        # Capacity-type modules will populate these lists if called
+        # These are the sets of project-operational_period by capacity type;
+        # the sets will be joined to make the final
+        # project-operational_period set that includes all projects
         setattr(self, capacity_type_operational_period_sets, list())
         setattr(self, storage_only_capacity_type_operational_period_sets,
                 list())
 
-        # Operational type modules
+        # Operational type modules (the list of unique operational types in
+        # the project list)
         setattr(self, required_operational_modules, list())
 
-        # PRM type modules
+        # PRM type modules (the list of unique prm types in the project list)
         setattr(self, required_prm_modules, list())
-
-        # Reserve types
-        # Will be determined based on whether the user has specified a module
-        setattr(self, required_reserve_modules, list())
-
-        # Headroom and footroom variables
-        setattr(self, headroom_variables, dict())
-        setattr(self, footroom_variables, dict())
-        setattr(self, reserve_variable_derate_params, dict())
-        setattr(self, reserve_to_energy_adjustment_params, dict())
 
         # PRM cost groups
         setattr(self, prm_cost_group_sets, list())
@@ -92,6 +89,40 @@ class DynamicComponents(object):
 
         # Transmission
         setattr(self, required_tx_capacity_modules, list())
+
+        # ### Operating reserves ### #
+
+        # Reserve types -- the list of reserve types the user has requested
+        # to be modeled
+        # Will be determined based on whether the user has specified a module
+        # This list is populated in
+        # *gridpath.operations.reserves.reserve_provision* when the respective
+        # reserve module is called (e.g. spinning reserves are added to this
+        # list when *gridpath.operations.reserves.spinning_reserves* is
+        # called, which in turn only happens if the 'spinning_reserves'
+        # feature is selected
+        setattr(self, required_reserve_modules, list())
+
+        # Headroom and footroom variables
+        # These will include the project as keys and a list as value for
+        # each project; the list could be empty if the project is not
+        # providing any reserves, or will include the names of the
+        # respective reserve-provision variable if the reserve-type is
+        # modeled and a project can provide it
+        setattr(self, headroom_variables, dict())
+        setattr(self, footroom_variables, dict())
+
+        # A reserve-provision derate parameter and a
+        # reserve-to-energy-adjustment parameter could also be assigned to
+        # project, so we make dictionaries that will link the
+        # reserve-provision variable names to a derate-param name (i.e. the
+        # regulation up variable will be linked to a regulation-up
+        # parameter, the spinning-reserves variable will be linked to a
+        # spinning reserves paramater, etc.)
+        setattr(self, reserve_variable_derate_params, dict())
+        setattr(self, reserve_to_energy_adjustment_params, dict())
+
+        # ### Constraint and objective function components ### #
 
         # Load balance constraint
         # Modules will add component names to these lists

@@ -18,12 +18,33 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
 
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
+    :param d: the dynamic components class object we'll be adding to
+    :param scenario_directory: the base scenario directory
+    :param horizon: if horizon subproblems exist, the horizon name; NOT USED
+    :param stage: if stage subproblems exist, the stage name; NOT USED
 
-    :param d:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
+    This method adds several project-related 'dynamic components' to the
+    Python class object (created in *gridpath.auxiliary.dynamic_components*) we
+    use to pass around components that depend on the selected modules and
+    the scenario input data.
+
+    First, we get the unique sets of project 'capacity types' and 'operational
+    types.' We will use this lists to iterate over the required capacity-type
+    and operational-type modules, so that they can add the relevant params,
+    sets, variables, etc. to the model, load their data, export their
+    results, etc.
+
+    We will also set the keys for the headroom and footroom variable
+    dictionaries: the keys are all the projects included in the
+    'projects.tab' input file. The values of these dictionaries are
+    initially empty lists and will be populated later by each of included
+    the reserve (e.g regulation up) modules. E.g. if the user has requested to
+    model spinning reserves and project *r* has a value in the column
+    associated with the spinning-reserves balancing area, then the name of
+    project-level spinning-reserves-provision variable will be added to that
+    project's list of variables in the 'headroom_variables' dictionary. For
+    downward reserves, the associated variables are added to the
+    'footroom_variables' dictionary.
     """
 
     project_dynamic_data = \

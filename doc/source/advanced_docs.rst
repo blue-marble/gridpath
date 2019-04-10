@@ -47,8 +47,11 @@ gridpath.geography.load_zones
 
 Projects
 ========
+
+gridpath.project.__init__
+^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.__init__
-    :members: add_model_components
+    :members: determine_dynamic_components, add_model_components
 
 Project Capacity
 ----------------
@@ -264,7 +267,26 @@ currently modeled (none, any, or all can be selected, as they are additive
 in the model) include regulation up and down, spinning reserves,
 load-following up and down, and frequency response.
 
-More documentation will be included in the future.
+The treatment of operating reserves is standardized. It requires defining
+the reserve balancing areas with their associated parameters and setting
+the reserve requirements by balancing area and timepoint; we must
+also assign a balancing area to each project that can provide the reserve;
+the model then takes care of creating the appropriate project-level
+reserve-provision variables, aggregates the provision of reserves, and
+ensures that total provision of the reserve and the reserve requirement are
+balanced (or that penalties are applied if not).
+
+Modules from each reserve feature call on standardized methods included in
+other GridPath modules. The standard methods are included in the following
+modules:
+
+gridpath.project.operations.reserves.reserve_provision
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: gridpath.project.operations.reserves.reserve_provision
+    :members: generic_determine_dynamic_components
+
+
 
 Reliability
 ===========
