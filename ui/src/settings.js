@@ -53,13 +53,13 @@ scenariosDirectorySettingsButton.addEventListener(
     'click',
     (event) => {
         // Write where
-        let dbFilePath = dialog.showOpenDialog(
+        let scenariosDirectoryPath = dialog.showOpenDialog(
             { properties: ['openDirectory'] }
         );
         // set the database path
         storage.set(
             'scenariosDirectory',
-            { 'scenariosDirectory': dbFilePath },
+            { 'scenariosDirectory': scenariosDirectoryPath },
             (error) => {if (error) throw error;}
         );
         // re-load settings view
@@ -76,5 +76,39 @@ storage.get(
             'currentScenariosDirectory'
         ).innerHTML =
             data.scenariosDirectory;
+    }
+);
+
+
+// Get the gridPath directory
+const gridPathDirectorySettingsButton =
+    document.getElementById('gridPathDirectorySettingsButton');
+gridPathDirectorySettingsButton.addEventListener(
+    'click',
+    (event) => {
+        // Write where
+        let gridPathDirectoryPath = dialog.showOpenDialog(
+            { properties: ['openDirectory'] }
+        );
+        // set the database path
+        storage.set(
+            'gridPathDirectory',
+            { 'gridPathDirectory': gridPathDirectoryPath },
+            (error) => {if (error) throw error;}
+        );
+        // re-load settings view
+        ipcRenderer.send('User-Requests-Settings-View');
+    }
+);
+
+storage.get(
+    'gridPathDirectory',
+    (error, data) => {
+        if (error) throw error;
+        console.log(data);
+        document.getElementById(
+            'currentGridPathDirectory'
+        ).innerHTML =
+            data.gridPathDirectory;
     }
 );

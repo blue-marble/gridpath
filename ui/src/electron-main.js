@@ -3,12 +3,12 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const storage = require('electron-json-storage');
 
 
 // Keep a global reference of each window object; if we don't, the window will
 // be closed automatically when the JavaScript object is garbage-collected.
 let mainWindow;
-let scenarioDetailWindow;
 
 // // Main window //
 function createMainWindow () {
@@ -122,45 +122,59 @@ const baseDirectory = () => {
     }
 };
 
-const PyScriptPath = path.join(baseDirectory(), '../run_scenario.py');
-
+// TODO: how to get the GP python code? Should we have the user specify
+//  where it is? We're not packaging up Python for now.
+// const PyScriptPath = path.join(baseDirectory(), '../run_start_to_end.py');
 ipcMain.on(
     'User-Requests-to-Run-Scenario',
     (event, userRequestedScenarioName) => {
         console.log(`Received user request for ${userRequestedScenarioName}`);
 
-        // Spawn Python process
-        console.log(`Running ${userRequestedScenarioName}...`);
-        console.log(PyScriptPath);
-        // Spawn a python child process
-        // Options:
-        // 1) cwd changes directory to the root
-        // 2) setting stdio to 'inherit' in order to display child process
-        // stdout output 'live' (it's buffered otherwise); other options I
-        // found include flushing stdout with sys.stdout.flush() in the
-        // Python code or spawning the Python child process with the
-        // unbuffered (-u) flag (python -u python_script.py); sticking with
-        // 'inherit' for now as it's simplest and produces the most
-        // faithful output in a limited set of experiments
-        const runScenarioPythonChild = require('child_process').spawn(
-            'python',
-            [PyScriptPath, '--scenario', userRequestedScenarioName],
-            {
-                cwd: path.join(baseDirectory(), ".."),
-                stdio: 'inherit'
-            }
+        storage.get(
+            'gridPathDirectory',
+            (error, data) => {
+                if (error) throw error;
+                const gridPathDirectoryPath = data['gridPathDirectory'][0];
+                        // Spawn Python process
+                console.log(`Running ${userRequestedScenarioName}...`);
+                console.log(gridPathDirectoryPath);
+
+                const PyScriptPath = path.join(gridPathDirectoryPath, 'run_start_to_end.py');
+                console.log(PyScriptPath);
+                // Spawn a python child process
+                // Options:
+                // 1) cwd changes directory to the root
+                // 2) setting stdio to 'inherit' in order to display child process
+                // stdout output 'live' (it's buffered otherwise); other options I
+                // found include flushing stdout with sys.stdout.flush() in the
+                // Python code or spawning the Python child process with the
+                // unbuffered (-u) flag (python -u python_script.py); sticking with
+                // 'inherit' for now as it's simplest and produces the most
+                // faithful output in a limited set of experiments
+                const runScenarioPythonChild = require('child_process').spawn(
+                    'python',
+                    [PyScriptPath, '--scenario', userRequestedScenarioName],
+                    {
+                        cwd: gridPathDirectoryPath,
+                        stdio: 'inherit',
+                        shell: true
+                    }
+                );
+                // runScenarioPythonChild.stdout.on('data', function(data) {
+                //     console.log('stdout: ' + data.toString());
+                // });
+                // runScenarioPythonChild.stderr.on('data', function(data) {
+                //     console.log('stderr: ' + data.toString());
+                // });
+                runScenarioPythonChild.on('close', function(code) {
+                    console.log('Python process closing code: ' + code.toString());
+                });
+
+                }
         );
-        // runScenarioPythonChild.stdout.on('data', function(data) {
-        //     console.log('stdout: ' + data.toString());
-        // });
-        // runScenarioPythonChild.stderr.on('data', function(data) {
-        //     console.log('stderr: ' + data.toString());
-        // });
-        runScenarioPythonChild.on('close', function(code) {
-            console.log('Python process closing code: ' + code.toString());
-        });
     }
 );
+
 
 // General methods //
 // Go back to index view if user requests it; maybe this can be reused
