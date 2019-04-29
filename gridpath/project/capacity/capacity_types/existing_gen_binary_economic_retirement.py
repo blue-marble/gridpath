@@ -177,11 +177,13 @@ def capacity_cost_rule(mod, g, p):
     capacity (pre-specified capacity or zero if retired) times the per-mw
     fixed cost for each of the project's operational periods. This method
     returns :math:`existing\_bin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{ebr,
-    ebp} *(1 - Binary\_Retire_{ebr, ebp}`.
+    ebp} * existing\_bin\_econ\_ret\_capacity\_mw_{ebr, ebp} *
+    (1 - Binary\_Retire_{ebr, ebp}`.
     and it will be called for :math:`(ebr, ebp)\in EBR_P`.
     """
     return mod.existing_bin_econ_ret_fixed_cost_per_mw_yr[g, p] \
-           * (1 - mod.Retire_Binary[g, p])
+        * mod.existing_bin_econ_ret_capacity_mw[g, p] \
+        * (1 - mod.Retire_Binary[g, p])
 
 
 def load_module_specific_data(
