@@ -92,7 +92,7 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
             "Hydro", 'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Nuclear_Flexible"]
+            "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"]
         )
         actual_projects = sorted([
             prj for prj in instance.FULLY_DELIVERABLE_PRM_PROJECTS

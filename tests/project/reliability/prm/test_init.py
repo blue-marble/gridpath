@@ -91,7 +91,7 @@ class TestProjPRMInit(unittest.TestCase):
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Nuclear_Flexible"]
+            "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"]
             )
         actual_projects = sorted([prj for prj in instance.PRM_PROJECTS])
 
@@ -109,9 +109,10 @@ class TestProjPRMInit(unittest.TestCase):
                  "Battery": "PRM_Zone1", "Battery_Specified": "PRM_Zone1",
                  "Hydro": "PRM_Zone1", 'Hydro_NonCurtailable': "PRM_Zone1",
                  "Disp_Binary_Commit": "PRM_Zone1",
-                 "Disp_Cont_Commit": "PRM_Zone1",
-                 "Disp_No_Commit": "PRM_Zone1", "Clunky_Old_Gen": "PRM_Zone1",
-                 "Nuclear_Flexible": "PRM_Zone1"}.items()
+                 "Disp_Cont_Commit": "PRM_Zone1", "Disp_No_Commit": "PRM_Zone1",
+                 "Clunky_Old_Gen": "PRM_Zone1", "Clunky_Old_Gen2": "PRM_Zone1",
+                 "Nuclear_Flexible": "PRM_Zone1"
+                 }.items()
             )
         )
         actual_prm_zone = OrderedDict(
@@ -144,7 +145,9 @@ class TestProjPRMInit(unittest.TestCase):
                  "Disp_Cont_Commit": "fully_deliverable",
                  "Disp_No_Commit": "fully_deliverable",
                  "Clunky_Old_Gen": "fully_deliverable",
-                 "Nuclear_Flexible": "fully_deliverable"}.items()
+                 "Clunky_Old_Gen2": "fully_deliverable",
+                 "Nuclear_Flexible": "fully_deliverable"
+                 }.items()
             )
         )
         actual_prm_type = OrderedDict(
@@ -163,7 +166,7 @@ class TestProjPRMInit(unittest.TestCase):
                 "Wind", "Battery", "Battery_Specified", "Hydro",
                 'Hydro_NonCurtailable',
                 "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-                "Clunky_Old_Gen", "Nuclear_Flexible"
+                "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"
             ]),
             "PRM_Zone2": sorted([
                 "Coal_z2", "Gas_CCGT_z2", "Gas_CT_z2", "Nuclear_z2", "Wind_z2"
@@ -190,13 +193,11 @@ class TestProjPRMInit(unittest.TestCase):
             ("Gas_CT_New", 2030), ("Battery", 2020), ("Battery", 2030),
             ("Hydro", 2020), ("Hydro", 2030),
             ("Hydro_NonCurtailable", 2020), ("Hydro_NonCurtailable", 2030),
-            ("Disp_Binary_Commit", 2020),
-            ("Disp_Binary_Commit", 2030),
-            ("Disp_Cont_Commit", 2020),
-            ("Disp_Cont_Commit", 2030),
-            ("Disp_No_Commit", 2020),
-            ("Disp_No_Commit", 2030),
+            ("Disp_Binary_Commit", 2020), ("Disp_Binary_Commit", 2030),
+            ("Disp_Cont_Commit", 2020), ("Disp_Cont_Commit", 2030),
+            ("Disp_No_Commit", 2020), ("Disp_No_Commit", 2030),
             ("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030),
+            ("Clunky_Old_Gen2", 2020), ("Clunky_Old_Gen2", 2030),
             ("Nuclear_Flexible", 2030)
         ])
         actual_proj_period_set = sorted([

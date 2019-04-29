@@ -96,9 +96,10 @@ class TestProjPRMSimple(unittest.TestCase):
                  "Battery": 0.8, "Battery_Specified": 0.8,
                  "Hydro": 0.8, 'Hydro_NonCurtailable': 0.8,
                  "Disp_Binary_Commit": 0.8,
-                 "Disp_Cont_Commit": 0.8,
-                 "Disp_No_Commit": 0.8, "Clunky_Old_Gen": 0.8,
-                 "Nuclear_Flexible": 0.8}.items()
+                 "Disp_Cont_Commit": 0.8, "Disp_No_Commit": 0.8,
+                 "Clunky_Old_Gen": 0.8, "Clunky_Old_Gen2": 0.8,
+                 "Nuclear_Flexible": 0.8
+                 }.items()
             )
         )
         actual_prm_frac = OrderedDict(

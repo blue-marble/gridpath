@@ -139,7 +139,7 @@ def add_module_specific_components(m, d):
                    >= \
                    mod.Retire_Binary[g, mod.previous_period[p]]
 
-    m.Retire_Forever_Constraint = Constraint(
+    m.Binary_Retirement_Retire_Forever_Constraint = Constraint(
         m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
         rule=retire_forever_rule
     )

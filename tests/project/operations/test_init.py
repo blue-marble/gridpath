@@ -86,7 +86,8 @@ class TestOperationsInit(unittest.TestCase):
         # Set: STARTUP_COST_PROJECTS
         expected_startup_projects = sorted([
             "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_z2", "Coal_z2",
-            "Disp_Binary_Commit", "Disp_Cont_Commit", "Clunky_Old_Gen"
+            "Disp_Binary_Commit", "Disp_Cont_Commit", "Clunky_Old_Gen",
+            "Clunky_Old_Gen2"
         ])
         actual_startup_projects = sorted([
                                              prj for prj in
@@ -104,7 +105,8 @@ class TestOperationsInit(unittest.TestCase):
             "Coal_z2": 1,
             "Disp_Binary_Commit": 1,
             "Disp_Cont_Commit": 1,
-            "Clunky_Old_Gen": 1
+            "Clunky_Old_Gen": 1,
+            "Clunky_Old_Gen2": 1
                                                     }.items()
                                                     )
                                              )
@@ -120,7 +122,7 @@ class TestOperationsInit(unittest.TestCase):
         expected_shutdown_projects = sorted([
             "Gas_CCGT", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New", "Gas_CCGT_z2",
             "Gas_CT_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
-            "Clunky_Old_Gen"
+            "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
         actual_shutdown_projects = sorted([
             prj for prj in instance.SHUTDOWN_COST_PROJECTS])
@@ -137,7 +139,9 @@ class TestOperationsInit(unittest.TestCase):
             "Gas_CT_z2": 1,
             "Disp_Binary_Commit": 1,
             "Disp_Cont_Commit": 1,
-            "Clunky_Old_Gen": 1}.items()
+            "Clunky_Old_Gen": 1,
+            "Clunky_Old_Gen2": 1
+                                                     }.items()
                                                      )
                                               )
         actual_shutdown_costs = OrderedDict(sorted(
@@ -153,7 +157,7 @@ class TestOperationsInit(unittest.TestCase):
             "Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
             "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Gas_CT_New",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Nuclear_Flexible"
+            "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"
         ])
         actual_fuel_projects = sorted([
             prj for prj in instance.FUEL_PROJECTS
@@ -177,7 +181,9 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Cont_Commit": "Gas",
             "Disp_No_Commit": "Gas",
             "Clunky_Old_Gen": "Coal",
-            "Nuclear_Flexible": "Uranium"}.items()
+            "Clunky_Old_Gen2": "Coal",
+            "Nuclear_Flexible": "Uranium"
+                                           }.items()
                                            )
                                     )
         actual_fuel = OrderedDict(sorted(
@@ -202,7 +208,9 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Cont_Commit": 500,
             "Disp_No_Commit": 500,
             "Clunky_Old_Gen": 5000,
-            "Nuclear_Flexible": 5500}.items()
+            "Clunky_Old_Gen2": 5000,
+            "Nuclear_Flexible": 5500
+                                                }.items()
                                                 )
                                          )
         actual_min_input = OrderedDict(sorted(
@@ -228,7 +236,9 @@ class TestOperationsInit(unittest.TestCase):
             "Disp_Cont_Commit": 8,
             "Disp_No_Commit": 8,
             "Clunky_Old_Gen": 15,
-            "Nuclear_Flexible": 450}.items()
+            "Clunky_Old_Gen2": 15,
+            "Nuclear_Flexible": 450
+                                                    }.items()
                                                     )
                                              )
         actual_inc_heat_rate = OrderedDict(sorted(
@@ -888,6 +898,54 @@ class TestOperationsInit(unittest.TestCase):
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
             ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Clunky_Old_Gen2", 20200201), ("Clunky_Old_Gen2", 20200202),
+            ("Clunky_Old_Gen2", 20200203), ("Clunky_Old_Gen2", 20200204),
+            ("Clunky_Old_Gen2", 20200205), ("Clunky_Old_Gen2", 20200206),
+            ("Clunky_Old_Gen2", 20200207), ("Clunky_Old_Gen2", 20200208),
+            ("Clunky_Old_Gen2", 20200209), ("Clunky_Old_Gen2", 20200210),
+            ("Clunky_Old_Gen2", 20200211), ("Clunky_Old_Gen2", 20200212),
+            ("Clunky_Old_Gen2", 20200213), ("Clunky_Old_Gen2", 20200214),
+            ("Clunky_Old_Gen2", 20200215), ("Clunky_Old_Gen2", 20200216),
+            ("Clunky_Old_Gen2", 20200217), ("Clunky_Old_Gen2", 20200218),
+            ("Clunky_Old_Gen2", 20200219), ("Clunky_Old_Gen2", 20200220),
+            ("Clunky_Old_Gen2", 20200221), ("Clunky_Old_Gen2", 20200222),
+            ("Clunky_Old_Gen2", 20200223), ("Clunky_Old_Gen2", 20200224),
+            ("Clunky_Old_Gen2", 20300101), ("Clunky_Old_Gen2", 20300102),
+            ("Clunky_Old_Gen2", 20300103), ("Clunky_Old_Gen2", 20300104),
+            ("Clunky_Old_Gen2", 20300105), ("Clunky_Old_Gen2", 20300106),
+            ("Clunky_Old_Gen2", 20300107), ("Clunky_Old_Gen2", 20300108),
+            ("Clunky_Old_Gen2", 20300109), ("Clunky_Old_Gen2", 20300110),
+            ("Clunky_Old_Gen2", 20300111), ("Clunky_Old_Gen2", 20300112),
+            ("Clunky_Old_Gen2", 20300113), ("Clunky_Old_Gen2", 20300114),
+            ("Clunky_Old_Gen2", 20300115), ("Clunky_Old_Gen2", 20300116),
+            ("Clunky_Old_Gen2", 20300117), ("Clunky_Old_Gen2", 20300118),
+            ("Clunky_Old_Gen2", 20300119), ("Clunky_Old_Gen2", 20300120),
+            ("Clunky_Old_Gen2", 20300121), ("Clunky_Old_Gen2", 20300122),
+            ("Clunky_Old_Gen2", 20300123), ("Clunky_Old_Gen2", 20300124),
+            ("Clunky_Old_Gen2", 20300201), ("Clunky_Old_Gen2", 20300202),
+            ("Clunky_Old_Gen2", 20300203), ("Clunky_Old_Gen2", 20300204),
+            ("Clunky_Old_Gen2", 20300205), ("Clunky_Old_Gen2", 20300206),
+            ("Clunky_Old_Gen2", 20300207), ("Clunky_Old_Gen2", 20300208),
+            ("Clunky_Old_Gen2", 20300209), ("Clunky_Old_Gen2", 20300210),
+            ("Clunky_Old_Gen2", 20300211), ("Clunky_Old_Gen2", 20300212),
+            ("Clunky_Old_Gen2", 20300213), ("Clunky_Old_Gen2", 20300214),
+            ("Clunky_Old_Gen2", 20300215), ("Clunky_Old_Gen2", 20300216),
+            ("Clunky_Old_Gen2", 20300217), ("Clunky_Old_Gen2", 20300218),
+            ("Clunky_Old_Gen2", 20300219), ("Clunky_Old_Gen2", 20300220),
+            ("Clunky_Old_Gen2", 20300221), ("Clunky_Old_Gen2", 20300222),
+            ("Clunky_Old_Gen2", 20300223), ("Clunky_Old_Gen2", 20300224),
             ("Nuclear_Flexible", 20300101), ("Nuclear_Flexible", 20300102),
             ("Nuclear_Flexible", 20300103), ("Nuclear_Flexible", 20300104),
             ("Nuclear_Flexible", 20300105), ("Nuclear_Flexible", 20300106),
@@ -1305,7 +1363,55 @@ class TestOperationsInit(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Clunky_Old_Gen2", 20200201), ("Clunky_Old_Gen2", 20200202),
+            ("Clunky_Old_Gen2", 20200203), ("Clunky_Old_Gen2", 20200204),
+            ("Clunky_Old_Gen2", 20200205), ("Clunky_Old_Gen2", 20200206),
+            ("Clunky_Old_Gen2", 20200207), ("Clunky_Old_Gen2", 20200208),
+            ("Clunky_Old_Gen2", 20200209), ("Clunky_Old_Gen2", 20200210),
+            ("Clunky_Old_Gen2", 20200211), ("Clunky_Old_Gen2", 20200212),
+            ("Clunky_Old_Gen2", 20200213), ("Clunky_Old_Gen2", 20200214),
+            ("Clunky_Old_Gen2", 20200215), ("Clunky_Old_Gen2", 20200216),
+            ("Clunky_Old_Gen2", 20200217), ("Clunky_Old_Gen2", 20200218),
+            ("Clunky_Old_Gen2", 20200219), ("Clunky_Old_Gen2", 20200220),
+            ("Clunky_Old_Gen2", 20200221), ("Clunky_Old_Gen2", 20200222),
+            ("Clunky_Old_Gen2", 20200223), ("Clunky_Old_Gen2", 20200224),
+            ("Clunky_Old_Gen2", 20300101), ("Clunky_Old_Gen2", 20300102),
+            ("Clunky_Old_Gen2", 20300103), ("Clunky_Old_Gen2", 20300104),
+            ("Clunky_Old_Gen2", 20300105), ("Clunky_Old_Gen2", 20300106),
+            ("Clunky_Old_Gen2", 20300107), ("Clunky_Old_Gen2", 20300108),
+            ("Clunky_Old_Gen2", 20300109), ("Clunky_Old_Gen2", 20300110),
+            ("Clunky_Old_Gen2", 20300111), ("Clunky_Old_Gen2", 20300112),
+            ("Clunky_Old_Gen2", 20300113), ("Clunky_Old_Gen2", 20300114),
+            ("Clunky_Old_Gen2", 20300115), ("Clunky_Old_Gen2", 20300116),
+            ("Clunky_Old_Gen2", 20300117), ("Clunky_Old_Gen2", 20300118),
+            ("Clunky_Old_Gen2", 20300119), ("Clunky_Old_Gen2", 20300120),
+            ("Clunky_Old_Gen2", 20300121), ("Clunky_Old_Gen2", 20300122),
+            ("Clunky_Old_Gen2", 20300123), ("Clunky_Old_Gen2", 20300124),
+            ("Clunky_Old_Gen2", 20300201), ("Clunky_Old_Gen2", 20300202),
+            ("Clunky_Old_Gen2", 20300203), ("Clunky_Old_Gen2", 20300204),
+            ("Clunky_Old_Gen2", 20300205), ("Clunky_Old_Gen2", 20300206),
+            ("Clunky_Old_Gen2", 20300207), ("Clunky_Old_Gen2", 20300208),
+            ("Clunky_Old_Gen2", 20300209), ("Clunky_Old_Gen2", 20300210),
+            ("Clunky_Old_Gen2", 20300211), ("Clunky_Old_Gen2", 20300212),
+            ("Clunky_Old_Gen2", 20300213), ("Clunky_Old_Gen2", 20300214),
+            ("Clunky_Old_Gen2", 20300215), ("Clunky_Old_Gen2", 20300216),
+            ("Clunky_Old_Gen2", 20300217), ("Clunky_Old_Gen2", 20300218),
+            ("Clunky_Old_Gen2", 20300219), ("Clunky_Old_Gen2", 20300220),
+            ("Clunky_Old_Gen2", 20300221), ("Clunky_Old_Gen2", 20300222),
+            ("Clunky_Old_Gen2", 20300223), ("Clunky_Old_Gen2", 20300224)
         ])
         actual_tmps_by_startup_project = sorted([
             (prj, tmp) for (prj, tmp) in
@@ -1723,7 +1829,55 @@ class TestOperationsInit(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Clunky_Old_Gen2", 20200201), ("Clunky_Old_Gen2", 20200202),
+            ("Clunky_Old_Gen2", 20200203), ("Clunky_Old_Gen2", 20200204),
+            ("Clunky_Old_Gen2", 20200205), ("Clunky_Old_Gen2", 20200206),
+            ("Clunky_Old_Gen2", 20200207), ("Clunky_Old_Gen2", 20200208),
+            ("Clunky_Old_Gen2", 20200209), ("Clunky_Old_Gen2", 20200210),
+            ("Clunky_Old_Gen2", 20200211), ("Clunky_Old_Gen2", 20200212),
+            ("Clunky_Old_Gen2", 20200213), ("Clunky_Old_Gen2", 20200214),
+            ("Clunky_Old_Gen2", 20200215), ("Clunky_Old_Gen2", 20200216),
+            ("Clunky_Old_Gen2", 20200217), ("Clunky_Old_Gen2", 20200218),
+            ("Clunky_Old_Gen2", 20200219), ("Clunky_Old_Gen2", 20200220),
+            ("Clunky_Old_Gen2", 20200221), ("Clunky_Old_Gen2", 20200222),
+            ("Clunky_Old_Gen2", 20200223), ("Clunky_Old_Gen2", 20200224),
+            ("Clunky_Old_Gen2", 20300101), ("Clunky_Old_Gen2", 20300102),
+            ("Clunky_Old_Gen2", 20300103), ("Clunky_Old_Gen2", 20300104),
+            ("Clunky_Old_Gen2", 20300105), ("Clunky_Old_Gen2", 20300106),
+            ("Clunky_Old_Gen2", 20300107), ("Clunky_Old_Gen2", 20300108),
+            ("Clunky_Old_Gen2", 20300109), ("Clunky_Old_Gen2", 20300110),
+            ("Clunky_Old_Gen2", 20300111), ("Clunky_Old_Gen2", 20300112),
+            ("Clunky_Old_Gen2", 20300113), ("Clunky_Old_Gen2", 20300114),
+            ("Clunky_Old_Gen2", 20300115), ("Clunky_Old_Gen2", 20300116),
+            ("Clunky_Old_Gen2", 20300117), ("Clunky_Old_Gen2", 20300118),
+            ("Clunky_Old_Gen2", 20300119), ("Clunky_Old_Gen2", 20300120),
+            ("Clunky_Old_Gen2", 20300121), ("Clunky_Old_Gen2", 20300122),
+            ("Clunky_Old_Gen2", 20300123), ("Clunky_Old_Gen2", 20300124),
+            ("Clunky_Old_Gen2", 20300201), ("Clunky_Old_Gen2", 20300202),
+            ("Clunky_Old_Gen2", 20300203), ("Clunky_Old_Gen2", 20300204),
+            ("Clunky_Old_Gen2", 20300205), ("Clunky_Old_Gen2", 20300206),
+            ("Clunky_Old_Gen2", 20300207), ("Clunky_Old_Gen2", 20300208),
+            ("Clunky_Old_Gen2", 20300209), ("Clunky_Old_Gen2", 20300210),
+            ("Clunky_Old_Gen2", 20300211), ("Clunky_Old_Gen2", 20300212),
+            ("Clunky_Old_Gen2", 20300213), ("Clunky_Old_Gen2", 20300214),
+            ("Clunky_Old_Gen2", 20300215), ("Clunky_Old_Gen2", 20300216),
+            ("Clunky_Old_Gen2", 20300217), ("Clunky_Old_Gen2", 20300218),
+            ("Clunky_Old_Gen2", 20300219), ("Clunky_Old_Gen2", 20300220),
+            ("Clunky_Old_Gen2", 20300221), ("Clunky_Old_Gen2", 20300222),
+            ("Clunky_Old_Gen2", 20300223), ("Clunky_Old_Gen2", 20300224)
         ])
         actual_tmps_by_shutdown_project = sorted([
             (prj, tmp) for (prj, tmp) in
@@ -1734,8 +1888,9 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: STARTUP_FUEL_PROJECTS
         expected_startup_fuel_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New", "Gas_CCGT_z2", "Coal_z2",
-            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"
+            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
+            "Gas_CCGT_z2", "Coal_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
+            "Disp_No_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
         actual_startup_fuel_projects = sorted([
             prj for prj in instance.STARTUP_FUEL_PROJECTS
@@ -1745,9 +1900,11 @@ class TestOperationsInit(unittest.TestCase):
 
         # Param: startup_fuel_mmbtu_per_mw
         expected_startup_fuel_mmbtu_per_mw = OrderedDict(sorted({
-            "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 0.5, "Gas_CCGT_New": 6, "Gas_CT_New": 0.5,
-            "Gas_CCGT_z2": 6, "Coal_z2": 6, "Disp_Binary_Commit": 10, "Disp_Cont_Commit": 10,
-            "Disp_No_Commit": 10, "Clunky_Old_Gen": 10
+            "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 0.5, "Gas_CCGT_New": 6,
+            "Gas_CT_New": 0.5, "Gas_CCGT_z2": 6, "Coal_z2": 6,
+            "Disp_Binary_Commit": 10, "Disp_Cont_Commit": 10,
+            "Disp_No_Commit": 10,
+            "Clunky_Old_Gen": 10, "Clunky_Old_Gen2": 10
             }.items()
                 )
             )
@@ -1756,7 +1913,8 @@ class TestOperationsInit(unittest.TestCase):
              for prj in instance.STARTUP_FUEL_PROJECTS}.items()
             )
         )
-        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw, actual_startup_fuel_mmbtu_per_mw)
+        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
+                             actual_startup_fuel_mmbtu_per_mw)
 
         # Set: STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps_by_startup_fuel_project = sorted([
@@ -2263,7 +2421,55 @@ class TestOperationsInit(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Clunky_Old_Gen2", 20200201), ("Clunky_Old_Gen2", 20200202),
+            ("Clunky_Old_Gen2", 20200203), ("Clunky_Old_Gen2", 20200204),
+            ("Clunky_Old_Gen2", 20200205), ("Clunky_Old_Gen2", 20200206),
+            ("Clunky_Old_Gen2", 20200207), ("Clunky_Old_Gen2", 20200208),
+            ("Clunky_Old_Gen2", 20200209), ("Clunky_Old_Gen2", 20200210),
+            ("Clunky_Old_Gen2", 20200211), ("Clunky_Old_Gen2", 20200212),
+            ("Clunky_Old_Gen2", 20200213), ("Clunky_Old_Gen2", 20200214),
+            ("Clunky_Old_Gen2", 20200215), ("Clunky_Old_Gen2", 20200216),
+            ("Clunky_Old_Gen2", 20200217), ("Clunky_Old_Gen2", 20200218),
+            ("Clunky_Old_Gen2", 20200219), ("Clunky_Old_Gen2", 20200220),
+            ("Clunky_Old_Gen2", 20200221), ("Clunky_Old_Gen2", 20200222),
+            ("Clunky_Old_Gen2", 20200223), ("Clunky_Old_Gen2", 20200224),
+            ("Clunky_Old_Gen2", 20300101), ("Clunky_Old_Gen2", 20300102),
+            ("Clunky_Old_Gen2", 20300103), ("Clunky_Old_Gen2", 20300104),
+            ("Clunky_Old_Gen2", 20300105), ("Clunky_Old_Gen2", 20300106),
+            ("Clunky_Old_Gen2", 20300107), ("Clunky_Old_Gen2", 20300108),
+            ("Clunky_Old_Gen2", 20300109), ("Clunky_Old_Gen2", 20300110),
+            ("Clunky_Old_Gen2", 20300111), ("Clunky_Old_Gen2", 20300112),
+            ("Clunky_Old_Gen2", 20300113), ("Clunky_Old_Gen2", 20300114),
+            ("Clunky_Old_Gen2", 20300115), ("Clunky_Old_Gen2", 20300116),
+            ("Clunky_Old_Gen2", 20300117), ("Clunky_Old_Gen2", 20300118),
+            ("Clunky_Old_Gen2", 20300119), ("Clunky_Old_Gen2", 20300120),
+            ("Clunky_Old_Gen2", 20300121), ("Clunky_Old_Gen2", 20300122),
+            ("Clunky_Old_Gen2", 20300123), ("Clunky_Old_Gen2", 20300124),
+            ("Clunky_Old_Gen2", 20300201), ("Clunky_Old_Gen2", 20300202),
+            ("Clunky_Old_Gen2", 20300203), ("Clunky_Old_Gen2", 20300204),
+            ("Clunky_Old_Gen2", 20300205), ("Clunky_Old_Gen2", 20300206),
+            ("Clunky_Old_Gen2", 20300207), ("Clunky_Old_Gen2", 20300208),
+            ("Clunky_Old_Gen2", 20300209), ("Clunky_Old_Gen2", 20300210),
+            ("Clunky_Old_Gen2", 20300211), ("Clunky_Old_Gen2", 20300212),
+            ("Clunky_Old_Gen2", 20300213), ("Clunky_Old_Gen2", 20300214),
+            ("Clunky_Old_Gen2", 20300215), ("Clunky_Old_Gen2", 20300216),
+            ("Clunky_Old_Gen2", 20300217), ("Clunky_Old_Gen2", 20300218),
+            ("Clunky_Old_Gen2", 20300219), ("Clunky_Old_Gen2", 20300220),
+            ("Clunky_Old_Gen2", 20300221), ("Clunky_Old_Gen2", 20300222),
+            ("Clunky_Old_Gen2", 20300223), ("Clunky_Old_Gen2", 20300224)
         ])
 
         actual_tmps_by_startup_fuel_project = sorted([
@@ -2324,6 +2530,8 @@ class TestOperationsInit(unittest.TestCase):
              ("Disp_No_Commit", 203001): 1, ("Disp_No_Commit", 203002): 1,
              ("Clunky_Old_Gen", 202001): 1, ("Clunky_Old_Gen", 202002): 1,
              ("Clunky_Old_Gen", 203001): 1, ("Clunky_Old_Gen", 203002): 1,
+             ("Clunky_Old_Gen2", 202001): 1, ("Clunky_Old_Gen2", 202002): 1,
+             ("Clunky_Old_Gen2", 203001): 1, ("Clunky_Old_Gen2", 203002): 1,
              ("Customer_PV", 202001): 1, ("Customer_PV", 202002): 1,
              ("Customer_PV", 203001): 1, ("Customer_PV", 203002): 1,
              ("Nuclear_Flexible", 202001): 1, ("Nuclear_Flexible", 202002): 1,

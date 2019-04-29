@@ -89,7 +89,8 @@ class TestCarbonEmissions(unittest.TestCase):
         expected_carbonaceous_projects = sorted(
             ["Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
              "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Disp_Binary_Commit",
-             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen"])
+             "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen",
+             "Clunky_Old_Gen2"])
         actual_carbonaceous_projects = \
             sorted([p for p in instance.CARBONACEOUS_PROJECTS])
         self.assertListEqual(expected_carbonaceous_projects,
@@ -108,9 +109,10 @@ class TestCarbonEmissions(unittest.TestCase):
             "Disp_Binary_Commit": "Carbon_Cap_Zone1",
             "Disp_Cont_Commit": "Carbon_Cap_Zone1",
             "Disp_No_Commit": "Carbon_Cap_Zone1",
-            "Clunky_Old_Gen": "Carbon_Cap_Zone1"}.items()
-                                                      )
-                                               )
+            "Clunky_Old_Gen": "Carbon_Cap_Zone1",
+            "Clunky_Old_Gen2": "Carbon_Cap_Zone1",
+            }.items())
+        )
         actual_cc_zone_by_prj = OrderedDict(sorted({
             p: instance.carbon_cap_zone[p] for p in
             instance.CARBONACEOUS_PROJECTS}.items()
@@ -123,7 +125,7 @@ class TestCarbonEmissions(unittest.TestCase):
             "Carbon_Cap_Zone1": sorted([
                 "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
                 "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-                "Clunky_Old_Gen"
+                "Clunky_Old_Gen", "Clunky_Old_Gen2"
             ]),
             "Carbon_Cap_Zone2": sorted(["Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2"])
                                                   }.items()
@@ -692,7 +694,55 @@ class TestCarbonEmissions(unittest.TestCase):
             ("Clunky_Old_Gen", 20300217), ("Clunky_Old_Gen", 20300218),
             ("Clunky_Old_Gen", 20300219), ("Clunky_Old_Gen", 20300220),
             ("Clunky_Old_Gen", 20300221), ("Clunky_Old_Gen", 20300222),
-            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224)
+            ("Clunky_Old_Gen", 20300223), ("Clunky_Old_Gen", 20300224),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Clunky_Old_Gen2", 20200201), ("Clunky_Old_Gen2", 20200202),
+            ("Clunky_Old_Gen2", 20200203), ("Clunky_Old_Gen2", 20200204),
+            ("Clunky_Old_Gen2", 20200205), ("Clunky_Old_Gen2", 20200206),
+            ("Clunky_Old_Gen2", 20200207), ("Clunky_Old_Gen2", 20200208),
+            ("Clunky_Old_Gen2", 20200209), ("Clunky_Old_Gen2", 20200210),
+            ("Clunky_Old_Gen2", 20200211), ("Clunky_Old_Gen2", 20200212),
+            ("Clunky_Old_Gen2", 20200213), ("Clunky_Old_Gen2", 20200214),
+            ("Clunky_Old_Gen2", 20200215), ("Clunky_Old_Gen2", 20200216),
+            ("Clunky_Old_Gen2", 20200217), ("Clunky_Old_Gen2", 20200218),
+            ("Clunky_Old_Gen2", 20200219), ("Clunky_Old_Gen2", 20200220),
+            ("Clunky_Old_Gen2", 20200221), ("Clunky_Old_Gen2", 20200222),
+            ("Clunky_Old_Gen2", 20200223), ("Clunky_Old_Gen2", 20200224),
+            ("Clunky_Old_Gen2", 20300101), ("Clunky_Old_Gen2", 20300102),
+            ("Clunky_Old_Gen2", 20300103), ("Clunky_Old_Gen2", 20300104),
+            ("Clunky_Old_Gen2", 20300105), ("Clunky_Old_Gen2", 20300106),
+            ("Clunky_Old_Gen2", 20300107), ("Clunky_Old_Gen2", 20300108),
+            ("Clunky_Old_Gen2", 20300109), ("Clunky_Old_Gen2", 20300110),
+            ("Clunky_Old_Gen2", 20300111), ("Clunky_Old_Gen2", 20300112),
+            ("Clunky_Old_Gen2", 20300113), ("Clunky_Old_Gen2", 20300114),
+            ("Clunky_Old_Gen2", 20300115), ("Clunky_Old_Gen2", 20300116),
+            ("Clunky_Old_Gen2", 20300117), ("Clunky_Old_Gen2", 20300118),
+            ("Clunky_Old_Gen2", 20300119), ("Clunky_Old_Gen2", 20300120),
+            ("Clunky_Old_Gen2", 20300121), ("Clunky_Old_Gen2", 20300122),
+            ("Clunky_Old_Gen2", 20300123), ("Clunky_Old_Gen2", 20300124),
+            ("Clunky_Old_Gen2", 20300201), ("Clunky_Old_Gen2", 20300202),
+            ("Clunky_Old_Gen2", 20300203), ("Clunky_Old_Gen2", 20300204),
+            ("Clunky_Old_Gen2", 20300205), ("Clunky_Old_Gen2", 20300206),
+            ("Clunky_Old_Gen2", 20300207), ("Clunky_Old_Gen2", 20300208),
+            ("Clunky_Old_Gen2", 20300209), ("Clunky_Old_Gen2", 20300210),
+            ("Clunky_Old_Gen2", 20300211), ("Clunky_Old_Gen2", 20300212),
+            ("Clunky_Old_Gen2", 20300213), ("Clunky_Old_Gen2", 20300214),
+            ("Clunky_Old_Gen2", 20300215), ("Clunky_Old_Gen2", 20300216),
+            ("Clunky_Old_Gen2", 20300217), ("Clunky_Old_Gen2", 20300218),
+            ("Clunky_Old_Gen2", 20300219), ("Clunky_Old_Gen2", 20300220),
+            ("Clunky_Old_Gen2", 20300221), ("Clunky_Old_Gen2", 20300222),
+            ("Clunky_Old_Gen2", 20300223), ("Clunky_Old_Gen2", 20300224)
         ])
 
         actual_carb_prj_op_tmp = sorted([
