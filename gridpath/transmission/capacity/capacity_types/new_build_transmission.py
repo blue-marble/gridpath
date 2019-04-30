@@ -120,7 +120,7 @@ def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
 
     # TODO: throw an error when a line of the 'new_build_transmission' capacity
-    # type is not found in new_build_transmission_vintage_costs.tab
+    #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",

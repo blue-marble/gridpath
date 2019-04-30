@@ -178,7 +178,7 @@ def capacity_rule(mod, g, p):
     :param p: the operational period
     :return: the capacity of project *g* in period *p*
 
-    The capacity of projects of the *existing_gen_no_econoimc_retirement*
+    The capacity of projects of the *existing_gen_no_economic_retirement*
     capacity type is a pre-specified number for each of the project's
     operational periods minus any capacity that was retired. The expression
     returned is :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
@@ -196,12 +196,12 @@ def capacity_cost_rule(mod, g, p):
         *existing_gen_linear_economic_retirement* project *g* in period *p*
 
     The capacity cost of projects of the
-    *existing_gen_linear_econoimc_retirement* capacity type is its net
+    *existing_gen_linear_economic_retirement* capacity type is its net
     capacity (pre-specified capacity minus retired capacity) times the per-mw
     fixed cost for each of the project's operational periods. This method
-    returns :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{g,
-    p} \\times existing\_lin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{g,
-    p}` and it will be called for :math:`(g, p)\in ELR_P`.
+    returns :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
+    elp} \\times existing\_lin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{elr,
+    elp}` and it will be called for :math:`(elr, elp)\in ELR_P`.
     """
     return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
         * mod.existing_lin_econ_ret_fixed_cost_per_mw_yr[g, p]

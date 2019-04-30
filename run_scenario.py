@@ -239,14 +239,14 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,
-                 dynamic_inputs, instance, results, parsed_arguments):
+                 dynamic_components, instance, results, parsed_arguments):
     """
 
     :param scenario_directory:
     :param horizon:
     :param stage:
     :param loaded_modules:
-    :param dynamic_inputs:
+    :param dynamic_components:
     :param instance:
     :param results:
     :param parsed_arguments:
@@ -260,7 +260,7 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
     save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
 
     export_results(scenario_directory, horizon, stage, instance,
-                   dynamic_inputs, loaded_modules, parsed_arguments)
+                   dynamic_components, loaded_modules, parsed_arguments)
 
 
 def populate_dynamic_components(dynamic_components, loaded_modules,
@@ -433,23 +433,23 @@ def log_run(scenario_directory, horizon, stage, parsed_arguments):
 
 
 def export_results(problem_directory, horizon, stage, instance,
-                   dynamic_inputs, loaded_modules, parsed_arguments):
+                   dynamic_components, loaded_modules, parsed_arguments):
     if not parsed_arguments.quiet:
         print("Exporting results...")
     for m in loaded_modules:
         if hasattr(m, "export_results"):
             m.export_results(problem_directory, horizon, stage, instance,
-                             dynamic_inputs)
+                             dynamic_components)
     else:
         pass
 
 
 def export_pass_through_inputs(problem_directory, horizon, stage, instance,
-                               dynamic_inputs, loaded_modules):
+                               dynamic_components, loaded_modules):
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
             m.export_pass_through_inputs(
-                problem_directory, horizon, stage, instance, dynamic_inputs
+                problem_directory, horizon, stage, instance, dynamic_components
             )
     else:
         pass
@@ -507,14 +507,14 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
 
 
 def summarize_results(problem_directory, horizon, stage, loaded_modules,
-                      dynamic_inputs, parsed_arguments):
+                      dynamic_components, parsed_arguments):
     """
     Summarize results (after results export)
     :param problem_directory:
     :param horizon:
     :param stage:
     :param loaded_modules:
-    :param dynamic_inputs:
+    :param dynamic_components:
     :param parsed_arguments:
     :return:
     """
@@ -536,7 +536,7 @@ def summarize_results(problem_directory, horizon, stage, loaded_modules,
     # Go through the modules and get the appropriate results
     for m in loaded_modules:
         if hasattr(m, "summarize_results"):
-            m.summarize_results(dynamic_inputs, problem_directory, horizon,
+            m.summarize_results(dynamic_components, problem_directory, horizon,
                                 stage)
     else:
         pass

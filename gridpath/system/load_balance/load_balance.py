@@ -117,7 +117,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "load_balance.csv"), "w") as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["zone", "period", "horizon", "timepoint",  "horizon",
+        writer.writerow(["zone", "period", "horizon", "timepoint",
                          "discount_factor", "number_years_represented",
                          "horizon_weight", "number_of_hours_in_timepiont",
                          "overgeneration_mw",
