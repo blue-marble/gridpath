@@ -13,7 +13,7 @@ Zone1     unspecified 2020                   52
 --> Energy Production <--
                               Annual Energy (MWh)  % Total Power
 load_zone period technology                                     
-Zone1     2020   unspecified                  142            100
-          2030   unspecified                  146            100
-Zone2     2020   unspecified                   38            100
-          2030   unspecified                   34            100
+Zone1     2020   unspecified                  134            100
+          2030   unspecified                  140            100
+Zone2     2020   unspecified                   46            100
+          2030   unspecified                   40            100

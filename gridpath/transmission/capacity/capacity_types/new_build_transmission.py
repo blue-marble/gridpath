@@ -88,7 +88,7 @@ def min_transmission_capacity_rule(mod, g, p):
     :param p:
     :return:
     """
-    return mod.New_Build_Transmission_Capacity_MW[g, p]
+    return -mod.New_Build_Transmission_Capacity_MW[g, p]
 
 
 def max_transmission_capacity_rule(mod, g, p):
