@@ -58,7 +58,7 @@ def add_module_specific_components(m, d):
 
     :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
     elp}\leq Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
-    previuos\_period_{elp}}`.
+    previous\_period_{elp}}`.
 
 
     """

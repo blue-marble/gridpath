@@ -9,10 +9,12 @@ def operational_periods_by_project_vintage(periods, vintage, lifetime):
     :param periods: the study periods
     :param vintage: the project vintage
     :param lifetime: the project-vintage lifetime
-    :return: the operational periods given a the study periods and
+    :return: the operational periods given the study periods and
         the project vintage and lifetime
 
-    Get a list of operational periods by vintage depending on lifetime.
+    Given the list of study periods and the project's vintage and lifetime,
+    this function returns the list of periods that a project with
+    this vintage and lifetime will be operational.
     """
     operational_periods = list()
     for p in periods:
@@ -34,7 +36,7 @@ def project_operational_periods(project_vintages_set,
 
     Get the periods in which each project COULD be operational given all
     project-vintages and operational periods by project-vintage (the
-    lifetime is allowed differ by vintage).
+    lifetime is allowed to differ by vintage).
     """
     return set((g, p)
                for (g, v) in project_vintages_set

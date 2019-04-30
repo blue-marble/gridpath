@@ -75,7 +75,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-
+        Test components initialized with data as expected
         :return:
         """
         m, data = \
