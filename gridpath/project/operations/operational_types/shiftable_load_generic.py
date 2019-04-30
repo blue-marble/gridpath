@@ -2,12 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of generic shiftable load.
+This modules describes the operations of generic shiftable load.
 
-There are two opertional variables: shift load up (add load) and shift load
-down (subtract load). These cannot exceed the power capaity of the project
-and must meet an energy balance constrain on each horizon (no efficiency
+There are two operational variables: shift load up (add load) and shift load
+down (subtract load). These cannot exceed the power capacity of the project
+and must meet an energy balance constraint on each horizon (no efficiency
 loss implemented).
+
+Full documentation to be added.
 """
 
 from pyomo.environ import Var, Set, Constraint, NonNegativeReals

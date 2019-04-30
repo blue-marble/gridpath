@@ -2,10 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of always-on generators. These are generators that are always 
-committed but can ramp up and down between a minimum stable level above 0 and 
-full output.
-No reserves.
+This module describes the operations of always-on generators. These are
+generators that are always  committed but can ramp up and down between a
+minimum stable level above 0 and full output. Always-on generators cannot
+provide operating reserves.
 """
 from __future__ import division
 
@@ -21,9 +21,39 @@ from gridpath.auxiliary.auxiliary import generator_subset_init
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :return:
+    Here, we define the set of always-on generators: *ALWAYS_ON_GENERATORS*
+    (:math:`AOG`, index :math:`aog`) and use this set to get the subset of
+    *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in AOG` -- the
+    *ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS* (:math:`AOG\_OT`).
+
+    We define several operational parameters over :math:`AGO`: \n
+    *always_on_min_stable_level_fraction* \ :sub:`aog`\ -- the minimum stable
+    level of the always on generator, defined as a fraction of its capacity \n
+    *always_on_unit_size_mw* \ :sub:`aog`\ -- the unit size for the
+    project, which is needed to calculate fuel burn if the project
+    represents a fleet \n
+    *always_on_ramp_down_rate* \ :sub:`aog`\ -- the project's upward ramp rate,
+    defined as a fraction of its capacity \n
+    *always_on_ramp_up_rate* \ :sub:`aog`\ -- the project's downward ramp rate,
+    defined as a fraction of its capacity \n
+
+    The power provision variable for always-on generators,
+    Provide_Power_AlwaysOn_MW, is defined over
+    *ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    The main constraints on always-on generator power provision are as follows:
+
+    For :math:`(aog, tmp) \in AOG\_OT`: \n
+    :math:`Provide\_Power\_AlwaysOn\_MW_{aog, tmp} \geq
+    always\_on\_min\_stable\_level\_fraction \\times Capacity\_MW_{aog,
+    p}`
+    :math:`Provide\_Power\_AlwaysOn\_MW_{aog, tmp} \leq  Capacity\_MW_{aog,
+    p}`
+
+
     """    
     m.ALWAYS_ON_GENERATORS = Set(
         within=m.PROJECTS,
@@ -154,11 +184,13 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by must-run generators
+
+    Power provision for always-on generators is a variable constrained to be
+    between the generator's minimum stable level and its capacity.
     """
     return mod.Provide_Power_AlwaysOn_MW[g, tmp]
 

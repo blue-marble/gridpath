@@ -2,12 +2,12 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of dispatchable generators with 'capacity commitment,' i.e.
-commit some level of capacity below the total capacity. This approach can
-be good for modeling 'fleets' of generators, e.g. a total 2000 MW of 500-MW
-units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
-Integer commitment is not enforced as capacity commitment with this approach is
-continuous.
+This module describes the operations of dispatchable generators with 'capacity
+commitment,' i.e. commit some level of capacity below the total capacity.
+This approach can be good for modeling 'fleets' of generators, e.g. a total
+2000 MW of 500-MW units, so if 2000 MW are committed 4 generators (x 500 MW)
+are committed. Integer commitment is not enforced; capacity commitment with
+this approach is continuous.
 """
 from __future__ import division
 from __future__ import print_function
@@ -30,11 +30,44 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a capacity commit variable to represent the amount of capacity that is
-    on.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we define the set of dispatchable-capacity-commit generators:
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATORS*
+    (:math:`CCG`, index :math:`ccg`) and use this set to get the subset of
+    *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in CCG` -- the
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
+    :math:`CCG\_OT`).
+
+    We define several operational parameters over :math:`CCG`: \n
+    *disp_cap_commit_min_stable_level_fraction* \ :sub:`ccg`\ -- the minimum
+    stable level of the project, defined as a fraction of its
+    capacity \n
+    *unit_size_mw* \ :sub:`ccg`\ -- the unit size for the
+    project, which is needed to calculate fuel burn if the project
+    represents a fleet \n
+    *ramp rates*, *min up time*, *min down time* -- formulation not
+    documented yet
+
+    The power provision variable for dispatchable-capacity-commit generators,
+    *Provide_Power_DispCapacityCommit_MW*, is defined over
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    Commit_Capacity_MW is the continuous variable to represent commitment
+    state of a project. It is also defined over over
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    The main constraints on dispatchable-capacity-commit project power
+    provision are as follows:
+
+    For :math:`(ccg, tmp) \in CCG\_OT`: \n
+    :math:`Commit\_Capacity\_MW_{ccg, tmp} \leq Capacity\_MW_{ccg,p^{tmp}}`
+    :math:`Provide\_Power\_DispCapacityCommit\_MW_{ccg, tmp} \geq
+    disp\_cap\_commit\_min\_stable\_level\_fraction_{ccg} \\times
+    Commit\_Capacity\_MW_{ccg,tmp}`
+    :math:`Provide\_Power\_DispCapacityCommit\_MW_{ccg, tmp} \leq
+    Commit\_Capacity\_MW_{ccg,tmp}`
     """
 
     # Sets and params
@@ -513,6 +546,9 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
+
+        units_turned_off_min_down_time_or_less_hours_ago = 0
+
         # TODO: enforce subhourly?
         if mod.dispcapcommit_min_up_time_hours[g] <= 1:
             return Constraint.Skip
@@ -550,11 +586,15 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from dispatchable generators is an endogenous variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by dispatchable-capacity-commit
+     generators
+
+    Power provision for dispatchable-capacity-commit generators is a
+    variable constrained to be between the minimum stable level (defined as
+    a fraction of committed capacity) and the committed capacity.
     """
     return mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
 

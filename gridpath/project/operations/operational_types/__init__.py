@@ -31,6 +31,8 @@ def add_model_components(m, d):
             imp_op_m.add_module_specific_components(m, d)
 
 
+# TODO: we should check that all operational types specified by user are
+#  actually implemented
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     """
 

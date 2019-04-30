@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate capacity costs.
+This module aggregates all project capacity costs and adds them to the
+objective function.
 """
 
 from pyomo.environ import Expression
@@ -12,10 +13,16 @@ from gridpath.auxiliary.dynamic_components import total_cost_components
 
 def add_model_components(m, d):
     """
-    Sum up all capacity costs and add to the objective function.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we sum up all capacity-related costs and add them to the
+    objective-function dynamic components.
+
+    :math:`Total\_Capacity\_Costs =
+    \sum_{(r, p)\in {RP}}{Capacity\_Cost\_in\_Period_{r, p} \\times
+    discount\_factor_p \\times number\_years\_represented_p}`
+
     """
     # Add costs to objective function
     def total_capacity_cost_rule(mod):

@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-
+This module exports the commitment variables that must be fixed in the next
+stage and imports the variables that were fixed in the previous stage.
 """
 
 from builtins import zip
@@ -151,8 +152,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
             None: determine_fixed_commitment_projects()
         }
 
-        # Generators that whose final commitment was in a prior stage
-        # The fixed commitment by project and timepoint
+        # For project whose final commitment was in a prior stage, get their
+        # fixed commitment (by project and timepoint)
         data_portal.load(filename=os.path.join(scenario_directory,
                                                horizon, "pass_through_inputs",
                                                "fixed_commitment.tab"),

@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+The **gridpath.transmission.capacity.capacity_types** package contains
+modules to describe the various ways in which transmission-line capacity can be
+treated in the optimization problem, e.g. as specified, available to be
+built, available to be retired, etc.
+"""
+
 import pandas as pd
 import os.path
 

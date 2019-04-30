@@ -19,10 +19,49 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a capacity commit variable to represent the amount of capacity that is
-    on.
-    :param m:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we define the set of non-curtailable hydro projects:
+    *HYDRO_NONCURTAILABLE_PROJECTS*
+    (:math:`NCHG`, index :math:`nchg`) and use this set to get the subset of
+    *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in NCHG` -- the
+    *HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS* (:math:`NCHG\_OT`).
+
+    We also need the *HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS* set
+    (:math:`NCHG\_OH`) over which we will define hydro's main operational
+    parameters including:
+    *hydro_noncurtailable_average_power_mwa* \ :sub:`nchg, oh`\ -- the
+    average power on a given horizon *oh* (multiply by the timepoint number of
+    hours represented and sum across all timepoints on the horizon to get
+    the horizon energy budget) \n
+    *hydro_noncurtailable_min_power_mw* \ :sub:`nchg, oh`\ -- the minimum
+    power output on each timepoint on horizon *oh* \n
+    *hydro_noncurtailable_max_power_mw* \ :sub:`nchg, oh`\ -- the maximum
+    power output on each timepoint on horizon *oh* \n
+
+    The power provision variable for non-curtailable hydro projects,
+    *Hydro_Noncurtailable_Provide_Power_MW*, is defined over
+    *HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS*.
+
+    The main constraints on non-curtailable-hydro project power provision
+    are as follows:
+
+    For :math:`(nchg, oh) \in CCG\_OH`: \n
+
+    :math:`\sum_{{tmp}\in T_h}{Hydro\_Noncurtailable\_Provide\_Power\_MW_{
+    nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp} = \sum_{{
+    tmp}\in T_h}{hydro\_noncurtailable\_average\_power\_mwa_{
+    nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp}`
+
+    For :math:`(nchg, tmp) \in NCHG\_OT`: \n
+    :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \geq
+    hydro\_noncurtailable\_min\_power\_mwa_{nchg, tmp}`
+    :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \leq
+    hydro\_noncurtailable\_max\_power\_mwa_{nchg, tmp}`
+
+    Hydro ramps can be constrained: documentation to be added.
+
     """
     # Sets and params
     m.HYDRO_NONCURTAILABLE_PROJECTS = Set(
@@ -45,6 +84,13 @@ def add_module_specific_components(m, d):
         Param(m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
 
+    # TODO: hydro operational horizon validation:
+    #  we  should probably get the operational timepoints from the
+    #  operational horizons and validate that they are within the
+    #  operational timepoints we would get by looking at the project's
+    #  capacity module; or, alternatively, validate that the operational
+    #  horizons loaded above match the operational timepoints we get via the
+    #  capacity module
     m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=lambda mod:
@@ -185,11 +231,15 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from noncurtailable hydro
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by non-curtailable hydropower
+     generators
+
+    Power provision for non-curtailable hydro generators is a variable
+    constrained to be between the minimum and maximum level on each horizon,
+    and to average to a pre-specified number on each horizon.
     """
     return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]
 

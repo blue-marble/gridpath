@@ -13,6 +13,8 @@ from gridpath.auxiliary.dynamic_components import required_prm_modules
 from gridpath.auxiliary.auxiliary import load_prm_type_modules
 
 
+# TODO: rename to deliverability types; the PRM types are really 'simple'
+#  and 'elcc surface'
 def determine_dynamic_components(d, scenario_directory, horizon, stage):
     """
 

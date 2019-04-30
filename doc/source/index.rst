@@ -1,80 +1,46 @@
-.. GridPath documentation master file, created by
-   sphinx-quickstart on Tue Jun 13 15:21:44 2017.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. We'll be using the following section designations based on
+   https://devguide.python.org/documenting/#sections:
+   # with overline, for parts
+   * with overline, for chapters
+   =, for sections
+   -, for subsections
+   ^, for subsubsections
+   ", for paragraphs
 
-==========
-Background
-==========
+############
+Introduction
+############
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Topics:
+   :maxdepth: 3
 
    introduction
 
-
-=====================
-GridPath Architecture
-=====================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Topics:
-
-   overview
-   packages
-
-
-==============
+##############
 Using GridPath
-==============
+##############
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Topics:
+   :maxdepth: 3
 
-   approaches
-   basic_functionality
-   optional_features
-   running_the_model
+   usage
 
-=================
-GridPath Database
-=================
+######################
+GridPath Functionality
+######################
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Topics:
+   :maxdepth: 4
 
-   database
-
-=======================
-GridPath User Interface
-=======================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Topics:
-
-   ui
+   functionality
 
 
-===================
-GridPath Test Suite
-===================
+######################
+Advanced Documentation
+######################
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Topics:
+   :maxdepth: 4
 
-   tests
-
-
-==================
-Indices and Tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   architecture
+   advanced_docs

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This is a line-level module that adds to the formulation components that
+describe the amount of power flowing on each line.
+"""
+
 from __future__ import print_function
 
 from builtins import next

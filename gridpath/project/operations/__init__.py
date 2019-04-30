@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operational subsets (that can include more than one operational type)
+The **gridpath.project.operations** package contains modules to describe the
+operational capabilities, constraints, and costs of generation, storage,
+and demand-side infrastructure 'projects' in the optimization problem.
 """
 
 from builtins import next
@@ -15,9 +17,10 @@ from pyomo.environ import Set, Param, PositiveReals, PercentFraction
 from gridpath.auxiliary.auxiliary import is_number
 
 
+# TODO: should we take this out of __init__.py
 def add_model_components(m, d):
     """
-    Sum up all operational costs and add to the objective function.
+    Add operational subsets (that can include more than one operational type).
     :param m:
     :param d:
     :return:
@@ -45,10 +48,16 @@ def add_model_components(m, d):
                 if g in mod.SHUTDOWN_COST_PROJECTS))
 
     # TODO: implement check for which generator types can have fuels
+    # TODO: re-think how to deal with fuel projects; it's awkward to import
+    #  fuel & heat rate params here, but use them in the operational_type
+    #  modules with an 'if in FUEL_PROJECTS'
     # Fuels and heat rates
     m.FUEL_PROJECTS = Set(within=m.PROJECTS)
 
     m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS)
+
+    # TODO: implement full heat rate curve (probably piecewise linear with
+    #  flexible  number of points)
     m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS)
     m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS)
 

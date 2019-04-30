@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Run model.
+This script runs a GridPath scenario. It assumes that scenario inputs have
+already been written.
 """
 from __future__ import print_function
 
@@ -23,11 +24,16 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 
 class ScenarioStructure(object):
     """
-    Directory and file structure for the scenario.
+    This class defines the scenario structure, i.e. is the scenario a single
+    problem or does it consist of subproblems, both horizon subproblems and
+    stage subproblems for each horizon.
 
-    Check for horizon and stage subproblems, and make appropriate lists to
-    iterate over and solve each subproblem.
+    Based on the subproblem structure, we will define the directory and file
+    structure for the scenario including where the inputs and outputs are
+    written, and where to write any pass-through inputs.
 
+    The scenario structure will then be passed to other methods that iterate
+    over and solve each subproblem.
     """
     def __init__(self, scenario, scenario_location):
         self.main_scenario_directory = \
@@ -75,8 +81,9 @@ class ScenarioStructure(object):
                     with open(
                             os.path.join(
                                 pass_through_directory,
-                                "fixed_commitment.tab"), "w") \
-                            as fixed_commitment_file:
+                                "fixed_commitment.tab"
+                            ), "w"
+                    ) as fixed_commitment_file:
                         fixed_commitment_writer = \
                             writer(fixed_commitment_file, delimiter="\t")
                         fixed_commitment_writer.writerow(
@@ -101,31 +108,56 @@ class ScenarioStructure(object):
 def create_and_solve_problem(scenario_directory, horizon, stage,
                              parsed_arguments):
     """
+    :param scenario_directory: the main scenario directory
+    :param horizon: the horizon subproblem name
+    :param stage: the stage subproblem name
+    :param parsed_arguments: the user-defined script arguments
+    :return: modules_to_use (list of module names used in scenario),
+        loaded_modules (Python objects), dynamic_inputs (the populated
+        dynamic components class), instance (the problem instance), results
+        (the optimization results)
 
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :param parsed_arguments:
-    :return:
+    This method creates the problem instance and solves it.
+
+    To create the problem, we use a Pyomo AbstractModel() class. We will add
+    Pyomo optimization components to this class, will load data into the
+    components, and will then compile the problem.
+
+    We first need to determine which GridPath modules we need to use. See
+    *determine_modules* method (imported from
+    *gridpath.auxiilary.module_list*) and import those modules (via the
+    *load_modules* method imported from *gridpath.auxiliary.module_list*).
+
+    We then determine the dynamic model components based on the selected
+    modules and input data. See *populate_dynamic_components* method.
+
+    The next step is to create the abstract model (see *create_abstract_model*
+    method) and load the input data into its components (see
+    *load_scenario_data*).
+
+    Finally, we compile and solve the problem (*create_problem_instance* and
+    *solve* methods respectively). If any variables need to be fixed,
+    this is done before solving (see the *fix_variables* method).
     """
     # Create pyomo abstract model class
     model = AbstractModel()
 
-    # Initialize the dynamic components class
-    dynamic_inputs = DynamicComponents()
-
+    # Determine and load modules
     modules_to_use = determine_modules(scenario_directory)
-
     loaded_modules = load_modules(modules_to_use)
 
-    # Set dynamic components as attributes to inputs class
-    populate_dynamic_components(dynamic_inputs, loaded_modules,
+    # Initialize the dynamic components class
+    dynamic_components = DynamicComponents()
+
+    # Determine the dynamic components based on the needed modules and input
+    # data
+    populate_dynamic_components(dynamic_components, loaded_modules,
                                 scenario_directory, horizon, stage)
 
     # Create the abstract model; some components are initialized here
     if not parsed_arguments.quiet:
         print("Building model...")
-    create_abstract_model(model, dynamic_inputs, loaded_modules)
+    create_abstract_model(model, dynamic_components, loaded_modules)
 
     # Create a dual suffix component
     # TODO: maybe this shouldn't always be needed
@@ -134,32 +166,47 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     # Load the scenario data
     if not parsed_arguments.quiet:
         print("Loading data...")
-    scenario_data = load_scenario_data(model, dynamic_inputs, loaded_modules,
+    scenario_data = load_scenario_data(model, dynamic_components, loaded_modules,
                                        scenario_directory, horizon, stage)
 
     # Build the problem instance; this will also call any BuildActions that
     # construct the dynamic inputs
+    # TODO: pretty sure there aren't any BuildActions left (?)
     if not parsed_arguments.quiet:
         print("Creating problem instance...")
     instance = create_problem_instance(model, scenario_data)
 
     # Fix variables if modules request so
-    instance = fix_variables(instance, dynamic_inputs, loaded_modules)
+    instance = fix_variables(instance, dynamic_components, loaded_modules)
 
     # Solve
     results = solve(instance, parsed_arguments)
 
-    return modules_to_use, loaded_modules, dynamic_inputs, instance, results
+    return modules_to_use, loaded_modules, dynamic_components, instance, results
 
 
 def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     """
+    :param scenario_directory: the main scenario directory
+    :param horizon: if there are horizon subproblems, the horizon
+    :param stage: if there are stage subproblems, the stage
+    :param parsed_arguments: the parsed script arguments
+    :return: only if in 'testing' mode, return the objective function value
+        (Total_Cost)
 
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :param parsed_arguments:
-    :return:
+    Create a results directory for the subproblem.
+
+    Create and solve the subproblem. See *create_and_solve_problem* method.
+
+    If applicable (i.e. a loaded module requires it), export any pass-through
+    inputs. See *export_pass_through_inputs* method.
+
+    Save results. See *save_results* method.
+
+    Summarize results. See *summarize_results* method.
+
+    If we're in 'testing' mode, return the objective function (Total_Cost)
+    value.
     """
 
     # TODO: how best to handle non-empty results directories?
@@ -169,21 +216,21 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
+    modules_to_use, loaded_modules, dynamic_components, instance, results = \
         create_and_solve_problem(scenario_directory, horizon, stage,
                                  parsed_arguments)
 
     # Export pass-through results if modules require it
     export_pass_through_inputs(scenario_directory, horizon, stage, instance,
-                               dynamic_inputs, loaded_modules)
+                               dynamic_components, loaded_modules)
 
     # Save the scenario results to disk
     save_results(scenario_directory, horizon, stage, loaded_modules,
-                 dynamic_inputs, instance, results, parsed_arguments)
+                 dynamic_components, instance, results, parsed_arguments)
 
     # Summarize results
     summarize_results(scenario_directory, horizon, stage, loaded_modules,
-                      dynamic_inputs, parsed_arguments)
+                      dynamic_components, parsed_arguments)
 
     # If running this problem as part of the test suite, return the objective
     # function value to check against expected value
@@ -216,46 +263,68 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
                    dynamic_inputs, loaded_modules, parsed_arguments)
 
 
-def populate_dynamic_components(inputs, loaded_modules,
+def populate_dynamic_components(dynamic_components, loaded_modules,
                                 scenario_directory, horizon, stage):
+    """
+    :param dynamic_components: the dynamic components class we're populating
+    :param loaded_modules: list of the needed imported modules (Python objects)
+    :param scenario_directory: the main scenario directory
+    :param horizon: the horizon subproblem name
+    :param stage: the stage subproblem name
+
+    We iterate over all required modules and call their
+    *determine_dynamic_components* method, if applicable, in order to add
+    the dynamic components to the *dynamic_components* class object,
+    which we will then pass to the *add_model_components* module methods,
+    so that the applicable components can be added to the abstract model.
+    """
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_components'):
-            m.determine_dynamic_components(inputs,
+            m.determine_dynamic_components(dynamic_components,
                                            scenario_directory, horizon, stage)
         else:
             pass
 
 
-def create_abstract_model(model, inputs, loaded_modules):
+def create_abstract_model(model, dynamic_components, loaded_modules):
     """
+    :param model: the Pyomo AbstractModel object
+    :param dynamic_components: the populated dynamic model components class
+    :param loaded_modules: list of the required modules as Python objects
 
-    :param model:
-    :param inputs:
-    :param loaded_modules:
-    :return:
+    To create the abstract model, we iterate over all required modules and
+    call their *add_model_components* method to add components to the Pyomo
+    AbstractModel. Some modules' *add_model_components* method also require the
+    dynamic component class as an argument for any dynamic components to be
+    added to the model.
     """
     for m in loaded_modules:
         if hasattr(m, 'add_model_components'):
-            m.add_model_components(model, inputs)
+            m.add_model_components(model, dynamic_components)
 
 
-def load_scenario_data(model, dynamic_inputs, loaded_modules,
+def load_scenario_data(model, dynamic_components, loaded_modules,
                        scenario_directory, horizon, stage):
     """
+    :param model: the Pyomo abstract model object with components added
+    :param dynamic_components: the dynamic components class
+    :param loaded_modules: list of the imported GridPath modules as Python
+        objects
+    :param scenario_directory: the main scenario directory
+    :param horizon: the horizon subproblem
+    :param stage: the stage subproblem
+    :return: the DataPortal object populated with the input data
 
-    :param model:
-    :param dynamic_inputs:
-    :param loaded_modules:
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :return:
+    Iterate over all required GridPath modules and call their
+    *load_model_data* method in order to load input data into the relevant
+    model components. Return the resulting DataPortal object with the data
+    loaded in.
     """
     # Load data
     data_portal = DataPortal()
     for m in loaded_modules:
         if hasattr(m, "load_model_data"):
-            m.load_model_data(model, dynamic_inputs, data_portal,
+            m.load_model_data(model, dynamic_components, data_portal,
                               scenario_directory, horizon, stage)
         else:
             pass
@@ -263,22 +332,34 @@ def load_scenario_data(model, dynamic_inputs, loaded_modules,
 
 
 def create_problem_instance(model, loaded_data):
-    # Create instance
+    """
+    :param model: the AbstractModel Pyomo object with components added
+    :param loaded_data: the DataPortal object with the data loaded in and
+        linked to the relevant model components
+    :return: the compiled problem instance
+
+    Compile the problem based on the abstract model formulation and the data
+    loaded into the model components.
+    """
+    # Create problem instance
     instance = model.create_instance(loaded_data)
     return instance
 
 
-def fix_variables(instance, dynamic_inputs, loaded_modules):
+def fix_variables(instance, dynamic_components, loaded_modules):
     """
-    Fix any variables modules want fixed and return the modified instance
-    :param instance:
-    :param dynamic_inputs:
-    :param loaded_modules:
-    :return:
+    :param instance: the compiled problem instance
+    :param dynamic_components: the dynamic component class
+    :param loaded_modules: list of imported GridPath modules as Python objects
+    :return: the problem instance with the relevant variables fixed
+
+    Iterate over the required GridPath modules and fix variables by calling
+    the modules' *fix_variables*, if applicable. Return the modified
+    problem instance with the relevant variables fixed.
     """
     for m in loaded_modules:
         if hasattr(m, "fix_variables"):
-            m.fix_variables(instance, dynamic_inputs)
+            m.fix_variables(instance, dynamic_components)
         else:
             pass
 
@@ -299,21 +380,24 @@ def view_loaded_data(loaded_modules, instance):
 
 def solve(instance, parsed_arguments):
     """
+    :param instance: the compiled problem instance
+    :param parsed_arguments: the user-defined arguments (parsed)
+    :return: the problem results
 
-    :param instance:
-    :param parsed_arguments:
-    :return:
+    Send the compiled problem instance to the solver and solve. Return the
+    results (solver output).
     """
     # Get solver and solve
     solver = SolverFactory(parsed_arguments.solver)
 
     if not parsed_arguments.quiet:
         print("Solving...")
-    results = solver.solve(instance,
-                           tee=parsed_arguments.mute_solver_output,
-                           keepfiles=parsed_arguments.keepfiles,
-                           symbolic_solver_labels=parsed_arguments.symbolic
-                           )
+    results = solver.solve(
+        instance,
+        tee=parsed_arguments.mute_solver_output,
+        keepfiles=parsed_arguments.keepfiles,
+        symbolic_solver_labels=parsed_arguments.symbolic
+    )
     return results
 
 
@@ -460,11 +544,21 @@ def summarize_results(problem_directory, horizon, stage, loaded_modules,
 
 def run_scenario(structure, parsed_arguments):
     """
-    Check if there are scenario subproblems and solve each problem
-    :param structure:
+    :param structure: the scenario structure (i.e. horizon and stage
+        subproblems)
     :param parsed_arguments:
-    :return:
+    :return: in 'testing' mode only, the objective function value (Total_Cost)
+
+    Check the scenario structure, iterate over all subproblems if they
+    exist, and run the subproblem optimization.
+
+    If we are in 'testing' mode, we also keep track of the objective
+    function for each subproblem.
+
+    We also log each run in the subproblem directory if requested by the user.
     """
+
+    # TODO: why is this here? shouldn't this be in dealt with in log_run()?
     # Log output to file if instructed
     stdout_original = sys.stdout  # will return sys.stdout to original
 
@@ -533,25 +627,31 @@ def run_scenario(structure, parsed_arguments):
 # Auxiliary functions
 def check_for_subproblems(directory):
     """
-    Check if more subproblems
-    :param directory:
-    :return:
+    :param directory: the directory where we're looking for a
+        'subproblems.csv' file
+    :return: True or False
+
+    Check for subproblems. Currently, this is done by checking if a
+    'subproblems.csv' file exists in the directory.
+
+    .. todo:: a subproblems file may not be how we tell GridPath what the
+        scenario structure is; we need to think about what the best way to
+        do this is, particularly in the context of linking to the database
     """
     subproblems_file = \
         os.path.join(directory, "subproblems.csv")
     if os.path.isfile(subproblems_file):
         return True
-    # TODO: figure out how to know that this file SHOULD be there (currently
-    # not always the case) and handle exceptions accordingly
     else:
         return False
 
 
 def get_subproblems(directory):
     """
-    Get names of subproblems
     :param directory:
-    :return:
+    :return: a list of the subproblems
+
+    Get the names of the subproblems from the CSV.
     """
     subproblems_file = os.path.join(directory, "subproblems.csv")
     try:
@@ -570,7 +670,9 @@ def get_subproblems(directory):
 def parse_arguments(arguments):
     """
 
-    :return:
+    :param arguments: the script arguments specified by the user
+    :return: the parsed argument values (<class 'argparse.Namespace'> Python
+        object)
     """
     parser = ArgumentParser(add_help=True)
 
@@ -615,8 +717,11 @@ def parse_arguments(arguments):
 
 def main(args=None):
     """
-
-    :return:
+    This is the 'main' method that runs a scenario. It takes in and parses the
+    script arguments, determines the scenario structure (i.e. whether it is a
+    single optimization or has subproblems), and runs the scenario. If a
+    test is being run -- determined via the 'testing' argument passed to
+    this script -- then this method also returns the objective function value.
     """
 
     if args is None:

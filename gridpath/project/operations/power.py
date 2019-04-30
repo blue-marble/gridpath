@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Get the dispatch of all projects
+The **gridpath.project.capacity.capacity** module is a project-level
+module that adds to the formulation components that describe the amount of
+power that a project is providing in each study timepoint.
 """
 
 from __future__ import division
@@ -22,10 +24,18 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
 
-    :param m:
-    :param d:
-    :return:
+    The Pyomo expression *Power_Provision_MW*\ :sub:`r,tmp`\ (:math:`(r,
+    tmp)\in RT`) defines the power a project is producing in each of its
+    operational timepoints. The exact formulation of the expression depends
+    on the project's *operational_type*. For each project, we call its
+    *capacity_type* module's *power_provision_rule* method in order to
+    formulate the expression. E.g. a project of the  *must_run*
+    operational_type will be producing power equal to its capacity while a
+    dispatchable project will have a variable in its power provision
+    expression. This expression will then be used by other modules.
     """
     # Import needed operational modules
     imported_operational_modules = \

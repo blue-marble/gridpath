@@ -5,6 +5,7 @@ from gridpath.auxiliary.dynamic_components import \
     headroom_variables, footroom_variables, \
     reserve_to_energy_adjustment_params
 
+# TODO: shoud probably re-name to sub-timepoint from subhourly
 
 def footroom_subhourly_energy_adjustment_rule(d, mod, g, tmp):
     """

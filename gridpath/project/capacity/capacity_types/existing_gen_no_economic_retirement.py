@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+The **existing_gen_no_economic_retirement** module describes the capacity of
+generators that are available to the optimization without having to incur an
+investment cost. For example, this module can be applied to existing
+generators or to generators that we know will be built in the future and
+whose capital costs we want to ignore.
+
+It is not required to specify a capacity for all periods, i.e. a project can
+be operational in some periods but not in others with no restriction on the
+order and combination of periods.
+"""
+
+
 from builtins import zip
 import csv
 import os.path
@@ -11,12 +24,34 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 
 
+# TODO: rename 'existing' to 'specified' to better reflect functionality (
+#  i.e. this module can be used to specify capacity that comes online in the
+#  future but is 'given' to the optimization without having to incur
+#  investment costs)
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
+    This function adds to the model a two-dimensional set of project-period
+    combinations to describe the project capacity will be available to the
+    optimization in a given period: the
+    *EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS* set. This set
+    is then added to the list of sets to join to get the final
+    *PROJECT_OPERATIONAL_PERIODS* set defined in
+    **gridpath.project.capacity.capacity**. We will also use *EG_P* to
+    designate this set (index :math:`eg, ep` where :math:`eg\in R` and
+    :math:`ep\in P`).
+
+    We then add two parameters associated with this capacity_type,
+    the project capacity and its fixed cost for each operational period:
+    :math:`existing\_gen\_no\_econ\_ret\_capacity\_mw_{eg,ep}` and
+    :math:`existing\_no\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{eg,ep}`. The
+    latter can be added to the objective function for cost-tracking
+    purposes but will not affect any optimization decisions.
     """
     m.EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
-        Set(dimen=2)
+        Set(dimen=2, within=m.PROJECTS*m.PERIODS)
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
@@ -33,18 +68,36 @@ def add_module_specific_components(m, d):
 
 
 def capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the capacity of project *g* in period *p*
+
+    The capacity of projects of the *existing_gen_no_econoimc_retirement*
+    capacity type is a pre-specified number for each of the project's
+    operational periods.
+    """
     return mod.existing_gen_no_econ_ret_capacity_mw[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for existing capacity generators with no economic retirements
-    is 0
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized fixed cost of
+        *existing_gen_no_economic_retirement* project *g* in period *p*
+
+    The capacity cost of projects of the *existing_gen_no_econoimc_retirement*
+    capacity type is a pre-specified number equal to the capacity times the
+    per-mw fixed cost for each of the project's operational periods.
     """
-    return mod.existing_gen_no_econ_ret_capacity_mw[g, p] \
+    existing_gen_no_econ_ret_total_fixed_cost = \
+        mod.existing_gen_no_econ_ret_capacity_mw[g, p] \
         * mod.existing_no_econ_ret_fixed_cost_per_mw_yr[g, p]
+
+    return existing_gen_no_econ_ret_total_fixed_cost
 
 
 def load_module_specific_data(
