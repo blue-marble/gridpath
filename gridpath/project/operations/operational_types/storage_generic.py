@@ -10,7 +10,6 @@ provide reserves.
 from __future__ import division
 
 from builtins import zip
-from past.utils import old_div
 import csv
 import os.path
 from pandas import read_csv
@@ -210,18 +209,18 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return old_div(sum(getattr(mod, c)[s, tmp]
+        return sum(getattr(mod, c)[s, tmp]
                    for c in getattr(d, headroom_variables)[s]) \
-            * mod.number_of_hours_in_timepoint[tmp],
-                       mod.storage_generic_discharging_efficiency[s]) \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s] \
             <= \
             mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
             + mod.Generic_Storage_Charge_MW[s, tmp] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
-            - old_div(mod.Generic_Storage_Discharge_MW[s, tmp] \
-            * mod.number_of_hours_in_timepoint[tmp],
-                      mod.storage_generic_discharging_efficiency[s])
+            - mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Max_Headroom_Energy_Constraint = \
         Constraint(
@@ -250,9 +249,9 @@ def add_module_specific_components(m, d):
             - mod.Generic_Storage_Charge_MW[s, tmp] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
-            + old_div(mod.Generic_Storage_Discharge_MW[s, tmp] \
-            * mod.number_of_hours_in_timepoint[tmp],
-                      mod.storage_generic_discharging_efficiency[s])
+            + mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Max_Footroom_Energy_Constraint = \
         Constraint(
@@ -282,11 +281,11 @@ def add_module_specific_components(m, d):
                 * mod.number_of_hours_in_timepoint[
                       mod.previous_timepoint[tmp]] \
                 * mod.storage_generic_charging_efficiency[s] \
-                - old_div(mod.Generic_Storage_Discharge_MW[
+                - mod.Generic_Storage_Discharge_MW[
                       s, mod.previous_timepoint[tmp]] \
                 * mod.number_of_hours_in_timepoint[
-                      mod.previous_timepoint[tmp]],
-                          mod.storage_generic_discharging_efficiency[s])
+                      mod.previous_timepoint[tmp]] \
+                / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Energy_Tracking_Constraint = \
         Constraint(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,

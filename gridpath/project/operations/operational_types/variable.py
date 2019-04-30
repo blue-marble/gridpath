@@ -12,7 +12,6 @@ from __future__ import print_function
 from builtins import next
 from builtins import zip
 from builtins import str
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -89,12 +88,9 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Variable_Power_MW[g, tmp] + \
-            sum(
-            old_div(getattr(mod, c)[g, tmp], getattr(
-                mod, getattr(d, reserve_variable_derate_params)[c]
-            )[g])
-            for c in getattr(d, headroom_variables)[g]
-        ) \
+            sum(getattr(mod, c)[g, tmp]
+                / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
+                for c in getattr(d, headroom_variables)[g]) \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.availability_derate[g, mod.horizon[tmp]] \
             * mod.cap_factor[g, tmp]
@@ -111,12 +107,9 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Variable_Power_MW[g, tmp] - \
-            sum(
-            old_div(getattr(mod, c)[g, tmp], getattr(
-                mod, getattr(d, reserve_variable_derate_params)[c]
-            )[g])
-            for c in getattr(d, footroom_variables)[g]
-        ) \
+            sum(getattr(mod, c)[g, tmp]
+                / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
+                for c in getattr(d, footroom_variables)[g]) \
             >= 0
     m.Variable_Min_Power_Constraint = \
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,

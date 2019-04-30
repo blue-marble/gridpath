@@ -10,7 +10,6 @@ from __future__ import print_function
 
 from builtins import next
 from builtins import str
-from past.utils import old_div
 import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
@@ -80,9 +79,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
-                old_div(value(
-                    m.Total_Carbon_Emissions_Tons[z, p]
-                ), 10**6)  # MMT
+                value(m.Total_Carbon_Emissions_Tons[z, p]/10**6)  # MMT
             ])
 
 

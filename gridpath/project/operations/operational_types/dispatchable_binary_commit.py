@@ -345,7 +345,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp]),
-                value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp])
+                value(mod.Capacity_MW[p, mod.period[tmp]])
                 * value(mod.Commit_Binary[p, tmp]),
-                value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp])
+                value(mod.Commit_Binary[p, tmp])
             ])

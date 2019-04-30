@@ -10,7 +10,6 @@ provide operating reserves.
 from __future__ import division
 
 from builtins import zip
-from past.utils import old_div
 import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, Var, NonNegativeReals, \
@@ -264,9 +263,9 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (old_div(mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.availability_derate[g, mod.horizon[tmp]],
-                mod.always_on_unit_size_mw[g])
+        return (mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.availability_derate[g, mod.horizon[tmp]]
+                / mod.always_on_unit_size_mw[g]
                 ) \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_AlwaysOn_MW[g, tmp] -
