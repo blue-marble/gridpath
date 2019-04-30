@@ -216,21 +216,21 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    modules_to_use, loaded_modules, dynamic_inputs, instance, results = \
+    modules_to_use, loaded_modules, dynamic_components, instance, results = \
         create_and_solve_problem(scenario_directory, horizon, stage,
                                  parsed_arguments)
 
     # Export pass-through results if modules require it
     export_pass_through_inputs(scenario_directory, horizon, stage, instance,
-                               dynamic_inputs, loaded_modules)
+                               dynamic_components, loaded_modules)
 
     # Save the scenario results to disk
     save_results(scenario_directory, horizon, stage, loaded_modules,
-                 dynamic_inputs, instance, results, parsed_arguments)
+                 dynamic_components, instance, results, parsed_arguments)
 
     # Summarize results
     summarize_results(scenario_directory, horizon, stage, loaded_modules,
-                      dynamic_inputs, parsed_arguments)
+                      dynamic_components, parsed_arguments)
 
     # If running this problem as part of the test suite, return the objective
     # function value to check against expected value
@@ -276,7 +276,7 @@ def populate_dynamic_components(dynamic_components, loaded_modules,
     *determine_dynamic_components* method, if applicable, in order to add
     the dynamic components to the *dynamic_components* class object,
     which we will then pass to the *add_model_components* module methods,
-    so that the applicable compnents can be added to the abstract model.
+    so that the applicable components can be added to the abstract model.
     """
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_components'):

@@ -21,7 +21,7 @@ from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Expression, value
+from pyomo.environ import Set, Expression, value, BuildAction
 
 from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules, join_sets
@@ -176,6 +176,12 @@ def add_model_components(m, d):
                 ]
             )
 
+    # TODO: the creation of the OPERATIONAL_PROJECTS_IN_TIMEPOINTS is by far
+    #  the most time-consuming step in instantiating the problem; is there
+    #  any way to speed it up? It is perhaps inefficient to iterate over all
+    #  (g, t) for every timepoint, but how do we get around having to do that?
+    #  Also, this is a more general problem with all the indexed sets,
+    #  but the larger timepoints-based sets are more of a problem
     def op_gens_by_tmp(mod, tmp):
         """
         Figure out which generators are operational in each timepoint

@@ -97,8 +97,6 @@ def add_model_components(m, d):
     The project load zone parameter (:math:`load\_zone_r\in Z`) determines
     which load zone's load-balance constraint the project contributes to.
 
-
-
     The operational type of a project is given by the
     *operational_type*\ :sub:`r`\  param and determines things like whether the
     project is a fuel-based dispatchable generator (e.g. a CCGT) or a

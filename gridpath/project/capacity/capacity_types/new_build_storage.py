@@ -65,6 +65,10 @@ def add_module_specific_components(m, d):
     :math:`max\_storage\_cumulative\_new\_build\_mwh_{ns,v}` parameters
     respectively.
 
+    Storage sizing in this module is endogenous: the model decides both the
+    power capacity and energy capacity of the project, therefore determining
+    optimal storage sizing/duration.
+
     Two variables, :math:`Build\_Storage\_Power\_MW_{ns,v}` and
     :math:`Build\_Storage\_Energy\_MWh_{ns,v}` are defined over
     the :math:`NS\_V` set and determines how much power and energy capacity
@@ -131,8 +135,6 @@ def add_module_specific_components(m, d):
     constrained by :math:`min\_storage\_cumulative\_new\_build\_mwh_{ns,v}` and
     :math:`max\_storage\_cumulative\_new\_build\_mwh_{ng,v}` (the set of
     vintages *v* is a subset of the set of operational periods *np*).
-
-    Storage sizing in this module is endogenous.
     """
     m.NEW_BUILD_STORAGE_PROJECTS = Set()
     m.minimum_duration_hours = \
