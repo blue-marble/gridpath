@@ -272,13 +272,13 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         min_stable_fraction
 
 
-def export_module_specific_results(m, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
     """
 
     :param scenario_directory:
     :param horizon:
     :param stage:
-    :param m:
+    :param mod:
     :param d:
     :return:
     """
@@ -292,20 +292,19 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
                          ])
 
         for (p, tmp) \
-                in \
-                m.\
+                in mod.\
                 DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
-                m.period[tmp],
-                m.horizon[tmp],
+                mod.period[tmp],
+                mod.horizon[tmp],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
-                m.number_of_hours_in_timepoint[tmp],
-                m.technology[p],
-                m.load_zone[p],
-                value(m.Provide_Power_DispContinuousCommit_MW[p, tmp]),
-                value(m.Provide_Power_DispContinuousCommit_MW[p, tmp])
-                * value(m.Commit_Continuous[p, tmp]),
-                value(m.Commit_Continuous[p, tmp])
+                mod.horizon_weight[mod.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
+                value(mod.Provide_Power_DispContinuousCommit_MW[p, tmp]),
+                value(mod.Capacity_MW[p, mod.period[tmp]])
+                * value(mod.Commit_Continuous[p, tmp]),
+                value(mod.Commit_Continuous[p, tmp])
             ])
