@@ -299,7 +299,7 @@ def add_module_specific_components(m, d):
         ramp rate (expressed as fraction of capacity)
         Two components:
         1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
-        If we are turning generators on since the prevoius timepoint, we will
+        If we are turning generators on since the previous timepoint, we will
         allow the ramp of going from 0 to minimum stable level + some
         additional ramping : the dispcapcommit_startup_plus_ramp_up_rate
         parameter
