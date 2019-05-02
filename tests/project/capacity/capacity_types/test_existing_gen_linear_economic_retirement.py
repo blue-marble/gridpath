@@ -156,19 +156,6 @@ class TestExistingGenLinearEconRet(unittest.TestCase):
             }
         self.assertDictEqual(expected_cost, actual_cost)
 
-    def test_derived_data(self):
-        """
-        Calculations
-        :return:
-        """
-        m, data = add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=MODULE_BEING_TESTED,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-        )
-        instance = m.create_instance(data)
 
 if __name__ == "__main__":
     unittest.main()
