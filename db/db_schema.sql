@@ -28,7 +28,7 @@ description VARCHAR(128)
 -- TODO: add descriptions
 INSERT INTO mod_capacity_types (capacity_type)
 VALUES ('existing_gen_linear_economic_retirement'),
-('existing_gen_binary_economic_retirement')
+('existing_gen_binary_economic_retirement'),
 ('existing_gen_no_economic_retirement'), ('new_build_generator'),
 ('new_build_storage'), ('storage_specified_no_economic_retirement');
 
