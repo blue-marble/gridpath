@@ -17,7 +17,7 @@ from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Expression, \
+from pyomo.environ import Set, Param, Var, Constraint, \
     NonNegativeReals, Binary, value
 
 from gridpath.auxiliary.dynamic_components import \
@@ -59,8 +59,7 @@ def add_module_specific_components(m, d):
     from coming back online after it has been retired for
     :math:`ebp\in N\_F\_P`.
 
-    :math:`Binary\_Retire_{ebr,
-    ebp}\geq Binary\_Retire_{ebr,
+    :math:`Binary\_Retire_{ebr, ebp}\geq Binary\_Retire_{ebr,
     previous\_period_{ebp}}`.
 
 
@@ -110,12 +109,10 @@ def add_module_specific_components(m, d):
         Param(m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
 
-
     # Binary retirement variable
     m.Retire_Binary = Var(
         m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
         within=Binary)
-
 
     # TODO: we need to check that the user hasn't specified increasing
     #  capacity to begin with
@@ -161,7 +158,7 @@ def capacity_rule(mod, g, p):
     See the *add_module_specific_components* method for constraints.
     """
     return mod.existing_bin_econ_ret_capacity_mw[g, p] \
-           * (1 - mod.Retire_Binary[g, p])
+        * (1 - mod.Retire_Binary[g, p])
 
 
 def capacity_cost_rule(mod, g, p):
@@ -190,7 +187,6 @@ def load_module_specific_data(
         m, data_portal, scenario_directory, horizon, stage
 ):
     """
-
     :param m:
     :param data_portal:
     :param scenario_directory:
@@ -253,8 +249,8 @@ def load_module_specific_data(
                 pass
 
         return generator_period_list, \
-               existing_bin_econ_ret_capacity_mw_dict, \
-               existing_bin_econ_ret_fixed_cost_per_mw_yr_dict
+            existing_bin_econ_ret_capacity_mw_dict, \
+            existing_bin_econ_ret_fixed_cost_per_mw_yr_dict
 
     data_portal.data()[
         "EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"

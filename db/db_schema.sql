@@ -28,6 +28,7 @@ description VARCHAR(128)
 -- TODO: add descriptions
 INSERT INTO mod_capacity_types (capacity_type)
 VALUES ('existing_gen_linear_economic_retirement'),
+('existing_gen_binary_economic_retirement')
 ('existing_gen_no_economic_retirement'), ('new_build_generator'),
 ('new_build_storage'), ('storage_specified_no_economic_retirement');
 
@@ -1855,6 +1856,19 @@ PRIMARY KEY (scenario_id, project, period)
 
 DROP TABLE IF EXISTS results_project_capacity_linear_economic_retirement;
 CREATE TABLE results_project_capacity_linear_economic_retirement (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+retired_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_binary_economic_retirement;
+CREATE TABLE results_project_capacity_binary_economic_retirement (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
