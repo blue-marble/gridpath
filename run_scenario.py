@@ -191,8 +191,8 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     :param horizon: if there are horizon subproblems, the horizon
     :param stage: if there are stage subproblems, the stage
     :param parsed_arguments: the parsed script arguments
-    :return: only if in 'testing' mode, return the objective function value
-        (Total_Cost)
+    :return: return the objective function value (Total_Cost); only used in
+    testing
 
     Create a results directory for the subproblem.
 
@@ -205,8 +205,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
     Summarize results. See *summarize_results* method.
 
-    If we're in 'testing' mode, return the objective function (Total_Cost)
-    value.
+    Return the objective function (Total_Cost) value; only used in testing mode
     """
 
     # TODO: how best to handle non-empty results directories?
@@ -232,10 +231,9 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     summarize_results(scenario_directory, horizon, stage, loaded_modules,
                       dynamic_components, parsed_arguments)
 
-    # If running this problem as part of the test suite, return the objective
-    # function value to check against expected value
-    if parsed_arguments.testing:
-        return instance.Total_Cost()
+    # Return the objective function value
+    # In 'testing' mode, this gets checked against expected value
+    return round(instance.Total_Cost(), 2)
 
 
 def save_results(scenario_directory, horizon, stage, loaded_modules,
@@ -470,7 +468,7 @@ def save_objective_function_value(scenario_directory, horizon, stage, instance
             "objective_function_value.txt"),
             "w") as objective_file:
         objective_file.write(
-            "Objective function: " + str(instance.Total_Cost())
+            "Objective function: " + str(round(instance.Total_Cost(), 2))
         )
 
 
@@ -547,13 +545,14 @@ def run_scenario(structure, parsed_arguments):
     :param structure: the scenario structure (i.e. horizon and stage
         subproblems)
     :param parsed_arguments:
-    :return: in 'testing' mode only, the objective function value (Total_Cost)
+    :return: the objective function value (Total_Cost); only used in
+     'testing' mode.
 
     Check the scenario structure, iterate over all subproblems if they
     exist, and run the subproblem optimization.
 
-    If we are in 'testing' mode, we also keep track of the objective
-    function for each subproblem.
+    The objective function is returned, but it's only really used if we
+    are in 'testing' mode.
 
     We also log each run in the subproblem directory if requested by the user.
     """
@@ -566,22 +565,14 @@ def run_scenario(structure, parsed_arguments):
     if not structure.horizon_subproblems:
         log_run(structure.main_scenario_directory, "", "",
                 parsed_arguments)
-        # If we're testing, get the objective function value
-        if parsed_arguments.testing:
-            objective_values = run_optimization(
-                structure.main_scenario_directory, "", "", parsed_arguments)
-        # If not testing, don't create the objective function value object
-        # (run_optimization doesn't return anything if not testing)
-        else:
-            run_optimization(structure.main_scenario_directory, "", "",
-                             parsed_arguments)
+        objective_values = run_optimization(
+            structure.main_scenario_directory, "", "", parsed_arguments)
         # Return sys.stdout to original (i.e. stop writing to log file)
         sys.stdout = stdout_original
     else:
-        # If this is a test run, create dictionary with which we'll keep track
+        # Create dictionary with which we'll keep track
         # of subproblem objective function values
-        if parsed_arguments.testing:
-            objective_values = {}
+        objective_values = {}
         for h in structure.horizon_subproblems:
             # If no stage subproblems (empty list), run horizon problem
             if not structure.stage_subproblems[h]:
@@ -589,39 +580,27 @@ def run_scenario(structure, parsed_arguments):
                         parsed_arguments)
                 if not parsed_arguments.quiet:
                     print("Running horizon {}".format(h))
-                if parsed_arguments.testing:
-                    objective_values[h] = run_optimization(
-                        structure.main_scenario_directory, h, "",
-                        parsed_arguments)
-                else:
-                    run_optimization(
-                        structure.main_scenario_directory, h, "",
-                        parsed_arguments)
+                objective_values[h] = run_optimization(
+                    structure.main_scenario_directory, h, "",
+                    parsed_arguments)
                 # Return sys.stdout to original (i.e. stop writing to log file)
                 sys.stdout = stdout_original
             else:
-                if parsed_arguments.testing:
-                    objective_values[h] = {}
+                objective_values[h] = {}
                 for s in structure.stage_subproblems[h]:
                     log_run(structure.main_scenario_directory, h, s,
                             parsed_arguments)
                     if not parsed_arguments.quiet:
                         print("Running horizon {}, stage {}".format(h, s))
-                    if parsed_arguments.testing:
-                        objective_values[h][s] = \
-                            run_optimization(
-                                structure.main_scenario_directory, h, s,
-                                parsed_arguments)
-                    else:
+                    objective_values[h][s] = \
                         run_optimization(
-                            structure.main_scenario_directory,
-                            h, s, parsed_arguments)
+                            structure.main_scenario_directory, h, s,
+                            parsed_arguments)
                     # Return sys.stdout to original
                     # (i.e. stop writing to log file)
                     sys.stdout = stdout_original
 
-    if parsed_arguments.testing:
-        return objective_values
+    return objective_values
 
 
 # Auxiliary functions
@@ -719,9 +698,8 @@ def main(args=None):
     """
     This is the 'main' method that runs a scenario. It takes in and parses the
     script arguments, determines the scenario structure (i.e. whether it is a
-    single optimization or has subproblems), and runs the scenario. If a
-    test is being run -- determined via the 'testing' argument passed to
-    this script -- then this method also returns the objective function value.
+    single optimization or has subproblems), and runs the scenario.
+    This method also returns the objective function value(s).
     """
 
     if args is None:
@@ -733,12 +711,9 @@ def main(args=None):
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
     # Run the optimization
-    if parsed_args.testing:
-        expected_objective_values = run_scenario(
-            scenario_structure, parsed_args)
-        return expected_objective_values
-    else:
-        run_scenario(scenario_structure, parsed_args)
+    expected_objective_values = run_scenario(
+        scenario_structure, parsed_args)
+    return expected_objective_values
 
 
 if __name__ == "__main__":
