@@ -10,6 +10,7 @@ CREATE TABLE mod_horizon_boundary_types (
 horizon_boundary_type VARCHAR(16) PRIMARY KEY,
 description VARCHAR(128)
 );
+
 -- TODO: add descriptions
 INSERT INTO mod_horizon_boundary_types (horizon_boundary_type, description)
 VALUES
@@ -53,7 +54,7 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 -- Timepoints
 -- These are the timepoints that go into the model, with horizons
 -- and periods specified
--- Usually, this a timepoint_scenario_id is a subset of a much larger set of
+-- Usually, this timepoint_scenario_id is a subset of a much larger set of
 -- timepoints
 DROP TABLE IF EXISTS subscenarios_temporal_timepoints;
 CREATE TABLE subscenarios_temporal_timepoints (
