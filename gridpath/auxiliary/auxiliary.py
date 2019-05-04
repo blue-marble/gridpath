@@ -204,7 +204,9 @@ class Logging(object):
 
     def write(self, message):
         """
-        Output to both terminal and a log file
+        Output to both terminal and a log file. The print statement will
+        call the write() method of any object you assign to sys.stdout
+        (in this case the Logging object)
 
         :param message: 
         :return: 
