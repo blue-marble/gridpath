@@ -91,8 +91,8 @@ class TestProjLocalCapacityInit(unittest.TestCase):
             "Battery_Specified", "Hydro",
             "Hydro_NonCurtailable", "Disp_Binary_Commit",
             "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Nuclear_Flexible",
-            "Shift_DR"
+            "Clunky_Old_Gen", "Clunky_Old_Gen2",
+            "Nuclear_Flexible", "Shift_DR"
         ])
         actual_projects = sorted([prj for prj
                                   in instance.LOCAL_CAPACITY_PROJECTS])
@@ -116,6 +116,7 @@ class TestProjLocalCapacityInit(unittest.TestCase):
                  "Disp_Cont_Commit": "Local_Capacity_Zone2",
                  "Disp_No_Commit": "Local_Capacity_Zone1",
                  "Clunky_Old_Gen": "Local_Capacity_Zone2",
+                 "Clunky_Old_Gen2": "Local_Capacity_Zone2",
                  "Nuclear_Flexible": "Local_Capacity_Zone1",
                  "Shift_DR": "Local_Capacity_Zone2"}.items()
             )
@@ -138,7 +139,7 @@ class TestProjLocalCapacityInit(unittest.TestCase):
             "Local_Capacity_Zone2": sorted([
                 "Coal", "Gas_CT", "Gas_CT_New", "Battery_Specified",
                 "Hydro_NonCurtailable", "Disp_Cont_Commit",
-                "Clunky_Old_Gen", "Shift_DR"
+                "Clunky_Old_Gen", "Clunky_Old_Gen2", "Shift_DR"
             ])
         }
         actual_projects_by_zone = {
@@ -162,13 +163,11 @@ class TestProjLocalCapacityInit(unittest.TestCase):
             ("Gas_CT_New", 2030), ("Battery", 2020), ("Battery", 2030),
             ("Hydro", 2020), ("Hydro", 2030),
             ("Hydro_NonCurtailable", 2020), ("Hydro_NonCurtailable", 2030),
-            ("Disp_Binary_Commit", 2020),
-            ("Disp_Binary_Commit", 2030),
-            ("Disp_Cont_Commit", 2020),
-            ("Disp_Cont_Commit", 2030),
-            ("Disp_No_Commit", 2020),
-            ("Disp_No_Commit", 2030),
+            ("Disp_Binary_Commit", 2020), ("Disp_Binary_Commit", 2030),
+            ("Disp_Cont_Commit", 2020), ("Disp_Cont_Commit", 2030),
+            ("Disp_No_Commit", 2020), ("Disp_No_Commit", 2030),
             ("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030),
+            ("Clunky_Old_Gen2", 2020), ("Clunky_Old_Gen2", 2030),
             ("Nuclear_Flexible", 2030), ("Shift_DR", 2020), ("Shift_DR", 2030)
         ])
         actual_proj_period_set = sorted([

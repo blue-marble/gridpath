@@ -2,9 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **existing_gen_linear_economic_retirement** module describes the capacity
+The **existing_gen_binary_economic_retirement** module describes the capacity
 of generators that are available to the optimization without having to incur an
 investment cost, but whose fixed O&M can be avoided if they are retired.
+As opposed to linear retirement, these type of generators have binary
+retirement decisions (either completely retired or not).
 """
 
 from __future__ import print_function
@@ -15,8 +17,8 @@ from builtins import str
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Expression, \
-    NonNegativeReals, value
+from pyomo.environ import Set, Param, Var, Constraint, \
+    NonNegativeReals, Binary, value
 
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
@@ -30,146 +32,115 @@ def add_module_specific_components(m, d):
     This function adds to the model a two-dimensional set of project-period
     combinations to describe the project capacity will be available to the
     optimization in a given period: the
-    *EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS* set. This set
+    *EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS* set. This set
     is then added to the list of sets to join to get the final
     *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *ELR_P* to
-    designate this set (index :math:`elr, elp` where :math:`elr\in R` and
-    :math:`elp\in P`).
+    **gridpath.project.capacity.capacity**. We will also use *EBR_P* to
+    designate this set (index :math:`ebr, ebp` where :math:`ebr\in R` and
+    :math:`ebp\in P`).
 
-    For each :math:`elr, elp`, we define two parameters:
-    *existing_lin_econ_ret_capacity_mw* (the specified capacity of project
-    *elr* in period *elp* if no capacity is retired) and
-    *existing_lin_econ_ret_fixed_cost_per_mw_yr* (the per-MW cost to keep
-    capacity at project *elr* operational in period *elp*.
+    For each :math:`ebr, ebp`, we define two parameters:
+    *existing_bin_econ_ret_capacity_mw* (the specified capacity of project
+    *ebr* in period *ebp* if no capacity is retired) and
+    *existing_bin_econ_ret_fixed_cost_per_mw_yr* (the per-MW cost to keep
+    capacity at project *ebr* operational in period *ebp*.
 
-    The variable *Retire_MW* is also defined over the *ELR_P* set. This is
-    the amount of capacity that the model can retire in each operational
-    period. The project's capacity in each period is then constrained as
-    follows:
+    The variable *Retire_Binary* is also defined over the *EBR_P* set. This
+    decision variable is binary, i.e. the model decides to either retire all
+    specified capacity or none at all in each operational period. The project's
+    capacity in each period is then constrained as follows:
 
-    :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
-    elp}\leq existing\_lin\_econ\_ret\_capacity\_mw_{elr, elp} -
-    Retire\_MW_{elr, elp}`
+    :math:`Existing\_Binary\_Econ\_Ret\_Capacity\_MW_{ebr,ebp} =
+    existing\_bin\_econ\_ret\_capacity\_mw_{ebr, ebp} *
+    (1 - Binary\_Retire_{ebr, ebp}`
 
-    The capacity expression is then constrained to be less than or equal to
-    the capacity in the previous period in order to prevent capacity from
-    coming back online after it has been retired for :math:`elp\in N\_F\_P`.
+    The binary decision variable is then constrained to be less than or equal
+    to the binary variable in the previous period in order to prevent capacity
+    from coming back online after it has been retired for
+    :math:`ebp\in N\_F\_P`.
 
-    :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
-    elp}\leq Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
-    previuos\_period_{elp}}`.
+    :math:`Binary\_Retire_{ebr, ebp}\geq Binary\_Retire_{ebr,
+    previous\_period_{ebp}}`.
 
 
     """
-    m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
+    m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
         Set(dimen=2)
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
+        "EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
     )
 
     # Make set of operational periods by generator
-    m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS = Set(
+    m.EXISTING_BINARY_ECON_RETRMNT_GENERATORS = Set(
         initialize=
         lambda mod: set(
             g for (g, p)
-            in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+            in mod.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
         )
     )
-    m.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS = \
+    m.OPRTNL_PERIODS_BY_EX_BIN_ECON_RETRMNT_GENERATORS = \
         Set(
-            m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+            m.EXISTING_BINARY_ECON_RETRMNT_GENERATORS,
             initialize=
             lambda mod, prj: set(
                 period for (project, period)
-                in mod.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                in mod.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
                 if project == prj
             )
         )
-    m.ex_gen_lin_econ_ret_gen_first_period = \
+    m.ex_gen_bin_econ_ret_gen_first_period = \
         Param(
-            m.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS,
+            m.EXISTING_BINARY_ECON_RETRMNT_GENERATORS,
             initialize=
             lambda mod, g: min(
                 p for p
-                in mod.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
+                in mod.OPRTNL_PERIODS_BY_EX_BIN_ECON_RETRMNT_GENERATORS[g]
             )
         )
 
     # Capacity and fixed cost
-    m.existing_lin_econ_ret_capacity_mw = \
-        Param(m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+    m.existing_bin_econ_ret_capacity_mw = \
+        Param(m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
-    m.existing_lin_econ_ret_fixed_cost_per_mw_yr = \
-        Param(m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+    m.existing_bin_econ_ret_fixed_cost_per_mw_yr = \
+        Param(m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
               within=NonNegativeReals)
 
-    def retire_capacity_bounds(mod, g, p):
-        """
-        Shouldn't be able to retire more than available capacity
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return 0, mod.existing_lin_econ_ret_capacity_mw[g, p]
-
-    # Retire capacity variable
-    m.Retire_MW = Var(
-        m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
-        bounds=retire_capacity_bounds
-    )
-
-    # Existing capacity minus retirements
-    def existing_existing_econ_ret_capacity_rule(mod, g, p):
-        """
-
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.existing_lin_econ_ret_capacity_mw[g, p] \
-            - mod.Retire_MW[g, p]
-    m.Existing_Linear_Econ_Ret_Capacity_MW = \
-        Expression(
-            m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
-            rule=existing_existing_econ_ret_capacity_rule
-        )
+    # Binary retirement variable
+    m.Retire_Binary = Var(
+        m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+        within=Binary)
 
     # TODO: we need to check that the user hasn't specified increasing
     #  capacity to begin with
     def retire_forever_rule(mod, g, p):
         """
-        Once retired, capacity cannot be brought back (i.e. in the current 
-        period, total capacity (after retirement) must be less than or equal 
-        what it was in the last period
-        :param mod: 
-        :param g: 
-        :param p: 
-        :return: 
+        Once the binary retirement decision is made, the decision will last
+        through all following periods, i.e. the binary variable cannot be
+        smaller than what it was in the previous period
+        :param g:
+        :param p:
+        :return:
         """
         # Skip if we're in the first period
         if p == value(mod.first_period):
             return Constraint.Skip
         # Skip if this is the generator's first period
-        if p == mod.ex_gen_lin_econ_ret_gen_first_period[g]:
+        if p == mod.ex_gen_bin_econ_ret_gen_first_period[g]:
             return Constraint.Skip
         else:
-            return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
-                <= \
-                mod.Existing_Linear_Econ_Ret_Capacity_MW[
-                    g, mod.previous_period[p]
-                ]
+            return mod.Retire_Binary[g, p] \
+                   >= \
+                   mod.Retire_Binary[g, mod.previous_period[p]]
 
-    m.Linear_Retirement_Retire_Forever_Constraint = Constraint(
-        m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
+    m.Binary_Retirement_Retire_Forever_Constraint = Constraint(
+        m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
         rule=retire_forever_rule
     )
-        
+
 
 def capacity_rule(mod, g, p):
     """
@@ -178,13 +149,16 @@ def capacity_rule(mod, g, p):
     :param p: the operational period
     :return: the capacity of project *g* in period *p*
 
-    The capacity of projects of the *existing_gen_no_econoimc_retirement*
+    The capacity of projects of the *existing_gen_binary_economic_retirement*
     capacity type is a pre-specified number for each of the project's
-    operational periods minus any capacity that was retired. The expression
-    returned is :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
-    elp}`. See the *add_module_specific_components* method for constraints.
+    operational periods multiplied with 1 minus the binary retirement variable.
+    The expression returned is
+    :math:`existing\_bin\_econ\_ret\_capacity\_mw_{ebr, ebp} *
+    (1 - Binary\_Retire_{ebr, ebp}`.
+    See the *add_module_specific_components* method for constraints.
     """
-    return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p]
+    return mod.existing_bin_econ_ret_capacity_mw[g, p] \
+        * (1 - mod.Retire_Binary[g, p])
 
 
 def capacity_cost_rule(mod, g, p):
@@ -193,25 +167,26 @@ def capacity_cost_rule(mod, g, p):
     :param g: the project
     :param p: the operational period
     :return: the total annualized fixed cost of
-        *existing_gen_linear_economic_retirement* project *g* in period *p*
+        *existing_gen_binary_economic_retirement* project *g* in period *p*
 
     The capacity cost of projects of the
-    *existing_gen_linear_econoimc_retirement* capacity type is its net
-    capacity (pre-specified capacity minus retired capacity) times the per-mw
+    *existing_gen_binary_economic_retirement* capacity type is its net
+    capacity (pre-specified capacity or zero if retired) times the per-mw
     fixed cost for each of the project's operational periods. This method
-    returns :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{g,
-    p} \\times existing\_lin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{g,
-    p}` and it will be called for :math:`(g, p)\in ELR_P`.
+    returns :math:`existing\_bin\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{ebr,
+    ebp} * existing\_bin\_econ\_ret\_capacity\_mw_{ebr, ebp} *
+    (1 - Binary\_Retire_{ebr, ebp}`.
+    and it will be called for :math:`(ebr, ebp)\in EBR_P`.
     """
-    return mod.Existing_Linear_Econ_Ret_Capacity_MW[g, p] \
-        * mod.existing_lin_econ_ret_fixed_cost_per_mw_yr[g, p]
+    return mod.existing_bin_econ_ret_fixed_cost_per_mw_yr[g, p] \
+        * mod.existing_bin_econ_ret_capacity_mw[g, p] \
+        * (1 - mod.Retire_Binary[g, p])
 
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, horizon, stage
 ):
     """
-
     :param m:
     :param data_portal:
     :param scenario_directory:
@@ -219,13 +194,14 @@ def load_module_specific_data(
     :param stage:
     :return:
     """
-    def determine_existing_gen_linear_econ_ret_projects():
+
+    def determine_existing_gen_binary_econ_ret_projects():
         """
-        Find the existing_gen_linear_economic_retirement capacity type projects
+        Find the existing_gen_binary_economic_retirement capacity type projects
         :return:
         """
 
-        ex_gen_lin_econ_ret_projects = list()
+        ex_gen_bin_econ_ret_projects = list()
 
         dynamic_components = \
             pd.read_csv(
@@ -235,22 +211,22 @@ def load_module_specific_data(
             )
         for row in zip(dynamic_components["project"],
                        dynamic_components["capacity_type"]):
-            if row[1] == "existing_gen_linear_economic_retirement":
-                ex_gen_lin_econ_ret_projects.append(row[0])
+            if row[1] == "existing_gen_binary_economic_retirement":
+                ex_gen_bin_econ_ret_projects.append(row[0])
             else:
                 pass
 
-        return ex_gen_lin_econ_ret_projects
+        return ex_gen_bin_econ_ret_projects
 
     def determine_period_params():
         """
 
         :return:
         """
-        generators_list = determine_existing_gen_linear_econ_ret_projects()
+        generators_list = determine_existing_gen_binary_econ_ret_projects()
         generator_period_list = list()
-        existing_lin_econ_ret_capacity_mw_dict = dict()
-        existing_lin_econ_ret_fixed_cost_per_mw_yr_dict = dict()
+        existing_bin_econ_ret_capacity_mw_dict = dict()
+        existing_bin_econ_ret_fixed_cost_per_mw_yr_dict = dict()
         dynamic_components = \
             pd.read_csv(
                 os.path.join(scenario_directory, "inputs",
@@ -264,34 +240,34 @@ def load_module_specific_data(
                        dynamic_components["fixed_cost_per_mw_yr"]):
             if row[0] in generators_list:
                 generator_period_list.append((row[0], row[1]))
-                existing_lin_econ_ret_capacity_mw_dict[(row[0], row[1])] = \
+                existing_bin_econ_ret_capacity_mw_dict[(row[0], row[1])] = \
                     float(row[2])
-                existing_lin_econ_ret_fixed_cost_per_mw_yr_dict[(row[0],
+                existing_bin_econ_ret_fixed_cost_per_mw_yr_dict[(row[0],
                                                                  row[1])] = \
                     float(row[3])
             else:
                 pass
 
         return generator_period_list, \
-            existing_lin_econ_ret_capacity_mw_dict, \
-            existing_lin_econ_ret_fixed_cost_per_mw_yr_dict
+            existing_bin_econ_ret_capacity_mw_dict, \
+            existing_bin_econ_ret_fixed_cost_per_mw_yr_dict
 
     data_portal.data()[
-        "EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
+        "EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
     ] = {
         None: determine_period_params()[0]
     }
 
-    data_portal.data()["existing_lin_econ_ret_capacity_mw"] = \
+    data_portal.data()["existing_bin_econ_ret_capacity_mw"] = \
         determine_period_params()[1]
 
-    data_portal.data()["existing_lin_econ_ret_fixed_cost_per_mw_yr"] = \
+    data_portal.data()["existing_bin_econ_ret_fixed_cost_per_mw_yr"] = \
         determine_period_params()[2]
 
 
 def export_module_specific_results(scenario_directory, horizon, stage, m, d):
     """
-    Export existing gen linear economic retirement results.
+    Export existing gen binary economic retirement results.
     :param scenario_directory:
     :param horizon:
     :param stage:
@@ -300,27 +276,28 @@ def export_module_specific_results(scenario_directory, horizon, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "capacity_existing_gen_linear_economic_retirement"
+                           "capacity_existing_gen_binary_economic_retirement"
                            ".csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "retire_mw"])
         for (prj, p) in \
-                m.EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
+                m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
             writer.writerow([
                 prj,
                 p,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.Retire_MW[prj, p])
+                value(m.Retire_Binary[prj, p] *
+                      m.existing_bin_econ_ret_capacity_mw[prj, p])
             ])
 
 
 def summarize_module_specific_results(
-    problem_directory, horizon, stage, summary_results_file
+        problem_directory, horizon, stage, summary_results_file
 ):
     """
-    Summarize existing gen linear economic retirement capacity results.
+    Summarize existing gen binary economic retirement capacity results.
     :param problem_directory:
     :param horizon:
     :param stage:
@@ -332,12 +309,12 @@ def summarize_module_specific_results(
     capacity_results_df = \
         pd.read_csv(os.path.join(
             problem_directory, horizon, stage, "results",
-            "capacity_existing_gen_linear_economic_retirement.csv"
+            "capacity_existing_gen_binary_economic_retirement.csv"
         ))
 
     capacity_results_agg_df = \
         capacity_results_df.groupby(
-            by=["load_zone", "technology",'period'],
+            by=["load_zone", "technology", 'period'],
             as_index=True
         ).sum()
 
@@ -345,35 +322,36 @@ def summarize_module_specific_results(
     pd.options.display.float_format = "{:,.0f}".format
 
     # Get all technologies with the new build capacity
-    lin_retirement_df = pd.DataFrame(
+    bin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
             capacity_results_agg_df["retire_mw"] > 0
-        ]["retire_mw"]
+            ]["retire_mw"]
     )
 
-    lin_retirement_df.columns = ["Retired Capacity (MW)"]
+    bin_retirement_df.columns = ["Retired Capacity (MW)"]
 
     with open(summary_results_file, "a") as outfile:
         outfile.write("\n--> Retired Capacity <--\n")
-        if lin_retirement_df.empty:
+        if bin_retirement_df.empty:
             outfile.write("No retirements.\n")
         else:
-            lin_retirement_df.to_string(outfile)
+            bin_retirement_df.to_string(outfile)
             outfile.write("\n")
 
 
+# TODO: untested functionality
 def get_module_specific_inputs_from_database(
         subscenarios, c, inputs_directory
 ):
     """
     existing_generation_period_params.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios:
+    :param c:
+    :param inputs_directory:
+    :return:
     """
 
-    # Select generators of 'existing_gen_linear_economic_retirement' capacity
+    # Select generators of 'existing_gen_binary_economic_retirement' capacity
     # type only
     ep_capacities = c.execute(
         """SELECT project, period, existing_capacity_mw,
@@ -397,7 +375,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 
-        'existing_gen_linear_economic_retirement';""".format(
+        'existing_gen_binary_economic_retirement';""".format(
             subscenarios.TIMEPOINT_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
@@ -436,7 +414,7 @@ def get_module_specific_inputs_from_database(
             for row in ep_capacities:
                 writer.writerow(row)
 
-
+# TODO: untested functionality
 def import_module_specific_results_into_database(
         scenario_id, c, db, results_directory
 ):
@@ -449,9 +427,9 @@ def import_module_specific_results_into_database(
     :return:
     """
     # New build capacity results
-    print("project linear economic retirements")
+    print("project binary economic retirements")
     c.execute(
-        """DELETE FROM results_project_capacity_linear_economic_retirement 
+        """DELETE FROM results_project_capacity_binary_economic_retirement 
         WHERE scenario_id = {};""".format(
             scenario_id
         )
@@ -461,14 +439,14 @@ def import_module_specific_results_into_database(
     # Create temporary table, which we'll use to sort results and then drop
     c.execute(
         """DROP TABLE IF EXISTS 
-        temp_results_project_capacity_linear_economic_retirement"""
+        temp_results_project_capacity_binary_economic_retirement"""
         + str(scenario_id) + """;"""
     )
     db.commit()
 
     c.execute(
         """CREATE TABLE 
-        temp_results_project_capacity_linear_economic_retirement"""
+        temp_results_project_capacity_binary_economic_retirement"""
         + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
@@ -484,7 +462,7 @@ def import_module_specific_results_into_database(
     # Load results into the temporary table
     with open(os.path.join(
             results_directory,
-            "capacity_existing_gen_linear_economic_retirement.csv"), "r") as \
+            "capacity_existing_gen_binary_economic_retirement.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
 
@@ -498,7 +476,7 @@ def import_module_specific_results_into_database(
 
             c.execute(
                 """INSERT INTO 
-                temp_results_project_capacity_linear_economic_retirement"""
+                temp_results_project_capacity_binary_economic_retirement"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, technology, load_zone,
                 retired_mw)
@@ -511,11 +489,11 @@ def import_module_specific_results_into_database(
 
     # Insert sorted results into permanent results table
     c.execute(
-        """INSERT INTO results_project_capacity_linear_economic_retirement
+        """INSERT INTO results_project_capacity_binary_economic_retirement
         (scenario_id, project, period, technology, load_zone, retired_mw)
         SELECT
         scenario_id, project, period, technology, load_zone, retired_mw
-        FROM temp_results_project_capacity_linear_economic_retirement"""
+        FROM temp_results_project_capacity_binary_economic_retirement"""
         + str(scenario_id)
         + """
         ORDER BY scenario_id, project, period;"""
@@ -525,7 +503,7 @@ def import_module_specific_results_into_database(
     # Drop the temporary table
     c.execute(
         """DROP TABLE 
-        temp_results_project_capacity_linear_economic_retirement"""
+        temp_results_project_capacity_binary_economic_retirement"""
         + str(scenario_id) +
         """;"""
     )
