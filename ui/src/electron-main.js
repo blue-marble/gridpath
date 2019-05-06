@@ -5,6 +5,9 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const storage = require('electron-json-storage');
 
+// https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209
+let {PythonShell} = require('python-shell');
+
 
 // Keep a global reference of each window object; if we don't, the window will
 // be closed automatically when the JavaScript object is garbage-collected.
@@ -151,15 +154,17 @@ ipcMain.on(
                 // unbuffered (-u) flag (python -u python_script.py); sticking with
                 // 'inherit' for now as it's simplest and produces the most
                 // faithful output in a limited set of experiments
-                const runScenarioPythonChild = require('child_process').spawn(
-                    'python',
-                    [PyScriptPath, '--scenario', userRequestedScenarioName],
-                    {
-                        cwd: gridPathDirectoryPath,
-                        stdio: 'inherit',
-                        shell: true
-                    }
-                );
+                const runScenarioPythonChild =
+                    require('child_process').spawn(
+                        '/Users/ana/.pyenv/versions/gridpath-3.7.2/bin/python',
+                        [PyScriptPath, '--scenario',
+                            userRequestedScenarioName],
+                        {
+                            cwd: gridPathDirectoryPath,
+                            stdio: 'inherit',
+                            shell: true
+                        }
+                    );
                 // runScenarioPythonChild.stdout.on('data', function(data) {
                 //     console.log('stdout: ' + data.toString());
                 // });
