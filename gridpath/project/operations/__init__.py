@@ -98,8 +98,10 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :return:
     """
 
-    # Get column names as a few columns will be optional; won't load data if column does not exist
-    with open(os.path.join(scenario_directory, "inputs", "projects.tab")) as prj_file:
+    # Get column names as a few columns will be optional;
+    # won't load data if column does not exist
+    with open(os.path.join(scenario_directory, "inputs", "projects.tab")
+              ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t")
         headers = next(reader)
 
@@ -264,7 +266,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         data_portal.data()["STARTUP_FUEL_PROJECTS"] = {
             None: determine_startup_fuel_projects()[0]
         }
-        data_portal.data()["startup_fuel_mmbtu_per_mw"] = determine_startup_fuel_projects()[1]
+        data_portal.data()["startup_fuel_mmbtu_per_mw"] = \
+            determine_startup_fuel_projects()[1]
     else:
         pass
 
