@@ -768,7 +768,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                         "shutdown_plus_ramp_down_rate",
                         "ramp_up_when_on_rate",
                         "ramp_down_when_on_rate",
-                        "min_up_time_hours", "min_down_time_hours"]
+                        "min_up_time_hours",
+                        "min_down_time_hours"]
     used_columns = [c for c in optional_columns if c in header]
 
     dynamic_components = \
@@ -797,9 +798,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "startup_plus_ramp_up_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "startup_plus_ramp_up_rate"]
-                       ):
+                       dynamic_components["startup_plus_ramp_up_rate"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
             else:
@@ -811,9 +810,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "shutdown_plus_ramp_down_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "shutdown_plus_ramp_down_rate"]
-                       ):
+                       dynamic_components["shutdown_plus_ramp_down_rate"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
             else:
@@ -825,9 +822,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
-                       ):
+                       dynamic_components["ramp_up_when_on_rate"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
@@ -839,9 +834,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
-                       ):
+                       dynamic_components["ramp_down_when_on_rate"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
@@ -854,9 +847,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "min_up_time_hours" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "min_up_time_hours"]
-                       ):
+                       dynamic_components["min_up_time_hours"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 min_up_time[row[0]] = int(row[2])
             else:
@@ -868,9 +859,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "min_down_time_hours" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "min_down_time_hours"]
-                       ):
+                       dynamic_components["min_down_time_hours"]):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 min_down_time[row[0]] = int(row[2])
             else:

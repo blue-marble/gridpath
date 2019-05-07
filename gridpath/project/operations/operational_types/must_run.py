@@ -3,7 +3,8 @@
 
 """
 This module describes the operations of must-run generators. These
-generators can provide power but not reserves.
+generators can provide power but always operate at max capacity.
+They cannot provide reserves.
 """
 
 from pyomo.environ import Constraint, Set

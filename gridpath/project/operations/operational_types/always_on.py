@@ -363,9 +363,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
-                       ):
+                       dynamic_components["ramp_up_when_on_rate"]):
             if row[1] == "always_on" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
             else:
@@ -377,9 +375,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
-                       ):
+                       dynamic_components["ramp_down_when_on_rate"]):
             if row[1] == "always_on" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
             else:
