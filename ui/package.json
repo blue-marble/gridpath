@@ -31,6 +31,7 @@
   "dependencies": {
     "better-sqlite3": "^5.4.0",
     "electron-json-storage": "^4.1.6",
+    "python-shell": "^1.0.7",
     "sqlite3": "^4.0.6"
   },
   "devDependencies": {

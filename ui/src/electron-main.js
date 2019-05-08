@@ -38,6 +38,30 @@ function createMainWindow () {
         mainWindow = null
     });
 
+
+    let options = {
+        pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+        scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+    };
+    PythonShell.run(
+        'flask_local_server.py',
+         options,
+        function (err) {
+            if (err) throw err;
+            console.log('finished');
+        }
+    );
+
+    // require('child_process').spawn(
+    //                     '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+    //                     [PyScriptPath, '--scenario',
+    //                         userRequestedScenarioName],
+    //                     {
+    //                         cwd: gridPathDirectoryPath,
+    //                         stdio: 'inherit',
+    //                         shell: true
+    //                     }
+    //                 );
 }
 
 

@@ -61,10 +61,14 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
+def main(args):
+    print(args)
 
     get_scenario_inputs.main(args=args)
     run_scenario.main(args=args)
     import_scenario_results.main(args=args)
     process_results.main(args=args)
+
+
+if __name__ == "__main__":
+    main(args=sys.argv[1:])

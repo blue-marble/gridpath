@@ -305,14 +305,19 @@ def solve(instance, parsed_arguments):
     :return:
     """
     # Get solver and solve
+    import pyutilib.subprocess.GlobalData
+    pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
     solver = SolverFactory(parsed_arguments.solver)
+    solver.options['threads'] = 6
+    solver.options['lpmethod'] = 4
 
     if not parsed_arguments.quiet:
         print("Solving...")
     results = solver.solve(instance,
                            tee=parsed_arguments.mute_solver_output,
                            keepfiles=parsed_arguments.keepfiles,
-                           symbolic_solver_labels=parsed_arguments.symbolic
+                           symbolic_solver_labels=parsed_arguments.symbolic,
+                           use_signal_handling=False
                            )
     return results
 
