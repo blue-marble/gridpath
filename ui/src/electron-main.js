@@ -8,6 +8,8 @@ const storage = require('electron-json-storage');
 // https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209
 let {PythonShell} = require('python-shell');
 
+// // Socket IO
+const io = require('socket.io-client');
 
 // Keep a global reference of each window object; if we don't, the window will
 // be closed automatically when the JavaScript object is garbage-collected.
@@ -38,7 +40,7 @@ function createMainWindow () {
         mainWindow = null
     });
 
-
+    // Start Flask server
     let options = {
         pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
         scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
@@ -52,16 +54,16 @@ function createMainWindow () {
         }
     );
 
-    // require('child_process').spawn(
-    //                     '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-    //                     [PyScriptPath, '--scenario',
-    //                         userRequestedScenarioName],
-    //                     {
-    //                         cwd: gridPathDirectoryPath,
-    //                         stdio: 'inherit',
-    //                         shell: true
-    //                     }
-    //                 );
+    // Send message to server
+    const socket = io.connect('http://localhost:8080/');
+    socket.on('connect', function() {
+        console.log(`Connection established: ${socket.connected}`); //make
+        // sure the connection is established
+    });
+
+    socket.on('message', function(message){
+        console.log(message + 'message received');
+    });
 }
 
 
