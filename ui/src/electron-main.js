@@ -40,30 +40,19 @@ function createMainWindow () {
         mainWindow = null
     });
 
-    // Start Flask server
-    let options = {
-        pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-        scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
-    };
-    PythonShell.run(
-        'flask_local_server.py',
-         options,
-        function (err) {
-            if (err) throw err;
-            console.log('finished');
-        }
-    );
-
-    // Send message to server
-    const socket = io.connect('http://localhost:8080/');
-    socket.on('connect', function() {
-        console.log(`Connection established: ${socket.connected}`); //make
-        // sure the connection is established
-    });
-
-    socket.on('message', function(message){
-        console.log(message + 'message received');
-    });
+    // // Start Flask server
+    // let options = {
+    //     pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+    //     scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+    // };
+    // PythonShell.run(
+    //     'flask_local_server.py',
+    //      options,
+    //     function (err) {
+    //         if (err) throw err;
+    //         console.log('finished');
+    //     }
+    // );
 }
 
 
@@ -159,50 +148,66 @@ ipcMain.on(
     (event, userRequestedScenarioName) => {
         console.log(`Received user request for ${userRequestedScenarioName}`);
 
-        storage.get(
-            'gridPathDirectory',
-            (error, data) => {
-                if (error) throw error;
-                const gridPathDirectoryPath = data['gridPathDirectory'][0];
-                        // Spawn Python process
-                console.log(`Running ${userRequestedScenarioName}...`);
-                console.log(gridPathDirectoryPath);
+        // Send message to server to run scenario
+        // Connect
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        // Emit run_scenario event
+        socket.emit('_run_scenario', {scenario: userRequestedScenarioName});
+        // socket.on('_run_scenario', function(event, message){
+        //     console.log(userRequestedScenarioName + ' sent to' +
+        //         ' server?');
+        //     message = userRequestedScenarioName
+        // });
 
-                const PyScriptPath = path.join(gridPathDirectoryPath, 'run_start_to_end.py');
-                console.log(PyScriptPath);
-                // Spawn a python child process
-                // Options:
-                // 1) cwd changes directory to the root
-                // 2) setting stdio to 'inherit' in order to display child process
-                // stdout output 'live' (it's buffered otherwise); other options I
-                // found include flushing stdout with sys.stdout.flush() in the
-                // Python code or spawning the Python child process with the
-                // unbuffered (-u) flag (python -u python_script.py); sticking with
-                // 'inherit' for now as it's simplest and produces the most
-                // faithful output in a limited set of experiments
-                const runScenarioPythonChild =
-                    require('child_process').spawn(
-                        '/Users/ana/.pyenv/versions/gridpath-3.7.2/bin/python',
-                        [PyScriptPath, '--scenario',
-                            userRequestedScenarioName],
-                        {
-                            cwd: gridPathDirectoryPath,
-                            stdio: 'inherit',
-                            shell: true
-                        }
-                    );
-                // runScenarioPythonChild.stdout.on('data', function(data) {
-                //     console.log('stdout: ' + data.toString());
-                // });
-                // runScenarioPythonChild.stderr.on('data', function(data) {
-                //     console.log('stderr: ' + data.toString());
-                // });
-                runScenarioPythonChild.on('close', function(code) {
-                    console.log('Python process closing code: ' + code.toString());
-                });
-
-                }
-        );
+        //
+        // storage.get(
+        //     'gridPathDirectory',
+        //     (error, data) => {
+        //         if (error) throw error;
+        //         const gridPathDirectoryPath = data['gridPathDirectory'][0];
+        //                 // Spawn Python process
+        //         console.log(`Running ${userRequestedScenarioName}...`);
+        //         console.log(gridPathDirectoryPath);
+        //
+        //         const PyScriptPath = path.join(gridPathDirectoryPath, 'run_start_to_end.py');
+        //         console.log(PyScriptPath);
+        //         // Spawn a python child process
+        //         // Options:
+        //         // 1) cwd changes directory to the root
+        //         // 2) setting stdio to 'inherit' in order to display child process
+        //         // stdout output 'live' (it's buffered otherwise); other options I
+        //         // found include flushing stdout with sys.stdout.flush() in the
+        //         // Python code or spawning the Python child process with the
+        //         // unbuffered (-u) flag (python -u python_script.py); sticking with
+        //         // 'inherit' for now as it's simplest and produces the most
+        //         // faithful output in a limited set of experiments
+        //         const runScenarioPythonChild =
+        //             require('child_process').spawn(
+        //                 '/Users/ana/.pyenv/versions/gridpath-3.7.2/bin/python',
+        //                 [PyScriptPath, '--scenario',
+        //                     userRequestedScenarioName],
+        //                 {
+        //                     cwd: gridPathDirectoryPath,
+        //                     stdio: 'inherit',
+        //                     shell: true
+        //                 }
+        //             );
+        //         // runScenarioPythonChild.stdout.on('data', function(data) {
+        //         //     console.log('stdout: ' + data.toString());
+        //         // });
+        //         // runScenarioPythonChild.stderr.on('data', function(data) {
+        //         //     console.log('stderr: ' + data.toString());
+        //         // });
+        //         runScenarioPythonChild.on('close', function(code) {
+        //             console.log('Python process closing code: ' + code.toString());
+        //         });
+        //
+        //         }
+        // );
     }
 );
 
