@@ -10,8 +10,15 @@ They cannot provide reserves.
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
+#TODO don't allow for specifying a zone for any of the reserve types. Currently
+#  this is possible and lets the project provide unconstrained reserves
+#  since these reserves don't show up in any of the constraints here
+#  Can also add constraint that ensures sum of all headroom/footroom
+#  variables is zero.
 def add_module_specific_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding the components to
@@ -32,6 +39,30 @@ def add_module_specific_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.MUST_RUN_GENERATORS))
+
+    # TODO: simply eliminate this through input validation?
+    #  i.e. can't specify reserve zone if 'must_run' type
+    def no_upwards_reserve_rule(mod, g, tmp):
+        if getattr(d, headroom_variables)[g]:
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, headroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Must_Run_No_Upwards_Reserves_Constraint = Constraint(
+            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_upwards_reserve_rule)
+
+    # TODO: simply eliminate this through input validation?
+    #  i.e. can't specify reserve zone if 'must_run' type
+    def no_downwards_reserve_rule(mod, g, tmp):
+        if getattr(d, footroom_variables)[g]:
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, footroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Must_Run_No_Downwards_Reserves_Constraint = Constraint(
+            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_downwards_reserve_rule)
 
 
 def power_provision_rule(mod, g, tmp):

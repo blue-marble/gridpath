@@ -484,7 +484,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 0.4
         }
         actual_min_stable_fraction = {
-            prj: instance.disp_cap_commit_min_stable_level_fraction[prj]
+            prj: instance.dispcapcommit_min_stable_level_fraction[prj]
             for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
         }
         self.assertDictEqual(expected_min_stable_fraction,
@@ -527,13 +527,13 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_New": 0.8, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
-        actual_ramp_down_when_on_rate = {
+        actual_ramp_up_when_on_rate = {
             prj: instance.dispcapcommit_ramp_up_when_on_rate[
                 prj]
             for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
-                             actual_ramp_down_when_on_rate
+                             actual_ramp_up_when_on_rate
                              )
         
         # Param: dispcapcommit_ramp_down_when_on_rate

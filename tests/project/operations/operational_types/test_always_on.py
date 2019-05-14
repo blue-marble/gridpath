@@ -154,13 +154,13 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
         expected_ramp_up_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
-        actual_ramp_down_when_on_rate = {
+        actual_ramp_up_when_on_rate = {
             prj: instance.always_on_ramp_up_rate[
                 prj]
             for prj in instance.ALWAYS_ON_GENERATORS
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
-                             actual_ramp_down_when_on_rate
+                             actual_ramp_up_when_on_rate
                              )
 
         # Param: always_on_ramp_down_rate

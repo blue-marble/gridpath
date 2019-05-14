@@ -3,9 +3,8 @@
 
 """
 This module describes the operations of always-on generators. These are
-generators that are always  committed but can ramp up and down between a
-minimum stable level above 0 and full output. Always-on generators cannot
-provide operating reserves.
+generators that are always committed but can ramp up and down between a
+minimum stable level above 0 and full output.
 """
 from __future__ import division
 
@@ -16,6 +15,8 @@ from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -53,19 +54,30 @@ def add_module_specific_components(m, d):
     p}`
 
 
-    """    
+    """
+    # Sets
     m.ALWAYS_ON_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=generator_subset_init(
             "operational_type", "always_on"
         )
     )
+
+    m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                if g in mod.ALWAYS_ON_GENERATORS))
+
+    # Params
     m.always_on_min_stable_level_fraction = \
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction)
+
     m.always_on_unit_size_mw = \
         Param(m.ALWAYS_ON_GENERATORS, within=NonNegativeReals)
-    
-    # Ramp rates can be optionally specified and will default to 1 if not
+
+    # Ramp rates are optional. If not provided by user they will default to 1
+    # and will be ignored in the ramp rate constraints
     m.always_on_ramp_up_rate = \
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction,
               default=1)
@@ -73,28 +85,59 @@ def add_module_specific_components(m, d):
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction,
               default=1)
 
-    # Operational timepoints
-    m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.ALWAYS_ON_GENERATORS))
-
     # Variables
     m.Provide_Power_AlwaysOn_MW = Var(
-        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
-    )
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals)
 
-    def min_power_rule(mod, g, tmp):
+    # Expressions
+    m.AlwaysOn_Ramp_MW = Expression(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_rule)
+
+    def upwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, headroom_variables)[g])
+    m.AlwaysOn_Upwards_Reserves_MW = Expression(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=upwards_reserve_rule)
+
+    def downwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, footroom_variables)[g])
+    m.AlwaysOn_Downwards_Reserves_MW = Expression(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=downwards_reserve_rule)
+
+    # Operational Constraints
+    def max_power_rule(mod, g, tmp):
         """
-        Always-on generators must provide power at at least minimum stable 
-        level at all times
+        Power plus upward services cannot exceed capacity.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
+            <= mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.availability_derate[g, mod.horizon[tmp]]
+    m.AlwaysOn_Max_Power_Constraint = \
+        Constraint(
+            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=max_power_rule
+        )
+
+    def min_power_rule(mod, g, tmp):
+        """
+        Power minus downward services cannot be below the minimum stable
+        level at all time
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            - mod.AlwaysOn_Downwards_Reserves_MW[g, tmp] \
             >= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.availability_derate[g, mod.horizon[tmp]] \
             * mod.always_on_min_stable_level_fraction[g]
@@ -104,30 +147,8 @@ def add_module_specific_components(m, d):
             rule=min_power_rule
         )
 
-    def max_power_rule(mod, g, tmp):
-        """
-        Power provision can't exceed capacity
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
-            <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]]
-    m.AlwaysOn_Max_Power_Constraint = \
-        Constraint(
-            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=max_power_rule
-        )
-
-    # Optional ramp constraints
-    # Constrain ramps
-    m.Always_On_Ramp_MW = Expression(
-        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_rule
-    )
-
+    # Optional Constraint - if ramps not provided, they will default to a large
+    # value that results in the constraint being skipped
     def ramp_up_rule(mod, g, tmp):
         """
 
@@ -142,18 +163,23 @@ def add_module_specific_components(m, d):
         elif mod.always_on_ramp_up_rate[g] == 1:
             return Constraint.Skip
         else:
-            return mod.Always_On_Ramp_MW[g, tmp] \
+            return mod.AlwaysOn_Ramp_MW[g, tmp] \
+                   + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
+                   + mod.AlwaysOn_Downwards_Reserves_MW[
+                       g, mod.previous_timepoint[tmp]] \
                    <= \
                    mod.always_on_ramp_up_rate[g] \
                    * mod.Capacity_MW[g, mod.period[tmp]] \
                    * mod.availability_derate[g, mod.horizon[tmp]]
 
-    m.Always_On_Ramp_Up_Constraint = \
+    m.AlwaysOn_Ramp_Up_Constraint = \
         Constraint(
             m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=ramp_up_rule
         )
 
+    # Optional Constraint - if ramps not provided, they will default to a large
+    # value that results in the constraint being skipped
     def ramp_down_rule(mod, g, tmp):
         """
 
@@ -168,13 +194,16 @@ def add_module_specific_components(m, d):
         elif mod.always_on_ramp_down_rate[g] == 1:
             return Constraint.Skip
         else:
-            return mod.Always_On_Ramp_MW[g, tmp] \
+            return mod.AlwaysOn_Ramp_MW[g, tmp] \
+                   - mod.AlwaysOn_Downwards_Reserves_MW[g, tmp] \
+                   - mod.AlwaysOn_Upwards_Reserves_MW[
+                       g, mod.previous_timepoint[tmp]] \
                    >= \
                    - mod.always_on_ramp_down_rate[g] \
                    * mod.Capacity_MW[g, mod.period[tmp]] \
                    * mod.availability_derate[g, mod.horizon[tmp]]
 
-    m.Always_On_Ramp_Down_Constraint = \
+    m.AlwaysOn_Ramp_Down_Constraint = \
         Constraint(
             m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=ramp_down_rule
@@ -325,6 +354,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     unit_size_mw = dict()
     min_stable_fraction = dict()
+
     # Ramp rate limits are optional, will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
@@ -383,3 +413,143 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "always_on_ramp_down_rate"] = \
             ramp_down_rate
+
+
+# TODO: remove this since redundant with dispatch_all?
+def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+    """
+
+    :param scenario_directory:
+    :param horizon:
+    :param stage:
+    :param mod:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, horizon, stage, "results",
+                           "dispatch_always_on.csv"), "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "technology", "load_zone", "power_mw"
+                         ])
+
+        for (p, tmp) \
+                in mod. \
+                ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                mod.period[tmp],
+                mod.horizon[tmp],
+                tmp,
+                mod.horizon_weight[mod.horizon[tmp]],
+                mod.number_of_hours_in_timepoint[tmp],
+                mod.technology[p],
+                mod.load_zone[p],
+                value(mod.Provide_Power_AlwaysOn_MW[p, tmp])
+            ])
+
+
+# TODO: remove this since redundant with dispatch_all?
+def import_module_specific_results_to_database(
+        scenario_id, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("project dispatch always on")
+    # dispatch_always_on.csv
+    c.execute(
+        """DELETE FROM results_project_dispatch_always_on
+        WHERE scenario_id = {};""".format(
+            scenario_id
+        )
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS
+        temp_results_project_dispatch_always_on"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_project_dispatch_always_on"""
+        + str(scenario_id) + """(
+            scenario_id INTEGER,
+            project VARCHAR(64),
+            period INTEGER,
+            horizon INTEGER,
+            timepoint INTEGER,
+            horizon_weight FLOAT,
+            number_of_hours_in_timepoint FLOAT,
+            load_zone VARCHAR(32),
+            technology VARCHAR(32),
+            power_mw FLOAT,
+            PRIMARY KEY (scenario_id, project, timepoint)
+                );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(
+            results_directory, "dispatch_always_on.csv"), "r") \
+            as cc_dispatch_file:
+        reader = csv.reader(cc_dispatch_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            horizon_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[7]
+            technology = row[6]
+            power_mw = row[8]
+            c.execute(
+                """INSERT INTO temp_results_project_dispatch_always_on"""
+                + str(scenario_id) + """
+                    (scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    {});""".format(
+                    scenario_id, project, period, horizon, timepoint,
+                    horizon_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_project_dispatch_always_on
+        (scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw)
+        SELECT
+        scenario_id, project, period, horizon, timepoint,
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw
+        FROM temp_results_project_dispatch_always_on""" + str(
+            scenario_id) + """
+            ORDER BY scenario_id, project, timepoint;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_project_dispatch_always_on""" + str(
+            scenario_id) +
+        """;"""
+    )
+    db.commit()

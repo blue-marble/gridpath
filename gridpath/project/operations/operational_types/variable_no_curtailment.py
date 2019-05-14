@@ -10,10 +10,12 @@ from builtins import zip
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals
+from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
-from gridpath.auxiliary.auxiliary import generator_subset_init, is_number
+from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -41,6 +43,30 @@ def add_module_specific_components(m, d):
     m.cap_factor_no_curtailment = Param(
         m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
+
+    # TODO: simply eliminate this through input validation?
+    #  i.e. can't specify reserve zone if 'variable_no_curtailment' type
+    def no_upwards_reserve_rule(mod, g, tmp):
+        if getattr(d, headroom_variables)[g]:
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, headroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Variable_No_Curtailment_No_Upwards_Reserves_Constraint = Constraint(
+            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_upwards_reserve_rule)
+
+    # TODO: simply eliminate this through input validation?
+    #  i.e. can't specify reserve zone if 'variable_no_curtailment' type
+    def no_downwards_reserve_rule(mod, g, tmp):
+        if getattr(d, footroom_variables)[g]:
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, footroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Variable_No_Curtailment_No_Downwards_Reserves_Constraint = Constraint(
+            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_downwards_reserve_rule)
 
 
 # Operations

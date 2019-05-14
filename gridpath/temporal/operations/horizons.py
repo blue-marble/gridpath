@@ -104,11 +104,26 @@ def add_model_components(m, d):
 
     # Determine the previous timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
-    # TIMEPONTS set to increment by 1
+    # TIMEPOINTS set to increment by 1
     m.previous_timepoint = \
         Param(m.TIMEPOINTS,
               initialize=previous_timepoint_init)
 
+    # Determine the next timepoint for each timepoint; depends on
+    # whether horizon is circular or linear and relies on having ordered
+    # TIMEPOINTS set to increment by 1
+    m.next_timepoint = \
+        Param(m.TIMEPOINTS,
+              initialize=next_timepoint_init)
+
+    # TODO: removed since not used? Start of horizon might not matter if using
+    #  circular boundary so this is not a surefire way to assist the minup/down
+    #  constraints
+    # Determine the numger of hours elapsed since the start of the horizon
+    # for each timepoint.
+    m.hours_elapsed_since_horizon_start = \
+        Param(m.TIMEPOINTS,
+              initialize=hours_elapsed_since_horizon_start_init)
 
 def previous_timepoint_init(mod, tmp):
     """
@@ -121,7 +136,7 @@ def previous_timepoint_init(mod, tmp):
     then the previous timepoint is the last timepoint of the respective
     horizon. If the timepoint is the first timepoint of a horizon and the
     horizon boundary is linear, then no previous timepoint is defined. In all
-    other cases, the previous timepoints is the one with an index of tmp-1.
+    other cases, the previous timepoint is the one with an index of tmp-1.
     """
     prev_tmp_dict = {}
     for tmp in mod.TIMEPOINTS:
@@ -144,6 +159,69 @@ def previous_timepoint_init(mod, tmp):
                 list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)-1]
 
     return prev_tmp_dict
+
+
+def next_timepoint_init(mod, tmp):
+    """
+    :param mod:
+    :param tmp:
+    :return:
+
+    Determine the next timepoint for each timepoint. If the timepoint is
+    the last timepoint of a horizon and the horizon boundary is circular,
+    then the next timepoint is the first timepoint of the respective
+    horizon. If the timepoint is the last timepoint of a horizon and the
+    horizon boundary is linear, then no next timepoint is defined. In all
+    other cases, the next timepoint is the one with an index of tmp+1.
+    """
+    # TODO: can we make this determination more robust than adding 1 or
+    #  should we require a data check to ensure TIMEPOINTS ordered set has
+    #  increments of 1 only? Perhaps we should use the same approach as wth
+    #  previous_period and use the timepoint list index not its actual ID.
+    next_tmp_dict = {}
+    for tmp in mod.TIMEPOINTS:
+        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
+            if mod.boundary[mod.horizon[tmp]] == "circular":
+                next_tmp_dict[tmp] = \
+                    mod.first_horizon_timepoint[mod.horizon[tmp]]
+            elif mod.boundary[mod.horizon[tmp]] == "linear":
+                next_tmp_dict[tmp] = None
+            else:
+                raise ValueError(
+                    "Invalid boundary value '{}' for horizon '{}'".
+                    format(
+                        mod.boundary[mod.horizon[tmp]], mod.horizon[tmp])
+                    + "\n" +
+                    "Horizon boundary must be either 'circular' or 'linear'"
+                )
+        else:
+            next_tmp_dict[tmp] = tmp+1
+
+    return next_tmp_dict
+
+
+# TODO: removed since not used? Start of horizon might not matter if using
+#  circular boundary so this is not a surefire way to assist the minup/down
+#  constraints
+def hours_elapsed_since_horizon_start_init(mod, tmp):
+    """
+    Returns the hours that have elapsed since the start of the horizon for
+    each timepoint.
+    The elapsed time counts from the *end* of the timepoint. So a horizon's
+    first timepoint with a hours_in_timepoint equal to 2 would have an
+    hours_elapsed_since_horizon_start of 2 hours.
+    :param mod:
+    :param tmp:
+    :return:
+    """
+    results_dict = {}
+    hour_count = 0
+    for tmp in mod.TIMEPOINTS:
+        hour_count += mod.number_of_hours_in_timepoint[tmp]
+        results_dict[tmp] = hour_count
+        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
+            hour_count = 0
+    return results_dict
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):

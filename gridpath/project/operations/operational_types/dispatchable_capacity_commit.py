@@ -40,7 +40,7 @@ def add_module_specific_components(m, d):
     :math:`CCG\_OT`).
 
     We define several operational parameters over :math:`CCG`: \n
-    *disp_cap_commit_min_stable_level_fraction* \ :sub:`ccg`\ -- the minimum
+    *dispcapcommit_min_stable_level_fraction* \ :sub:`ccg`\ -- the minimum
     stable level of the project, defined as a fraction of its
     capacity \n
     *unit_size_mw* \ :sub:`ccg`\ -- the unit size for the
@@ -85,7 +85,7 @@ def add_module_specific_components(m, d):
 
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
                            within=NonNegativeReals)
-    m.disp_cap_commit_min_stable_level_fraction = \
+    m.dispcapcommit_min_stable_level_fraction = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction)
     m.dispcapcommit_startup_plus_ramp_up_rate = \
@@ -165,7 +165,7 @@ def add_module_specific_components(m, d):
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, footroom_variables)[g]) \
             >= mod.Commit_Capacity_MW[g, tmp] \
-            * mod.disp_cap_commit_min_stable_level_fraction[g]
+            * mod.dispcapcommit_min_stable_level_fraction[g]
     m.DispCapCommit_Min_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -318,7 +318,7 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         elif mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 \
                 and mod.dispcapcommit_ramp_up_when_on_rate[g] >= \
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
+                (1-mod.dispcapcommit_min_stable_level_fraction[g]):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
@@ -422,7 +422,7 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         elif (mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] == 1 and
               mod.dispcapcommit_ramp_down_when_on_rate[g] >=
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
+                (1-mod.dispcapcommit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
@@ -682,7 +682,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                 (mod.Commit_Capacity_MW[g, tmp]
-                 * mod.disp_cap_commit_min_stable_level_fraction[g])
+                 * mod.dispcapcommit_min_stable_level_fraction[g])
                ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
     else:
         raise ValueError(error_message)
@@ -791,7 +791,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
             pass
 
     data_portal.data()["unit_size_mw"] = unit_size_mw
-    data_portal.data()["disp_cap_commit_min_stable_level_fraction"] = \
+    data_portal.data()["dispcapcommit_min_stable_level_fraction"] = \
         min_stable_fraction
 
     # Ramp rate limits are optional, will default to 1 if not specified

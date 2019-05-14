@@ -178,7 +178,9 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return mod.Commit_Continuous[g, tmp] * mod.minimum_input_mmbtu_per_hr[g] \
+        return mod.Commit_Continuous[g, tmp] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispContinuousCommit_MW[g, tmp] -
                (mod.Commit_Continuous[g, tmp]
                 * mod.Capacity_MW[g, mod.period[tmp]]
