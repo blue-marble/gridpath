@@ -287,7 +287,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
     # Return the objective function value (in 'testing' mode,
     # the value gets checked against the expected value)
-    return round(instance.Total_Cost(), 2)
+    return instance.Total_Cost()
 
 
 def run_scenario(structure, parsed_arguments):
@@ -595,12 +595,18 @@ def save_objective_function_value(scenario_directory, horizon, stage, instance
     :param instance:
     :return:
     """
+    objective_function_value = instance.Total_Cost()
+
+    # Round objective function value of test examples
+    if os.path.dirname(scenario_directory)[-8:] == 'examples':
+        objective_function_value = round(objective_function_value, 2)
+
     with open(os.path.join(
             scenario_directory, horizon, stage, "results",
             "objective_function_value.txt"),
             "w") as objective_file:
         objective_file.write(
-            "Objective function: " + str(round(instance.Total_Cost(), 2))
+            "Objective function: " + str(objective_function_value)
         )
 
 
@@ -615,7 +621,6 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
 
     Save the duals of various constraints.
     """
-
     instance.constraint_indices = {}
     for m in loaded_modules:
         if hasattr(m, "save_duals"):
@@ -714,7 +719,7 @@ def parse_arguments(arguments):
 
     # Flag for test runs (various changes in behavior)
     parser.add_argument("--testing", default=False, action="store_true",
-                        help="Flag for test suite runs. Results not saved.")
+                        help="Flag for test suite runs.")
 
     # Parse arguments
     parsed_arguments = parser.parse_args(args=arguments)
