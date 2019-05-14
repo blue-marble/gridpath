@@ -1,0 +1,10 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_dispbincommit_short3* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                 42.0          100.0
