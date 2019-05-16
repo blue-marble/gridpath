@@ -36,11 +36,6 @@ def add_model_components(m, d):
 
     .. TODO:: we need to check there are no exceptions to the above statement
 
-    .. warning:: The *TIMEPOINTS* set must have increments of 1, for the
-        calculations of previous timepoint to work in the **horizons** module.
-    .. TODO:: see warning above and todo in horizons module; we need to
-        enforce increments of 1 or come up with a more robust method for
-        determining previous timepoint
     """
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
     m.number_of_hours_in_timepoint = \
