@@ -116,14 +116,6 @@ def add_model_components(m, d):
         Param(m.TIMEPOINTS,
               initialize=next_timepoint_init)
 
-    # TODO: removed since not used? Start of horizon might not matter if using
-    #  circular boundary so this is not a surefire way to assist the minup/down
-    #  constraints
-    # Determine the numger of hours elapsed since the start of the horizon
-    # for each timepoint.
-    m.hours_elapsed_since_horizon_start = \
-        Param(m.TIMEPOINTS,
-              initialize=hours_elapsed_since_horizon_start_init)
 
 def previous_timepoint_init(mod, tmp):
     """
@@ -198,30 +190,6 @@ def next_timepoint_init(mod, tmp):
             next_tmp_dict[tmp] = tmp+1
 
     return next_tmp_dict
-
-
-# TODO: removed since not used? Start of horizon might not matter if using
-#  circular boundary so this is not a surefire way to assist the minup/down
-#  constraints
-def hours_elapsed_since_horizon_start_init(mod, tmp):
-    """
-    Returns the hours that have elapsed since the start of the horizon for
-    each timepoint.
-    The elapsed time counts from the *end* of the timepoint. So a horizon's
-    first timepoint with a hours_in_timepoint equal to 2 would have an
-    hours_elapsed_since_horizon_start of 2 hours.
-    :param mod:
-    :param tmp:
-    :return:
-    """
-    results_dict = {}
-    hour_count = 0
-    for tmp in mod.TIMEPOINTS:
-        hour_count += mod.number_of_hours_in_timepoint[tmp]
-        results_dict[tmp] = hour_count
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
-            hour_count = 0
-    return results_dict
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
