@@ -257,9 +257,28 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
 
     """
 
-    # Log optimization run
-    stdout_original = sys.stdout  # Save stdout so we can return to it later
-    log_run(scenario_directory, horizon, stage, parsed_arguments)
+    # If directed to do so, log optimization run
+    if parsed_arguments.log:
+        logs_directory = create_logs_directory_if_not_exists(
+            scenario_directory, horizon, stage)
+
+        # Save sys.stdout so we can return to it later
+        stdout_original = sys.stdout
+
+        # The print statement will call the write() method of any object
+        # you assign to sys.stdout (in this case the Logging object). The
+        # write method of Logging writes both to sys.stdout and a log file
+        # (see auxiliary/auxiliary.py)
+        sys.stdout = Logging(logs_dir=logs_directory)
+
+    # If directed, set temporary file directory to be the logs directory
+    # In conjunction with --keepfiles, this will write the solver solution
+    # files into the log directory (rather than a hidden temp folder).
+    # Use the --symbolic argument as well for best debugging results
+    if parsed_arguments.write_solver_files_to_logs_dir:
+        logs_directory = create_logs_directory_if_not_exists(
+            scenario_directory, horizon, stage)
+        TempfileManager.tempdir = logs_directory
 
     if not parsed_arguments.quiet:
         print("\nRunning optimization for scenario {}"
@@ -282,8 +301,10 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     summarize_results(scenario_directory, horizon, stage, loaded_modules,
                       dynamic_components, parsed_arguments)
 
-    # Return sys.stdout to original (i.e. stop writing to log file)
-    sys.stdout = stdout_original
+    # If logging, we need to return sys.stdout to original (i.e. stop writing
+    # to log file)
+    if parsed_arguments.log:
+        sys.stdout = stdout_original
 
     # Return the objective function value (in 'testing' mode,
     # the value gets checked against the expected value)
@@ -493,53 +514,71 @@ def solve(instance, parsed_arguments):
     # Get solver
     solver = SolverFactory(parsed_arguments.solver)
 
-    # Solve (results will be loaded into instance automatically)
+    # Solve
+    # Note: Pyomo moves the results to the instance object by default.
+    # If you want the results to stay into a results object, set the
+    # load_solutions argument to False:
+    # >>> results = solver.solve(instance, load_solutions=False)
+
     solver.solve(
         instance,
         tee=not parsed_arguments.mute_solver_output,
         keepfiles=parsed_arguments.keepfiles,
-        symbolic_solver_labels=parsed_arguments.symbolic,
-        load_solutions=True
+        symbolic_solver_labels=parsed_arguments.symbolic
     )
 
 
-def log_run(scenario_directory, horizon, stage, parsed_arguments):
+def create_logs_directory_if_not_exists(scenario_directory, horizon, stage):
     """
+    Create a logs directory if it doesn't exist already
     :param scenario_directory:
-    :param horizon: 
-    :param stage: 
-    :param parsed_arguments:
+    :param horizon:
+    :param stage:
     :return:
-
-    Log run output to a logs file and/or write temporary files in logs dir
     """
-    logs_directory = os.path.join(scenario_directory, horizon, stage,
-                                  "logs")
-
-    if (not os.path.exists(logs_directory)) and \
-            (parsed_arguments.write_solver_files_to_logs_dir or
-             parsed_arguments.log):
+    logs_directory = os.path.join(scenario_directory, horizon, stage, "logs")
+    if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
+    return logs_directory
 
-    # Set temporary file directory to be the logs directory
-    # In conjunction with --keepfiles, this will write the solver solution
-    # files into the log directory (rather than a hidden temp folder).
-    # Use the --symbolic argument as well for best debugging results
-    if parsed_arguments.write_solver_files_to_logs_dir:
-        TempfileManager.tempdir = logs_directory
-    else:
-        pass
-
-    # Log output to assigned destinations (terminal and a log file in the
-    # logs directory) if directed to do so
-    if parsed_arguments.log:
-        sys.stdout = Logging(logs_dir=logs_directory)
-        # The print statement will call the write() method of any object
-        # you assign to sys.stdout (in this case the Logging object). The
-        # write method of Logging writes both to sys.stdout and a log file
-        # see auxiliary/axiliary.py
-    else:
-        pass
+#
+# def log_run(scenario_directory, horizon, stage, parsed_arguments):
+#     """
+#     :param scenario_directory:
+#     :param horizon:
+#     :param stage:
+#     :param parsed_arguments:
+#     :return:
+#
+#     Log run output to a logs file and/or write temporary files in logs dir
+#     """
+#     logs_directory = os.path.join(scenario_directory, horizon, stage,
+#                                   "logs")
+#
+#     if (not os.path.exists(logs_directory)) and \
+#             (parsed_arguments.write_solver_files_to_logs_dir or
+#              parsed_arguments.log):
+#         os.makedirs(logs_directory)
+#
+#     # Set temporary file directory to be the logs directory
+#     # In conjunction with --keepfiles, this will write the solver solution
+#     # files into the log directory (rather than a hidden temp folder).
+#     # Use the --symbolic argument as well for best debugging results
+#     if parsed_arguments.write_solver_files_to_logs_dir:
+#         TempfileManager.tempdir = logs_directory
+#     else:
+#         pass
+#
+#     # Log output to assigned destinations (terminal and a log file in the
+#     # logs directory) if directed to do so
+#     if parsed_arguments.log:
+#         sys.stdout = Logging(logs_dir=logs_directory)
+#         # The print statement will call the write() method of any object
+#         # you assign to sys.stdout (in this case the Logging object). The
+#         # write method of Logging writes both to sys.stdout and a log file
+#         # see auxiliary/axiliary.py
+#     else:
+#         pass
 
 
 def export_results(scenario_directory, horizon, stage, instance,
