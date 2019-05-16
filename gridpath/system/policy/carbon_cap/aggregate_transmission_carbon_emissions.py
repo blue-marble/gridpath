@@ -9,7 +9,6 @@ from __future__ import division
 from __future__ import print_function
 
 from builtins import next
-from past.utils import old_div
 import csv
 import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
@@ -102,10 +101,9 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 z,
                 p,
                 float(m.carbon_cap_target_mmt[z, p]),
-                old_div(value(
-                    m.Total_Carbon_Emission_Imports_Tons[z, p]
-                ), 10**6),  # MMT
-                old_div(total_carbon_emissions_imports_degen_expr_rule(m, z, p), 10**6) # MMT
+                value(m.Total_Carbon_Emission_Imports_Tons[z, p]/10**6),  # MMT
+                total_carbon_emissions_imports_degen_expr_rule(m, z, p)/10**6
+                # MMT
             ])
 
 

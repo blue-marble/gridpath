@@ -16,7 +16,6 @@ from builtins import next
 from builtins import zip
 from builtins import str
 from builtins import range
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -300,7 +299,7 @@ def add_module_specific_components(m, d):
         ramp rate (expressed as fraction of capacity)
         Two components:
         1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
-        If we are turning generators on since the prevoius timepoint, we will
+        If we are turning generators on since the previous timepoint, we will
         allow the ramp of going from 0 to minimum stable level + some
         additional ramping : the dispcapcommit_startup_plus_ramp_up_rate
         parameter
@@ -317,16 +316,15 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif (mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 and
-              mod.dispcapcommit_ramp_up_when_on_rate[g] >=
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
+        elif mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 \
+                and mod.dispcapcommit_ramp_up_when_on_rate[g] >= \
+                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return old_div((
-                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]
-                   ), mod.number_of_hours_in_timepoint[tmp]) \
+                g, mod.previous_timepoint[tmp]]) \
+                / mod.number_of_hours_in_timepoint[tmp] \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -427,11 +425,10 @@ def add_module_specific_components(m, d):
                 (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return old_div((
-                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]
-                   ), mod.number_of_hours_in_timepoint[tmp]) \
+                g, mod.previous_timepoint[tmp]]) \
+                / mod.number_of_hours_in_timepoint[tmp] \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -514,8 +511,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(old_div(mod.dispcapcommit_min_up_time_hours[g],
-                               mod.number_of_hours_in_timepoint[tmp])) + 1):
+                           int(mod.dispcapcommit_min_up_time_hours[g] //
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -557,8 +554,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(old_div(mod.dispcapcommit_min_down_time_hours[g],
-                               mod.number_of_hours_in_timepoint[tmp])) + 1):
+                           int(mod.dispcapcommit_min_down_time_hours[g] //
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -681,7 +678,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (old_div(mod.Commit_Capacity_MW[g, tmp],mod.unit_size_mw[g])) \
+        return (mod.Commit_Capacity_MW[g, tmp] / mod.unit_size_mw[g]) \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                 (mod.Commit_Capacity_MW[g, tmp]
@@ -916,7 +913,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 mod.load_zone[p],
                 value(mod.Provide_Power_DispCapacityCommit_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
-                old_div(value(mod.Commit_Capacity_MW[p, tmp]),mod.unit_size_mw[p])
+                value(mod.Commit_Capacity_MW[p, tmp]) / mod.unit_size_mw[p]
             ])
 
 

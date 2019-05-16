@@ -88,7 +88,7 @@ def min_transmission_capacity_rule(mod, g, p):
     :param p:
     :return:
     """
-    return mod.New_Build_Transmission_Capacity_MW[g, p]
+    return -mod.New_Build_Transmission_Capacity_MW[g, p]
 
 
 def max_transmission_capacity_rule(mod, g, p):
@@ -120,7 +120,7 @@ def load_module_specific_data(m,
                               data_portal, scenario_directory, horizon, stage):
 
     # TODO: throw an error when a line of the 'new_build_transmission' capacity
-    # type is not found in new_build_transmission_vintage_costs.tab
+    #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",

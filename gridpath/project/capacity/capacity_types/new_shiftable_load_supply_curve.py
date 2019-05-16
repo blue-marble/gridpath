@@ -19,7 +19,6 @@ from __future__ import division
 
 from builtins import zip
 from builtins import range
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -120,10 +119,8 @@ def add_module_specific_components(m, d):
         :param p:
         :return:
         """
-        return old_div(
-            mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p],
-            mod.shiftable_load_supply_curve_min_duration[g]
-        )
+        return mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p] \
+            / mod.shiftable_load_supply_curve_min_duration[g]
 
     m.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW = Expression(
         m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,

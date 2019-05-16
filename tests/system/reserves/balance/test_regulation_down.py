@@ -76,7 +76,7 @@ class TestCosts(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test components initialized with expected data
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(

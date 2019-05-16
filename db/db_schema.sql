@@ -10,6 +10,7 @@ CREATE TABLE mod_horizon_boundary_types (
 horizon_boundary_type VARCHAR(16) PRIMARY KEY,
 description VARCHAR(128)
 );
+
 -- TODO: add descriptions
 INSERT INTO mod_horizon_boundary_types (horizon_boundary_type, description)
 VALUES
@@ -30,7 +31,8 @@ INSERT INTO mod_capacity_types (capacity_type)
 VALUES ('existing_gen_linear_economic_retirement'),
 ('existing_gen_binary_economic_retirement'),
 ('existing_gen_no_economic_retirement'), ('new_build_generator'),
-('new_build_storage'), ('storage_specified_no_economic_retirement');
+('new_build_storage'), ('new_shiftable_load_supply_curve'),
+('storage_specified_no_economic_retirement');
 
 -- Implemented operational types
 DROP TABLE IF EXISTS mod_operational_types;
@@ -53,7 +55,7 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 -- Timepoints
 -- These are the timepoints that go into the model, with horizons
 -- and periods specified
--- Usually, this a timepoint_scenario_id is a subset of a much larger set of
+-- Usually, this timepoint_scenario_id is a subset of a much larger set of
 -- timepoints
 DROP TABLE IF EXISTS subscenarios_temporal_timepoints;
 CREATE TABLE subscenarios_temporal_timepoints (

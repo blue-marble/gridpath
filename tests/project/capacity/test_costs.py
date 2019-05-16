@@ -70,7 +70,7 @@ class TestCapacityCosts(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-        Test that the data loaded are as expected
+        Test components initialized with data as expected
         :return:
         """
         m, data = add_components_and_load_data(
