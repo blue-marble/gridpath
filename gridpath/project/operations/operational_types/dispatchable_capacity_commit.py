@@ -69,13 +69,12 @@ def add_module_specific_components(m, d):
     Commit\_Capacity\_MW_{ccg,tmp}`
     """
 
-    # Sets and params
+    # Sets
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
         generator_subset_init("operational_type",
-                              "dispatchable_capacity_commit")
-    )
+                              "dispatchable_capacity_commit"))
 
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -83,11 +82,14 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
 
+    # Params - Required
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
                            within=NonNegativeReals)
     m.dispcapcommit_min_stable_level_fraction = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction)
+
+    # Params - Optional
     m.dispcapcommit_startup_plus_ramp_up_rate = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
@@ -100,6 +102,7 @@ def add_module_specific_components(m, d):
     m.dispcapcommit_ramp_down_when_on_rate = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
+
     m.dispcapcommit_min_up_time_hours = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=Integers, default=1)
@@ -107,18 +110,52 @@ def add_module_specific_components(m, d):
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=Integers, default=1)
 
-    # Variables
-    # Dispatch
+    # Variables - Required
     m.Provide_Power_DispCapacityCommit_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
-    # Commitment
     m.Commit_Capacity_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            within=NonNegativeReals
-            )
+            within=NonNegativeReals)
 
-    # Operational constraints
+    # Variables - Ramping (optional)
+
+    # We'll have separate treatment of ramps of:
+    # 1. generation that is online in both the current and previous timepoint
+    # 2. generation that is either started up or shut down since the previous
+    #   timepoint
+
+    # Ramp_Up_Startup_MW and Ramp_Down_Shutdown_MW must be able to take
+    # either positive or negative values, as they are both constrained by
+    # a product of a positive number and the difference committed capacity
+    # between the current and previous timepoints (which needs to be able to
+    # take on both positive values when turning units on and negative values
+    # when turning units off).
+    # They also need to be separate variables, as if they were combined,
+    # the only solution would be for there to be no startups/shutdowns
+    m.Ramp_Up_Startup_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=Reals)
+    m.Ramp_Down_Shutdown_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=Reals)
+    m.Ramp_Up_When_On_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
+    m.Ramp_Down_When_On_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonPositiveReals)
+
+    # Variables - Startup and Shutdown (optional)
+    # These are used to constrain minimum up and down time
+    m.DispCapCommit_Startup_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
+    m.DispCapCommit_Shutdown_MW = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
+
+    # Constraints
     def commit_capacity_constraint_rule(mod, g, tmp):
         """
         Can't commit more capacity than available in each timepoint.
@@ -130,10 +167,10 @@ def add_module_specific_components(m, d):
         return mod.Commit_Capacity_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.availability_derate[g, mod.horizon[tmp]]
-    m.Commit_Capacity_Constraint = \
-        Constraint(
+    m.Commit_Capacity_Constraint = Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=commit_capacity_constraint_rule)
+            rule=commit_capacity_constraint_rule
+    )
 
     def max_power_rule(mod, g, tmp):
         """
@@ -147,11 +184,10 @@ def add_module_specific_components(m, d):
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, headroom_variables)[g]) \
             <= mod.Commit_Capacity_MW[g, tmp]
-    m.DispCapCommit_Max_Power_Constraint = \
-        Constraint(
+    m.DispCapCommit_Max_Power_Constraint = Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=max_power_rule
-        )
+    )
 
     def min_power_rule(mod, g, tmp):
         """
@@ -166,48 +202,11 @@ def add_module_specific_components(m, d):
                 for c in getattr(d, footroom_variables)[g]) \
             >= mod.Commit_Capacity_MW[g, tmp] \
             * mod.dispcapcommit_min_stable_level_fraction[g]
-    m.DispCapCommit_Min_Power_Constraint = \
-        Constraint(
+    m.DispCapCommit_Min_Power_Constraint = Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=min_power_rule
-        )
-
-    # Optional
-    # Constrain ramps
-
-    # We'll have separate treatment of ramps of:
-    # generation that is online in both the current and the previous timepoint
-    # and of
-    # generation that is either started up or shut down since the previous
-    # timepoint
-
-    # Ramp_Up_Startup_MW and Ramp_Down_Shutdown_MW must be able to take
-    # either positive  or negative values, as they are both constrained by
-    # a product of a positive number and the difference committed capacity
-    # between the current and previous timepoints (which needs to be able to
-    # take on both positive values when turning units on and negative values
-    # when turning units off)
-    # They also need to be separate variables, as if they were combined,
-    # the only solution would be for there to be no startups/shutdowns
-    m.Ramp_Up_Startup_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=Reals
-    )
-    m.Ramp_Down_Shutdown_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=Reals
     )
 
-    m.Ramp_Up_When_On_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=NonNegativeReals
-    )
-    m.Ramp_Down_When_On_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=NonPositiveReals
-    )
-
-    # Startups and shutowns
     def ramp_up_off_to_on_constraint_rule(mod, g, tmp):
         """
         When turning on, generators can ramp up to a certain fraction of
@@ -321,9 +320,10 @@ def add_module_specific_components(m, d):
                 (1-mod.dispcapcommit_min_stable_level_fraction[g]):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
-                - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]) \
+            return \
+                (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+                 - mod.Provide_Power_DispCapacityCommit_MW[
+                    g, mod.previous_timepoint[tmp]]) \
                 / mod.number_of_hours_in_timepoint[tmp] \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
@@ -334,7 +334,6 @@ def add_module_specific_components(m, d):
         rule=ramp_up_constraint_rule
     )
 
-    # Ramp down
     def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
         """
         When turning off, generators can ramp down from a certain
@@ -425,9 +424,10 @@ def add_module_specific_components(m, d):
                 (1-mod.dispcapcommit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
-                - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]) \
+            return \
+                (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+                 - mod.Provide_Power_DispCapacityCommit_MW[
+                    g, mod.previous_timepoint[tmp]]) \
                 / mod.number_of_hours_in_timepoint[tmp] \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
@@ -435,17 +435,6 @@ def add_module_specific_components(m, d):
     m.DispCapCommit_Ramp_Down_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_constraint_rule
-    )
-
-    # Constrain up and down time
-    # Startup and shutdown variables, must be non-negative
-    m.DispCapCommit_Startup_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=NonNegativeReals
-    )
-    m.DispCapCommit_Shutdown_MW = Var(
-        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        within=NonNegativeReals
     )
 
     def startup_constraint_rule(mod, g, tmp):

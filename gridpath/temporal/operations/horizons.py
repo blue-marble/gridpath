@@ -166,10 +166,6 @@ def next_timepoint_init(mod, tmp):
     horizon boundary is linear, then no next timepoint is defined. In all
     other cases, the next timepoint is the one with an index of tmp+1.
     """
-    # TODO: can we make this determination more robust than adding 1 or
-    #  should we require a data check to ensure TIMEPOINTS ordered set has
-    #  increments of 1 only? Perhaps we should use the same approach as wth
-    #  previous_period and use the timepoint list index not its actual ID.
     next_tmp_dict = {}
     for tmp in mod.TIMEPOINTS:
         if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
@@ -187,7 +183,8 @@ def next_timepoint_init(mod, tmp):
                     "Horizon boundary must be either 'circular' or 'linear'"
                 )
         else:
-            next_tmp_dict[tmp] = tmp+1
+            next_tmp_dict[tmp] = \
+                list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)+1]
 
     return next_tmp_dict
 

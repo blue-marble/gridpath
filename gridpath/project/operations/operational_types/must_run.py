@@ -40,8 +40,8 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.MUST_RUN_GENERATORS))
 
-    # TODO: simply eliminate this through input validation?
-    #  i.e. can't specify reserve zone if 'must_run' type
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'must_run' type
     def no_upwards_reserve_rule(mod, g, tmp):
         if getattr(d, headroom_variables)[g]:
             return sum(getattr(mod, c)[g, tmp]
@@ -52,8 +52,8 @@ def add_module_specific_components(m, d):
             m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=no_upwards_reserve_rule)
 
-    # TODO: simply eliminate this through input validation?
-    #  i.e. can't specify reserve zone if 'must_run' type
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'must_run' type
     def no_downwards_reserve_rule(mod, g, tmp):
         if getattr(d, footroom_variables)[g]:
             return sum(getattr(mod, c)[g, tmp]

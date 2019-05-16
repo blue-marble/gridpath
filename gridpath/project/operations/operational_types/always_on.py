@@ -59,9 +59,7 @@ def add_module_specific_components(m, d):
     m.ALWAYS_ON_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=generator_subset_init(
-            "operational_type", "always_on"
-        )
-    )
+            "operational_type", "always_on"))
 
     m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -87,7 +85,8 @@ def add_module_specific_components(m, d):
 
     # Variables
     m.Provide_Power_AlwaysOn_MW = Var(
-        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals)
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
 
     # Expressions
     m.AlwaysOn_Ramp_MW = Expression(
@@ -108,7 +107,7 @@ def add_module_specific_components(m, d):
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=downwards_reserve_rule)
 
-    # Operational Constraints
+    # Constraints
     def max_power_rule(mod, g, tmp):
         """
         Power plus upward services cannot exceed capacity.
@@ -413,143 +412,3 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "always_on_ramp_down_rate"] = \
             ramp_down_rate
-
-
-# TODO: remove this since redundant with dispatch_all?
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
-    """
-
-    :param scenario_directory:
-    :param horizon:
-    :param stage:
-    :param mod:
-    :param d:
-    :return:
-    """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
-                           "dispatch_always_on.csv"), "w") as f:
-        writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
-                         "technology", "load_zone", "power_mw"
-                         ])
-
-        for (p, tmp) \
-                in mod. \
-                ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                p,
-                mod.period[tmp],
-                mod.horizon[tmp],
-                tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
-                mod.number_of_hours_in_timepoint[tmp],
-                mod.technology[p],
-                mod.load_zone[p],
-                value(mod.Provide_Power_AlwaysOn_MW[p, tmp])
-            ])
-
-
-# TODO: remove this since redundant with dispatch_all?
-def import_module_specific_results_to_database(
-        scenario_id, c, db, results_directory
-):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :return:
-    """
-    print("project dispatch always on")
-    # dispatch_always_on.csv
-    c.execute(
-        """DELETE FROM results_project_dispatch_always_on
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
-    )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_dispatch_always_on"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_dispatch_always_on"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            horizon INTEGER,
-            timepoint INTEGER,
-            horizon_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            power_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, timepoint)
-                );"""
-    )
-    db.commit()
-
-    # Load results into the temporary table
-    with open(os.path.join(
-            results_directory, "dispatch_always_on.csv"), "r") \
-            as cc_dispatch_file:
-        reader = csv.reader(cc_dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            horizon_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[7]
-            technology = row[6]
-            power_mw = row[8]
-            c.execute(
-                """INSERT INTO temp_results_project_dispatch_always_on"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
-                    {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw
-                )
-            )
-    db.commit()
-
-    # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_dispatch_always_on
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw
-        FROM temp_results_project_dispatch_always_on""" + str(
-            scenario_id) + """
-            ORDER BY scenario_id, project, timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_dispatch_always_on""" + str(
-            scenario_id) +
-        """;"""
-    )
-    db.commit()
