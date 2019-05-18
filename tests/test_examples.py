@@ -470,7 +470,7 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 68097.61333333333
+        expected_objective = 2879181715.404
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
@@ -478,7 +478,7 @@ class TestExamples(unittest.TestCase):
     def test_example_test_ramp_up_and_down_constraints(self):
         """
         Check objective function value of "test_ramp_up_and_down_constraints"
-        example; this example requires a non-linear solver
+        example
         :return:
         """
         actual_objective = \
@@ -490,7 +490,26 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 80071278.98
+        expected_objective = 2998385367.443385
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
+    def test_example_test_dispbincommit_constraints(self):
+        """
+        Check objective function value of "test_dispbincommit" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "test_dispbincommit",
+                 "--scenario_location", "examples",
+                 "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 250109833.08
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)

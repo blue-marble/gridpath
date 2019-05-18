@@ -67,15 +67,19 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.ALWAYS_ON_GENERATORS))
 
-    # Params
+    # Param - Required
     m.always_on_min_stable_level_fraction = \
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction)
 
     m.always_on_unit_size_mw = \
         Param(m.ALWAYS_ON_GENERATORS, within=NonNegativeReals)
 
+    # Params - Optional
+
     # Ramp rates are optional. If not provided by user they will default to 1
-    # and will be ignored in the ramp rate constraints
+    # and will be ignored in the ramp rate constraints.
+    # The units of all ramp rate inputs are assumed to be
+    # [fraction of operational capacity per minute]
     m.always_on_ramp_up_rate = \
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction,
               default=1)
@@ -150,7 +154,12 @@ def add_module_specific_components(m, d):
     # value that results in the constraint being skipped
     def ramp_up_rule(mod, g, tmp):
         """
-
+        Difference between power generation of consecutive timepoints has to
+        obey ramp up rates.
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -159,7 +168,10 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.always_on_ramp_up_rate[g] == 1:
+        elif mod.always_on_ramp_up_rate[g] * 60 \
+                >= (1-mod.always_on_min_stable_level_fraction[g]) \
+                / mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp]]:
             return Constraint.Skip
         else:
             return mod.AlwaysOn_Ramp_MW[g, tmp] \
@@ -167,7 +179,9 @@ def add_module_specific_components(m, d):
                    + mod.AlwaysOn_Downwards_Reserves_MW[
                        g, mod.previous_timepoint[tmp]] \
                    <= \
-                   mod.always_on_ramp_up_rate[g] \
+                   mod.always_on_ramp_up_rate[g] * 60 \
+                   / mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp]] \
                    * mod.Capacity_MW[g, mod.period[tmp]] \
                    * mod.availability_derate[g, mod.horizon[tmp]]
 
@@ -181,7 +195,12 @@ def add_module_specific_components(m, d):
     # value that results in the constraint being skipped
     def ramp_down_rule(mod, g, tmp):
         """
-
+        Difference between power generation of consecutive timepoints has to
+        obey ramp down rates.
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -190,7 +209,10 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.always_on_ramp_down_rate[g] == 1:
+        elif mod.always_on_ramp_down_rate[g] * 60 \
+                >= (1 - mod.always_on_min_stable_level_fraction[g]) \
+                / mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp]]:
             return Constraint.Skip
         else:
             return mod.AlwaysOn_Ramp_MW[g, tmp] \
@@ -198,7 +220,9 @@ def add_module_specific_components(m, d):
                    - mod.AlwaysOn_Upwards_Reserves_MW[
                        g, mod.previous_timepoint[tmp]] \
                    >= \
-                   - mod.always_on_ramp_down_rate[g] \
+                   - mod.always_on_ramp_down_rate[g] * 60 \
+                   / mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp]] \
                    * mod.Capacity_MW[g, mod.period[tmp]] \
                    * mod.availability_derate[g, mod.horizon[tmp]]
 

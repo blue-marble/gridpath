@@ -541,45 +541,6 @@ def create_logs_directory_if_not_exists(scenario_directory, horizon, stage):
         os.makedirs(logs_directory)
     return logs_directory
 
-#
-# def log_run(scenario_directory, horizon, stage, parsed_arguments):
-#     """
-#     :param scenario_directory:
-#     :param horizon:
-#     :param stage:
-#     :param parsed_arguments:
-#     :return:
-#
-#     Log run output to a logs file and/or write temporary files in logs dir
-#     """
-#     logs_directory = os.path.join(scenario_directory, horizon, stage,
-#                                   "logs")
-#
-#     if (not os.path.exists(logs_directory)) and \
-#             (parsed_arguments.write_solver_files_to_logs_dir or
-#              parsed_arguments.log):
-#         os.makedirs(logs_directory)
-#
-#     # Set temporary file directory to be the logs directory
-#     # In conjunction with --keepfiles, this will write the solver solution
-#     # files into the log directory (rather than a hidden temp folder).
-#     # Use the --symbolic argument as well for best debugging results
-#     if parsed_arguments.write_solver_files_to_logs_dir:
-#         TempfileManager.tempdir = logs_directory
-#     else:
-#         pass
-#
-#     # Log output to assigned destinations (terminal and a log file in the
-#     # logs directory) if directed to do so
-#     if parsed_arguments.log:
-#         sys.stdout = Logging(logs_dir=logs_directory)
-#         # The print statement will call the write() method of any object
-#         # you assign to sys.stdout (in this case the Logging object). The
-#         # write method of Logging writes both to sys.stdout and a log file
-#         # see auxiliary/axiliary.py
-#     else:
-#         pass
-
 
 def export_results(scenario_directory, horizon, stage, instance,
                    dynamic_components, loaded_modules):

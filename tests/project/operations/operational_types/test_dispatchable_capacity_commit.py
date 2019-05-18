@@ -554,8 +554,8 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_min_up_time_hours
         expected_min_up_time = OrderedDict(
             sorted({"Gas_CCGT": 3, "Coal": 2, "Gas_CT": 5, "Gas_CCGT_New": 8,
-                    "Gas_CT_New": 5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
-                    "Gas_CT_z2": 1}.items()
+                    "Gas_CT_New": 5, "Gas_CCGT_z2": 0, "Coal_z2": 0,
+                    "Gas_CT_z2": 0}.items()
                    )
         )
         actual_min_up_time = OrderedDict(
@@ -572,8 +572,8 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_min_down_time_hours
         expected_min_down_time = OrderedDict(
             sorted({"Gas_CCGT": 7, "Coal": 10, "Gas_CT": 3, "Gas_CCGT_New": 5,
-                    "Gas_CT_New": 2, "Gas_CCGT_z2": 1, "Coal_z2": 1,
-                    "Gas_CT_z2": 1}.items()
+                    "Gas_CT_New": 2, "Gas_CCGT_z2": 0, "Coal_z2": 0,
+                    "Gas_CT_z2": 0}.items()
                    )
         )
         actual_min_down_time = OrderedDict(

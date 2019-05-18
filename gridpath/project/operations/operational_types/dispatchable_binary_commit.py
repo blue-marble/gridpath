@@ -85,8 +85,6 @@ def add_module_specific_components(m, d):
 
     # The units of all ramp rate inputs are assumed to be
     # [fraction of operational capacity per minute]
-    # TODO: units are inconsistent with the units in capacity_commit but
-    #  more robust to timepoint < 1hr
     m.dispbincommit_startup_plus_ramp_up_rate = \
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
@@ -221,7 +219,7 @@ def add_module_specific_components(m, d):
         rule=downwards_reserve_rule)
 
     # Constraints
-    def binary_logic_rule(mod, g, tmp):
+    def binary_logic_constraint_rule(mod, g, tmp):
         """
         If commit status changes, unit is starting or stopping.
         The *Start_Binary* variable is 1 for the first timepoint the unit is
@@ -249,10 +247,10 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Binary_Logic_Constraint = \
         Constraint(
             m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=binary_logic_rule
+            rule=binary_logic_constraint_rule
         )
 
-    def min_power_rule(mod, g, tmp):
+    def min_power_constraint_rule(mod, g, tmp):
         """
         Power minus downward services cannot be below minimum stable level.
         This constraint is not in Knueven et al. (2018) because they don't
@@ -269,10 +267,10 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Min_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=min_power_rule
+            rule=min_power_constraint_rule
         )
 
-    def max_power_rule(mod, g, tmp):
+    def max_power_constraint_rule(mod, g, tmp):
         """
         Total power provision can't be above generator's maximum power output
         Also ensure total capacity is not above startup or shutdown ramp rate
@@ -330,10 +328,10 @@ def add_module_specific_components(m, d):
             * stop_next_tmp
     m.Max_Power_Constraint_DispBinaryCommit = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=max_power_rule
+        rule=max_power_constraint_rule
     )
 
-    def max_power_startup_rule(mod, g, tmp):
+    def max_power_startup_constraint_rule(mod, g, tmp):
         """
         Total power provision can't be above generator's maximum power output
         Also ensure total capacity is not above startup ramp rate if unit
@@ -375,10 +373,10 @@ def add_module_specific_components(m, d):
             * mod.Start_Binary[g, tmp]
     m.Max_Power_Startup_Constraint_DispBinaryCommit = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=max_power_startup_rule
+        rule=max_power_startup_constraint_rule
     )
 
-    def max_power_shutdown_rule(mod, g, tmp):
+    def max_power_shutdown_constraint_rule(mod, g, tmp):
         """
         Total power provision can't be above generator's maximum power output
         Also ensure total capacity is not above shutdown ramp rate if unit
@@ -419,10 +417,10 @@ def add_module_specific_components(m, d):
             * stop_next_tmp
     m.Max_Power_Shutdown_Constraint_DispBinaryCommit = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=max_power_shutdown_rule
+        rule=max_power_shutdown_constraint_rule
     )
 
-    def min_up_time_rule(mod, g, tmp):
+    def min_up_time_constraint_rule(mod, g, tmp):
         """
         When units are started, they have to stay on for a minimum number
         of hours described by the dispbincommit_min_up_time_hours parameter.
@@ -519,10 +517,10 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Min_Up_Time_Constraint = \
         Constraint(
             m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=min_up_time_rule
+            rule=min_up_time_constraint_rule
         )
 
-    def min_down_time_rule(mod, g, tmp):
+    def min_down_time_constraint_rule(mod, g, tmp):
         """
         When units are stopped, they have to stay off for a minimum number
         of hours described by the dispbincommit_min_down_time_hours parameter.
@@ -619,17 +617,17 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Min_Down_Time_Constraint = \
         Constraint(
             m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=min_down_time_rule
+            rule=min_down_time_constraint_rule
         )
 
-    def ramp_up_rule(mod, g, tmp):
+    def ramp_up_constraint_rule(mod, g, tmp):
         """
         Difference between power generation of consecutive timepoints has to
         obey ramp up rates.
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        hourly ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate is adjusted for the duration of the first timepoint.
         Constraint (26) in Knueven et al. (2018)
         :param mod:
         :param g:
@@ -652,26 +650,28 @@ def add_module_specific_components(m, d):
         else:
             return \
                 (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
-                    + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
-                - (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
-                       g, mod.previous_timepoint[tmp]]
-                   - mod.DispBinCommit_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
-                <= mod.DispBinCommit_Ramp_Up_Rate_MW_Per_Timepoint[
+                 + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
+                - \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
+                    g, mod.previous_timepoint[tmp]]
+                 - mod.DispBinCommit_Downwards_Reserves_MW[
+                    g, mod.previous_timepoint[tmp]]) \
+                <= \
+                mod.DispBinCommit_Ramp_Up_Rate_MW_Per_Timepoint[
                     g, mod.previous_timepoint[tmp]]
     m.Ramp_Up_Constraint_DispBinaryCommit = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_up_rule
+        rule=ramp_up_constraint_rule
     )
 
-    def ramp_down_rule(mod, g, tmp):
+    def ramp_down_constraint_rule(mod, g, tmp):
         """
         Difference between power generation of consecutive timepoints has to
         obey ramp down rates.
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        hourly ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate is adjusted for the duration of the first timepoint.
         Constraint (27) in Knueven et al. (2018)
         :param mod:
         :param g:
@@ -689,15 +689,16 @@ def add_module_specific_components(m, d):
             return \
                 (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
                        g, mod.previous_timepoint[tmp]]
-                    + mod.DispBinCommit_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
-                - (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
-                   - mod.DispBinCommit_Downwards_Reserves_MW[g, tmp]) \
+                 + mod.DispBinCommit_Upwards_Reserves_MW[
+                       g, mod.previous_timepoint[tmp]]) \
+                - \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
+                 - mod.DispBinCommit_Downwards_Reserves_MW[g, tmp]) \
                 <= mod.DispBinCommit_Ramp_Down_Rate_MW_Per_Timepoint[
                     g, mod.previous_timepoint[tmp]]
     m.Ramp_Down_Constraint_DispBinaryCommit = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_down_rule
+        rule=ramp_down_constraint_rule
     )
 
 
