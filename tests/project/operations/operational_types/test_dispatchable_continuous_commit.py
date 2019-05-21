@@ -247,12 +247,12 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: disp_cont_commit_min_stable_level_fraction
+        # Param: dispcontcommit_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Cont_Commit": 0.4,
                                         "Clunky_Old_Gen": 0.4,
                                         "Clunky_Old_Gen2": 0.4}
         actual_min_stable_fraction = {
-            prj: instance.disp_cont_commit_min_stable_level_fraction[prj]
+            prj: instance.dispcontcommit_min_stable_level_fraction[prj]
             for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
         }
         self.assertDictEqual(expected_min_stable_fraction,
