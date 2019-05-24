@@ -72,7 +72,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             JOIN
             (SELECT period
             FROM inputs_temporal_periods
-            WHERE timepoint_scenario_id = {}) as relevant_periods
+            WHERE temporal_scenario_id = {}) as relevant_periods
             USING (period)
             JOIN
             (SELECT carbon_cap_zone
@@ -81,7 +81,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             using (carbon_cap_zone)
             WHERE carbon_cap_target_scenario_id = {};
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
                 subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
             )

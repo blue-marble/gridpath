@@ -501,7 +501,7 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT horizon
         FROM inputs_temporal_horizons
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         LEFT OUTER JOIN
         inputs_project_hydro_operational_chars
         USING (hydro_operational_chars_scenario_id, project, horizon)
@@ -513,7 +513,7 @@ def get_module_specific_inputs_from_database(
         INNER JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         USING (period)
         WHERE project_existing_capacity_scenario_id = {}
         AND existing_capacity_mw > 0) as existing
@@ -523,17 +523,17 @@ def get_module_specific_inputs_from_database(
         INNER JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         USING (period)
         WHERE project_new_cost_scenario_id = {})
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )

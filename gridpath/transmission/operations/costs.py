@@ -138,11 +138,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             INNER JOIN
             (SELECT period
              FROM inputs_temporal_periods
-             WHERE timepoint_scenario_id = {}) as relevant_periods
+             WHERE temporal_scenario_id = {}) as relevant_periods
              USING (period)
              WHERE transmission_hurdle_rate_scenario_id = {};
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
             )
         )

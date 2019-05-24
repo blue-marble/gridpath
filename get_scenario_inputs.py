@@ -186,8 +186,8 @@ def write_scenario_description(
         )
 
         # Subscenarios
-        writer.writerow(["timepoint_scenario_id",
-                         subscenarios.TIMEPOINT_SCENARIO_ID])
+        writer.writerow(["temporal_scenario_id",
+                         subscenarios.TEMPORAL_SCENARIO_ID])
         writer.writerow(["load_zone_scenario_id",
                          subscenarios.LOAD_ZONE_SCENARIO_ID])
         writer.writerow(["lf_reserves_up_ba_scenario_id",

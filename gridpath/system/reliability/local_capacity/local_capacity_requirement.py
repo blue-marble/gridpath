@@ -73,7 +73,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             JOIN
             (SELECT period
             FROM inputs_temporal_periods
-            WHERE timepoint_scenario_id = {}) as relevant_periods
+            WHERE temporal_scenario_id = {}) as relevant_periods
             USING (period)
             JOIN
             (SELECT local_capacity_zone
@@ -82,7 +82,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             using (local_capacity_zone)
             WHERE local_capacity_requirement_scenario_id = {};
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
                 subscenarios.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID
             )

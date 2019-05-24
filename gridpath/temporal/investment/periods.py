@@ -123,8 +123,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         periods = c.execute(
             """SELECT period, discount_factor, number_years_represented
                FROM inputs_temporal_periods
-               WHERE timepoint_scenario_id = {};""".format(
-                subscenarios.TIMEPOINT_SCENARIO_ID
+               WHERE temporal_scenario_id = {};""".format(
+                subscenarios.TEMPORAL_SCENARIO_ID
             )
         ).fetchall()
 

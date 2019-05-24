@@ -96,10 +96,10 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             FROM inputs_project_fuel_prices
             INNER JOIN
             (SELECT period from inputs_temporal_periods
-            WHERE timepoint_scenario_id = {})
+            WHERE temporal_scenario_id = {})
             USING (period)
             WHERE fuel_price_scenario_id = {}""".format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.FUEL_PRICE_SCENARIO_ID
             )
         )

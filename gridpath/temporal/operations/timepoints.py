@@ -71,8 +71,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         timepoints = c.execute(
             """SELECT timepoint, period, horizon, number_of_hours_in_timepoint
                FROM inputs_temporal_timepoints
-               WHERE timepoint_scenario_id = {};""".format(
-                subscenarios.TIMEPOINT_SCENARIO_ID
+               WHERE temporal_scenario_id = {};""".format(
+                subscenarios.TEMPORAL_SCENARIO_ID
             )
         ).fetchall()
 

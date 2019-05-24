@@ -278,7 +278,7 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
         LEFT OUTER JOIN
         (SELECT project, period,
         minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
@@ -288,7 +288,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period) 
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'new_shiftable_load_supply_curve';""".format(
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )

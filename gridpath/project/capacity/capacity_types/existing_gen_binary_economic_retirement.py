@@ -360,7 +360,7 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, existing_capacity_mw
         FROM inputs_project_existing_capacity
@@ -376,7 +376,7 @@ def get_module_specific_inputs_from_database(
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 
         'existing_gen_binary_economic_retirement';""".format(
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID

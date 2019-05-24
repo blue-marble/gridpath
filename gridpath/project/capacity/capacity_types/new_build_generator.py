@@ -469,14 +469,14 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, lifetime_yrs,
         annualized_real_cost_per_kw_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)""".format(
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )
         + get_potentials[1] +

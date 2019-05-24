@@ -76,7 +76,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             INNER JOIN
             (SELECT timepoint
             FROM inputs_temporal_timepoints
-            WHERE timepoint_scenario_id = {}) as relevant_timepoints
+            WHERE temporal_scenario_id = {}) as relevant_timepoints
             USING (timepoint)
             INNER JOIN
             (SELECT load_zone
@@ -85,7 +85,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             USING (load_zone)
             WHERE load_scenario_id = {}
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.LOAD_ZONE_SCENARIO_ID,
                 subscenarios.LOAD_SCENARIO_ID
             )

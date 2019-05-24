@@ -173,8 +173,8 @@ class SubScenarios(object):
         """
         self.SCENARIO_ID = scenario_id
 
-        self.TIMEPOINT_SCENARIO_ID = cursor.execute(
-            """SELECT timepoint_scenario_id
+        self.TEMPORAL_SCENARIO_ID = cursor.execute(
+            """SELECT temporal_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]

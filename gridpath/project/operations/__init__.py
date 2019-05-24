@@ -311,10 +311,10 @@ def get_inputs_from_database(
             USING (horizon)
             WHERE project_portfolio_scenario_id = {}
             AND project_availability_scenario_id = {}
-            AND timepoint_scenario_id = {};""".format(
+            AND temporal_scenario_id = {};""".format(
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-                subscenarios.TIMEPOINT_SCENARIO_ID
+                subscenarios.TEMPORAL_SCENARIO_ID
             )
         )
 
