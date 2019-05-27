@@ -51,29 +51,12 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 --------------------
 -- -- TEMPORAL -- --
 --------------------
-
 -- Timepoints
--- These are the timepoints that go into the model, with horizons
--- and periods specified
--- Usually, this temporal_scenario_id is a subset of a much larger set of
--- timepoints
 DROP TABLE IF EXISTS subscenarios_temporal;
 CREATE TABLE subscenarios_temporal (
 temporal_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints (
-temporal_scenario_id INTEGER,
-timepoint INTEGER,
-period INTEGER,
-horizon INTEGER,
-number_of_hours_in_timepoint INTEGER,
-PRIMARY KEY (temporal_scenario_id, timepoint),
-FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
-(temporal_scenario_id)
 );
 
 -- Periods
@@ -85,10 +68,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 PRIMARY KEY (temporal_scenario_id, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
-(temporal_scenario_id),
--- Make sure period exists in this timepoint_id
-FOREIGN KEY (temporal_scenario_id, period) REFERENCES
-inputs_temporal_timepoints (temporal_scenario_id, period)
+(temporal_scenario_id)
 );
 
 -- Horizons
@@ -100,15 +80,30 @@ period INTEGER,
 boundary VARCHAR(16),
 horizon_weight FLOAT,
 month INTEGER,
-PRIMARY KEY (temporal_scenario_id, horizon),
+PRIMARY KEY (temporal_scenario_id, horizon, period),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
--- Make sure horizon exists in this timepoint_id
-FOREIGN KEY (temporal_scenario_id, horizon) REFERENCES
-inputs_temporal_timepoints (temporal_scenario_id, horizon),
 -- Make sure boundary type is correct
 FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
 (horizon_boundary_type)
+);
+
+DROP TABLE IF EXISTS inputs_temporal_timepoints;
+CREATE TABLE inputs_temporal_timepoints (
+temporal_scenario_id INTEGER,
+timepoint INTEGER,
+horizon INTEGER,
+period INTEGER,
+number_of_hours_in_timepoint INTEGER,
+PRIMARY KEY (temporal_scenario_id, timepoint, horizon, period),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure period exists in this temporal_scenario_id
+FOREIGN KEY (temporal_scenario_id, period) REFERENCES
+inputs_temporal_periods (temporal_scenario_id, period),
+-- Make sure horizon/period exist in this temporal scenario id
+FOREIGN KEY (temporal_scenario_id, horizon, period) REFERENCES
+inputs_temporal_horizons (temporal_scenario_id, horizon, period)
 );
 
 
