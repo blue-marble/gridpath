@@ -35,7 +35,7 @@ def temporal(
 
     # Subscenarios
     c.execute(
-        """INSERT INTO subscenarios_temporal_timepoints
+        """INSERT INTO subscenarios_temporal
         (temporal_scenario_id, name, description)
         VALUES ({}, '{}', '{}');""".format(
             temporal_scenario_id, scenario_name, scenario_description

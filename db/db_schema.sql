@@ -57,8 +57,8 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 -- and periods specified
 -- Usually, this temporal_scenario_id is a subset of a much larger set of
 -- timepoints
-DROP TABLE IF EXISTS subscenarios_temporal_timepoints;
-CREATE TABLE subscenarios_temporal_timepoints (
+DROP TABLE IF EXISTS subscenarios_temporal;
+CREATE TABLE subscenarios_temporal (
 temporal_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
@@ -72,7 +72,7 @@ period INTEGER,
 horizon INTEGER,
 number_of_hours_in_timepoint INTEGER,
 PRIMARY KEY (temporal_scenario_id, timepoint),
-FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal_timepoints
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id)
 );
 
@@ -84,7 +84,7 @@ period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 PRIMARY KEY (temporal_scenario_id, period),
-FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal_timepoints
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure period exists in this timepoint_id
 FOREIGN KEY (temporal_scenario_id, period) REFERENCES
@@ -101,7 +101,7 @@ boundary VARCHAR(16),
 horizon_weight FLOAT,
 month INTEGER,
 PRIMARY KEY (temporal_scenario_id, horizon),
-FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal_timepoints
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure horizon exists in this timepoint_id
 FOREIGN KEY (temporal_scenario_id, horizon) REFERENCES
@@ -1649,7 +1649,7 @@ local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
 FOREIGN KEY (temporal_scenario_id) REFERENCES
-subscenarios_temporal_timepoints (temporal_scenario_id),
+subscenarios_temporal (temporal_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
