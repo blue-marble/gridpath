@@ -523,12 +523,12 @@ PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 -- Ensure operational characteristics for variable and hydro exist
-FOREIGN KEY (variable_generator_profile_scenario_id, project) REFERENCES
-inputs_project_variable_generator_profiles
-(variable_generator_profile_scenario_id, project),
-FOREIGN KEY (hydro_operational_chars_scenario_id, project) REFERENCES
-inputs_project_hydro_operational_chars
-(hydro_operational_chars_scenario_id, project),
+FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
+subscenarios_project_variable_generator_profiles
+(project, variable_generator_profile_scenario_id),
+FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
+subscenarios_project_hydro_operational_chars
+(project, hydro_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
@@ -540,46 +540,51 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 -- perhaps a better name is needed for this table
 DROP TABLE IF EXISTS subscenarios_project_variable_generator_profiles;
 CREATE TABLE subscenarios_project_variable_generator_profiles (
-variable_generator_profile_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+project VARCHAR(64),
+variable_generator_profile_scenario_id INTEGER,
 name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (project, variable_generator_profile_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
 CREATE TABLE inputs_project_variable_generator_profiles (
-variable_generator_profile_scenario_id INTEGER,
 project VARCHAR(64),
+variable_generator_profile_scenario_id INTEGER,
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 cap_factor FLOAT,
-PRIMARY KEY (variable_generator_profile_scenario_id, project, timepoint),
-FOREIGN KEY (variable_generator_profile_scenario_id) REFERENCES
+PRIMARY KEY (project, variable_generator_profile_scenario_id, period, horizon,
+timepoint),
+FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
-(variable_generator_profile_scenario_id)
+(project, variable_generator_profile_scenario_id)
 );
 
 -- Hydro operational characteristics
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
 CREATE TABLE subscenarios_project_hydro_operational_chars (
-hydro_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+project VARCHAR(64),
+hydro_operational_chars_scenario_id,
 name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_hydro_operational_chars;
 CREATE TABLE inputs_project_hydro_operational_chars (
-hydro_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
+hydro_operational_chars_scenario_id INTEGER,
 period INTEGER,
 horizon INTEGER,
 average_power_mwa FLOAT,
 min_power_mw FLOAT,
 max_power_mw FLOAT,
-PRIMARY KEY (hydro_operational_chars_scenario_id, project, horizon),
-FOREIGN KEY (hydro_operational_chars_scenario_id) REFERENCES
+PRIMARY KEY (project, hydro_operational_chars_scenario_id, period, horizon),
+FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_project_hydro_operational_chars
-(hydro_operational_chars_scenario_id)
+(project, hydro_operational_chars_scenario_id)
 );
 
 -- Project availability (e.g. due to planned outages/maintenance)
