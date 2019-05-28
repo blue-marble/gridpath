@@ -213,6 +213,11 @@ def add_module_specific_components(m, d):
         When turning on, generators can ramp up to a certain fraction of
         started up capacity. This fraction must be greater than or equal to
         the minimum stable level for the generator to be able to turn on.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -226,7 +231,8 @@ def add_module_specific_components(m, d):
                 <= \
                 (mod.Commit_Capacity_MW[g, tmp]
                  - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
-                * mod.dispcapcommit_startup_plus_ramp_up_rate[g]
+                * mod.dispcapcommit_startup_plus_ramp_up_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
     m.Ramp_Up_Off_to_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_off_to_on_constraint_rule
@@ -249,6 +255,11 @@ def add_module_specific_components(m, d):
         Pmax fully in an hour, so the fact that this constraint is too lax
         in this situation does not matter when modeling fleets at an hourly
         or coarser resolution.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -260,8 +271,9 @@ def add_module_specific_components(m, d):
         else:
             return mod.Ramp_Up_When_On_MW[g, tmp] \
                 <= \
-                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] * \
-                mod.dispcapcommit_ramp_up_when_on_rate[g]
+                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                * mod.dispcapcommit_ramp_up_when_on_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
     m.Ramp_Up_When_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_on_to_on_constraint_rule
@@ -271,7 +283,7 @@ def add_module_specific_components(m, d):
         """
         Generators online in the previous timepoint that are still online
         could not have ramped up above their total online capacity (more
-        than their available headroom in the previous hour).
+        than their available headroom in the previous timepoint).
         :param mod:
         :param g:
         :param tmp:
@@ -316,15 +328,20 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 \
-                and mod.dispcapcommit_ramp_up_when_on_rate[g] >= \
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
+        elif (mod.dispcapcommit_startup_plus_ramp_up_rate[g] * 60
+              >=
+              1 / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              and
+              mod.dispcapcommit_ramp_up_when_on_rate[g] * 60
+              >=
+              (1 - mod.disp_cap_commit_min_stable_level_fraction[g])
+              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              ):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
                 g, mod.previous_timepoint[tmp]]) \
-                / mod.number_of_hours_in_timepoint[tmp] \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -341,6 +358,11 @@ def add_module_specific_components(m, d):
         fraction of the capacity to be shut down to 0. This fraction must be
         greater than or equal to the minimum stable level for the generator
         to be able to turn off.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -353,8 +375,9 @@ def add_module_specific_components(m, d):
             return mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 >= \
                 (mod.Commit_Capacity_MW[g, tmp]
-                 - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) * \
-                mod.dispcapcommit_shutdown_plus_ramp_down_rate[g]
+                 - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
+                * mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
     m.Ramp_Down_On_to_Off_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_on_to_off_constraint_rule
@@ -370,11 +393,15 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-
-        return mod.Ramp_Down_When_On_MW[g, tmp] \
-            >= \
-            mod.Commit_Capacity_MW[g, tmp] * \
-            - mod.dispcapcommit_ramp_down_when_on_rate[g]
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.Ramp_Down_When_On_MW[g, tmp] \
+                >= \
+                mod.Commit_Capacity_MW[g, tmp] \
+                * (-mod.dispcapcommit_ramp_down_when_on_rate[g]) * 60 \
+                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
     m.Ramp_Down_When_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_on_to_on_constraint_rule
@@ -420,15 +447,20 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif (mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] == 1 and
-              mod.dispcapcommit_ramp_down_when_on_rate[g] >=
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
+        elif (mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] * 60
+              >=
+              1 / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              and
+              mod.dispcapcommit_ramp_down_when_on_rate[g] * 60
+              >=
+              (1-mod.disp_cap_commit_min_stable_level_fraction[g])
+              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              ):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
                 g, mod.previous_timepoint[tmp]]) \
-                / mod.number_of_hours_in_timepoint[tmp] \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -793,12 +825,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["disp_cap_commit_min_stable_level_fraction"] = \
         min_stable_fraction
 
-    # Ramp rate limits are optional, will default to 1 if not specified
+    # Ramp rate limits are optional; will default to 1 if not specified
     if "startup_plus_ramp_up_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "startup_plus_ramp_up_rate"]
+                       dynamic_components["startup_plus_ramp_up_rate"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
@@ -811,8 +842,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "shutdown_plus_ramp_down_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "shutdown_plus_ramp_down_rate"]
+                       dynamic_components["shutdown_plus_ramp_down_rate"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
@@ -825,8 +855,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
+                       dynamic_components["ramp_up_when_on_rate"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
@@ -839,8 +868,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
+                       dynamic_components["ramp_down_when_on_rate"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])

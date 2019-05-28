@@ -137,7 +137,13 @@ def add_module_specific_components(m, d):
 
     def ramp_up_rule(mod, g, tmp):
         """
-        
+        Difference between power generation of consecutive timepoints has to
+        obey ramp up rate limits.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -146,12 +152,21 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.hydro_curtailable_ramp_up_rate[g] == 1:
+        elif (mod.hydro_curtailable_ramp_up_rate[g] * 60
+              * mod.Capacity_MW[g, mod.period[tmp]]
+              >=
+              (mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
+               - mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]])
+              / mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp]]
+              ):
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 <= \
-                mod.hydro_curtailable_ramp_up_rate[g] \
+                mod.hydro_curtailable_ramp_up_rate[g] * 60 \
+                / mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Curtailable_Ramp_Up_Constraint = \
@@ -162,7 +177,13 @@ def add_module_specific_components(m, d):
 
     def ramp_down_rule(mod, g, tmp):
         """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp down rate limits.
 
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -171,12 +192,20 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.hydro_curtailable_ramp_down_rate[g] == 1:
+        elif (mod.hydro_curtailable_ramp_down_rate[g] * 60
+              * mod.Capacity_MW[g, mod.period[tmp]]
+              >=
+              (mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
+               - mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]])
+              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              ):
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 >= \
-                - mod.hydro_curtailable_ramp_down_rate[g] \
+                - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
+                / mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Curtailable_Ramp_Down_Constraint = \
@@ -379,7 +408,7 @@ def load_module_specific_data(m,
     data_portal.data()["hydro_curtailable_min_power_mw"] = min_mw
     data_portal.data()["hydro_curtailable_max_power_mw"] = max_mw
 
-    # Ramp rate limits are optional, will default to 1 if not specified
+    # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
     header = pd.read_csv(os.path.join(scenario_directory, "inputs",
@@ -400,8 +429,7 @@ def load_module_specific_data(m,
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
+                       dynamic_components["ramp_up_when_on_rate"]
                        ):
             if row[1] == "hydro_curtailable" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
@@ -414,8 +442,7 @@ def load_module_specific_data(m,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
+                       dynamic_components["ramp_down_when_on_rate"]
                        ):
             if row[1] == "hydro_curtailable" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
