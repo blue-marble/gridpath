@@ -104,10 +104,17 @@ def add_model_components(m, d):
 
     # Determine the previous timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
-    # TIMEPONTS set to increment by 1
+    # TIMEPOINTS
     m.previous_timepoint = \
         Param(m.TIMEPOINTS,
               initialize=previous_timepoint_init)
+
+    # Determine the next timepoint for each timepoint; depends on
+    # whether horizon is circular or linear and relies on having ordered
+    # TIMEPOINTS
+    m.next_timepoint = \
+        Param(m.TIMEPOINTS,
+              initialize=next_timepoint_init)
 
 
 def previous_timepoint_init(mod, tmp):
@@ -144,6 +151,41 @@ def previous_timepoint_init(mod, tmp):
                 list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)-1]
 
     return prev_tmp_dict
+
+
+def next_timepoint_init(mod, tmp):
+    """
+    :param mod:
+    :param tmp:
+    :return:
+    Determine the next timepoint for each timepoint. If the timepoint is
+    the last timepoint of a horizon and the horizon boundary is circular,
+    then the next timepoint is the first timepoint of the respective
+    horizon. If the timepoint is the last timepoint of a horizon and the
+    horizon boundary is linear, then no next timepoint is defined. In all
+    other cases, the next timepoint is the one with an index of tmp+1.
+    """
+    next_tmp_dict = {}
+    for tmp in mod.TIMEPOINTS:
+        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
+            if mod.boundary[mod.horizon[tmp]] == "circular":
+                next_tmp_dict[tmp] = \
+                    mod.first_horizon_timepoint[mod.horizon[tmp]]
+            elif mod.boundary[mod.horizon[tmp]] == "linear":
+                next_tmp_dict[tmp] = None
+            else:
+                raise ValueError(
+                    "Invalid boundary value '{}' for horizon '{}'".
+                    format(
+                        mod.boundary[mod.horizon[tmp]], mod.horizon[tmp])
+                    + "\n" +
+                    "Horizon boundary must be either 'circular' or 'linear'"
+                )
+        else:
+            next_tmp_dict[tmp] = \
+                list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)+1]
+
+    return next_tmp_dict
 
 
 def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
