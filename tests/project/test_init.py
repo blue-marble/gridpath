@@ -8,6 +8,7 @@ from builtins import object
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -40,7 +41,7 @@ except ImportError:
           " to test.")
 
 
-class TestProject(unittest.TestCase):
+class TestProjectInit(unittest.TestCase):
     """
 
     """
@@ -60,6 +61,8 @@ class TestProject(unittest.TestCase):
         MODULE_BEING_TESTED.determine_dynamic_components(
             d, TEST_DATA_DIRECTORY, "", "")
 
+        # NOTE: keeping these hard-coded for they should be easy to update
+        # if new types are added
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
             "new_build_generator", "new_build_storage",
@@ -87,16 +90,15 @@ class TestProject(unittest.TestCase):
         self.assertListEqual(expected_required_operational_modules,
                              actual_required_operational_modules)
 
+        projects_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
+                sep="\t", usecols=['project']
+            )
+        projects_list = projects_df['project'].tolist()
         # Check if headroom variables dictionaries are as expected
         expected_headroom_var_dict = {
-            'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
-            'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
-            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
-            'Hydro_NonCurtailable': [],
-            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
-            'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Clunky_Old_Gen2": [],
-            "Customer_PV": [], "Nuclear_Flexible": [], "Shift_DR": []
+            prj: [] for prj in projects_list
         }
         actual_headroom_var_dict = getattr(d, "headroom_variables")
         self.assertDictEqual(expected_headroom_var_dict,
@@ -104,14 +106,7 @@ class TestProject(unittest.TestCase):
 
         # Check if footroom variables dictionaries are as expected
         expected_footroom_var_dict = {
-            'Battery': [], 'Battery_Specified': [], 'Coal': [], 'Coal_z2': [],
-            'Gas_CCGT': [], 'Gas_CCGT_New': [], 'Gas_CCGT_z2': [], 'Gas_CT': [],
-            'Gas_CT_New': [], 'Gas_CT_z2': [], 'Hydro': [],
-            'Hydro_NonCurtailable': [],
-            'Nuclear': [], 'Nuclear_z2': [], 'Wind': [], 'Wind_z2': [],
-            'Disp_Binary_Commit': [], "Disp_Cont_Commit": [],
-            "Disp_No_Commit": [], "Clunky_Old_Gen": [], "Clunky_Old_Gen2": [],
-            "Customer_PV": [], "Nuclear_Flexible": [], "Shift_DR": []
+            prj: [] for prj in projects_list
         }
         actual_footroom_var_dict = getattr(d, "footroom_variables")
         self.assertDictEqual(expected_footroom_var_dict,
@@ -120,7 +115,6 @@ class TestProject(unittest.TestCase):
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
-        :return:
         """
         create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
                               module_to_test=MODULE_BEING_TESTED,
@@ -132,7 +126,6 @@ class TestProject(unittest.TestCase):
     def test_load_model_data(self):
         """
         Test that data are loaded with no errors
-        :return:
         """
         add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
                                      module_to_test=MODULE_BEING_TESTED,
@@ -141,10 +134,9 @@ class TestProject(unittest.TestCase):
                                      stage=""
                                      )
 
-    def test_project_data_load_correctly(self):
+    def test_initialized_components(self):
         """
-
-        :return:
+        Create components; check they are initialized with data as expected
         """
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
@@ -155,17 +147,19 @@ class TestProject(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Load test data
+        projects_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
+                sep="\t", usecols=[
+                    'project', 'load_zone',"capacity_type",
+                    "operational_type", "variable_om_cost_per_mwh"
+                ]
+            )
+
         # Check data are as expected
         # PROJECTS
-        expected_projects = sorted([
-            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
-            "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
-            "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
-            'Hydro_NonCurtailable',
-            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
-            "Clunky_Old_Gen", "Clunky_Old_Gen2", "Customer_PV",
-            "Nuclear_Flexible", "Shift_DR"]
-            )
+        expected_projects = sorted(projects_df['project'].tolist())
         actual_projects = sorted([prj for prj in instance.PROJECTS])
 
         self.assertListEqual(expected_projects, actual_projects)
@@ -173,20 +167,7 @@ class TestProject(unittest.TestCase):
         # Params: load_zone
         expected_load_zone = OrderedDict(
             sorted(
-                {"Coal": "Zone1", "Coal_z2": "Zone2", "Gas_CCGT": "Zone1",
-                 "Gas_CCGT_New": "Zone1", "Gas_CCGT_z2": "Zone2",
-                 "Gas_CT": "Zone1",
-                 "Gas_CT_New": "Zone1", "Gas_CT_z2": "Zone2",
-                 "Nuclear": "Zone1",
-                 "Nuclear_z2": "Zone2", "Wind": "Zone1",
-                 "Wind_z2": "Zone2", "Battery": "Zone1",
-                 "Battery_Specified": "Zone1", "Hydro": "Zone1",
-                 'Hydro_NonCurtailable': "Zone1",
-                 "Disp_Binary_Commit": "Zone1", "Disp_Cont_Commit": "Zone1",
-                 "Disp_No_Commit": "Zone1", "Clunky_Old_Gen": "Zone1",
-                 "Clunky_Old_Gen2": "Zone1", "Customer_PV": "Zone1",
-                 "Nuclear_Flexible": "Zone1", "Shift_DR": "Zone1"
-                 }.items()
+                projects_df.set_index('project').to_dict()['load_zone'].items()
             )
         )
         actual_load_zone = OrderedDict(
@@ -200,32 +181,8 @@ class TestProject(unittest.TestCase):
         # Params: capacity_type
         expected_cap_type = OrderedDict(
             sorted(
-                {"Coal": "existing_gen_no_economic_retirement",
-                 "Coal_z2": "existing_gen_no_economic_retirement",
-                 "Gas_CCGT": "existing_gen_no_economic_retirement",
-                 "Gas_CCGT_New": "new_build_generator",
-                 "Gas_CCGT_z2": "existing_gen_no_economic_retirement",
-                 "Gas_CT": "existing_gen_no_economic_retirement",
-                 "Gas_CT_New": "new_build_generator",
-                 "Gas_CT_z2": "existing_gen_no_economic_retirement",
-                 "Nuclear": "existing_gen_no_economic_retirement",
-                 "Nuclear_z2": "existing_gen_no_economic_retirement",
-                 "Wind": "existing_gen_no_economic_retirement",
-                 "Wind_z2": "existing_gen_no_economic_retirement",
-                 "Battery": "new_build_storage",
-                 "Battery_Specified":
-                     "storage_specified_no_economic_retirement",
-                 "Hydro": "existing_gen_no_economic_retirement",
-                 "Hydro_NonCurtailable": "existing_gen_no_economic_retirement",
-                 "Disp_Binary_Commit": "existing_gen_no_economic_retirement",
-                 "Disp_Cont_Commit": "existing_gen_no_economic_retirement",
-                 "Disp_No_Commit": "existing_gen_no_economic_retirement",
-                 "Clunky_Old_Gen": "existing_gen_linear_economic_retirement",
-                 "Clunky_Old_Gen2": "existing_gen_binary_economic_retirement",
-                 "Customer_PV": "existing_gen_no_economic_retirement",
-                 "Nuclear_Flexible": "existing_gen_no_economic_retirement",
-                 "Shift_DR": "new_shiftable_load_supply_curve"
-                 }.items()
+                projects_df.set_index('project').to_dict()[
+                    'capacity_type'].items()
             )
         )
 
@@ -238,18 +195,28 @@ class TestProject(unittest.TestCase):
 
         self.assertDictEqual(expected_cap_type, actual_cap_type)
 
+        # Params: operational_type
+        expected_op_type = OrderedDict(
+            sorted(
+                projects_df.set_index('project').to_dict()[
+                    'operational_type'].items()
+            )
+        )
+
+        actual_op_type = OrderedDict(
+            sorted(
+                {prj: instance.operational_type[prj] for prj in
+                 instance.PROJECTS}.items()
+            )
+        )
+
+        self.assertDictEqual(expected_op_type, actual_op_type)
+
         # Params: variable_om_cost_per_mwh
         expected_var_om_cost = OrderedDict(
             sorted(
-                {"Coal": 1, "Coal_z2": 1, "Gas_CCGT": 2, "Gas_CCGT_New": 2,
-                 "Gas_CCGT_z2": 2, "Gas_CT": 2, "Gas_CT_New": 2, "Gas_CT_z2": 2,
-                 "Nuclear": 1, "Nuclear_z2": 1, "Wind": 0, "Wind_z2": 0,
-                 "Battery": 0, "Battery_Specified": 0, "Hydro": 0,
-                 "Hydro_NonCurtailable": 0,
-                 "Disp_Binary_Commit": 0, "Disp_Cont_Commit": 0,
-                 "Disp_No_Commit": 0, "Clunky_Old_Gen": 1, "Clunky_Old_Gen2": 1,
-                 "Customer_PV": 0, "Nuclear_Flexible": 1, "Shift_DR": 0
-                 }.items()
+                projects_df.set_index('project').to_dict()[
+                    'variable_om_cost_per_mwh'].items()
             )
         )
         actual_var_om_cost = OrderedDict(
