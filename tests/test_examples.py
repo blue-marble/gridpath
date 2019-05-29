@@ -429,7 +429,7 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 844035709.4169273
+        expected_objective = 844035708.6251316
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
@@ -451,7 +451,7 @@ class TestExamples(unittest.TestCase):
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 845532009.8435436
+        expected_objective = 845532009.0665814
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
