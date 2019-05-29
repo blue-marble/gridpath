@@ -152,14 +152,7 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif (mod.hydro_curtailable_ramp_up_rate[g] * 60
-              * mod.Capacity_MW[g, mod.period[tmp]]
-              >=
-              (mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
-               - mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]])
-              / mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp]]
-              ):
+        elif mod.hydro_curtailable_ramp_up_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
@@ -192,13 +185,7 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif (mod.hydro_curtailable_ramp_down_rate[g] * 60
-              * mod.Capacity_MW[g, mod.period[tmp]]
-              >=
-              (mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
-               - mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]])
-              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
-              ):
+        elif mod.hydro_curtailable_ramp_down_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
