@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 from builtins import str
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -12,6 +11,8 @@ import unittest
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
+from tests.project.operations.common_methods import \
+    get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
@@ -84,66 +85,19 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS
-        expected_always_on_gen_set = sorted([
+        expected_projects = sorted([
             "Shift_DR"
         ])
         actual_always_on_gen_set = sorted([
             prj for prj in instance.SHIFTABLE_LOAD_GENERIC_PROJECTS
         ])
-        self.assertListEqual(expected_always_on_gen_set,
+        self.assertListEqual(expected_projects,
                              actual_always_on_gen_set)
 
         # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS_OPERATIONAL_TIMEPOINTS
-        expected_operational_timpoints_by_project = sorted([
-            ("Shift_DR", 20200101), ("Shift_DR", 20200102),
-            ("Shift_DR", 20200103), ("Shift_DR", 20200104),
-            ("Shift_DR", 20200105), ("Shift_DR", 20200106),
-            ("Shift_DR", 20200107), ("Shift_DR", 20200108),
-            ("Shift_DR", 20200109), ("Shift_DR", 20200110),
-            ("Shift_DR", 20200111), ("Shift_DR", 20200112),
-            ("Shift_DR", 20200113), ("Shift_DR", 20200114),
-            ("Shift_DR", 20200115), ("Shift_DR", 20200116),
-            ("Shift_DR", 20200117), ("Shift_DR", 20200118),
-            ("Shift_DR", 20200119), ("Shift_DR", 20200120),
-            ("Shift_DR", 20200121), ("Shift_DR", 20200122),
-            ("Shift_DR", 20200123), ("Shift_DR", 20200124),
-            ("Shift_DR", 20200201), ("Shift_DR", 20200202),
-            ("Shift_DR", 20200203), ("Shift_DR", 20200204),
-            ("Shift_DR", 20200205), ("Shift_DR", 20200206),
-            ("Shift_DR", 20200207), ("Shift_DR", 20200208),
-            ("Shift_DR", 20200209), ("Shift_DR", 20200210),
-            ("Shift_DR", 20200211), ("Shift_DR", 20200212),
-            ("Shift_DR", 20200213), ("Shift_DR", 20200214),
-            ("Shift_DR", 20200215), ("Shift_DR", 20200216),
-            ("Shift_DR", 20200217), ("Shift_DR", 20200218),
-            ("Shift_DR", 20200219), ("Shift_DR", 20200220),
-            ("Shift_DR", 20200221), ("Shift_DR", 20200222),
-            ("Shift_DR", 20200223), ("Shift_DR", 20200224),
-            ("Shift_DR", 20300101), ("Shift_DR", 20300102),
-            ("Shift_DR", 20300103), ("Shift_DR", 20300104),
-            ("Shift_DR", 20300105), ("Shift_DR", 20300106),
-            ("Shift_DR", 20300107), ("Shift_DR", 20300108),
-            ("Shift_DR", 20300109), ("Shift_DR", 20300110),
-            ("Shift_DR", 20300111), ("Shift_DR", 20300112),
-            ("Shift_DR", 20300113), ("Shift_DR", 20300114),
-            ("Shift_DR", 20300115), ("Shift_DR", 20300116),
-            ("Shift_DR", 20300117), ("Shift_DR", 20300118),
-            ("Shift_DR", 20300119), ("Shift_DR", 20300120),
-            ("Shift_DR", 20300121), ("Shift_DR", 20300122),
-            ("Shift_DR", 20300123), ("Shift_DR", 20300124),
-            ("Shift_DR", 20300201), ("Shift_DR", 20300202),
-            ("Shift_DR", 20300203), ("Shift_DR", 20300204),
-            ("Shift_DR", 20300205), ("Shift_DR", 20300206),
-            ("Shift_DR", 20300207), ("Shift_DR", 20300208),
-            ("Shift_DR", 20300209), ("Shift_DR", 20300210),
-            ("Shift_DR", 20300211), ("Shift_DR", 20300212),
-            ("Shift_DR", 20300213), ("Shift_DR", 20300214),
-            ("Shift_DR", 20300215), ("Shift_DR", 20300216),
-            ("Shift_DR", 20300217), ("Shift_DR", 20300218),
-            ("Shift_DR", 20300219), ("Shift_DR", 20300220),
-            ("Shift_DR", 20300221), ("Shift_DR", 20300222),
-            ("Shift_DR", 20300223), ("Shift_DR", 20300224)
-        ])
+        expected_operational_timpoints_by_project = sorted(
+            get_project_operational_timepoints(expected_projects)
+        )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS]
@@ -152,7 +106,7 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
                              actual_operational_timepoints_by_project)
 
         # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS_OPERATIONAL_HORIZONS
-        expected_operational_timpoints_by_project = sorted([
+        expected_operational_horizons_by_project = sorted([
             ("Shift_DR", 202001), ("Shift_DR", 202002),
             ("Shift_DR", 203001), ("Shift_DR", 203002)
         ])
@@ -160,9 +114,9 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
             [(g, tmp) for (g, tmp) in
              instance.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_HORIZONS]
         )
-        self.assertListEqual(expected_operational_timpoints_by_project,
+        self.assertListEqual(expected_operational_horizons_by_project,
                              actual_operational_horizons_by_project)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,6 @@
 from __future__ import print_function
 
 from builtins import str
-from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -12,6 +11,8 @@ import unittest
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
+from tests.project.operations.common_methods import \
+    get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
@@ -94,32 +95,9 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
                              actual_always_on_gen_set)
 
         # Set: ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS
-        expected_operational_timpoints_by_project = sorted([
-            ("Nuclear_Flexible", 20300101), ("Nuclear_Flexible", 20300102),
-            ("Nuclear_Flexible", 20300103), ("Nuclear_Flexible", 20300104),
-            ("Nuclear_Flexible", 20300105), ("Nuclear_Flexible", 20300106),
-            ("Nuclear_Flexible", 20300107), ("Nuclear_Flexible", 20300108),
-            ("Nuclear_Flexible", 20300109), ("Nuclear_Flexible", 20300110),
-            ("Nuclear_Flexible", 20300111), ("Nuclear_Flexible", 20300112),
-            ("Nuclear_Flexible", 20300113), ("Nuclear_Flexible", 20300114),
-            ("Nuclear_Flexible", 20300115), ("Nuclear_Flexible", 20300116),
-            ("Nuclear_Flexible", 20300117), ("Nuclear_Flexible", 20300118),
-            ("Nuclear_Flexible", 20300119), ("Nuclear_Flexible", 20300120),
-            ("Nuclear_Flexible", 20300121), ("Nuclear_Flexible", 20300122),
-            ("Nuclear_Flexible", 20300123), ("Nuclear_Flexible", 20300124),
-            ("Nuclear_Flexible", 20300201), ("Nuclear_Flexible", 20300202),
-            ("Nuclear_Flexible", 20300203), ("Nuclear_Flexible", 20300204),
-            ("Nuclear_Flexible", 20300205), ("Nuclear_Flexible", 20300206),
-            ("Nuclear_Flexible", 20300207), ("Nuclear_Flexible", 20300208),
-            ("Nuclear_Flexible", 20300209), ("Nuclear_Flexible", 20300210),
-            ("Nuclear_Flexible", 20300211), ("Nuclear_Flexible", 20300212),
-            ("Nuclear_Flexible", 20300213), ("Nuclear_Flexible", 20300214),
-            ("Nuclear_Flexible", 20300215), ("Nuclear_Flexible", 20300216),
-            ("Nuclear_Flexible", 20300217), ("Nuclear_Flexible", 20300218),
-            ("Nuclear_Flexible", 20300219), ("Nuclear_Flexible", 20300220),
-            ("Nuclear_Flexible", 20300221), ("Nuclear_Flexible", 20300222),
-            ("Nuclear_Flexible", 20300223), ("Nuclear_Flexible", 20300224)
-        ])
+        expected_operational_timpoints_by_project = sorted(
+            get_project_operational_timepoints(expected_always_on_gen_set)
+        )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS]
