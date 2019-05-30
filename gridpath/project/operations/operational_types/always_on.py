@@ -4,8 +4,7 @@
 """
 This module describes the operations of always-on generators. These are
 generators that are always  committed but can ramp up and down between a
-minimum stable level above 0 and full output. Always-on generators cannot
-provide operating reserves.
+minimum stable level above 0 and full output.
 """
 from __future__ import division
 
@@ -16,7 +15,8 @@ from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
-
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 def add_module_specific_components(m, d):
     """
@@ -85,41 +85,57 @@ def add_module_specific_components(m, d):
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
     )
 
+    # Expressions
+    def upwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, headroom_variables)[g])
+    m.AlwaysOn_Upwards_Reserves_MW = Expression(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=upwards_reserve_rule)
+
+    def downwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, footroom_variables)[g])
+    m.AlwaysOn_Downwards_Reserves_MW = Expression(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=downwards_reserve_rule)
+
+    # Constraints
     def min_power_rule(mod, g, tmp):
         """
-        Always-on generators must provide power at at least minimum stable 
-        level at all times
+        Power provision minus downward services cannot be below the
+        minimum stable level at all times
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            - mod.AlwaysOn_Downwards_Reserves_MW[g, tmp] \
             >= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.availability_derate[g, mod.horizon[tmp]] \
             * mod.always_on_min_stable_level_fraction[g]
-    m.AlwaysOn_Min_Power_Constraint = \
-        Constraint(
-            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=min_power_rule
-        )
+    m.AlwaysOn_Min_Power_Constraint = Constraint(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_power_rule
+    )
 
     def max_power_rule(mod, g, tmp):
         """
-        Power provision can't exceed capacity
+        Power provision plus upward reserves cannot exceed capacity at all times
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.availability_derate[g, mod.horizon[tmp]]
-    m.AlwaysOn_Max_Power_Constraint = \
-        Constraint(
-            m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=max_power_rule
-        )
+    m.AlwaysOn_Max_Power_Constraint = Constraint(
+        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=max_power_rule
+    )
 
     # Optional ramp constraints
     # Constrain ramps
