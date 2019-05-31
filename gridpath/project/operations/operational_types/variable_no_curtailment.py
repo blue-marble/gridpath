@@ -49,6 +49,15 @@ def add_module_specific_components(m, d):
     #  type
     def no_upwards_reserve_rule(mod, g, tmp):
         if getattr(d, headroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'variable_no_curtailment' operational 
+                type and should not be assigned any upward reserve BAs since it 
+                cannot provide  upward reserves. Please replace the upward 
+                reserve BA for project {} with '.' (no value) in projects.tab. 
+                Model will add  constraint to ensure project {} cannot provide 
+                upward reserves
+                """.format(g, g, g)
+            )
             return sum(getattr(mod, c)[g, tmp]
                        for c in getattr(d, headroom_variables)[g]) == 0
         else:
@@ -62,6 +71,15 @@ def add_module_specific_components(m, d):
     #  type
     def no_downwards_reserve_rule(mod, g, tmp):
         if getattr(d, footroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'variable_no_curtailment' operational 
+                type and should not be assigned any downward reserve BAs since 
+                it cannot provide downward reserves. Please replace the downward 
+                reserve BA for project {} with '.' (no value) in projects.tab. 
+                Model will add  constraint to ensure project {} cannot provide 
+                downward reserves
+                """.format(g, g, g)
+            )
             return sum(getattr(mod, c)[g, tmp]
                        for c in getattr(d, footroom_variables)[g]) == 0
         else:
