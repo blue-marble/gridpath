@@ -11,7 +11,7 @@ import unittest
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
-from tests.project.operations.common_methods import \
+from tests.project.operations.common_functions import \
     get_project_operational_timepoints
 
 TEST_DATA_DIRECTORY = \
