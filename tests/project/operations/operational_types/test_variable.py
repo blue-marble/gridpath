@@ -108,20 +108,19 @@ class TestVariableOperationalType(unittest.TestCase):
                              actual_operational_timepoints_by_project)
 
         # Param: cap_factor
-        all_cap_factors = \
+        all_df = \
             pd.read_csv(
                 os.path.join(
                     TEST_DATA_DIRECTORY, "inputs",
                     "variable_generator_profiles.tab"
                 ),
                 sep="\t"
-            ).set_index(['project', 'timepoint']).to_dict()['cap_factor']
+            )
 
         # We only want projects of the 'variable' operational type
-        expected_cap_factor = dict()
-        for (p, tmp) in all_cap_factors.keys():
-            if p in expected_variable_gen_set:
-                expected_cap_factor[p, tmp] = all_cap_factors[p, tmp]
+        v_df = all_df[all_df["project"].isin(expected_variable_gen_set)]
+        expected_cap_factor = \
+            v_df.set_index(['project', 'timepoint']).to_dict()['cap_factor']
 
         actual_cap_factor = {
             (g, tmp): instance.cap_factor[g, tmp]
