@@ -83,8 +83,8 @@ class TestCapacity(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: PROJECT_OPERATIONAL_PERIODS
-        # We're the capacity_type modules to have added sets to be joined
-        # for the final PROJECT_OPERATIONAL_PERIODS
+        # We're expecting the capacity_type modules to have added sets to be
+        # joined for the final PROJECT_OPERATIONAL_PERIODS
         # The capacity_type modules use the
         # existing_generation_period_params.tab,
         # new_build_generator_vintage_costs.tab,
@@ -92,7 +92,7 @@ class TestCapacity(unittest.TestCase):
         # new_build_storage_vintage_costs.tab,
         # and new_shiftable_load_supply_curve.tab files to determine
         # operational periods, so we'll load from those files directly here
-        # and compare to what the set the capacity_type modules have created
+        # and compare to the set the capacity_type modules have created
 
         eg_df = \
             pd.read_csv(
