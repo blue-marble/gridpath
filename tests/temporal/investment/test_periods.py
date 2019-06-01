@@ -85,7 +85,8 @@ class TestPeriods(unittest.TestCase):
         timepoints_df = \
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
-                sep="\t", usecols=['TIMEPOINTS', 'period']
+                sep="\t",
+                usecols=['TIMEPOINTS', 'period']
             )
 
         # PERIODS set
