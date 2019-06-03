@@ -7,6 +7,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -68,10 +69,9 @@ class TestFuels(unittest.TestCase):
                                      stage=""
                                      )
 
-    def test_data_loaded_correctly(self):
+    def test_initialized_components(self):
         """
-        Test that the data loaded are as expected
-        :return:
+        Create components; check they are initialized with data as expected
         """
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,
@@ -82,108 +82,57 @@ class TestFuels(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # Load test data
+        fuels_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "fuels.tab"),
+                sep="\t"
+            )
+        fuel_prices_df = \
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs", "fuel_prices.tab"),
+                sep="\t"
+            )
+
         # Set: FUELS
-        expected_fuels = sorted(["Uranium", "Coal", "Gas"])
+        expected_fuels = sorted(fuels_df['FUELS'].tolist())
         actual_fuels = sorted([fuel for fuel in instance.FUELS])
         self.assertListEqual(expected_fuels, actual_fuels)
 
         # Param: co2_intensity_tons_per_mmbtu
-        expected_co2 = OrderedDict(sorted(
-            {"Uranium": 0, "Coal": 0.09552, "Gas": 0.05306}.items()
-                                            )
-                                     )
-        actual_co2 = OrderedDict(sorted(
-            {f: instance.co2_intensity_tons_per_mmbtu[f]
-             for f in instance.FUELS}.items()
-                                            )
-                                     )
+        # Rounding to 5 digits here to avoid precision-related error
+        expected_co2 = OrderedDict(
+            sorted(
+                fuels_df.round(5).set_index('FUELS').to_dict()[
+                    'co2_intensity_tons_per_mmbtu'
+                ].items()
+            )
+        )
+        actual_co2 = OrderedDict(
+            sorted(
+                {f: instance.co2_intensity_tons_per_mmbtu[f]
+                 for f in instance.FUELS}.items()
+            )
+        )
         self.assertDictEqual(expected_co2, actual_co2)
 
         # Param: fuel_price_per_mmbtu
-        expected_price = OrderedDict(sorted(
-            {("Uranium", 2020, 1): 2,
-             ("Uranium", 2020, 2): 2,
-             ("Uranium", 2020, 3): 2,
-             ("Uranium", 2020, 4): 2,
-             ("Uranium", 2020, 5): 2,
-             ("Uranium", 2020, 6): 2,
-             ("Uranium", 2020, 7): 2,
-             ("Uranium", 2020, 8): 2,
-             ("Uranium", 2020, 9): 2,
-             ("Uranium", 2020, 10): 2,
-             ("Uranium", 2020, 11): 2,
-             ("Uranium", 2020, 12): 2,
-             ("Uranium", 2030, 1): 2,
-             ("Uranium", 2030, 2): 2,
-             ("Uranium", 2030, 3): 2,
-             ("Uranium", 2030, 4): 2,
-             ("Uranium", 2030, 5): 2,
-             ("Uranium", 2030, 6): 2,
-             ("Uranium", 2030, 7): 2,
-             ("Uranium", 2030, 8): 2,
-             ("Uranium", 2030, 9): 2,
-             ("Uranium", 2030, 10): 2,
-             ("Uranium", 2030, 11): 2,
-             ("Uranium", 2030, 12): 2,
-             ("Coal", 2020, 1): 4,
-             ("Coal", 2020, 2): 4,
-             ("Coal", 2020, 3): 4,
-             ("Coal", 2020, 4): 4,
-             ("Coal", 2020, 5): 4,
-             ("Coal", 2020, 6): 4,
-             ("Coal", 2020, 7): 4,
-             ("Coal", 2020, 8): 4,
-             ("Coal", 2020, 9): 4,
-             ("Coal", 2020, 10): 4,
-             ("Coal", 2020, 11): 4,
-             ("Coal", 2020, 12): 4,
-             ("Coal", 2030, 1): 4,
-             ("Coal", 2030, 2): 4,
-             ("Coal", 2030, 3): 4,
-             ("Coal", 2030, 4): 4,
-             ("Coal", 2030, 5): 4,
-             ("Coal", 2030, 6): 4,
-             ("Coal", 2030, 7): 4,
-             ("Coal", 2030, 8): 4,
-             ("Coal", 2030, 9): 4,
-             ("Coal", 2030, 10): 4,
-             ("Coal", 2030, 11): 4,
-             ("Coal", 2030, 12): 4,
-             ("Gas", 2020, 1): 5,
-             ("Gas", 2020, 2): 5,
-             ("Gas", 2020, 3): 5,
-             ("Gas", 2020, 4): 5,
-             ("Gas", 2020, 5): 5,
-             ("Gas", 2020, 6): 5,
-             ("Gas", 2020, 7): 5,
-             ("Gas", 2020, 8): 5,
-             ("Gas", 2020, 9): 5,
-             ("Gas", 2020, 10): 5,
-             ("Gas", 2020, 11): 5,
-             ("Gas", 2020, 12): 5,
-             ("Gas", 2030, 1): 5,
-             ("Gas", 2030, 2): 5,
-             ("Gas", 2030, 3): 5,
-             ("Gas", 2030, 4): 5,
-             ("Gas", 2030, 5): 5,
-             ("Gas", 2030, 6): 5,
-             ("Gas", 2030, 7): 5,
-             ("Gas", 2030, 8): 5,
-             ("Gas", 2030, 9): 5,
-             ("Gas", 2030, 10): 5,
-             ("Gas", 2030, 11): 5,
-             ("Gas", 2030, 12): 5
-             }.items()
-                                            )
-                                     )
+        expected_price = OrderedDict(
+            sorted(
+                fuel_prices_df.set_index(
+                    ['fuel', 'period', 'month']
+                ).to_dict()['fuel_price_per_mmbtu'].items()
+            )
+        )
         actual_price = OrderedDict(sorted(
             {(f, p, m): instance.fuel_price_per_mmbtu[f, p, m]
              for f in instance.FUELS
              for p in instance.PERIODS
              for m in instance.MONTHS}.items()
-                                            )
-                                     )
+        )
+        )
         self.assertDictEqual(expected_price, actual_price)
+
 
 if __name__ == "__main__":
     unittest.main()
