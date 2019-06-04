@@ -2,7 +2,8 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of no-commit generators.
+Operations of no-commit generators, a proxy for a perfectly flexible generator
+with constant heat rate, no minimum output, and no ramp rate limits.
 """
 
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals
@@ -34,9 +35,10 @@ def add_module_specific_components(m, d):
                 if g in mod.DISPATCHABLE_NO_COMMIT_GENERATORS))
 
     # Variables
-    m.Provide_Power_DispNoCommit_MW = \
-        Var(m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            within=NonNegativeReals)
+    m.Provide_Power_DispNoCommit_MW = Var(
+        m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
+    )
 
     # Operational constraints
     def max_power_rule(mod, g, tmp):
@@ -146,12 +148,14 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-# TODO: add data check that minimum_input_mmbtu_per_hr is 0 for no-commit gens
+# TODO: add data check that there is indeed only 1 segment for must-run
+#   generators (and therefore there is no intercept)
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Fuel use in terms of an IO curve with an incremental heat rate above
-    the minimum stable level, which is 0 for no-commit generators, so just
-    multiply power by the incremental heat rate
+    Fuel burn is the product of the fuel burn slope and the power output. For
+    no commit generators we assume only one average heat rate is specified
+    in heat_rate_curves.tab, so the fuel burn slope is equal to the specified
+    heat rate and the intercept is zero.
     :param mod:
     :param g:
     :param tmp:
@@ -159,8 +163,8 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] \
-            * mod.inc_heat_rate_mmbtu_per_mwh[g]
+        return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
+            * mod.Provide_Power_DispNoCommit_MW[g, tmp]
     else:
         raise ValueError(error_message)
 

@@ -11,8 +11,10 @@ from builtins import next
 from builtins import zip
 import csv
 from pandas import read_csv
+import numpy as np
 import os.path
-from pyomo.environ import Set, Param, PositiveReals, PercentFraction
+from pyomo.environ import Set, Param, PositiveReals, PercentFraction, \
+    NonNegativeReals, Reals
 
 from gridpath.auxiliary.auxiliary import is_number
 
@@ -53,13 +55,22 @@ def add_model_components(m, d):
     #  modules with an 'if in FUEL_PROJECTS'
     # Fuels and heat rates
     m.FUEL_PROJECTS = Set(within=m.PROJECTS)
-
     m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS)
 
-    # TODO: implement full heat rate curve (probably piecewise linear with
-    #  flexible  number of points)
-    m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS)
-    m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS)
+    m.FUEL_PROJECT_SEGMENTS = Set(dimen=2)
+    m.fuel_burn_intercept_mmbtu_per_hr = Param(
+        m.FUEL_PROJECT_SEGMENTS, within=Reals)
+    m.fuel_burn_slope_mmbtu_per_mwh = Param(
+        m.FUEL_PROJECT_SEGMENTS, within=PositiveReals)
+
+    # this is the set over which we will define the fuel burn rule
+    m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            for _g, s in mod.FUEL_PROJECT_SEGMENTS
+            if g in mod.FUEL_PROJECTS and g == _g)
+    )
 
     m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2,
@@ -184,53 +195,53 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     else:
         pass
 
-    # FUEL_PROJECTS
-    def determine_fuel_projects():
-        """
-        E.g. generators that use coal, gas, uranium
-        :param mod:
-        :return:
-        """
-        fuel_projects = list()
-        fuel = dict()
-        minimum_input_mmbtu_per_hr = dict()
-        inc_heat_rate_mmbtu_per_mwh = dict()
+    def determine_fuel_project_segments():
+        hr_df = read_csv(
+            os.path.join(scenario_directory, "inputs", "heat_rate_curves.tab"),
+            sep="\t"
+        )
 
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "fuel",
-                                   "minimum_input_mmbtu_per_hr",
-                                   "inc_heat_rate_mmbtu_per_mwh"]
-                )
+        pr_df = read_csv(
+            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            sep="\t",
+            usecols=["project", "fuel"]
+        )
+        pr_df = pr_df[pr_df["fuel"] != "."]
 
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["fuel"],
-                       dynamic_components["minimum_input_mmbtu_per_hr"],
-                       dynamic_components["inc_heat_rate_mmbtu_per_mwh"]):
-            # print row[0]
-            if row[1] != ".":
-                fuel_projects.append(row[0])
-                fuel[row[0]] = row[1]
-                minimum_input_mmbtu_per_hr[row[0]] = float(row[2])
-                inc_heat_rate_mmbtu_per_mwh[row[0]] = float(row[3])
-            else:
-                pass
+        fuels_dict = dict(zip(pr_df["project"], pr_df["fuel"]))
+        slope_dict = {}
+        intercept_dict = {}
+        for project in fuels_dict.keys():
+            # read in the power setpoints and average heat rates
+            hr_slice = hr_df[hr_df["project"] == project]
+            hr_slice = hr_slice.sort_values(by=["load_point_mw"])
+            load_points = hr_slice["load_point_mw"].values
+            heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
-        return fuel_projects, fuel, minimum_input_mmbtu_per_hr, \
-            inc_heat_rate_mmbtu_per_mwh
+            slopes, intercepts = calculate_heat_rate_slope_intercept(
+                project, load_points, heat_rates
+            )
+
+            slope_dict.update(slopes)
+            intercept_dict.update(intercepts)
+
+        return fuels_dict, slope_dict, intercept_dict
 
     if "fuel" in headers:
-        data_portal.data()["FUEL_PROJECTS"] = {
-            None: determine_fuel_projects()[0]
-        }
+        fuels_dict, slope_dict, intercept_dict = \
+            determine_fuel_project_segments()
+        fuel_projects = list(fuels_dict.keys())
+        fuel_project_segments = list(slope_dict.keys())
 
-        data_portal.data()["fuel"] = determine_fuel_projects()[1]
-        data_portal.data()["minimum_input_mmbtu_per_hr"] = \
-            determine_fuel_projects()[2]
-        data_portal.data()["inc_heat_rate_mmbtu_per_mwh"] = \
-            determine_fuel_projects()[3]
+        data_portal.data()["FUEL_PROJECTS"] = \
+            {None: fuel_projects}
+        data_portal.data()["FUEL_PROJECT_SEGMENTS"] = \
+            {None: fuel_project_segments}
+        data_portal.data()["fuel"] = fuels_dict
+        data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = \
+            slope_dict
+        data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = \
+            intercept_dict
     else:
         pass
 
@@ -253,7 +264,6 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
         for row in zip(dynamic_components["project"],
                        dynamic_components["startup_fuel_mmbtu_per_mw"]):
-            # print row[0]
             if row[1] != ".":
                 startup_fuel_projects.append(row[0])
                 startup_fuel_mmbtu_per_mw[row[0]] = float(row[1])
@@ -327,3 +337,114 @@ def get_inputs_from_database(
 
             for row in availabilities:
                 writer.writerow(row)
+
+    # TODO; test this once database integration is merged into piecewise
+    #   fuel cost branch.
+    # Write heat rate curves files
+    # Select only heat rate curves of projects in the portfolio
+    heat_rates = c.execute(
+        """
+        SELECT project, segment_id, load_point_mw, 
+        average_heat_rate_mmbtu_per_mwh
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, heat_rate_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) AS op_char
+        USING(project)
+        LEFT OUTER JOIN
+        inputs_project_heat_rate_curves
+        USING(project, heat_rate_curves_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
+              "w") as \
+            heat_rate_tab_file:
+        writer = csv.writer(heat_rate_tab_file, delimiter="\t")
+
+        writer.writerow(["project", "segment_id", "load_point_mw",
+                         "average_heat_rate_mmbtu_per_mwh"])
+
+        for row in heat_rates:
+            writer.writerow(row)
+
+
+def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
+    """
+    Calculates slope and intercept for a set of load points and corresponding
+    average heat rates.
+    :param project: the project name
+    :param load_points: NumPy array with the loading points in MW
+    :param heat_rates: NumPy array with the corresponding heat rates in MMBtu
+    per MWh
+    :return:
+    """
+
+    n_points = len(load_points)
+
+    # Data checks
+    assert len(load_points) == len(heat_rates)
+    # TODO: remove once proper data validation with database?
+    if np.any(load_points <= 0) or np.any(heat_rates <= 0):
+        raise ValueError(
+            """
+            Load points and average heat rates should be positive
+            numbers. Check heat rate curve inputs for project '{}'.
+            """.format(project)
+        )
+    if n_points == 0:
+        raise ValueError(
+            """
+            Model requires at least one load point and one average
+            heat rate input for each fuel project. It seems like
+            there are no heat rate inputs for project '{}'.
+            """.format(project)
+        )
+
+    # calculate the slope and intercept for each pair of load points
+    slope_dict = {}
+    intercept_dict = {}
+    # if just one point, assume constant heat rate (no intercept)
+    if n_points == 1:
+        slope_dict[(project, 0)] = heat_rates[0]
+        intercept_dict[(project, 0)] = 0
+    else:
+        fuel_burn = load_points * heat_rates
+        incr_loads = np.diff(load_points)
+        incr_fuel_burn = np.diff(fuel_burn)
+        slopes = incr_fuel_burn / incr_loads
+        intercepts = fuel_burn[:-1] - slopes * load_points[:-1]
+
+        # Data Checks
+        if np.any(incr_loads <= 0):
+            raise ValueError(
+                """
+                Load points in heat rate curve should be strictly
+                increasing. Check heat rate curve inputs for project '{}'.
+                """.format(project)
+            )
+        if np.any(incr_fuel_burn <= 0):
+            raise ValueError(
+                """
+                Total fuel burn should be strictly increasing between
+                load points. Check heat rate curve inputs for project '{}'.
+                """.format(project)
+            )
+        if np.any(np.diff(slopes) <= 0):
+            raise ValueError(
+                """
+                The fuel burn as a function of power output should be
+                a convex function, i.e. the incremental heat rate should
+                be positive and strictly increasing. Check heat rate
+                curve inputs for project '{}'.
+                """.format(project)
+            )
+
+        for i in range(n_points - 1):
+            slope_dict[(project, i)] = slopes[i]
+            intercept_dict[(project, i)] = intercepts[i]
+
+    return slope_dict, intercept_dict

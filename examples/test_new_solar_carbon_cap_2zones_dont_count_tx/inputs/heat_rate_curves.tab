@@ -1,0 +1,10 @@
+project	load_point_mw	average_heat_rate_mmbtu_per_mwh
+Coal	2.4	1250
+Coal	6	506
+Gas_CCGT	3	506
+Gas_CCGT	6	256
+Gas_CT	2.4	208.33333
+Gas_CT	6	88.13333
+Nuclear	6	1666.67
+Gas_CCGT_z2	3	506
+Gas_CCGT_z2	6	256

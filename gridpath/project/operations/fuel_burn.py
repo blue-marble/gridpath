@@ -48,7 +48,6 @@ def add_model_components(m, d):
                                         "'.' in projects.tab.".format(g))
 
     # Get startup fuel burn if it applies
-
     def startup_shutdown_rule(mod, g, tmp):
         """
         Track units started up from timepoint to timepoint; get appropriate

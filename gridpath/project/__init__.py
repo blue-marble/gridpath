@@ -182,7 +182,6 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer.writerow(
             ["project", "capacity_type", "operational_type", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
-             "minimum_input_mmbtu_per_hr", "inc_heat_rate_mmbtu_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",
              "startup_cost_per_mw", "shutdown_cost_per_mw",
              "startup_fuel_mmbtu_per_mw",
@@ -199,7 +198,6 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         projects = c.execute(
             """SELECT project, capacity_type, operational_type, technology,
             load_zone, fuel, variable_cost_per_mwh,
-            minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
             min_stable_level, unit_size_mw,
             startup_cost_per_mw, shutdown_cost_per_mw,
             startup_fuel_mmbtu_per_mw,
@@ -220,7 +218,6 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             LEFT OUTER JOIN
             (SELECT project, operational_type, technology,
             fuel, variable_cost_per_mwh,
-            minimum_input_mmbtu_per_hr, inc_heat_rate_mmbtu_per_mwh,
             min_stable_level, unit_size_mw,
             startup_cost_per_mw, shutdown_cost_per_mw,
             startup_fuel_mmbtu_per_mw,

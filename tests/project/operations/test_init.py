@@ -9,11 +9,15 @@ from importlib import import_module
 import os.path
 import sys
 import unittest
+import numpy as np
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 from tests.project.operations.common_functions import \
     get_project_operational_timepoints
+from gridpath.project.operations.__init__ import \
+    calculate_heat_rate_slope_intercept
+
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
@@ -46,6 +50,22 @@ class TestOperationsInit(unittest.TestCase):
     """
 
     """
+
+    def assertDictAlmostEqual(self, d1, d2, msg=None, places=7):
+
+        # check if both inputs are dicts
+        self.assertIsInstance(d1, dict, 'First argument is not a dictionary')
+        self.assertIsInstance(d2, dict, 'Second argument is not a dictionary')
+
+        # check if both inputs have the same keys
+        self.assertEqual(d1.keys(), d2.keys())
+
+        # check each key
+        for key, value in d1.items():
+            if isinstance(value, dict):
+                self.assertDictAlmostEqual(d1[key], d2[key], msg=msg)
+            else:
+                self.assertAlmostEqual(d1[key], d2[key], places=places, msg=msg)
 
     def test_add_model_components(self):
         """
@@ -194,62 +214,6 @@ class TestOperationsInit(unittest.TestCase):
         )
         self.assertDictEqual(expected_fuel, actual_fuel)
 
-        # Param: minimum_input_mmbtu_per_hr
-        expected_min_input = OrderedDict(sorted({
-            "Nuclear": 0,
-            "Gas_CCGT": 1500,
-            "Coal": 3000,
-            "Gas_CT": 500,
-            "Gas_CCGT_New": 1500,
-            "Nuclear_z2": 10000,
-            "Gas_CCGT_z2": 1500,
-            "Coal_z2": 3000,
-            "Gas_CT_z2": 500,
-            "Gas_CT_New": 500,
-            "Disp_Binary_Commit": 500,
-            "Disp_Cont_Commit": 500,
-            "Disp_No_Commit": 500,
-            "Clunky_Old_Gen": 5000,
-            "Clunky_Old_Gen2": 5000,
-            "Nuclear_Flexible": 5500
-                                                }.items()
-                                                )
-                                         )
-        actual_min_input = OrderedDict(sorted(
-            {prj: instance.minimum_input_mmbtu_per_hr[prj]
-             for prj in instance.FUEL_PROJECTS}.items()
-        )
-        )
-        self.assertDictEqual(expected_min_input, actual_min_input)
-
-        # Param: inc_heat_rate_mmbtu_per_mwh
-        expected_inc_heat_rate = OrderedDict(sorted({
-            "Nuclear": 1666.67,
-            "Gas_CCGT": 6,
-            "Coal": 10,
-            "Gas_CT": 8,
-            "Gas_CCGT_New": 6,
-            "Nuclear_z2": 0,
-            "Gas_CCGT_z2": 6,
-            "Coal_z2": 10,
-            "Gas_CT_z2": 8,
-            "Gas_CT_New": 8,
-            "Disp_Binary_Commit": 8,
-            "Disp_Cont_Commit": 8,
-            "Disp_No_Commit": 8,
-            "Clunky_Old_Gen": 15,
-            "Clunky_Old_Gen2": 15,
-            "Nuclear_Flexible": 450
-                                                    }.items()
-                                                    )
-                                             )
-        actual_inc_heat_rate = OrderedDict(sorted(
-            {prj: instance.inc_heat_rate_mmbtu_per_mwh[prj]
-             for prj in instance.FUEL_PROJECTS}.items()
-        )
-        )
-        self.assertDictEqual(expected_inc_heat_rate, actual_inc_heat_rate)
-
         # Set: FUEL_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps_by_fuel_project = sorted(
             get_project_operational_timepoints(expected_fuel_projects)
@@ -260,6 +224,106 @@ class TestOperationsInit(unittest.TestCase):
                                                  ])
         self.assertListEqual(expected_tmps_by_fuel_project,
                              actual_tmps_by_fuel_project)
+
+        # Set: FUEL_PROJECT_SEGMENTS
+
+        expected_fuel_project_segments = sorted([
+            ("Nuclear", 0),
+            ("Gas_CCGT", 0),
+            ("Coal", 0),
+            ("Gas_CT", 0),
+            ("Gas_CCGT_New", 0),
+            ("Nuclear_z2", 0),
+            ("Gas_CCGT_z2", 0),
+            ("Coal_z2", 0),
+            ("Gas_CT_z2", 0),
+            ("Gas_CT_New", 0),
+            ("Disp_Binary_Commit", 0),
+            ("Disp_Cont_Commit", 0),
+            ("Disp_No_Commit", 0),
+            ("Clunky_Old_Gen", 0),
+            ("Clunky_Old_Gen2", 0),
+            ("Nuclear_Flexible", 0)
+        ])
+        actual_fuel_project_segments = sorted([
+            (prj, s) for (prj, s) in instance.FUEL_PROJECT_SEGMENTS
+            ])
+        self.assertListEqual(expected_fuel_project_segments,
+                             actual_fuel_project_segments)
+
+        # Set: FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+        expected_fuel_project_segments_operational_timepoints = sorted([
+            (g, tmp, s) for (g, tmp) in expected_tmps_by_fuel_project
+            for _g, s in expected_fuel_project_segments
+            if g in expected_fuel_projects and g == _g
+        ])
+        actual_fuel_project_segments_operational_timepoints = sorted([
+            (prj, tmp, s) for (prj, tmp, s) in
+            instance.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+        ])
+
+        self.assertListEqual(
+            expected_fuel_project_segments_operational_timepoints,
+            actual_fuel_project_segments_operational_timepoints
+        )
+
+        # Param: fuel_burn_slope_mmbtu_per_mwh
+        expected_fuel_burn_slope = OrderedDict(sorted({
+            ("Nuclear", 0): 1666.67,
+            ("Gas_CCGT", 0): 6,
+            ("Coal", 0): 10,
+            ("Gas_CT", 0): 8,
+            ("Gas_CCGT_New", 0): 6,
+            ("Nuclear_z2", 0): 1666.67,
+            ("Gas_CCGT_z2", 0): 6,
+            ("Coal_z2", 0): 10,
+            ("Gas_CT_z2", 0): 8,
+            ("Gas_CT_New", 0): 8,
+            ("Disp_Binary_Commit", 0): 8,
+            ("Disp_Cont_Commit", 0): 8,
+            ("Disp_No_Commit", 0): 8,
+            ("Clunky_Old_Gen", 0): 15,
+            ("Clunky_Old_Gen2", 0): 15,
+            ("Nuclear_Flexible", 0): 10
+        }.items()))
+        actual_fuel_burn_slope = OrderedDict(sorted(
+            {(prj, s): instance.fuel_burn_slope_mmbtu_per_mwh[(prj, s)]
+             for (prj, s) in instance.FUEL_PROJECT_SEGMENTS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_slope,
+                                   actual_fuel_burn_slope,
+                                   places=5)
+
+        # Param: fuel_burn_intercept_mmbtu_per_hour
+        expected_fuel_burn_intercept = OrderedDict(sorted({
+            ("Nuclear", 0): 0,
+            ("Gas_CCGT", 0): 1500,
+            ("Coal", 0): 2976,
+            ("Gas_CT", 0): 480.8,
+            ("Gas_CCGT_New", 0): 1500,
+            ("Nuclear_z2", 0): 0,
+            ("Gas_CCGT_z2", 0): 1500,
+            ("Coal_z2", 0): 2976,
+            ("Gas_CT_z2", 0): 480.8,
+            ("Gas_CT_New", 0): 480.8,
+            ("Disp_Binary_Commit", 0): 480.8,
+            ("Disp_Cont_Commit", 0): 480.8,
+            ("Disp_No_Commit", 0): 0,
+            ("Clunky_Old_Gen", 0): 4964,
+            ("Clunky_Old_Gen2", 0): 4964,
+            ("Nuclear_Flexible", 0): 0
+        }.items()))
+        actual_fuel_burn_intercept = OrderedDict(sorted(
+            {(prj, s): instance.fuel_burn_intercept_mmbtu_per_hr[(prj, s)]
+             for (prj, s) in instance.FUEL_PROJECT_SEGMENTS}.items()
+            )
+        )
+
+        self.assertDictAlmostEqual(expected_fuel_burn_intercept,
+                                   actual_fuel_burn_intercept,
+                                   places=5)
 
         # Set: STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps_by_startup_project = sorted(
@@ -395,6 +459,41 @@ class TestOperationsInit(unittest.TestCase):
         )
 
         self.assertDictEqual(expected_availability, actual_availability)
+
+    def test_calculate_heat_rate_slope_intercept(self):
+        """
+        Check that heat rate slope and intercept calculation gives expected
+        results for examples with different number of load points
+        """
+        test_cases = {
+            1: {"project": "test1",
+                "load_points": np.array([10]),
+                "heat_rates": np.array([8]),
+                "slopes": {("test1", 0): 8},
+                "intercepts": {("test1", 0): 0}},
+            2: {"project": "test2",
+                "load_points": np.array([5, 10]),
+                "heat_rates": np.array([10, 7]),
+                "slopes": {("test2", 0): 4},
+                "intercepts": {("test2", 0): 30}},
+            3: {"project": "test3",
+                "load_points": np.array([5, 10, 20]),
+                "heat_rates": np.array([10, 7, 6]),
+                "slopes": {("test3", 0): 4, ("test3", 1): 5},
+                "intercepts": {("test3", 0): 30, ("test3", 1): 20}}
+        }
+        for test_case in test_cases.keys():
+            expected_slopes = test_cases[test_case]["slopes"]
+            expected_intercepts = test_cases[test_case]["intercepts"]
+            actual_slopes, actual_intercepts = \
+                calculate_heat_rate_slope_intercept(
+                    project=test_cases[test_case]["project"],
+                    load_points=test_cases[test_case]["load_points"],
+                    heat_rates=test_cases[test_case]["heat_rates"]
+                )
+
+            self.assertDictEqual(expected_slopes, actual_slopes)
+            self.assertDictEqual(expected_intercepts, actual_intercepts)
 
 
 if __name__ == "__main__":

@@ -82,9 +82,31 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.ALWAYS_ON_GENERATORS))
 
+    # Fuel Project Operational timepoints
+    m.ALWAYS_ON_GENERATOR_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2, within=m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in
+                mod.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS
+                if g in mod.FUEL_PROJECTS))
+
+    # Fuel burn segment operational timepoints
+    m.ALWAYS_ON_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=3,
+            within=m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+            rule=lambda mod:
+            set((g, tmp, s) for (g, tmp, s)
+                in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+                if g in mod.ALWAYS_ON_GENERATORS))
+
     # Variables
     m.Provide_Power_AlwaysOn_MW = Var(
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
+    )
+
+    m.Fuel_Burn_AlwaysOn_MMBTU = Var(
+        m.ALWAYS_ON_GENERATOR_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
     )
 
     # Expressions
@@ -150,7 +172,7 @@ def add_module_specific_components(m, d):
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
         ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod: 
+        :param mod:
         :param g: 
         :param tmp: 
         :return: 
@@ -196,7 +218,7 @@ def add_module_specific_components(m, d):
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
         ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod: 
+        :param mod:
         :param g: 
         :param tmp: 
         :return: 
@@ -231,6 +253,36 @@ def add_module_specific_components(m, d):
             m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
             rule=ramp_down_rule
         )
+
+    def fuel_burn_constraint_rule(mod, g, tmp, s):
+        """
+        Fuel burn is set by piecewise linear representation of input/output
+        curve.
+
+        Note: we assume that when projects are derated for availability, the
+        input/output curve is derated by the same amount. The implicit
+        assumption is that when a generator is de-rated, some of its units
+        are out rather than it being forced to run below minimum stable level
+        at very inefficient operating points.
+        :param mod:
+        :param g:
+        :param tmp:
+        :param s:
+        :return:
+        """
+        return \
+            mod.Fuel_Burn_AlwaysOn_MMBTU[g, tmp] \
+            >= \
+            mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
+            * mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+            + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
+            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * (mod.Capacity_MW[g, mod.period[tmp]]
+               / mod.always_on_unit_size_mw[g])
+    m.Fuel_Burn_AlwaysOn_Constraint = Constraint(
+        m.ALWAYS_ON_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+        rule=fuel_burn_constraint_rule
+    )
 
 
 def power_provision_rule(mod, g, tmp):
@@ -307,7 +359,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    
+
     :param mod:
     :param g:
     :param tmp:
@@ -315,16 +367,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.availability_derate[g, mod.horizon[tmp]]
-                / mod.always_on_unit_size_mw[g]
-                ) \
-            * mod.minimum_input_mmbtu_per_hr[g] \
-            + (mod.Provide_Power_AlwaysOn_MW[g, tmp] -
-                (mod.Capacity_MW[g, mod.period[tmp]]
-                 * mod.availability_derate[g, mod.horizon[tmp]]
-                 * mod.always_on_min_stable_level_fraction[g])
-               ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
+        return mod.Fuel_Burn_AlwaysOn_MMBTU[g, tmp]
     else:
         raise ValueError(error_message)
 
