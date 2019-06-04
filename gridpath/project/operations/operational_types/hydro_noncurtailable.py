@@ -39,6 +39,10 @@ def add_module_specific_components(m, d):
     power output on each timepoint on horizon *oh* \n
     *hydro_noncurtailable_max_power_mw* \ :sub:`nchg, oh`\ -- the maximum
     power output on each timepoint on horizon *oh* \n
+    *hydro_noncurtailable_ramp_up_rate* \ :sub:`nchg`\ -- the project's upward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
+    *hydro_noncurtailable_ramp_down_rate* \ :sub:`nchg`\ -- the project's
+    downward ramp rate limit, defined as a fraction of its capacity per minute\n
 
     The power provision variable for non-curtailable hydro projects,
     *Hydro_Noncurtailable_Provide_Power_MW*, is defined over
@@ -98,6 +102,7 @@ def add_module_specific_components(m, d):
                 if g in mod.HYDRO_NONCURTAILABLE_PROJECTS))
 
     # Ramp rates can be optionally specified and will default to 1 if not
+    # Ramp rate units are "percent of project capacity per minute"
     m.hydro_noncurtailable_ramp_up_rate = \
         Param(m.HYDRO_NONCURTAILABLE_PROJECTS, within=PercentFraction,
               default=1)
@@ -184,7 +189,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -193,13 +198,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If you can ramp up the the total project's capacity within a minute
+        # ramp constraints won't bind (assuming we're not modeling timepoints
+        # shorter than 1 minute)
         elif mod.hydro_noncurtailable_ramp_up_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
                 <= \
                 mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
-                / mod.number_of_hours_in_timepoint[
+                * mod.number_of_hours_in_timepoint[
                        mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]
@@ -217,7 +225,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -226,13 +234,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If you can ramp down the the total project's capacity within a minute
+        # ramp constraints won't bind (assuming we're not modeling timepoints
+        # shorter than 1 minute)
         elif mod.hydro_noncurtailable_ramp_down_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
                 >= \
                 - mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
-                / mod.number_of_hours_in_timepoint[
+                * mod.number_of_hours_in_timepoint[
                     mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]

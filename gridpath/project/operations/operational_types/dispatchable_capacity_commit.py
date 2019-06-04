@@ -46,7 +46,24 @@ def add_module_specific_components(m, d):
     *unit_size_mw* \ :sub:`ccg`\ -- the unit size for the
     project, which is needed to calculate fuel burn if the project
     represents a fleet \n
-    *ramp rates*, *min up time*, *min down time* -- formulation not
+    *dispcapcommit_startup_plus_ramp_up_rate* \ :sub:`ccg`\ -- the project's
+    upward ramp rate limit during startup, defined as a fraction of its capacity
+    per minute. This param, adjusted for timepoint duration, has to be equal or
+    larger than *disp_cap_commit_min_stable_level_fraction* for the unit to be
+    able to start up between timepoints. \n
+    *dispcapcommit_shutdown_plus_ramp_down_rate* \ :sub:`ccg`\ -- the project's
+    downward ramp rate limit during shutdown, defined as a fraction of its
+    capacity per minute. This param, adjusted for timepoint duration, has to be
+    equal or larger than *disp_cap_commit_min_stable_level_fraction* for the
+    unit to be able to shut down between timepoints. \n
+    *dispcapcommit_ramp_up_when_on_rate* \ :sub:`ccg`\ -- the project's
+    upward ramp rate limit during operations, defined as a fraction of its
+    capacity per minute. \n
+    *dispcapcommit_ramp_down_when_on_rate* \ :sub:`ccg`\ -- the project's
+    downward ramp rate limit during operations, defined as a fraction of its
+    capacity per minute. \n
+
+    *min up time*, *min down time* -- formulation not
     documented yet
 
     The power provision variable for dispatchable-capacity-commit generators,
@@ -88,6 +105,8 @@ def add_module_specific_components(m, d):
     m.disp_cap_commit_min_stable_level_fraction = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction)
+    # Ramp rates can be optionally specified and will default to 1 if not
+    # Ramp rate units are "percent of project capacity per minute"
     m.dispcapcommit_startup_plus_ramp_up_rate = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
@@ -217,7 +236,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -259,7 +278,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -328,14 +347,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # start up the full capacity and ramp up the full operable range
+        # between timepoints, constraint won't bind, so skip
         elif (mod.dispcapcommit_startup_plus_ramp_up_rate[g] * 60
-              >=
-              1 / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= 1
               and
               mod.dispcapcommit_ramp_up_when_on_rate[g] * 60
-              >=
-              (1 - mod.disp_cap_commit_min_stable_level_fraction[g])
-              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1 - mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
@@ -362,7 +383,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -447,14 +468,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # shut down the full capacity and ramp down the full operable range
+        # between timepoints, constraint won't bind, so skip
         elif (mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] * 60
-              >=
-              1 / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= 1
               and
               mod.dispcapcommit_ramp_down_when_on_rate[g] * 60
-              >=
-              (1-mod.disp_cap_commit_min_stable_level_fraction[g])
-              / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1-mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:

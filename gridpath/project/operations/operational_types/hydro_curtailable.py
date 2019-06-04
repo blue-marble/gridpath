@@ -22,7 +22,10 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-
+    *hydro_curtailable_ramp_up_rate* \ :sub:`chg`\ -- the project's upward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
+    *hydro_curtailable_ramp_down_rate* \ :sub:`chg`\ -- the project's downward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
     :param m:
     :return:
     """
@@ -54,6 +57,7 @@ def add_module_specific_components(m, d):
                 if g in mod.HYDRO_CURTAILABLE_PROJECTS))
 
     # Ramp rates can be optionally specified and will default to 1 if not
+    # Ramp rate units are "percent of project capacity per minute"
     m.hydro_curtailable_ramp_up_rate = \
         Param(m.HYDRO_CURTAILABLE_PROJECTS, within=PercentFraction, default=1)
     m.hydro_curtailable_ramp_down_rate = \
@@ -143,7 +147,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -152,13 +156,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If you can ramp up the the total project's capacity within a minute
+        # ramp constraints won't bind (assuming we're not modeling timepoints
+        # shorter than 1 minute)
         elif mod.hydro_curtailable_ramp_up_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 <= \
                 mod.hydro_curtailable_ramp_up_rate[g] * 60 \
-                / mod.number_of_hours_in_timepoint[
+                * mod.number_of_hours_in_timepoint[
                     mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]
@@ -176,7 +183,7 @@ def add_module_specific_components(m, d):
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -185,13 +192,16 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
+        # If you can ramp down the the total project's capacity within a minute
+        # ramp constraints won't bind (assuming we're not modeling timepoints
+        # shorter than 1 minute)
         elif mod.hydro_curtailable_ramp_down_rate[g] == 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
                 >= \
                 - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
-                / mod.number_of_hours_in_timepoint[
+                * mod.number_of_hours_in_timepoint[
                     mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]]
