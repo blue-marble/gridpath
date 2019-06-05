@@ -26,26 +26,28 @@ def add_model_components(m, d):
                              within=NonNegativeReals)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs", "rps_targets.tab"),
-                     index=m.RPS_ZONE_PERIODS_WITH_RPS,
-                     param=m.rps_target_mwh,
-                     select=("rps_zone", "period", "rps_target_mwh")
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "rps_targets.tab"),
+        index=m.RPS_ZONE_PERIODS_WITH_RPS,
+        param=m.rps_target_mwh,
+        select=("rps_zone", "period", "rps_target_mwh")
+    )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios

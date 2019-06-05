@@ -16,11 +16,11 @@ from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_operational_modules, headroom_variables, footroom_variables
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
     :param d: the dynamic components class object we'll be adding to
     :param scenario_directory: the base scenario directory
-    :param horizon: if horizon subproblems exist, the horizon name; NOT USED
+    :param stage: if horizon subproblems exist, the horizon name; NOT USED
     :param stage: if stage subproblems exist, the stage name; NOT USED
 
     This method adds several project-related 'dynamic components' to the
@@ -49,7 +49,8 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
 
     project_dynamic_data = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
+                         "projects.tab"),
             sep="\t", usecols=["project",
                                "capacity_type",
                                "operational_type"]
@@ -125,18 +126,18 @@ def add_model_components(m, d):
     m.technology = Param(m.PROJECTS, default="unspecified")
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     
     :param m: 
     :param d: 
     :param data_portal: 
     :param scenario_directory: 
-    :param horizon: 
+    :param stage:
     :param stage: 
     :return: 
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
@@ -146,19 +147,19 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
     # Technology column is optional (default param value is 'unspecified')
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                      "inputs", "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
     if "technology" in header:
-        data_portal.load(filename=os.path.join(scenario_directory,
+        data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                                "inputs", "projects.tab"),
                          select=("project", "technology"),
                          param=m.technology
                          )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

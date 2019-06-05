@@ -357,14 +357,14 @@ def capacity_cost_rule(mod, g, p):
                if gen == g)
 
 
-def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+def load_module_specific_data(m, data_portal,
+                              scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -375,12 +375,12 @@ def load_module_specific_data(m,
         new_build_storage_projects = list()
         storage_min_duration = dict()
 
-        dynamic = \
-            pd.read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project", "capacity_type",
-                                   "minimum_duration_hours"]
-            )
+        dynamic = pd.read_csv(
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs","projects.tab"),
+            sep="\t",
+            usecols=["project", "capacity_type", "minimum_duration_hours"]
+        )
         for r in zip(dynamic["project"],
                      dynamic["capacity_type"],
                      dynamic["minimum_duration_hours"]):
@@ -402,7 +402,7 @@ def load_module_specific_data(m,
     # TODO: throw an error when a generator of the 'new_build_storage' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(filename=
-                     os.path.join(scenario_directory,
+                     os.path.join(scenario_directory, subproblem, stage,
                                   "inputs",
                                   "new_build_storage_vintage_costs.tab"),
                      index=
@@ -426,9 +426,11 @@ def load_module_specific_data(m,
     max_cumulative_mw = dict()
     max_cumulative_mwh = dict()
 
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "new_build_storage_vintage_costs.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "new_build_storage_vintage_costs.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     dynamic_columns = ["min_cumulative_new_build_mw",
                        "min_cumulative_new_build_mwh",
@@ -436,13 +438,12 @@ def load_module_specific_data(m,
                        "max_cumulative_new_build_mwh"]
     used_columns = [c for c in dynamic_columns if c in header]
 
-    dynamic_components = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs",
-                         "new_build_storage_vintage_costs.tab"),
-            sep="\t",
-            usecols=["project", "vintage"] + used_columns
-            )
+    dynamic_components = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "new_build_storage_vintage_costs.tab"),
+        sep="\t",
+        usecols=["project", "vintage"] + used_columns
+    )
 
     # min_storage_cumulative_new_build_mw and
     # min_storage_cumulative_new_build_mwh are optional,
@@ -540,17 +541,17 @@ def load_module_specific_data(m,
         max_cumulative_mwh
 
 
-def export_module_specific_results(scenario_directory, horizon, stage, m, d):
+def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     """
     Export new build storage results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "capacity_new_build_storage.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -590,12 +591,12 @@ def new_build_storage_vintages_operational_in_period(mod, p):
 
 
 def summarize_module_specific_results(
-    problem_directory, horizon, stage, summary_results_file
+    scenario_directory, subproblem, stage, summary_results_file
 ):
     """
     Summarize new build storage capacity results.
-    :param problem_directory:
-    :param horizon:
+    :param scenario_directory:
+    :param subproblem:
     :param stage:
     :param summary_results_file:
     :return:
@@ -603,8 +604,8 @@ def summarize_module_specific_results(
 
     # Get the results CSV as dataframe
     capacity_results_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
-                                 "capacity_new_build_storage.csv")
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                 "results", "capacity_new_build_storage.csv")
                     )
 
     capacity_results_agg_df = \
@@ -712,11 +713,13 @@ def get_module_specific_inputs_from_database(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -726,9 +729,10 @@ def import_module_specific_results_into_database(
     print("project new build storage")
     c.execute(
         """DELETE FROM results_project_capacity_new_build_storage 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -746,11 +750,13 @@ def import_module_specific_results_into_database(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         technology VARCHAR(32),
         load_zone VARCHAR(32),
         new_build_mw FLOAT,
         new_build_mwh FLOAT,
-        PRIMARY KEY (scenario_id, project, period)
+        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -774,11 +780,11 @@ def import_module_specific_results_into_database(
                 """INSERT INTO 
                 temp_results_project_capacity_new_build_storage"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, technology, load_zone,
-                new_build_mw, new_build_mwh)
-                VALUES ({}, '{}', {}, '{}', '{}', {}, {});""".format(
-                    scenario_id, project, period, technology, load_zone,
-                    new_build_mw, new_build_mwh,
+                (scenario_id, project, period, subproblem_id, stage_id,
+                technology, load_zone, new_build_mw, new_build_mwh)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    technology, load_zone, new_build_mw, new_build_mwh,
                 )
             )
     db.commit()
@@ -786,13 +792,16 @@ def import_module_specific_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_capacity_new_build_storage
-        (scenario_id, project, period, technology, load_zone,
-        new_build_mw, new_build_mwh)
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, new_build_mw, new_build_mwh)
         SELECT
-        scenario_id, project, period, technology, load_zone,
-        new_build_mw, new_build_mwh
-        FROM temp_results_project_capacity_new_build_storage""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, period;"""
+        scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, new_build_mw, new_build_mwh
+        FROM temp_results_project_capacity_new_build_storage"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 

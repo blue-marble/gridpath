@@ -101,14 +101,14 @@ def capacity_cost_rule(mod, g, p):
 
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, horizon, stage
+        m, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -123,7 +123,7 @@ def load_module_specific_data(
 
         dynamic_components = \
             pd.read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
                 sep="\t", usecols=["project",
                                    "capacity_type"]
                 )
@@ -148,7 +148,7 @@ def load_module_specific_data(
         existing_no_econ_ret_fixed_cost_per_mw_yr_dict = dict()
         dynamic_components = \
             pd.read_csv(
-                os.path.join(scenario_directory, "inputs",
+                os.path.join(scenario_directory, subproblem, stage, "inputs",
                              "existing_generation_period_params.tab"),
                 sep="\t"
                 )

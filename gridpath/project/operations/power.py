@@ -58,11 +58,11 @@ def add_model_components(m, d):
                                       rule=power_provision_rule)
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     The Pyomo abstract model
@@ -73,7 +73,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     # First power
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_all.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -93,18 +93,18 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def summarize_results(d, problem_directory, horizon, stage):
+def summarize_results(d, scenario_directory, subproblem, stage):
     """
     Summarize operational results
     :param d:
-    :param problem_directory:
-    :param horizon:
+    :param scenario_directory:
+    :param subproblem:
     :param stage:
     :return:
     """
 
     summary_results_file = os.path.join(
-        problem_directory, horizon, stage, "results", "summary_results.txt"
+        scenario_directory, subproblem, stage, "results", "summary_results.txt"
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -119,8 +119,8 @@ def summarize_results(d, problem_directory, horizon, stage):
 
     # Get the results CSV as dataframe
     operational_results_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon,
-                                 stage, "results", "dispatch_all.csv")
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                 "results", "dispatch_all.csv")
                     )
 
     operational_results_df["weighted_power_mwh"] = \
@@ -171,10 +171,13 @@ def summarize_results(d, problem_directory, horizon, stage):
         outfile.write("\n")
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage,
+                                 c, db, results_directory):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -183,9 +186,11 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("project dispatch all")
     # dispatch_all.csv
     c.execute(
-        """DELETE FROM results_project_dispatch_all WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        """DELETE FROM results_project_dispatch_all 
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -201,6 +206,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
         horizon_weight FLOAT,
@@ -208,7 +215,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         load_zone VARCHAR(32),
         technology VARCHAR(32),
         power_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, timepoint)
+        PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -232,13 +239,15 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_all"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, horizon, timepoint,
-                horizon_weight, number_of_hours_in_timepoint,
+                (scenario_id, project, period, subproblem_id, stage_id, 
+                horizon, timepoint, horizon_weight,
+                number_of_hours_in_timepoint,
                 load_zone, technology, power_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', 
                 {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     load_zone, technology, power_mw
                 )
             )
@@ -247,15 +256,15 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_all
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw
         FROM temp_results_project_dispatch_all""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, timepoint;"""
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 

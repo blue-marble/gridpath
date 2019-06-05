@@ -98,18 +98,18 @@ def elcc_eligible_capacity_rule(mod, g, p):
 
 
 def load_module_specific_data(
-            m, data_portal, scenario_directory, horizon, stage
+            m, data_portal, scenario_directory, subproblem, stage
     ):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=("project",
                              "minimum_duration_for_full_capacity_credit_hours"

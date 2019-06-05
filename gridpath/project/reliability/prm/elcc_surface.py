@@ -75,19 +75,19 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     # Projects that contribute to the ELCC surface
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=("project", "contributes_to_elcc_surface"),
                      param=(m.contributes_to_elcc_surface,)
@@ -95,7 +95,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
     # Project-period-facet
     data_portal.load(filename=os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "project_elcc_surface_coefficients.tab"
     ),
                      index=m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
@@ -105,17 +105,17 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "prm_project_elcc_surface_contribution.csv"),
               "w") as \
             results_file:
@@ -140,7 +140,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
@@ -235,9 +235,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             writer.writerow(row)
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id: 
@@ -250,9 +248,10 @@ def import_results_into_database(
 
     c.execute(
         """DELETE FROM results_project_elcc_surface 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -269,6 +268,8 @@ def import_results_into_database(
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             prm_zone VARCHAR(32),
             facet INTEGER,
             technology VARCHAR(32),
@@ -277,7 +278,7 @@ def import_results_into_database(
             elcc_eligible_capacity_mw FLOAT,
             elcc_surface_coefficient FLOAT,
             elcc_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, period, facet)
+            PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id, facet)
                 );"""
     )
     db.commit()
@@ -304,15 +305,15 @@ def import_results_into_database(
             c.execute(
                 """INSERT INTO temp_results_project_elcc_surface"""
                 + str(scenario_id) + """
-                    (scenario_id, project, period, prm_zone, facet, 
-                    technology, load_zone, capacity_mw, 
-                    elcc_eligible_capacity_mw,
+                    (scenario_id, project, period, subproblem_id, stage_id, 
+                    prm_zone, facet, technology, load_zone,
+                    capacity_mw, elcc_eligible_capacity_mw,
                     elcc_surface_coefficient, elcc_mw)
-                    VALUES ({}, '{}', {}, '{}', {}, '{}', '{}',  
+                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, '{}', '{}',  
                     {}, {}, {}, {});""".format(
-                    scenario_id, project, period, prm_zone, facet, technology,
-                    load_zone, capacity, elcc_eligible_capacity,
-                    coefficient, elcc
+                    scenario_id, project, period, subproblem, stage,
+                    prm_zone, facet, technology, load_zone,
+                    capacity, elcc_eligible_capacity, coefficient, elcc
                 )
             )
     db.commit()
@@ -320,15 +321,17 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_elcc_surface
-        (scenario_id, project, period, prm_zone, facet, technology, load_zone, 
+        (scenario_id, project, period, subproblem_id, stage_id,
+        prm_zone, facet, technology, load_zone, 
         capacity_mw, elcc_eligible_capacity_mw, 
         elcc_surface_coefficient, elcc_mw)
         SELECT
-        scenario_id, project, period, prm_zone, facet, technology, load_zone, 
+        scenario_id, project, period, subproblem_id, stage_id,
+        prm_zone, facet, technology, load_zone, 
         capacity_mw, elcc_eligible_capacity_mw,
         elcc_surface_coefficient, elcc_mw
         FROM temp_results_project_elcc_surface""" + str(scenario_id) +
-        """ ORDER BY scenario_id, project, period;"""
+        """ ORDER BY scenario_id, project, period, subproblem_id, stage_id;"""
     )
     db.commit()
 

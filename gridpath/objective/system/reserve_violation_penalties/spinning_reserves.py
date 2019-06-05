@@ -27,9 +27,9 @@ def add_model_components(m, d):
         )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     generic_load_model_data(m, d, data_portal,
-                            scenario_directory, horizon, stage,
+                            scenario_directory, subproblem, stage,
                             "spinning_reserves_balancing_areas.tab",
                             "spinning_reserves_violation_penalty_per_mw"
                             )

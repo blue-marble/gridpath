@@ -27,16 +27,17 @@ def add_model_components(m, d):
         )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     generic_load_model_data(m, d, data_portal,
-                            scenario_directory, horizon, stage,
+                            scenario_directory, subproblem, stage,
                             "regulation_down_requirement.tab",
                             "REGULATION_DOWN_ZONE_TIMEPOINTS",
                             "regulation_down_requirement_mw"
                             )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios
@@ -60,9 +61,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             """SELECT regulation_down_ba, timepoint, regulation_down_mw
             FROM inputs_system_regulation_down
             INNER JOIN
-            (SELECT timepoint
+            (SELECT timepoint 
             FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}) as relevant_timepoints
+            WHERE temporal_scenario_id = {}
+            AND subproblem_id = {}
+            AND stage_id = {}) as relevant_timepoints
             USING (timepoint)
             INNER JOIN
             (SELECT regulation_down_ba
@@ -70,10 +73,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             WHERE regulation_down_ba_scenario_id = {}) as relevant_bas
             USING (regulation_down_ba)
             WHERE regulation_down_scenario_id = {}
+            AND stage_id = {}
             """.format(
                 subscenarios.TEMPORAL_SCENARIO_ID,
+                subproblem,
+                stage,
                 subscenarios.REGULATION_DOWN_BA_SCENARIO_ID,
-                subscenarios.REGULATION_DOWN_SCENARIO_ID
+                subscenarios.REGULATION_DOWN_SCENARIO_ID,
+                stage
             )
         )
         for row in regulation_down:

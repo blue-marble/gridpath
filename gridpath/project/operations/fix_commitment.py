@@ -24,7 +24,16 @@ def add_model_components(m, d):
     :return:
     """
 
-    # The generators for which the current stage is the final commitment stage
+    # Import needed operational modules
+    # TODO: import only
+    imported_operational_modules = \
+        load_operational_type_modules(
+            getattr(d, required_operational_modules)
+        )
+
+    # Sets
+    # The generators for which the current stage or any of the previous stages
+    # is the final commitment stage
     m.FINAL_COMMITMENT_PROJECTS = Set()
 
     m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
@@ -33,13 +42,22 @@ def add_model_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.FINAL_COMMITMENT_PROJECTS))
 
-    # Import needed operational modules
-    # TODO: import only
-    imported_operational_modules = \
-        load_operational_type_modules(
-            getattr(d, required_operational_modules)
-        )
+    # The generators that have already had their commitment fixed in a prior
+    # commitment stage
+    m.FIXED_COMMITMENT_PROJECTS = Set()
 
+    m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2,
+            rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                if g in mod.FIXED_COMMITMENT_PROJECTS))
+
+    # Params
+    m.fixed_commitment = Param(
+        m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals)
+
+    # Expressions
     def commitment_rule(mod, g, tmp):
         """
 
@@ -54,21 +72,6 @@ def add_model_components(m, d):
     m.Commitment = Expression(m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
                               rule=commitment_rule)
 
-    # TODO: is there a need to subdivide into binary and continuous?
-    # The generators that have already had their commitment fixed in a prior
-    # commitment stage
-    m.FIXED_COMMITMENT_PROJECTS = Set()
-
-    m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.FIXED_COMMITMENT_PROJECTS))
-
-    m.fixed_commitment = Param(
-        m.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS,
-        within=NonNegativeReals)
-
 
 def fix_variables(m, d):
     """
@@ -81,6 +84,7 @@ def fix_variables(m, d):
     imported_operational_modules = load_operational_type_modules(
         d.required_operational_modules)
 
+    # Fix commitment if there are any fixed commitment projects
     for g in m.FIXED_COMMITMENT_PROJECTS:
         op_m = m.operational_type[g]
         imp_op_m = imported_operational_modules[op_m]
@@ -89,39 +93,50 @@ def fix_variables(m, d):
                 imp_op_m.fix_commitment(m, g, tmp)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
+
+    stages = read_csv(
+        os.path.join(scenario_directory, subproblem, "subproblems.csv")
+    )['subproblems'].tolist()
+
+    fixed_commitment_df = read_csv(
+        os.path.join(scenario_directory, subproblem,
+                     "pass_through_inputs",
+                     "fixed_commitment.tab"),
+        sep='\t')
 
     # FINAL_COMMITMENT_GENERATORS
     def determine_final_commitment_projects():
         """
         Get the list of generators for which the current stage is the final
-        commitment stage
+        commitment stage or for which any of the previous stages was the
+        final commitment stage.
         """
         final_commitment_projects = list()
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "last_commitment_stage"]
-                )
-
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["last_commitment_stage"]):
-            if row[1] == stage:
+        df = read_csv(
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
+            sep="\t",
+            usecols=["project", "last_commitment_stage"]
+        )
+        for row in zip(df["project"],
+                       df["last_commitment_stage"]):
+            if row[1] == ".":
+                pass
+            elif row[1] == stage or stages.index(row[1]) < stages.index(stage):
                 final_commitment_projects.append(row[0])
             else:
                 pass
-
         return final_commitment_projects
 
     data_portal.data()["FINAL_COMMITMENT_PROJECTS"] = {
@@ -129,57 +144,61 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     }
 
     # FIXED_COMMITMENT_GENERATORS
-    def determine_fixed_commitment_projects():
-        """
-        Get the list of generators whose commitment has already been fixed and
-        the fixed commitment
-        """
-        fixed_commitment_df = \
-            read_csv(os.path.join(scenario_directory, horizon,
-                                  "pass_through_inputs",
-                                  "fixed_commitment.tab"),
-                     sep='\t')
-
-        fixed_commitment_projects = \
-            set(fixed_commitment_df["project"].tolist())
-
-        return fixed_commitment_projects
-
+    fixed_commitment_projects = set(fixed_commitment_df["project"].tolist())
     # Load data only if we have projects that have already been committed
     # Otherwise, leave uninitialized
-    if len(determine_fixed_commitment_projects()) > 0:
-        data_portal.data()["FIXED_COMMITMENT_PROJECTS"] = {
-            None: determine_fixed_commitment_projects()
-        }
+    if len(fixed_commitment_projects) > 0:
+        # For projects whose final commitment was in a prior stage, get the
+        # fixed commitment of the previous stage (by project and timepoint)
+        fixed_commitment_df["stage_index"] = fixed_commitment_df.apply(
+            lambda row: stages.index(row["stage"]), axis=1)
+        relevant_commitment_df = fixed_commitment_df[
+            fixed_commitment_df["stage_index"] == stages.index(stage) - 1
+        ]
+        projects_timepoints = list(zip(relevant_commitment_df["project"],
+                                       relevant_commitment_df["timepoint"]))
+        fixed_commitment_dict = dict(zip(projects_timepoints,
+                                         relevant_commitment_df["commitment"]))
 
-        # For projects whose final commitment was in a prior stage, get their
-        # fixed commitment (by project and timepoint)
-        data_portal.load(filename=os.path.join(scenario_directory,
-                                               horizon, "pass_through_inputs",
-                                               "fixed_commitment.tab"),
-                         select=("project", "timepoint", "commitment"),
-                         param=m.fixed_commitment,
-                         )
+        data_portal.data()["FIXED_COMMITMENT_PROJECTS"] = {
+            None: fixed_commitment_projects
+        }
+        data_portal.data()[
+            "FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS"
+        ] = {None: projects_timepoints}
+        data_portal.data()["fixed_commitment"] = fixed_commitment_dict
     else:
         pass
 
 
-def export_pass_through_inputs(scenario_directory, horizon, stage, m, d):
+def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
+
+    df = read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "last_commitment_stage"]
+    )
+    final_commitment_stage_dict = dict(
+        zip(df["project"], df["last_commitment_stage"])
+    )
+
     with open(os.path.join(
-            scenario_directory, horizon,
+            scenario_directory, subproblem,
             "pass_through_inputs", "fixed_commitment.tab"), "a") \
             as fixed_commitment_file:
         fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t")
         for (g, tmp) in m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS:
             fixed_commitment_writer.writerow(
-                [g, tmp, stage, m.Commitment[g, tmp].expr.value]
+                [g, tmp, stage, final_commitment_stage_dict[g],
+                 m.Commitment[g, tmp].expr.value]
             )

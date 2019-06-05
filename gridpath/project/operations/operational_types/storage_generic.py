@@ -449,14 +449,14 @@ def power_delta_rule(mod, g, tmp):
                 ])
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
 
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -471,7 +471,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
         dynamic_components = \
             read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                os.path.join(scenario_directory, subproblem, stage,
+                             "inputs", "projects.tab"),
                 sep="\t", usecols=["project", "operational_type",
                                    "charging_efficiency",
                                    "discharging_efficiency"]
@@ -497,17 +498,18 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         determine_efficiencies()[1]
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_storage_generic.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",

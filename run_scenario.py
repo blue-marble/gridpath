@@ -14,6 +14,7 @@ from csv import writer
 import os.path
 import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
+from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
 
@@ -93,8 +94,8 @@ class ScenarioStructure(object):
                         fixed_commitment_writer = \
                             writer(fixed_commitment_file, delimiter="\t")
                         fixed_commitment_writer.writerow(
-                            ["project", "timepoint", "final_stage",
-                             "commitment"])
+                            ["project", "timepoint", "stage",
+                             "final_commitment_stage", "commitment"])
 
                     # Since there were subproblems in this horizon, empty the
                     # horizon subproblems list -- problems are actually by
@@ -154,11 +155,11 @@ class ScenarioStructure(object):
             sys.exit(1)
 
 
-def create_and_solve_problem(scenario_directory, horizon, stage,
+def create_and_solve_problem(scenario_directory, subproblem, stage,
                              parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
-    :param horizon: the horizon subproblem name
+    :param subproblem: the horizon subproblem name
     :param stage: the stage subproblem name
     :param parsed_arguments: the user-defined script arguments
     :return: modules_to_use (list of module names used in scenario),
@@ -201,7 +202,7 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     # Determine the dynamic components based on the needed modules and input
     # data
     populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, horizon, stage)
+                                scenario_directory, subproblem, stage)
 
     # Create the abstract model; some components are initialized here
     if not parsed_arguments.quiet:
@@ -216,7 +217,7 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     if not parsed_arguments.quiet:
         print("Loading data...")
     scenario_data = load_scenario_data(model, dynamic_components, loaded_modules,
-                                       scenario_directory, horizon, stage)
+                                       scenario_directory, subproblem, stage)
 
     # Build the problem instance; this will also call any BuildActions that
     # construct the dynamic inputs
@@ -236,10 +237,10 @@ def create_and_solve_problem(scenario_directory, horizon, stage,
     return modules_to_use, loaded_modules, dynamic_components, instance
 
 
-def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
+def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     """
     :param scenario_directory: the main scenario directory
-    :param horizon: if there are horizon subproblems, the horizon
+    :param subproblem: if there are horizon subproblems, the horizon
     :param stage: if there are stage subproblems, the stage
     :param parsed_arguments: the parsed script arguments
     :return: return the objective function value (Total_Cost); only used in
@@ -260,7 +261,7 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     # If directed to do so, log optimization run
     if parsed_arguments.log:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, horizon, stage)
+            scenario_directory, subproblem, stage)
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout
@@ -277,28 +278,28 @@ def run_optimization(scenario_directory, horizon, stage, parsed_arguments):
     # Use the --symbolic argument as well for best debugging results
     if parsed_arguments.write_solver_files_to_logs_dir:
         logs_directory = create_logs_directory_if_not_exists(
-            scenario_directory, horizon, stage)
+            scenario_directory, subproblem, stage)
         TempfileManager.tempdir = logs_directory
 
     if not parsed_arguments.quiet:
         print("\nRunning optimization for scenario {}"
               .format(scenario_directory.split("/")[-1]))
-        if horizon != "":
-            print("--- horizon {}".format(horizon))
-        if horizon != "":
+        if subproblem != "":
+            print("--- subproblem {}".format(subproblem))
+        if stage != "":
             print("--- stage {}".format(stage))
 
     # Create problem instance and solve it
     modules_to_use, loaded_modules, dynamic_components, instance = \
-        create_and_solve_problem(scenario_directory, horizon, stage,
+        create_and_solve_problem(scenario_directory, subproblem, stage,
                                  parsed_arguments)
 
     # Save the scenario results to disk
-    save_results(scenario_directory, horizon, stage, loaded_modules,
+    save_results(scenario_directory, subproblem, stage, loaded_modules,
                  dynamic_components, instance, parsed_arguments)
 
     # Summarize results
-    summarize_results(scenario_directory, horizon, stage, loaded_modules,
+    summarize_results(scenario_directory, subproblem, stage, loaded_modules,
                       dynamic_components, parsed_arguments)
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
@@ -349,11 +350,11 @@ def run_scenario(structure, parsed_arguments):
     return objective_values
 
 
-def save_results(scenario_directory, horizon, stage, loaded_modules,
+def save_results(scenario_directory, subproblem, stage, loaded_modules,
                  dynamic_components, instance, parsed_arguments):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param loaded_modules:
     :param dynamic_components:
@@ -371,29 +372,29 @@ def save_results(scenario_directory, horizon, stage, loaded_modules,
         print("Saving results...")
 
     # TODO: how best to handle non-empty results directories?
-    results_directory = os.path.join(scenario_directory, horizon, stage,
+    results_directory = os.path.join(scenario_directory, subproblem, stage,
                                      "results")
     if not os.path.exists(results_directory):
         os.makedirs(results_directory)
 
-    export_results(scenario_directory, horizon, stage, instance,
+    export_results(scenario_directory, subproblem, stage, instance,
                    dynamic_components, loaded_modules)
 
-    export_pass_through_inputs(scenario_directory, horizon, stage, instance,
+    export_pass_through_inputs(scenario_directory, subproblem, stage, instance,
                                dynamic_components, loaded_modules)
 
-    save_objective_function_value(scenario_directory, horizon, stage, instance)
+    save_objective_function_value(scenario_directory, subproblem, stage, instance)
 
-    save_duals(scenario_directory, horizon, stage, instance, loaded_modules)
+    save_duals(scenario_directory, subproblem, stage, instance, loaded_modules)
 
 
 def populate_dynamic_components(dynamic_components, loaded_modules,
-                                scenario_directory, horizon, stage):
+                                scenario_directory, subproblem, stage):
     """
     :param dynamic_components: the dynamic components class we're populating
     :param loaded_modules: list of the needed imported modules (Python objects)
     :param scenario_directory: the main scenario directory
-    :param horizon: the horizon subproblem name
+    :param subproblem: the horizon subproblem name
     :param stage: the stage subproblem name
 
     We iterate over all required modules and call their
@@ -405,7 +406,7 @@ def populate_dynamic_components(dynamic_components, loaded_modules,
     for m in loaded_modules:
         if hasattr(m, 'determine_dynamic_components'):
             m.determine_dynamic_components(dynamic_components,
-                                           scenario_directory, horizon, stage)
+                                           scenario_directory, subproblem, stage)
         else:
             pass
 
@@ -428,14 +429,14 @@ def create_abstract_model(model, dynamic_components, loaded_modules):
 
 
 def load_scenario_data(model, dynamic_components, loaded_modules,
-                       scenario_directory, horizon, stage):
+                       scenario_directory, subproblem, stage):
     """
     :param model: the Pyomo abstract model object with components added
     :param dynamic_components: the dynamic components class
     :param loaded_modules: list of the imported GridPath modules as Python
         objects
     :param scenario_directory: the main scenario directory
-    :param horizon: the horizon subproblem
+    :param subproblem: the horizon subproblem
     :param stage: the stage subproblem
     :return: the DataPortal object populated with the input data
 
@@ -449,7 +450,7 @@ def load_scenario_data(model, dynamic_components, loaded_modules,
     for m in loaded_modules:
         if hasattr(m, "load_model_data"):
             m.load_model_data(model, dynamic_components, data_portal,
-                              scenario_directory, horizon, stage)
+                              scenario_directory, subproblem, stage)
         else:
             pass
     return data_portal
@@ -527,32 +528,34 @@ def solve(instance, parsed_arguments):
         symbolic_solver_labels=parsed_arguments.symbolic
     )
 
+    log_infeasible_constraints(instance)
 
-def create_logs_directory_if_not_exists(scenario_directory, horizon, stage):
+
+def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
     """
     Create a logs directory if it doesn't exist already
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    logs_directory = os.path.join(scenario_directory, horizon, stage, "logs")
+    logs_directory = os.path.join(scenario_directory, subproblem, stage, "logs")
     if not os.path.exists(logs_directory):
         os.makedirs(logs_directory)
     return logs_directory
 
 #
-# def log_run(scenario_directory, horizon, stage, parsed_arguments):
+# def log_run(scenario_directory, subproblem, stage, parsed_arguments):
 #     """
 #     :param scenario_directory:
-#     :param horizon:
+#     :param subproblem:
 #     :param stage:
 #     :param parsed_arguments:
 #     :return:
 #
 #     Log run output to a logs file and/or write temporary files in logs dir
 #     """
-#     logs_directory = os.path.join(scenario_directory, horizon, stage,
+#     logs_directory = os.path.join(scenario_directory, subproblem, stage,
 #                                   "logs")
 #
 #     if (not os.path.exists(logs_directory)) and \
@@ -581,11 +584,11 @@ def create_logs_directory_if_not_exists(scenario_directory, horizon, stage):
 #         pass
 
 
-def export_results(scenario_directory, horizon, stage, instance,
+def export_results(scenario_directory, subproblem, stage, instance,
                    dynamic_components, loaded_modules):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param instance:
     :param dynamic_components:
@@ -596,17 +599,17 @@ def export_results(scenario_directory, horizon, stage, instance,
     """
     for m in loaded_modules:
         if hasattr(m, "export_results"):
-            m.export_results(scenario_directory, horizon, stage, instance,
+            m.export_results(scenario_directory, subproblem, stage, instance,
                              dynamic_components)
     else:
         pass
 
 
-def export_pass_through_inputs(scenario_directory, horizon, stage, instance,
+def export_pass_through_inputs(scenario_directory, subproblem, stage, instance,
                                dynamic_components, loaded_modules):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param instance:
     :param dynamic_components:
@@ -618,18 +621,19 @@ def export_pass_through_inputs(scenario_directory, horizon, stage, instance,
     for m in loaded_modules:
         if hasattr(m, "export_pass_through_inputs"):
             m.export_pass_through_inputs(
-                scenario_directory, horizon, stage, instance, dynamic_components
+                scenario_directory, subproblem, stage,
+                instance, dynamic_components
             )
     else:
         pass
 
 
-def save_objective_function_value(scenario_directory, horizon, stage, instance
-                                  ):
+def save_objective_function_value(scenario_directory, subproblem, stage,
+                                  instance):
     """
     Save the objective function value.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param instance:
     :return:
@@ -641,7 +645,7 @@ def save_objective_function_value(scenario_directory, horizon, stage, instance
         objective_function_value = round(objective_function_value, 2)
 
     with open(os.path.join(
-            scenario_directory, horizon, stage, "results",
+            scenario_directory, subproblem, stage, "results",
             "objective_function_value.txt"),
             "w") as objective_file:
         objective_file.write(
@@ -649,10 +653,10 @@ def save_objective_function_value(scenario_directory, horizon, stage, instance
         )
 
 
-def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
+def save_duals(scenario_directory, subproblem, stage, instance, loaded_modules):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param instance:
     :param loaded_modules:
@@ -670,7 +674,7 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
     for c in list(instance.constraint_indices.keys()):
         constraint_object = getattr(instance, c)
         with open(os.path.join(
-            scenario_directory, horizon, stage, "results", str(c) + ".csv"),
+            scenario_directory, subproblem, stage, "results", str(c) + ".csv"),
             "w"
         ) as duals_results_file:
             duals_writer = writer(duals_results_file)
@@ -681,11 +685,11 @@ def save_duals(scenario_directory, horizon, stage, instance, loaded_modules):
                                       )
 
 
-def summarize_results(scenario_directory, horizon, stage, loaded_modules,
+def summarize_results(scenario_directory, subproblem, stage, loaded_modules,
                       dynamic_components, parsed_arguments):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param loaded_modules:
     :param dynamic_components:
@@ -699,7 +703,7 @@ def summarize_results(scenario_directory, horizon, stage, loaded_modules,
 
     # Make the summary results file
     summary_results_file = os.path.join(
-        scenario_directory, horizon, stage, "results", "summary_results.txt"
+        scenario_directory, subproblem, stage, "results", "summary_results.txt"
     )
 
     # TODO: how to handle results from previous runs
@@ -712,7 +716,7 @@ def summarize_results(scenario_directory, horizon, stage, loaded_modules,
     # Go through the modules and get the appropriate results
     for m in loaded_modules:
         if hasattr(m, "summarize_results"):
-            m.summarize_results(dynamic_components, scenario_directory, horizon,
+            m.summarize_results(dynamic_components, scenario_directory, subproblem,
                                 stage)
     else:
         pass

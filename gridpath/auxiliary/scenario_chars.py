@@ -510,3 +510,45 @@ class SubScenarios(object):
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+
+
+# TODO: perhaps this is not the right place to define this data structure?
+class SubProblems(object):
+    def __init__(self, cursor, scenario_id):
+        """
+
+        :param cursor:
+        :param scenario_id:
+        """
+
+        # TODO: make sure there is data integrity between subproblems_stages
+        #   and inputs_temporal_horizons and inputs_temporal_timepoints
+        subproblems = cursor.execute(
+            """SELECT subproblem_id
+               FROM inputs_temporal_subproblems
+               INNER JOIN scenarios
+               USING (temporal_scenario_id)
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchall()
+        # SQL returns a list of tuples [(1,), (2,)] so convert to simple list
+        self.SUBPROBLEMS = [subproblem[0] for subproblem in subproblems]
+
+        # store subproblems and stages in dict {subproblem: [stages]}
+        self.SUBPROBLEM_STAGE_DICT = {}
+        for s in self.SUBPROBLEMS:
+            stages = cursor.execute(
+                """SELECT stage_id
+                   FROM inputs_temporal_subproblems_stages
+                   INNER JOIN scenarios
+                   USING (temporal_scenario_id)
+                   WHERE scenario_id = {}
+                   AND subproblem_id = {};""".format(scenario_id, s)
+            ).fetchall()
+            stages = [stage[0] for stage in stages]  # convert to simple list
+            self.SUBPROBLEM_STAGE_DICT[s] = stages
+
+        # TODO: you might want to save the subproblem.csv files here and
+        #   generally deal with the subproblem_stage config here
+        #   (note stages also require you to save subproblem.csv files)
+        #    subproblem.csv file might not be best way to specify that there are
+        #    subproblems

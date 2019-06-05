@@ -16,19 +16,19 @@ def add_model_components(m, d):
     m.SPINNING_RESERVES_ZONES = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "spinning_reserves_balancing_areas.tab"),
         select=("balancing_area",),
         index=m.SPINNING_RESERVES_ZONES,
@@ -36,7 +36,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

@@ -86,35 +86,35 @@ def add_model_components(m, d):
                                         rule=meet_load_rule)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "load_zones.tab"),
                      param=(m.overgeneration_penalty_per_mw,
                             m.unserved_energy_penalty_per_mw)
                      )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "load_balance.csv"), "w") as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["zone", "period", "horizon", "timepoint",
@@ -144,9 +144,7 @@ def save_duals(m):
         ["zone", "timepoint", "dual"]
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -159,7 +157,10 @@ def import_results_into_database(
     
     c.execute(
         """DELETE FROM results_system_load_balance
-        WHERE scenario_id = {};""".format(scenario_id)
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -177,6 +178,8 @@ def import_results_into_database(
         scenario_id INTEGER,
         load_zone VARCHAR(32),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
         discount_factor FLOAT,
@@ -185,7 +188,7 @@ def import_results_into_database(
         number_of_hours_in_timepoint FLOAT,
         overgeneration_mw FLOAT,
         unserved_energy_mw FLOAT,
-        PRIMARY KEY (scenario_id, load_zone, timepoint)
+        PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -211,14 +214,14 @@ def import_results_into_database(
                 """INSERT INTO 
                 temp_results_system_load_balance"""
                 + str(scenario_id) + """
-                (scenario_id, load_zone, period, horizon, 
-                timepoint, discount_factor, number_years_represented,
+                (scenario_id, load_zone, period, subproblem_id, stage_id,
+                horizon, timepoint, discount_factor, number_years_represented,
                 horizon_weight, number_of_hours_in_timepoint,
                 overgeneration_mw, unserved_energy_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, 
-                {});""".format(
-                    scenario_id, ba, period, horizon, timepoint,
-                    discount_factor, number_years,
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                """.format(
+                    scenario_id, ba, period, subproblem, stage,
+                    horizon, timepoint, discount_factor, number_years,
                     horizon_weight, number_of_hours_in_timepoint,
                     overgen, unserved_energy
                 )
@@ -228,18 +231,18 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_load_balance
-        (scenario_id, load_zone, period, horizon, timepoint,
-        discount_factor, number_years_represented,
+        (scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
+        timepoint, discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
         overgeneration_mw, unserved_energy_mw)
         SELECT
-        scenario_id, load_zone, period, horizon, timepoint,
-        discount_factor, number_years_represented,
+        scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
+        timepoint, discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
         overgeneration_mw, unserved_energy_mw
         FROM temp_results_system_load_balance"""
         + str(scenario_id) + """
-        ORDER BY scenario_id, load_zone, timepoint;"""
+        ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 
@@ -264,8 +267,10 @@ def import_results_into_database(
                 SET dual = {}
                 WHERE load_zone = '{}'
                 AND timepoint = {}
-                AND scenario_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id
+                AND scenario_id = {}
+                AND subproblem_id = {}
+                AND stage_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id, subproblem, stage
                 )
             )
     db.commit()
@@ -276,8 +281,9 @@ def import_results_into_database(
         SET marginal_price_per_mw = 
         dual / (discount_factor * number_years_represented * horizon_weight 
         * number_of_hours_in_timepoint)
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()

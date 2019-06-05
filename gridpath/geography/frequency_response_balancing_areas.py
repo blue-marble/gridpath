@@ -16,19 +16,19 @@ def add_model_components(m, d):
     m.FREQUENCY_RESPONSE_BAS = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     data_portal.load(
-        filename=os.path.join(scenario_directory, "inputs",
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "frequency_response_balancing_areas.tab"),
         select=("balancing_area",),
         index=m.FREQUENCY_RESPONSE_BAS,
@@ -36,10 +36,13 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
-    :param subscenarios
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
     :param c:
     :param inputs_directory:
     :return:

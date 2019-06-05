@@ -80,7 +80,7 @@ def generic_add_model_components(
 
 
 def generic_load_model_data(
-        m, d, data_portal, scenario_directory, horizon, stage,
+        m, d, data_portal, scenario_directory, subproblem, stage,
         ramp_rate_limit_column_name,
         reserve_provision_ramp_rate_limit_param
 ):
@@ -90,7 +90,7 @@ def generic_load_model_data(
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param ramp_rate_limit_column_name:
     :param reserve_provision_ramp_rate_limit_param:
@@ -99,10 +99,11 @@ def generic_load_model_data(
 
     columns_to_import = ("project",)
     params_to_import = ()
-    projects_file_header = pd.read_csv(os.path.join(scenario_directory,
-                                                    "inputs", "projects.tab"),
-                                       sep="\t", header=None, nrows=1
-                                       ).values[0]
+    projects_file_header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     # Import reserve provision ramp rate limit parameter only if
     # column is present
@@ -115,7 +116,7 @@ def generic_load_model_data(
         pass
 
     # Load the needed data
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=columns_to_import,
                      param=params_to_import

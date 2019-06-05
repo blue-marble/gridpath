@@ -51,12 +51,38 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 --------------------
 -- -- TEMPORAL -- --
 --------------------
--- Timepoints
+
+-- Temporal Scenarios
 DROP TABLE IF EXISTS subscenarios_temporal;
 CREATE TABLE subscenarios_temporal (
 temporal_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
+);
+
+-- Subproblems (for production cost modeling)
+DROP TABLE IF EXISTS inputs_temporal_subproblems;
+CREATE TABLE inputs_temporal_subproblems (
+temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
+PRIMARY KEY (temporal_scenario_id, subproblem_id),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id)
+);
+
+-- Stages (within subproblems; for production cost modeling)
+DROP TABLE IF EXISTS inputs_temporal_subproblems_stages;
+CREATE TABLE inputs_temporal_subproblems_stages (
+temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+stage_name VARCHAR(32),
+PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure subproblem exists in this temporal_scenario_id
+FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
+inputs_temporal_subproblems (temporal_scenario_id, subproblem_id)
 );
 
 -- Periods
@@ -75,35 +101,50 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
 horizon INTEGER,
 period INTEGER,
 boundary VARCHAR(16),
 horizon_weight FLOAT,
 month INTEGER,
-PRIMARY KEY (temporal_scenario_id, horizon, period),
+PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure boundary type is correct
 FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
-(horizon_boundary_type)
-);
-
-DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints (
-temporal_scenario_id INTEGER,
-timepoint INTEGER,
-horizon INTEGER,
-period INTEGER,
-number_of_hours_in_timepoint INTEGER,
-PRIMARY KEY (temporal_scenario_id, timepoint, horizon, period),
-FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
-(temporal_scenario_id),
+(horizon_boundary_type),
 -- Make sure period exists in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, period) REFERENCES
 inputs_temporal_periods (temporal_scenario_id, period),
--- Make sure horizon/period exist in this temporal scenario id
-FOREIGN KEY (temporal_scenario_id, horizon, period) REFERENCES
-inputs_temporal_horizons (temporal_scenario_id, horizon, period)
+-- Make sure subproblem_id exists in this temporal_scenario_id
+FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
+inputs_temporal_subproblems (temporal_scenario_id, subproblem_id),
+-- Add unique constraint so you can use as foreign key in timepoints table
+CONSTRAINT horizons_periods_unique UNIQUE (temporal_scenario_id, subproblem_id,
+horizon, period)
+);
+
+-- Timepoints
+DROP TABLE IF EXISTS inputs_temporal_timepoints;
+CREATE TABLE inputs_temporal_timepoints (
+temporal_scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
+horizon INTEGER,
+period INTEGER, -- could also derive this from horizons
+number_of_hours_in_timepoint INTEGER,
+spinup_or_lookahead INTEGER,
+PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure horizon/period exist in this temporal_scenario_id and subproblem_id
+FOREIGN KEY (temporal_scenario_id, subproblem_id, horizon, period) REFERENCES
+inputs_temporal_horizons (temporal_scenario_id, subproblem_id, horizon, period),
+-- Make sure subproblem/stage exist in this temporal_scenario_id
+FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id) REFERENCES
+inputs_temporal_subproblems_stages (temporal_scenario_id, subproblem_id,
+stage_id)
 );
 
 
@@ -575,12 +616,13 @@ DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
 CREATE TABLE inputs_project_variable_generator_profiles (
 project VARCHAR(64),
 variable_generator_profile_scenario_id INTEGER,
+stage_id INTEGER,
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 cap_factor FLOAT,
-PRIMARY KEY (project, variable_generator_profile_scenario_id, period, horizon,
-timepoint),
+PRIMARY KEY (project, variable_generator_profile_scenario_id, stage_id,
+period, horizon, timepoint),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id)
@@ -1336,9 +1378,10 @@ DROP TABLE IF EXISTS inputs_system_load;
 CREATE TABLE inputs_system_load (
 load_scenario_id INTEGER,
 load_zone VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 load_mw FLOAT,
-PRIMARY KEY (load_scenario_id, load_zone, timepoint),
+PRIMARY KEY (load_scenario_id, load_zone, stage_id, timepoint),
 FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
 (load_scenario_id)
 );
@@ -1360,9 +1403,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_up;
 CREATE TABLE inputs_system_lf_reserves_up (
 lf_reserves_up_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 lf_reserves_up_mw FLOAT,
-PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, timepoint),
+PRIMARY KEY (lf_reserves_up_scenario_id, lf_reserves_up_ba, stage_id,
+timepoint),
 FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id)
 );
@@ -1382,9 +1427,11 @@ DROP TABLE IF EXISTS inputs_system_lf_reserves_down;
 CREATE TABLE inputs_system_lf_reserves_down (
 lf_reserves_down_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 lf_reserves_down_mw FLOAT,
-PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, timepoint),
+PRIMARY KEY (lf_reserves_down_scenario_id, lf_reserves_down_ba, stage_id,
+timepoint),
 FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
 subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id)
 );
@@ -1404,9 +1451,10 @@ DROP TABLE IF EXISTS inputs_system_regulation_up;
 CREATE TABLE inputs_system_regulation_up (
 regulation_up_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 regulation_up_mw FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, timepoint),
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, timepoint)
 FOREIGN KEY (regulation_up_scenario_id) REFERENCES
 subscenarios_system_regulation_up (regulation_up_scenario_id)
 );
@@ -1426,9 +1474,11 @@ DROP TABLE IF EXISTS inputs_system_regulation_down;
 CREATE TABLE inputs_system_regulation_down (
 regulation_down_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 regulation_down_mw FLOAT,
-PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, timepoint),
+PRIMARY KEY (regulation_down_scenario_id, regulation_down_ba, stage_id,
+timepoint),
 FOREIGN KEY (regulation_down_scenario_id) REFERENCES
 subscenarios_system_regulation_down (regulation_down_scenario_id)
 );
@@ -1448,10 +1498,12 @@ DROP TABLE IF EXISTS inputs_system_frequency_response;
 CREATE TABLE inputs_system_frequency_response (
 frequency_response_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 frequency_response_mw FLOAT,
 frequency_response_partial_mw FLOAT,
-PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, timepoint),
+PRIMARY KEY (frequency_response_scenario_id, frequency_response_ba, stage_id,
+timepoint),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id)
 );
@@ -1471,9 +1523,11 @@ DROP TABLE IF EXISTS inputs_system_spinning_reserves;
 CREATE TABLE inputs_system_spinning_reserves (
 spinning_reserves_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+stage_id INTEGER,
 timepoint INTEGER,
 spinning_reserves_mw FLOAT,
-PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, timepoint),
+PRIMARY KEY (spinning_reserves_scenario_id, spinning_reserves_ba, stage_id,
+timepoint),
 FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
 subscenarios_system_spinning_reserves (spinning_reserves_scenario_id)
 );
@@ -1844,13 +1898,15 @@ CREATE TABLE results_project_capacity_all (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_capacity_new_build_generator;
@@ -1858,12 +1914,14 @@ CREATE TABLE results_project_capacity_new_build_generator (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 new_build_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_capacity_new_build_storage;
@@ -1871,13 +1929,15 @@ CREATE TABLE results_project_capacity_new_build_storage (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_capacity_linear_economic_retirement;
@@ -1885,12 +1945,14 @@ CREATE TABLE results_project_capacity_linear_economic_retirement (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 retired_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_capacity_binary_economic_retirement;
@@ -1898,12 +1960,14 @@ CREATE TABLE results_project_capacity_binary_economic_retirement (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 retired_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_all;
@@ -1911,6 +1975,8 @@ CREATE TABLE results_project_dispatch_all (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -1920,7 +1986,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_variable;
@@ -1928,6 +1994,8 @@ CREATE TABLE results_project_dispatch_variable (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -1941,7 +2009,7 @@ scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,
 total_curtailment_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_hydro_curtailable;
@@ -1949,6 +2017,8 @@ CREATE TABLE results_project_dispatch_hydro_curtailable (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -1959,7 +2029,7 @@ carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,
 scheduled_curtailment_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_capacity_commit;
@@ -1967,6 +2037,8 @@ CREATE TABLE results_project_dispatch_capacity_commit (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -1978,7 +2050,7 @@ technology VARCHAR(32),
 power_mw FLOAT,
 committed_mw FLOAT,
 committed_units FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_binary_commit;
@@ -2028,6 +2100,8 @@ CREATE TABLE results_project_lf_reserves_up (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2038,7 +2112,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_lf_reserves_down;
@@ -2046,6 +2120,8 @@ CREATE TABLE results_project_lf_reserves_down (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2056,7 +2132,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_regulation_up;
@@ -2064,6 +2140,8 @@ CREATE TABLE results_project_regulation_up (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2074,7 +2152,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_regulation_down;
@@ -2083,6 +2161,8 @@ scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 horizon INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
@@ -2092,7 +2172,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_frequency_response;
@@ -2100,6 +2180,8 @@ CREATE TABLE results_project_frequency_response (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2111,7 +2193,7 @@ carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
 partial INTEGER,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_spinning_reserves;
@@ -2119,6 +2201,8 @@ CREATE TABLE results_project_spinning_reserves (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2129,7 +2213,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 reserve_provision_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_prm_deliverability;
@@ -2137,6 +2221,8 @@ CREATE TABLE results_project_prm_deliverability (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 prm_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
@@ -2145,13 +2231,15 @@ carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 deliverable_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS
 results_project_prm_deliverability_group_capacity_and_costs;
 CREATE TABLE results_project_prm_deliverability_group_capacity_and_costs (
 scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 deliverability_group VARCHAR(64),
 period INTEGER,
 deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
@@ -2160,7 +2248,7 @@ total_capacity_mw FLOAT,
 deliverable_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
 deliverable_capacity_cost FLOAT,
-PRIMARY KEY (scenario_id, deliverability_group, period)
+PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_elcc_simple;
@@ -2168,6 +2256,8 @@ CREATE TABLE results_project_elcc_simple (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 prm_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
@@ -2178,7 +2268,7 @@ elcc_eligible_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
 elcc_simple_contribution_fraction FLOAT,
 elcc_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_project_elcc_surface;
@@ -2186,6 +2276,8 @@ CREATE TABLE results_project_elcc_surface (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 prm_zone VARCHAR(32),
 facet INTEGER,
 technology VARCHAR(32),
@@ -2197,7 +2289,7 @@ elcc_eligible_capacity_mw FLOAT,
 energy_only_capacity_mw FLOAT,
 elcc_surface_coefficient FLOAT,
 elcc_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period, facet)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id, facet)
 );
 
 -- Local capacity
@@ -2206,6 +2298,8 @@ CREATE TABLE results_project_local_capacity (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 local_capacity_zone VARCHAR(32),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
@@ -2214,7 +2308,7 @@ carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 local_capacity_fraction FLOAT,
 local_capacity_contribution_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 
@@ -2224,12 +2318,14 @@ CREATE TABLE results_project_costs_capacity (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 annualized_capacity_cost FLOAT,
-PRIMARY KEY (scenario_id, project, period)
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
 
@@ -2238,6 +2334,8 @@ CREATE TABLE results_project_costs_operations_variable_om (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2247,7 +2345,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 variable_om_cost FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_fuel;
@@ -2255,6 +2353,8 @@ CREATE TABLE results_project_costs_operations_fuel (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2264,7 +2364,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel_cost FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_startup;
@@ -2272,6 +2372,8 @@ CREATE TABLE results_project_costs_operations_startup (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2281,7 +2383,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 startup_cost FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_shutdown;
@@ -2289,6 +2391,8 @@ CREATE TABLE results_project_costs_operations_shutdown (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2298,7 +2402,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 shutdown_cost FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_fuel_burn;
@@ -2306,6 +2410,8 @@ CREATE TABLE results_project_fuel_burn (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2316,7 +2422,7 @@ carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
 fuel_burn_mmbtu FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 
@@ -2325,6 +2431,8 @@ CREATE TABLE results_project_carbon_emissions (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2334,7 +2442,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 carbon_emission_tons FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_rps;
@@ -2342,6 +2450,8 @@ CREATE TABLE results_project_rps (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2354,7 +2464,7 @@ scheduled_rps_energy_mw FLOAT,
 scheduled_curtailment_mw FLOAT,
 subhourly_rps_energy_delivered_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_capacity;
@@ -2362,11 +2472,13 @@ CREATE TABLE results_transmission_capacity (
 scenario_id INTEGER,
 tx_line VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 min_mw FLOAT,
 max_mw FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period)
+PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_transmission_costs_capacity;
@@ -2374,10 +2486,12 @@ CREATE TABLE results_transmission_costs_capacity (
 scenario_id INTEGER,
 tx_line VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 annualized_capacity_cost FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period)
+PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
 DROP TABLE IF EXISTS results_transmission_imports_exports;
@@ -2385,6 +2499,8 @@ CREATE TABLE results_transmission_imports_exports (
 scenario_id INTEGER,
 load_zone VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
@@ -2392,7 +2508,7 @@ number_of_hours_in_timepoint FLOAT,
 imports_mw FLOAT,
 exports_mw FLOAT,
 net_imports_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, timepoint)
+PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_operations;
@@ -2402,12 +2518,14 @@ transmission_line VARCHAR(64),
 load_zone_from VARCHAR(64),
 load_zone_to VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 transmission_flow_mw FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, timepoint)
+PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_hurdle_costs;
@@ -2417,13 +2535,15 @@ transmission_line VARCHAR(64),
 load_zone_from VARCHAR(64),
 load_zone_to VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 hurdle_cost_positive_direction FLOAT,
 hurdle_cost_negative_direction FLOAT,
-PRIMARY KEY (scenario_id, transmission_line, timepoint)
+PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_transmission_carbon_emissions;
@@ -2431,13 +2551,15 @@ CREATE TABLE results_transmission_carbon_emissions (
 scenario_id INTEGER,
 tx_line VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 horizon_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 carbon_emission_imports_tons FLOAT,
 carbon_emission_imports_tons_degen FLOAT,
-PRIMARY KEY (scenario_id, tx_line, timepoint)
+PRIMARY KEY (scenario_id, tx_line, subproblem_id, stage_id, timepoint)
 );
 
 
@@ -2446,6 +2568,8 @@ CREATE TABLE results_system_load_balance (
 scenario_id INTEGER,
 load_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2456,7 +2580,7 @@ overgeneration_mw FLOAT,
 unserved_energy_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, load_zone, timepoint)
+PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_up_balance;
@@ -2464,6 +2588,8 @@ CREATE TABLE results_system_lf_reserves_up_balance (
 scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2473,7 +2599,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, lf_reserves_up_ba, timepoint)
+PRIMARY KEY (scenario_id, lf_reserves_up_ba, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_lf_reserves_down_balance;
@@ -2481,6 +2607,8 @@ CREATE TABLE results_system_lf_reserves_down_balance (
 scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2490,7 +2618,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, lf_reserves_down_ba, timepoint)
+PRIMARY KEY (scenario_id, lf_reserves_down_ba, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_regulation_up_balance;
@@ -2498,6 +2626,8 @@ CREATE TABLE results_system_regulation_up_balance (
 scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2507,7 +2637,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, regulation_up_ba, timepoint)
+PRIMARY KEY (scenario_id, regulation_up_ba, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_regulation_down_balance;
@@ -2515,6 +2645,8 @@ CREATE TABLE results_system_regulation_down_balance (
 scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2524,7 +2656,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, regulation_down_ba, timepoint)
+PRIMARY KEY (scenario_id, regulation_down_ba, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_frequency_response_balance;
@@ -2532,6 +2664,8 @@ CREATE TABLE results_system_frequency_response_balance (
 scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2541,7 +2675,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, frequency_response_ba, timepoint)
+PRIMARY KEY (scenario_id, frequency_response_ba, subproblem_id, stage_id, timepoint)
 );
 
 -- TODO: frequency_response_partial_ba is the same as frequency_response_ba
@@ -2551,6 +2685,8 @@ CREATE TABLE results_system_frequency_response_partial_balance (
 scenario_id INTEGER,
 frequency_response_partial_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2560,7 +2696,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, frequency_response_partial_ba, timepoint)
+PRIMARY KEY (scenario_id, frequency_response_partial_ba, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_system_spinning_reserves_balance;
@@ -2568,6 +2704,8 @@ CREATE TABLE results_system_spinning_reserves_balance (
 scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 discount_factor FLOAT,
@@ -2577,7 +2715,7 @@ number_of_hours_in_timepoint FLOAT,
 violation_mw FLOAT,
 dual FLOAT,
 marginal_price_per_mw FLOAT,
-PRIMARY KEY (scenario_id, spinning_reserves_ba, timepoint)
+PRIMARY KEY (scenario_id, spinning_reserves_ba, subproblem_id, stage_id, timepoint)
 );
 
 -- Carbon emissions
@@ -2586,6 +2724,8 @@ CREATE TABLE results_system_carbon_emissions (
 scenario_id INTEGER,
 carbon_cap_zone VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 carbon_cap_mmt FLOAT,
@@ -2596,7 +2736,7 @@ import_emissions_mmt_degen FLOAT,
 total_emissions_mmt_degen FLOAT,
 dual FLOAT,
 carbon_cap_marginal_cost_per_mmt FLOAT,
-PRIMARY KEY (scenario_id, carbon_cap_zone, period)
+PRIMARY KEY (scenario_id, carbon_cap_zone, subproblem_id, stage_id, period)
 );
 
 -- RPS balance
@@ -2605,6 +2745,8 @@ CREATE TABLE  results_system_rps (
 scenario_id INTEGER,
 rps_zone VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 rps_target_mwh FLOAT,
@@ -2615,7 +2757,7 @@ fraction_of_rps_target_met FLOAT,
 fraction_of_rps_energy_curtailed FLOAT,
 dual FLOAT,
 rps_marginal_cost_per_mwh FLOAT,
-PRIMARY KEY (scenario_id, rps_zone, period)
+PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
 );
 
 
@@ -2625,6 +2767,8 @@ CREATE TABLE  results_system_prm (
 scenario_id INTEGER,
 prm_zone VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 prm_requirement_mw FLOAT,
@@ -2633,7 +2777,7 @@ elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
 dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
-PRIMARY KEY (scenario_id, prm_zone, period)
+PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
 );
 
 -- Local capacity balance
@@ -2642,11 +2786,13 @@ CREATE TABLE  results_system_local_capacity (
 scenario_id INTEGER,
 local_capacity_zone VARCHAR(64),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
 local_capacity_requirement_mw FLOAT,
 local_capacity_provision_mw FLOAT,
 dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
-PRIMARY KEY (scenario_id, local_capacity_zone, period)
+PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 );

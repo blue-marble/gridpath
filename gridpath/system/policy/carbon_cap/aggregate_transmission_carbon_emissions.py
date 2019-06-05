@@ -79,17 +79,17 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
                )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "carbon_cap_total_transmission.csv"), "w") as \
             rps_results_file:
         writer = csv.writer(rps_results_file)
@@ -107,9 +107,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -128,9 +126,10 @@ def import_results_into_database(
     c.execute(
         """UPDATE results_system_carbon_emissions
         SET import_emissions_mmt = NULL
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -152,10 +151,13 @@ def import_results_into_database(
                 import_emissions_mmt_degen = {}
                 WHERE scenario_id = {}
                 AND carbon_cap_zone = '{}'
-                AND period = {}""".format(
+                AND period = {}
+                AND subproblem_id = {}
+                AND stage_id = {}""".format(
                     tx_carbon_emissions_mmt,
                     tx_carbon_emissions_mmt_degen,
-                    scenario_id, carbon_cap_zone, period
+                    scenario_id, carbon_cap_zone, period,
+                    subproblem, stage
                 )
             )
 
@@ -166,9 +168,10 @@ def import_results_into_database(
         """UPDATE results_system_carbon_emissions
            SET total_emissions_mmt_degen = 
            in_zone_project_emissions_mmt + import_emissions_mmt_degen
-           WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+           WHERE scenario_id = {}
+           AND subproblem_id = {}
+           AND stage_id = {};
+           """.format(scenario_id, subproblem, stage)
     )
 
     db.commit()

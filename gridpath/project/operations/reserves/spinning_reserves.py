@@ -38,12 +38,12 @@ RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
     "SPINNING_RESERVES_PROJECT_OPERATIONAL_TIMEPOINTS"
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -51,7 +51,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     generic_determine_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         reserve_module=MODULE_NAME,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
@@ -88,14 +88,14 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -104,7 +104,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
@@ -119,11 +119,11 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export project-level results for upward load-following
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
@@ -134,7 +134,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
         m=m,
         d=d,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         module_name=MODULE_NAME,
         reserve_project_operational_timepoints_set=
@@ -144,7 +144,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
     )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios
@@ -219,9 +220,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer.writerows(new_rows)
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id: 
@@ -234,6 +233,8 @@ def import_results_into_database(
 
     generic_import_results_into_database(
         scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
         c=c,
         db=db,
         results_directory=results_directory,

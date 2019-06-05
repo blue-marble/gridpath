@@ -898,10 +898,6 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Fuel use in terms of an IO curve with an incremental heat rate above
-    the minimum stable level, i.e. a minimum MMBtu input to have the generator
-    on plus incremental fuel use for each MWh above the minimum stable level of
-    the generator.
     :param mod:
     :param g:
     :param tmp:
@@ -962,17 +958,18 @@ def fix_commitment(mod, g, tmp):
     :param tmp:
     :return:
     """
-    mod.Commit_Binary[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Binary[g, tmp] = \
+        mod.fixed_commitment[g, mod.previous_stage_timepoint_map[tmp]]
     mod.Commit_Binary[g, tmp].fixed = True
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -985,9 +982,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     min_up_time = dict()
     min_down_time = dict()
 
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     optional_columns = ["startup_plus_ramp_up_rate",
                         "shutdown_plus_ramp_down_rate",
@@ -997,14 +996,14 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                         "min_down_time_hours"]
     used_columns = [c for c in optional_columns if c in header]
 
-    dynamic_components = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type",
-                     "min_stable_level_fraction"] + used_columns
-        )
+    dynamic_components = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type",
+                 "min_stable_level_fraction"] + used_columns
 
+    )
     for row in zip(dynamic_components["project"],
                    dynamic_components["operational_type"],
                    dynamic_components["min_stable_level_fraction"]):
@@ -1090,16 +1089,17 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
             min_down_time
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_binary_commit.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",

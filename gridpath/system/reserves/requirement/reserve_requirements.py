@@ -41,7 +41,7 @@ def generic_add_model_components(
 
 
 def generic_load_model_data(m, d, data_portal,
-                            scenario_directory, horizon, stage,
+                            scenario_directory, subproblem, stage,
                             requirement_filename,
                             reserve_zone_timepoint_set,
                             reserve_requirement_param):
@@ -51,14 +51,14 @@ def generic_load_model_data(m, d, data_portal,
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param requirement_filename:
     :param reserve_zone_timepoint_set:
     :param reserve_requirement_param:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs",
                                            requirement_filename),
                      index=getattr(m, reserve_zone_timepoint_set),

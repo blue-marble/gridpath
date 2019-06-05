@@ -52,7 +52,7 @@ class TestFixCommitment(unittest.TestCase):
         create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
                               module_to_test=MODULE_BEING_TESTED,
                               test_data_dir=TEST_DATA_DIRECTORY,
-                              horizon="202001",
+                              subproblem="202001",
                               stage="ha"
                               )
 
@@ -64,7 +64,7 @@ class TestFixCommitment(unittest.TestCase):
         add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
                                      module_to_test=MODULE_BEING_TESTED,
                                      test_data_dir=TEST_DATA_DIRECTORY,
-                                     horizon="202001",
+                                     subproblem="202001",
                                      stage="ha"
                                      )
 
@@ -77,7 +77,7 @@ class TestFixCommitment(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="202001",
+            subproblem="202001",
             stage="ha"
         )
         instance = m.create_instance(data)
@@ -85,7 +85,8 @@ class TestFixCommitment(unittest.TestCase):
         # Set: FINAL_COMMITMENT_PROJECTS
         expected_final_projects = sorted([
             "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2", "Disp_Binary_Commit",
-            "Disp_Cont_Commit"
+            "Disp_Cont_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2", "Coal",
+            "Coal_z2"
         ])
         actual_final_projects = sorted([
             prj for prj in instance.FINAL_COMMITMENT_PROJECTS
@@ -156,7 +157,55 @@ class TestFixCommitment(unittest.TestCase):
             ("Disp_Cont_Commit", 20200117), ("Disp_Cont_Commit", 20200118),
             ("Disp_Cont_Commit", 20200119), ("Disp_Cont_Commit", 20200120),
             ("Disp_Cont_Commit", 20200121), ("Disp_Cont_Commit", 20200122),
-            ("Disp_Cont_Commit", 20200123), ("Disp_Cont_Commit", 20200124)
+            ("Disp_Cont_Commit", 20200123), ("Disp_Cont_Commit", 20200124),
+            ("Clunky_Old_Gen", 20200101), ("Clunky_Old_Gen", 20200102),
+            ("Clunky_Old_Gen", 20200103), ("Clunky_Old_Gen", 20200104),
+            ("Clunky_Old_Gen", 20200105), ("Clunky_Old_Gen", 20200106),
+            ("Clunky_Old_Gen", 20200107), ("Clunky_Old_Gen", 20200108),
+            ("Clunky_Old_Gen", 20200109), ("Clunky_Old_Gen", 20200110),
+            ("Clunky_Old_Gen", 20200111), ("Clunky_Old_Gen", 20200112),
+            ("Clunky_Old_Gen", 20200113), ("Clunky_Old_Gen", 20200114),
+            ("Clunky_Old_Gen", 20200115), ("Clunky_Old_Gen", 20200116),
+            ("Clunky_Old_Gen", 20200117), ("Clunky_Old_Gen", 20200118),
+            ("Clunky_Old_Gen", 20200119), ("Clunky_Old_Gen", 20200120),
+            ("Clunky_Old_Gen", 20200121), ("Clunky_Old_Gen", 20200122),
+            ("Clunky_Old_Gen", 20200123), ("Clunky_Old_Gen", 20200124),
+            ("Clunky_Old_Gen2", 20200101), ("Clunky_Old_Gen2", 20200102),
+            ("Clunky_Old_Gen2", 20200103), ("Clunky_Old_Gen2", 20200104),
+            ("Clunky_Old_Gen2", 20200105), ("Clunky_Old_Gen2", 20200106),
+            ("Clunky_Old_Gen2", 20200107), ("Clunky_Old_Gen2", 20200108),
+            ("Clunky_Old_Gen2", 20200109), ("Clunky_Old_Gen2", 20200110),
+            ("Clunky_Old_Gen2", 20200111), ("Clunky_Old_Gen2", 20200112),
+            ("Clunky_Old_Gen2", 20200113), ("Clunky_Old_Gen2", 20200114),
+            ("Clunky_Old_Gen2", 20200115), ("Clunky_Old_Gen2", 20200116),
+            ("Clunky_Old_Gen2", 20200117), ("Clunky_Old_Gen2", 20200118),
+            ("Clunky_Old_Gen2", 20200119), ("Clunky_Old_Gen2", 20200120),
+            ("Clunky_Old_Gen2", 20200121), ("Clunky_Old_Gen2", 20200122),
+            ("Clunky_Old_Gen2", 20200123), ("Clunky_Old_Gen2", 20200124),
+            ("Coal", 20200101), ("Coal", 20200102),
+            ("Coal", 20200103), ("Coal", 20200104),
+            ("Coal", 20200105), ("Coal", 20200106),
+            ("Coal", 20200107), ("Coal", 20200108),
+            ("Coal", 20200109), ("Coal", 20200110),
+            ("Coal", 20200111), ("Coal", 20200112),
+            ("Coal", 20200113), ("Coal", 20200114),
+            ("Coal", 20200115), ("Coal", 20200116),
+            ("Coal", 20200117), ("Coal", 20200118),
+            ("Coal", 20200119), ("Coal", 20200120),
+            ("Coal", 20200121), ("Coal", 20200122),
+            ("Coal", 20200123), ("Coal", 20200124),
+            ("Coal_z2", 20200101), ("Coal_z2", 20200102),
+            ("Coal_z2", 20200103), ("Coal_z2", 20200104),
+            ("Coal_z2", 20200105), ("Coal_z2", 20200106),
+            ("Coal_z2", 20200107), ("Coal_z2", 20200108),
+            ("Coal_z2", 20200109), ("Coal_z2", 20200110),
+            ("Coal_z2", 20200111), ("Coal_z2", 20200112),
+            ("Coal_z2", 20200113), ("Coal_z2", 20200114),
+            ("Coal_z2", 20200115), ("Coal_z2", 20200116),
+            ("Coal_z2", 20200117), ("Coal_z2", 20200118),
+            ("Coal_z2", 20200119), ("Coal_z2", 20200120),
+            ("Coal_z2", 20200121), ("Coal_z2", 20200122),
+            ("Coal_z2", 20200123), ("Coal_z2", 20200124)
         ])
         actual_final_prj_op_tmps = sorted([
             (prj, tmp) for (prj, tmp)
@@ -236,7 +285,7 @@ class TestFixCommitment(unittest.TestCase):
             ("Coal_z2", 20200121): 6, ("Coal_z2", 20200122): 6,
             ("Coal_z2", 20200123): 6, ("Coal_z2", 20200124): 6}.items()
                                                        )
-                                                )
+        )
         actual_fixed_commitment = OrderedDict(sorted({
             (prj, tmp): instance.fixed_commitment[prj, tmp] for (prj, tmp)
             in instance.FIXED_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS}.items()
@@ -244,6 +293,7 @@ class TestFixCommitment(unittest.TestCase):
                                               )
         self.assertDictEqual(expected_fixed_commitment,
                              actual_fixed_commitment)
+
 
 if __name__ == "__main__":
     unittest.main()

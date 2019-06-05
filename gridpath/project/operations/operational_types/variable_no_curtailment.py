@@ -229,15 +229,15 @@ def power_delta_rule(mod, g, tmp):
                 )
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
     directory
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -250,7 +250,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     prj_op_type_df = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
             sep="\t", usecols=["project",
                                "operational_type"]
         )
@@ -270,7 +271,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     prj_tmp_cf_df = \
         pd.read_csv(
-            os.path.join(scenario_directory, horizon, stage, "inputs",
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
                          "variable_generator_profiles.tab"),
             sep="\t", usecols=["project", "timepoint", "cap_factor"]
         )
@@ -303,13 +304,13 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["cap_factor_no_curtailment"] = cap_factor
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
+                                             c, inputs_directory):
     """
     Write profiles to variable_generator_profiles.tab
     If file does not yet exist, write header first
     :param subscenarios
+    :param subproblem
     :param c:
     :param inputs_directory:
     :return:
@@ -335,7 +336,9 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT timepoint, period
         FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {})
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {})
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, timepoint)
@@ -361,14 +364,18 @@ def get_module_specific_inputs_from_database(
         USING (period)
         WHERE project_new_cost_scenario_id = {})
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {}""".format(
+        WHERE project_portfolio_scenario_id = {}
+        AND stage_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            stage
         )
     )
 

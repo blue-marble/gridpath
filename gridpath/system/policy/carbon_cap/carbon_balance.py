@@ -50,17 +50,17 @@ def add_model_components(m, d):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "carbon_cap.csv"), "w") as carbon_cap_results_file:
         writer = csv.writer(carbon_cap_results_file)
         writer.writerow(["carbon_cap_zone", "period",
@@ -84,9 +84,7 @@ def save_duals(m):
         ["carbon_cap_zone", "period", "dual"]
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -105,9 +103,10 @@ def import_results_into_database(
     c.execute(
         """UPDATE results_system_carbon_emissions
         SET total_emissions_mmt = NULL
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -131,9 +130,12 @@ def import_results_into_database(
                 number_years_represented = {}
                 WHERE scenario_id = {}
                 AND carbon_cap_zone = '{}'
-                AND period = {}""".format(
+                AND period = {}
+                AND subproblem_id = {}
+                AND stage_id = {}""".format(
                     total_emissions_mmt, discount_factor, number_years,
-                    scenario_id, carbon_cap_zone, period
+                    scenario_id, carbon_cap_zone, period,
+                    subproblem, stage
                 )
             )
     db.commit()
@@ -151,8 +153,10 @@ def import_results_into_database(
                 SET dual = {}
                 WHERE carbon_cap_zone = '{}'
                 AND period = {}
-                AND scenario_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id
+                AND scenario_id = {}
+                AND subproblem_id = {}
+                AND stage_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id, subproblem, stage
                 )
             )
     db.commit()
@@ -162,8 +166,9 @@ def import_results_into_database(
         """UPDATE results_system_carbon_emissions
         SET carbon_cap_marginal_cost_per_mmt = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()

@@ -22,18 +22,18 @@ def add_model_components(m, d):
     m.LOCAL_CAPACITY_ZONES = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs",
                                            "local_capacity_zones.tab"),
                      select=("local_capacity_zone",),
@@ -42,7 +42,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
     local_capacity_zones.tab
     :param subscenarios

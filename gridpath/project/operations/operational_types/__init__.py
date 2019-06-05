@@ -33,14 +33,14 @@ def add_model_components(m, d):
 
 # TODO: we should check that all operational types specified by user are
 #  actually implemented
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -50,16 +50,16 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         if hasattr(imported_operational_modules[op_m],
                    "load_module_specific_data"):
             imported_operational_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, horizon, stage)
+                m, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     The Pyomo abstract model
@@ -78,15 +78,13 @@ def export_results(scenario_directory, horizon, stage, m, d):
                    "export_module_specific_results"):
             imported_operational_modules[op_m].\
                 export_module_specific_results(
-                m, d, scenario_directory, horizon, stage,
+                m, d, scenario_directory, subproblem, stage,
             )
         else:
             pass
 
 
-def get_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
     
     :param subscenarios: 
@@ -139,13 +137,13 @@ def get_inputs_from_database(
                    "get_module_specific_inputs_from_database"):
             imported_operational_modules[op_m]. \
                 get_module_specific_inputs_from_database(
-                subscenarios, c, inputs_directory
+                subscenarios, subproblem, stage, c, inputs_directory
             )
         else:
             pass
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -162,7 +160,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
+        WHERE scenario_id = {}
+        """.format(scenario_id)
     ).fetchone()[0]
 
     project_opchars_scenario_id = c.execute(
@@ -198,7 +197,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
                    "import_module_specific_results_to_database"):
             imported_operational_modules[op_m]. \
                 import_module_specific_results_to_database(
-                scenario_id, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory
             )
         else:
             pass

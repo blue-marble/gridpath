@@ -40,12 +40,12 @@ RESERVE_PROJECT_OPERATIONAL_TIMEPOINTS_SET_NAME = \
     "FREQUENCY_RESPONSE_PROJECT_OPERATIONAL_TIMEPOINTS"
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -53,7 +53,7 @@ def determine_dynamic_components(d, scenario_directory, horizon, stage):
     generic_determine_dynamic_components(
         d=d,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         reserve_module=MODULE_NAME,
         headroom_or_footroom_dict=HEADROOM_OR_FOOTROOM_DICT_NAME,
@@ -102,14 +102,14 @@ def add_model_components(m, d):
     #         within=m.FREQUENCY_RESPONSE_PROJECT_OPERATIONAL_TIMEPOINTS)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -118,7 +118,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         ba_column_name=BA_COLUMN_NAME_IN_INPUT_FILE,
         derate_column_name=
@@ -137,7 +137,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     project_fr_partial_list = list()
     projects = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs",
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
                          "projects.tab"),
             sep="\t"
         )
@@ -157,11 +157,11 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     }
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export project-level results for downward load-following
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :param m:
     :param d:
@@ -175,7 +175,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
         else:
             partial_proj[prj] = 0
 
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "reserves_provision_frequency_response.csv"),
               "w") as f:
         writer = csv.writer(f)
@@ -198,7 +198,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios
@@ -280,9 +281,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer.writerows(new_rows)
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id: 
@@ -293,9 +292,10 @@ def import_results_into_database(
     """
     c.execute(
         """DELETE FROM results_project_frequency_response 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -312,6 +312,8 @@ def import_results_into_database(
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -321,7 +323,7 @@ def import_results_into_database(
             technology VARCHAR(32),
             reserve_provision_mw FLOAT,
             partial INTEGER,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -348,15 +350,17 @@ def import_results_into_database(
             c.execute(
                 """INSERT INTO temp_results_project_frequency_response"""
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint, 
-                    frequency_response_ba,
-                    load_zone, technology, reserve_provision_mw, partial)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}',
-                    {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint, ba,
-                    load_zone, technology, reserve_provision, partial
+                    (scenario_id, project, period, subproblem_id, stage_id,
+                    horizon, timepoint, horizon_weight, 
+                    number_of_hours_in_timepoint, 
+                    frequency_response_ba, load_zone, technology,
+                    reserve_provision_mw, partial)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
+                    '{}', '{}', '{}', {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    ba, load_zone, technology, reserve_provision, partial
                 )
             )
     db.commit()
@@ -364,15 +368,18 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_frequency_response
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint, frequency_response_ba, 
-        load_zone, technology, reserve_provision_mw, partial)
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
+        frequency_response_ba, load_zone, technology,
+        reserve_provision_mw, partial)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint, frequency_response_ba, 
-        load_zone, technology, reserve_provision_mw, partial
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        frequency_response_ba, load_zone, technology,
+        reserve_provision_mw, partial
         FROM temp_results_project_frequency_response""" + str(scenario_id) +
-        """ ORDER BY scenario_id, project, timepoint;"""
+        """ ORDER BY scenario_id, project, subproblem_id, stage_id, 
+        timepoint;"""
     )
     db.commit()
 

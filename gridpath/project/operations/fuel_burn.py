@@ -121,11 +121,11 @@ def add_model_components(m, d):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export fuel burn results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     The Pyomo abstract model
@@ -134,7 +134,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
               "fuel_burn.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -162,9 +162,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -177,9 +175,10 @@ def import_results_into_database(
     print("project fuel burn")
     c.execute(
         """DELETE FROM results_project_fuel_burn 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -197,6 +196,8 @@ def import_results_into_database(
          scenario_id INTEGER,
          project VARCHAR(64),
          period INTEGER,
+         subproblem_id INTEGER,
+         stage_id INTEGER,
          horizon INTEGER,
          timepoint INTEGER,
          horizon_weight FLOAT,
@@ -205,7 +206,7 @@ def import_results_into_database(
          technology VARCHAR(32),
          fuel VARCHAR(32),
          fuel_burn_mmbtu FLOAT,
-         PRIMARY KEY (scenario_id, project, timepoint)
+         PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
          );"""
     )
     db.commit()
@@ -233,14 +234,16 @@ def import_results_into_database(
                 """INSERT INTO 
                 temp_results_project_fuel_burn"""
                 + str(scenario_id) + """
-                 (scenario_id, project, period, horizon, timepoint, 
-                 horizon_weight, number_of_hours_in_timepoint, load_zone,
-                 technology, fuel, fuel_burn_mmbtu)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}',
+                 (scenario_id, project, period, subproblem_id, stage_id, 
+                 horizon, timepoint, horizon_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, fuel, fuel_burn_mmbtu)
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}',
                  {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint, load_zone,
-                    technology, fuel, fuel_burn_tons
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone, technology, fuel, fuel_burn_tons
                 )
             )
     db.commit()
@@ -248,17 +251,17 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_fuel_burn
-        (scenario_id, project, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, load_zone,
-        technology, fuel, fuel_burn_mmbtu)
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, fuel, fuel_burn_mmbtu)
         SELECT
-        scenario_id, project, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, load_zone,
-        technology, fuel, fuel_burn_mmbtu
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, fuel, fuel_burn_mmbtu
         FROM temp_results_project_fuel_burn"""
         + str(scenario_id)
         + """
-         ORDER BY scenario_id, project, timepoint;"""
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 

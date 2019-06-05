@@ -36,14 +36,14 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     
     :param m: 
     :param d: 
     :param data_portal: 
     :param scenario_directory: 
-    :param horizon: 
+    :param stage:
     :param stage: 
     :return: 
     """
@@ -51,7 +51,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     # importing two columns (total and partial requirement), not just a
     # single param
     data_portal.load(filename=os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "frequency_response_requirement.tab"),
                      index=m.FREQUENCY_RESPONSE_BA_TIMEPOINTS,
                      param=(m.frequency_response_requirement_mw,
@@ -59,7 +59,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios
@@ -83,9 +84,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             frequency_response_mw, frequency_response_partial_mw
             FROM inputs_system_frequency_response
             INNER JOIN
-            (SELECT timepoint
+            (SELECT timepoint 
             FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}) as relevant_timepoints
+            WHERE temporal_scenario_id = {}
+            AND subproblem_id = {}
+            AND stage_id = {}) as relevant_timepoints
             USING (timepoint)
             INNER JOIN
             (SELECT frequency_response_ba
@@ -93,10 +96,14 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             WHERE frequency_response_ba_scenario_id = {}) as relevant_bas
             USING (frequency_response_ba)
             WHERE frequency_response_scenario_id = {}
+            AND stage_id = {}
             """.format(
                 subscenarios.TEMPORAL_SCENARIO_ID,
+                subproblem,
+                stage,
                 subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
-                subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID
+                subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID,
+                stage
             )
         )
         for row in frequency_response:

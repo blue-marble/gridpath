@@ -1,5 +1,5 @@
-TIMEPOINTS	period	horizon	number_of_hours_in_timepoint
-1	2020	20201	1
-2	2020	20201	1
-3	2030	20301	1
-4	2030	20301	1
+TIMEPOINTS	period	horizon	number_of_hours_in_timepoint	previous_stage_timepoint_map
+1	2020	20201	1	.
+2	2020	20201	1	.
+3	2030	20301	1	.
+4	2030	20301	1	.

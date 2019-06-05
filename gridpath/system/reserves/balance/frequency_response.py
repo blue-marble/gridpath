@@ -46,24 +46,24 @@ def add_model_components(m, d):
                    rule=meet_partial_frequency_response_rule)
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    generic_export_results(scenario_directory, horizon, stage, m, d,
+    generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "frequency_response_violation.csv",
                            "frequency_response_violation_mw",
                            "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
                            "Frequency_Response_Violation_MW"
                            )
 
-    generic_export_results(scenario_directory, horizon, stage, m, d,
+    generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "frequency_response_partial_violation.csv",
                            "frequency_response_partial_violation_mw",
                            "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
@@ -81,7 +81,7 @@ def save_duals(m):
     generic_save_duals(m, "Meet_Frequency_Response_Partial_Constraint")
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -95,6 +95,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     generic_import_results_to_database(
         scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
         c=c,
         db=db,
         results_directory=results_directory,
@@ -103,6 +105,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     generic_import_results_to_database(
         scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
         c=c,
         db=db,
         results_directory=results_directory,

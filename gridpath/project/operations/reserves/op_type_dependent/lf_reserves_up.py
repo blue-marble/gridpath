@@ -52,14 +52,14 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -68,7 +68,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         d=d,
         data_portal=data_portal,
         scenario_directory=scenario_directory,
-        horizon=horizon,
+        subproblem=subproblem,
         stage=stage,
         ramp_rate_limit_column_name
         =RESERVE_PROVISION_RAMP_RATE_LIMIT_COLUMN_NAME_IN_INPUT_FILE,
@@ -77,7 +77,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios

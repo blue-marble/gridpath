@@ -84,10 +84,10 @@ def add_model_components(m, d):
                               )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "periods.tab"),
                      select=("PERIODS", "discount_factor",
                              "number_years_represented"),
@@ -95,7 +95,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      param=(m.discount_factor, m.number_years_represented)
                      )
 
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      select=("TIMEPOINTS","period"),
                      index=m.TIMEPOINTS,
@@ -103,7 +103,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
