@@ -15,8 +15,6 @@ from tests.common_functions import create_abstract_model, \
 from tests.project.operations.common_functions import \
     get_project_operational_timepoints
 
-from gridpath.project.operations.operational_types.\
-    dispatchable_capacity_commit import determine_relevant_timepoints
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
@@ -237,81 +235,6 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
 
         # for tmp in instance.TIMEPOINTS:
         #     print(tmp)
-
-    def test_determine_relevant_timepoints(self):
-        """
-        ..todo: keeping this test in the dispatchable_capacity_commit
-            testing module for now, but this will be a more general function
-            reused by different modules that should be tested in a separate
-            'common_functions' module
-        """
-        imported_modules = list()
-        for md in [
-            "temporal.operations.timepoints",
-            "temporal.operations.horizons"
-        ]:
-            try:
-                im = import_module("." + str(md),
-                                                package='gridpath')
-                imported_modules.append(im)
-            except ImportError:
-                print("ERROR! Module " + str(md) + " not found.")
-                sys.exit(1)
-
-        m, data = add_components_and_load_data(
-            prereq_modules=imported_modules,
-            module_to_test=None,
-            test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
-            stage=""
-        )
-        instance = m.create_instance(data)
-
-        test_cases = {
-            1: {"min_time": 4, "tmp": 20200103,
-                "relevant_timepoints": [20200102]},
-            2: {"min_time": 5, "tmp": 20200103,
-                "relevant_timepoints":
-                    [20200102, 20200101, 20200124, 20200123]},
-            3: {"min_time": 8, "tmp": 20200103,
-                "relevant_timepoints":
-                    [20200102, 20200101, 20200124, 20200123, 20200122,
-                     20200121]},
-            4: {"min_time": 1, "tmp": 20200120,
-                "relevant_timepoints": [20200119, 20200118]},
-            5: {"min_time": 2, "tmp": 20200120,
-                "relevant_timepoints": [20200119, 20200118, 20200117]},
-            6: {"min_time": 3, "tmp": 20200120,
-                "relevant_timepoints":
-                    [20200119, 20200118, 20200117, 20200116]},
-            # Test min times of longer duration than the horizon in a
-            # 'circular' horizon setting
-            7: {"min_time": 100, "tmp": 20200101,
-                "relevant_timepoints":
-                    [20200124, 20200123, 20200122, 20200121, 20200120,
-                     20200119, 20200118, 20200117, 20200116, 20200115,
-                     20200114, 20200113, 20200112, 20200111, 20200110,
-                     20200109, 20200108, 20200107, 20200106, 20200105,
-                     20200104, 20200103, 20200102, 20200101]},
-            # Test that we get an empty list if we're in the first timepoint
-            # of a linear horizon
-            8: {"min_time": 100, "tmp": 20200201,
-                "relevant_timepoints": []},
-            # Test that we break out of loop with min times that reach the
-            # first horizon timepoint in a 'linear' horizon setting
-            9: {"min_time": 100, "tmp": 20200202,
-                "relevant_timepoints": [20200201]}
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["relevant_timepoints"]
-            actual_list = determine_relevant_timepoints(
-                mod=instance,
-                t=test_cases[test_case]["tmp"],
-                min_time=test_cases[test_case]["min_time"]
-            )
-
-            self.assertListEqual(expected_list, actual_list)
 
 
 if __name__ == "__main__":
