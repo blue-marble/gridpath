@@ -15,8 +15,11 @@ def determine_relevant_timepoints(mod, t, min_time):
     i.e. which timepoints we need to consider when capacity could have
     been turned on/off that must still be on/off in the current timepoint *t*.
 
-    Capacity must still be on/off if it was turned on/off less than its
-    up/down time ago, i.e. if it was turned on/off during timepoints that
+    Any capacity that was turned on/off between t and t-1 must still be
+    on/off in t, so timepoint *t* is a relevant timepoint.
+
+    Capacity must also still be on/off if it was turned on/off less than its
+    up/down time ago, i.e. if it was turned on/off between timepoints that
     are within the min up/down time from the beginning of the current
     timepoint. Once we reach a timepoint whose duration takes us to a
     point in time that is removed from the beginning of timepoint *t* by a
@@ -26,12 +29,12 @@ def determine_relevant_timepoints(mod, t, min_time):
     In a simple case, let's assume all timepoints have durations of 1 hour.
     Timepoint t-1 is removed from the start of timepoint *t* by an hour,
     timepoint t-2 by 2 hours, timepoint t-3 by 3 hours, etc. Therefore, if
-    if a generator has a 4-hour minimum up time and was started up in t-3,
-    then it must still be on in the current timepoint. If it was started up
-    in t-4, it has already been up for 4 hours by the time timepoint *t*
-    begins, so it can be turned off. The relevant timepoints are therefore
-    t-1, t-2, and t-3; we do not need to constrain capacity turned on/off in
-    t-4 or farther in the past.
+    if a generator has a 4-hour minimum up time and was started up in t-3 (
+    i.e. between t-4 and t-3), then it must still be on in the current
+    timepoint. If it was started up in t-4, it has already been up for 4
+    hours by the time timepoint *t* begins, so it can be turned off. The
+    relevant timepoints are therefore t-1, t-2, and t-3; we do not need to
+    constrain capacity turned on/off in t-4 or farther in the past.
 
     If t-2 has duration of 2-hours, on the other hand, the total duration of
     the previous three timepoints would be 4 hours and the generator turned
@@ -41,7 +44,7 @@ def determine_relevant_timepoints(mod, t, min_time):
     up/down time, so t-3 will not be relevant for the minimum up time
     constraint in timepoint *t*.
     """
-    relevant_tmps = list()
+    relevant_tmps = [t]
 
     if t == mod.first_horizon_timepoint[mod.horizon[t]] \
             and mod.boundary[mod.horizon[t]] == "linear":

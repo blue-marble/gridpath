@@ -54,38 +54,40 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
 
         test_cases = {
             1: {"min_time": 4, "tmp": 20200103,
-                "relevant_timepoints": [20200102]},
+                "relevant_timepoints": [20200103, 20200102]},
             2: {"min_time": 5, "tmp": 20200103,
                 "relevant_timepoints":
-                    [20200102, 20200101, 20200124, 20200123]},
+                    [20200103, 20200102, 20200101, 20200124, 20200123]},
             3: {"min_time": 8, "tmp": 20200103,
                 "relevant_timepoints":
-                    [20200102, 20200101, 20200124, 20200123, 20200122,
-                     20200121]},
+                    [20200103, 20200102, 20200101, 20200124, 20200123,
+                     20200122, 20200121]},
             4: {"min_time": 1, "tmp": 20200120,
-                "relevant_timepoints": [20200119, 20200118]},
+                "relevant_timepoints": [20200120, 20200119, 20200118]},
             5: {"min_time": 2, "tmp": 20200120,
-                "relevant_timepoints": [20200119, 20200118, 20200117]},
+                "relevant_timepoints":
+                    [20200120, 20200119, 20200118, 20200117]},
             6: {"min_time": 3, "tmp": 20200120,
                 "relevant_timepoints":
-                    [20200119, 20200118, 20200117, 20200116]},
+                    [20200120, 20200119, 20200118, 20200117, 20200116]},
             # Test min times of longer duration than the horizon in a
             # 'circular' horizon setting
             7: {"min_time": 100, "tmp": 20200101,
                 "relevant_timepoints":
-                    [20200124, 20200123, 20200122, 20200121, 20200120,
-                     20200119, 20200118, 20200117, 20200116, 20200115,
-                     20200114, 20200113, 20200112, 20200111, 20200110,
-                     20200109, 20200108, 20200107, 20200106, 20200105,
-                     20200104, 20200103, 20200102, 20200101]},
-            # Test that we get an empty list if we're in the first timepoint
-            # of a linear horizon
+                    [20200101, 20200124, 20200123, 20200122, 20200121,
+                     20200120, 20200119, 20200118, 20200117, 20200116,
+                     20200115, 20200114, 20200113, 20200112, 20200111,
+                     20200110, 20200109, 20200108, 20200107, 20200106,
+                     20200105, 20200104, 20200103, 20200102, 20200101]},
+            # If we're in the first timepoint of a linear horizon, test that
+            # we only get that timepoint (i.e. that we break out of the loop
+            # before adding any more timepoints)
             8: {"min_time": 100, "tmp": 20200201,
-                "relevant_timepoints": []},
-            # Test that we break out of loop with min times that reach the
+                "relevant_timepoints": [20200201]},
+            # Test that we break out of the loop with min times that reach the
             # first horizon timepoint in a 'linear' horizon setting
             9: {"min_time": 100, "tmp": 20200202,
-                "relevant_timepoints": [20200201]}
+                "relevant_timepoints": [20200202, 20200201]}
         }
 
         for test_case in test_cases.keys():

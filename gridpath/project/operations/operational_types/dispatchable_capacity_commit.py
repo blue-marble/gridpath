@@ -19,7 +19,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    NonPositiveReals, PercentFraction, Expression, Integers, Reals, value
+    NonPositiveReals, PercentFraction, Reals, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -517,9 +517,12 @@ def add_module_specific_components(m, d):
             mod, tmp, mod.dispcapcommit_min_up_time_hours[g]
         )
 
-        # If we have determined there are no relevant timepoints, we skip
-        # the constraint
-        if not relevant_tmps:  # Empty list is False
+        # If only the current timepoint is determined to be relevant,
+        # this constraint is redundant (it will simplify to
+        # Commit_Capacity_MW[g, previous_timepoint[tmp]} >= 0)
+        # This also takes care of the first timepoint in a linear horizon
+        # setting, which has only *tmp* in the list of relevant timepoints
+        if relevant_tmps == [tmp]:
             return Constraint.Skip
         # Otherwise, we must have at least as much capacity committed as was
         # started up in the relevant timepoints
@@ -565,9 +568,12 @@ def add_module_specific_components(m, d):
             sum(mod.DispCapCommit_Shutdown_MW[g, tp]
                 for tp in relevant_tmps)
 
-        # If we have determined there are no relevant timepoints, we skip
-        # the constraint
-        if not relevant_tmps:  # Empty list is False
+        # If only the current timepoint is determined to be relevant,
+        # this constraint is redundant (it will simplify to
+        # Commit_Capacity_MW[g, previous_timepoint[tmp]} >= 0)
+        # This also takes care of the first timepoint in a linear horizon
+        # setting, which has only *tmp* in the list of relevant timepoints
+        if relevant_tmps == [tmp]:
             return Constraint.Skip
         # Otherwise, we must have at least as much capacity off as was shut
         # down in the relevant timepoints
