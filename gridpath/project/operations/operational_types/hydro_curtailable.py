@@ -156,10 +156,11 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        # If you can ramp up the the total project's capacity within a minute
-        # ramp constraints won't bind (assuming we're not modeling timepoints
-        # shorter than 1 minute)
-        elif mod.hydro_curtailable_ramp_up_rate[g] == 1:
+        # If you can ramp up the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        elif mod.hydro_curtailable_ramp_up_rate[g] * 60 \
+             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
+             >= 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
@@ -192,10 +193,11 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        # If you can ramp down the the total project's capacity within a minute
-        # ramp constraints won't bind (assuming we're not modeling timepoints
-        # shorter than 1 minute)
-        elif mod.hydro_curtailable_ramp_down_rate[g] == 1:
+        # If you can ramp down the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        elif mod.hydro_curtailable_ramp_down_rate[g] * 60 \
+             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
+             >= 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Curtailable_Ramp_MW[g, tmp] \
