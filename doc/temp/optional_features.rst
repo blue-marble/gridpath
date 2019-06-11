@@ -5,7 +5,6 @@ GridPath models can include or exclude several high-level level optional
 "features." Features include modules from different packages.
 
 
------
 Fuels
 -----
 Whether or not fuel-based projects are included in the model.
@@ -16,7 +15,7 @@ Feature modules include:
 .. automodule:: gridpath.project.operations.fuel_burn
     :members:
 
------------
+
 Multi-stage
 -----------
 Whether or not to model multiple stages in production-cost simulation mode.
@@ -25,7 +24,7 @@ Feature modules include:
 .. automodule:: gridpath.project.operations.fix_commitment
     :members:
 
-------------
+
 Transmission
 ------------
 Whether or not to model transmission between load zones.
@@ -42,7 +41,7 @@ Feature modules include:
 .. automodule:: gridpath.system.load_balance.aggregate_transmission_power
     :members:
 
--------------------------
+
 Transmission Hurdle Rates
 -------------------------
 Whether or not to apply hurdle rates on transmission line flows.
@@ -53,10 +52,13 @@ Feature modules include:
 .. automodule:: gridpath.objective.transmission.aggregate_operational_costs
     :members:
 
---------------------------
-Load-Following Reserves Up
---------------------------
+
+Reserves
+--------
 Whether or not to model load-following up reserves.
+
+Load-Following Reserves Up
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Feature modules include:
 .. automodule:: gridpath.geography.load_following_up_balancing_areas
@@ -74,9 +76,9 @@ Feature modules include:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.lf_reserves_up
     :members:
 
-----------------------------
+
 Load-Following Reserves Down
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Whether or not to model load-following down reserves.
 
 Feature modules include:
@@ -95,9 +97,9 @@ Feature modules include:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.lf_reserves_down
     :members:
 
-----------------------
+
 Regulation Reserves Up
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 Whether or not to model regulation up reserves.
 
 Feature modules include:
@@ -116,9 +118,9 @@ Feature modules include:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.regulation_up
     :members:
 
-------------------------
+
 Regulation Reserves Down
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 Whether or not to model regulation down reserves.
 
 Feature modules include:
@@ -137,9 +139,9 @@ Feature modules include:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.regulation_down
     :members:
 
-------------------
+
 Frequency Response
-------------------
+^^^^^^^^^^^^^^^^^^
 Whether or not to model frequency response.
 
 Feature modules include:
@@ -158,9 +160,9 @@ Feature modules include:
 .. automodule:: gridpath.objective.system.reserve_violation_penalties.frequency_response
     :members:
 
------------------
+
 Spinning Reserves
------------------
+^^^^^^^^^^^^^^^^^
 Whether or not to model spinning reserves.
 
 Feature modules include:
@@ -180,7 +182,6 @@ Feature modules include:
     :members:
 
 
-----------------------------------
 Renewable Portfolio Standard (RPS)
 ----------------------------------
 Whether or not to enforce a Renewable Portfolio Standard policy.
@@ -198,7 +199,6 @@ Feature modules include:
     :members:
 
 
---------------------
 Carbon Emissions Cap
 --------------------
 Whether or not to enforce a carbon cap.
@@ -216,7 +216,6 @@ Feature modules include:
     :members:
 
 
------------------------------
 Planning Reserve Margin (PRM)
 -----------------------------
 Whether or not to enforce a planning reserve margin constraint.
@@ -242,7 +241,6 @@ Feature modules include:
     :members:
 
 
----------------------------
 Local Capacity Requirements
 ---------------------------
 Whether or not to enforce a local capacity requirement constraint.
@@ -264,7 +262,6 @@ Feature modules include:
     :members:
 
 
------------------------
 Carbon-Imports Tracking
 -----------------------
 Whether or not to track how much carbon emissions are imported into a load
@@ -281,7 +278,6 @@ Feature modules include:
     :members:
 
 
-------------------------
 Simultaneous Flow Limits
 ------------------------
 Whether or not to constrain simultaneous flows on groups of transmission
@@ -292,7 +288,6 @@ Feature modules include:
     :members:
 
 
-------------
 ELCC Surface
 ------------
 Whether or not to use an "ELCC surface" approach to track the ELCC

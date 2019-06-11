@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Supply curve for new shiftable load capacity.
+This module describes a supply curve for new shiftable load capacity.
 
 The supply curve does not have vintages, i.e. there are no cost differences for
 capacity built in different periods. The cost for new capacity is specified
@@ -19,7 +19,6 @@ from __future__ import division
 
 from builtins import zip
 from builtins import range
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -33,10 +32,11 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_module_specific_components(m, d):
     """
-    Supply curve for shift DR, no vintages for now
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Describes the model formulation for a supply curve for shift DR. No
+    vintages for now.
     """
 
     m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS = Set()
@@ -119,10 +119,8 @@ def add_module_specific_components(m, d):
         :param p:
         :return:
         """
-        return old_div(
-            mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p],
-            mod.shiftable_load_supply_curve_min_duration[g]
-        )
+        return mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p] \
+            / mod.shiftable_load_supply_curve_min_duration[g]
 
     m.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW = Expression(
         m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,
@@ -157,19 +155,36 @@ def add_module_specific_components(m, d):
 
 
 def capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
+
+    The total power capacity of shiftable load operational in period :math:`p`.
+    """
     return mod.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
+    """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
+
+    The total power capacity of shiftable load operational in period :math:`p`.
+    """
     return mod.New_Shiftable_Load_Supply_Curve_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for specified capacity generators with no economic retirements
-    is 0
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized capacity cost of
+        *new_shiftable_load_supply_curve* project *g* in period *p*
     """
     return mod.New_Shiftable_Load_Supply_Curve_Cost[g, p]
 
@@ -263,7 +278,7 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
         LEFT OUTER JOIN
         (SELECT project, period,
         minimum_cumulative_new_build_mw, minimum_cumulative_new_build_mwh,
@@ -273,7 +288,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period) 
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'new_shiftable_load_supply_curve';""".format(
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )

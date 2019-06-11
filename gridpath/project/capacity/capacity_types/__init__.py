@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
-import pandas as pd
-import os.path
+"""
+The **gridpath.project.capacity.capacity_types** package contains modules to
+describe the various ways in which project capacity can be treated in the
+optimization problem, e.g. as specified, available to be built, available to
+be retired, etc.
+"""
 
 from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
+
+# TODO: we should shorten the names of the capacity-type modules, e.g. to
+#   gen_specified, gen_specified_lin_ret, gen_new, stor_specified, stor_new,
+#   shift_load_supply_curve
+# TODO: We should decide on naming conventions for sets, variables, etc. in
+#  the capacity type modules
 
 
 def get_inputs_from_database(

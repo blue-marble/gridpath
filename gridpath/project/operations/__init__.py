@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operational subsets (that can include more than one operational type)
+The **gridpath.project.operations** package contains modules to describe the
+operational capabilities, constraints, and costs of generation, storage,
+and demand-side infrastructure 'projects' in the optimization problem.
 """
 
 from builtins import next
@@ -15,9 +17,10 @@ from pyomo.environ import Set, Param, PositiveReals, PercentFraction
 from gridpath.auxiliary.auxiliary import is_number
 
 
+# TODO: should we take this out of __init__.py
 def add_model_components(m, d):
     """
-    Sum up all operational costs and add to the objective function.
+    Add operational subsets (that can include more than one operational type).
     :param m:
     :param d:
     :return:
@@ -45,10 +48,16 @@ def add_model_components(m, d):
                 if g in mod.SHUTDOWN_COST_PROJECTS))
 
     # TODO: implement check for which generator types can have fuels
+    # TODO: re-think how to deal with fuel projects; it's awkward to import
+    #  fuel & heat rate params here, but use them in the operational_type
+    #  modules with an 'if in FUEL_PROJECTS'
     # Fuels and heat rates
     m.FUEL_PROJECTS = Set(within=m.PROJECTS)
 
     m.fuel = Param(m.FUEL_PROJECTS, within=m.FUELS)
+
+    # TODO: implement full heat rate curve (probably piecewise linear with
+    #  flexible  number of points)
     m.minimum_input_mmbtu_per_hr = Param(m.FUEL_PROJECTS)
     m.inc_heat_rate_mmbtu_per_mwh = Param(m.FUEL_PROJECTS)
 
@@ -89,8 +98,10 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :return:
     """
 
-    # Get column names as a few columns will be optional; won't load data if column does not exist
-    with open(os.path.join(scenario_directory, "inputs", "projects.tab")) as prj_file:
+    # Get column names as a few columns will be optional;
+    # won't load data if column does not exist
+    with open(os.path.join(scenario_directory, "inputs", "projects.tab")
+              ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t")
         headers = next(reader)
 
@@ -255,7 +266,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         data_portal.data()["STARTUP_FUEL_PROJECTS"] = {
             None: determine_startup_fuel_projects()[0]
         }
-        data_portal.data()["startup_fuel_mmbtu_per_mw"] = determine_startup_fuel_projects()[1]
+        data_portal.data()["startup_fuel_mmbtu_per_mw"] = \
+            determine_startup_fuel_projects()[1]
     else:
         pass
 
@@ -299,10 +311,10 @@ def get_inputs_from_database(
             USING (horizon)
             WHERE project_portfolio_scenario_id = {}
             AND project_availability_scenario_id = {}
-            AND timepoint_scenario_id = {};""".format(
+            AND temporal_scenario_id = {};""".format(
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-                subscenarios.TIMEPOINT_SCENARIO_ID
+                subscenarios.TEMPORAL_SCENARIO_ID
             )
         )
 

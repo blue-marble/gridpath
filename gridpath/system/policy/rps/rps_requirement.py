@@ -71,7 +71,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             JOIN
             (SELECT period
             FROM inputs_temporal_periods
-            WHERE timepoint_scenario_id = {}) as relevant_periods
+            WHERE temporal_scenario_id = {}) as relevant_periods
             USING (period)
             JOIN
             (SELECT rps_zone
@@ -80,7 +80,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             using (rps_zone)
             WHERE rps_target_scenario_id = {};
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.RPS_ZONE_SCENARIO_ID,
                 subscenarios.RPS_TARGET_SCENARIO_ID
             )

@@ -10,10 +10,12 @@ from builtins import zip
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Param, Set, NonNegativeReals
+from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, is_number
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 
 def add_module_specific_components(m, d):
@@ -41,6 +43,50 @@ def add_module_specific_components(m, d):
     m.cap_factor_no_curtailment = Param(
         m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
                          within=NonNegativeReals)
+
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'variable_no_curtailment'
+    #  type
+    def no_upwards_reserve_rule(mod, g, tmp):
+        if getattr(d, headroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'variable_no_curtailment' operational 
+                type and should not be assigned any upward reserve BAs since it 
+                cannot provide  upward reserves. Please replace the upward 
+                reserve BA for project {} with '.' (no value) in projects.tab. 
+                Model will add  constraint to ensure project {} cannot provide 
+                upward reserves
+                """.format(g, g, g)
+            )
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, headroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Variable_No_Curtailment_No_Upwards_Reserves_Constraint = Constraint(
+            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_upwards_reserve_rule)
+
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'variable_no_curtailment'
+    #  type
+    def no_downwards_reserve_rule(mod, g, tmp):
+        if getattr(d, footroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'variable_no_curtailment' operational 
+                type and should not be assigned any downward reserve BAs since 
+                it cannot provide downward reserves. Please replace the downward 
+                reserve BA for project {} with '.' (no value) in projects.tab. 
+                Model will add  constraint to ensure project {} cannot provide 
+                downward reserves
+                """.format(g, g, g)
+            )
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, footroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Variable_No_Curtailment_No_Downwards_Reserves_Constraint = Constraint(
+            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_downwards_reserve_rule)
 
 
 # Operations
@@ -288,7 +334,7 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT timepoint, period
         FROM inputs_temporal_timepoints
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, timepoint)
@@ -300,7 +346,7 @@ def get_module_specific_inputs_from_database(
         INNER JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         USING (period)
         WHERE project_existing_capacity_scenario_id = {}
         AND existing_capacity_mw > 0) as existing
@@ -310,16 +356,16 @@ def get_module_specific_inputs_from_database(
         INNER JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {})
+        WHERE temporal_scenario_id = {})
         USING (period)
         WHERE project_new_cost_scenario_id = {})
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )

@@ -10,6 +10,7 @@ CREATE TABLE mod_horizon_boundary_types (
 horizon_boundary_type VARCHAR(16) PRIMARY KEY,
 description VARCHAR(128)
 );
+
 -- TODO: add descriptions
 INSERT INTO mod_horizon_boundary_types (horizon_boundary_type, description)
 VALUES
@@ -28,8 +29,10 @@ description VARCHAR(128)
 -- TODO: add descriptions
 INSERT INTO mod_capacity_types (capacity_type)
 VALUES ('existing_gen_linear_economic_retirement'),
+('existing_gen_binary_economic_retirement'),
 ('existing_gen_no_economic_retirement'), ('new_build_generator'),
-('new_build_storage'), ('storage_specified_no_economic_retirement');
+('new_build_storage'), ('new_shiftable_load_supply_curve'),
+('storage_specified_no_economic_retirement');
 
 -- Implemented operational types
 DROP TABLE IF EXISTS mod_operational_types;
@@ -48,64 +51,59 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 --------------------
 -- -- TEMPORAL -- --
 --------------------
-
 -- Timepoints
--- These are the timepoints that go into the model, with horizons
--- and periods specified
--- Usually, this a timepoint_scenario_id is a subset of a much larger set of
--- timepoints
-DROP TABLE IF EXISTS subscenarios_temporal_timepoints;
-CREATE TABLE subscenarios_temporal_timepoints (
-timepoint_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+DROP TABLE IF EXISTS subscenarios_temporal;
+CREATE TABLE subscenarios_temporal (
+temporal_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 name VARCHAR(32),
 description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS inputs_temporal_timepoints;
-CREATE TABLE inputs_temporal_timepoints (
-timepoint_scenario_id INTEGER,
-timepoint INTEGER,
-period INTEGER,
-horizon INTEGER,
-number_of_hours_in_timepoint INTEGER,
-PRIMARY KEY (timepoint_scenario_id, timepoint),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
-(timepoint_scenario_id)
 );
 
 -- Periods
 DROP TABLE IF EXISTS inputs_temporal_periods;
 CREATE TABLE inputs_temporal_periods (
-timepoint_scenario_id INTEGER,
+temporal_scenario_id INTEGER,
 period INTEGER,
 discount_factor FLOAT,
 number_years_represented FLOAT,
-PRIMARY KEY (timepoint_scenario_id, period),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
-(timepoint_scenario_id),
--- Make sure period exists in this timepoint_id
-FOREIGN KEY (timepoint_scenario_id, period) REFERENCES
-inputs_temporal_timepoints (timepoint_scenario_id, period)
+PRIMARY KEY (temporal_scenario_id, period),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id)
 );
 
 -- Horizons
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
-timepoint_scenario_id INTEGER,
+temporal_scenario_id INTEGER,
 horizon INTEGER,
 period INTEGER,
 boundary VARCHAR(16),
 horizon_weight FLOAT,
 month INTEGER,
-PRIMARY KEY (timepoint_scenario_id, horizon),
-FOREIGN KEY (timepoint_scenario_id) REFERENCES subscenarios_temporal_timepoints
-(timepoint_scenario_id),
--- Make sure horizon exists in this timepoint_id
-FOREIGN KEY (timepoint_scenario_id, horizon) REFERENCES
-inputs_temporal_timepoints (timepoint_scenario_id, horizon),
+PRIMARY KEY (temporal_scenario_id, horizon, period),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
 -- Make sure boundary type is correct
 FOREIGN KEY (boundary) REFERENCES mod_horizon_boundary_types
 (horizon_boundary_type)
+);
+
+DROP TABLE IF EXISTS inputs_temporal_timepoints;
+CREATE TABLE inputs_temporal_timepoints (
+temporal_scenario_id INTEGER,
+timepoint INTEGER,
+horizon INTEGER,
+period INTEGER,
+number_of_hours_in_timepoint INTEGER,
+PRIMARY KEY (temporal_scenario_id, timepoint, horizon, period),
+FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
+(temporal_scenario_id),
+-- Make sure period exists in this temporal_scenario_id
+FOREIGN KEY (temporal_scenario_id, period) REFERENCES
+inputs_temporal_periods (temporal_scenario_id, period),
+-- Make sure horizon/period exist in this temporal scenario id
+FOREIGN KEY (temporal_scenario_id, horizon, period) REFERENCES
+inputs_temporal_horizons (temporal_scenario_id, horizon, period)
 );
 
 
@@ -525,12 +523,12 @@ PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 -- Ensure operational characteristics for variable and hydro exist
-FOREIGN KEY (variable_generator_profile_scenario_id, project) REFERENCES
-inputs_project_variable_generator_profiles
-(variable_generator_profile_scenario_id, project),
-FOREIGN KEY (hydro_operational_chars_scenario_id, project) REFERENCES
-inputs_project_hydro_operational_chars
-(hydro_operational_chars_scenario_id, project),
+FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
+subscenarios_project_variable_generator_profiles
+(project, variable_generator_profile_scenario_id),
+FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
+subscenarios_project_hydro_operational_chars
+(project, hydro_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
@@ -542,46 +540,51 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 -- perhaps a better name is needed for this table
 DROP TABLE IF EXISTS subscenarios_project_variable_generator_profiles;
 CREATE TABLE subscenarios_project_variable_generator_profiles (
-variable_generator_profile_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+project VARCHAR(64),
+variable_generator_profile_scenario_id INTEGER,
 name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (project, variable_generator_profile_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_variable_generator_profiles;
 CREATE TABLE inputs_project_variable_generator_profiles (
-variable_generator_profile_scenario_id INTEGER,
 project VARCHAR(64),
+variable_generator_profile_scenario_id INTEGER,
 period INTEGER,
 horizon INTEGER,
 timepoint INTEGER,
 cap_factor FLOAT,
-PRIMARY KEY (variable_generator_profile_scenario_id, project, timepoint),
-FOREIGN KEY (variable_generator_profile_scenario_id) REFERENCES
+PRIMARY KEY (project, variable_generator_profile_scenario_id, period, horizon,
+timepoint),
+FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
-(variable_generator_profile_scenario_id)
+(project, variable_generator_profile_scenario_id)
 );
 
 -- Hydro operational characteristics
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
 CREATE TABLE subscenarios_project_hydro_operational_chars (
-hydro_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+project VARCHAR(64),
+hydro_operational_chars_scenario_id,
 name VARCHAR(32),
-description VARCHAR(128)
+description VARCHAR(128),
+PRIMARY KEY (project, hydro_operational_chars_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_hydro_operational_chars;
 CREATE TABLE inputs_project_hydro_operational_chars (
-hydro_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
+hydro_operational_chars_scenario_id INTEGER,
 period INTEGER,
 horizon INTEGER,
 average_power_mwa FLOAT,
 min_power_mw FLOAT,
 max_power_mw FLOAT,
-PRIMARY KEY (hydro_operational_chars_scenario_id, project, horizon),
-FOREIGN KEY (hydro_operational_chars_scenario_id) REFERENCES
+PRIMARY KEY (project, hydro_operational_chars_scenario_id, period, horizon),
+FOREIGN KEY (project, hydro_operational_chars_scenario_id) REFERENCES
 subscenarios_project_hydro_operational_chars
-(hydro_operational_chars_scenario_id)
+(project, hydro_operational_chars_scenario_id)
 );
 
 -- Project availability (e.g. due to planned outages/maintenance)
@@ -1304,7 +1307,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and load_zone_scenario_id
+-- temporal_scenario_id and load_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_load;
 CREATE TABLE inputs_system_load (
 load_scenario_id INTEGER,
@@ -1328,7 +1331,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_lf_reserves_up;
 CREATE TABLE inputs_system_lf_reserves_up (
 lf_reserves_up_scenario_id INTEGER,
@@ -1350,7 +1353,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_lf_reserves_down;
 CREATE TABLE inputs_system_lf_reserves_down (
 lf_reserves_down_scenario_id INTEGER,
@@ -1372,7 +1375,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_regulation_up;
 CREATE TABLE inputs_system_regulation_up (
 regulation_up_scenario_id INTEGER,
@@ -1394,7 +1397,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_regulation_down;
 CREATE TABLE inputs_system_regulation_down (
 regulation_down_scenario_id INTEGER,
@@ -1416,7 +1419,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_frequency_response;
 CREATE TABLE inputs_system_frequency_response (
 frequency_response_scenario_id INTEGER,
@@ -1439,7 +1442,7 @@ description VARCHAR(128)
 
 -- Can include timepoints and zones other than the ones in a scenario, as
 -- correct timepoints and zones will be pulled depending on
--- timepoint_scenario_id and reserves_scenario_id
+-- temporal_scenario_id and reserves_scenario_id
 DROP TABLE IF EXISTS inputs_system_spinning_reserves;
 CREATE TABLE inputs_system_spinning_reserves (
 spinning_reserves_scenario_id INTEGER,
@@ -1463,7 +1466,7 @@ description VARCHAR(128)
 );
 
 -- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on timepoint_scenario_id and
+-- periods and zones will be pulled depending on temporal_scenario_id and
 -- rps_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_rps_targets;
 CREATE TABLE inputs_system_rps_targets (
@@ -1486,7 +1489,7 @@ description VARCHAR(128)
 );
 
 -- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on timepoint_scenario_id and
+-- periods and zones will be pulled depending on temporal_scenario_id and
 -- carbon_cap_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_carbon_cap_targets;
 CREATE TABLE inputs_system_carbon_cap_targets (
@@ -1508,7 +1511,7 @@ description VARCHAR(128)
 );
 
 -- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on timepoint_scenario_id and
+-- periods and zones will be pulled depending on temporal_scenario_id and
 -- prm_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_prm_requirement;
 CREATE TABLE inputs_system_prm_requirement (
@@ -1531,7 +1534,7 @@ description VARCHAR(128)
 );
 
 -- Can include periods and zones other than the ones in a scenario, as correct
--- periods and zones will be pulled depending on timepoint_scenario_id and
+-- periods and zones will be pulled depending on temporal_scenario_id and
 -- local_capacity_zone_scenario_id
 DROP TABLE IF EXISTS inputs_system_local_capacity_requirement;
 CREATE TABLE inputs_system_local_capacity_requirement (
@@ -1589,7 +1592,7 @@ of_track_carbon_imports INTEGER,
 of_prm INTEGER,
 of_elcc_surface INTEGER,
 of_local_capacity INTEGER,
-timepoint_scenario_id INTEGER,
+temporal_scenario_id INTEGER,
 load_zone_scenario_id INTEGER,
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_down_ba_scenario_id INTEGER,
@@ -1645,8 +1648,8 @@ prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
-FOREIGN KEY (timepoint_scenario_id) REFERENCES
-subscenarios_temporal_timepoints (timepoint_scenario_id),
+FOREIGN KEY (temporal_scenario_id) REFERENCES
+subscenarios_temporal (temporal_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
 subscenarios_geography_load_zones (load_zone_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
@@ -1855,6 +1858,19 @@ PRIMARY KEY (scenario_id, project, period)
 
 DROP TABLE IF EXISTS results_project_capacity_linear_economic_retirement;
 CREATE TABLE results_project_capacity_linear_economic_retirement (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+retired_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_binary_economic_retirement;
+CREATE TABLE results_project_capacity_binary_economic_retirement (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,

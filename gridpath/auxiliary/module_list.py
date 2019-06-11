@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This module contains:
+
+1) the list of all GridPath modules;
+2) the modules included in each optional feature;
+3) the 'cross-feature' modules;
+4) the method for determining the user-requested features for the scenarios;
+5) the method for loading modules.
+"""
+
 from __future__ import print_function
 
 from builtins import str
@@ -11,7 +21,12 @@ import sys
 
 
 def all_modules_list():
-    # If all optional modules are selected, this would be the list
+    """
+    :return: list of all GridPath modules in order they are loaded
+
+    This is the list of all GridPath modules in the order they would be
+    loaded if all optional features were selected.
+    """
     all_modules = [
         "temporal.operations.timepoints",
         "temporal.operations.horizons",
@@ -126,7 +141,14 @@ def all_modules_list():
 
 
 def optional_modules_list():
-    # Names of groups of optional modules (features as keys)
+    """
+    :return: dictionary with the optional feature names as keys and a list
+        of the modules included in each feature as values
+
+    These are all of GridPath's optional modules grouped by features (
+    features as the dictionary keys). Each of these modules belongs to only
+    one feature.
+    """
     optional_modules = {
         "fuels":
             ["project.fuels", "project.operations.fuel_burn"],
@@ -231,8 +253,14 @@ def optional_modules_list():
 
 
 def cross_feature_modules_list():
-    # Some modules depend on more than one supermodule
-    # Currently, these are: track_carbon_imports and simultaneous_flow_limits
+    """
+    :return: dictionary with a tuple of features as keys and a list of
+        modules to be included if all those features are selected as values
+
+    Some modules depend on more than one feature, i.e. they are included
+    only if multiple features are selected. These relationships are
+    described in the 'cross_modules' dictionary here.
+    """
     cross_modules = {
         ("transmission", "carbon_cap", "track_carbon_imports"):
         ["system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
@@ -250,15 +278,30 @@ def cross_feature_modules_list():
 
 def determine_modules(scenario_directory):
     """
-    Determine modules needed based on features specified for scenario
-    :param scenario_directory:
-    :return:
+    :param scenario_directory: the scenario directory, where we will look
+        for the list of requested features
+    :return: the list of modules -- a subset of all GridPath modules -- needed
+        for a scenario
+
+    This method determines which modules are needed for a scenario based on
+    the features specified for the scenario. We start with the list of all
+    GridPath modules from *all_modules_list()* as the list of modules to
+    use in the scenario. We then iterate over all optional features, which we
+    get from the keys of the *optional_modules_list()* method above; if the
+    feature is in the list of user-requested features, we do nothing; if it
+    is not, we remove all of the feature's modules from the list of modules
+    to use. Similarly, for the cross feature modules, which we get from the
+    *cross_feature_module_list()* method, we check if all features they
+    depend on are included and, if not, remove those modules from the list
+    of modules to use.
     """
     features_file = os.path.join(scenario_directory, "features.csv")
     try:
         requested_features = pd.read_csv(features_file)["features"].tolist()
     except IOError:
-        print("ERROR! Features file {} not found".format(features_file))
+        print("ERROR! Features file {} not found in {}.".format(
+            features_file, scenario_directory
+        ))
         sys.exit(1)
 
     # Remove any modules not requested by user
@@ -289,9 +332,11 @@ def determine_modules(scenario_directory):
 
 def load_modules(modules_to_use):
     """
-    Load modules, keep track of which modules have been imported
-    :param modules_to_use:
-    :return:
+    :param modules_to_use: a list of the names of the modules to use
+    :return: list of imported modules (Python <class 'module'> objects)
+
+    Load the requested modules and return them as a list of Python module
+    objects.
     """
     loaded_modules = list()
     for m in modules_to_use:

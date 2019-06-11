@@ -27,7 +27,7 @@ def create_scenario(
         of_prm,
         of_local_capacity,
         of_elcc_surface,
-        timepoint_scenario_id,
+        temporal_scenario_id,
         load_zone_scenario_id,
         lf_reserves_up_ba_scenario_id,
         lf_reserves_down_ba_scenario_id,
@@ -106,7 +106,7 @@ def create_scenario(
     :param of_prm:
     :param of_local_capacity:
     :param of_elcc_surface:
-    :param timepoint_scenario_id:
+    :param temporal_scenario_id:
     :param load_zone_scenario_id:
     :param lf_reserves_up_ba_scenario_id:
     :param lf_reserves_down_ba_scenario_id:
@@ -186,7 +186,7 @@ def create_scenario(
         of_prm,
         of_local_capacity,
         of_elcc_surface,
-        timepoint_scenario_id,
+        temporal_scenario_id,
         load_zone_scenario_id,
         lf_reserves_up_ba_scenario_id,
         lf_reserves_down_ba_scenario_id,
@@ -336,7 +336,7 @@ def create_scenario(
             of_prm,
             of_local_capacity,
             of_elcc_surface,
-            timepoint_scenario_id,
+            temporal_scenario_id,
             load_zone_scenario_id,
             lf_reserves_up_ba_scenario_id,
             lf_reserves_down_ba_scenario_id,

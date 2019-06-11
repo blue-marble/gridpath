@@ -93,8 +93,8 @@ class TestProjPRMSimple(unittest.TestCase):
                  "Battery_Specified": 0.5, "Hydro": 0.5,
                  "Hydro_NonCurtailable": 1, "Disp_Binary_Commit": 1,
                  "Disp_Cont_Commit": 1, "Disp_No_Commit": 1,
-                 "Clunky_Old_Gen": 1, "Nuclear_Flexible": 1,
-                 "Shift_DR": 0.2
+                 "Clunky_Old_Gen": 1, "Clunky_Old_Gen2": 1,
+                 "Nuclear_Flexible": 1, "Shift_DR": 0.2
                  }.items()
             )
         )

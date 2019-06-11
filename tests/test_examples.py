@@ -186,7 +186,7 @@ class TestExamples(unittest.TestCase):
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 1941106985.7334006
+        expected_objective = 1820978464.266668
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
@@ -356,7 +356,7 @@ class TestExamples(unittest.TestCase):
     def test_example_2periods_gen_lin_econ_retirement(self):
         """
         Check objective function value of "2periods_gen_lin_econ_retirement"
-        example; this example requires a non-linear solver
+        example
         :return:
         """
         actual_objective = \
@@ -364,11 +364,31 @@ class TestExamples(unittest.TestCase):
                 ["--scenario",
                  "2periods_gen_lin_econ_retirement",
                  "--scenario_location", "examples",
-                 "--solver", "ipopt", "--quiet",
+                 "--quiet",
                  "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 1310168.2612837963
+        expected_objective = 1276508.2612077533
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
+    def test_example_2periods_gen_bin_econ_retirement(self):
+        """
+        Check objective function value of "2periods_gen_bin_econ_retirement"
+        example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2periods_gen_bin_econ_retirement",
+                 "--scenario_location", "examples",
+                 "--quiet",
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 1310168.26635704
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)

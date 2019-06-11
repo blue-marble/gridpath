@@ -139,10 +139,10 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         USING (period)
         WHERE prm_zone_scenario_id = {}
         AND elcc_surface_scenario_id = {}
-        AND timepoint_scenario_id = {}""".format(
+        AND temporal_scenario_id = {}""".format(
             subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.TIMEPOINT_SCENARIO_ID
+            subscenarios.TEMPORAL_SCENARIO_ID
         )
     ).fetchall()
 

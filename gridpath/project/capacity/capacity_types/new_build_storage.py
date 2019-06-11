@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+The **gridpath.project.capacity.capacity_types.new_build_storage**
+module describes the capacity of storage projects that can be built by the
+optimization at a cost. The optimization determines both the power
+capacity of the storage project and its energy capacity (i.e. capacity and
+duration). Once built, these storage projects remain available for the
+duration of their pre-specified lifetime. Minimum and maximum power capacity
+and duration constraints can be optionally implemented.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -22,7 +32,109 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
+    This function adds to the model a two-dimensional set of project-vintage
+    combinations to describe the periods in time when project capacity can be
+    built in the optimization: the *NEW_BUILD_STORAGE_VINTAGES* set,
+    which we will also designate with :math:`NS\_V` and index with
+    :math:`ns, v` where :math:`ns\in R` and :math:`v\in P`. For each :math:`ns,
+    v`, we load the *lifetime_yrs_by_new_build_storage vintage* parameter,
+    which is the project's lifetime, i.e. how long project capacity of a
+    particular vintage remains operational. We will then use this parameter to
+    determine the operational periods :math:`p` for each :math:`ns, v`. For
+    each :math:`ns, v`, we also declare the per-unit cost to build new power
+    and energy capacity: the *new_build_storage_annualized_real_cost_per_mw_yr*
+    and *new_build_storage_annualized_real_cost_per_mwh_yr* parameters.
+
+    .. note:: The cost inputs to the model are annualized costs per unit
+        capacity. The annualized costs are incurred in each period of the study
+        (and multiplied by the number of years the period represents) for
+        the duration of the project's lifetime. It is up to the user to
+        ensure that the *lifetime_yrs_by_new_build_storage* input to the model
+        is consistent with the exogenous cost annualization.
+
+    For each project vintage, the user can optionally specify a minimum
+    cumulative amount of power capacity and/or energy capacity that must be
+    built by that period and/or a maximum amount of cumulative power
+    and/or energy capacity  that can be built by that period:
+    the :math:`min\_storage_cumulative\_new\_build\_mw_{ns,
+    v}` / :math:`min\_storage_cumulative\_new\_build\_mwh_{ns,v}` and
+    :math:`max\_storage\_cumulative\_new\_build\_mw_{ns,v}` /
+    :math:`max\_storage\_cumulative\_new\_build\_mwh_{ns,v}` parameters
+    respectively.
+
+    Storage sizing in this module is endogenous: the model decides both the
+    power capacity and energy capacity of the project, therefore determining
+    optimal storage sizing/duration.
+
+    Two variables, :math:`Build\_Storage\_Power\_MW_{ns,v}` and
+    :math:`Build\_Storage\_Energy\_MWh_{ns,v}` are defined over
+    the :math:`NS\_V` set and determines how much power and energy capacity
+    respectively of each possible vintage :math:`v` is  built at each
+    new-build storage project :math:`ns`.
+
+    We use the *NEW_BUILD_STORAGE_VINTAGES* set and the
+    *lifetime_yrs_by_new_build_storage_vintage* parameter to determine the
+    operational periods for capacity of each possible vintage: the
+    *OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE* set indexed by
+    :math:`ns,v`.
+
+    .. note:: A period is currently defined as operational for project
+        :math:`ng` if :math:`v <= p < lifetime\_yrs\_by\_new\_build\_vintage_{
+        ng,v}`, so capacity of the 2020 vintage with lifetime of 30 years will
+        be assumed operational starting Jan 1, 2020 and through Dec 31, 2049,
+        but will not be operational in 2050.
+
+    The *NEW_BUILD_STORAGE_OPERATIONAL_PERIODS* set is a
+    two-dimensional set that includes the periods when project capacity of
+    any vintage *could* be operational if built.  This set
+    is then added to the list of sets to join to get the final
+    *PROJECT_OPERATIONAL_PERIODS* set defined in
+    **gridpath.project.capacity.capacity**. We will also use *NS_P* to
+    designate this set (index :math:`ns, np` where :math:`ns\in R` and
+    :math:`np\in P`).
+
+    Finally, we need to determine which project vintages could be
+    operational in each period: the
+    *NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
+    :math:`p`, this two-dimensional set :math:`\{NS\_OV_p\}_{p\in P}`
+    (:math:`NS\_OV_p\subset NS\_V`) can help us tell how much power
+    and energy capacity we have available in period :math:`p` of each
+    new-build project :math:`ns` depending on the build decisions made by
+    the optimization.
+
+    Finally, we are ready to define the power and energy capacity expressions
+    for new-build storage:
+
+    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np} = \sum_{(ns,ov)\in
+    NS\_OV_{np}}{Build\_Power\_Capacity\_MW_{ns,ov}}`.
+
+    :math:`New\_Build\_Storage\_Energy\_Capacity\_MW_{ns,np} = \sum_{(ns,ov)\in
+    NS\_OV_{np}}{Build\_Energy\_Capacity\_MW_{ns,ov}}`.
+
+    The power/energy capacity of a new-build generator in a given operational
+    period for the new-build generator is equal to the sum of all power/energy
+    capacity-build of vintages operational in that period.
+
+    This expression is not defined for a new-build storage project's
+    non-operational periods (i.e. it's 0). E.g. if we were allowed to build
+    capacity in 2020 and 2030, and the project had a 15 year lifetime,
+    in 2020 we'd take 2020 capacity-build only, in 2030, we'd take the sum
+    of 2020 capacity-build and 2030 capacity-build, in 2040, we'd take 2030
+    capacity-build only, and in 2050, the capacity would be undefined (i.e.
+    0 for the purposes of the objective function).
+
+    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np}` can then be
+    constrained by :math:`min\_storage\_cumulative\_new\_build\_mw_{ns,v}` and
+    :math:`max\_storage\_cumulative\_new\_build\_mw_{ng,v}` (the set of
+    vintages *v* is a subset of the set of operational periods *np*).
+
+    :math:`New\_Build\_Storage\_Energy\_Capacity\_MWh_{ns,np}` can then be
+    constrained by :math:`min\_storage\_cumulative\_new\_build\_mwh_{ns,v}` and
+    :math:`max\_storage\_cumulative\_new\_build\_mwh_{ng,v}` (the set of
+    vintages *v* is a subset of the set of operational periods *np*).
     """
     m.NEW_BUILD_STORAGE_PROJECTS = Set()
     m.minimum_duration_hours = \
@@ -196,32 +308,45 @@ def add_module_specific_components(m, d):
 
 def capacity_rule(mod, g, p):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the power capacity of storage project *g* in period *p*
 
-    :param mod:
-    :param g:
-    :param p:
-    :return:
+    This function returns total power capacity at storage project :math:`g`
+    that is operational in period :math:`p`. See the
+    **add_module_specific_components** method above for how
+    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np}` is calculated.
     """
     return mod.New_Build_Storage_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
     """
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the energy capacity of storage project *g* in period *p*
 
-    :param mod:
-    :param g:
-    :param p:
-    :return:
+    This functin returns total energy capacity at storage project :math:`g`
+    that is operational in period :math:`p`. See the
+    **add_module_specific_components** method above for how
+    :math:`New\_Build\_Storage\_Power\_Capacity\_MWh_{ns,np}` is calculated.
     """
     return mod.New_Build_Storage_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    Capacity cost for new builds in each period (sum over all vintages
-    operational in current period)
-    :param mod:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param p: the operational period
+    :return: the total annualized capacity cost of *new_build_storage*
+        project *g* in period *p*
+
+    This function retuns the total power and energy capacity cost for
+    new_build_storage  projects in each period (sum over all vintages
+    operational in current period).
     """
     return sum((mod.Build_Storage_Power_MW[g, v]
                * mod.new_build_storage_annualized_real_cost_per_mw_yr[g, v]
@@ -275,7 +400,7 @@ def load_module_specific_data(m,
         determine_minimum_duration()[1]
 
     # TODO: throw an error when a generator of the 'new_build_storage' capacity
-    # type is not found in new_build_storage_vintage_costs.tab
+    #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory,
                                   "inputs",
@@ -547,14 +672,14 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT period
         FROM inputs_temporal_periods
-        WHERE timepoint_scenario_id = {}) as relevant_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
         (SELECT project, period, lifetime_yrs,
         annualized_real_cost_per_kw_yr, annualized_real_cost_per_kwh_yr
         FROM inputs_project_new_cost
         WHERE project_new_cost_scenario_id = {}) as cost
         USING (project, period)""".format(
-            subscenarios.TIMEPOINT_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
         )
         + get_potentials[1] +

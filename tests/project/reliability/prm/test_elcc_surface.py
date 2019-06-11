@@ -96,9 +96,10 @@ class TestProjELCCSurface(unittest.TestCase):
                  "Battery": 0, "Battery_Specified": 0,
                  "Hydro": 0, 'Hydro_NonCurtailable': 0,
                  "Disp_Binary_Commit": 0,
-                 "Disp_Cont_Commit": 0,
-                 "Disp_No_Commit": 0, "Clunky_Old_Gen": 0,
-                 "Nuclear_Flexible": 0}.items()
+                 "Disp_Cont_Commit": 0, "Disp_No_Commit": 0,
+                 "Clunky_Old_Gen": 0, "Clunky_Old_Gen2": 0,
+                 "Nuclear_Flexible": 0
+                 }.items()
             )
         )
 

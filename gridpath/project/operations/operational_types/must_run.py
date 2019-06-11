@@ -2,40 +2,88 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of must-run generators. Can't provide reserves.
+This module describes the operations of must-run generators. These
+generators can provide power but not reserves.
 """
 
+import warnings
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
-
+from gridpath.auxiliary.dynamic_components import headroom_variables, \
+    footroom_variables
 
 def add_module_specific_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :return:
+
     """
 
+    # TODO: do we need this set or can we remove it
     m.MUST_RUN_GENERATORS = Set(within=m.PROJECTS,
                                 initialize=generator_subset_init(
                                     "operational_type", "must_run")
                                 )
 
+    # TODO: do we need this set or can we remove it?
     m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.MUST_RUN_GENERATORS))
 
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'must_run' type
+    def no_upwards_reserve_rule(mod, g, tmp):
+        if getattr(d, headroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'must_run' operational type and should 
+                not be assigned any upward reserve BAs since it cannot provide 
+                upward reserves. Please replace the upward reserve BA for 
+                project {} with '.' (no value) in projects.tab. Model will add  
+                constraint to ensure project {} cannot provide upward reserves
+                """.format(g, g, g)
+            )
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, headroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Must_Run_No_Upwards_Reserves_Constraint = Constraint(
+            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_upwards_reserve_rule)
+
+    # TODO: remove this constraint once input validation is in place that
+    #  does not allow specifying a reserve_zone if 'must_run' type
+    def no_downwards_reserve_rule(mod, g, tmp):
+        if getattr(d, footroom_variables)[g]:
+            warnings.warn(
+                """project {} is of the 'must_run' operational type and should 
+                not be assigned any downward reserve BAs since it cannot provide 
+                upwards reserves. Please replace the downward reserve BA for 
+                project {} with '.' (no value) in projects.tab. Model will add  
+                constraint to ensure project {} cannot provide downward reserves
+                """.format(g, g, g)
+            )
+            return sum(getattr(mod, c)[g, tmp]
+                       for c in getattr(d, footroom_variables)[g]) == 0
+        else:
+            return Constraint.Skip
+    m.Must_Run_No_Downwards_Reserves_Constraint = Constraint(
+            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
+            rule=no_downwards_reserve_rule)
+
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision for must run generators is their capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by must-run generators
+
+    Power provision for must run generators is simply their capacity in all
+    timepoints when they are operational.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.availability_derate[g, mod.horizon[tmp]]

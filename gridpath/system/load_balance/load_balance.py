@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This module creates the load balance constraint from all production and
+consumption components added by other modules.
+"""
+
 from __future__ import print_function
 
 from builtins import next
@@ -15,12 +20,33 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :param d:
-    :return:
+    Here we add, the overgeneration and unserved-energy per unit costs
+    are declared here as well as the overgeneration and unserved-energy
+    variables. Incurred violation costs are added to the objective function in
+    objective/aggregate_load_balance_penalties.py. Overgeneration is added
+    to the load-balance consumption components and unserved energy to the
+    load-balance production components.
+
+    We also get all other production and consumption components and add them
+    to the lhs and rhs of the load-balance constraint respectively. With the
+    minimum set of features, the load-balance constraint will be formulated
+    like this:
+
+    :math:`Power\_Production\_in\_Zone\_MW_{z, tmp} + Unserved\_Energy\_MW_{
+    z, tmp} = static\_load\_requirement_{z, tmp} + Overgeneration\_MW_{z,
+    tmp}`
     """
 
+    # TODO: do we want to completely disallow unserved energy and/or overgen
+    #  in some cases (as opposed to assigning a very high cost) -- we could
+    #  not append to the load-balance components given a flag for example,
+    #  or overgen and unserved energy could be their own modules
+    #  This is a more general question for all potential 'soft' constraints or
+    #  constraints that could cause feasibility issues (e.g. reserves, policy,
+    #  etc.)
     m.overgeneration_penalty_per_mw = \
         Param(m.LOAD_ZONES, within=NonNegativeReals)
     m.unserved_energy_penalty_per_mw = \
@@ -91,7 +117,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     with open(os.path.join(scenario_directory, horizon, stage, "results",
                            "load_balance.csv"), "w") as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["zone", "period", "horizon", "timepoint",  "horizon",
+        writer.writerow(["zone", "period", "horizon", "timepoint",
                          "discount_factor", "number_years_represented",
                          "horizon_weight", "number_of_hours_in_timepiont",
                          "overgeneration_mw",

@@ -2,9 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Aggregate carbon emissions from the transmission-line-timepoint level to
-the carbon cap zone - period level.
+This is a Tx-line-level module that adds to the formulation components that
+describe the operations-related costs of transmisison lines (e.g. hurdle
+rate costs).
 """
+
 from __future__ import print_function
 
 from builtins import next
@@ -136,11 +138,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             INNER JOIN
             (SELECT period
              FROM inputs_temporal_periods
-             WHERE timepoint_scenario_id = {}) as relevant_periods
+             WHERE temporal_scenario_id = {}) as relevant_periods
              USING (period)
              WHERE transmission_hurdle_rate_scenario_id = {};
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
             )
         )

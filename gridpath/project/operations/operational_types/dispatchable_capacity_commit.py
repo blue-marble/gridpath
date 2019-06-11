@@ -2,12 +2,12 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of dispatchable generators with 'capacity commitment,' i.e.
-commit some level of capacity below the total capacity. This approach can
-be good for modeling 'fleets' of generators, e.g. a total 2000 MW of 500-MW
-units, so if 2000 MW are committed 4 generators (x 500 MW) are committed.
-Integer commitment is not enforced as capacity commitment with this approach is
-continuous.
+This module describes the operations of dispatchable generators with 'capacity
+commitment,' i.e. commit some level of capacity below the total capacity.
+This approach can be good for modeling 'fleets' of generators, e.g. a total
+2000 MW of 500-MW units, so if 2000 MW are committed 4 generators (x 500 MW)
+are committed. Integer commitment is not enforced; capacity commitment with
+this approach is continuous.
 """
 from __future__ import division
 from __future__ import print_function
@@ -16,7 +16,6 @@ from builtins import next
 from builtins import zip
 from builtins import str
 from builtins import range
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -30,11 +29,44 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a capacity commit variable to represent the amount of capacity that is
-    on.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we define the set of dispatchable-capacity-commit generators:
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATORS*
+    (:math:`CCG`, index :math:`ccg`) and use this set to get the subset of
+    *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in CCG` -- the
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
+    :math:`CCG\_OT`).
+
+    We define several operational parameters over :math:`CCG`: \n
+    *disp_cap_commit_min_stable_level_fraction* \ :sub:`ccg`\ -- the minimum
+    stable level of the project, defined as a fraction of its
+    capacity \n
+    *unit_size_mw* \ :sub:`ccg`\ -- the unit size for the
+    project, which is needed to calculate fuel burn if the project
+    represents a fleet \n
+    *ramp rates*, *min up time*, *min down time* -- formulation not
+    documented yet
+
+    The power provision variable for dispatchable-capacity-commit generators,
+    *Provide_Power_DispCapacityCommit_MW*, is defined over
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    Commit_Capacity_MW is the continuous variable to represent commitment
+    state of a project. It is also defined over over
+    *DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+
+    The main constraints on dispatchable-capacity-commit project power
+    provision are as follows:
+
+    For :math:`(ccg, tmp) \in CCG\_OT`: \n
+    :math:`Commit\_Capacity\_MW_{ccg, tmp} \leq Capacity\_MW_{ccg,p^{tmp}}`
+    :math:`Provide\_Power\_DispCapacityCommit\_MW_{ccg, tmp} \geq
+    disp\_cap\_commit\_min\_stable\_level\_fraction_{ccg} \\times
+    Commit\_Capacity\_MW_{ccg,tmp}`
+    :math:`Provide\_Power\_DispCapacityCommit\_MW_{ccg, tmp} \leq
+    Commit\_Capacity\_MW_{ccg,tmp}`
     """
 
     # Sets and params
@@ -267,7 +299,7 @@ def add_module_specific_components(m, d):
         ramp rate (expressed as fraction of capacity)
         Two components:
         1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
-        If we are turning generators on since the prevoius timepoint, we will
+        If we are turning generators on since the previous timepoint, we will
         allow the ramp of going from 0 to minimum stable level + some
         additional ramping : the dispcapcommit_startup_plus_ramp_up_rate
         parameter
@@ -284,16 +316,15 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif (mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 and
-              mod.dispcapcommit_ramp_up_when_on_rate[g] >=
-                (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
+        elif mod.dispcapcommit_startup_plus_ramp_up_rate[g] == 1 \
+                and mod.dispcapcommit_ramp_up_when_on_rate[g] >= \
+                (1-mod.disp_cap_commit_min_stable_level_fraction[g]):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return old_div((
-                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]
-                   ), mod.number_of_hours_in_timepoint[tmp]) \
+                g, mod.previous_timepoint[tmp]]) \
+                / mod.number_of_hours_in_timepoint[tmp] \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -394,11 +425,10 @@ def add_module_specific_components(m, d):
                 (1-mod.disp_cap_commit_min_stable_level_fraction[g])):
             return Constraint.Skip  # constraint won't bind, so don't create
         else:
-            return old_div((
-                mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+            return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                 - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]
-                   ), mod.number_of_hours_in_timepoint[tmp]) \
+                g, mod.previous_timepoint[tmp]]) \
+                / mod.number_of_hours_in_timepoint[tmp] \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -481,8 +511,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(old_div(mod.dispcapcommit_min_up_time_hours[g],
-                               mod.number_of_hours_in_timepoint[tmp])) + 1):
+                           int(mod.dispcapcommit_min_up_time_hours[g] //
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -513,6 +543,9 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
+
+        units_turned_off_min_down_time_or_less_hours_ago = 0
+
         # TODO: enforce subhourly?
         if mod.dispcapcommit_min_up_time_hours[g] <= 1:
             return Constraint.Skip
@@ -521,8 +554,8 @@ def add_module_specific_components(m, d):
             relevant_tmp = tmp
 
             for n in range(1,
-                           int(old_div(mod.dispcapcommit_min_down_time_hours[g],
-                               mod.number_of_hours_in_timepoint[tmp])) + 1):
+                           int(mod.dispcapcommit_min_down_time_hours[g] //
+                               mod.number_of_hours_in_timepoint[tmp]) + 1):
                 relevant_tmps.append(relevant_tmp)
                 # If horizon is 'linear' and we reach the first timepoint,
                 # skip the constraint
@@ -550,11 +583,15 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from dispatchable generators is an endogenous variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by dispatchable-capacity-commit
+     generators
+
+    Power provision for dispatchable-capacity-commit generators is a
+    variable constrained to be between the minimum stable level (defined as
+    a fraction of committed capacity) and the committed capacity.
     """
     return mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
 
@@ -641,7 +678,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (old_div(mod.Commit_Capacity_MW[g, tmp],mod.unit_size_mw[g])) \
+        return (mod.Commit_Capacity_MW[g, tmp] / mod.unit_size_mw[g]) \
             * mod.minimum_input_mmbtu_per_hr[g] \
             + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
                 (mod.Commit_Capacity_MW[g, tmp]
@@ -876,7 +913,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                 mod.load_zone[p],
                 value(mod.Provide_Power_DispCapacityCommit_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
-                old_div(value(mod.Commit_Capacity_MW[p, tmp]),mod.unit_size_mw[p])
+                value(mod.Commit_Capacity_MW[p, tmp]) / mod.unit_size_mw[p]
             ])
 
 

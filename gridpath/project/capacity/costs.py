@@ -2,8 +2,12 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Describe capacity costs.
+The **gridpath.project.capacity.costs** module is a project-level
+module that adds to the formulation components that describe the
+capacity-related costs of projects (e.g. investment capital costs and fixed
+O&M costs).
 """
+
 from __future__ import print_function
 
 from builtins import next
@@ -18,10 +22,16 @@ from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 
 def add_model_components(m, d):
     """
-    Sum up all operational costs and add to the objective function.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
+
+    For each project and operational period, determine its capacity-related
+    cost in the period based on its *capacity_type*. For the purpose,
+    call the *capacity_cost_rule* method from the respective capacity-type
+    module. The expression component added to the model is
+    :math:`Capacity\_Cost\_in\_Period_{r, p}`. This expression will then be
+    used by other model components. See formulation in the *capacity_type*
+    modules.
     """
 
     # Import needed capacity type modules

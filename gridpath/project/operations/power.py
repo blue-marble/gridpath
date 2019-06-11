@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Get the dispatch of all projects
+The **gridpath.project.capacity.capacity** module is a project-level
+module that adds to the formulation components that describe the amount of
+power that a project is providing in each study timepoint.
 """
 
 from __future__ import division
@@ -10,7 +12,6 @@ from __future__ import print_function
 
 from builtins import next
 from builtins import str
-from past.utils import old_div
 import csv
 import os.path
 import pandas as pd
@@ -22,10 +23,18 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the DynamicComponents class object we will get components from
 
-    :param m:
-    :param d:
-    :return:
+    The Pyomo expression *Power_Provision_MW*\ :sub:`r,tmp`\ (:math:`(r,
+    tmp)\in RT`) defines the power a project is producing in each of its
+    operational timepoints. The exact formulation of the expression depends
+    on the project's *operational_type*. For each project, we call its
+    *capacity_type* module's *power_provision_rule* method in order to
+    formulate the expression. E.g. a project of the  *must_run*
+    operational_type will be producing power equal to its capacity while a
+    dispatchable project will have a variable in its power provision
+    expression. This expression will then be used by other modules.
     """
     # Import needed operational modules
     imported_operational_modules = \
@@ -148,10 +157,9 @@ def summarize_results(d, problem_directory, horizon, stage):
     # and period)
     for indx, row in operational_results_agg_df.iterrows():
         operational_results_agg_df.percent_total_power[indx] = \
-            old_div(
-                operational_results_agg_df.weighted_power_mwh[indx],
-                lz_period_power_df.weighted_power_mwh[indx[0], indx[1]]
-            )*100.0
+            operational_results_agg_df.weighted_power_mwh[indx] \
+            / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
+            * 100.0
 
     # Rename the columns for the final table
     operational_results_agg_df.columns = (["Annual Energy (MWh)",

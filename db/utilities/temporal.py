@@ -9,7 +9,7 @@ from __future__ import print_function
 
 def temporal(
         io, c,
-        timepoint_scenario_id, scenario_name, scenario_description,
+        temporal_scenario_id, scenario_name, scenario_description,
         periods, horizons, hours, number_of_hours_in_timepoint,
         boundary, discount_factors_and_years_represented,
         horizon_weights_and_months
@@ -18,7 +18,7 @@ def temporal(
     
     :param io: 
     :param c: 
-    :param timepoint_scenario_id: 
+    :param temporal_scenario_id:
     :param scenario_name: 
     :param scenario_description: 
     :param periods: 
@@ -35,10 +35,10 @@ def temporal(
 
     # Subscenarios
     c.execute(
-        """INSERT INTO subscenarios_temporal_timepoints
-        (timepoint_scenario_id, name, description)
+        """INSERT INTO subscenarios_temporal
+        (temporal_scenario_id, name, description)
         VALUES ({}, '{}', '{}');""".format(
-            timepoint_scenario_id, scenario_name, scenario_description
+            temporal_scenario_id, scenario_name, scenario_description
         )
     )
     io.commit()
@@ -51,10 +51,10 @@ def temporal(
             for hour in hours:
                 c.execute(
                     """INSERT INTO inputs_temporal_timepoints
-                    (timepoint_scenario_id, timepoint,
+                    (temporal_scenario_id, timepoint,
                     period, horizon, number_of_hours_in_timepoint)
                     VALUES ({}, {}, {}, {}, {});""".format(
-                        timepoint_scenario_id,
+                        temporal_scenario_id,
                         (period * 10**4 + horizon * 10**2 + hour),
                         period, period * 10**2 + horizon,
                         number_of_hours_in_timepoint
@@ -66,10 +66,10 @@ def temporal(
     for period in periods:
         c.execute(
             """INSERT INTO inputs_temporal_periods
-            (timepoint_scenario_id, period, discount_factor,
+            (temporal_scenario_id, period, discount_factor,
             number_years_represented)
             VALUES ({}, {}, {}, {});""".format(
-                timepoint_scenario_id, period,
+                temporal_scenario_id, period,
                 discount_factors_and_years_represented[period]["df"],
                 discount_factors_and_years_represented[period]["y"]
             )
@@ -82,10 +82,10 @@ def temporal(
             horizon_id = period * 100 + horizon
             c.execute(
                 """INSERT INTO inputs_temporal_horizons
-                (timepoint_scenario_id, horizon, period, boundary,
+                (temporal_scenario_id, horizon, period, boundary,
                 horizon_weight, month)
                 VALUES ({}, {}, {}, '{}', {}, {});""".format(
-                    timepoint_scenario_id, horizon_id, period, boundary,
+                    temporal_scenario_id, horizon_id, period, boundary,
                     horizon_weights_and_months[horizon]["weight"],
                     horizon_weights_and_months[horizon]["month"]
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     temporal(
         io=None,
         c=None,
-        timepoint_scenario_id=None,
+        temporal_scenario_id=None,
         scenario_name=None,
         scenario_description=None,
         periods=None,

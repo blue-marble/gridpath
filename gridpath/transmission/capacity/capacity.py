@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This is a line-level module that adds to the formulation components that
+describe the capacity of Tx lines that are available to the optimization for
+each period. For example, the capacity can be a fixed number or an
+expression with variables depending on the line's *capacity_type*. The
+project capacity can then be used to constrain operations, contribute to
+reliability constraints, etc.
+"""
+
 from __future__ import print_function
 
 from builtins import next

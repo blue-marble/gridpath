@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This module adds the main load-balance consumption component, the static
+load requirement to the load-balance constraint.
+"""
+
 import csv
 import os.path
-from pyomo.environ import Param, Var, Constraint, NonNegativeReals
+from pyomo.environ import Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import \
-    load_balance_consumption_components, load_balance_production_components
+    load_balance_consumption_components
 
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
 
-    :param m:
-    :param d:
-    :return:
+    Here, we add the *static_load_mw* parameter -- the load requirement --
+    defined for each load zone *z* and timepoint *tmp*, and add it to the
+    dynamic load-balance consumption components that will go into the load
+    balance constraint in the *load_balance* module (i.e. the constraint's
+    rhs).
     """
 
     # Static load
@@ -34,10 +43,12 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
-                                           "inputs", "load_mw.tab"),
-                     param=m.static_load_mw
-                     )
+    data_portal.load(
+        filename=os.path.join(
+            scenario_directory, horizon, stage, "inputs", "load_mw.tab"
+        ),
+        param=m.static_load_mw
+    )
 
 
 def get_inputs_from_database(subscenarios, c, inputs_directory):
@@ -65,7 +76,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             INNER JOIN
             (SELECT timepoint
             FROM inputs_temporal_timepoints
-            WHERE timepoint_scenario_id = {}) as relevant_timepoints
+            WHERE temporal_scenario_id = {}) as relevant_timepoints
             USING (timepoint)
             INNER JOIN
             (SELECT load_zone
@@ -74,7 +85,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             USING (load_zone)
             WHERE load_scenario_id = {}
             """.format(
-                subscenarios.TIMEPOINT_SCENARIO_ID,
+                subscenarios.TEMPORAL_SCENARIO_ID,
                 subscenarios.LOAD_ZONE_SCENARIO_ID,
                 subscenarios.LOAD_SCENARIO_ID
             )

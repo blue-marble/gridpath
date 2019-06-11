@@ -13,10 +13,6 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
-from gridpath.auxiliary.dynamic_components import \
-    required_operational_modules, carbon_cap_balance_emission_components
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
-
 
 def add_model_components(m, d):
     """

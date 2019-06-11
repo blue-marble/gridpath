@@ -33,7 +33,6 @@ def generic_add_model_components(
                   within=NonNegativeReals))
 
     # Add violation penalty costs incurred to objective function
-    # TODO: this needs to be multiplied by hours in timepoint andhorizon weight
     def penalty_costs_rule(mod):
         return sum(getattr(mod, reserve_violation_variable)[ba, tmp]
                    * getattr(mod, reserve_violation_penalty_param)[ba]

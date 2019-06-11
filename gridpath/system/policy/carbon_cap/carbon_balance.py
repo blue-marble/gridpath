@@ -8,7 +8,6 @@ from __future__ import division
 from __future__ import print_function
 
 from builtins import next
-from past.utils import old_div
 import csv
 import os.path
 
@@ -75,9 +74,8 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
-                old_div(value(
-                    m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
-                ), 10**6)  # MMT
+                value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
+                      / 10**6)  # MMT
             ])
 
 

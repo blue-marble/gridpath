@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+The **gridpath.geography.load_zones** module describes the geographic unit
+at which load is met.
+"""
+
 import csv
 import os.path
 from pyomo.environ import Set
@@ -8,10 +13,13 @@ from pyomo.environ import Set
 
 def add_model_components(m, d):
     """
+    :param m: the Pyomo abstract model object we are adding components to
+    :param d: the dynamic inputs class object; not used here
 
-    :param m:
-    :param d:
-    :return:
+    The module adds the *LOAD_ZONES* set to the model formulation.
+
+    We will designate the *LOAD_ZONES* set with *Z* and the load zones index
+    will be *z*.
     """
     m.LOAD_ZONES = Set()
 
@@ -43,7 +51,8 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
     :param inputs_directory:
     :return:
     """
-
+    # TODO: we get the overgen and unserve energy penalties here, but they
+    #  are loaded into the model in the load_balance system module
     # load_zones.tab
     with open(os.path.join(inputs_directory, "load_zones.tab"), "w") as \
             load_zones_tab_file:

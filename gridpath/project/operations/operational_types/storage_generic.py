@@ -2,12 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of generic storage
+This modules describes the operational capabilities and constraints of
+generic storage projects. The module can be used to describe a battery
+technology, a pumped storage project, etc. These storage projects can
+provide reserves.
 """
 from __future__ import division
 
 from builtins import zip
-from past.utils import old_div
 import csv
 import os.path
 from pandas import read_csv
@@ -21,11 +23,51 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Add a capacity commit variable to represent the amount of capacity that is
-    on.
-    :param m:
-    :param d:
-    :return:
+    :param m: the Pyomo abstract model object we are adding the components to
+    :param d: the DynamicComponents class object we are adding components to
+
+    Here, we define the set of generic-storage projects:
+    *STORAGE_GENERIC_PROJECTS* (:math:`SGP`, index :math:`sgp`) and use this set
+    to get the subset of *PROJECT_OPERATIONAL_TIMEPOINTS* with
+    :math:`g \in SGP` -- the *STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS*
+    (:math:`SGP\_OT`).
+
+    The main operational parameter for storage projects is are their
+    charging and discharging efficiencies:
+    *storage_generic_charging_efficiency* \ :sub:`sgp`\ and
+    *storage_generic_charging_efficiency* \ :sub:`sgp`\
+
+    The power provision for generic storage projects has two components,
+    *Generic_Storage_Discharge_MW* and *Generic_Storage_Charge_MW*,
+    defined over *STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS*. An
+    additional operational variable used to constrain power provision is
+    the storage state of charge: *Starting_Energy_in_Generic_Storage_MWh*,
+    also defined over :math:`SGP\_OT`.
+
+    The main operational constraints on generic storage projects are the
+    following:
+
+    For :math:`(sgp, tmp) \in SGP\_OT`: \n
+
+    :math:`Generic\_Storage\_Discharge\_MW_{sgp, tmp} \leq
+    Capacity\_MW_{sgp,p^{tmp}}`
+
+    :math:`Generic\_Storage\_Charge\_MW_{sgp, tmp} \leq
+    Capacity\_MW_{sgp,p^{tmp}}`
+
+    :math:`Starting\_Energy\_in\_Storage\_MWh_{sgp, tmp} \leq
+    Energy\_Capacity\_MWh_{sgp,p^{tmp}}`
+
+    :math:`Starting\_Energy\_in\_Storage\_MWh_{sgp, tmp} =
+    Starting\_Energy\_in\_Storage\_MWh_{sgp, previous\_timepoint_{tmp}} +
+    Generic\_Storage\_Charge\_MW_{sgp, tmp}
+    \\times number\_of\_hours\_in\_timepoint_{tmp}
+    \\times storage\_generic\_charging\_efficiency_{sgp}
+    - \\frac{Generic\_Storage\_Discharge\_MW_{sgp, tmp}
+    \\times number\_of\_hours\_in\_timepoint_{tmp}}
+    {storage\_generic\_discharging\_efficiency_{sgp}}`
+
+    Reserves-provision by generic storage is to be documented.
     """
     # Sets and params
     m.STORAGE_GENERIC_PROJECTS = Set(
@@ -145,13 +187,14 @@ def add_module_specific_components(m, d):
 
     # Headroom and footroom energy constraints
     # TODO: allow different sustained duration requirements; assumption here is
-    # that if reserves are called, new setpoint must be sustained for 1 hour
+    #  that if reserves are called, new setpoint must be sustained for 1 hour
     # TODO: allow derate of the net energy in the current timepoint in the
-    # headroom and footroom energy rules; in reality, reserves could be
-    # called at the very beginning or the very end of the timepoint (e.g. hour)
-    # If called at the end, we would have all the net energy (or
-    # resulting 'room in the tank') available, but if called in the beginning
-    # none of it would be available
+    #  headroom and footroom energy rules; in reality, reserves could be
+    #  called at the very beginning or the very end of the timepoint (e.g.
+    #  hour)
+    #  If called at the end, we would have all the net energy (or
+    #  resulting 'room in the tank') available, but if called in the beginning
+    #  none of it would be available
 
     # Can't provide more reserves (times sustained duration required) than
     # available energy in storage (for upward reserves) in that timepoint or
@@ -166,18 +209,18 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return old_div(sum(getattr(mod, c)[s, tmp]
+        return sum(getattr(mod, c)[s, tmp]
                    for c in getattr(d, headroom_variables)[s]) \
-            * mod.number_of_hours_in_timepoint[tmp],
-                       mod.storage_generic_discharging_efficiency[s]) \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s] \
             <= \
             mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
             + mod.Generic_Storage_Charge_MW[s, tmp] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
-            - old_div(mod.Generic_Storage_Discharge_MW[s, tmp] \
-            * mod.number_of_hours_in_timepoint[tmp],
-                      mod.storage_generic_discharging_efficiency[s])
+            - mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Max_Headroom_Energy_Constraint = \
         Constraint(
@@ -206,9 +249,9 @@ def add_module_specific_components(m, d):
             - mod.Generic_Storage_Charge_MW[s, tmp] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * mod.storage_generic_charging_efficiency[s] \
-            + old_div(mod.Generic_Storage_Discharge_MW[s, tmp] \
-            * mod.number_of_hours_in_timepoint[tmp],
-                      mod.storage_generic_discharging_efficiency[s])
+            + mod.Generic_Storage_Discharge_MW[s, tmp] \
+            * mod.number_of_hours_in_timepoint[tmp] \
+            / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Max_Footroom_Energy_Constraint = \
         Constraint(
@@ -238,11 +281,11 @@ def add_module_specific_components(m, d):
                 * mod.number_of_hours_in_timepoint[
                       mod.previous_timepoint[tmp]] \
                 * mod.storage_generic_charging_efficiency[s] \
-                - old_div(mod.Generic_Storage_Discharge_MW[
+                - mod.Generic_Storage_Discharge_MW[
                       s, mod.previous_timepoint[tmp]] \
                 * mod.number_of_hours_in_timepoint[
-                      mod.previous_timepoint[tmp]],
-                          mod.storage_generic_discharging_efficiency[s])
+                      mod.previous_timepoint[tmp]] \
+                / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Energy_Tracking_Constraint = \
         Constraint(m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -266,11 +309,17 @@ def add_module_specific_components(m, d):
 
 def power_provision_rule(mod, s, tmp):
     """
-    Power provision from storage
-    :param mod:
-    :param s:
-    :param tmp:
-    :return:
+    :param mod: the Pyomo abstract model
+    :param g: the project
+    :param tmp: the operational timepoint
+    :return: expression for power provision by generic storage resources
+
+    Power provision for generic storage resources is the net power (i.e.
+    discharging minus charging). The two variables are constrained to be
+    less than or equal to the storage power capacity (with an adjustment for
+    reserve-provision), and are also constrained by the storage state of
+    charge (i.e. can't charge when the storage is full; can't discharge when
+    storage is empty).
     """
     return mod.Generic_Storage_Discharge_MW[s, tmp] \
         - mod.Generic_Storage_Charge_MW[s, tmp]
