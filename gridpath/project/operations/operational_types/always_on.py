@@ -34,10 +34,10 @@ def add_module_specific_components(m, d):
     *always_on_unit_size_mw* \ :sub:`aog`\ -- the unit size for the
     project, which is needed to calculate fuel burn if the project
     represents a fleet \n
-    *always_on_ramp_down_rate* \ :sub:`aog`\ -- the project's upward ramp rate,
-    defined as a fraction of its capacity \n
-    *always_on_ramp_up_rate* \ :sub:`aog`\ -- the project's downward ramp rate,
-    defined as a fraction of its capacity \n
+    *always_on_ramp_down_rate* \ :sub:`aog`\ -- the project's upward ramp rate
+    limit, defined as a fraction of its capacity per minute \n
+    *always_on_ramp_up_rate* \ :sub:`aog`\ -- the project's downward ramp rate
+    limit, defined as a fraction of its capacity per minute \n
 
     The power provision variable for always-on generators,
     Provide_Power_AlwaysOn_MW, is defined over
@@ -51,9 +51,10 @@ def add_module_specific_components(m, d):
     p}`
     :math:`Provide\_Power\_AlwaysOn\_MW_{aog, tmp} \leq  Capacity\_MW_{aog,
     p}`
-
-
-    """    
+    To be added
+        - ramp constraint formulation
+        - add reserves to pmax / pmin constraint
+    """
     m.ALWAYS_ON_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=generator_subset_init(
@@ -66,6 +67,7 @@ def add_module_specific_components(m, d):
         Param(m.ALWAYS_ON_GENERATORS, within=NonNegativeReals)
     
     # Ramp rates can be optionally specified and will default to 1 if not
+    # Ramp rate units are "percent of project capacity per minute"
     m.always_on_ramp_up_rate = \
         Param(m.ALWAYS_ON_GENERATORS, within=PercentFraction,
               default=1)
@@ -146,7 +148,13 @@ def add_module_specific_components(m, d):
 
     def ramp_up_rule(mod, g, tmp):
         """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp up rate limits.
 
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -155,14 +163,22 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.always_on_ramp_up_rate[g] == 1:
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp up the full operable range between timepoints, constraint won't
+        # bind, so skip
+        elif (mod.always_on_ramp_up_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1 - mod.always_on_min_stable_level_fraction[g])
+              ):
             return Constraint.Skip
         else:
             return mod.Always_On_Ramp_MW[g, tmp] \
-                   <= \
-                   mod.always_on_ramp_up_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]] \
-                   * mod.availability_derate[g, mod.horizon[tmp]]
+                <= \
+                mod.always_on_ramp_up_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp]] \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Always_On_Ramp_Up_Constraint = \
         Constraint(
@@ -172,7 +188,13 @@ def add_module_specific_components(m, d):
 
     def ramp_down_rule(mod, g, tmp):
         """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp down rate limits.
 
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -181,14 +203,22 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.always_on_ramp_down_rate[g] == 1:
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp down the full operable range between timepoints, constraint won't
+        # bind, so skip
+        elif (mod.always_on_ramp_down_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1 - mod.always_on_min_stable_level_fraction[g])
+              ):
             return Constraint.Skip
         else:
             return mod.Always_On_Ramp_MW[g, tmp] \
-                   >= \
-                   - mod.always_on_ramp_down_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]] \
-                   * mod.availability_derate[g, mod.horizon[tmp]]
+                >= \
+                - mod.always_on_ramp_down_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp]] \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
 
     m.Always_On_Ramp_Down_Constraint = \
         Constraint(
@@ -341,7 +371,6 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     unit_size_mw = dict()
     min_stable_fraction = dict()
-    # Ramp rate limits are optional, will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
     header = pd.read_csv(os.path.join(scenario_directory, "inputs",
@@ -375,12 +404,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["always_on_min_stable_level_fraction"] = \
         min_stable_fraction
     
-    # Optional ramp rates
+    # Ramp rate limits are optional; will default to 1 if not specified
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
+                       dynamic_components["ramp_up_when_on_rate"]
                        ):
             if row[1] == "always_on" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
@@ -393,8 +421,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
+                       dynamic_components["ramp_down_when_on_rate"]
                        ):
             if row[1] == "always_on" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
