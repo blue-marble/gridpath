@@ -15,6 +15,7 @@ import os.path
 import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyutilib.services import TempfileManager
+import sqlite3
 import sys
 
 from gridpath.auxiliary.auxiliary import Logging
@@ -760,6 +761,11 @@ def parse_arguments(arguments):
     parser.add_argument("--testing", default=False, action="store_true",
                         help="Flag for test suite runs.")
 
+    # Flag for updating run status in the database
+    parser.add_argument("--update_db_run_status", default=False,
+                        action="store_true",
+                        help="Flag for updating run status in the database.")
+
     # Parse arguments
     parsed_arguments = parser.parse_args(args=arguments)
 
@@ -779,13 +785,46 @@ def main(args=None):
     # Parse arguments
     parsed_args = parse_arguments(args)
 
+    # Update run status to 'running'
+    if parsed_args.update_db_run_status:
+        update_run_status(scenario=parsed_args.scenario, status='running')
+
     # Figure out the scenario structure (i.e. horizons and stages)
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
     # Run the scenario (can be multiple optimization subproblems)
-    expected_objective_values = run_scenario(
-        scenario_structure, parsed_args)
-    return expected_objective_values
+    try:
+        expected_objective_values = run_scenario(
+            scenario_structure, parsed_args)
+
+        # Update run status to 'completed'
+        if parsed_args.update_db_run_status:
+            update_run_status(scenario=parsed_args.scenario,
+                              status='completed')
+
+        # Return the objective function values (used in testing)
+        return expected_objective_values
+    # TODO: make exceptions less broad, give more useful message
+    except:
+        if parsed_args.update_db_run_status:
+            update_run_status(scenario=parsed_args.scenario,
+                              status='error_encountered')
+
+
+def update_run_status(scenario, status):
+    # For now, assume script is run from root directory and the the
+    # database is ./db and named io.db
+    io = sqlite3.connect(
+        os.path.join(os.getcwd(), 'db', 'io.db')
+    )
+    c = io.cursor()
+
+    c.execute(
+        """UPDATE mod_run_status
+        SET status = '{}'
+        WHERE scenario_name = '{}';""".format(status, scenario)
+    )
+    io.commit()
 
 
 if __name__ == "__main__":

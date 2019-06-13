@@ -30,10 +30,21 @@ ipcRenderer.on(
             }
         );
 
+        storage.get(
+            'dbFilePath',
+            (error, data) => {
+                if (error) throw error;
+                const dbFilePath = data['dbFilePath'][0];
 
+                const runStatus = getRunStatus(scenarioName, dbFilePath);
+
+                // Create the run status HTML
+                document.getElementById('runStatus').innerHTML =
+                    `<b>Status: ${runStatus}</b>`;
+            }
+        );
 
         // TODO: create button to run scenario here, not in html file?
-
         // If runScenarioButton is clicked, send scenario name to main process
         const runScenarioButton =
             document.getElementById('runScenarioButton');
@@ -103,4 +114,20 @@ const getScenarioDetails = (scenario, dbFilePath) => {
 
     db.close();
     return getSubscenarioNames
+};
+
+
+const getRunStatus = (scenario, dbFilePath) => {
+    const db = new Database (dbFilePath, {fileMustExist: true});
+
+    const getStatus =
+        db.prepare(
+            `SELECT status
+            FROM mod_run_status 
+            WHERE scenario_name = ?`
+        ).get(scenario);
+
+    db.close();
+
+    return getStatus.status
 };

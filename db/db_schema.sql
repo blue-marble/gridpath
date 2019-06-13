@@ -47,6 +47,29 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
 ('storage_generic'), ('variable'), ('always_on');
 
+-- Run status
+DROP TABLE IF EXISTS mod_run_status_types;
+CREATE TABLE mod_run_status_types (
+status VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
+INSERT INTO mod_run_status_types (status)
+VALUES ('not_launched'), ('running'), ('completed'), ('encountered_error');
+
+-- TODO: figure out foreign keys for subproblems/stages when structure in place
+-- TODO: what happens if user deletes scenario in scenarios table
+DROP TABLE IF EXISTS mod_run_status;
+CREATE TABLE mod_run_status (
+scenario_id INTEGER,
+scenario_name VARCHAR(64),
+subproblem INTEGER,
+stage INTEGER,
+status VARCHAR(32),
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
+FOREIGN KEY (status) REFERENCES mod_run_status_types (status)
+);
+
 
 --------------------
 -- -- TEMPORAL -- --
