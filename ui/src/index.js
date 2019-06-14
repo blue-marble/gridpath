@@ -23,35 +23,17 @@ settingsButton.addEventListener(
 
 
 //// Make list of clickable scenarios ////
-// Get scenarios from database
-const getScenarioList = (dbFilePath) => {
-    const db = new Database (dbFilePath, {fileMustExist: true});
-    const scenariosList = [];
-    // TODO: how should these be ordered
-    const getScenariosSQL = db.prepare('SELECT scenario_name FROM scenarios;');
-    for (const scenario of getScenariosSQL.iterate()) {
-        scenariosList.push(scenario.scenario_name)
-    }
-    db.close();
-    return scenariosList
+// Listen for the scenario list
+ipcRenderer.send('Index-Requests-Scenario-List');
+ipcRenderer.on(
+    'Main-Relays-Scenario-List',
+    (event, scenarioList) => {
+        console.log('Index window received scenario list');
+        console.log(scenarioList);
 
-};
-
-// Make a list of scenarios; each scenario is a button with a unique ID
-// We need to get the user-defined database file path, so this is inside a
-// storage.get()
-storage.get(
-    'dbFilePath',
-    (error, data) => {
-        if (error) throw error;
-        const dbFilePath = data['dbFilePath'];
-
-        console.log(dbFilePath[0]);
-        const scenarios = getScenarioList(dbFilePath[0]);
-        console.log(scenarios);
         // Create the HTML string for a button group for the scenarios
         let scenarioListHTML = '<div class="btn-group">\n';
-        scenarios.forEach(
+        scenarioList.forEach(
             (scenario) => {
                 const buttonID = `scenarioDetailButton${scenario}`;
                 const htmlString =
@@ -65,7 +47,7 @@ storage.get(
         document.getElementById('scenarioListButtons').innerHTML =
             scenarioListHTML;
         // Bind the what-to-do-when-clicked function to the respective scenario button
-        scenarios.forEach(
+        scenarioList.forEach(
             (scenario) => {
                 // Get appropriate button
                 const scenarioDetailButton = document.getElementById(
@@ -82,6 +64,7 @@ storage.get(
         );
     }
 );
+
 
 
 // Define what to do when a scenario button is clicked (send scenario name to

@@ -2,8 +2,8 @@ from flask import Flask
 from flask_socketio import SocketIO, send, emit
 import multiprocessing
 import os
-import psutil
 import pyutilib.subprocess.GlobalData
+import sqlite3
 
 # Turn off signal handlers (in order to be able to spawn solvers from a
 # Pyomo running in a thread)
@@ -25,6 +25,7 @@ socketio = SocketIO(app, async_mode='eventlet')
 @app.route('/')
 def welcome():
     print('GridPath UI')
+    return 'GridPath UI'
 
 
 @socketio.on('connect')
@@ -37,7 +38,10 @@ def _run_scenario(message):
     scenario_name = str(message['scenario'])
     print("Running " + scenario_name)
     print("Process name and ID: ", p.name, p.pid)
+
+    # TODO: we'll need to get this from the user
     os.chdir('/Users/ana/dev/gridpath-ui-dev/')
+
     import run_scenario
     run_scenario.main(
         args=['--scenario', scenario_name, '--scenario_location',
@@ -75,6 +79,7 @@ def launch_scenario_process(message):
         SCENARIO_STATUS[scenario_name]['process_id'] = p.pid
 
 
+# TODO: figure out how to deal with scenarios that are already running
 @socketio.on('check_scenario_process_status')
 def check_scenario_process_status(message):
     """
@@ -91,6 +96,31 @@ def check_scenario_process_status(message):
             return False
     else:
         return False
+
+
+@socketio.on('get_scenario_list')
+def get_scenario_list():
+    """
+
+    :return:
+    """
+    print("Received request for scenario list")
+    # TODO: we'll need to get db path from the user
+    os.chdir('/Users/ana/dev/gridpath-ui-dev/')
+    io = sqlite3.connect(
+        os.path.join(os.getcwd(), 'db', 'io.db')
+    )
+    c = io.cursor()
+
+    scenarios_query = c.execute(
+        """SELECT scenario_name FROM scenarios;"""
+    )
+
+    scenarios = [s[0] for s in scenarios_query]
+    print(scenarios)
+    print("Sending scenario list to client")
+
+    emit('send_scenario_list', scenarios)
 
 
 if __name__ == '__main__':

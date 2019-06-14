@@ -17,6 +17,20 @@ let mainWindow;
 
 // // Main window //
 function createMainWindow () {
+    // // Start Flask server
+    // let options = {
+    //     pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+    //     scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+    // };
+    // PythonShell.run(
+    //     'flask_local_server.py',
+    //      options,
+    //     function (err) {
+    //         if (err) throw err;
+    //         console.log('error');
+    //     }
+    // );
+
     // Create the browser window.
     mainWindow = new BrowserWindow({
         width: 1200, height: 800, title: 'GridPath UI Sandbox', show: false
@@ -39,20 +53,6 @@ function createMainWindow () {
         // when you should delete the corresponding element.
         mainWindow = null
     });
-
-    // // Start Flask server
-    // let options = {
-    //     pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-    //     scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
-    // };
-    // PythonShell.run(
-    //     'flask_local_server.py',
-    //      options,
-    //     function (err) {
-    //         if (err) throw err;
-    //         console.log('finished');
-    //     }
-    // );
 }
 
 
@@ -80,7 +80,35 @@ app.on('activate', () => {
 });
 
 
-// // Other views/windows // //
+// Scenario list view //
+ipcMain.on(
+    'Index-Requests-Scenario-List',
+    (event) => {
+        console.log("Received request for scenario list");
+        // Get the scenario list from the server
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        socket.emit('get_scenario_list');
+        socket.on('send_scenario_list', function (scenarioList) {
+            console.log('Should have received scenario list');
+            event.sender.send(
+            'Main-Relays-Scenario-List', scenarioList
+            )
+        });
+        // socket.on('send_scenario_list', function (scenarioList) {
+        //     console.log('Should have received scenario list');
+        //     console.log(scenarioList);
+        //     // When request received, send the scenario list
+        //     event.sender.send(
+        //     'Main-Relays-Scenario-List', scenarioList
+        //     )
+        // });
+    }
+);
+
 
 // Scenario Detail window //
 // The Scenario Detail window opens when a signal from the main window is sent
@@ -121,28 +149,28 @@ ipcMain.on(
 );
 
 
-// Run a scenario //
-// Spawn a Python process to run a scenario when the 'Run Scenario' button
-// in the scenario detail window is clicked
-
-// We need to find the Python script when we are in both
-// a production environment and a development environment
-// We do that by looking up app.isPackaged (this is a renderer process, so we
-// need to do it via remote)
-// In development, the script is in the py directory under root
-// In production, we package the script in the 'py' directory under the app's
-// Contents/Resources by including extraResources under "build" in package.json
-const baseDirectory = () => {
-    if (app.isPackaged) {
-        return path.join(process.resourcesPath)
-    } else {
-        return path.join(__dirname, "..")
-    }
-};
-
-// TODO: how to get the GP python code? Should we have the user specify
-//  where it is? We're not packaging up Python for now.
-// const PyScriptPath = path.join(baseDirectory(), '../run_start_to_end.py');
+// // Run a scenario //
+// // Spawn a Python process to run a scenario when the 'Run Scenario' button
+// // in the scenario detail window is clicked
+//
+// // We need to find the Python script when we are in both
+// // a production environment and a development environment
+// // We do that by looking up app.isPackaged (this is a renderer process, so we
+// // need to do it via remote)
+// // In development, the script is in the py directory under root
+// // In production, we package the script in the 'py' directory under the app's
+// // Contents/Resources by including extraResources under "build" in package.json
+// const baseDirectory = () => {
+//     if (app.isPackaged) {
+//         return path.join(process.resourcesPath)
+//     } else {
+//         return path.join(__dirname, "..")
+//     }
+// };
+//
+// // TODO: how to get the GP python code? Should we have the user specify
+// //  where it is? We're not packaging up Python for now.
+// // const PyScriptPath = path.join(baseDirectory(), '../run_start_to_end.py');
 ipcMain.on(
     'User-Requests-to-Run-Scenario',
     (event, userRequestedScenarioName) => {
@@ -161,7 +189,7 @@ ipcMain.on(
             {scenario: userRequestedScenarioName}
         );
         // Keep track of process ID for this scenario run
-        socket.on ('scenario_already_running', function (msg) {
+        socket.on('scenario_already_running', function (msg) {
             console.log('in scenario_already_running');
             console.log (msg);
         });
