@@ -15,16 +15,17 @@ from __future__ import print_function
 from builtins import next
 from builtins import zip
 from builtins import str
-from builtins import range
 import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    NonPositiveReals, PercentFraction, Expression, Integers, Reals, value
+    NonPositiveReals, PercentFraction, Reals, value
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+from gridpath.project.operations.operational_types.common_functions import \
+    determine_relevant_timepoints
 
 
 def add_module_specific_components(m, d):
@@ -121,10 +122,10 @@ def add_module_specific_components(m, d):
               within=PercentFraction, default=1)
     m.dispcapcommit_min_up_time_hours = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-              within=Integers, default=1)
+              within=NonNegativeReals, default=1)
     m.dispcapcommit_min_down_time_hours = \
         Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
-              within=Integers, default=1)
+              within=NonNegativeReals, default=1)
 
     # Variables
     # Dispatch
@@ -226,7 +227,7 @@ def add_module_specific_components(m, d):
         within=NonPositiveReals
     )
 
-    # Startups and shutowns
+    # Startups and shutdowns
     def ramp_up_off_to_on_constraint_rule(mod, g, tmp):
         """
         When turning on, generators can ramp up to a certain fraction of
@@ -549,41 +550,44 @@ def add_module_specific_components(m, d):
 
     def min_up_time_constraint_rule(mod, g, tmp):
         """
+        :param mod: the Pyomo AbstractModel object
+        :param g: a project
+        :param tmp: a timepoint
+        :return: rule for constraint DispCapCommit_Min_Up_Time_Constraint
 
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        When units are started, they have to stay on for a minimum number
+        of hours described by the dispcapcommit_min_up_time_hours parameter.
+        The constraint is enforced by ensuring that the online capacity
+        (committed capacity) is at least as large as the amount of capacity
+        that was started within min down time hours.
+
+        We ensure capacity turned on less than the minimum up time ago is
+        still on in the current timepoint *tmp* by checking how much capacity
+        was turned on in each 'relevant' timepoint (i.e. a timepoint that
+        begins more than or equal to dispcapcommit_min_up_time_hours ago
+        relative to the start of timepoint *tmp*) and then summing those
+        capacities.
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        relevant_tmps = determine_relevant_timepoints(
+            mod, tmp, mod.dispcapcommit_min_up_time_hours[g]
+        )
+
+        # If only the current timepoint is determined to be relevant,
+        # this constraint is redundant (it will simplify to
+        # Commit_Capacity_MW[g, previous_timepoint[tmp]} >= 0)
+        # This also takes care of the first timepoint in a linear horizon
+        # setting, which has only *tmp* in the list of relevant timepoints
+        if relevant_tmps == [tmp]:
             return Constraint.Skip
-        # TODO: enforce subhourly?
-        elif mod.dispcapcommit_min_up_time_hours[g] <= 1:
-            return Constraint.Skip
+        # Otherwise, we must have at least as much capacity committed as was
+        # started up in the relevant timepoints
         else:
-            relevant_tmps = list()
-            relevant_tmp = tmp
-
-            for n in range(1,
-                           int(mod.dispcapcommit_min_up_time_hours[g] //
-                               mod.number_of_hours_in_timepoint[tmp]) + 1):
-                relevant_tmps.append(relevant_tmp)
-                # If horizon is 'linear' and we reach the first timepoint,
-                # skip the constraint
-                if relevant_tmp == mod.first_horizon_timepoint[mod.horizon[
-                    tmp]] \
-                        and mod.boundary[mod.horizon[tmp]] == "linear":
-                    return Constraint.Skip
-                else:
-                    relevant_tmp = mod.previous_timepoint[relevant_tmp]
-
-            units_turned_on_min_up_time_or_less_hours_ago = \
+            capacity_turned_on_min_up_time_or_less_hours_ago = \
                 sum(mod.DispCapCommit_Startup_MW[g, tp]
                     for tp in relevant_tmps)
 
             return mod.Commit_Capacity_MW[g, tmp] \
-                >= units_turned_on_min_up_time_or_less_hours_ago
+                >= capacity_turned_on_min_up_time_or_less_hours_ago
 
     m.DispCapCommit_Min_Up_Time_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -592,43 +596,47 @@ def add_module_specific_components(m, d):
 
     def min_down_time_constraint_rule(mod, g, tmp):
         """
+        :param mod: the Pyomo AbstractModel object
+        :param g: a project
+        :param tmp: a timepoint
+        :return: rule for constraint DispCapCommit_Min_Down_Time_Constraint
 
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        When units are stopped, they have to stay off for a minimum number
+        of hours described by the dispcapcommit_min_down_time_hours parameter.
+        The constraint is enforced by ensuring that the offline capacity
+        (available capacity minus committed capacity) is at least as large
+        as the amount of capacity that was stopped within min down time hours.
+
+        We ensure capacity turned off less than the minimum down time ago is
+        still off in the current timepoint *tmp* by checking how much capacity
+        was turned off in each 'relevant' timepoint (i.e. a timepoint that
+        begins more than or equal to dispcapcommit_min_down_time_hours ago
+        relative to the start of timepoint *tmp*) and then summing those
+        capacities.
         """
 
-        units_turned_off_min_down_time_or_less_hours_ago = 0
+        relevant_tmps = determine_relevant_timepoints(
+            mod, tmp, mod.dispcapcommit_min_down_time_hours[g]
+        )
 
-        # TODO: enforce subhourly?
-        if mod.dispcapcommit_min_up_time_hours[g] <= 1:
+        capacity_turned_off_min_down_time_or_less_hours_ago = \
+            sum(mod.DispCapCommit_Shutdown_MW[g, tp]
+                for tp in relevant_tmps)
+
+        # If only the current timepoint is determined to be relevant,
+        # this constraint is redundant (it will simplify to
+        # Commit_Capacity_MW[g, previous_timepoint[tmp]} >= 0)
+        # This also takes care of the first timepoint in a linear horizon
+        # setting, which has only *tmp* in the list of relevant timepoints
+        if relevant_tmps == [tmp]:
             return Constraint.Skip
+        # Otherwise, we must have at least as much capacity off as was shut
+        # down in the relevant timepoints
         else:
-            relevant_tmps = list()
-            relevant_tmp = tmp
-
-            for n in range(1,
-                           int(mod.dispcapcommit_min_down_time_hours[g] //
-                               mod.number_of_hours_in_timepoint[tmp]) + 1):
-                relevant_tmps.append(relevant_tmp)
-                # If horizon is 'linear' and we reach the first timepoint,
-                # skip the constraint
-                if relevant_tmp == mod.first_horizon_timepoint[mod.horizon[
-                    tmp]] \
-                        and mod.boundary[mod.horizon[tmp]] == "linear":
-                    return Constraint.Skip
-                else:
-                    relevant_tmp = mod.previous_timepoint[relevant_tmp]
-
-                units_turned_off_min_down_time_or_less_hours_ago = \
-                    sum(mod.DispCapCommit_Shutdown_MW[g, tp]
-                        for tp in relevant_tmps)
-
             return mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, mod.horizon[tmp]] \
                 - mod.Commit_Capacity_MW[g, tmp] \
-                >= units_turned_off_min_down_time_or_less_hours_ago
+                >= capacity_turned_off_min_down_time_or_less_hours_ago
 
     m.DispCapCommit_Min_Down_Time_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -909,7 +917,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                            "min_up_time_hours"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
-                min_up_time[row[0]] = int(row[2])
+                min_up_time[row[0]] = float(row[2])
             else:
                 pass
         data_portal.data()[
@@ -923,7 +931,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                            "min_down_time_hours"]
                        ):
             if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
-                min_down_time[row[0]] = int(row[2])
+                min_down_time[row[0]] = float(row[2])
             else:
                 pass
         data_portal.data()[
@@ -973,11 +981,11 @@ def import_module_specific_results_to_database(
 ):
     """
 
-    :param scenario_id: 
-    :param c: 
-    :param db: 
-    :param results_directory: 
-    :return: 
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
     """
     print("project dispatch capacity commit")
     # dispatch_capacity_commit.csv
