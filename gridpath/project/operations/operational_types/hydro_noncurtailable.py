@@ -39,6 +39,10 @@ def add_module_specific_components(m, d):
     power output on each timepoint on horizon *oh* \n
     *hydro_noncurtailable_max_power_mw* \ :sub:`nchg, oh`\ -- the maximum
     power output on each timepoint on horizon *oh* \n
+    *hydro_noncurtailable_ramp_up_rate* \ :sub:`nchg`\ -- the project's upward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
+    *hydro_noncurtailable_ramp_down_rate* \ :sub:`nchg`\ -- the project's
+    downward ramp rate limit, defined as a fraction of its capacity per minute\n
 
     The power provision variable for non-curtailable hydro projects,
     *Hydro_Noncurtailable_Provide_Power_MW*, is defined over
@@ -98,6 +102,7 @@ def add_module_specific_components(m, d):
                 if g in mod.HYDRO_NONCURTAILABLE_PROJECTS))
 
     # Ramp rates can be optionally specified and will default to 1 if not
+    # Ramp rate units are "percent of project capacity per minute"
     m.hydro_noncurtailable_ramp_up_rate = \
         Param(m.HYDRO_NONCURTAILABLE_PROJECTS, within=PercentFraction,
               default=1)
@@ -178,7 +183,13 @@ def add_module_specific_components(m, d):
 
     def ramp_up_rule(mod, g, tmp):
         """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp up rate limits.
 
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -187,15 +198,20 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.hydro_noncurtailable_ramp_up_rate[g] == 1:
+        # If you can ramp up the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        elif mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
+             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
+             >= 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
-                   <= \
-                   mod.hydro_noncurtailable_ramp_up_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]] \
-                   * mod.availability_derate[g, mod.horizon[tmp]]
-
+                <= \
+                mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp]] \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Noncurtailable_Ramp_Up_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -204,7 +220,13 @@ def add_module_specific_components(m, d):
 
     def ramp_down_rule(mod, g, tmp):
         """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp down rate limits.
 
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate limit is adjusted for the duration of the first timepoint.
         :param mod: 
         :param g: 
         :param tmp: 
@@ -213,15 +235,20 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.hydro_noncurtailable_ramp_down_rate[g] == 1:
+        # If you can ramp down the the total project's capacity within the
+        # previous timepoint, skip the constraint (it won't bind)
+        elif mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
+             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
+             >= 1:
             return Constraint.Skip
         else:
             return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
-                   >= \
-                   - mod.hydro_noncurtailable_ramp_down_rate[g] \
-                   * mod.Capacity_MW[g, mod.period[tmp]] \
-                   * mod.availability_derate[g, mod.horizon[tmp]]
-
+                >= \
+                - mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
+                * mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp]] \
+                * mod.Capacity_MW[g, mod.period[tmp]] \
+                * mod.availability_derate[g, mod.horizon[tmp]]
     m.Hydro_Noncurtailable_Ramp_Down_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -422,7 +449,7 @@ def load_module_specific_data(m,
     data_portal.data()["hydro_noncurtailable_min_power_mw"] = min_mw
     data_portal.data()["hydro_noncurtailable_max_power_mw"] = max_mw
 
-    # Ramp rate limits are optional, will default to 1 if not specified
+    # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
     header = pd.read_csv(os.path.join(scenario_directory, "inputs",
@@ -443,8 +470,7 @@ def load_module_specific_data(m,
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_up_when_on_rate"]
+                       dynamic_components["ramp_up_when_on_rate"]
                        ):
             if row[1] == "hydro_noncurtailable" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
@@ -457,8 +483,7 @@ def load_module_specific_data(m,
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
-                       dynamic_components[
-                           "ramp_down_when_on_rate"]
+                       dynamic_components["ramp_down_when_on_rate"]
                        ):
             if row[1] == "hydro_noncurtailable" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])

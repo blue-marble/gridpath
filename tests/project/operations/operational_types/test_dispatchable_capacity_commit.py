@@ -15,6 +15,7 @@ from tests.common_functions import create_abstract_model, \
 from tests.project.operations.common_functions import \
     get_project_operational_timepoints
 
+
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
@@ -231,6 +232,9 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time
                              )
+
+        # for tmp in instance.TIMEPOINTS:
+        #     print(tmp)
 
 
 if __name__ == "__main__":
