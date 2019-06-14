@@ -123,6 +123,59 @@ def get_scenario_list():
     emit('send_scenario_list', scenarios)
 
 
+@socketio.on('get_scenario_detail')
+def get_scenario_details(scenario):
+    """
+
+    :return:
+    """
+    print("Received request for scenario detail")
+    # TODO: we'll need to get db path from the user
+    os.chdir('/Users/ana/dev/gridpath-ui-dev/')
+    io = sqlite3.connect(
+        os.path.join(os.getcwd(), 'db', 'io.db')
+    )
+    c = io.cursor()
+
+    scenario_detail_query = c.execute(
+        """SELECT
+            subscenarios_project_portfolios.name as portfolio, 
+            subscenarios_project_operational_chars.name as operating_chars, 
+            subscenarios_system_load.name as load_profile, 
+            subscenarios_project_fuel_prices.name as fuel_prices
+            FROM scenarios 
+            JOIN subscenarios_project_portfolios 
+            USING (project_portfolio_scenario_id)
+            JOIN subscenarios_project_operational_chars 
+            USING (project_operational_chars_scenario_id)
+            JOIN subscenarios_system_load 
+            USING (load_scenario_id)
+            JOIN subscenarios_project_fuel_prices 
+            USING (fuel_price_scenario_id)
+            WHERE scenario_name = '{}';""".format(scenario)
+    )
+
+
+
+    column_names = [s[0] for s in scenario_detail_query.description]
+    column_values = list(list(scenario_detail_query)[0])
+    scenario_detail_dict = dict(zip(column_names, column_values))
+    scenario_detail_dict['scenario_name'] = scenario
+
+    scenario_status_query = c.execute(
+        """SELECT status
+            FROM mod_run_status
+            WHERE scenario_name = '{}';""".format(scenario)
+    ).fetchone()
+    scenario_detail_dict['run_status'] = scenario_status_query[0]
+
+    print(scenario_detail_dict)
+
+    print("Sending scenario detail to client")
+
+    emit('send_scenario_detail', scenario_detail_dict)
+
+
 if __name__ == '__main__':
     print("Running server manually")
     socketio.run(

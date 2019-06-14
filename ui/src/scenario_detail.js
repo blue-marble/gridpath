@@ -5,44 +5,30 @@ const Database = require('better-sqlite3');
 const storage = require('electron-json-storage');
 
 // Listen for a scenario name
-ipcRenderer.send('Scenario-Detail-Window-Requests-Scenario-Name');
+ipcRenderer.send('Scenario-Detail-Window-Requests-Scenario-Detail');
 ipcRenderer.on(
-    'Main-Relays-Scenario-Name',
-    (event, scenarioName) => {
-        console.log('Scenario Detail Window received message');
-        console.log(scenarioName);
+    'Main-Relays-Scenario-Detail',
+    (event, scenarioDetail) => {
+        const scenarioName = scenarioDetail['scenario_name'];
+        const runStatus = scenarioDetail['run_status'];
+
+        console.log(`Scenario Detail Window received detail for ${scenarioName}`);
 
         // Create the HTML for the scenario name
         document.getElementById('scenarioName').innerHTML =
             `<b>${scenarioName}</b>`;
 
-        storage.get(
-            'dbFilePath',
-            (error, data) => {
-                if (error) throw error;
-                const dbFilePath = data['dbFilePath'][0];
+        // Create the run status HTML
+        document.getElementById('runStatus').innerHTML =
+            `<b>Status: ${runStatus}</b>`;
 
-                // Create the scenario detail HTML
-                document.getElementById(
-                    'scenarioDetailTable'
-                ).innerHTML =
-                    createScenarioDetailTable(scenarioName, dbFilePath);
-            }
-        );
+        const scenarioParams = scenarioDetail;
+        delete scenarioParams['scenario_name'];
+        delete scenarioParams['run_status'];
+        // Create the scenario detail table
+        document.getElementById('scenarioDetailTable').innerHTML =
+            createScenarioDetailTable(scenarioParams);
 
-        storage.get(
-            'dbFilePath',
-            (error, data) => {
-                if (error) throw error;
-                const dbFilePath = data['dbFilePath'][0];
-
-                const runStatus = getRunStatus(scenarioName, dbFilePath);
-
-                // Create the run status HTML
-                document.getElementById('runStatus').innerHTML =
-                    `<b>Status: ${runStatus}</b>`;
-            }
-        );
 
         // TODO: create button to run scenario here, not in html file?
         // If runScenarioButton is clicked, send scenario name to main process
@@ -72,9 +58,10 @@ backtoScenariosListButton.addEventListener(
 );
 
 // Create the html for the scenario detail table
-const createScenarioDetailTable = (scenario, dbFilePath) => {
-    const scenarioParamsDict = getScenarioDetails(scenario, dbFilePath);
+const createScenarioDetailTable = (scenarioParamsDict) => {
 
+    console.log("Building params table");
+    console.log(scenarioParamsDict);
     let scenarioDetailTable = '<table align="center">';
     Object.keys(scenarioParamsDict).forEach(
         (key) => {
@@ -87,47 +74,4 @@ const createScenarioDetailTable = (scenario, dbFilePath) => {
     scenarioDetailTable += '</table>';
 
     return scenarioDetailTable
-};
-
-
-const getScenarioDetails = (scenario, dbFilePath) => {
-    const db = new Database (dbFilePath, {fileMustExist: true});
-
-    const getSubscenarioNames =
-        db.prepare(
-            `SELECT
-            subscenarios_project_portfolios.name as portfolio, 
-            subscenarios_project_operational_chars.name as operating_chars, 
-            subscenarios_system_load.name as load_profile, 
-            subscenarios_project_fuel_prices.name as fuel_prices
-            FROM scenarios 
-            JOIN subscenarios_project_portfolios 
-            USING (project_portfolio_scenario_id)
-            JOIN subscenarios_project_operational_chars 
-            USING (project_operational_chars_scenario_id)
-            JOIN subscenarios_system_load 
-            USING (load_scenario_id)
-            JOIN subscenarios_project_fuel_prices 
-            USING (fuel_price_scenario_id)
-            WHERE scenario_name = ?`
-        ).get(scenario);
-
-    db.close();
-    return getSubscenarioNames
-};
-
-
-const getRunStatus = (scenario, dbFilePath) => {
-    const db = new Database (dbFilePath, {fileMustExist: true});
-
-    const getStatus =
-        db.prepare(
-            `SELECT status
-            FROM mod_run_status 
-            WHERE scenario_name = ?`
-        ).get(scenario);
-
-    db.close();
-
-    return getStatus.status
 };

@@ -119,19 +119,33 @@ ipcMain.on(
         console.log(
             `Received request for ${userRequestedScenarioName} scenario detail`
         );
-        // We need to listen for an explict request for the scenario name
-        // from the scenario detail renderer (I couldn't figure out another
-        // way)
-        ipcMain.on(
-            'Scenario-Detail-Window-Requests-Scenario-Name',
-            (event) => {
-                // When request received, send the scenario name
-                event.sender.send(
-                    'Main-Relays-Scenario-Name',
-                    userRequestedScenarioName
-                )
-            }
+
+        // Get the scenario detail from the server
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        socket.emit('get_scenario_detail', userRequestedScenarioName);
+        socket.on('send_scenario_detail', function(scenarioDetail) {
+            console.log('Should have received scenario detail');
+            console.log(scenarioDetail);
+
+            // We need to listen for an explict request for the scenario name
+            // from the scenario detail renderer (I couldn't figure out another
+            // way)
+            ipcMain.on(
+                'Scenario-Detail-Window-Requests-Scenario-Detail',
+                (event) => {
+                    // When request received, send the scenario name
+                    event.sender.send(
+                        'Main-Relays-Scenario-Detail',
+                        scenarioDetail
+                    )
+                }
         );
+        });
+
 
         // // TODO: should the scenario detail view be a separate window
         // scenarioDetailWindow = new BrowserWindow({
