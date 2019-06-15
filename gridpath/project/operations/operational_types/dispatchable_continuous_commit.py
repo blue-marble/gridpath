@@ -645,17 +645,13 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.dispcontcommit_ramp_up_when_on_rate[g] * 60 \
-                >= \
-                (1 - mod.disp_cont_commit_min_stable_level_fraction[g]) \
-                / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]:
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp up the full operable range between timepoints, constraint
+        # won't bind, so skip
+        elif (mod.dispcontcommit_ramp_up_when_on_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1 - mod.disp_cont_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
-        # # Alternative way to check this:
-        # elif mod.DispContCommit_Ramp_Up_Rate_MW_Per_Timepoint[
-        #         g, mod.previous_timepoint[tmp]] \
-        #         >= mod.DispContCommit_Pmax_MW[g, tmp] \
-        #         - mod.DispContCommit_Pmin_MW[g, tmp]:
-        #     return Constraint.Skip
         else:
             return \
                 (mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[g, tmp]
@@ -691,10 +687,12 @@ def add_module_specific_components(m, d):
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
-        elif mod.dispcontcommit_ramp_down_when_on_rate[g] * 60 \
-                >= \
-                (1 - mod.disp_cont_commit_min_stable_level_fraction[g]) \
-                / mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]:
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp down the full operable range between timepoints, constraint
+        # won't bind, so skip
+        elif (mod.dispcontcommit_ramp_down_when_on_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              >= (1 - mod.disp_cont_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
             return \
