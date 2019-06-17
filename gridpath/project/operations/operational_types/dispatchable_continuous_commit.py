@@ -903,7 +903,7 @@ def startup_shutdown_rule(mod, g, tmp):
             * mod.DispContCommit_Pmax_MW[g, tmp]
 
 
-def ramp_rule(mod, g, tmp):
+def power_delta_rule(mod, g, tmp):
     """
     Ramp between this timepoint and the previous timepoint
     Actual ramp rate in MW/hr depends on the duration of the timepoints.

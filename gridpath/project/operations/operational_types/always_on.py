@@ -140,16 +140,11 @@ def add_module_specific_components(m, d):
     )
 
     # Optional ramp constraints
-    # Constrain ramps
-    m.Always_On_Ramp_MW = Expression(
-        m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_rule
-    )
-
     def ramp_up_rule(mod, g, tmp):
         """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp up rate limits.
+        Difference between power generation of consecutive timepoints, adjusted
+        for reserve provision in current and previous timepoint, has to obey
+        ramp up rate limits.
 
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
@@ -172,7 +167,12 @@ def add_module_specific_components(m, d):
               ):
             return Constraint.Skip
         else:
-            return mod.Always_On_Ramp_MW[g, tmp] \
+            return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+                + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
+                - (mod.Provide_Power_AlwaysOn_MW[
+                       g, mod.previous_timepoint[tmp]]
+                   - mod.AlwaysOn_Downwards_Reserves_MW[
+                       g, mod.previous_timepoint[tmp]]) \
                 <= \
                 mod.always_on_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -188,8 +188,9 @@ def add_module_specific_components(m, d):
 
     def ramp_down_rule(mod, g, tmp):
         """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp down rate limits.
+        Difference between power generation of consecutive timepoints, adjusted
+        for reserve provision in current and previous timepoint, has to obey
+        ramp down rate limits.
 
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
@@ -212,7 +213,12 @@ def add_module_specific_components(m, d):
               ):
             return Constraint.Skip
         else:
-            return mod.Always_On_Ramp_MW[g, tmp] \
+            return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
+                - mod.AlwaysOn_Downwards_Reserves_MW[g, tmp] \
+                - (mod.Provide_Power_AlwaysOn_MW[
+                       g, mod.previous_timepoint[tmp]]
+                   + mod.AlwaysOn_Upwards_Reserves_MW[
+                       g, mod.previous_timepoint[tmp]]) \
                 >= \
                 - mod.always_on_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -339,13 +345,12 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
-def ramp_rule(mod, g, tmp):
+def power_delta_rule(mod, g, tmp):
     """
-
-    :param mod: 
-    :param g: 
-    :param tmp: 
-    :return: 
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":

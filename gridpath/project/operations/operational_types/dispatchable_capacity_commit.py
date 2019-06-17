@@ -19,7 +19,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
-    NonPositiveReals, PercentFraction, Reals, value
+    NonPositiveReals, PercentFraction, Reals, value, Expression
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
@@ -128,15 +128,28 @@ def add_module_specific_components(m, d):
               within=NonNegativeReals, default=1)
 
     # Variables
-    # Dispatch
     m.Provide_Power_DispCapacityCommit_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
-    # Commitment
     m.Commit_Capacity_MW = \
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals
             )
+
+    # Expressions
+    def upwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, headroom_variables)[g])
+    m.DispCapCommit_Upwards_Reserves_MW = Expression(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=upwards_reserve_rule)
+
+    def downwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, footroom_variables)[g])
+    m.DispCapCommit_Downwards_Reserves_MW = Expression(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=downwards_reserve_rule)
 
     # Operational constraints
     def commit_capacity_constraint_rule(mod, g, tmp):
@@ -163,9 +176,8 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] + \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, headroom_variables)[g]) \
+        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] \
+            + mod.DispCapCommit_Upwards_Reserves_MW[g, tmp] \
             <= mod.Commit_Capacity_MW[g, tmp]
     m.DispCapCommit_Max_Power_Constraint = \
         Constraint(
@@ -181,9 +193,8 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, footroom_variables)[g]) \
+        return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] \
+            - mod.DispCapCommit_Downwards_Reserves_MW[g, tmp] \
             >= mod.Commit_Capacity_MW[g, tmp] \
             * mod.disp_cap_commit_min_stable_level_fraction[g]
     m.DispCapCommit_Min_Power_Constraint = \
@@ -302,23 +313,28 @@ def add_module_specific_components(m, d):
     def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
         """
         Generators online in the previous timepoint that are still online
-        could not have ramped up above their total online capacity (more
-        than their available headroom in the previous timepoint).
+        could not have ramped up above their total online capacity, i.e. not
+        more than their available headroom in the previous timepoint.
+        The maximum possible headroom in the previous timepoint is equal to
+        the difference between committed capacity and (power provided minus
+        downward reserves).
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
+        # TODO: check behavior more carefully (same for ramp down)
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Up_When_On_MW[g, tmp] \
                 <= \
-                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] - \
-                mod.Provide_Power_DispCapacityCommit_MW[
-                    g, mod.previous_timepoint[tmp]
-                ]
+                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                - (mod.Provide_Power_DispCapacityCommit_MW[
+                    g, mod.previous_timepoint[tmp]]
+                   - mod.DispCapCommit_Downwards_Reserves_MW[
+                    g, mod.previous_timepoint[tmp]])
     m.Ramp_Up_When_On_Headroom_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_on_to_on_headroom_constraint_rule
@@ -327,7 +343,8 @@ def add_module_specific_components(m, d):
     def ramp_up_constraint_rule(mod, g, tmp):
         """
         The ramp up (power provided in the current timepoint minus power
-        provided in the previous timepoint) cannot exceed a prespecified
+        provided in the previous timepoint), adjusted for any reserve provision
+        in the current and previous timepoint, cannot exceed a prespecified
         ramp rate (expressed as fraction of capacity)
         Two components:
         1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
@@ -359,11 +376,14 @@ def add_module_specific_components(m, d):
               * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
               >= (1 - mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
-            return Constraint.Skip  # constraint won't bind, so don't create
+            return Constraint.Skip
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
-                - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]) \
+                    + mod.DispCapCommit_Upwards_Reserves_MW[g, tmp]) \
+                - (mod.Provide_Power_DispCapacityCommit_MW[
+                        g, mod.previous_timepoint[tmp]]
+                   - mod.DispCapCommit_Downwards_Reserves_MW[
+                        g, mod.previous_timepoint[tmp]]) \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -432,16 +452,25 @@ def add_module_specific_components(m, d):
     def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
         """
         Generators still online in the current timepoint could not have ramped
-        down more than their current headroom.
+        down more than their current headroom. The maximum possible headroom is
+        equal to the difference between committed capacity and (power provided
+        minus downward reserves).
+        Note: Ramp_Down_When_On_MW is negative when a unit is ramping down, so
+        we add a negative sign before it the constraint.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        return mod.Ramp_Down_When_On_MW[g, tmp] \
-            >= \
-            - (mod.Commit_Capacity_MW[g, tmp] -
-               mod.Provide_Power_DispCapacityCommit_MW[g, tmp])
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
+                and mod.boundary[mod.horizon[tmp]] == "linear":
+            return Constraint.Skip
+        else:
+            return -mod.Ramp_Down_When_On_MW[g, tmp] \
+                <= \
+                mod.Commit_Capacity_MW[g, tmp] \
+                - (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
+                   - mod.DispCapCommit_Downwards_Reserves_MW[g, tmp])
     m.Ramp_Down_When_On_Headroom_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_on_to_on_headroom_constraint_rule
@@ -450,7 +479,8 @@ def add_module_specific_components(m, d):
     def ramp_down_constraint_rule(mod, g, tmp):
         """
         The ramp down (power provided in the current timepoint minus power
-        provided in the previous timepoint) cannot exceed a prespecified
+        provided in the previous timepoint), adjusted for any reserve provision
+        in the current and previous timepoint, cannot exceed a prespecified
         ramp rate (expressed as fraction of capacity)
         Two components:
         1) Ramp_Down_Shutdown_MW (see Ramp_Down_On_to_Off_Constraint above):
@@ -480,11 +510,14 @@ def add_module_specific_components(m, d):
               * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
               >= (1-mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
-            return Constraint.Skip  # constraint won't bind, so don't create
+            return Constraint.Skip
         else:
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
-                - mod.Provide_Power_DispCapacityCommit_MW[
-                g, mod.previous_timepoint[tmp]]) \
+                    - mod.DispCapCommit_Downwards_Reserves_MW[g, tmp]) \
+                - (mod.Provide_Power_DispCapacityCommit_MW[
+                        g, mod.previous_timepoint[tmp]]
+                   + mod.DispCapCommit_Upwards_Reserves_MW[
+                        g, mod.previous_timepoint[tmp]]) \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -772,9 +805,8 @@ def startup_shutdown_rule(mod, g, tmp):
          - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
 
 
-def ramp_rule(mod, g, tmp):
+def power_delta_rule(mod, g, tmp):
     """
-
     :param mod:
     :param g:
     :param tmp:

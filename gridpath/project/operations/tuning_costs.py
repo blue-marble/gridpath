@@ -29,7 +29,9 @@ def add_model_components(m, d):
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
 
-    # Figure out how much each project ramped
+    # Figure out how much each project ramped (for simplicity, only look at
+    # the difference in power setpoints, i.e. ignore the effect of providing
+    # any reserves)
     def ramp_rule(mod, g, tmp):
         """
         :param mod:
@@ -39,7 +41,7 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            ramp_rule(mod, g, tmp)
+            power_delta_rule(mod, g, tmp)
 
     m.Ramp_Expression = Expression(
         m.PROJECT_OPERATIONAL_TIMEPOINTS,
