@@ -1,0 +1,247 @@
+'use strict';
+
+
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const storage = require('electron-json-storage');
+
+// https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209
+let {PythonShell} = require('python-shell');
+
+// // Socket IO
+const io = require('socket.io-client');
+
+// Keep a global reference of each window object; if we don't, the window will
+// be closed automatically when the JavaScript object is garbage-collected.
+let mainWindow;
+
+// // Main window //
+function createMainWindow () {
+    // // Start Flask server
+    // let options = {
+    //     pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+    //     scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+    // };
+    // PythonShell.run(
+    //     'flask_local_server.py',
+    //      options,
+    //     function (err) {
+    //         if (err) throw err;
+    //         console.log('error');
+    //     }
+    // );
+
+    // Create the browser window.
+    mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      title: 'GridPath UI Sandbox',
+      show: false,
+      webPreferences: {nodeIntegration: true}  // to get 'require' to work in
+      // both main and renderer processes in Electron 5+
+    });
+
+    // and load the index.html of the app.
+    mainWindow.loadFile('./src/index.html');
+
+    // // Open the DevTools.
+    // mainWindow.webContents.openDevTools();
+
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show()
+    });
+
+    // Emitted when the window is closed.
+    mainWindow.on('closed', () => {
+        // Dereference the window object, usually you would store windows
+        // in an array if your app supports multi windows, this is the time
+        // when you should delete the corresponding element.
+        mainWindow = null
+    });
+}
+
+
+// // App behavior //
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.on('ready', createMainWindow);
+
+// Quit when all windows are closed.
+app.on('window-all-closed', () => {
+    // On macOS it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    if (process.platform !== 'darwin') {
+        app.quit()
+    }
+});
+
+app.on('activate', () => {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (mainWindow === null) {
+        createMainWindow()
+    }
+});
+
+
+// Scenario list view //
+ipcMain.on(
+    'Index-Requests-Scenario-List',
+    (event) => {
+        console.log("Received request for scenario list");
+        // Get the scenario list from the server
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        socket.emit('get_scenario_list');
+        socket.on('send_scenario_list', function (scenarioList) {
+            console.log('Should have received scenario list');
+            event.sender.send(
+            'Main-Relays-Scenario-List', scenarioList
+            )
+        });
+        // socket.on('send_scenario_list', function (scenarioList) {
+        //     console.log('Should have received scenario list');
+        //     console.log(scenarioList);
+        //     // When request received, send the scenario list
+        //     event.sender.send(
+        //     'Main-Relays-Scenario-List', scenarioList
+        //     )
+        // });
+    }
+);
+
+
+// Scenario Detail window //
+// The Scenario Detail window opens when a signal from the main window is sent
+// (i.e. a scenario button is clicked)
+ipcMain.on(
+    'User-Requests-Scenario-Detail',
+    (event, userRequestedScenarioName) => {
+        console.log(
+            `Received request for ${userRequestedScenarioName} scenario detail`
+        );
+
+        // Get the scenario detail from the server
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        socket.emit('get_scenario_detail', userRequestedScenarioName);
+        socket.on('send_scenario_detail', function(scenarioDetail) {
+            console.log('Should have received scenario detail');
+            console.log(scenarioDetail);
+
+            // We need to listen for an explict request for the scenario name
+            // from the scenario detail renderer (I couldn't figure out another
+            // way)
+            ipcMain.on(
+                'Scenario-Detail-Window-Requests-Scenario-Detail',
+                (event) => {
+                    // When request received, send the scenario name
+                    event.sender.send(
+                        'Main-Relays-Scenario-Detail',
+                        scenarioDetail
+                    )
+                }
+        );
+        });
+
+
+        // // TODO: should the scenario detail view be a separate window
+        // scenarioDetailWindow = new BrowserWindow({
+        //     width: 600, height: 600, title: 'Scenario Detail', show: false
+        // });
+
+        // // Open the DevTools.
+        // scenarioDetailWindow.webContents.openDevTools();
+
+        mainWindow.loadFile('./src/scenario_detail.html');
+        // mainWindow.once('ready-to-show', () => {
+        //     mainWindow.show()
+        // });
+    }
+);
+
+
+// // Run a scenario //
+// // Spawn a Python process to run a scenario when the 'Run Scenario' button
+// // in the scenario detail window is clicked
+//
+// // We need to find the Python script when we are in both
+// // a production environment and a development environment
+// // We do that by looking up app.isPackaged (this is a renderer process, so we
+// // need to do it via remote)
+// // In development, the script is in the py directory under root
+// // In production, we package the script in the 'py' directory under the app's
+// // Contents/Resources by including extraResources under "build" in package.json
+// const baseDirectory = () => {
+//     if (app.isPackaged) {
+//         return path.join(process.resourcesPath)
+//     } else {
+//         return path.join(__dirname, "..")
+//     }
+// };
+//
+// // TODO: how to get the GP python code? Should we have the user specify
+// //  where it is? We're not packaging up Python for now.
+// // const PyScriptPath = path.join(baseDirectory(), '../run_start_to_end.py');
+ipcMain.on(
+    'User-Requests-to-Run-Scenario',
+    (event, userRequestedScenarioName) => {
+        console.log(`Received user request to run ${userRequestedScenarioName}`);
+
+        // Send message to server to run scenario
+        // Connect to server
+        const socket = io.connect('http://localhost:8080/');
+        socket.on('connect', function() {
+            console.log(`Connection established: ${socket.connected}`); //make
+            // sure the connection is established
+        });
+        // Tell the server to start a scenario process
+        socket.emit(
+            'launch_scenario_process',
+            {scenario: userRequestedScenarioName}
+        );
+        // Keep track of process ID for this scenario run
+        socket.on('scenario_already_running', function (msg) {
+            console.log('in scenario_already_running');
+            console.log (msg);
+        });
+    }
+);
+
+
+
+// General methods //
+// Go back to index view if user requests it; maybe this can be reused
+ipcMain.on(
+    'User-Requests-Index-View',
+    (event) => {
+        console.log('Received user request for index view');
+        mainWindow.loadFile('./src/index.html');
+    }
+);
+
+// New scenario view //
+ipcMain.on(
+    'User-Requests-New-Scenario-View',
+    (event) => {
+        console.log('Received user request for new scenario');
+        mainWindow.loadFile('./src/scenario_new.html');
+    }
+);
+
+
+// Settings view //
+ipcMain.on(
+    'User-Requests-Settings-View',
+    (event) => {
+        console.log('Received user request for settings view');
+        mainWindow.loadFile('./src/settings.html');
+    }
+);

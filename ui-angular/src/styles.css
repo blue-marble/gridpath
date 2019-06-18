@@ -1,0 +1,71 @@
+/* Used in the scenario detail button group */
+.btn-group button {
+  background-color: white; /* White background */
+  border: 1px solid black; /* Dark grey border */
+  color: midnightblue; /* Black text */
+  padding: 10px 24px; /* Some padding */
+  cursor: pointer; /* Pointer/hand icon */
+  width: 50%; /* Set a width if needed */
+  display: block; /* Make the buttons appear below each other */
+  margin-left:25%;
+  margin-right:25%;
+}
+
+.btn-group button:not(:first-child) {
+  border-top: none; /* Prevent double borders */
+}
+
+/* Add a background color on hover */
+.btn-group button:hover {
+  background-color: darkblue;
+  color: white
+}
+
+/* Generic button styling for buttons with class="button" */
+.button {
+    background:aliceblue;
+    color:midnightblue;
+    padding: 5px 10px;
+    cursor:pointer
+}
+
+.button:hover {
+  background-color: darkblue;
+  color: white
+}
+
+#settingsButton {
+    margin-left:auto;
+    margin-right:10%;
+    display:block;
+    margin-top:0%;
+    margin-bottom:2%
+
+}
+
+#newScenarioButton {
+  margin-left:45%;
+  margin-right:auto;
+  display:block;
+  margin-top:2%;
+  margin-bottom:auto
+}
+
+#runScenarioButton {
+    margin-left:45%;
+    margin-right:auto;
+    display:block;
+    margin-top:2%;
+    margin-bottom:auto
+}
+
+/* Used in the scenario detail table */
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+    margin-top: 1%
+}
+
+th, td {
+    padding: 5px;
+}
