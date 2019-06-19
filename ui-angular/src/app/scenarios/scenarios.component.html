@@ -1,0 +1,29 @@
+<h2>My Scenarios</h2>
+<ul class="scenarios">
+  <li *ngFor="let scenario of scenarios"
+    [class.selected]="scenario === selectedScenario"
+    (click)="onSelect(scenario)">
+    <span class="badge">{{scenario.id}}</span> {{scenario.name}}
+  </li>
+</ul>
+
+<div *ngIf="selectedScenario">
+
+  <h2>{{selectedScenario.name | uppercase}} Details</h2>
+  <div><span>id: </span>{{selectedScenario.id}}</div>
+  <div>
+    <label>name:
+      <input [(ngModel)]="selectedScenario.name" placeholder="name">
+    </label>
+  </div>
+
+  <button ng-click="pleasePrint()">Will you please print!</button>
+
+</div>
+
+<script>
+  function pleasePrint($scope) {
+    console.log("Hello")
+  }
+
+</script>
