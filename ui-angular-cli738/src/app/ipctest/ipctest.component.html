@@ -1,0 +1,9 @@
+<form name="form" novalidate>
+	IPC info:<br>
+	<textarea name="ipc_info" [(ngModel)]="ipc_info" cols="40" rows="5"></textarea>
+	<br>
+	Remote data:<br>
+	<textarea name="remote_info" [(ngModel)]="remote_info" cols="40" rows="5"></textarea>
+	<br>
+	<button type="submit" (click)="sendClick()">Send</button>
+</form>

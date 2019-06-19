@@ -5,12 +5,14 @@ import { FormsModule } from '@angular/forms'; // <-- NgModel lives here
 
 import { AppComponent } from './app.component';
 import { ScenariosComponent } from './scenarios/scenarios.component';
+import { IPCTestComponent } from './ipctest/ipctest.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    ScenariosComponent
+    ScenariosComponent,
+    IPCTestComponent
   ],
   imports: [
     BrowserModule,

@@ -246,3 +246,16 @@ ipcMain.on(
         mainWindow.loadFile('./src/settings.html');
     }
 );
+
+global.sharedData = {
+	deckDef: []
+};
+
+ipcMain.on('get-data', (event, arg) => {
+	global.sharedData.deckDef = [];
+	for (let i = 0; i < 10; i += 1) {
+		global.sharedData.deckDef.push('line ' + i);
+	}
+
+	event.sender.send('get-data-replay', 'hello');
+});
