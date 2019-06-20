@@ -5,6 +5,8 @@ import os
 import pyutilib.subprocess.GlobalData
 import sqlite3
 
+from flask_restful import Resource, Api
+
 # Turn off signal handlers (in order to be able to spawn solvers from a
 # Pyomo running in a thread)
 # See: https://groups.google.com/forum/#!searchin/pyomo-forum
@@ -14,6 +16,7 @@ import sqlite3
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 app = Flask(__name__)
+api = Api(app)
 
 # Global variables
 SCENARIO_STATUS = dict()
@@ -174,6 +177,31 @@ def get_scenario_details(scenario):
     print("Sending scenario detail to client")
 
     emit('send_scenario_detail', scenario_detail_dict)
+
+
+class Scenarios(Resource):
+    @staticmethod
+    def get():
+        os.chdir('/Users/ana/dev/gridpath-ui-dev/')
+        io = sqlite3.connect(
+            os.path.join(os.getcwd(), 'db', 'io.db')
+        )
+        c = io.cursor()
+
+        scenarios_query = c.execute(
+            """SELECT scenario_id, scenario_name
+            FROM scenarios
+            ORDER by scenario_id ASC;"""
+        )
+
+        scenarios_api = []
+        for s in scenarios_query:
+            scenarios_api.append({'id': s[0], 'name': s[1]})
+
+        return scenarios_api
+
+
+api.add_resource(Scenarios, '/scenarios')  # Route_1
 
 
 if __name__ == '__main__':

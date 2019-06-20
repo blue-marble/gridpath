@@ -1,7 +1,6 @@
-import { Component, OnInit, NgZone } from '@angular/core';
-import { Scenario } from '../scenario';
-
-const electron = (<any>window).require('electron');
+import { Component, OnInit } from '@angular/core';
+import { Scenario } from './scenario';
+import { ScenariosService} from "./scenarios.service";
 
 @Component({
   selector: 'app-scenarios',
@@ -10,28 +9,23 @@ const electron = (<any>window).require('electron');
 })
 export class ScenariosComponent implements OnInit {
 
-
   scenarios: Scenario[];
   selectedScenario: Scenario;
 
-  // https://stackoverflow.com/questions/41254904/angular-2-change-detection-breaks-down-with-electron
-  // Must run with zone: NgZone
-  constructor(private zone: NgZone) {
-    electron.ipcRenderer.send('get-scenarios');
-    electron.ipcRenderer.on('get-scenarios-reply', (event, scenariosList) => {
-			console.log(scenariosList);
-			zone.run(() => {this.scenarios = scenariosList})
-		});
-    console.log(this.scenarios)
-  }
-
+  constructor(private scenariosService: ScenariosService) { }
 
   ngOnInit() {
+    this.getScenarios()
   }
 
   onSelect(scenario: Scenario): void {
     this.selectedScenario = scenario;
   }
+
+  getScenarios(): void {
+    this.scenariosService.getScenarios()
+      .subscribe(scenarios => this.scenarios = scenarios);
+    }
 
 }
 
