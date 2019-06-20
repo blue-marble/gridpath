@@ -259,3 +259,19 @@ ipcMain.on('get-data', (event, arg) => {
 
 	event.sender.send('get-data-replay', 'hello');
 });
+
+ipcMain.on('get-scenarios', (event, arg) => {
+  console.log("Received request for scenarios");
+	event.sender.send('get-scenarios-reply', [
+  { id: 1, name: 'Scenario-1' },
+  { id: 2, name: 'Scenario-2' },
+  { id: 3, name: 'Scenario-3' },
+  { id: 4, name: 'Scenario-4' },
+  { id: 5, name: 'Scenario-5' },
+  { id: 6, name: 'Scenario-6' },
+  { id: 7, name: 'Scenario-7' },
+  { id: 8, name: 'Scenario-8' },
+  { id: 9, name: 'Scenario-9' },
+  { id: 10, name: 'Scenario-10' }
+]);
+});
