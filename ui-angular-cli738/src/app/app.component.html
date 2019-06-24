@@ -1,3 +1,43 @@
 <h1>{{title}}</h1>
-<app-settings></app-settings>
-<app-scenarios></app-scenarios>
+<style>
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: darkblue;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+li a:hover {
+  background-color: lightsteelblue;
+}
+</style>
+<nav class="navbar navbar-fixed-top navbar-dark">
+    <div class="container">
+        <ul class="nav navbar-nav" routerLinkActive="active">
+            <li
+              class="nav-item"><a class="nav-link" routerLink="scenarios">Home
+            </a></li>
+            <li class="nav-item"><a class="nav-link" routerLink="settings">
+              Settings</a></li>
+            <li class="nav-item"><a class="nav-link"
+                                    routerLink="scenarios">Scenarios
+            </a></li>
+        </ul>
+    </div>
+</nav>
+
+<router-outlet></router-outlet>
+
