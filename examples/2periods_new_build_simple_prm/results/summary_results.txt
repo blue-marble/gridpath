@@ -6,7 +6,6 @@
                               New Capacity (MW)
 load_zone technology  period                   
 Zone1     unspecified 2020                   49
-                      2030                    0
 
 ### OPERATIONAL RESULTS ###
 

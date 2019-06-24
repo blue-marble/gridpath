@@ -5,7 +5,7 @@
 --> New Storage Capacity <--
                              New Storage Power Capacity (MW)  New Storage Energy Capacity (MWh)
 load_zone technology period                                                                    
-Zone1     Storage    2020                                  5                                  7
+Zone1     Storage    2020                                  4                                  7
                      2030                                 10                                 15
 
 ### OPERATIONAL RESULTS ###
@@ -13,10 +13,10 @@ Zone1     Storage    2020                                  5                    
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                          0              0
-                 Gas                          16             53
+Zone1     2020   Coal                          1              2
+                 Gas                          15             49
                  Nuclear                      12             40
-                 Storage                      -1             -2
+                 Storage                      -0             -1
                  Wind                          3              9
           2030   Coal                          0              0
                  Gas                          17             55
