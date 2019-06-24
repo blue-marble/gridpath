@@ -20,6 +20,8 @@ api = Api(app)
 
 # Global variables
 SCENARIO_STATUS = dict()
+GRIDPATH_DIRECTORY = str()
+DATABASE_PATH = str()
 
 # Needed to pip install eventlet
 socketio = SocketIO(app, async_mode='eventlet')
@@ -182,10 +184,8 @@ def get_scenario_details(scenario):
 class Scenarios(Resource):
     @staticmethod
     def get():
-        os.chdir('/Users/ana/dev/gridpath-ui-dev/')
-        io = sqlite3.connect(
-            os.path.join(os.getcwd(), 'db', 'io.db')
-        )
+        global DATABASE_PATH
+        io = sqlite3.connect(DATABASE_PATH)
         c = io.cursor()
 
         scenarios_query = c.execute(
@@ -201,7 +201,19 @@ class Scenarios(Resource):
         return scenarios_api
 
 
+# Add the scenarios data to the scenarios route
 api.add_resource(Scenarios, '/scenarios')  # Route_1
+
+
+@socketio.on('set_database_path')
+def set_database_path(db_path):
+    print('Database path set to ', str(db_path))
+    global DATABASE_PATH
+    DATABASE_PATH = db_path
+
+    # Get the scenarios
+    # TODO: when to call this?
+    Scenarios.get()
 
 
 if __name__ == '__main__':

@@ -7,13 +7,15 @@ import { HttpClientModule } from '@angular/common/http'
 import { AppComponent } from './app.component';
 import { ScenariosComponent } from './scenarios/scenarios.component';
 import { IPCTestComponent } from './ipctest/ipctest.component';
+import { SettingsComponent } from './settings/settings.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     ScenariosComponent,
-    IPCTestComponent
+    IPCTestComponent,
+    SettingsComponent
   ],
   imports: [
     BrowserModule,

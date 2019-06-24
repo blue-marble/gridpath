@@ -17,19 +17,19 @@ let mainWindow;
 
 // // Main window //
 function createMainWindow () {
-    // // Start Flask server
-    // let options = {
-    //     pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-    //     scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
-    // };
-    // PythonShell.run(
-    //     'flask_local_server.py',
-    //      options,
-    //     function (err) {
-    //         if (err) throw err;
-    //         console.log('error');
-    //     }
-    // );
+    // Start Flask server
+    let options = {
+        pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+        scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+    };
+    PythonShell.run(
+        'flask_local_server.py',
+         options,
+        function (err) {
+            if (err) throw err;
+            console.log('error');
+        }
+    );
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -247,31 +247,52 @@ ipcMain.on(
     }
 );
 
-global.sharedData = {
-	deckDef: []
-};
 
-ipcMain.on('get-data', (event, arg) => {
-	global.sharedData.deckDef = [];
-	for (let i = 0; i < 10; i += 1) {
-		global.sharedData.deckDef.push('line ' + i);
-	}
+// Settings
 
-	event.sender.send('get-data-replay', 'hello');
+// Set the GridPath folder setting
+ipcMain.on('onClickGridPathFolderSetting', (event) => {
+  console.log(`GridPath folder settings button clicked`);
+  // Tell renderer to proceed (message is sent to listeners in 'constructor'
+  // method, so that we can run inside the Angular zone for immediate view
+  // update)
+  event.sender.send('onClickGridPathFolderSettingAngular')
+});
+// Get setting from renderer and store it
+ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
+	console.log(`GridPath folder set to ${gpfolder}`);
+	// TODO: do we need to keep in storage?
+  // Set the GridPath directory path in Electron JSON storage
+  storage.set(
+      'gridPathDirectory',
+      { 'gridPathDirectory': gpfolder },
+      (error) => {if (error) throw error;}
+  );
 });
 
-ipcMain.on('get-scenarios', (event, arg) => {
-  console.log("Received request for scenarios");
-	event.sender.send('get-scenarios-reply', [
-  { id: 1, name: 'Scenario-1' },
-  { id: 2, name: 'Scenario-2' },
-  { id: 3, name: 'Scenario-3' },
-  { id: 4, name: 'Scenario-4' },
-  { id: 5, name: 'Scenario-5' },
-  { id: 6, name: 'Scenario-6' },
-  { id: 7, name: 'Scenario-7' },
-  { id: 8, name: 'Scenario-8' },
-  { id: 9, name: 'Scenario-9' },
-  { id: 10, name: 'Scenario-10' }
-]);
+// Set the GridPath database setting
+ipcMain.on('onClickGridPathDatabaseSetting', (event) => {
+  console.log(`GridPath database settings button clicked`);
+  // Tell renderer to proceed (message is sent to listeners in 'constructor'
+  // method, so that we can run inside the Angular zone for immediate view
+  // update)
+  event.sender.send('onClickGridPathDatabaseSettingAngular')
+});
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
+	console.log(`GridPath database set to ${gpDB}`);
+
+	// TODO: do we need to keep in storage?
+  // Set the database file path in Electron JSON storage
+  storage.set(
+      'gridPathDatabase',
+      { 'gridPathDatabase': gpDB },
+      (error) => {if (error) throw error;}
+  );
+
+  const socket = io.connect('http://localhost:8080/');
+  socket.on('connect', function() {
+      console.log(`Connection established: ${socket.connected}`);
+  });
+  socket.emit('set_database_path', gpDB[0]);
 });

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { Scenario } from './scenario';
 import { ScenariosService} from "./scenarios.service";
 
@@ -12,9 +12,12 @@ export class ScenariosComponent implements OnInit {
   scenarios: Scenario[];
   selectedScenario: Scenario;
 
-  constructor(private scenariosService: ScenariosService) { }
+  constructor(private scenariosService: ScenariosService) {
+    console.log("Constructing scenarios...");
+  }
 
   ngOnInit() {
+    console.log("Initializing scenarios...");
     this.getScenarios()
   }
 
@@ -23,9 +26,15 @@ export class ScenariosComponent implements OnInit {
   }
 
   getScenarios(): void {
+    console.log("Getting scenarios...");
     this.scenariosService.getScenarios()
       .subscribe(scenarios => this.scenarios = scenarios);
-    }
+  }
+
+  updateScenarios(event): void{
+    console.log('Updating scenarios...');
+    this.getScenarios()
+  }
 
 }
 
