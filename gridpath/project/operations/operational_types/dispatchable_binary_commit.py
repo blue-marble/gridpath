@@ -293,33 +293,44 @@ def add_module_specific_components(m, d):
         Total power provision can't be above generator's maximum power output
         Also ensure total capacity is not above startup or shutdown ramp rate
         if unit is starting in this timepoint or stopping the next timepoint.
-        Constraint only applies when min_up_time is larger than the
-        number_of_hours_in_timepoint, i.e. when it's not feasible to operate
-        the unit for just one timepoint, which means starting it during one
-        timepoint and shutting it down the next timepoint. There are 2 other
-        constraints to cover the situation where min_up_time is smaller than
-        number_of_hours_in_timepoint.
+        Constraint only applies when *min_up_time* is larger than the
+        *number_of_hours_in_timepoint*, i.e. when it's not feasible to operate
+        the unit for just one timepoint (starting it during one timepoint and
+        shutting it down the next timepoint).
+        There are 2 other constraints to cover the situation where *min_up_time*
+        is smaller than *number_of_hours_in_timepoint* (constraints 9 and 10 in
+        Morales-Espana et al. (2013)).
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the startup/shutdown ramp between 2 timepoints
         (with the startup/shutdown in timepoint 2) is assumed to take place
         during the duration of the first timepoint, and the startup/shutdown
         ramp rate is adjusted for the duration of the first timepoint.
-        Constraint (11) in Morales-Espana et al. (2013)
+        Constraint (11) in Morales-Espana et al. (2013).
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
+        # This constraint should only be applied if the minimum up-time is
+        # larger than the timepoint duration. If not, skip this constraint
+        # and apply the 2 constraints below instead.
         if mod.dispbincommit_min_up_time_hours[g] \
                 <= mod.number_of_hours_in_timepoint[tmp]:
             return Constraint.Skip
-
+        # *stop_next_tmp* equals the value of the binary stop variable for the
+        # next timepoint. If the horizon boundary is linear and we're at the
+        # last timepoint in the horizon, there is no next timepoint, so we'll
+        # assume that the value equals zero.
         if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             stop_next_tmp = 0
         else:
             stop_next_tmp = mod.Stop_Binary[g, mod.next_timepoint[tmp]]
-
+        # *startup_ramp* equals the ramp rate limit during the previous
+        # timepoint. If the horizon boundary is linear and we're at the first
+        # timepoint in the horizon, there is no previous timepoint, so we'll
+        # assume that the value equals the ramp rate limit of the current
+        # timepoint.
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             startup_ramp = mod. \
@@ -329,6 +340,10 @@ def add_module_specific_components(m, d):
                 DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
                 g, mod.previous_timepoint[tmp]]
 
+        # Power provision plus upward reserves shall not exceed maximum power.
+        # Constraint is further tightened if the unit is turning on or shutting
+        # down, ensuring that the unit does not exceed the startup/shutdown
+        # ramp rate limits.
         return \
             (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
@@ -364,10 +379,17 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
+        # This constraint should only be applied if the minimum up-time less
+        # than or equal to the timepoint duration. If not, skip this constraint
+        # and only apply the max_power_constraint_rule above.
         if mod.dispbincommit_min_up_time_hours[g] \
                 > mod.number_of_hours_in_timepoint[tmp]:
             return Constraint.Skip
-
+        # *startup_ramp* equals the ramp rate limit during the previous
+        # timepoint. If the horizon boundary is linear and we're at the first
+        # timepoint in the horizon, there is no previous timepoint, so we'll
+        # assume that the value equals the ramp rate limit of the current
+        # timepoint.
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             startup_ramp = mod. \
@@ -377,6 +399,9 @@ def add_module_specific_components(m, d):
                 DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
                 g, mod.previous_timepoint[tmp]]
 
+        # Power provision plus upward reserves shall not exceed maximum power.
+        # Constraint is further tightened if the unit is turning on, ensuring
+        # that the unit does not exceed the startup ramp rate limits.
         return \
             (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
@@ -408,16 +433,25 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
+        # This constraint should only be applied if the minimum up-time less
+        # than or equal to the timepoint duration. If not, skip this constraint
+        # and only apply the max_power_constraint_rule above.
         if mod.dispbincommit_min_up_time_hours[g] \
                 > mod.number_of_hours_in_timepoint[tmp]:
             return Constraint.Skip
-
+        # *stop_next_tmp* equals the value of the binary stop variable for the
+        # next timepoint. If the horizon boundary is linear and we're at the
+        # last timepoint in the horizon, there is no next timepoint, so we'll
+        # assume that the value equals zero.
         if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             stop_next_tmp = 0
         else:
             stop_next_tmp = mod.Stop_Binary[g, mod.next_timepoint[tmp]]
 
+        # Power provision plus upward reserves shall not exceed maximum power.
+        # Constraint is further tightened if the unit is shutting down, ensuring
+        # that the unit does not exceed the shutdown ramp rate limits.
         return \
             (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
@@ -1042,7 +1076,7 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             committed_mw FLOAT,
             committed_units INTEGER,
             started_units INTEGER,
-            stopped_UNITS INTEGER,
+            stopped_units INTEGER,
             PRIMARY KEY (scenario_id, project, timepoint)
                 );"""
     )
