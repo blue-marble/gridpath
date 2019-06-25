@@ -8,13 +8,15 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { ScenariosComponent } from './scenarios/scenarios.component';
 import { SettingsComponent } from './settings/settings.component';
+import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     ScenariosComponent,
-    SettingsComponent
+    SettingsComponent,
+    ScenarioDetailComponent
   ],
   imports: [
     BrowserModule,

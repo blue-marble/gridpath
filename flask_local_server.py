@@ -181,6 +181,7 @@ def get_scenario_details(scenario):
     emit('send_scenario_detail', scenario_detail_dict)
 
 
+# ### API ### #
 class Scenarios(Resource):
     @staticmethod
     def get():
@@ -201,8 +202,29 @@ class Scenarios(Resource):
         return scenarios_api
 
 
+class ScenarioDetail(Resource):
+    @staticmethod
+    def get(scenario_id):
+        global DATABASE_PATH
+        io = sqlite3.connect(DATABASE_PATH)
+        c = io.cursor()
+
+        scenarios_query = c.execute(
+            """SELECT scenario_id, scenario_name
+            FROM scenarios
+            WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()
+
+        scenario_detail_api =  \
+            {'id': scenarios_query[0], 'name': scenarios_query[1]}
+
+        return scenario_detail_api
+
+
 # Add the scenarios data to the scenarios route
-api.add_resource(Scenarios, '/scenarios')  # Route_1
+api.add_resource(Scenarios, '/scenarios/')  # scenario list route
+api.add_resource(ScenarioDetail, '/scenarios/<scenario_id>') # scenario
+# detail route
 
 
 @socketio.on('set_database_path')

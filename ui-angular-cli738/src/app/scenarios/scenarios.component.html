@@ -3,17 +3,9 @@
         (click)="updateScenarios()">Update scenarios list</button>
 <ul class="scenarios">
   <li *ngFor="let scenario of scenarios"
-    [class.selected]="scenario === selectedScenario"
-    (click)="onSelect(scenario)">
-    <span class="badge">{{scenario.id}}</span> {{scenario.name}}
+    [class.selected]="scenario.id === selectedId">
+    <a [routerLink]="['/scenario', scenario.id]">
+      <span class="badge">{{ scenario.id }}</span>{{ scenario.name }}
+    </a>
   </li>
 </ul>
-<div *ngIf="selectedScenario">
-  <h2>{{selectedScenario.name | uppercase}} Details</h2>
-  <div><span>id: </span>{{selectedScenario.id}}</div>
-  <div>
-    <label>name:
-      <input [(ngModel)]="selectedScenario.name" placeholder="name">
-    </label>
-  </div>
-</div>
