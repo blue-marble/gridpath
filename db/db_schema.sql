@@ -2607,3 +2607,40 @@ dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period)
 );
+
+
+-- Views
+DROP VIEW IF EXISTS scenarios_view;
+CREATE VIEW scenarios_view (
+scenario_id,
+scenario_name,
+temporal_scenario_id,
+load_zone_scenario_id,
+project_portfolio_scenario_id,
+project_operational_chars_scenario_id,
+fuel_price_scenario_id,
+load_scenario_id
+)
+AS
+SELECT
+scenario_id,
+scenario_name,
+subscenarios_temporal.name as temporal,
+subscenarios_geography_load_zones.name as geography_load_zones,
+subscenarios_project_portfolios.name as portfolio,
+subscenarios_project_operational_chars.name as operating_chars,
+subscenarios_project_fuel_prices.name as fuel_prices,
+subscenarios_system_load.name as load_profile
+FROM scenarios
+JOIN subscenarios_temporal
+USING (temporal_scenario_id)
+JOIN subscenarios_geography_load_zones
+USING (load_zone_scenario_id)
+JOIN subscenarios_project_portfolios
+USING (project_portfolio_scenario_id)
+JOIN subscenarios_project_operational_chars
+USING (project_operational_chars_scenario_id)
+JOIN subscenarios_system_load
+USING (load_scenario_id)
+JOIN subscenarios_project_fuel_prices
+USING (fuel_price_scenario_id);

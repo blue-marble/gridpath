@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
-import { Scenario } from '../scenarios/scenario'
+import { ScenarioDetail } from './scenario-detail'
 import { ScenarioDetailService } from './scenario-detail.service'
 
 @Component({
@@ -13,7 +13,7 @@ import { ScenarioDetailService } from './scenario-detail.service'
 
 export class ScenarioDetailComponent implements OnInit {
 
-  scenarioDetail: Scenario;
+  scenarioDetail: ScenarioDetail;
   id: number;
   private sub: any;
 
@@ -24,7 +24,7 @@ export class ScenarioDetailComponent implements OnInit {
 
   ngOnInit(): void {
     // The ActivatedRoute service provides a params Observable which we can
-    // subscribe to to get the route parameters
+    // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
        this.id = +params['id'];
        console.log(this.id)
@@ -36,7 +36,6 @@ export class ScenarioDetailComponent implements OnInit {
     console.log(`Getting scenario detail for scenario ${id}`);
     this.scenarioDetailService.getScenarioDetail(id)
       .subscribe(scenarioDetail => this.scenarioDetail = scenarioDetail);
-    console.log(this.scenarioDetail);
   }
 
   goBack(): void {

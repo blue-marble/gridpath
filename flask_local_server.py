@@ -190,8 +190,8 @@ class Scenarios(Resource):
         c = io.cursor()
 
         scenarios_query = c.execute(
-            """SELECT scenario_id, scenario_name
-            FROM scenarios
+            """SELECT *
+            FROM scenarios_view
             ORDER by scenario_id ASC;"""
         )
 
@@ -209,14 +209,15 @@ class ScenarioDetail(Resource):
         io = sqlite3.connect(DATABASE_PATH)
         c = io.cursor()
 
-        scenarios_query = c.execute(
-            """SELECT scenario_id, scenario_name
-            FROM scenarios
+        scenario_detail_query = c.execute(
+            """SELECT *
+            FROM scenarios_view
             WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()
+        )
 
-        scenario_detail_api =  \
-            {'id': scenarios_query[0], 'name': scenarios_query[1]}
+        column_names = [s[0] for s in scenario_detail_query.description]
+        column_values = list(list(scenario_detail_query)[0])
+        scenario_detail_api = dict(zip(column_names, column_values))
 
         return scenario_detail_api
 

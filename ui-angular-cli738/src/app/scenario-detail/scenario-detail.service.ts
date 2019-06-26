@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {Scenario} from "../scenarios/scenario";
+import {ScenarioDetail} from "./scenario-detail";
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +14,8 @@ export class ScenarioDetailService {
 
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
-  getScenarioDetail(id: number): Observable<Scenario> {
+  getScenarioDetail(id: number): Observable<ScenarioDetail> {
     console.log(`${this.scenariosBaseURL}${id}`);
-    return this.http.get<Scenario>(`${this.scenariosBaseURL}${id}`)
+    return this.http.get<ScenarioDetail>(`${this.scenariosBaseURL}${id}`)
   }
 }
