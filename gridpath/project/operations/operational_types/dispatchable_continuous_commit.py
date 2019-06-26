@@ -326,7 +326,8 @@ def add_module_specific_components(m, d):
         # *stop_next_tmp* equals the value of the binary stop variable for the
         # next timepoint. If the horizon boundary is linear and we're at the
         # last timepoint in the horizon, there is no next timepoint, so we'll
-        # assume that the value equals zero.
+        # assume that the value equals zero. This equivalent to "skipping" the
+        # tightening of the constraint.
         if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             stop_next_tmp = 0
@@ -335,16 +336,15 @@ def add_module_specific_components(m, d):
         # *startup_ramp* equals the ramp rate limit during the previous
         # timepoint. If the horizon boundary is linear and we're at the first
         # timepoint in the horizon, there is no previous timepoint, so we'll
-        # assume that the value equals the ramp rate limit of the current
-        # timepoint.
+        # skip tightening the constraint for startup ramp rate limits by setting
+        # startup_ramp equal to Pmax.
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
-            startup_ramp = mod. \
-                DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
+            startup_ramp = mod.DispContCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
                 DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
-                g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is turning on or shutting
@@ -394,16 +394,15 @@ def add_module_specific_components(m, d):
         # *startup_ramp* equals the ramp rate limit during the previous
         # timepoint. If the horizon boundary is linear and we're at the first
         # timepoint in the horizon, there is no previous timepoint, so we'll
-        # assume that the value equals the ramp rate limit of the current
-        # timepoint.
+        # skip tightening the constraint for startup ramp rate limits by setting
+        # startup_ramp equal to Pmax.
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
-            startup_ramp = mod. \
-                DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
+            startup_ramp = mod.DispContCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
                 DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
-                g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is turning on, ensuring
@@ -448,7 +447,8 @@ def add_module_specific_components(m, d):
         # *stop_next_tmp* equals the value of the binary stop variable for the
         # next timepoint. If the horizon boundary is linear and we're at the
         # last timepoint in the horizon, there is no next timepoint, so we'll
-        # assume that the value equals zero.
+        # assume that the value equals zero. This equivalent to "skipping" the
+        # tightening of the constraint.
         if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
             stop_next_tmp = 0
@@ -529,37 +529,30 @@ def add_module_specific_components(m, d):
             mod, tmp, mod.dispcontcommit_min_up_time_hours[g]
         )
 
-        units_turned_on_min_up_time_or_less_hours_ago = \
+        number_of_starts_min_up_time_or_less_hours_ago = \
             sum(mod.Start_Continuous[g, tp] for tp in relevant_tmps)
 
-        # If only the current timepoint is determined to be relevant,
-        # this constraint is redundant (it will simplify to
-        # mod.Commit_Continuous >= mod.Start_Continuous).
-        # This also takes care of the first timepoint in a linear horizon
-        # setting, which has only *tmp* in the list of relevant timepoints
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
         # If we've reached the first timepoint in linear boundary mode and
         # the total duration of the relevant timepoints (which includes *tmp*)
         # is less than the minimum up time, skip the constraint since the next
         # timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        elif (mod.boundary[mod.horizon[tmp]] == "linear"
-              and
-              relevant_tmps[:-1]
-              == mod.first_horizon_timepoint[mod.horizon[tmp]]
-              and
-              sum(mod.number_of_hours_in_timepoint[tp] for tp in relevant_tmps)
-              < mod.dispcontcommit_min_up_time_hours[g]
-              and
-              tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
+        if (mod.boundary[mod.horizon[tmp]] == "linear"
+                and
+                relevant_tmps[-1]
+                == mod.first_horizon_timepoint[mod.horizon[tmp]]
+                and
+                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
+                < mod.dispcontcommit_min_up_time_hours[g]
+                and
+                tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
             return Constraint.Skip
-        # Otherwise, we must have at least as much units committed as were
-        # started up in the relevant timepoints.
+        # Otherwise, if there was a start min_up_time or less ago, the unit has
+        # to remain committed.
         else:
             return mod.Commit_Continuous[g, tmp] \
-                >= units_turned_on_min_up_time_or_less_hours_ago
+                >= number_of_starts_min_up_time_or_less_hours_ago
 
     m.DispContCommit_Min_Up_Time_Constraint = Constraint(
         m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -594,37 +587,30 @@ def add_module_specific_components(m, d):
             mod, tmp, mod.dispcontcommit_min_down_time_hours[g]
         )
 
-        units_shut_down_min_down_time_or_less_hours_ago = \
+        number_of_stops_min_down_time_or_less_hours_ago = \
             sum(mod.Stop_Continuous[g, tp] for tp in relevant_tmps)
 
-        # If only the current timepoint is determined to be relevant,
-        # this constraint is redundant (it will simplify to
-        # 1-mod.Commit_Continuous >= mod.Stop_Continuous).
-        # This also takes care of the first timepoint in a linear horizon
-        # setting, which has only *tmp* in the list of relevant timepoints
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
         # If we've reached the first timepoint in linear boundary mode and
         # the total duration of the relevant timepoints (which includes *tmp*)
         # is less than the minimum down time, skip the constraint since the
         # next timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        elif (mod.boundary[mod.horizon[tmp]] == "linear"
-              and
-              relevant_tmps[:-1]
-              == mod.first_horizon_timepoint[mod.horizon[tmp]]
-              and
-              sum(mod.number_of_hours_in_timepoint[tp] for tp in relevant_tmps)
-              < mod.dispcontcommit_min_down_time_hours[g]
-              and
-              tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
+        if (mod.boundary[mod.horizon[tmp]] == "linear"
+                and
+                relevant_tmps[-1]
+                == mod.first_horizon_timepoint[mod.horizon[tmp]]
+                and
+                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
+                < mod.dispcontcommit_min_down_time_hours[g]
+                and
+                tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
             return Constraint.Skip
-        # Otherwise, we must have at least as much units not committed as were
-        # shut down in the relevant timepoints.
+        # Otherwise, if there was a shutdown min_down_time or less ago, the unit
+        # has to remain shut down.
         else:
             return 1 - mod.Commit_Continuous[g, tmp] \
-                >= units_shut_down_min_down_time_or_less_hours_ago
+                >= number_of_stops_min_down_time_or_less_hours_ago
 
     m.DispContCommit_Min_Down_Time_Constraint = Constraint(
         m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -839,8 +825,6 @@ def startup_shutdown_rule(mod, g, tmp):
             and mod.boundary[mod.horizon[tmp]] == "linear":
         return None
     else:
-        # TODO: does not take into account change in availability
-        #  between timepoints (should it?)
         return (mod.Commit_Continuous[g, tmp]
                 - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]) \
             * mod.DispContCommit_Pmax_MW[g, tmp]
