@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
 import { Scenario } from '../scenarios/scenario'
-import { ScenariosService } from '../scenarios/scenarios.service'
+import { ScenarioDetailService } from './scenario-detail.service'
 
 @Component({
   selector: 'app-scenario-detail',
@@ -18,7 +18,7 @@ export class ScenarioDetailComponent implements OnInit {
   private sub: any;
 
   constructor(private route: ActivatedRoute,
-    private scenariosService: ScenariosService,
+    private scenarioDetailService: ScenarioDetailService,
     private location: Location) {
   }
 
@@ -34,7 +34,7 @@ export class ScenarioDetailComponent implements OnInit {
 
   getScenarioDetail(id): void {
     console.log(`Getting scenario detail for scenario ${id}`);
-    this.scenariosService.getScenarioDetail(id)
+    this.scenarioDetailService.getScenarioDetail(id)
       .subscribe(scenarioDetail => this.scenarioDetail = scenarioDetail);
     console.log(this.scenarioDetail);
   }
