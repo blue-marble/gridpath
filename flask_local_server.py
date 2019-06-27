@@ -217,7 +217,13 @@ class ScenarioDetail(Resource):
 
         column_names = [s[0] for s in scenario_detail_query.description]
         column_values = list(list(scenario_detail_query)[0])
-        scenario_detail_api = dict(zip(column_names, column_values))
+        scenario_detail_dict = dict(zip(column_names, column_values))
+
+        scenario_detail_api = []
+        for key in scenario_detail_dict.keys():
+            scenario_detail_api.append(
+                {'name': key, 'value': scenario_detail_dict[key]}
+            )
 
         return scenario_detail_api
 

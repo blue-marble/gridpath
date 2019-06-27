@@ -1,13 +1,13 @@
-<div *ngIf="scenarioDetail">
-<h2>{{scenarioDetail.scenario_name}}<span> Scenario Details</span></h2>
-<div><span>Scenario ID: </span>{{scenarioDetail.scenario_id}}</div>
-<div><span>Scenario Name: </span>{{scenarioDetail.scenario_name}}</div>
-<div><span>Temporal: </span>{{scenarioDetail.temporal_scenario_id}}</div>
-<div><span>Load Zones: </span>{{scenarioDetail.load_zone_scenario_id}}</div>
-<div><span>Project Portfolio: </span>{{scenarioDetail.project_portfolio_scenario_id}}</div>
-<div><span>Operational Characteristics: </span>{{scenarioDetail.project_operational_chars_scenario_id}}</div>
-<div><span>Fuel Prices: </span>{{scenarioDetail.fuel_price_scenario_id}}</div>
-<div><span>Load Profile: </span>{{scenarioDetail.load_scenario_id}}</div>
-<button (click)="goBack()">Back to Scenarios List</button>
-</div>
-
+<h2>{{scenarioDetail[1].value}}<span> Scenario Details</span></h2>
+<table class="scenario-detail">
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetail">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>

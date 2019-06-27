@@ -14,8 +14,8 @@ export class ScenarioDetailService {
 
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
-  getScenarioDetail(id: number): Observable<ScenarioDetail> {
+  getScenarioDetail(id: number): Observable<ScenarioDetail[]> {
     console.log(`${this.scenariosBaseURL}${id}`);
-    return this.http.get<ScenarioDetail>(`${this.scenariosBaseURL}${id}`)
+    return this.http.get<ScenarioDetail[]>(`${this.scenariosBaseURL}${id}`)
   }
 }

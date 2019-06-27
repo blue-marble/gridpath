@@ -13,7 +13,7 @@ import { ScenarioDetailService } from './scenario-detail.service'
 
 export class ScenarioDetailComponent implements OnInit {
 
-  scenarioDetail: ScenarioDetail;
+  scenarioDetail: ScenarioDetail[];
   id: number;
   private sub: any;
 
@@ -27,9 +27,9 @@ export class ScenarioDetailComponent implements OnInit {
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
        this.id = +params['id'];
-       console.log(this.id)
+       console.log(`Scenario ID is ${this.id}`)
     });
-    this.getScenarioDetail(this.id)
+    this.getScenarioDetail(this.id);
   }
 
   getScenarioDetail(id): void {
