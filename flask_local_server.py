@@ -1,5 +1,5 @@
 from flask import Flask
-from flask_socketio import SocketIO, send, emit
+from flask_socketio import SocketIO, emit
 import multiprocessing
 import os
 import pyutilib.subprocess.GlobalData
@@ -15,13 +15,19 @@ from flask_restful import Resource, Api
 #
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
-app = Flask(__name__)
-api = Api(app)
 
 # Global variables
-SCENARIO_STATUS = dict()
 GRIDPATH_DIRECTORY = str()
 DATABASE_PATH = str()
+SOLVER = str()
+
+# TODO: not sure we'll need this
+SCENARIO_STATUS = dict()
+
+
+# ### Basic server set-up ### #
+app = Flask(__name__)
+api = Api(app)
 
 # Needed to pip install eventlet
 socketio = SocketIO(app, async_mode='eventlet')
@@ -29,32 +35,122 @@ socketio = SocketIO(app, async_mode='eventlet')
 
 @app.route('/')
 def welcome():
-    print('GridPath UI')
-    return 'GridPath UI'
+    return 'GridPath UI Server is running.'
 
 
 @socketio.on('connect')
 def connection():
-    print('Electron connection established')
+    print('Client connection established.')
 
 
+# ### User settings ### #
+@socketio.on('set_database_path')
+def set_database_path(db_path):
+    print('Database path set to ', str(db_path))
+    global DATABASE_PATH
+    DATABASE_PATH = db_path
+
+    # Get the scenarios
+    # TODO: when to call this?
+    Scenarios.get()
+
+
+# ### API ### #
+class Scenarios(Resource):
+    """
+    The list of scenarios.
+    """
+    @staticmethod
+    def get():
+        global DATABASE_PATH
+        io = sqlite3.connect(DATABASE_PATH)
+        c = io.cursor()
+
+        scenarios_query = c.execute(
+            """SELECT *
+            FROM scenarios_view
+            ORDER by scenario_id ASC;"""
+        )
+
+        scenarios_api = []
+        for s in scenarios_query:
+            scenarios_api.append({'id': s[0], 'name': s[1]})
+
+        return scenarios_api
+
+
+class ScenarioDetail(Resource):
+    """
+    Detailed information for a scenario.
+    """
+    @staticmethod
+    def get(scenario_id):
+        global DATABASE_PATH
+        io = sqlite3.connect(DATABASE_PATH)
+        c = io.cursor()
+
+        scenario_detail_query = c.execute(
+            """SELECT *
+            FROM scenarios_view
+            WHERE scenario_id = {};""".format(scenario_id)
+        )
+
+        column_names = [s[0] for s in scenario_detail_query.description]
+        column_values = list(list(scenario_detail_query)[0])
+        scenario_detail_dict = dict(zip(column_names, column_values))
+
+        scenario_detail_api = []
+        for key in scenario_detail_dict.keys():
+            scenario_detail_api.append(
+                {'name': key, 'value': scenario_detail_dict[key]}
+            )
+
+        return scenario_detail_api
+
+
+# Routes
+# Scenario list
+api.add_resource(Scenarios, '/scenarios/')
+# Scenario detail (by scenario_id)
+api.add_resource(ScenarioDetail, '/scenarios/<scenario_id>')
+
+
+# ### Socket Communication ### #
+@socketio.on('add_new_scenario')
+def add_new_scenario(msg):
+    print('Got message from Angular')
+    print(msg)
+
+    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
+    global DATABASE_PATH
+    io = sqlite3.connect(DATABASE_PATH)
+    c = io.cursor()
+
+    c.execute(
+        """INSERT INTO scenarios (scenario_name) VALUES ('{}')""".format(
+            msg['scenarioName']))
+    io.commit()
+
+
+# ### RUNNING SCENARIOS ### #
+# TODO: incomplete functionality
+# TODO: needs update
 def _run_scenario(message):
     p = multiprocessing.current_process()
     scenario_name = str(message['scenario'])
     print("Running " + scenario_name)
     print("Process name and ID: ", p.name, p.pid)
 
-    # TODO: we'll need to get this from the user
-    os.chdir('/Users/ana/dev/gridpath-ui-dev/')
+    os.chdir(GRIDPATH_DIRECTORY)
 
     import run_scenario
     run_scenario.main(
         args=['--scenario', scenario_name, '--scenario_location',
-              'scenarios', '--solver', 'cplex', '--update_db_run_status']
+              'scenarios', '--solver', SOLVER, '--update_db_run_status']
     )
-    return("Scenario completed")
 
 
+# TODO: probably will do this directly from Angular
 @socketio.on('launch_scenario_process')
 def launch_scenario_process(message):
     scenario_name = str(message['scenario'])
@@ -101,164 +197,6 @@ def check_scenario_process_status(message):
             return False
     else:
         return False
-
-
-@socketio.on('get_scenario_list')
-def get_scenario_list():
-    """
-
-    :return:
-    """
-    print("Received request for scenario list")
-    # TODO: we'll need to get db path from the user
-    os.chdir('/Users/ana/dev/gridpath-ui-dev/')
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
-    c = io.cursor()
-
-    scenarios_query = c.execute(
-        """SELECT scenario_name FROM scenarios;"""
-    )
-
-    scenarios = [s[0] for s in scenarios_query]
-    print(scenarios)
-    print("Sending scenario list to client")
-
-    emit('send_scenario_list', scenarios)
-
-
-@socketio.on('get_scenario_detail')
-def get_scenario_details(scenario):
-    """
-
-    :return:
-    """
-    print("Received request for scenario detail")
-    # TODO: we'll need to get db path from the user
-    os.chdir('/Users/ana/dev/gridpath-ui-dev/')
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
-    c = io.cursor()
-
-    scenario_detail_query = c.execute(
-        """SELECT
-            subscenarios_project_portfolios.name as portfolio, 
-            subscenarios_project_operational_chars.name as operating_chars, 
-            subscenarios_system_load.name as load_profile, 
-            subscenarios_project_fuel_prices.name as fuel_prices
-            FROM scenarios 
-            JOIN subscenarios_project_portfolios 
-            USING (project_portfolio_scenario_id)
-            JOIN subscenarios_project_operational_chars 
-            USING (project_operational_chars_scenario_id)
-            JOIN subscenarios_system_load 
-            USING (load_scenario_id)
-            JOIN subscenarios_project_fuel_prices 
-            USING (fuel_price_scenario_id)
-            WHERE scenario_name = '{}';""".format(scenario)
-    )
-
-
-
-    column_names = [s[0] for s in scenario_detail_query.description]
-    column_values = list(list(scenario_detail_query)[0])
-    scenario_detail_dict = dict(zip(column_names, column_values))
-    scenario_detail_dict['scenario_name'] = scenario
-
-    scenario_status_query = c.execute(
-        """SELECT status
-            FROM mod_run_status
-            WHERE scenario_name = '{}';""".format(scenario)
-    ).fetchone()
-    scenario_detail_dict['run_status'] = scenario_status_query[0]
-
-    print(scenario_detail_dict)
-
-    print("Sending scenario detail to client")
-
-    emit('send_scenario_detail', scenario_detail_dict)
-
-
-# ### API ### #
-class Scenarios(Resource):
-    @staticmethod
-    def get():
-        global DATABASE_PATH
-        io = sqlite3.connect(DATABASE_PATH)
-        c = io.cursor()
-
-        scenarios_query = c.execute(
-            """SELECT *
-            FROM scenarios_view
-            ORDER by scenario_id ASC;"""
-        )
-
-        scenarios_api = []
-        for s in scenarios_query:
-            scenarios_api.append({'id': s[0], 'name': s[1]})
-
-        return scenarios_api
-
-
-class ScenarioDetail(Resource):
-    @staticmethod
-    def get(scenario_id):
-        global DATABASE_PATH
-        io = sqlite3.connect(DATABASE_PATH)
-        c = io.cursor()
-
-        scenario_detail_query = c.execute(
-            """SELECT *
-            FROM scenarios_view
-            WHERE scenario_id = {};""".format(scenario_id)
-        )
-
-        column_names = [s[0] for s in scenario_detail_query.description]
-        column_values = list(list(scenario_detail_query)[0])
-        scenario_detail_dict = dict(zip(column_names, column_values))
-
-        scenario_detail_api = []
-        for key in scenario_detail_dict.keys():
-            scenario_detail_api.append(
-                {'name': key, 'value': scenario_detail_dict[key]}
-            )
-
-        return scenario_detail_api
-
-
-# Add the scenarios data to the scenarios route
-api.add_resource(Scenarios, '/scenarios/')  # scenario list route
-api.add_resource(ScenarioDetail, '/scenarios/<scenario_id>') # scenario
-# detail route
-
-
-@socketio.on('set_database_path')
-def set_database_path(db_path):
-    print('Database path set to ', str(db_path))
-    global DATABASE_PATH
-    DATABASE_PATH = db_path
-
-    # Get the scenarios
-    # TODO: when to call this?
-    Scenarios.get()
-
-
-@socketio.on('add_new_scenario')
-def add_new_scenario(msg):
-    print('Got message from Angular')
-    print(msg)
-
-    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
-    global DATABASE_PATH
-    io = sqlite3.connect(DATABASE_PATH)
-    c = io.cursor()
-
-    c.execute(
-        """INSERT INTO scenarios (scenario_name) VALUES ('{}')""".format(
-            msg['scenarioName']))
-    io.commit()
 
 
 if __name__ == '__main__':
