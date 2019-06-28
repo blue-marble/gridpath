@@ -1,0 +1,13 @@
+<h2>New Scenario</h2>
+
+<form #newScenarioForm="ngForm" (ngSubmit)="onSubmit(newScenarioForm)" novalidate>
+  <input name="scenarioName" ngModel required #scenarioName="ngModel">
+  <input name="scenarioOther" ngModel>
+  <button>Add Scenario</button>
+</form>
+
+<p>First name value: {{ scenarioName.value }}</p>
+<p>First name valid: {{ scenarioName.valid }}</p>
+<p>Form value: {{ newScenarioForm.value | json }}</p>
+<p>Form valid: {{ newScenarioForm.valid }}</p>
+

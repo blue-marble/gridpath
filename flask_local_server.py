@@ -245,6 +245,22 @@ def set_database_path(db_path):
     Scenarios.get()
 
 
+@socketio.on('add_new_scenario')
+def add_new_scenario(msg):
+    print('Got message from Angular')
+    print(msg)
+
+    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
+    global DATABASE_PATH
+    io = sqlite3.connect(DATABASE_PATH)
+    c = io.cursor()
+
+    c.execute(
+        """INSERT INTO scenarios (scenario_name) VALUES ('{}')""".format(
+            msg['scenarioName']))
+    io.commit()
+
+
 if __name__ == '__main__':
     print("Running server manually")
     socketio.run(

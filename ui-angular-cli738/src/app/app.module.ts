@@ -9,6 +9,7 @@ import { AppComponent } from './app.component';
 import { ScenariosComponent } from './scenarios/scenarios.component';
 import { SettingsComponent } from './settings/settings.component';
 import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.component';
+import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 
 
 @NgModule({
@@ -16,7 +17,8 @@ import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.compo
     AppComponent,
     ScenariosComponent,
     SettingsComponent,
-    ScenarioDetailComponent
+    ScenarioDetailComponent,
+    ScenarioNewComponent
   ],
   imports: [
     BrowserModule,
