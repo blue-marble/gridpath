@@ -44,6 +44,14 @@ def connection():
 
 
 # ### User settings ### #
+
+@socketio.on('set_gridpath_directory')
+def set_database_path(gp_directory):
+    print('GridPath directory set to ', str(gp_directory))
+    global GRIDPATH_DIRECTORY
+    GRIDPATH_DIRECTORY = gp_directory
+
+
 @socketio.on('set_database_path')
 def set_database_path(db_path):
     print('Database path set to ', str(db_path))
@@ -62,9 +70,7 @@ class Scenarios(Resource):
     """
     @staticmethod
     def get():
-        global DATABASE_PATH
-        io = sqlite3.connect(DATABASE_PATH)
-        c = io.cursor()
+        io, c = connect_to_database()
 
         scenarios_query = c.execute(
             """SELECT *
@@ -85,9 +91,7 @@ class ScenarioDetail(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        global DATABASE_PATH
-        io = sqlite3.connect(DATABASE_PATH)
-        c = io.cursor()
+        io, c = connect_to_database()
 
         scenario_detail_query = c.execute(
             """SELECT *
@@ -121,10 +125,7 @@ def add_new_scenario(msg):
     print('Got message from Angular')
     print(msg)
 
-    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
-    global DATABASE_PATH
-    io = sqlite3.connect(DATABASE_PATH)
-    c = io.cursor()
+    io, c = connect_to_database()
 
     c.execute(
         """INSERT INTO scenarios (scenario_name) VALUES ('{}')""".format(
@@ -197,6 +198,13 @@ def check_scenario_process_status(message):
             return False
     else:
         return False
+
+
+# ### Common functions ### #
+def connect_to_database():
+    io = sqlite3.connect(DATABASE_PATH)
+    c = io.cursor()
+    return io, c
 
 
 if __name__ == '__main__':

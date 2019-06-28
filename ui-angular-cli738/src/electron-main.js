@@ -84,8 +84,6 @@ app.on('activate', () => {
 });
 
 
-
-
 // Settings
 
 // Set the GridPath folder setting based on Angular input
@@ -106,6 +104,9 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
       { 'gridPathDirectory': gpfolder },
       (error) => {if (error) throw error;}
   );
+  const socket = connectToServer();
+  socket.emit('set_gridpath_directory', gpfolder[0])
+
 });
 
 // Set the GridPath database setting based on Angular input
@@ -128,9 +129,14 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
       (error) => {if (error) throw error;}
   );
 
+  const socket = connectToServer();
+  socket.emit('set_database_path', gpDB[0]);
+});
+
+function connectToServer () {
   const socket = io.connect('http://localhost:8080/');
   socket.on('connect', function() {
       console.log(`Connection established: ${socket.connected}`);
   });
-  socket.emit('set_database_path', gpDB[0]);
-});
+  return socket
+}
