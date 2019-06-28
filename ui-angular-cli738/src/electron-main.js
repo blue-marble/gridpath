@@ -1,8 +1,6 @@
 'use strict';
 
-
 const { app, BrowserWindow, ipcMain } = require('electron');
-const path = require('path');
 const storage = require('electron-json-storage');
 
 // https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209
@@ -86,171 +84,11 @@ app.on('activate', () => {
 });
 
 
-// Scenario list view //
-ipcMain.on(
-    'Index-Requests-Scenario-List',
-    (event) => {
-        console.log("Received request for scenario list");
-        // Get the scenario list from the server
-        const socket = io.connect('http://localhost:8080/');
-        socket.on('connect', function() {
-            console.log(`Connection established: ${socket.connected}`); //make
-            // sure the connection is established
-        });
-        socket.emit('get_scenario_list');
-        socket.on('send_scenario_list', function (scenarioList) {
-            console.log('Should have received scenario list');
-            event.sender.send(
-            'Main-Relays-Scenario-List', scenarioList
-            )
-        });
-        // socket.on('send_scenario_list', function (scenarioList) {
-        //     console.log('Should have received scenario list');
-        //     console.log(scenarioList);
-        //     // When request received, send the scenario list
-        //     event.sender.send(
-        //     'Main-Relays-Scenario-List', scenarioList
-        //     )
-        // });
-    }
-);
-
-
-// Scenario Detail window //
-// The Scenario Detail window opens when a signal from the main window is sent
-// (i.e. a scenario button is clicked)
-ipcMain.on(
-    'User-Requests-Scenario-Detail',
-    (event, userRequestedScenarioName) => {
-        console.log(
-            `Received request for ${userRequestedScenarioName} scenario detail`
-        );
-
-        // Get the scenario detail from the server
-        const socket = io.connect('http://localhost:8080/');
-        socket.on('connect', function() {
-            console.log(`Connection established: ${socket.connected}`); //make
-            // sure the connection is established
-        });
-        socket.emit('get_scenario_detail', userRequestedScenarioName);
-        socket.on('send_scenario_detail', function(scenarioDetail) {
-            console.log('Should have received scenario detail');
-            console.log(scenarioDetail);
-
-            // We need to listen for an explict request for the scenario name
-            // from the scenario detail renderer (I couldn't figure out another
-            // way)
-            ipcMain.on(
-                'Scenario-Detail-Window-Requests-Scenario-Detail',
-                (event) => {
-                    // When request received, send the scenario name
-                    event.sender.send(
-                        'Main-Relays-Scenario-Detail',
-                        scenarioDetail
-                    )
-                }
-        );
-        });
-
-
-        // // TODO: should the scenario detail view be a separate window
-        // scenarioDetailWindow = new BrowserWindow({
-        //     width: 600, height: 600, title: 'Scenario Detail', show: false
-        // });
-
-        // // Open the DevTools.
-        // scenarioDetailWindow.webContents.openDevTools();
-
-        mainWindow.loadFile('./src/scenario_detail.html');
-        // mainWindow.once('ready-to-show', () => {
-        //     mainWindow.show()
-        // });
-    }
-);
-
-
-// // Run a scenario //
-// // Spawn a Python process to run a scenario when the 'Run Scenario' button
-// // in the scenario detail window is clicked
-//
-// // We need to find the Python script when we are in both
-// // a production environment and a development environment
-// // We do that by looking up app.isPackaged (this is a renderer process, so we
-// // need to do it via remote)
-// // In development, the script is in the py directory under root
-// // In production, we package the script in the 'py' directory under the app's
-// // Contents/Resources by including extraResources under "build" in package.json
-// const baseDirectory = () => {
-//     if (app.isPackaged) {
-//         return path.join(process.resourcesPath)
-//     } else {
-//         return path.join(__dirname, "..")
-//     }
-// };
-//
-// // TODO: how to get the GP python code? Should we have the user specify
-// //  where it is? We're not packaging up Python for now.
-// // const PyScriptPath = path.join(baseDirectory(), '../run_start_to_end.py');
-ipcMain.on(
-    'User-Requests-to-Run-Scenario',
-    (event, userRequestedScenarioName) => {
-        console.log(`Received user request to run ${userRequestedScenarioName}`);
-
-        // Send message to server to run scenario
-        // Connect to server
-        const socket = io.connect('http://localhost:8080/');
-        socket.on('connect', function() {
-            console.log(`Connection established: ${socket.connected}`); //make
-            // sure the connection is established
-        });
-        // Tell the server to start a scenario process
-        socket.emit(
-            'launch_scenario_process',
-            {scenario: userRequestedScenarioName}
-        );
-        // Keep track of process ID for this scenario run
-        socket.on('scenario_already_running', function (msg) {
-            console.log('in scenario_already_running');
-            console.log (msg);
-        });
-    }
-);
-
-
-
-// General methods //
-// Go back to index view if user requests it; maybe this can be reused
-ipcMain.on(
-    'User-Requests-Index-View',
-    (event) => {
-        console.log('Received user request for index view');
-        mainWindow.loadFile('./src/index.html');
-    }
-);
-
-// New scenario view //
-ipcMain.on(
-    'User-Requests-New-Scenario-View',
-    (event) => {
-        console.log('Received user request for new scenario');
-        mainWindow.loadFile('./src/scenario_new.html');
-    }
-);
-
-
-// Settings view //
-ipcMain.on(
-    'User-Requests-Settings-View',
-    (event) => {
-        console.log('Received user request for settings view');
-        mainWindow.loadFile('./src/settings.html');
-    }
-);
 
 
 // Settings
 
-// Set the GridPath folder setting
+// Set the GridPath folder setting based on Angular input
 ipcMain.on('onClickGridPathFolderSetting', (event) => {
   console.log(`GridPath folder settings button clicked`);
   // Tell renderer to proceed (message is sent to listeners in 'constructor'
@@ -270,7 +108,7 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
   );
 });
 
-// Set the GridPath database setting
+// Set the GridPath database setting based on Angular input
 ipcMain.on('onClickGridPathDatabaseSetting', (event) => {
   console.log(`GridPath database settings button clicked`);
   // Tell renderer to proceed (message is sent to listeners in 'constructor'
