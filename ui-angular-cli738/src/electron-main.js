@@ -15,19 +15,8 @@ let mainWindow;
 
 // // Main window //
 function createMainWindow () {
-    // Start Flask server
-    let options = {
-        pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-        scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
-    };
-    PythonShell.run(
-        'flask_local_server.py',
-         options,
-        function (err) {
-            if (err) throw err;
-            console.log('error');
-        }
-    );
+
+    startServer ();
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -101,12 +90,11 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
   // Set the GridPath directory path in Electron JSON storage
   storage.set(
       'gridPathDirectory',
-      { 'gridPathDirectory': gpfolder },
+      { 'value': gpfolder },
       (error) => {if (error) throw error;}
   );
   const socket = connectToServer();
   socket.emit('set_gridpath_directory', gpfolder[0])
-
 });
 
 // Set the GridPath database setting based on Angular input
@@ -125,13 +113,60 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
   // Set the database file path in Electron JSON storage
   storage.set(
       'gridPathDatabase',
-      { 'gridPathDatabase': gpDB },
+      { 'value': gpDB },
       (error) => {if (error) throw error;}
   );
 
   const socket = connectToServer();
   socket.emit('set_database_path', gpDB[0]);
 });
+
+// Set the Python binary setting based on Angular input
+ipcMain.on('onClickPythonBinarySetting', (event) => {
+  console.log(`Python binary settings button clicked`);
+  // Tell renderer to proceed (message is sent to listeners in 'constructor'
+  // method, so that we can run inside the Angular zone for immediate view
+  // update)
+  event.sender.send('onClickPythonBinarySettingAngular')
+});
+// Get setting from renderer and store it
+ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
+	console.log(`Python binary set to ${pythonbinary}`);
+	// TODO: do we need to keep in storage?
+  // Set the Python binary path in Electron JSON storage
+  storage.set(
+      'pythonBinary',
+      { 'value': pythonbinary },
+      (error) => {if (error) throw error;}
+  );
+});
+
+
+// Flask server
+function startServer () {
+  storage.getMany(
+    ['gridPathDirectory', 'gridPathDatabase'],
+    (error, data) => {
+        if (error) throw error;
+        console.log("Inside storage.get");
+        console.log(data);
+    }
+  );
+
+  // Start Flask server
+  let options = {
+      pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
+      scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
+  };
+  PythonShell.run(
+      'flask_local_server.py',
+       options,
+      function (err) {
+          if (err) throw err;
+          console.log('error');
+      }
+  );
+}
 
 function connectToServer () {
   const socket = io.connect('http://localhost:8080/');

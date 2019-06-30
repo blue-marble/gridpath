@@ -44,29 +44,64 @@ export class SettingsComponent implements OnInit {
 		});
 
     // Set GridPath database setting via Electron dialog
-    electron.ipcRenderer.on('onClickGridPathDatabaseSettingAngular', (event) => {
-			electron.remote.dialog.showOpenDialog(
-      {title: 'Select a the GridPath database file', properties: ['openFile']},
-      (dbFilePath) => {
-        if (dbFilePath === undefined){
-            console.log("No file selected");
-            return;
-        }
-        // We must run this inside the Angular zone to get Angular to
-        // detect the change and update the view immediately
-        else {
-          zone.run( () => this.gridPathDB = dbFilePath);
-        }
-        console.log(`GridPath database set to ${this.gridPathDB[0]}`);
-        // Tell Electron about the setting, so that it can store it and
-        // tell the server
-        electron.ipcRenderer.send(
-          "setGridPathDatabaseSetting",
-          this.gridPathDB
+    electron.ipcRenderer.on('onClickGridPathDatabaseSettingAngular',
+        (event) => {
+        electron.remote.dialog.showOpenDialog(
+          {title: 'Select a the GridPath database file',
+          properties: ['openFile']},
+          (dbFilePath) => {
+            if (dbFilePath === undefined){
+                console.log("No file selected");
+                return;
+            }
+            // We must run this inside the Angular zone to get Angular to
+            // detect the change and update the view immediately
+            else {
+              zone.run( () => this.gridPathDB = dbFilePath);
+            }
+            console.log(`GridPath database set to ${this.gridPathDB[0]}`);
+            // Tell Electron about the setting, so that it can store it and
+            // tell the server
+            electron.ipcRenderer.send(
+              "setGridPathDatabaseSetting",
+              this.gridPathDB
+            );
+          }
         );
-      });
-		});
+      }
+    );
+
+
+    // Set Python binary setting via Electron dialog
+    electron.ipcRenderer.on('onClickPythonBinarySettingAngular',
+        (event) => {
+        electron.remote.dialog.showOpenDialog(
+          {title: 'Select a the Python binary file',
+          properties: ['openFile']},
+          (pythonBinaryPath) => {
+            if (pythonBinaryPath === undefined){
+                console.log("No file selected");
+                return;
+            }
+            // We must run this inside the Angular zone to get Angular to
+            // detect the change and update the view immediately
+            else {
+              zone.run( () => this.pythonBinary = pythonBinaryPath);
+            }
+            console.log(`Python binary set to ${this.pythonBinary[0]}`);
+            // Tell Electron about the setting, so that it can store it and
+            // tell the server
+            electron.ipcRenderer.send(
+              "setPythonBinarySetting",
+              this.pythonBinary
+            );
+          }
+        );
+      }
+    );
   }
+
+
 
   ngOnInit() {
     console.log("Initializing settings...")
@@ -75,9 +110,9 @@ export class SettingsComponent implements OnInit {
   // Set the GridPath folder and database settings: we do this by browsing
   // for the folder/database-file via Electron's 'dialog' functionality. In
   // order to get the view to update immediately upon selection, we need to
-  // set gridPathFolder/gridPathDB inside the Angular zone. We are outside
-  // Angular when using 'electron', so we need to explicitly run inside the
-  // Angular zone (using NgZone), but this can only happen in the
+  // set gridPathFolder/gridPathDB/pythonBinary inside the Angular zone. We are
+  // outside Angular when using 'electron', so we need to explicitly run
+  // inside the Angular zone (using NgZone), but this can only happen in the
   // 'constructor' method. Therefore, the dialog functionality is included
   // in the 'constructor' above; here we tell the Electron main that the
   // user is requesting to select the folder path; the 'constructor' method
@@ -94,5 +129,11 @@ export class SettingsComponent implements OnInit {
   browseGPDatabase(event, zone) {
     console.log("Request to set GP database setting...");
     electron.ipcRenderer.send('onClickGridPathDatabaseSetting');
+  }
+
+  pythonBinary: Array<string>;
+  browsePythonBinary(event, zone) {
+    console.log("Request to set Python binary setting...");
+    electron.ipcRenderer.send('onClickPythonBinarySetting');
   }
 }

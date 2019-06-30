@@ -13,3 +13,10 @@
             (click)="browseGPDatabase()">Browse</button>
     <input id="GPDatabaseInput" type="file" style="display: none" />
 </div>
+<div>
+    <input class="u-full-width" placeholder="Python binary" type="text"
+           [(ngModel)]="pythonBinary">
+    <button id="browsePythonBinary" class="button-primary"
+            (click)="browsePythonBinary()">Browse</button>
+    <input id="PythonBinaryInput" type="file" style="display: none" />
+</div>
