@@ -194,14 +194,6 @@ function connectToServer () {
   return socket
 }
 
-function checkServerStatus () {
-  const socket = io.connect('http://localhost:8080/');
-  socket.on('connect', function() {
-      return socket.connected()
-  });
-}
-
-
 // Send stored settings to Angular if requested
 
 // function sendStoredSettingstoAngular () {

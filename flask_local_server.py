@@ -112,11 +112,23 @@ class ScenarioDetail(Resource):
         return scenario_detail_api
 
 
+class ServerStatus(Resource):
+    """
+    Server status; response will be 'running'; if HTTP error is caught,
+    server status will be sent to 'down'
+    """
+    @staticmethod
+    def get():
+        return 'running'
+
+
 # Routes
 # Scenario list
 api.add_resource(Scenarios, '/scenarios/')
 # Scenario detail (by scenario_id)
 api.add_resource(ScenarioDetail, '/scenarios/<scenario_id>')
+# Scenario detail (by scenario_id)
+api.add_resource(ServerStatus, '/server-status')
 
 
 # ### Socket Communication ### #
