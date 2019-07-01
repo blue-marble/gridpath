@@ -175,3 +175,32 @@ function connectToServer () {
   });
   return socket
 }
+
+
+// Send stored settings to Angular if requested
+
+// function sendStoredSettingstoAngular () {
+//   storage.getMany(
+//     ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
+//     (error, data) => {
+//       if (error) throw error;
+//       console.log("Sending stored settings to Angular");
+//       console.log(data);
+//       ipcMain.on('requestStoredSettings', (event) => {
+//         event.sender.send('sendStoredSettings', data)
+//       });
+//     }
+//   );
+// }
+
+ipcMain.on('requestStoredSettings', (event) => {
+    storage.getMany(
+    ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
+    (error, data) => {
+      if (error) throw error;
+      console.log("Sending stored settings to Angular");
+      console.log(data);
+      event.sender.send('sendStoredSettings', data)
+    }
+  );
+});
