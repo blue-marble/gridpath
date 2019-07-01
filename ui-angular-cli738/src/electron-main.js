@@ -137,7 +137,7 @@ ipcMain.on('onClickPythonBinarySetting', (event) => {
 });
 // Get setting from renderer and store it
 ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
-	console.log(`Python binary set to ${pythonbinary}`);
+	console.log(`Python binary directory set to ${pythonbinary}`);
 	// TODO: do we need to keep in storage?
   // Set the Python binary path in Electron JSON storage
   storage.set(
@@ -150,23 +150,35 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 
 // Flask server
 function startServer () {
-
   console.log("Starting server...");
 
-  let options = {
-      pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
-      scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
-  };
+  storage.getMany(
+      ['gridPathDirectory', 'pythonBinary'],
+      (error, data) => {
+        if (error) throw error;
+        console.log(data);
 
-  // Start Flask server
-  PythonShell.run(
-      'flask_local_server.py',
-       options,
-      function (err) {
-          if (err) throw err;
-          console.log('error');
+        let options = {
+          pythonPath: `${data['pythonBinary']['value'][0]}/python`,
+          scriptPath: data['gridPathDirectory']['value'][0]
+        };
+
+        if (options.pythonPath == null || options.scriptPath == null) {
+        }
+        else {
+          // Start Flask server
+          // TODO: need to handle errors if script can't be run
+          PythonShell.run(
+            'flask_local_server.py',
+             options,
+            function (err) {
+                if (err) throw err;
+                console.log('error');
+            }
+          );
+        }
       }
-  );
+    );
 }
 
 // Connect to server and update the database global
@@ -212,12 +224,12 @@ function connectToServer () {
 
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
-    ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
-    (error, data) => {
-      if (error) throw error;
-      console.log("Sending stored settings to Angular");
-      console.log(data);
-      event.sender.send('sendStoredSettings', data)
-    }
-  );
+      ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
+      (error, data) => {
+        if (error) throw error;
+        console.log("Sending stored settings to Angular");
+        console.log(data);
+        event.sender.send('sendStoredSettings', data)
+      }
+    );
 });

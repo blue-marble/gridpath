@@ -208,12 +208,12 @@ export class SettingsComponent implements OnInit {
     );
 
 
-    // Set Python binary setting via Electron dialog
+    // Set Python binary directory setting via Electron dialog
     electron.ipcRenderer.on('onClickPythonBinarySettingAngular',
         (event) => {
         electron.remote.dialog.showOpenDialog(
           {title: 'Select a the Python binary file',
-          properties: ['openFile']},
+          properties: ['openDirectory']},
           (pythonBinaryPath) => {
             if (pythonBinaryPath === undefined){
                 console.log("No file selected");
@@ -223,7 +223,8 @@ export class SettingsComponent implements OnInit {
             // detect the change and update the view immediately
             else {
               // Send Electron the new value
-              console.log("Sending Python binary setting to Electron");
+              console.log("Sending Python binary directory setting to" +
+                " Electron");
               electron.ipcRenderer.send(
                 "setPythonBinarySetting", pythonBinaryPath
               );
@@ -247,7 +248,7 @@ export class SettingsComponent implements OnInit {
                         data['pythonBinary']['value'][0];
                     }
                     console.log(
-                      `Setting current Python binary to ${this.currentPythonBinarySetting} in Angular`
+                      `Setting current Python binary directory to ${this.currentPythonBinarySetting} in Angular`
                     );
 
                     // Also update the selection box with what we just selected
