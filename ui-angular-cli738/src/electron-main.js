@@ -13,10 +13,14 @@ const io = require('socket.io-client');
 // be closed automatically when the JavaScript object is garbage-collected.
 let mainWindow;
 
+
 // // Main window //
 function createMainWindow () {
 
-    startServer ();
+    // Start the server
+    startServer();
+    // Update server globals with initial Electron values
+    updateServerDatabaseGlobal();
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -28,6 +32,7 @@ function createMainWindow () {
       // get 'require' to work in
       // both main and renderer processes in Electron 5+
     });
+
 
     // and load the index.html of the app.
     mainWindow.loadFile('./ng-build/index.html');
@@ -117,6 +122,7 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
       (error) => {if (error) throw error;}
   );
 
+  // TODO: set this from Electron storage for consistency
   const socket = connectToServer();
   socket.emit('set_database_path', gpDB[0]);
 });
@@ -144,20 +150,15 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 
 // Flask server
 function startServer () {
-  storage.getMany(
-    ['gridPathDirectory', 'gridPathDatabase'],
-    (error, data) => {
-        if (error) throw error;
-        console.log("Inside storage.get");
-        console.log(data);
-    }
-  );
 
-  // Start Flask server
+  console.log("Starting server...");
+
   let options = {
       pythonPath: '/Users/ana/.pyenv/versions/gridpath-w-flask/bin/python',
       scriptPath: '/Users/ana/dev/gridpath-ui-dev/'
   };
+
+  // Start Flask server
   PythonShell.run(
       'flask_local_server.py',
        options,
@@ -168,12 +169,36 @@ function startServer () {
   );
 }
 
+// Connect to server and update the database global
+function updateServerDatabaseGlobal () {
+  console.log("Updating server database global");
+  // Update global variables
+  storage.get(
+    'gridPathDatabase',
+    (error, data) => {
+        if (error) throw error;
+        console.log('Database data', data);
+        const socket = connectToServer();
+        socket.emit('set_database_path', data.value[0]);
+    }
+  );
+}
+
+
+
 function connectToServer () {
   const socket = io.connect('http://localhost:8080/');
   socket.on('connect', function() {
       console.log(`Connection established: ${socket.connected}`);
   });
   return socket
+}
+
+function checkServerStatus () {
+  const socket = io.connect('http://localhost:8080/');
+  socket.on('connect', function() {
+      return socket.connected()
+  });
 }
 
 
