@@ -3,8 +3,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const storage = require('electron-json-storage');
 
-// https://github.com/extrabacon/python-shell/issues/148#issuecomment-419120209
-let {PythonShell} = require('python-shell');
+const { spawn } = require('child_process');
 
 // // Socket IO
 const io = require('socket.io-client');
@@ -160,22 +159,25 @@ function startServer () {
 
         let options = {
           pythonPath: `${data['pythonBinary']['value'][0]}/python`,
-          scriptPath: data['gridPathDirectory']['value'][0]
+          scriptPath: data['gridPathDirectory']['value'][0],
         };
 
         if (options.pythonPath == null || options.scriptPath == null) {
+          console.log("No Python path and server script path set.")
         }
         else {
           // Start Flask server
-          // TODO: need to handle errors if script can't be run
-          PythonShell.run(
-            'flask_local_server.py',
-             options,
-            function (err) {
-                if (err) throw err;
-                console.log('error');
-            }
+          const serverChild = spawn(
+             options.pythonPath,
+            [`${options.scriptPath}/flask_local_server.py`],
+            {stdio: 'inherit'}
           );
+          serverChild.on('error', function(error) {
+            console.log("Server process failed to spawn");
+          });
+          serverChild.on('close', function(code) {
+              console.log('Python process closing code: ' + code.toString());
+          });
         }
       }
     );
