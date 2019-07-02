@@ -214,13 +214,13 @@ def check_scenario_process_status(message):
 
 # ### Common functions ### #
 def connect_to_database():
+    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
     io = sqlite3.connect(DATABASE_PATH)
     c = io.cursor()
     return io, c
 
 
 if __name__ == '__main__':
-    print("Running server manually")
     socketio.run(
         app,
         port='8080',
