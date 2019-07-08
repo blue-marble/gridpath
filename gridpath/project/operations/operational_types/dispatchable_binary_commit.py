@@ -279,16 +279,15 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        # TODO: input commit from previous horizon's last timepoint
-        #  rather than assuming unit was on
+        # TODO: if we can link horizons, input commit from previous horizon's
+        #  last timepoint rather than skipping the constraint
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
                 and mod.boundary[mod.horizon[tmp]] == "linear":
-            previous_commit = 1
+            return Constraint.Skip
         else:
-            previous_commit = mod.Commit_Binary[g, mod.previous_timepoint[tmp]]
-
-        return mod.Commit_Binary[g, tmp] - previous_commit \
-            == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
+           return mod.Commit_Binary[g, tmp] \
+                  - mod.Commit_Binary[g, mod.previous_timepoint[tmp]] \
+                  == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
 
     m.DispBinCommit_Binary_Logic_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
