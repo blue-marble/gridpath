@@ -19,10 +19,6 @@ function createMainWindow () {
     // Start the server
     startServer();
 
-    // TODO: wait to do this until the server has started
-    // Update server globals with initial Electron values
-    updateServerDatabaseGlobal();
-
     // Create the browser window.
     mainWindow = new BrowserWindow({
       width: 1200,
@@ -183,6 +179,9 @@ function startServer () {
         }
       }
     );
+
+  // Update the server database global
+  updateServerDatabaseGlobal ()
 }
 
 // Connect to server and update the database global
