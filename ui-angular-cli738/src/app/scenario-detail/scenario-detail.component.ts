@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
+const electron = (<any>window).require('electron');
+
 import { ScenarioDetail } from './scenario-detail'
 import { ScenarioDetailService } from './scenario-detail.service'
 
@@ -40,6 +42,11 @@ export class ScenarioDetailComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  runScenario(id): void {
+    console.log(`Running scenario ${id}`);
+    electron.ipcRenderer.send('runScenario', id)
   }
 
 }

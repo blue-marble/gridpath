@@ -18,6 +18,8 @@ function createMainWindow () {
 
     // Start the server
     startServer();
+
+    // TODO: wait to do this until the server has started
     // Update server globals with initial Electron values
     updateServerDatabaseGlobal();
 
@@ -209,21 +211,6 @@ function connectToServer () {
 }
 
 // Send stored settings to Angular if requested
-
-// function sendStoredSettingstoAngular () {
-//   storage.getMany(
-//     ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
-//     (error, data) => {
-//       if (error) throw error;
-//       console.log("Sending stored settings to Angular");
-//       console.log(data);
-//       ipcMain.on('requestStoredSettings', (event) => {
-//         event.sender.send('sendStoredSettings', data)
-//       });
-//     }
-//   );
-// }
-
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
       ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
@@ -235,3 +222,25 @@ ipcMain.on('requestStoredSettings', (event) => {
       }
     );
 });
+
+// Tell server to run scenario if signal received from Angular
+ipcMain.on(
+    'runScenario',
+    (event, userRequestedScenarioName) => {
+        console.log(`Received user request to run ${userRequestedScenarioName}`);
+
+        // Send message to server to run scenario
+        // Connect to server
+        const socket = connectToServer();
+        // Tell the server to start a scenario process
+        socket.emit(
+            'launch_scenario_process',
+            {scenario: userRequestedScenarioName}
+        );
+        // Keep track of process ID for this scenario run
+        socket.on('scenario_already_running', function (msg) {
+            console.log('in scenario_already_running');
+            console.log (msg);
+        });
+    }
+);
