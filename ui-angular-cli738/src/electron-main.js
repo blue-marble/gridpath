@@ -150,38 +150,41 @@ function startServer () {
   console.log("Starting server...");
 
   storage.getMany(
-      ['gridPathDirectory', 'pythonBinary'],
-      (error, data) => {
-        if (error) throw error;
-        console.log(data);
+    ['gridPathDirectory', 'pythonBinary'],
+    (error, data) => {
+      if (error) throw error;
+      console.log(data);
 
-        let options = {
-          pythonPath: `${data['pythonBinary']['value'][0]}/python`,
-          scriptPath: data['gridPathDirectory']['value'][0],
-        };
+      let options = {
+        pythonPath: `${data['pythonBinary']['value'][0]}/python`,
+        scriptPath: data['gridPathDirectory']['value'][0],
+      };
 
-        if (options.pythonPath == null || options.scriptPath == null) {
-          console.log("No Python path and server script path set.")
-        }
-        else {
-          // Start Flask server
-          const serverChild = spawn(
-             options.pythonPath,
-            [`${options.scriptPath}/flask_local_server.py`],
-            {stdio: 'inherit'}
-          );
-          serverChild.on('error', function(error) {
-            console.log("Server process failed to spawn");
-          });
-          serverChild.on('close', function(code) {
-              console.log('Python process closing code: ' + code.toString());
-          });
-        }
+      if (options.pythonPath == null || options.scriptPath == null) {
+        console.log("No Python path and server script path set.")
       }
-    );
+      else {
+        // Start Flask server
+        const serverChild = spawn(
+           options.pythonPath,
+          [`${options.scriptPath}/flask_local_server.py`],
+          {stdio: 'inherit'}
+        );
+        serverChild.on('error', function(error) {
+          console.log("Server process failed to spawn");
+          console.log(error)
+        });
+        serverChild.on('close', function(code) {
+            console.log('Python process closing code: ' + code.toString());
+        });
 
-  // Update the server database global
-  updateServerDatabaseGlobal ()
+      }
+    }
+  );
+
+  // Update the server database and GP directory globals
+  updateServerDatabaseGlobal ();
+  updateServerGPDirectoryGlobal ();
 }
 
 // Connect to server and update the database global
@@ -192,9 +195,21 @@ function updateServerDatabaseGlobal () {
     'gridPathDatabase',
     (error, data) => {
         if (error) throw error;
-        console.log('Database data', data);
         const socket = connectToServer();
         socket.emit('set_database_path', data.value[0]);
+    }
+  );
+}
+
+function updateServerGPDirectoryGlobal () {
+  console.log("Updating server GridPath directory global");
+  // Update global variables
+  storage.get(
+    'gridPathDirectory',
+    (error, data) => {
+        if (error) throw error;
+        const socket = connectToServer();
+        socket.emit('set_gridpath_directory', data.value[0]);
     }
   );
 }
