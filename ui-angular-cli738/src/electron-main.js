@@ -12,6 +12,9 @@ const io = require('socket.io-client');
 // be closed automatically when the JavaScript object is garbage-collected.
 let mainWindow;
 
+// Keep a global reference to the server process
+let serverChildProcess;
+
 
 // // Main window //
 function createMainWindow () {
@@ -64,6 +67,10 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
+});
+
+app.on('before-quit', () => {
+  serverChildProcess.kill('SIGINT')
 });
 
 app.on('activate', () => {
@@ -165,17 +172,17 @@ function startServer () {
       }
       else {
         // Start Flask server
-        const serverChild = spawn(
+        serverChildProcess = spawn(
            options.pythonPath,
           [`${options.scriptPath}/flask_local_server.py`],
           {stdio: 'inherit'}
         );
-        serverChild.on('error', function(error) {
+        serverChildProcess.on('error', function(error) {
           console.log("Server process failed to spawn");
           console.log(error)
         });
-        serverChild.on('close', function(code) {
-            console.log('Python process closing code: ' + code.toString());
+        serverChildProcess.on('close', function(exit_code) {
+            console.log('Python process closing code: ' + exit_code.toString());
         });
 
       }
