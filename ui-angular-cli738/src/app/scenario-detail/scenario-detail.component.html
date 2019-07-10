@@ -1,18 +1,298 @@
 <h2>{{scenarioDetail[1].value}}<span> Scenario Details</span></h2>
+
 <table class="scenario-detail">
+  <caption>Features</caption>
 <tr>
 <th>Name</th>
 <th>Value</th>
 </tr>
-  <ng-container *ngFor="let sd of scenarioDetail">
+  <ng-container *ngFor="let sd of scenarioDetailFeatures">
      <tr>
        <td>{{sd.name}}</td>
        <td>{{sd.value}}</td>
      </tr>
   </ng-container>
 </table>
-<div>
-  <button id="runScenarioButton" class="button-primary"
-        (click)="runScenario(scenarioDetail[0].value)">Run Scenario</button>
-</div>
 
+<table class="scenario-detail">
+  <caption>Temporal settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailTemporal">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Load zone settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailGeographyLoadZones">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>System Load</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailLoad">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Project capacity settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailProjectCapacity">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Project operating characteristics settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailProjectOpChars">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Fuels settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailFuels">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Transmission capacity settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailTransmissionCapacity">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Transmission operating characteristics settings</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailTransmissionOpChars">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Transmission hurdle rates</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailTransmissionHurdleRates">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Transmission simultaneous flow limits</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailTransmissionSimFlow">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Load Following Reserves Up</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailLFUp">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Load Following Reserves Down</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailLFDown">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Regulation Reserves Up</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailRegUp">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Regulation Reserves Down</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailRegDown">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Spinning Reserves</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailSpin">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Frequency Response Reserves</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailFreqResp">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>RPS</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailRPS">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Carbon Cap</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailCarbonCap">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>PRM</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailPRM">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<table class="scenario-detail">
+  <caption>Local Capacity</caption>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+  <ng-container *ngFor="let sd of scenarioDetailLocalCapacity">
+     <tr>
+       <td>{{sd.name}}</td>
+       <td>{{sd.value}}</td>
+     </tr>
+  </ng-container>
+</table>
+
+<button id="runScenarioButton" class="button-primary"
+      (click)="runScenario(scenarioDetail[0].value)">Run Scenario</button>

@@ -85,29 +85,357 @@ class Scenarios(Resource):
         return scenarios_api
 
 
-class ScenarioDetail(Resource):
+def get_scenario_detail(scenario_id, columns_string):
+    """
+
+    :param scenario_id:
+    :param columns_string:
+    :return:
+    """
+    io, c = connect_to_database()
+
+    scenario_detail_query = c.execute(
+        """SELECT {}
+        FROM scenarios_view
+        WHERE scenario_id = {};""".format(columns_string, scenario_id)
+    )
+
+    column_names = [s[0] for s in scenario_detail_query.description]
+    column_values = list(list(scenario_detail_query)[0])
+    scenario_detail_dict = dict(zip(column_names, column_values))
+
+    scenario_detail_api = []
+    for key in scenario_detail_dict.keys():
+        scenario_detail_api.append(
+            {'name': key, 'value': scenario_detail_dict[key]}
+        )
+
+    return scenario_detail_api
+
+
+class ScenarioDetailAll(Resource):
     """
     Detailed information for a scenario.
     """
     @staticmethod
     def get(scenario_id):
-        io, c = connect_to_database()
+        scenario_detail_api = get_scenario_detail(scenario_id, '*')
 
-        scenario_detail_query = c.execute(
-            """SELECT *
-            FROM scenarios_view
-            WHERE scenario_id = {};""".format(scenario_id)
+        return scenario_detail_api
+
+
+class ScenarioDetailFeatures(Resource):
+    """
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'feature_fuels, feature_transmission, '
+            'feature_transmission_hurdle_rates,'
+            'feature_simultaneous_flow_limits, feature_load_following_up, '
+            'feature_load_following_down, feature_regulation_up, '
+            'feature_regulation_down, feature_spinning_reserves, '
+            'feature_frequency_response, '
+            'feature_rps, feature_carbon_cap, feature_track_carbon_imports, '
+            'feature_prm, feature_elcc_surface, feature_local_capacity'
         )
 
-        column_names = [s[0] for s in scenario_detail_query.description]
-        column_values = list(list(scenario_detail_query)[0])
-        scenario_detail_dict = dict(zip(column_names, column_values))
+        return scenario_detail_api
 
-        scenario_detail_api = []
-        for key in scenario_detail_dict.keys():
-            scenario_detail_api.append(
-                {'name': key, 'value': scenario_detail_dict[key]}
-            )
+
+class ScenarioDetailTemporal(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'temporal'
+        )
+
+        return scenario_detail_api
+
+
+# TODO: exclude transmission_load_zones if Tx feature not enabled
+class ScenarioDetailGeographyLoadZones(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'geography_load_zones, project_load_zones, transmission_load_zones'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailLoad(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'load_profile'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailProjectCapacity(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'project_portfolio, project_existing_capacity, '
+            'project_existing_fixed_cost, project_new_cost, '
+            'project_new_potential, project_availability'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailProjectOpChars(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'project_operating_chars'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailFuels(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'feature_fuels, project_fuels, fuel_prices'
+        )
+
+        return scenario_detail_api
+
+
+# TODO: show transmission selections only when Tx feature is selected,
+#  show info that feature is not selected otherwise
+class ScenarioDetailTransmissionCapacity(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'transmission_portfolio, transmission_existing_capacity '
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailTransmissionOpChars(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'transmission_operational_chars'
+        )
+
+        return scenario_detail_api
+
+
+# TODO: show subscenario selections only when Tx hurdle rate feature is
+#  selected, show info that feature is not selected otherwise
+class ScenarioDetailTransmissionHurdleRates(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'transmission_hurdle_rates'
+        )
+
+        return scenario_detail_api
+
+
+# TODO: show subscenario selections only when Tx simultaneous flow feature
+#  is selected, show info that feature is not selected otherwise
+class ScenarioDetailTransmissionSimFlow(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'transmission_simultaneous_flow_limits, '
+            'transmission_simultaneous_flow_limit_line_groups'
+        )
+
+        return scenario_detail_api
+
+
+# Reserves
+# TODO: show selections only of reserves feature selected
+class ScenarioDetailLoadFollowingUp(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'load_following_reserves_up_profile, project_lf_up_bas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailLoadFollowingDown(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'load_following_reserves_down_profile, project_lf_down_bas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailRegulationUp(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'regulation_up_profile, project_reg_up_bas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailRegulationDown(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'regulation_down_profile, project_reg_down_bas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailSpinningReserves(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'spinning_reserves_profile, project_spin_bas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailFrequencyResponse(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'frequency_response_profile, project_freq_resp_bas'
+        )
+
+        return scenario_detail_api
+
+
+# Policy and reliability
+class ScenarioDetailRPS(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'rps_target, project_rps_areas'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailCarbonCap(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'carbon_cap, project_carbon_cap_areas'
+        )
+
+        return scenario_detail_api
+
+
+# TODO: show elcc_surface only if feature selected
+class ScenarioDetailPRM(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'prm_requirement, elcc_surface, project_prm_areas, '
+            'project_elcc_chars, project_prm_energy_only'
+        )
+
+        return scenario_detail_api
+
+
+class ScenarioDetailLocalCapacity(Resource):
+    """
+
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            scenario_id,
+            'local_capacity_requirement, project_local_capacity_areas, '
+            'project_local_capacity_chars'
+        )
 
         return scenario_detail_api
 
@@ -115,19 +443,114 @@ class ScenarioDetail(Resource):
 class ServerStatus(Resource):
     """
     Server status; response will be 'running'; if HTTP error is caught,
-    server status will be sent to 'down'
+    server status will be set to 'down'
     """
     @staticmethod
     def get():
         return 'running'
 
 
-# Routes
+# ### Routes ### #
 # Scenario list
 api.add_resource(Scenarios, '/scenarios/')
+
 # Scenario detail (by scenario_id)
-api.add_resource(ScenarioDetail, '/scenarios/<scenario_id>')
-# Scenario detail (by scenario_id)
+# All
+api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
+# Features
+api.add_resource(ScenarioDetailFeatures, '/scenarios/<scenario_id>/features')
+# Temporal
+api.add_resource(ScenarioDetailTemporal, '/scenarios/<scenario_id>/temporal')
+# Geography load zones
+api.add_resource(
+    ScenarioDetailGeographyLoadZones,
+    '/scenarios/<scenario_id>/geography-load-zones'
+)
+# System load
+api.add_resource(
+    ScenarioDetailLoad,
+    '/scenarios/<scenario_id>/load'
+)
+# Project capacity
+api.add_resource(
+    ScenarioDetailProjectCapacity,
+    '/scenarios/<scenario_id>/project-capacity'
+)
+# Project operating characteristics
+api.add_resource(
+    ScenarioDetailProjectOpChars,
+    '/scenarios/<scenario_id>/project-opchars'
+)
+# Fuels
+api.add_resource(
+    ScenarioDetailFuels,
+    '/scenarios/<scenario_id>/fuels'
+)
+# Transmission capacity
+api.add_resource(
+    ScenarioDetailTransmissionCapacity,
+    '/scenarios/<scenario_id>/transmission-capacity'
+)
+# Transmission operating characteristics
+api.add_resource(
+    ScenarioDetailTransmissionOpChars,
+    '/scenarios/<scenario_id>/transmission-opchars'
+)
+# Transmission hurdle rates
+api.add_resource(
+    ScenarioDetailTransmissionHurdleRates,
+    '/scenarios/<scenario_id>/transmission-hurdle-rates'
+)
+# Transmission simultaneous flow limits
+api.add_resource(
+    ScenarioDetailTransmissionSimFlow,
+    '/scenarios/<scenario_id>/transmission-sim-flow'
+)
+# Reserves
+api.add_resource(
+    ScenarioDetailLoadFollowingUp,
+    '/scenarios/<scenario_id>/lf-up'
+)
+api.add_resource(
+    ScenarioDetailLoadFollowingDown,
+    '/scenarios/<scenario_id>/lf-down'
+)
+api.add_resource(
+    ScenarioDetailRegulationUp,
+    '/scenarios/<scenario_id>/reg-up'
+)
+api.add_resource(
+    ScenarioDetailRegulationDown,
+    '/scenarios/<scenario_id>/reg-down'
+)
+api.add_resource(
+    ScenarioDetailSpinningReserves,
+    '/scenarios/<scenario_id>/spin'
+)
+api.add_resource(
+    ScenarioDetailFrequencyResponse,
+    '/scenarios/<scenario_id>/freq-resp'
+)
+# Policy and reliability
+api.add_resource(
+    ScenarioDetailRPS,
+    '/scenarios/<scenario_id>/rps'
+)
+api.add_resource(
+    ScenarioDetailCarbonCap,
+    '/scenarios/<scenario_id>/carbon-cap'
+)
+api.add_resource(
+    ScenarioDetailPRM,
+    '/scenarios/<scenario_id>/prm'
+)
+api.add_resource(
+    ScenarioDetailLocalCapacity,
+    '/scenarios/<scenario_id>/local-capacity'
+)
+
+
+# Server status
 api.add_resource(ServerStatus, '/server-status')
 
 
