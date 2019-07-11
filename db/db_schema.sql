@@ -1957,6 +1957,48 @@ committed_units FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
+DROP TABLE IF EXISTS results_project_dispatch_binary_commit;
+CREATE TABLE results_project_dispatch_binary_commit (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+committed_mw FLOAT,
+committed_units INTEGER,
+started_units INTEGER,
+stopped_units INTEGER,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
+DROP TABLE IF EXISTS results_project_dispatch_continuous_commit;
+CREATE TABLE results_project_dispatch_continuous_commit (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+horizon INTEGER,
+timepoint INTEGER,
+horizon_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+power_mw FLOAT,
+committed_mw FLOAT,
+committed_units FLOAT,
+started_units FLOAT,
+stopped_units FLOAT,
+PRIMARY KEY (scenario_id, project, timepoint)
+);
+
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
 CREATE TABLE results_project_lf_reserves_up (
 scenario_id INTEGER,

@@ -117,8 +117,74 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
             for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
         }
         self.assertDictEqual(expected_min_stable_fraction,
-                             actual_min_stable_fraction
-                             )
+                             actual_min_stable_fraction)
+
+        # Param: dispcontcommit_startup_plus_ramp_up_rate
+        expected_startup_plus_ramp_up_rate = {"Disp_Cont_Commit": 0.6,
+                                              "Clunky_Old_Gen": 1,
+                                              "Clunky_Old_Gen2": 1}
+        actual_startup_plus_ramp_up_rate = {
+            prj: instance.dispcontcommit_startup_plus_ramp_up_rate[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
+                             actual_startup_plus_ramp_up_rate)
+
+        # Param: dispcontcommit_shutdown_plus_ramp_down_rate
+        expected_shutdown_plus_ramp_down_rate = {"Disp_Cont_Commit": 0.6,
+                                                 "Clunky_Old_Gen": 1,
+                                                 "Clunky_Old_Gen2": 1}
+        actual_shutdown_plus_ramp_down_rate = {
+            prj: instance.dispcontcommit_shutdown_plus_ramp_down_rate[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
+                             actual_shutdown_plus_ramp_down_rate)
+
+        # Param: dispcontcommit_ramp_up_when_on_rate
+        expected_ramp_up_when_on_rate = {"Disp_Cont_Commit": 0.3,
+                                         "Clunky_Old_Gen": 1,
+                                         "Clunky_Old_Gen2": 1}
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispcontcommit_ramp_up_when_on_rate[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_up_when_on_rate,
+                             actual_ramp_down_when_on_rate)
+
+        # Param: dispcontcommit_ramp_down_when_on_rate
+        expected_ramp_down_when_on_rate = {"Disp_Cont_Commit": 0.5,
+                                           "Clunky_Old_Gen": 1,
+                                           "Clunky_Old_Gen2": 1}
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispcontcommit_ramp_down_when_on_rate[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_down_when_on_rate,
+                             actual_ramp_down_when_on_rate)
+
+        # Param: dispcontcommit_min_up_time_hours
+        expected_min_up_time = {"Disp_Cont_Commit": 3,
+                                "Clunky_Old_Gen": 0,
+                                "Clunky_Old_Gen2": 0}
+        actual_min_up_time = {
+            prj: instance.dispcontcommit_min_up_time_hours[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+
+        self.assertDictEqual(expected_min_up_time,
+                             actual_min_up_time)
+
+        # Param: dispcontcommit_min_down_time_hours
+        expected_min_down_time = {"Disp_Cont_Commit": 7,
+                                  "Clunky_Old_Gen": 0,
+                                  "Clunky_Old_Gen2": 0}
+        actual_min_down_time = {
+            prj: instance.dispcontcommit_min_down_time_hours[prj]
+            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_min_down_time,
+                             actual_min_down_time)
 
 
 if __name__ == "__main__":

@@ -48,7 +48,7 @@ def determine_relevant_timepoints(mod, t, min_time):
 
     if t == mod.first_horizon_timepoint[mod.horizon[t]] \
             and mod.boundary[mod.horizon[t]] == "linear":
-        pass  # no relevant timepoints, keep list empty
+        pass  # no relevant timepoints, keep list limited to *t*
     else:
         # The first possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
