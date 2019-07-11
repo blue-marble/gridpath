@@ -113,6 +113,24 @@ def get_scenario_detail(scenario_id, columns_string):
     return scenario_detail_api
 
 
+def check_feature(scenario_id, column_string):
+    """
+
+    :param scenario_id:
+    :param column_string:
+    :return:
+    """
+    io, c = connect_to_database()
+
+    scenario_feature_on = c.execute(
+        """SELECT {}
+        FROM scenarios
+        WHERE scenario_id = {};""".format(column_string, scenario_id)
+    ).fetchone()[0]
+
+    return scenario_feature_on
+
+
 class ScenarioDetailAll(Resource):
     """
     Detailed information for a scenario.
@@ -158,17 +176,25 @@ class ScenarioDetailTemporal(Resource):
         return scenario_detail_api
 
 
-# TODO: exclude transmission_load_zones if Tx feature not enabled
 class ScenarioDetailGeographyLoadZones(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'geography_load_zones, project_load_zones, transmission_load_zones'
-        )
+        if check_feature(scenario_id, 'of_transmission'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'geography_load_zones, project_load_zones, '
+                'transmission_load_zones'
+            )
+        else:
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'geography_load_zones, project_load_zones, '
+                '"WARNING: transmission feature disabled" AS '
+                'transmission_load_zones'
+            )
 
         return scenario_detail_api
 
@@ -223,26 +249,40 @@ class ScenarioDetailFuels(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'feature_fuels, project_fuels, fuel_prices'
-        )
+        if check_feature(scenario_id, 'of_fuels'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'project_fuels, fuel_prices'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "project_fuels",
+                 "value": "WARNING: fuels feature disabled"},
+                {"name": "fuel_prices",
+                 "value": "WARNING: fuels feature disabled"}
+            ]
 
         return scenario_detail_api
 
 
-# TODO: show transmission selections only when Tx feature is selected,
-#  show info that feature is not selected otherwise
 class ScenarioDetailTransmissionCapacity(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'transmission_portfolio, transmission_existing_capacity '
-        )
+        if check_feature(scenario_id, 'of_transmission'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'transmission_portfolio, transmission_existing_capacity '
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "transmission_portfolio",
+                 "value": "WARNING: transmission feature disabled"},
+                {"name": "transmission_existing_capacity",
+                 "value": "WARNING: transmission feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -253,59 +293,121 @@ class ScenarioDetailTransmissionOpChars(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'transmission_operational_chars'
-        )
+        if check_feature(scenario_id, 'of_transmission'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'transmission_operational_chars'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "transmission_operational_chars",
+                 "value": "WARNING: transmission feature disabled"}
+            ]
 
         return scenario_detail_api
 
 
-# TODO: show subscenario selections only when Tx hurdle rate feature is
-#  selected, show info that feature is not selected otherwise
 class ScenarioDetailTransmissionHurdleRates(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'transmission_hurdle_rates'
-        )
+        if check_feature(scenario_id, 'of_transmission') \
+                and check_feature(scenario_id, 'of_transmission_hurdle_rates'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'transmission_hurdle_rates'
+            )
+        elif not check_feature(scenario_id, 'of_transmission') \
+                and not check_feature(scenario_id,
+                                      'of_transmission_hurdle_rates'):
+            scenario_detail_api = [
+                {"name": "transmission_hurdle_rates",
+                 "value": "WARNING: both transmission and transmission "
+                          "hurdle rates features disabled"}
+            ]
+        elif not check_feature(scenario_id, 'of_transmission') \
+                and check_feature(scenario_id, 'of_transmission_hurdle_rates'):
+            scenario_detail_api = [
+                {"name": "transmission_hurdle_rates",
+                 "value": "WARNING: transmission feature disabled"}
+            ]
+        else:
+            scenario_detail_api = [
+                {"name": "transmission_hurdle_rates",
+                 "value": "WARNING: transmission hurdle rates feature "
+                          "disabled"}
+            ]
 
         return scenario_detail_api
 
 
-# TODO: show subscenario selections only when Tx simultaneous flow feature
-#  is selected, show info that feature is not selected otherwise
 class ScenarioDetailTransmissionSimFlow(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'transmission_simultaneous_flow_limits, '
-            'transmission_simultaneous_flow_limit_line_groups'
-        )
+        if check_feature(scenario_id, 'of_transmission') \
+                and check_feature(scenario_id, 'of_simultaneous_flow_limits'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'transmission_simultaneous_flow_limits, '
+                'transmission_simultaneous_flow_limit_line_groups'
+            )
+        elif not check_feature(scenario_id, 'of_transmission') \
+                and not check_feature(scenario_id,
+                                      'of_simultaneous_flow_limits'):
+            scenario_detail_api = [
+                {"name": "transmission_simultaneous_flow_limits",
+                 "value": "WARNING: both transmission and simultaneous flow "
+                          "limits features disabled"},
+                {"name": "transmission_simultaneous_flow_limit_line_groups",
+                 "value": "WARNING: both transmission and simultaneous flow "
+                          "limits features disabled"}
+            ]
+        elif not check_feature(scenario_id, 'of_transmission') \
+                and check_feature(scenario_id, 'of_simultaneous_flow_limits'):
+            scenario_detail_api = [
+                {"name": "transmission_simultaneous_flow_limits",
+                 "value": "WARNING: transmission feature disabled"},
+                {"name": "transmission_simultaneous_flow_limit_line_groups",
+                 "value": "WARNING: transmission feature disabled"}
+            ]
+        else:
+            scenario_detail_api = [
+                {"name": "transmission_simultaneous_flow_limits",
+                 "value": "WARNING: simultaneous flow limits feature "
+                          "disabled"},
+                {"name": "transmission_simultaneous_flow_limit_line_groups",
+                 "value": "WARNING: simultaneous flow limits feature disabled"}
+            ]
 
         return scenario_detail_api
 
 
 # Reserves
-# TODO: show selections only of reserves feature selected
 class ScenarioDetailLoadFollowingUp(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'load_following_reserves_up_profile, project_lf_up_bas'
-        )
+        if check_feature(scenario_id, 'of_lf_reserves_up'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'load_following_reserves_up_profile, project_lf_up_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "load_following_reserves_up_profile",
+                 "value": "WARNING: load-following reserves up feature "
+                          "disabled"},
+                {"name": "project_lf_up_bas",
+                 "value": "WARNING: load-following reserves up feature "
+                          "disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -316,10 +418,20 @@ class ScenarioDetailLoadFollowingDown(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'load_following_reserves_down_profile, project_lf_down_bas'
-        )
+        if check_feature(scenario_id, 'of_lf_reserves_down'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'load_following_reserves_down_profile, project_lf_down_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "load_following_reserves_down_profile",
+                 "value": "WARNING: load-following reserves down feature "
+                          "disabled"},
+                {"name": "project_lf_down_bas",
+                 "value": "WARNING: load-following reserves down feature "
+                          "disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -330,10 +442,18 @@ class ScenarioDetailRegulationUp(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'regulation_up_profile, project_reg_up_bas'
-        )
+        if check_feature(scenario_id, 'of_regulation_up'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'regulation_up_profile, project_reg_up_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "regulation_up_profile",
+                 "value": "WARNING: regulation up feature disabled"},
+                {"name": "project_reg_up_bas",
+                 "value": "WARNING: regulation up feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -344,10 +464,18 @@ class ScenarioDetailRegulationDown(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'regulation_down_profile, project_reg_down_bas'
-        )
+        if check_feature(scenario_id, 'of_regulation_down'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'regulation_down_profile, project_reg_down_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "regulation_down_profile",
+                 "value": "WARNING: regulation down feature disabled"},
+                {"name": "project_reg_down_bas",
+                 "value": "WARNING: regulation down feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -358,10 +486,18 @@ class ScenarioDetailSpinningReserves(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'spinning_reserves_profile, project_spin_bas'
-        )
+        if check_feature(scenario_id, 'of_spinning_reserves'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'spinning_reserves_profile, project_spin_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "spinning_reserves_profile",
+                 "value": "WARNING: spinning reserves feature disabled"},
+                {"name": "project_spin_bas",
+                 "value": "WARNING: spinning reserves feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -372,10 +508,18 @@ class ScenarioDetailFrequencyResponse(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'frequency_response_profile, project_freq_resp_bas'
-        )
+        if check_feature(scenario_id, 'of_frequency_response'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'frequency_response_profile, project_freq_resp_bas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "frequency_response_profile",
+                 "value": "WARNING: frequency response feature disabled"},
+                {"name": "project_freq_resp_bas",
+                 "value": "WARNING: frequency response feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -387,10 +531,18 @@ class ScenarioDetailRPS(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'rps_target, project_rps_areas'
-        )
+        if check_feature(scenario_id, 'of_rps'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'rps_target, project_rps_areas'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "rps_target",
+                 "value": "WARNING: RPS feature disabled"},
+                {"name": "project_rps_areas",
+                 "value": "WARNING: RPS feature disabled"}
+            ]
 
         return scenario_detail_api
 
@@ -401,26 +553,67 @@ class ScenarioDetailCarbonCap(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'carbon_cap, project_carbon_cap_areas'
-        )
+        if check_feature(scenario_id, 'of_carbon_cap') \
+                and check_feature(scenario_id, 'of_track_carbon_imports'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'carbon_cap, project_carbon_cap_areas, '
+                'transmission_carbon_cap_zone_scenario_id'
+            )
+        elif not check_feature(scenario_id, 'of_carbon_cap'):
+            scenario_detail_api = [
+                {"name": "carbon_cap",
+                 "value": "WARNING: carbon cap feature disabled"},
+                {"name": "project_carbon_cap_areas",
+                 "value": "WARNING: carbon cap feature disabled"},
+                {"name": "transmission_carbon_cap_zone_scenario_id",
+                 "value": "WARNING: carbon cap feature disabled"}
+            ]
+        else:
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'carbon_cap, project_carbon_cap_areas, '
+                '"WARNING: tracking carbon imports feature disabled" AS'
+                'transmission_carbon_cap_zone_scenario_id'
+            )
 
         return scenario_detail_api
 
 
-# TODO: show elcc_surface only if feature selected
 class ScenarioDetailPRM(Resource):
     """
 
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'prm_requirement, elcc_surface, project_prm_areas, '
-            'project_elcc_chars, project_prm_energy_only'
-        )
+        if check_feature(scenario_id, 'of_prm'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'prm_requirement, project_prm_areas, '
+                'project_elcc_chars, elcc_surface, project_prm_energy_only'
+            )
+        elif not check_feature(scenario_id, 'of_prm'):
+            scenario_detail_api = [
+                {"name": "prm_requirement",
+                 "value": "WARNING: PRM feature disabled"},
+                {"name": "project_prm_areas",
+                 "value": "WARNING: PRM feature disabled"},
+                {"name": "elcc_surface",
+                 "value": "WARNING: PRM feature disabled"},
+                {"name": "project_elcc_chars",
+                 "value": "WARNING: PRM feature disabled"},
+                {"name": "project_prm_energy_only",
+                 "value": "WARNING: PRM feature disabled"}
+            ]
+        else:
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'prm_requirement, project_prm_areas, '
+                '"WARNING: ELCC surface feature disabled" AS elcc_surface, '
+                'project_prm_areas, '
+                '"WARNING: ELCC surface feature disabled" AS '
+                'project_elcc_chars, project_prm_energy_only'
+            )
 
         return scenario_detail_api
 
@@ -431,11 +624,21 @@ class ScenarioDetailLocalCapacity(Resource):
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'local_capacity_requirement, project_local_capacity_areas, '
-            'project_local_capacity_chars'
-        )
+        if check_feature(scenario_id, 'of_local_capacity'):
+            scenario_detail_api = get_scenario_detail(
+                scenario_id,
+                'local_capacity_requirement, project_local_capacity_areas, '
+                'project_local_capacity_chars'
+            )
+        else:
+            scenario_detail_api = [
+                {"name": "local_capacity_requirement",
+                 "value": "WARNING: local capacity feature disabled"},
+                {"name": "project_local_capacity_areas",
+                 "value": "WARNING: local capacity feature disabled"},
+                {"name": "project_local_capacity_chars",
+                 "value": "WARNING: local capacity feature disabled"}
+            ]
 
         return scenario_detail_api
 
