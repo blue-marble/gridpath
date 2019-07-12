@@ -33,6 +33,23 @@
       </ng-container>
 </table>
 
+<table class="scenario-detail">
+  <caption>Temporal settings</caption>
+      <tr>
+        <th>Name</th>
+        <th>Value</th>
+      </tr>
+       <tr>
+         <td>Temporal</td>
+         <td><select formControlName="temporalSetting">
+                <option value=""></option>
+                <option *ngFor="let setting of temporalSettingOptions">
+                  {{setting.name}}
+                </option>
+              </select></td>
+      </tr>
+</table>
+
 <button type="submit" [disabled]="!newScenarioForm.valid"
         class="button-primary">
   Save Scenario</button>

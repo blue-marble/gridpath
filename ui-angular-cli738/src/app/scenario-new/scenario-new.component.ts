@@ -4,6 +4,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 
 const io = (<any>window).require('socket.io-client');
 
+import { Setting, ScenarioNewService } from './scenario-new.service'
 
 @Component({
   selector: 'app-scenario-new',
@@ -13,6 +14,8 @@ const io = (<any>window).require('socket.io-client');
 export class ScenarioNewComponent implements OnInit {
 
   features: Features[];
+  yesNo: string[];
+  temporalSettingOptions: Setting[];
 
   newScenarioForm = new FormGroup({
     scenarioName: new FormControl(''),
@@ -32,12 +35,11 @@ export class ScenarioNewComponent implements OnInit {
     featureTrackCarbonImports: new FormControl(''),
     featurePRM: new FormControl(''),
     featureELCCSurface: new FormControl(''),
-    featureLocalCapacity: new FormControl('')
+    featureLocalCapacity: new FormControl(''),
+    temporalSetting: new FormControl('')
   });
 
-  yesNo: string[];
-
-  constructor() {
+  constructor(private scenarioNewService: ScenarioNewService) {
     this.features = [
       {featureName: 'feature_fuels', formControlName: 'featureFuels'},
       {featureName: 'feature_transmission',
@@ -71,6 +73,12 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.getSettingOptionsTemporal()
+  }
+
+  getSettingOptionsTemporal(): void {
+    this.scenarioNewService.getSettingTemporal()
+      .subscribe(scenarioSetting => this.temporalSettingOptions = scenarioSetting);
   }
 
   saveNewScenario() {
@@ -86,10 +94,6 @@ export class ScenarioNewComponent implements OnInit {
 
   getYesNo() {
     return ['', 'yes', 'no']
-  }
-
-  getTemporal() {
-
   }
 
 }

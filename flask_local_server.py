@@ -115,6 +115,44 @@ def get_scenario_detail(scenario_id, columns_string):
     return scenario_detail_api
 
 
+def get_setting_options(id_column, table):
+    """
+
+    """
+    io, c = connect_to_database()
+
+    setting_options_query = c.execute(
+        """SELECT {}, name FROM {};""".format(id_column, table)
+    ).fetchall()
+
+    setting_options_api = []
+    for row in setting_options_query:
+        print(row[0])
+        setting_options_api.append(
+            {'id': row[0], 'name': row[1]}
+        )
+
+    return setting_options_api
+
+
+def get_setting_option_id(id_column, table, setting_name):
+    """
+
+    :param id_column:
+    :param table:
+    :param setting_name:
+    :return:
+    """
+    io, c = connect_to_database()
+    setting_id = c.execute(
+        """SELECT {} FROM {} WHERE name = '{}'""".format(
+            id_column, table, setting_name
+        )
+    ).fetchone()[0]
+
+    return setting_id
+
+
 def check_feature(scenario_id, column_string):
     """
 
@@ -566,7 +604,7 @@ class ScenarioDetailCarbonCap(Resource):
             scenario_detail_api = [
                 {"name": "carbon_cap",
                  "value": "WARNING: carbon cap feature disabled"},
-                {"name": "project_carbon_cap_areas",
+                {"name": "projefct_carbon_cap_areas",
                  "value": "WARNING: carbon cap feature disabled"},
                 {"name": "transmission_carbon_cap_zone_scenario_id",
                  "value": "WARNING: carbon cap feature disabled"}
@@ -643,6 +681,19 @@ class ScenarioDetailLocalCapacity(Resource):
             ]
 
         return scenario_detail_api
+
+
+class SettingsTemporal(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='temporal_scenario_id',
+            table='subscenarios_temporal'
+        )
+        return setting_options_api
 
 
 class ServerStatus(Resource):
@@ -754,6 +805,8 @@ api.add_resource(
     '/scenarios/<scenario_id>/local-capacity'
 )
 
+# Scenario settings
+api.add_resource(SettingsTemporal, '/scenario-settings/temporal')
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
@@ -788,7 +841,11 @@ def add_new_scenario(msg):
         of_prm=1 if msg['featurePRM'] == 'yes' else 0,
         of_local_capacity=1 if msg['featureELCCSurface'] == 'yes' else 0,
         of_elcc_surface=1 if msg['featureLocalCapacity'] == 'yes' else 0,
-        temporal_scenario_id='NULL',
+        temporal_scenario_id=get_setting_option_id(
+            id_column='temporal_scenario_id',
+            table='subscenarios_temporal',
+            setting_name=msg['temporalSetting']
+        ),
         load_zone_scenario_id='NULL',
         lf_reserves_up_ba_scenario_id='NULL',
         lf_reserves_down_ba_scenario_id='NULL',
