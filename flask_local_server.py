@@ -15,6 +15,8 @@ from flask_restful import Resource, Api
 #
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
+# Gridpath modules
+from db.utilities.create_scenario import create_scenario
 
 # Global variables
 GRIDPATH_DIRECTORY = str()
@@ -760,15 +762,89 @@ api.add_resource(ServerStatus, '/server-status')
 # ### Socket Communication ### #
 @socketio.on('add_new_scenario')
 def add_new_scenario(msg):
-    print('Got message from Angular')
+    print('Inserting new scenario...')
     print(msg)
 
     io, c = connect_to_database()
 
-    c.execute(
-        """INSERT INTO scenarios (scenario_name) VALUES ('{}')""".format(
-            msg['scenarioName']))
-    io.commit()
+    create_scenario(
+        io=io, c=c,
+        scenario_name=msg['scenarioName'],
+        of_fuels=1 if msg['featureFuels'] == 'yes' else 0,
+        of_multi_stage='NULL',
+        of_transmission=1 if msg['featureTransmission'] == 'yes' else 0,
+        of_transmission_hurdle_rates=1 if msg[
+            'featureTransmissionHurdleRates'] == 'yes' else 0,
+        of_simultaneous_flow_limits=1 if ['featureSimFlowLimits'] == 'yes' else 0,
+        of_lf_reserves_up=1 if msg['featureLFUp'] == 'yes' else 0,
+        of_lf_reserves_down=1 if msg['featureLFDown'] == 'yes' else 0,
+        of_regulation_up=1 if msg['featureRegUp'] == 'yes' else 0,
+        of_regulation_down=1 if msg['featureRegDown'] == 'yes' else 0,
+        of_frequency_response=1 if msg['featureFreqResp'] == 'yes' else 0,
+        of_spinning_reserves=1 if msg['featureSpin'] == 'yes' else 0,
+        of_rps=1 if msg['featureRPS'] == 'yes' else 0,
+        of_carbon_cap=1 if msg['featureCarbonCap'] == 'yes' else 0,
+        of_track_carbon_imports=1 if msg['featureTrackCarbonImports'] == 'yes' else 0,
+        of_prm=1 if msg['featurePRM'] == 'yes' else 0,
+        of_local_capacity=1 if msg['featureELCCSurface'] == 'yes' else 0,
+        of_elcc_surface=1 if msg['featureLocalCapacity'] == 'yes' else 0,
+        temporal_scenario_id='NULL',
+        load_zone_scenario_id='NULL',
+        lf_reserves_up_ba_scenario_id='NULL',
+        lf_reserves_down_ba_scenario_id='NULL',
+        regulation_up_ba_scenario_id='NULL',
+        regulation_down_ba_scenario_id='NULL',
+        frequency_response_ba_scenario_id='NULL',
+        spinning_reserves_ba_scenario_id='NULL',
+        rps_zone_scenario_id='NULL',
+        carbon_cap_zone_scenario_id='NULL',
+        prm_zone_scenario_id='NULL',
+        local_capacity_zone_scenario_id='NULL',
+        project_portfolio_scenario_id='NULL',
+        project_operational_chars_scenario_id='NULL',
+        project_availability_scenario_id='NULL',
+        fuel_scenario_id='NULL',
+        project_load_zone_scenario_id='NULL',
+        project_lf_reserves_up_ba_scenario_id='NULL',
+        project_lf_reserves_down_ba_scenario_id='NULL',
+        project_regulation_up_ba_scenario_id='NULL',
+        project_regulation_down_ba_scenario_id='NULL',
+        project_frequency_response_ba_scenario_id='NULL',
+        project_spinning_reserves_ba_scenario_id='NULL',
+        project_rps_zone_scenario_id='NULL',
+        project_carbon_cap_zone_scenario_id='NULL',
+        project_prm_zone_scenario_id='NULL',
+        project_elcc_chars_scenario_id='NULL',
+        prm_energy_only_scenario_id='NULL',
+        project_local_capacity_zone_scenario_id='NULL',
+        project_local_capacity_chars_scenario_id='NULL',
+        project_existing_capacity_scenario_id='NULL',
+        project_existing_fixed_cost_scenario_id='NULL',
+        fuel_price_scenario_id='NULL',
+        project_new_cost_scenario_id='NULL',
+        project_new_potential_scenario_id='NULL',
+        transmission_portfolio_scenario_id='NULL',
+        transmission_load_zone_scenario_id='NULL',
+        transmission_existing_capacity_scenario_id='NULL',
+        transmission_operational_chars_scenario_id='NULL',
+        transmission_hurdle_rate_scenario_id='NULL',
+        transmission_carbon_cap_zone_scenario_id='NULL',
+        transmission_simultaneous_flow_limit_scenario_id='NULL',
+        transmission_simultaneous_flow_limit_line_group_scenario_id='NULL',
+        load_scenario_id='NULL',
+        lf_reserves_up_scenario_id='NULL',
+        lf_reserves_down_scenario_id='NULL',
+        regulation_up_scenario_id='NULL',
+        regulation_down_scenario_id='NULL',
+        frequency_response_scenario_id='NULL',
+        spinning_reserves_scenario_id='NULL',
+        rps_target_scenario_id='NULL',
+        carbon_cap_target_scenario_id='NULL',
+        prm_requirement_scenario_id='NULL',
+        elcc_surface_scenario_id='NULL',
+        local_capacity_requirement_scenario_id='NULL',
+        tuning_scenario_id='NULL'
+    )
 
 
 # ### RUNNING SCENARIOS ### #
@@ -840,7 +916,7 @@ def check_scenario_process_status(message):
 
 # ### Common functions ### #
 def connect_to_database():
-    # '/Users/ana/dev/gridpath-ui-dev/db/io.db'
+    # io = sqlite3.connect('/Users/ana/dev/gridpath-ui-dev/db/io.db')
     io = sqlite3.connect(DATABASE_PATH)
     c = io.cursor()
     return io, c

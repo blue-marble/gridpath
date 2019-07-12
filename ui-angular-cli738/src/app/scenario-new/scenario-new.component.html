@@ -1,15 +1,39 @@
+<h2><span>New Scenario: </span>{{newScenarioForm.value.scenarioName}}</h2>
+
 <form [formGroup]="newScenarioForm" (ngSubmit)="saveNewScenario()">
 
-  <label>
-    Scenario Name:
-    <input type="text" formControlName="scenarioName">
-  </label>
+  <p><label>
+  Scenario Name:
+  <input type="text" formControlName="scenarioName">
+</label></p>
 
-  <label>
-    Description:
-    <input type="text" formControlName="scenarioDescription">
-  </label>
+  <p><label>
+  Description:
+  <input type="text" formControlName="scenarioDescription">
+</label></p>
 
-<button type="submit" [disabled]="!newScenarioForm.valid">
+
+<table class="scenario-detail">
+  <caption>Features</caption>
+    <tr>
+      <th>Name</th>
+      <th>Value</th>
+    </tr>
+      <ng-container *ngFor="let sd of features">
+         <tr>
+           <td>{{sd.featureName}}</td>
+           <td>
+             <select formControlName="{{sd.formControlName}}">
+                <option *ngFor="let setting of yesNo">
+                  {{setting}}
+                </option>
+              </select>
+           </td>
+         </tr>
+      </ng-container>
+</table>
+
+<button type="submit" [disabled]="!newScenarioForm.valid"
+        class="button-primary">
   Save Scenario</button>
 </form>
