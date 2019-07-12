@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {ScenarioDetail} from "./scenario-detail";
+import { ScenarioDetail } from "./scenario-detail";
 
 @Injectable({
   providedIn: 'root'

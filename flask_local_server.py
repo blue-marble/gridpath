@@ -598,7 +598,7 @@ class ScenarioDetailCarbonCap(Resource):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
                 'carbon_cap, project_carbon_cap_areas, '
-                'transmission_carbon_cap_zone_scenario_id'
+                'transmission_carbon_cap_zones'
             )
         elif not check_feature(scenario_id, 'of_carbon_cap'):
             scenario_detail_api = [
