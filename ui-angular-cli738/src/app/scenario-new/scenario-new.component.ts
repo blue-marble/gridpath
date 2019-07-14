@@ -21,7 +21,7 @@ export class ScenarioNewComponent implements OnInit {
   // For the features
   // TODO: can we consolidate with structure for settings below?
   features: Feature[];
-  yesNo: string[];
+  featureSelectionOption: string[];
 
   // Temporal settings
   temporalSettingTable: SettingTable;
@@ -264,7 +264,7 @@ export class ScenarioNewComponent implements OnInit {
     this.features.push(featureLocalCapacity);
 
 
-    this.yesNo = this.getYesNo();
+    this.featureSelectionOption = this.featureSelectionOptions();
 
 
   }
@@ -312,7 +312,7 @@ export class ScenarioNewComponent implements OnInit {
     socket.emit('add_new_scenario', this.newScenarioForm.value);
   }
 
-  getYesNo() {
+  featureSelectionOptions() {
     return ['', 'yes', 'no']
   }
 
