@@ -34,9 +34,11 @@ export class ScenarioNewComponent implements OnInit {
   geographyTxLoadZonesSettingOptions: Setting[];
 
   // System load settings
+  systemLoadSettingsTable: SettingsTable;
   systemLoadSettingOptions: Setting[];
 
   // Project capacity settings
+  projectCapacitySettingsTable: SettingsTable;
   projectPortfolioSettingOptions: Setting[];
   projectExistingCapacitySettingOptions: Setting[];
   projectExistingFixedCostSettingOptions: Setting[];
@@ -45,60 +47,75 @@ export class ScenarioNewComponent implements OnInit {
   projectAvailabilitySettingOptions: Setting[];
 
   // Project operational characteristics settings
+  projectOperationalCharsSettingsTable: SettingsTable;
   projectOperationalCharsSettingOptions: Setting[];
 
   // Fuel settings
+  projectFuelsSettingsTable: SettingsTable;
   projectFuelsSettingOptions: Setting[];
   fuelPricesSettingOptions: Setting[];
 
   // Transmission capacity settings
+  transmissionPortfolioSettingsTable: SettingsTable;
   transmissionPortfolioSettingOptions: Setting[];
   transmissionExistingCapacitySettingOptions: Setting[];
 
   // Transmission operational characteristics
+  transmissionOperationalCharsSettingsTable: SettingsTable;
   transmissionOperationalCharsSettingOptions: Setting[];
 
   // Transission hurdle rates settings
+  transmissionHurdleRatesSettingsTable: SettingsTable;
   transmissionHurdleRatesSettingOptions: Setting[];
 
   // Transmission simultaneous flow limits settings
+  transmissionSimultaneousFlowLimitsSettingsTable: SettingsTable;
   transmissionSimultaneousFlowLimitsSettingOptions: Setting[];
   transmissionSimultaneousFlowLimitLineGroupsSettingOptions: Setting[];
 
   // Load-following-up settings
+  loadFollowingUpProfileSettingsTable: SettingsTable;
   loadFollowingUpProfileSettingOptions: Setting[];
   projectLoadFollowingUpBAsSettingOptions: Setting[];
 
   // Load-following-down settings
+  loadFollowingDownProfileSettingsTable: SettingsTable;
   loadFollowingDownProfileSettingOptions: Setting[];
   projectLoadFollowingDownBAsSettingOptions: Setting[];
 
   // Regulation up settings
+  regulationUpProfileSettingsTable: SettingsTable;
   regulationUpProfileSettingOptions: Setting[];
   projectRegulationUpBAsSettingOptions: Setting[];
 
   // Regulation down settings
+  regulationDownProfileSettingsTable: SettingsTable;
   regulationDownProfileSettingOptions: Setting[];
   projectRegulationDownBAsSettingOptions: Setting[];
 
   // Spinning reserves settings
+  spinningReservesProfileSettingsTable: SettingsTable;
   spinningReservesProfileSettingOptions: Setting[];
   projectSpinningReservesBAsSettingOptions: Setting[];
 
   // Frequency response settings
+  frequencyResponseSettingsTable: SettingsTable;
   frequencyResponseSettingOptions: Setting[];
   projectFrequencyResponseBAsSettingOptions: Setting[];
 
   // RPS settings
+  rpsTargetSettingsTable: SettingsTable;
   rpsTargetSettingOptions: Setting[];
   projectRPSAreasSettingOptions: Setting[];
 
   // Carbon cap settings
+  carbonCapSettingsTable: SettingsTable;
   carbonCapSettingOptions: Setting[];
   projectCarbonCapAreasSettingOptions: Setting[];
   transmissionCarbonCapAreasSettingOptions: Setting[];
 
   // PRM settings
+  prmRequirementSettingsTable: SettingsTable;
   prmRequirementSettingOptions: Setting[];
   projectPRMAreasSettingOptions: Setting[];
   projectELCCCharsSettingOptions: Setting[];
@@ -106,6 +123,7 @@ export class ScenarioNewComponent implements OnInit {
   projectPRMEnergyOnlySettingOptions: Setting[];
 
   // Local capacity settings
+  localCapacityRequirementSettingsTable: SettingsTable;
   localCapacityRequirementSettingOptions: Setting[];
   projectLocalCapacityAreasSettingOptions: Setting[];
   projectLocalCapacityCharsSettingOptions: Setting[];
@@ -274,6 +292,8 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure = [];
     this.getSettingOptionsTemporal();
     this.getSettingOptionsLoadZones();
+    this.getSettingOptionsLoad();
+    this.getSettingOptionsProjectCapacity();
   }
 
   getSettingOptionsTemporal(): void {
@@ -291,13 +311,14 @@ export class ScenarioNewComponent implements OnInit {
           this.temporalSettingOptions = scenarioSetting;
 
           // Create the row
-          const temporalSettingRow = new SettingRow();
-          temporalSettingRow.rowName = 'temporal';
-          temporalSettingRow.rowFormControlName = 'temporalSetting';
-          temporalSettingRow.settingOptions = this.temporalSettingOptions;
+          const newRow = this.createRow(
+            'temporal',
+            'temporalSetting',
+             this.temporalSettingOptions
+          );
 
           // Add the row to the table
-          this.temporalSettingsTable.settingRows.push(temporalSettingRow);
+          this.temporalSettingsTable.settingRows.push(newRow);
         }
       );
 
@@ -320,14 +341,14 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const loadZoneSettingRow = new SettingRow();
-          loadZoneSettingRow.rowName = 'geography_load_zones';
-          loadZoneSettingRow.rowFormControlName = 'geographyLoadZonesSetting';
-          loadZoneSettingRow.settingOptions =
-            this.geographyLoadZonesSettingOptions;
+          const newRow = this.createRow(
+            'geography_load_zones',
+            'geographyLoadZonesSetting',
+            this.geographyLoadZonesSettingOptions
+          );
 
           // Add the row to the table
-          this.loadZoneSettingsTable.settingRows.push(loadZoneSettingRow);
+          this.loadZoneSettingsTable.settingRows.push(newRow);
 
 
         }
@@ -340,17 +361,14 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyProjectLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const projectLoadZoneSettingRow = new SettingRow();
-          projectLoadZoneSettingRow.rowName = 'project_load_zones';
-          projectLoadZoneSettingRow.rowFormControlName =
-            'geographyProjectLoadZonesSetting';
-          projectLoadZoneSettingRow.settingOptions =
-            this.geographyProjectLoadZonesSettingOptions;
+          const newRow = this.createRow(
+            'project_load_zones',
+            'geographyProjectLoadZonesSetting',
+            this.geographyProjectLoadZonesSettingOptions
+          );
 
           // Add the row to the table
-          this.loadZoneSettingsTable.settingRows.push(projectLoadZoneSettingRow);
-
-
+          this.loadZoneSettingsTable.settingRows.push(newRow);
         }
       );
 
@@ -361,17 +379,14 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyTxLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const transmissionLoadZoneSettingRow = new SettingRow();
-          transmissionLoadZoneSettingRow.rowName = 'transmission_load_zones';
-          transmissionLoadZoneSettingRow.rowFormControlName =
-            'geographyTxLoadZonesSetting';
-          transmissionLoadZoneSettingRow.settingOptions =
-            this.geographyTxLoadZonesSettingOptions;
+          const newRow = this.createRow(
+            'transmission_load_zones',
+            'geographyTxLoadZonesSetting',
+            this.geographyTxLoadZonesSettingOptions
+          );
 
           // Add the row to the table
-          this.loadZoneSettingsTable.settingRows.push(
-            transmissionLoadZoneSettingRow
-          );
+          this.loadZoneSettingsTable.settingRows.push(newRow);
 
         }
       );
@@ -379,8 +394,163 @@ export class ScenarioNewComponent implements OnInit {
       // Add the table to the scenario structure
       this.ScenarioNewStructure.push(this.loadZoneSettingsTable);
 
+  }
+
+  getSettingOptionsLoad(): void {
+    // Set the setting table captions
+    this.systemLoadSettingsTable = new SettingsTable();
+    this.systemLoadSettingsTable.tableCaption = 'System load';
+    this.systemLoadSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingSystemLoad()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.systemLoadSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'load_profile',
+            'systemLoadSetting',
+            this.systemLoadSettingOptions
+          );
+
+          // Add the row to the table
+          this.systemLoadSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+      // Add the table to the scenario structure
+      this.ScenarioNewStructure.push(this.systemLoadSettingsTable);
 
   }
+
+  getSettingOptionsProjectCapacity(): void {
+    // Set the setting table captions
+    this.projectCapacitySettingsTable = new SettingsTable();
+    this.projectCapacitySettingsTable.tableCaption = 'Project capacity';
+    this.projectCapacitySettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingProjectPortfolio()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectPortfolioSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_portfolio',
+            'projectPortfolioSetting',
+            this.projectPortfolioSettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectExistingCapacity()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectExistingCapacitySettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_existing_capacity',
+            'projectExistingCapacitySetting',
+            this.projectExistingCapacitySettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectExistingFixedCost()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectExistingFixedCostSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_existing_fixed_cost',
+            'projectExistingFixedCostSetting',
+            this.projectExistingFixedCostSettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectNewCost()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectNewCostSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_new_cost',
+            'projectNewCostSetting',
+            this.projectNewCostSettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectNewPotential()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectNewPotentialSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_new_potential',
+            'projectNewPotentialSetting',
+            this.projectNewPotentialSettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectAvailability()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectAvailabilitySettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_availability',
+            'projectAvailabilitySetting',
+            this.projectAvailabilitySettingOptions
+          );
+
+          // Add the row to the table
+          this.projectCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.projectCapacitySettingsTable);
+
+  }
+
+
 
   saveNewScenario() {
     const socket = io.connect('http://127.0.0.1:8080/');
@@ -392,6 +562,17 @@ export class ScenarioNewComponent implements OnInit {
 
   featureSelectionOptions() {
     return ['', 'yes', 'no']
+  }
+
+  createRow(rowName: string,
+            rowFormControlName: string,
+            settingOptions: Setting[]) {
+      const settingRow = new SettingRow();
+      settingRow.rowName = rowName;
+      settingRow.rowFormControlName = rowFormControlName;
+      settingRow.settingOptions = settingOptions;
+
+      return settingRow
   }
 
 }
@@ -412,3 +593,4 @@ class SettingRow {
   rowFormControlName: string;
   settingOptions: Setting[]
 }
+

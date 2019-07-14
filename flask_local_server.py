@@ -127,7 +127,6 @@ def get_setting_options(id_column, table):
 
     setting_options_api = []
     for row in setting_options_query:
-        print(row[0])
         setting_options_api.append(
             {'id': row[0], 'name': row[1]}
         )
@@ -709,6 +708,7 @@ class SettingLoadZones(Resource):
         return setting_options_api
 
 
+# TODO: need to require setting 'name' column to be unique
 # TODO: will need to show only project_load_zone_scenario_id for the
 #  selected load_zone_scenario_id
 class SettingProjectLoadZones(Resource):
@@ -735,6 +735,97 @@ class SettingTxLoadZones(Resource):
         setting_options_api = get_setting_options(
             id_column='transmission_load_zone_scenario_id',
             table='subscenarios_transmission_load_zones'
+        )
+        return setting_options_api
+
+
+class SettingSystemLoad(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='load_scenario_id',
+            table='subscenarios_system_load'
+        )
+        return setting_options_api
+
+
+class SettingProjectPorftolio(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_portfolio_scenario_id',
+            table='subscenarios_project_portfolios'
+        )
+        return setting_options_api
+
+
+class SettingProjectExistingCapacity(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_existing_capacity_scenario_id',
+            table='subscenarios_project_existing_capacity'
+        )
+        return setting_options_api
+
+
+class SettingProjectExistingFixedCost(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_existing_fixed_cost_scenario_id',
+            table='subscenarios_project_existing_fixed_cost'
+        )
+        return setting_options_api
+
+
+class SettingProjectNewCost(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_new_cost_scenario_id',
+            table='subscenarios_project_new_cost'
+        )
+        return setting_options_api
+
+
+class SettingProjectNewPotential(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_new_potential_scenario_id',
+            table='subscenarios_project_new_potential'
+        )
+        return setting_options_api
+
+
+class SettingProjectAvailability(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_availability_scenario_id',
+            table='subscenarios_project_availability'
         )
         return setting_options_api
 
@@ -855,6 +946,21 @@ api.add_resource(SettingProjectLoadZones,
                  '/scenario-settings/project-load-zones')
 api.add_resource(SettingTxLoadZones,
                  '/scenario-settings/tx-load-zones')
+api.add_resource(SettingSystemLoad,
+                 '/scenario-settings/system-load')
+api.add_resource(SettingProjectPorftolio,
+                 '/scenario-settings/project-portfolio')
+api.add_resource(SettingProjectExistingCapacity,
+                 '/scenario-settings/project-existing-capacity')
+api.add_resource(SettingProjectExistingFixedCost,
+                 '/scenario-settings/project-existing-fixed-cost')
+api.add_resource(SettingProjectNewCost,
+                 '/scenario-settings/project-new-cost')
+api.add_resource(SettingProjectNewPotential,
+                 '/scenario-settings/project-new-potential')
+api.add_resource(SettingProjectAvailability,
+                 '/scenario-settings/project-availability')
+
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
@@ -864,6 +970,7 @@ api.add_resource(ServerStatus, '/server-status')
 @socketio.on('add_new_scenario')
 def add_new_scenario(msg):
     print('Inserting new scenario...')
+
     print(msg)
 
     io, c = connect_to_database()
@@ -894,7 +1001,11 @@ def add_new_scenario(msg):
             table='subscenarios_temporal',
             setting_name=msg['temporalSetting']
         ),
-        load_zone_scenario_id='NULL',
+        load_zone_scenario_id=get_setting_option_id(
+            id_column='load_zone_scenario_id',
+            table='subscenarios_geography_load_zones',
+            setting_name=msg['geographyLoadZonesSetting']
+        ),
         lf_reserves_up_ba_scenario_id='NULL',
         lf_reserves_down_ba_scenario_id='NULL',
         regulation_up_ba_scenario_id='NULL',
@@ -905,11 +1016,23 @@ def add_new_scenario(msg):
         carbon_cap_zone_scenario_id='NULL',
         prm_zone_scenario_id='NULL',
         local_capacity_zone_scenario_id='NULL',
-        project_portfolio_scenario_id='NULL',
+        project_portfolio_scenario_id=get_setting_option_id(
+            id_column='project_portfolio_scenario_id',
+            table='subscenarios_project_portfolios',
+            setting_name=msg['projectPortfolioSetting']
+        ),
         project_operational_chars_scenario_id='NULL',
-        project_availability_scenario_id='NULL',
+        project_availability_scenario_id=get_setting_option_id(
+            id_column='project_availability_scenario_id',
+            table='subscenarios_project_availability',
+            setting_name=msg['projectAvailabilitySetting']
+        ),
         fuel_scenario_id='NULL',
-        project_load_zone_scenario_id='NULL',
+        project_load_zone_scenario_id=get_setting_option_id(
+            id_column='project_load_zone_scenario_id',
+            table='subscenarios_project_load_zones',
+            setting_name=msg['geographyProjectLoadZonesSetting']
+        ),
         project_lf_reserves_up_ba_scenario_id='NULL',
         project_lf_reserves_down_ba_scenario_id='NULL',
         project_regulation_up_ba_scenario_id='NULL',
@@ -923,20 +1046,44 @@ def add_new_scenario(msg):
         prm_energy_only_scenario_id='NULL',
         project_local_capacity_zone_scenario_id='NULL',
         project_local_capacity_chars_scenario_id='NULL',
-        project_existing_capacity_scenario_id='NULL',
-        project_existing_fixed_cost_scenario_id='NULL',
+        project_existing_capacity_scenario_id=get_setting_option_id(
+            id_column='project_existing_capacity_scenario_id',
+            table='subscenarios_project_existing_capacity',
+            setting_name=msg['projectExistingCapacitySetting']
+        ),
+        project_existing_fixed_cost_scenario_id=get_setting_option_id(
+            id_column='project_existing_fixed_cost_scenario_id',
+            table='subscenarios_project_existing_fixed_cost',
+            setting_name=msg['projectExistingFixedCostSetting']
+        ),
         fuel_price_scenario_id='NULL',
-        project_new_cost_scenario_id='NULL',
-        project_new_potential_scenario_id='NULL',
+        project_new_cost_scenario_id=get_setting_option_id(
+            id_column='project_new_cost_scenario_id',
+            table='subscenarios_project_new_cost',
+            setting_name=msg['projectNewCostSetting']
+        ),
+        project_new_potential_scenario_id=get_setting_option_id(
+            id_column='project_new_potential_scenario_id',
+            table='subscenarios_project_new_potential',
+            setting_name=msg['projectNewPotentialSetting']
+        ),
         transmission_portfolio_scenario_id='NULL',
-        transmission_load_zone_scenario_id='NULL',
+        transmission_load_zone_scenario_id=get_setting_option_id(
+            id_column='transmission_load_zone_scenario_id',
+            table='subscenarios_transmission_load_zones',
+            setting_name=msg['geographyTxLoadZonesSetting']
+        ),
         transmission_existing_capacity_scenario_id='NULL',
         transmission_operational_chars_scenario_id='NULL',
         transmission_hurdle_rate_scenario_id='NULL',
         transmission_carbon_cap_zone_scenario_id='NULL',
         transmission_simultaneous_flow_limit_scenario_id='NULL',
         transmission_simultaneous_flow_limit_line_group_scenario_id='NULL',
-        load_scenario_id='NULL',
+        load_scenario_id=get_setting_option_id(
+            id_column='load_scenario_id',
+            table='subscenarios_system_load',
+            setting_name=msg['systemLoadSetting']
+        ),
         lf_reserves_up_scenario_id='NULL',
         lf_reserves_down_scenario_id='NULL',
         regulation_up_scenario_id='NULL',

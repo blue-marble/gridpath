@@ -37,6 +37,48 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/tx-load-zones`
     )
   }
+
+  getSettingSystemLoad(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/system-load`
+    )
+  }
+
+  getSettingProjectPortfolio(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-portfolio`
+    )
+  }
+
+  getSettingProjectExistingCapacity(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-existing-capacity`
+    )
+  }
+
+  getSettingProjectExistingFixedCost(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-existing-fixed-cost`
+    )
+  }
+
+  getSettingProjectNewCost(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-new-cost`
+    )
+  }
+
+  getSettingProjectNewPotential(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-new-potential`
+    )
+  }
+
+  getSettingProjectAvailability(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-availability`
+    )
+  }
 }
 
 
