@@ -14,7 +14,7 @@ import { Setting, ScenarioNewService } from './scenario-new.service'
 export class ScenarioNewComponent implements OnInit {
 
   // The final structure we'll iterate over
-  ScenarioNewStructure: SettingTable[];
+  ScenarioNewStructure: SettingsTable[];
 
   // Setting elements
 
@@ -24,10 +24,11 @@ export class ScenarioNewComponent implements OnInit {
   featureSelectionOption: string[];
 
   // Temporal settings
-  temporalSettingTable: SettingTable;
+  temporalSettingsTable: SettingsTable;
   temporalSettingOptions: Setting[];
 
   // Load zone settings
+  loadZoneSettingsTable: SettingsTable;
   geographyLoadZonesSettingOptions: Setting[];
   geographyProjectLoadZonesSettingOptions: Setting[];
   geographyTxLoadZonesSettingOptions: Setting[];
@@ -270,14 +271,16 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.ScenarioNewStructure = [];
     this.getSettingOptionsTemporal();
+    this.getSettingOptionsLoadZones();
   }
 
   getSettingOptionsTemporal(): void {
     // Set the setting table captions
-    this.temporalSettingTable = new SettingTable();
-    this.temporalSettingTable.tableCaption = 'Temporal settings';
-    this.temporalSettingTable.settingRows = [];
+    this.temporalSettingsTable = new SettingsTable();
+    this.temporalSettingsTable.tableCaption = 'Temporal settings';
+    this.temporalSettingsTable.settingRows = [];
 
 
     // Get the settings
@@ -294,14 +297,89 @@ export class ScenarioNewComponent implements OnInit {
           temporalSettingRow.settingOptions = this.temporalSettingOptions;
 
           // Add the row to the table
-          this.temporalSettingTable.settingRows.push(temporalSettingRow);
-
-          // Add the table to the scenario structure
-          this.ScenarioNewStructure = [
-            this.temporalSettingTable
-          ];
+          this.temporalSettingsTable.settingRows.push(temporalSettingRow);
         }
       );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.temporalSettingsTable);
+  }
+
+  getSettingOptionsLoadZones(): void {
+    // Set the setting table captions
+    this.loadZoneSettingsTable = new SettingsTable();
+    this.loadZoneSettingsTable.tableCaption = 'Load zone settings';
+    this.loadZoneSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingLoadZones()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyLoadZonesSettingOptions = scenarioSetting;
+
+          // Create the row
+          const loadZoneSettingRow = new SettingRow();
+          loadZoneSettingRow.rowName = 'geography_load_zones';
+          loadZoneSettingRow.rowFormControlName = 'geographyLoadZonesSetting';
+          loadZoneSettingRow.settingOptions =
+            this.geographyLoadZonesSettingOptions;
+
+          // Add the row to the table
+          this.loadZoneSettingsTable.settingRows.push(loadZoneSettingRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectLoadZones()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyProjectLoadZonesSettingOptions = scenarioSetting;
+
+          // Create the row
+          const projectLoadZoneSettingRow = new SettingRow();
+          projectLoadZoneSettingRow.rowName = 'project_load_zones';
+          projectLoadZoneSettingRow.rowFormControlName =
+            'geographyProjectLoadZonesSetting';
+          projectLoadZoneSettingRow.settingOptions =
+            this.geographyProjectLoadZonesSettingOptions;
+
+          // Add the row to the table
+          this.loadZoneSettingsTable.settingRows.push(projectLoadZoneSettingRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingTransmissionLoadZones()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyTxLoadZonesSettingOptions = scenarioSetting;
+
+          // Create the row
+          const transmissionLoadZoneSettingRow = new SettingRow();
+          transmissionLoadZoneSettingRow.rowName = 'transmission_load_zones';
+          transmissionLoadZoneSettingRow.rowFormControlName =
+            'geographyTxLoadZonesSetting';
+          transmissionLoadZoneSettingRow.settingOptions =
+            this.geographyTxLoadZonesSettingOptions;
+
+          // Add the row to the table
+          this.loadZoneSettingsTable.settingRows.push(
+            transmissionLoadZoneSettingRow
+          );
+
+        }
+      );
+
+      // Add the table to the scenario structure
+      this.ScenarioNewStructure.push(this.loadZoneSettingsTable);
+
+
   }
 
   saveNewScenario() {
@@ -324,7 +402,7 @@ class Feature {
   formControlName: string;
 }
 
-class SettingTable {
+class SettingsTable {
   tableCaption: string;
   settingRows: SettingRow[]
 }

@@ -683,7 +683,7 @@ class ScenarioDetailLocalCapacity(Resource):
         return scenario_detail_api
 
 
-class SettingsTemporal(Resource):
+class SettingTemporal(Resource):
     """
 
     """
@@ -692,6 +692,49 @@ class SettingsTemporal(Resource):
         setting_options_api = get_setting_options(
             id_column='temporal_scenario_id',
             table='subscenarios_temporal'
+        )
+        return setting_options_api
+
+
+class SettingLoadZones(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='load_zone_scenario_id',
+            table='subscenarios_geography_load_zones'
+        )
+        return setting_options_api
+
+
+# TODO: will need to show only project_load_zone_scenario_id for the
+#  selected load_zone_scenario_id
+class SettingProjectLoadZones(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_load_zone_scenario_id',
+            table='subscenarios_project_load_zones'
+        )
+        return setting_options_api
+
+
+# TODO: will need to show only transmission_load_zone_scenario_id for the
+#  selected load_zone_scenario_id
+class SettingTxLoadZones(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_load_zone_scenario_id',
+            table='subscenarios_transmission_load_zones'
         )
         return setting_options_api
 
@@ -806,7 +849,12 @@ api.add_resource(
 )
 
 # Scenario settings
-api.add_resource(SettingsTemporal, '/scenario-settings/temporal')
+api.add_resource(SettingTemporal, '/scenario-settings/temporal')
+api.add_resource(SettingLoadZones, '/scenario-settings/load-zones')
+api.add_resource(SettingProjectLoadZones,
+                 '/scenario-settings/project-load-zones')
+api.add_resource(SettingTxLoadZones,
+                 '/scenario-settings/tx-load-zones')
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')

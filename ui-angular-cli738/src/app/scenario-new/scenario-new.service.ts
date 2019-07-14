@@ -19,6 +19,24 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/temporal`
     )
   }
+
+  getSettingLoadZones(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/load-zones`
+    )
+  }
+
+  getSettingProjectLoadZones(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-load-zones`
+    )
+  }
+
+  getSettingTransmissionLoadZones(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/tx-load-zones`
+    )
+  }
 }
 
 
