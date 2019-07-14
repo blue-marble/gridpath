@@ -79,6 +79,12 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/project-availability`
     )
   }
+
+  getSettingProjectOpChar(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-opchar`
+    )
+  }
 }
 
 

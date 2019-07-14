@@ -65,7 +65,9 @@ def set_database_path(db_path):
     Scenarios.get()
 
 
-# ### API ### #
+# ################################### API ################################### #
+
+# ### API: Scenarios List ### #
 class Scenarios(Resource):
     """
     The list of scenarios.
@@ -87,89 +89,7 @@ class Scenarios(Resource):
         return scenarios_api
 
 
-def get_scenario_detail(scenario_id, columns_string):
-    """
-
-    :param scenario_id:
-    :param columns_string:
-    :return:
-    """
-    io, c = connect_to_database()
-
-    scenario_detail_query = c.execute(
-        """SELECT {}
-        FROM scenarios_view
-        WHERE scenario_id = {};""".format(columns_string, scenario_id)
-    )
-
-    column_names = [s[0] for s in scenario_detail_query.description]
-    column_values = list(list(scenario_detail_query)[0])
-    scenario_detail_dict = dict(zip(column_names, column_values))
-
-    scenario_detail_api = []
-    for key in scenario_detail_dict.keys():
-        scenario_detail_api.append(
-            {'name': key, 'value': scenario_detail_dict[key]}
-        )
-
-    return scenario_detail_api
-
-
-def get_setting_options(id_column, table):
-    """
-
-    """
-    io, c = connect_to_database()
-
-    setting_options_query = c.execute(
-        """SELECT {}, name FROM {};""".format(id_column, table)
-    ).fetchall()
-
-    setting_options_api = []
-    for row in setting_options_query:
-        setting_options_api.append(
-            {'id': row[0], 'name': row[1]}
-        )
-
-    return setting_options_api
-
-
-def get_setting_option_id(id_column, table, setting_name):
-    """
-
-    :param id_column:
-    :param table:
-    :param setting_name:
-    :return:
-    """
-    io, c = connect_to_database()
-    setting_id = c.execute(
-        """SELECT {} FROM {} WHERE name = '{}'""".format(
-            id_column, table, setting_name
-        )
-    ).fetchone()[0]
-
-    return setting_id
-
-
-def check_feature(scenario_id, column_string):
-    """
-
-    :param scenario_id:
-    :param column_string:
-    :return:
-    """
-    io, c = connect_to_database()
-
-    scenario_feature_on = c.execute(
-        """SELECT {}
-        FROM scenarios
-        WHERE scenario_id = {};""".format(column_string, scenario_id)
-    ).fetchone()[0]
-
-    return scenario_feature_on
-
-
+# ### API: Scenario Detail ### #
 class ScenarioDetailAll(Resource):
     """
     Detailed information for a scenario.
@@ -682,6 +602,7 @@ class ScenarioDetailLocalCapacity(Resource):
         return scenario_detail_api
 
 
+# ### API: New Scenario Settings ### #
 class SettingTemporal(Resource):
     """
 
@@ -830,6 +751,20 @@ class SettingProjectAvailability(Resource):
         return setting_options_api
 
 
+class SettingProjectOpChar(Resource):
+    """
+
+    """
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_operational_chars_scenario_id',
+            table='subscenarios_project_operational_chars'
+        )
+        return setting_options_api
+
+
+# ### API: Status ### #
 class ServerStatus(Resource):
     """
     Server status; response will be 'running'; if HTTP error is caught,
@@ -840,11 +775,12 @@ class ServerStatus(Resource):
         return 'running'
 
 
-# ### Routes ### #
+# ##### API: Routes ##### #
+# ### API Routes Scenario List ### #
 # Scenario list
 api.add_resource(Scenarios, '/scenarios/')
 
-# Scenario detail (by scenario_id)
+# ### API Routes Scenario Detail ### #
 # All
 api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
 # Features
@@ -939,7 +875,7 @@ api.add_resource(
     '/scenarios/<scenario_id>/local-capacity'
 )
 
-# Scenario settings
+# ### API Routes New Scenario Settings ### #
 api.add_resource(SettingTemporal, '/scenario-settings/temporal')
 api.add_resource(SettingLoadZones, '/scenario-settings/load-zones')
 api.add_resource(SettingProjectLoadZones,
@@ -960,11 +896,96 @@ api.add_resource(SettingProjectNewPotential,
                  '/scenario-settings/project-new-potential')
 api.add_resource(SettingProjectAvailability,
                  '/scenario-settings/project-availability')
+api.add_resource(SettingProjectOpChar,
+                 '/scenario-settings/project-opchar')
 
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
 
+
+# ### API common functions ### #
+def get_scenario_detail(scenario_id, columns_string):
+    """
+
+    :param scenario_id:
+    :param columns_string:
+    :return:
+    """
+    io, c = connect_to_database()
+
+    scenario_detail_query = c.execute(
+        """SELECT {}
+        FROM scenarios_view
+        WHERE scenario_id = {};""".format(columns_string, scenario_id)
+    )
+
+    column_names = [s[0] for s in scenario_detail_query.description]
+    column_values = list(list(scenario_detail_query)[0])
+    scenario_detail_dict = dict(zip(column_names, column_values))
+
+    scenario_detail_api = []
+    for key in scenario_detail_dict.keys():
+        scenario_detail_api.append(
+            {'name': key, 'value': scenario_detail_dict[key]}
+        )
+
+    return scenario_detail_api
+
+
+def get_setting_options(id_column, table):
+    """
+
+    """
+    io, c = connect_to_database()
+
+    setting_options_query = c.execute(
+        """SELECT {}, name FROM {};""".format(id_column, table)
+    ).fetchall()
+
+    setting_options_api = []
+    for row in setting_options_query:
+        setting_options_api.append(
+            {'id': row[0], 'name': row[1]}
+        )
+
+    return setting_options_api
+
+
+def get_setting_option_id(id_column, table, setting_name):
+    """
+
+    :param id_column:
+    :param table:
+    :param setting_name:
+    :return:
+    """
+    io, c = connect_to_database()
+    setting_id = c.execute(
+        """SELECT {} FROM {} WHERE name = '{}'""".format(
+            id_column, table, setting_name
+        )
+    ).fetchone()[0]
+
+    return setting_id
+
+
+def check_feature(scenario_id, column_string):
+    """
+
+    :param scenario_id:
+    :param column_string:
+    :return:
+    """
+    io, c = connect_to_database()
+
+    scenario_feature_on = c.execute(
+        """SELECT {}
+        FROM scenarios
+        WHERE scenario_id = {};""".format(column_string, scenario_id)
+    ).fetchone()[0]
+
+    return scenario_feature_on
 
 # ### Socket Communication ### #
 @socketio.on('add_new_scenario')
@@ -1021,7 +1042,11 @@ def add_new_scenario(msg):
             table='subscenarios_project_portfolios',
             setting_name=msg['projectPortfolioSetting']
         ),
-        project_operational_chars_scenario_id='NULL',
+        project_operational_chars_scenario_id=get_setting_option_id(
+            id_column='project_operational_chars_scenario_id',
+            table='subscenarios_project_operational_chars',
+            setting_name=msg['projectOperationalCharsSetting']
+        ),
         project_availability_scenario_id=get_setting_option_id(
             id_column='project_availability_scenario_id',
             table='subscenarios_project_availability',

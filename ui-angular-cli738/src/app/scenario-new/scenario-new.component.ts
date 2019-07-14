@@ -294,6 +294,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsLoadZones();
     this.getSettingOptionsLoad();
     this.getSettingOptionsProjectCapacity();
+    this.getSettingOptionsProjectOperationalChars()
   }
 
   getSettingOptionsTemporal(): void {
@@ -547,6 +548,40 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.projectCapacitySettingsTable);
+
+  }
+
+  getSettingOptionsProjectOperationalChars(): void {
+    // Set the setting table captions
+    this.projectOperationalCharsSettingsTable = new SettingsTable();
+    this.projectOperationalCharsSettingsTable.tableCaption =
+      'Project operational characteristics';
+    this.projectOperationalCharsSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingProjectOpChar()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectOperationalCharsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'project_operational_characteristics',
+            'projectOperationalCharsSetting',
+            this.projectOperationalCharsSettingOptions
+          );
+
+          // Add the row to the table
+          this.projectOperationalCharsSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+      // Add the table to the scenario structure
+      this.ScenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
 
   }
 
