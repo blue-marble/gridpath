@@ -33,22 +33,30 @@
       </ng-container>
 </table>
 
-<table class="scenario-detail">
-  <caption>Temporal settings</caption>
-      <tr>
-        <th>Name</th>
-        <th>Value</th>
-      </tr>
-       <tr>
-         <td>Temporal</td>
-         <td><select formControlName="temporalSetting">
+<ng-container *ngFor="let tbl of ScenarioNewStructure">
+  <table class="scenario-detail">
+    <caption>{{tbl.tableCaption}}</caption>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+        </tr>
+      <ng-container *ngFor="let tblRow of tbl.settingRows">
+         <tr>
+           <td>{{tblRow.rowName}}</td>
+           <td>
+             <select formControlName="{{tblRow.rowFormControlName}}">
                 <option value=""></option>
-                <option *ngFor="let setting of temporalSettingOptions">
+                <option *ngFor="let setting of tblRow.settingOptions">
                   {{setting.name}}
                 </option>
-              </select></td>
-      </tr>
-</table>
+              </select>
+           </td>
+        </tr>
+      </ng-container>
+  </table>
+</ng-container>
+
+<button class="button-primary">Validate Scenario (inactive)</button>
 
 <button type="submit" [disabled]="!newScenarioForm.valid"
         class="button-primary">
