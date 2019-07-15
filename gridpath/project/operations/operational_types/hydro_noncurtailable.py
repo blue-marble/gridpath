@@ -115,6 +115,22 @@ def add_module_specific_components(m, d):
         Var(m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals)
 
+    # Expressions
+    def upwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, headroom_variables)[g])
+    m.Hydro_Noncurtailable_Upwards_Reserves_MW = Expression(
+        m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=upwards_reserve_rule)
+
+    def downwards_reserve_rule(mod, g, tmp):
+        return sum(getattr(mod, c)[g, tmp]
+                   for c in getattr(d, footroom_variables)[g])
+    m.Hydro_Noncurtailable_Downwards_Reserves_MW = Expression(
+        m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=downwards_reserve_rule)
+
+
     # Operational constraints
     def hydro_energy_budget_rule(mod, g, h):
         """
@@ -144,12 +160,9 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] + \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, headroom_variables)[g]) \
-            <= mod.hydro_noncurtailable_max_power_mw[
-                   g, mod.horizon[tmp]
-               ]
+        return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] \
+            + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[g, tmp] \
+            <= mod.hydro_noncurtailable_max_power_mw[g, mod.horizon[tmp]]
     m.Hydro_Noncurtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -164,27 +177,20 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] - \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, footroom_variables)[g]) \
-            >= mod.hydro_noncurtailable_min_power_mw[
-                   g, mod.horizon[tmp]]
+        return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]\
+            - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[g, tmp] \
+            >= mod.hydro_noncurtailable_min_power_mw[g, mod.horizon[tmp]]
     m.Hydro_Noncurtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
             rule=min_power_rule
         )
 
-    # Constrain ramps
-    m.Hydro_Noncurtailable_Ramp_MW = Expression(
-        m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_rule
-    )
-
     def ramp_up_rule(mod, g, tmp):
         """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp up rate limits.
+        Difference between power generation of consecutive timepoints, adjusted
+        for reserve provision in current and previous timepoint, has to obey
+        ramp up rate limits.
 
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
@@ -205,7 +211,12 @@ def add_module_specific_components(m, d):
              >= 1:
             return Constraint.Skip
         else:
-            return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
+            return (mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]
+                    + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[g, tmp]) \
+                - (mod.Hydro_Noncurtailable_Provide_Power_MW[
+                        g, mod.previous_timepoint[tmp]]
+                   - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[
+                        g, mod.previous_timepoint[tmp]]) \
                 <= \
                 mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -220,8 +231,9 @@ def add_module_specific_components(m, d):
 
     def ramp_down_rule(mod, g, tmp):
         """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp down rate limits.
+        Difference between power generation of consecutive timepoints, adjusted
+        for reserve provision in current and previous timepoint, has to obey
+        ramp down rate limits.
 
         We assume that a unit has to reach its setpoint at the start of the
         timepoint; as such, the ramping between 2 timepoints is assumed to
@@ -242,7 +254,12 @@ def add_module_specific_components(m, d):
              >= 1:
             return Constraint.Skip
         else:
-            return mod.Hydro_Noncurtailable_Ramp_MW[g, tmp] \
+            return (mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]
+                    - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[g, tmp]) \
+                - (mod.Hydro_Noncurtailable_Provide_Power_MW[
+                        g, mod.previous_timepoint[tmp]]
+                   + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[
+                        g, mod.previous_timepoint[tmp]]) \
                 >= \
                 - mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -363,13 +380,13 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
-def ramp_rule(mod, g, tmp):
+def power_delta_rule(mod, g, tmp):
     """
-    
-    :param mod: 
-    :param g: 
-    :param tmp: 
-    :return: 
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":
@@ -377,8 +394,8 @@ def ramp_rule(mod, g, tmp):
     else:
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] - \
                mod.Hydro_Noncurtailable_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp]
-                ]
+                   g, mod.previous_timepoint[tmp]
+               ]
 
 
 def load_module_specific_data(m,

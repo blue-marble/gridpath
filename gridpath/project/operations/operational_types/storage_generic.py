@@ -428,13 +428,12 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
-def ramp_rule(mod, g, tmp):
+def power_delta_rule(mod, g, tmp):
     """
-
-    :param mod: 
-    :param g: 
-    :param tmp: 
-    :return: 
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
             and mod.boundary[mod.horizon[tmp]] == "linear":

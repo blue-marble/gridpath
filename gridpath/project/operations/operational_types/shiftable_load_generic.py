@@ -180,9 +180,8 @@ def startup_shutdown_rule(mod, g, tmp):
     )
 
 
-def ramp_rule(mod, l, tmp):
+def power_delta_rule(mod, l, tmp):
     """
-
     :param mod:
     :param l:
     :param tmp:
