@@ -356,7 +356,8 @@ class ScenarioDetailLoadFollowingUp(Resource):
         if check_feature(scenario_id, 'of_lf_reserves_up'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'load_following_reserves_up_profile, project_lf_up_bas'
+                'geography_lf_up_bas, load_following_reserves_up_profile, '
+                'project_lf_up_bas'
             )
         else:
             scenario_detail_api = [
@@ -380,7 +381,8 @@ class ScenarioDetailLoadFollowingDown(Resource):
         if check_feature(scenario_id, 'of_lf_reserves_down'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'load_following_reserves_down_profile, project_lf_down_bas'
+                'geography_lf_down_bas, load_following_reserves_down_profile, '
+                'project_lf_down_bas'
             )
         else:
             scenario_detail_api = [
@@ -404,7 +406,8 @@ class ScenarioDetailRegulationUp(Resource):
         if check_feature(scenario_id, 'of_regulation_up'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'regulation_up_profile, project_reg_up_bas'
+                'geography_reg_up_bas, regulation_up_profile, '
+                'project_reg_up_bas'
             )
         else:
             scenario_detail_api = [
@@ -426,7 +429,8 @@ class ScenarioDetailRegulationDown(Resource):
         if check_feature(scenario_id, 'of_regulation_down'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'regulation_down_profile, project_reg_down_bas'
+                'geography_reg_down_bas, regulation_down_profile, '
+                'project_reg_down_bas'
             )
         else:
             scenario_detail_api = [
@@ -448,7 +452,8 @@ class ScenarioDetailSpinningReserves(Resource):
         if check_feature(scenario_id, 'of_spinning_reserves'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'spinning_reserves_profile, project_spin_bas'
+                'geography_spin_bas, spinning_reserves_profile, '
+                'project_spin_bas'
             )
         else:
             scenario_detail_api = [
@@ -470,7 +475,8 @@ class ScenarioDetailFrequencyResponse(Resource):
         if check_feature(scenario_id, 'of_frequency_response'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'frequency_response_profile, project_freq_resp_bas'
+                'geography_freq_resp_bas, frequency_response_profile, '
+                'project_freq_resp_bas'
             )
         else:
             scenario_detail_api = [
