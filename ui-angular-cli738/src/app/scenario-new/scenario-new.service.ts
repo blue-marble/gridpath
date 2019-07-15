@@ -85,6 +85,18 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/project-opchar`
     )
   }
+
+  getSettingFuels(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/fuels`
+    )
+  }
+
+  getSettingFuelPrices(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/fuel-prices`
+    )
+  }
 }
 
 

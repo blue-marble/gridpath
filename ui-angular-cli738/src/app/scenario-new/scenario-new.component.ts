@@ -51,8 +51,8 @@ export class ScenarioNewComponent implements OnInit {
   projectOperationalCharsSettingOptions: Setting[];
 
   // Fuel settings
-  projectFuelsSettingsTable: SettingsTable;
-  projectFuelsSettingOptions: Setting[];
+  fuelSettingsTable: SettingsTable;
+  fuelSettingOptions: Setting[];
   fuelPricesSettingOptions: Setting[];
 
   // Transmission capacity settings
@@ -294,7 +294,8 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsLoadZones();
     this.getSettingOptionsLoad();
     this.getSettingOptionsProjectCapacity();
-    this.getSettingOptionsProjectOperationalChars()
+    this.getSettingOptionsProjectOperationalChars();
+    this.getSettingOptionsFuels();
   }
 
   getSettingOptionsTemporal(): void {
@@ -392,8 +393,8 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
 
-      // Add the table to the scenario structure
-      this.ScenarioNewStructure.push(this.loadZoneSettingsTable);
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.loadZoneSettingsTable);
 
   }
 
@@ -425,8 +426,8 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
 
-      // Add the table to the scenario structure
-      this.ScenarioNewStructure.push(this.systemLoadSettingsTable);
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.systemLoadSettingsTable);
 
   }
 
@@ -580,11 +581,63 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
 
-      // Add the table to the scenario structure
-      this.ScenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
 
   }
 
+  getSettingOptionsFuels(): void {
+    // Set the setting table captions
+    this.fuelSettingsTable = new SettingsTable();
+    this.fuelSettingsTable.tableCaption ='Fuels settings';
+    this.fuelSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingFuels()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.fuelSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'fuel_characteristics',
+            'projectFuelsSetting',
+            this.fuelSettingOptions
+          );
+
+          // Add the row to the table
+          this.fuelSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingFuelPrices()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.fuelPricesSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'fuel_prices',
+            'fuelPricesSetting',
+            this.fuelPricesSettingOptions
+          );
+
+          // Add the row to the table
+          this.fuelSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.fuelSettingsTable);
+
+  }
 
 
   saveNewScenario() {

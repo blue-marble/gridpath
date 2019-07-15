@@ -764,6 +764,34 @@ class SettingProjectOpChar(Resource):
         return setting_options_api
 
 
+class SettingFuels(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='fuel_scenario_id',
+            table='subscenarios_project_fuels'
+        )
+        return setting_options_api
+
+
+class SettingFuelPrices(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='fuel_price_scenario_id',
+            table='subscenarios_project_fuel_prices'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -898,6 +926,10 @@ api.add_resource(SettingProjectAvailability,
                  '/scenario-settings/project-availability')
 api.add_resource(SettingProjectOpChar,
                  '/scenario-settings/project-opchar')
+api.add_resource(SettingFuels,
+                 '/scenario-settings/fuels')
+api.add_resource(SettingFuelPrices,
+                 '/scenario-settings/fuel-prices')
 
 
 # Server status
@@ -1052,7 +1084,11 @@ def add_new_scenario(msg):
             table='subscenarios_project_availability',
             setting_name=msg['projectAvailabilitySetting']
         ),
-        fuel_scenario_id='NULL',
+        fuel_scenario_id=get_setting_option_id(
+            id_column='fuel_scenario_id',
+            table='subscenarios_project_fuels',
+            setting_name=msg['projectFuelsSetting']
+        ),
         project_load_zone_scenario_id=get_setting_option_id(
             id_column='project_load_zone_scenario_id',
             table='subscenarios_project_load_zones',
@@ -1081,7 +1117,11 @@ def add_new_scenario(msg):
             table='subscenarios_project_existing_fixed_cost',
             setting_name=msg['projectExistingFixedCostSetting']
         ),
-        fuel_price_scenario_id='NULL',
+        fuel_price_scenario_id=get_setting_option_id(
+            id_column='fuel_price_scenario_id',
+            table='subscenarios_project_fuel_prices',
+            setting_name=msg['fuelPricesSetting']
+        ),
         project_new_cost_scenario_id=get_setting_option_id(
             id_column='project_new_cost_scenario_id',
             table='subscenarios_project_new_cost',
