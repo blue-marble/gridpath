@@ -71,7 +71,7 @@ def load_operational_type_modules(required_operational_modules):
     return load_subtype_modules(
         required_operational_modules,
         "gridpath.project.operations.operational_types",
-        ["power_provision_rule", "fuel_burn_rule",
+        ["power_provision_rule",
          "startup_shutdown_rule"]
          )
 

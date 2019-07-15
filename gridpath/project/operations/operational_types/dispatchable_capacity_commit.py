@@ -101,6 +101,14 @@ def add_module_specific_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
 
+    m.DISPATCHABLE_CAPACITY_COMMIT_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=3,
+            within=m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+            rule=lambda mod:
+            set((g, tmp, s) for (g, tmp, s)
+                in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+                if g in mod.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS))
+
     m.unit_size_mw = Param(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS,
                            within=NonNegativeReals)
     m.disp_cap_commit_min_stable_level_fraction = \
@@ -135,6 +143,10 @@ def add_module_specific_components(m, d):
         Var(m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
             within=NonNegativeReals
             )
+    m.Fuel_Burn_DispCapCommit_MMBTU = Var(
+        m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
+    )
 
     # Expressions
     def upwards_reserve_rule(mod, g, tmp):
@@ -676,6 +688,32 @@ def add_module_specific_components(m, d):
         rule=min_down_time_constraint_rule
     )
 
+    def fuel_burn_constraint_rule(mod, g, tmp, s):
+        """
+        Fuel burn is set by piecewise linear representation of input/output
+        curve.
+
+        Note: The availability de-rate is already accounted for in
+        Commit_Capacity_MW so we don't need to multiply the intercept
+        by the availability_derate like we do for always_on generators.
+        :param mod:
+        :param g:
+        :param tmp:
+        :param s:
+        :return:
+        """
+        return \
+            mod.Fuel_Burn_DispCapCommit_MMBTU[g, tmp] \
+            >= \
+            mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
+            * mod.Provide_Power_DispCapacityCommit_MW[g, tmp] \
+            + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
+            * (mod.Commit_Capacity_MW[g, tmp] / mod.unit_size_mw[g])
+    m.Fuel_Burn_DispCapCommit_Constraint = Constraint(
+        m.DISPATCHABLE_CAPACITY_COMMIT_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+        rule=fuel_burn_constraint_rule
+    )
+
 
 def power_provision_rule(mod, g, tmp):
     """
@@ -760,13 +798,8 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-# TODO: figure out how this should work with fleets (unit size here or in data)
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Fuel use in terms of an IO curve with an incremental heat rate above
-    the minimum stable level, i.e. a minimum MMBtu input to have the generator
-    on plus incremental fuel use for each MWh above the minimum stable level of
-    the generator.
     :param mod:
     :param g:
     :param tmp:
@@ -774,12 +807,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return (mod.Commit_Capacity_MW[g, tmp] / mod.unit_size_mw[g]) \
-            * mod.minimum_input_mmbtu_per_hr[g] \
-            + (mod.Provide_Power_DispCapacityCommit_MW[g, tmp] -
-                (mod.Commit_Capacity_MW[g, tmp]
-                 * mod.disp_cap_commit_min_stable_level_fraction[g])
-               ) * mod.inc_heat_rate_mmbtu_per_mwh[g]
+        return mod.Fuel_Burn_DispCapCommit_MMBTU[g, tmp]
     else:
         raise ValueError(error_message)
 

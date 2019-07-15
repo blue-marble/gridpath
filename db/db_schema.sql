@@ -489,8 +489,7 @@ technology VARCHAR(32),
 operational_type VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
-minimum_input_mmbtu_per_hr FLOAT,
-inc_heat_rate_mmbtu_per_mwh FLOAT,
+heat_rate_curves_scenario_id VARCHAR(64),  -- determined heat rate curve
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
 startup_cost_per_mw FLOAT,
@@ -522,7 +521,10 @@ spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
--- Ensure operational characteristics for variable and hydro exist
+-- Ensure operational characteristics for variable, hydro and heat rates exist
+FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
+subscenarios_project_heat_rate_curves
+(project, heat_rate_curves_scenario_id),
 FOREIGN KEY (project, variable_generator_profile_scenario_id) REFERENCES
 subscenarios_project_variable_generator_profiles
 (project, variable_generator_profile_scenario_id),
@@ -531,6 +533,28 @@ subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
+);
+
+-- Heat rate curves
+-- TODO: see comments variable profiles
+DROP TABLE IF EXISTS subscenarios_project_heat_rate_curves;
+CREATE TABLE subscenarios_project_heat_rate_curves (
+project VARCHAR(32),
+heat_rate_curves_scenario_id,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, heat_rate_curves_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_heat_rate_curves;
+CREATE TABLE inputs_project_heat_rate_curves (
+project VARCHAR(64),
+heat_rate_curves_scenario_id INTEGER,
+load_point_mw FLOAT,
+average_heat_rate_mmbtu_per_mwh FLOAT,
+PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_mw),
+FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
+subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
 );
 
 -- Variable generator profiles

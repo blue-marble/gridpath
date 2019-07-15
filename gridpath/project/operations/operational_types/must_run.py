@@ -146,8 +146,8 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     return 0
 
 
-# TODO: add data check that minimum_input_mmbtu_per_hr is 0 for must-run gens
-# TODO: change when can-build-new
+# TODO: add data check that there is indeed only 1 segment for must-run
+#   generators (and therefore there is no intercept)
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Output doesn't vary, so this is a constant
@@ -161,7 +161,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     :return:
     """
     if g in mod.FUEL_PROJECTS:
-        return mod.inc_heat_rate_mmbtu_per_mwh[g] \
+        return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
             * mod.Power_Provision_MW[g, tmp]
     else:
         raise ValueError(error_message)
