@@ -2,10 +2,9 @@
 <button ng-click="updateScenarios" class="button-primary"
         (click)="updateScenarios()">Update scenarios list</button>
 <ul class="scenarios">
-  <li *ngFor="let scenario of scenarios"
-    [class.selected]="scenario.id === selectedId">
+  <li *ngFor="let scenario of scenarios">
     <a [routerLink]="['/scenario', scenario.id]">
-      <span class="badge">{{ scenario.id }}</span>{{ scenario.name }}
+      {{ scenario.name }}
     </a>
   </li>
 </ul>

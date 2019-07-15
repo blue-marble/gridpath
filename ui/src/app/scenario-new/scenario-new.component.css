@@ -24,18 +24,3 @@
   margin-top: 10px;
   margin-bottom: 1px;
 }
-
-.button-primary {
-  background:aliceblue;
-  color:midnightblue;
-  font-size: medium;
-  font-weight: bold;
-  margin-top: 10px;
-  padding: 5px 10px;
-  cursor:pointer
-}
-
-.button-primary:hover {
-  background-color: darkblue;
-  color: white
-}
