@@ -134,7 +134,8 @@ export class ScenarioNewComponent implements OnInit {
   projectPRMEnergyOnlySettingOptions: Setting[];
 
   // Local capacity settings
-  localCapacityRequirementSettingsTable: SettingsTable;
+  localCapacitySettingsTable: SettingsTable;
+  geographyLocalCapacityAreasSettingOptions: Setting[];
   localCapacityRequirementSettingOptions: Setting[];
   projectLocalCapacityAreasSettingOptions: Setting[];
   projectLocalCapacityCharsSettingOptions: Setting[];
@@ -213,6 +214,7 @@ export class ScenarioNewComponent implements OnInit {
     projectELCCCharsSetting: new FormControl(''),
     elccSurfaceSetting: new FormControl(''),
     projectPRMEnergyOnlySetting: new FormControl(''),
+    geographyLocalCapacityAreasSetting: new FormControl(''),
     localCapacityRequirementSetting: new FormControl(''),
     projectLocalCapacityAreasSetting: new FormControl(''),
     projectLocalCapacityCharsSetting: new FormControl(''),
@@ -329,6 +331,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsRPS();
     this.getSettingOptionsCarbonCap();
     this.getSettingOptionsPRM();
+    this.getSettingOptionsLocalCapacity();
   }
 
   getSettingOptionsTemporal(): void {
@@ -1552,6 +1555,96 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.prmSettingsTable);
+
+  }
+  
+  getSettingOptionsLocalCapacity(): void {
+    // Set the setting table captions
+    this.localCapacitySettingsTable = new SettingsTable();
+    this.localCapacitySettingsTable.tableCaption =
+      'Local capacity settings';
+    this.localCapacitySettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingLocalCapacityAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyLocalCapacityAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'local_capacity_areas',
+            'geographyLocalCapacityAreasSetting',
+            this.geographyLocalCapacityAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.localCapacitySettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectLocalCapacityAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectLocalCapacityAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_local_capacity_areas',
+            'projectLocalCapacityAreasSetting',
+            this.projectLocalCapacityAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.localCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingLocalCapacityRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.localCapacityRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'local_capacity_requirement',
+            'localCapacityRequirementSetting',
+            this.localCapacityRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.localCapacitySettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectLocalCapacityChars()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectLocalCapacityCharsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_local_capacity_chars',
+            'projectLocalCapacityCharsSetting',
+            this.projectLocalCapacityCharsSettingOptions
+          );
+
+          // Add the row to the table
+          this.localCapacitySettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.localCapacitySettingsTable);
 
   }
 

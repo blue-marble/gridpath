@@ -319,6 +319,30 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/project-energy-only`
     )
   }
+
+  getSettingLocalCapacityAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/local-capacity-areas`
+    )
+  }
+
+  getSettingProjectLocalCapacityAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-local-capacity-areas`
+    )
+  }
+
+  getSettingLocalCapacityRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/local-capacity-req`
+    )
+  }
+
+  getSettingProjectLocalCapacityChars(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-local-capacity-chars`
+    )
+  }
 }
 
 

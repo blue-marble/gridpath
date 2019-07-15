@@ -1330,6 +1330,62 @@ class SettingELCCSurface(Resource):
         return setting_options_api
 
 
+class SettingLocalCapacityAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='local_capacity_zone_scenario_id',
+            table='subscenarios_geography_local_capacity_zones'
+        )
+        return setting_options_api
+
+
+class SettingLocalCapacityRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='local_capacity_requirement_scenario_id',
+            table='subscenarios_system_local_capacity_requirement'
+        )
+        return setting_options_api
+
+
+class SettingProjectLocalCapacityAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_local_capacity_zone_scenario_id',
+            table='subscenarios_project_local_capacity_zones'
+        )
+        return setting_options_api
+
+
+class SettingProjectLocalCapacityChars(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_local_capacity_chars_scenario_id',
+            table='subscenarios_project_local_capacity_chars'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1542,6 +1598,15 @@ api.add_resource(SettingProjectELCCChars,
 api.add_resource(SettingProjectPRMEnergyOnly,
                  '/scenario-settings/project-energy-only')
 
+api.add_resource(SettingLocalCapacityAreas,
+                 '/scenario-settings/local-capacity-areas')
+api.add_resource(SettingProjectLocalCapacityAreas,
+                 '/scenario-settings/project-local-capacity-areas')
+api.add_resource(SettingLocalCapacityRequirement,
+                 '/scenario-settings/local-capacity-req')
+api.add_resource(SettingProjectLocalCapacityChars,
+                 '/scenario-settings/project-local-capacity-chars')
+
 # Server status
 api.add_resource(ServerStatus, '/server-status')
 
@@ -1714,7 +1779,11 @@ def add_new_scenario(msg):
             table='subscenarios_geography_prm_zones',
             setting_name=msg['geographyPRMAreasSetting']
         ),
-        local_capacity_zone_scenario_id='NULL',
+        local_capacity_zone_scenario_id=get_setting_option_id(
+            id_column='local_capacity_zone_scenario_id',
+            table='subscenarios_geography_local_capacity_zones',
+            setting_name=msg['geographyLocalCapacityAreasSetting']
+        ),
         project_portfolio_scenario_id=get_setting_option_id(
             id_column='project_portfolio_scenario_id',
             table='subscenarios_project_portfolios',
@@ -1795,8 +1864,16 @@ def add_new_scenario(msg):
             table='subscenarios_project_prm_energy_only',
             setting_name=msg['projectPRMEnergyOnlySetting']
         ),
-        project_local_capacity_zone_scenario_id='NULL',
-        project_local_capacity_chars_scenario_id='NULL',
+        project_local_capacity_zone_scenario_id=get_setting_option_id(
+            id_column='project_local_capacity_zone_scenario_id',
+            table='subscenarios_project_local_capacity_zones',
+            setting_name=msg['projectLocalCapacityAreasSetting']
+        ),
+        project_local_capacity_chars_scenario_id=get_setting_option_id(
+            id_column='project_local_capacity_chars_scenario_id',
+            table='subscenarios_project_local_capacity_chars',
+            setting_name=msg['projectLocalCapacityCharsSetting']
+        ),
         project_existing_capacity_scenario_id=get_setting_option_id(
             id_column='project_existing_capacity_scenario_id',
             table='subscenarios_project_existing_capacity',
@@ -1922,7 +1999,11 @@ def add_new_scenario(msg):
             table='subscenarios_system_elcc_surface',
             setting_name=msg['elccSurfaceSetting']
         ),
-        local_capacity_requirement_scenario_id='NULL',
+        local_capacity_requirement_scenario_id=get_setting_option_id(
+            id_column='local_capacity_requirement_scenario_id',
+            table='subscenarios_system_local_capacity_requirement',
+            setting_name=msg['localCapacityRequirementSetting']
+        ),
         tuning_scenario_id='NULL'
     )
 
