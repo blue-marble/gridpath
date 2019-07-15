@@ -141,7 +141,8 @@ export class ScenarioNewComponent implements OnInit {
   projectLocalCapacityCharsSettingOptions: Setting[];
 
   // Tuning settings
-
+  tuningSettingsTable: SettingsTable;
+  tuningSettingOptions: Setting[];
 
   // Create the form
   newScenarioForm = new FormGroup({
@@ -218,6 +219,7 @@ export class ScenarioNewComponent implements OnInit {
     localCapacityRequirementSetting: new FormControl(''),
     projectLocalCapacityAreasSetting: new FormControl(''),
     projectLocalCapacityCharsSetting: new FormControl(''),
+    tuningSetting: new FormControl('')
     });
 
   constructor(private scenarioNewService: ScenarioNewService) {
@@ -332,6 +334,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsCarbonCap();
     this.getSettingOptionsPRM();
     this.getSettingOptionsLocalCapacity();
+    this.getSettingOptionsTuning();
   }
 
   getSettingOptionsTemporal(): void {
@@ -1646,6 +1649,36 @@ export class ScenarioNewComponent implements OnInit {
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.localCapacitySettingsTable);
 
+  }
+
+  getSettingOptionsTuning(): void {
+    // Set the setting table captions
+    this.tuningSettingsTable = new SettingsTable();
+    this.tuningSettingsTable.tableCaption = 'Tuning settings';
+    this.tuningSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingTuning()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.tuningSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'tuning',
+            'tuningSetting',
+             this.tuningSettingOptions
+          );
+
+          // Add the row to the table
+          this.tuningSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.tuningSettingsTable);
   }
 
   saveNewScenario() {

@@ -343,6 +343,12 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/project-local-capacity-chars`
     )
   }
+
+  getSettingTuning(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/tuning`
+    )
+  }
 }
 
 

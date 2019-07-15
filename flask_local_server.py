@@ -1386,6 +1386,20 @@ class SettingProjectLocalCapacityChars(Resource):
         return setting_options_api
 
 
+class SettingTuning(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='tuning_scenario_id',
+            table='subscenarios_tuning'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1606,6 +1620,8 @@ api.add_resource(SettingLocalCapacityRequirement,
                  '/scenario-settings/local-capacity-req')
 api.add_resource(SettingProjectLocalCapacityChars,
                  '/scenario-settings/project-local-capacity-chars')
+api.add_resource(SettingTuning,
+                 '/scenario-settings/tuning')
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
@@ -2004,7 +2020,11 @@ def add_new_scenario(msg):
             table='subscenarios_system_local_capacity_requirement',
             setting_name=msg['localCapacityRequirementSetting']
         ),
-        tuning_scenario_id='NULL'
+        tuning_scenario_id=get_setting_option_id(
+            id_column='tuning_scenario_id',
+            table='subscenarios_tuning',
+            setting_name=msg['tuningSetting']
+        )
     )
 
 
