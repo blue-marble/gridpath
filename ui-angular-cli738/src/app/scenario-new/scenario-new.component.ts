@@ -11,6 +11,8 @@ import { Setting, ScenarioNewService } from './scenario-new.service'
   templateUrl: './scenario-new.component.html',
   styleUrls: ['./scenario-new.component.css']
 })
+
+
 export class ScenarioNewComponent implements OnInit {
 
   // The final structure we'll iterate over
@@ -297,6 +299,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsProjectOperationalChars();
     this.getSettingOptionsFuels();
     this.getSettingOptionsTransmissionCapacity();
+    this.getSettingOptionsTransmissionOperationalChars();
   }
 
   getSettingOptionsTemporal(): void {
@@ -687,6 +690,42 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.transmissionCapacitySettingsTable);
+
+  }
+  
+  getSettingOptionsTransmissionOperationalChars(): void {
+    // Set the setting table captions
+    this.transmissionOperationalCharsSettingsTable = new SettingsTable();
+    this.transmissionOperationalCharsSettingsTable.tableCaption =
+      'Transmission operational characteristics';
+    this.transmissionOperationalCharsSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingTransmissionOpChar()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionOperationalCharsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'transmission_operational_characteristics',
+            'transmissionOperationalCharsSetting',
+            this.transmissionOperationalCharsSettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionOperationalCharsSettingsTable.settingRows.push(
+            newRow
+          );
+
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
 
   }
 

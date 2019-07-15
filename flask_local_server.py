@@ -820,6 +820,20 @@ class SettingTransmissionExistingCapacity(Resource):
         return setting_options_api
 
 
+class SettingTransmissionOpChar(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_operational_chars_scenario_id',
+            table='subscenarios_transmission_operational_chars'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -962,6 +976,8 @@ api.add_resource(SettingTransmissionPortfolio,
                  '/scenario-settings/transmission-portfolio')
 api.add_resource(SettingTransmissionExistingCapacity,
                  '/scenario-settings/transmission-existing-capacity')
+api.add_resource(SettingTransmissionOpChar,
+                 '/scenario-settings/transmission-opchar')
 
 
 # Server status
@@ -1179,7 +1195,11 @@ def add_new_scenario(msg):
             table='subscenarios_transmission_existing_capacity',
             setting_name=msg['transmissionExistingCapacitySetting']
         ),
-        transmission_operational_chars_scenario_id='NULL',
+        transmission_operational_chars_scenario_id=get_setting_option_id(
+            id_column='transmission_operational_chars_scenario_id',
+            table='subscenarios_transmission_operational_chars',
+            setting_name=msg['transmissionOperationalCharsSetting']
+        ),
         transmission_hurdle_rate_scenario_id='NULL',
         transmission_carbon_cap_zone_scenario_id='NULL',
         transmission_simultaneous_flow_limit_scenario_id='NULL',

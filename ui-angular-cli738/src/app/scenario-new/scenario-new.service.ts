@@ -109,6 +109,12 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/transmission-existing-capacity`
     )
   }
+
+  getSettingTransmissionOpChar(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-opchar`
+    )
+  }
 }
 
 
