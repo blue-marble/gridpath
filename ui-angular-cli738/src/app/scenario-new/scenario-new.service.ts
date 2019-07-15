@@ -224,7 +224,7 @@ export class ScenarioNewService {
     )
   }
 
-    getSettingFrequencyResponseBAs(): Observable<Setting[]> {
+  getSettingFrequencyResponseBAs(): Observable<Setting[]> {
     return this.http.get<Setting[]>(
       `${this.scenarioSettingsBaseURL}/freq-resp-bas`
     )
@@ -239,6 +239,24 @@ export class ScenarioNewService {
   getSettingFrequencyResponseRequirement(): Observable<Setting[]> {
     return this.http.get<Setting[]>(
       `${this.scenarioSettingsBaseURL}/freq-resp-req`
+    )
+  }
+
+  getSettingRPSAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/rps-areas`
+    )
+  }
+
+  getSettingProjectRPSAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-rps-areas`
+    )
+  }
+
+  getSettingRPSRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/rps-req`
     )
   }
 }

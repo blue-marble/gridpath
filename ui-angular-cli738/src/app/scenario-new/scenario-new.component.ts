@@ -112,7 +112,8 @@ export class ScenarioNewComponent implements OnInit {
   projectFrequencyResponseBAsSettingOptions: Setting[];
 
   // RPS settings
-  rpsTargetSettingsTable: SettingsTable;
+  rpsSettingsTable: SettingsTable;
+  geographyRPSAreasSettingOptions: Setting[];
   rpsTargetSettingOptions: Setting[];
   projectRPSAreasSettingOptions: Setting[];
 
@@ -197,6 +198,7 @@ export class ScenarioNewComponent implements OnInit {
     geographyFrequencyResponseBAsSetting: new FormControl(''),
     frequencyResponseRequirementSetting: new FormControl(''),
     projectFrequencyResponseBAsSetting: new FormControl(''),
+    geographyRPSAreasSetting: new FormControl(''),
     rpsTargetSetting: new FormControl(''),
     projectRPSAreasSetting: new FormControl(''),
     carbonCapSetting: new FormControl(''),
@@ -320,6 +322,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsRegulationDown();
     this.getSettingOptionsSpinningReserves();
     this.getSettingOptionsFrequencyResponse();
+    this.getSettingOptionsRPS();
   }
 
   getSettingOptionsTemporal(): void {
@@ -1255,6 +1258,77 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.frequencyResponseSettingsTable);
+
+  }
+  
+  getSettingOptionsRPS(): void {
+    // Set the setting table captions
+    this.rpsSettingsTable = new SettingsTable();
+    this.rpsSettingsTable.tableCaption =
+      'RPS settings';
+    this.rpsSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingRPSAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyRPSAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'rps_areas',
+            'geographyRPSAreasSetting',
+            this.geographyRPSAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.rpsSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectRPSAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectRPSAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_rps_areas',
+            'projectRPSAreasSetting',
+            this.projectRPSAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.rpsSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingRPSRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.rpsTargetSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'rps_target',
+            'rpsTargetSetting',
+            this.rpsTargetSettingOptions
+          );
+
+          // Add the row to the table
+          this.rpsSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.rpsSettingsTable);
 
   }
 

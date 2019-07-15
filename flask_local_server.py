@@ -1145,6 +1145,49 @@ class SettingFrequencyResponseRequirement(Resource):
         return setting_options_api
 
 
+class SettingRPSAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='rps_zone_scenario_id',
+            table='subscenarios_geography_rps_zones'
+        )
+        return setting_options_api
+
+
+# TODO: link two IDs
+class SettingProjectRPSAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_rps_zone_scenario_id',
+            table='subscenarios_project_rps_zones'
+        )
+        return setting_options_api
+
+
+class SettingRPSRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='rps_target_scenario_id',
+            table='subscenarios_system_rps_targets'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1331,6 +1374,12 @@ api.add_resource(SettingProjectFrequencyResponseBAs,
                  '/scenario-settings/project-freq-resp-bas')
 api.add_resource(SettingFrequencyResponseRequirement,
                  '/scenario-settings/freq-resp-req')
+api.add_resource(SettingRPSAreas,
+                 '/scenario-settings/rps-areas')
+api.add_resource(SettingProjectRPSAreas,
+                 '/scenario-settings/project-rps-areas')
+api.add_resource(SettingRPSRequirement,
+                 '/scenario-settings/rps-req')
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
@@ -1489,7 +1538,11 @@ def add_new_scenario(msg):
             table='subscenarios_geography_spinning_reserves_bas',
             setting_name=msg['geographySpinningReservesBAsSetting']
         ),
-        rps_zone_scenario_id='NULL',
+        rps_zone_scenario_id=get_setting_option_id(
+            id_column='rps_zone_scenario_id',
+            table='subscenarios_geography_rps_zones',
+            setting_name=msg['geographyRPSAreasSetting']
+        ),
         carbon_cap_zone_scenario_id='NULL',
         prm_zone_scenario_id='NULL',
         local_capacity_zone_scenario_id='NULL',
@@ -1548,7 +1601,11 @@ def add_new_scenario(msg):
             table='subscenarios_project_spinning_reserves_bas',
             setting_name=msg['projectSpinningReservesBAsSetting']
         ),
-        project_rps_zone_scenario_id='NULL',
+        project_rps_zone_scenario_id=get_setting_option_id(
+            id_column='project_rps_zone_scenario_id',
+            table='subscenarios_project_rps_zones',
+            setting_name=msg['projectRPSAreasSetting']
+        ),
         project_carbon_cap_zone_scenario_id='NULL',
         project_prm_zone_scenario_id='NULL',
         project_elcc_chars_scenario_id='NULL',
@@ -1656,7 +1713,11 @@ def add_new_scenario(msg):
             table='subscenarios_system_spinning_reserves',
             setting_name=msg['spinningReservesRequirementSetting']
         ),
-        rps_target_scenario_id='NULL',
+        rps_target_scenario_id=get_setting_option_id(
+            id_column='rps_target_scenario_id',
+            table='subscenarios_system_rps_targets',
+            setting_name=msg['rpsTargetSetting']
+        ),
         carbon_cap_target_scenario_id='NULL',
         prm_requirement_scenario_id='NULL',
         elcc_surface_scenario_id='NULL',
