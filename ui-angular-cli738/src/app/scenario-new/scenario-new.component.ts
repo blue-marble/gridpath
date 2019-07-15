@@ -300,6 +300,8 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsFuels();
     this.getSettingOptionsTransmissionCapacity();
     this.getSettingOptionsTransmissionOperationalChars();
+    this.getSettingOptionsTransmissionHurdleRates();
+    this.getSettingOptionsTransmissionSimultaneousFlowLimits();
   }
 
   getSettingOptionsTemporal(): void {
@@ -728,6 +730,93 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
 
   }
+  
+  getSettingOptionsTransmissionHurdleRates(): void {
+    // Set the setting table captions
+    this.transmissionHurdleRatesSettingsTable = new SettingsTable();
+    this.transmissionHurdleRatesSettingsTable.tableCaption =
+      'Transmission hurdle rates';
+    this.transmissionHurdleRatesSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingTransmissionHurdleRates()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionHurdleRatesSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'transmission_hurdle_rates',
+            'transmissionHurdleRatesSetting',
+            this.transmissionHurdleRatesSettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionHurdleRatesSettingsTable.settingRows.push(
+            newRow
+          );
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.transmissionHurdleRatesSettingsTable);
+  }
+
+  getSettingOptionsTransmissionSimultaneousFlowLimits(): void {
+    // Set the setting table captions
+    this.transmissionSimultaneousFlowLimitsSettingsTable = new SettingsTable();
+    this.transmissionSimultaneousFlowLimitsSettingsTable.tableCaption =
+      'Transmission simultaneous flow limits';
+    this.transmissionSimultaneousFlowLimitsSettingsTable.settingRows = [];
+
+    // Get the settings
+    this.scenarioNewService.getSettingTransmissionSimFlowLimits()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionSimultaneousFlowLimitsSettingOptions =
+            scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'transmission_simultaneous_flow_limits',
+            'transmissionSimultaneousFlowLimitsSetting',
+            this.transmissionSimultaneousFlowLimitsSettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionSimultaneousFlowLimitsSettingsTable.settingRows
+            .push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingTransmissionSimFlowLimitGroups()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionSimultaneousFlowLimitLineGroupsSettingOptions =
+            scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'transmission_simultaneous_flow_limit_line_groups',
+            'transmissionSimultaneousFlowLimitLineGroupsSetting',
+            this.transmissionSimultaneousFlowLimitLineGroupsSettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionSimultaneousFlowLimitsSettingsTable.settingRows
+            .push(newRow);
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(
+      this.transmissionSimultaneousFlowLimitsSettingsTable
+    );
+  }
 
   saveNewScenario() {
     const socket = io.connect('http://127.0.0.1:8080/');
@@ -736,8 +825,6 @@ export class ScenarioNewComponent implements OnInit {
     });
     socket.emit('add_new_scenario', this.newScenarioForm.value);
   }
-
-
 
 }
 

@@ -834,6 +834,50 @@ class SettingTransmissionOpChar(Resource):
         return setting_options_api
 
 
+class SettingTransmissionHurdleRates(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_hurdle_rate_scenario_id',
+            table='subscenarios_transmission_hurdle_rates'
+        )
+        return setting_options_api
+
+
+class SettingTransmissionSimFlowLimits(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_simultaneous_flow_limit_scenario_id',
+            table='subscenarios_transmission_simultaneous_flow_limits'
+        )
+        return setting_options_api
+
+
+class SettingTransmissionSimFlowLimitGroups(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column=
+            'transmission_simultaneous_flow_limit_line_group_scenario_id',
+            table=
+            'subscenarios_transmission_simultaneous_flow_limit_line_groups'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -978,6 +1022,12 @@ api.add_resource(SettingTransmissionExistingCapacity,
                  '/scenario-settings/transmission-existing-capacity')
 api.add_resource(SettingTransmissionOpChar,
                  '/scenario-settings/transmission-opchar')
+api.add_resource(SettingTransmissionHurdleRates,
+                 '/scenario-settings/transmission-hurdle-rates')
+api.add_resource(SettingTransmissionSimFlowLimits,
+                 '/scenario-settings/transmission-simflow-limits')
+api.add_resource(SettingTransmissionSimFlowLimitGroups,
+                 '/scenario-settings/transmission-simflow-limit-groups')
 
 
 # Server status
@@ -1200,10 +1250,27 @@ def add_new_scenario(msg):
             table='subscenarios_transmission_operational_chars',
             setting_name=msg['transmissionOperationalCharsSetting']
         ),
-        transmission_hurdle_rate_scenario_id='NULL',
+        transmission_hurdle_rate_scenario_id=get_setting_option_id(
+            id_column='transmission_hurdle_rate_scenario_id',
+            table='subscenarios_transmission_hurdle_rates',
+            setting_name=msg['transmissionHurdleRatesSetting']
+        ),
         transmission_carbon_cap_zone_scenario_id='NULL',
-        transmission_simultaneous_flow_limit_scenario_id='NULL',
-        transmission_simultaneous_flow_limit_line_group_scenario_id='NULL',
+        transmission_simultaneous_flow_limit_scenario_id=get_setting_option_id(
+            id_column='transmission_simultaneous_flow_limit_scenario_id',
+            table='subscenarios_transmission_simultaneous_flow_limits',
+            setting_name=msg['transmissionSimultaneousFlowLimitsSetting']
+        ),
+        transmission_simultaneous_flow_limit_line_group_scenario_id=
+        get_setting_option_id(
+            id_column=
+            'transmission_simultaneous_flow_limit_line_group_scenario_id',
+            table=
+            'subscenarios_transmission_simultaneous_flow_limit_line_groups',
+            setting_name=msg[
+                'transmissionSimultaneousFlowLimitLineGroupsSetting'
+            ]
+        ),
         load_scenario_id=get_setting_option_id(
             id_column='load_scenario_id',
             table='subscenarios_system_load',

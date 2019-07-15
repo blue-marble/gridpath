@@ -115,6 +115,24 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/transmission-opchar`
     )
   }
+
+  getSettingTransmissionHurdleRates(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-hurdle-rates`
+    )
+  }
+
+  getSettingTransmissionSimFlowLimits(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-simflow-limits`
+    )
+  }
+
+  getSettingTransmissionSimFlowLimitGroups(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-simflow-limit-groups`
+    )
+  }
 }
 
 
