@@ -499,7 +499,7 @@ class ScenarioDetailRPS(Resource):
         if check_feature(scenario_id, 'of_rps'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'rps_target, project_rps_areas'
+                'geography_rps_areas, rps_target, project_rps_areas'
             )
         else:
             scenario_detail_api = [
@@ -522,11 +522,13 @@ class ScenarioDetailCarbonCap(Resource):
                 and check_feature(scenario_id, 'of_track_carbon_imports'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'carbon_cap, project_carbon_cap_areas, '
+                'carbon_cap_areas, carbon_cap, project_carbon_cap_areas, '
                 'transmission_carbon_cap_zones'
             )
         elif not check_feature(scenario_id, 'of_carbon_cap'):
             scenario_detail_api = [
+                {"name": "carbon_cap_areas",
+                 "value": "WARNING: carbon cap feature disabled"},
                 {"name": "carbon_cap",
                  "value": "WARNING: carbon cap feature disabled"},
                 {"name": "projefct_carbon_cap_areas",
@@ -537,7 +539,7 @@ class ScenarioDetailCarbonCap(Resource):
         else:
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'carbon_cap, project_carbon_cap_areas, '
+                'carbon_cap_areas, carbon_cap, project_carbon_cap_areas, '
                 '"WARNING: tracking carbon imports feature disabled" AS'
                 'transmission_carbon_cap_zone_scenario_id'
             )
@@ -554,11 +556,13 @@ class ScenarioDetailPRM(Resource):
         if check_feature(scenario_id, 'of_prm'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'prm_requirement, project_prm_areas, '
+                'prm_areas, prm_requirement, project_prm_areas, '
                 'project_elcc_chars, elcc_surface, project_prm_energy_only'
             )
         elif not check_feature(scenario_id, 'of_prm'):
             scenario_detail_api = [
+                {"name": "prm_areas",
+                 "value": "WARNING: PRM feature disabled"},
                 {"name": "prm_requirement",
                  "value": "WARNING: PRM feature disabled"},
                 {"name": "project_prm_areas",
@@ -573,7 +577,7 @@ class ScenarioDetailPRM(Resource):
         else:
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'prm_requirement, project_prm_areas, '
+                'prm_areas, prm_requirement, project_prm_areas, '
                 '"WARNING: ELCC surface feature disabled" AS elcc_surface, '
                 'project_prm_areas, '
                 '"WARNING: ELCC surface feature disabled" AS '
@@ -592,11 +596,14 @@ class ScenarioDetailLocalCapacity(Resource):
         if check_feature(scenario_id, 'of_local_capacity'):
             scenario_detail_api = get_scenario_detail(
                 scenario_id,
-                'local_capacity_requirement, project_local_capacity_areas, '
+                'local_capacity_areas, local_capacity_requirement, '
+                'project_local_capacity_areas, '
                 'project_local_capacity_chars'
             )
         else:
             scenario_detail_api = [
+                {"name": "local_capacity_areas",
+                 "value": "WARNING: local capacity feature disabled"},
                 {"name": "local_capacity_requirement",
                  "value": "WARNING: local capacity feature disabled"},
                 {"name": "project_local_capacity_areas",
