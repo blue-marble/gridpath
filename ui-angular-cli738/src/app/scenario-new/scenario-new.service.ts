@@ -259,6 +259,30 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/rps-req`
     )
   }
+  
+  getSettingCarbonCapAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/carbon-cap-areas`
+    )
+  }
+
+  getSettingProjectCarbonCapAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-carbon-cap-areas`
+    )
+  }
+
+  getSettingTransmissionCarbonCapAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-carbon-cap-areas`
+    )
+  }
+
+  getSettingCarbonCapRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/carbon-cap-req`
+    )
+  }
 }
 
 

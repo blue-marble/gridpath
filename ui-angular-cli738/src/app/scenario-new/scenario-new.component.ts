@@ -119,7 +119,8 @@ export class ScenarioNewComponent implements OnInit {
 
   // Carbon cap settings
   carbonCapSettingsTable: SettingsTable;
-  carbonCapSettingOptions: Setting[];
+  geographyCarbonCapAreasSettingOptions: Setting[];
+  carbonCapTargetSettingOptions: Setting[];
   projectCarbonCapAreasSettingOptions: Setting[];
   transmissionCarbonCapAreasSettingOptions: Setting[];
 
@@ -201,7 +202,8 @@ export class ScenarioNewComponent implements OnInit {
     geographyRPSAreasSetting: new FormControl(''),
     rpsTargetSetting: new FormControl(''),
     projectRPSAreasSetting: new FormControl(''),
-    carbonCapSetting: new FormControl(''),
+    geographyCarbonCapAreasSetting: new FormControl(''),
+    carbonCapTargetSetting: new FormControl(''),
     projectCarbonCapAreasSetting: new FormControl(''),
     transmissionCarbonCapAreasSetting: new FormControl(''),
     prmRequirementSetting: new FormControl(''),
@@ -323,6 +325,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsSpinningReserves();
     this.getSettingOptionsFrequencyResponse();
     this.getSettingOptionsRPS();
+    this.getSettingOptionsCarbonCap();
   }
 
   getSettingOptionsTemporal(): void {
@@ -1329,6 +1332,95 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.rpsSettingsTable);
+
+  }
+  
+  getSettingOptionsCarbonCap(): void {
+    // Set the setting table captions
+    this.carbonCapSettingsTable = new SettingsTable();
+    this.carbonCapSettingsTable.tableCaption =
+      'CarbonCap settings';
+    this.carbonCapSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingCarbonCapAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyCarbonCapAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'carbon_cap_areas',
+            'geographyCarbonCapAreasSetting',
+            this.geographyCarbonCapAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.carbonCapSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectCarbonCapAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectCarbonCapAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_carbon_cap_areas',
+            'projectCarbonCapAreasSetting',
+            this.projectCarbonCapAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.carbonCapSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingTransmissionCarbonCapAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionCarbonCapAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'transmission_carbon_cap_areas',
+            'transmissionCarbonCapAreasSetting',
+            this.transmissionCarbonCapAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.carbonCapSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingCarbonCapRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.carbonCapTargetSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'carbon_cap_target',
+            'carbonCapTargetSetting',
+            this.carbonCapTargetSettingOptions
+          );
+
+          // Add the row to the table
+          this.carbonCapSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.carbonCapSettingsTable);
 
   }
 

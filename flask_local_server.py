@@ -1186,6 +1186,63 @@ class SettingRPSRequirement(Resource):
             table='subscenarios_system_rps_targets'
         )
         return setting_options_api
+    
+
+class SettingCarbonCapAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='carbon_cap_zone_scenario_id',
+            table='subscenarios_geography_carbon_cap_zones'
+        )
+        return setting_options_api
+
+
+# TODO: link two IDs
+class SettingProjectCarbonCapAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_carbon_cap_zone_scenario_id',
+            table='subscenarios_project_carbon_cap_zones'
+        )
+        return setting_options_api
+
+
+class SettingTransmissionCarbonCapAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_carbon_cap_zone_scenario_id',
+            table='subscenarios_transmission_carbon_cap_zones'
+        )
+        return setting_options_api
+
+
+class SettingCarbonCapRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='carbon_cap_target_scenario_id',
+            table='subscenarios_system_carbon_cap_targets'
+        )
+        return setting_options_api
 
 
 # ### API: Status ### #
@@ -1381,6 +1438,15 @@ api.add_resource(SettingProjectRPSAreas,
 api.add_resource(SettingRPSRequirement,
                  '/scenario-settings/rps-req')
 
+api.add_resource(SettingCarbonCapAreas,
+                 '/scenario-settings/carbon-cap-areas')
+api.add_resource(SettingProjectCarbonCapAreas,
+                 '/scenario-settings/project-carbon-cap-areas')
+api.add_resource(SettingTransmissionCarbonCapAreas,
+                 '/scenario-settings/transmission-carbon-cap-areas')
+api.add_resource(SettingCarbonCapRequirement,
+                 '/scenario-settings/carbon-cap-req')
+
 # Server status
 api.add_resource(ServerStatus, '/server-status')
 
@@ -1543,7 +1609,11 @@ def add_new_scenario(msg):
             table='subscenarios_geography_rps_zones',
             setting_name=msg['geographyRPSAreasSetting']
         ),
-        carbon_cap_zone_scenario_id='NULL',
+        carbon_cap_zone_scenario_id=get_setting_option_id(
+            id_column='carbon_cap_zone_scenario_id',
+            table='subscenarios_geography_carbon_cap_zones',
+            setting_name=msg['geographyCarbonCapAreasSetting']
+        ),
         prm_zone_scenario_id='NULL',
         local_capacity_zone_scenario_id='NULL',
         project_portfolio_scenario_id=get_setting_option_id(
@@ -1606,7 +1676,11 @@ def add_new_scenario(msg):
             table='subscenarios_project_rps_zones',
             setting_name=msg['projectRPSAreasSetting']
         ),
-        project_carbon_cap_zone_scenario_id='NULL',
+        project_carbon_cap_zone_scenario_id=get_setting_option_id(
+            id_column='project_carbon_cap_zone_scenario_id',
+            table='subscenarios_project_carbon_cap_zones',
+            setting_name=msg['projectCarbonCapAreasSetting']
+        ),
         project_prm_zone_scenario_id='NULL',
         project_elcc_chars_scenario_id='NULL',
         prm_energy_only_scenario_id='NULL',
@@ -1662,7 +1736,11 @@ def add_new_scenario(msg):
             table='subscenarios_transmission_hurdle_rates',
             setting_name=msg['transmissionHurdleRatesSetting']
         ),
-        transmission_carbon_cap_zone_scenario_id='NULL',
+        transmission_carbon_cap_zone_scenario_id=get_setting_option_id(
+            id_column='transmission_carbon_cap_zone_scenario_id',
+            table='subscenarios_transmission_carbon_cap_zones',
+            setting_name=msg['transmissionCarbonCapAreasSetting']
+        ),
         transmission_simultaneous_flow_limit_scenario_id=get_setting_option_id(
             id_column='transmission_simultaneous_flow_limit_scenario_id',
             table='subscenarios_transmission_simultaneous_flow_limits',
@@ -1718,7 +1796,11 @@ def add_new_scenario(msg):
             table='subscenarios_system_rps_targets',
             setting_name=msg['rpsTargetSetting']
         ),
-        carbon_cap_target_scenario_id='NULL',
+        carbon_cap_target_scenario_id=get_setting_option_id(
+            id_column='carbon_cap_target_scenario_id',
+            table='subscenarios_system_carbon_cap_targets',
+            setting_name=msg['carbonCapTargetSetting']
+        ),
         prm_requirement_scenario_id='NULL',
         elcc_surface_scenario_id='NULL',
         local_capacity_requirement_scenario_id='NULL',
