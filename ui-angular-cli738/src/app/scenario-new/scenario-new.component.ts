@@ -283,7 +283,7 @@ export class ScenarioNewComponent implements OnInit {
     this.features.push(featureLocalCapacity);
 
 
-    this.featureSelectionOption = this.featureSelectionOptions();
+    this.featureSelectionOption = featureSelectionOptions();
 
 
   }
@@ -314,7 +314,7 @@ export class ScenarioNewComponent implements OnInit {
           this.temporalSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'temporal',
             'temporalSetting',
              this.temporalSettingOptions
@@ -344,7 +344,7 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'geography_load_zones',
             'geographyLoadZonesSetting',
             this.geographyLoadZonesSettingOptions
@@ -364,7 +364,7 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyProjectLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_load_zones',
             'geographyProjectLoadZonesSetting',
             this.geographyProjectLoadZonesSettingOptions
@@ -382,7 +382,7 @@ export class ScenarioNewComponent implements OnInit {
           this.geographyTxLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'transmission_load_zones',
             'geographyTxLoadZonesSetting',
             this.geographyTxLoadZonesSettingOptions
@@ -414,7 +414,7 @@ export class ScenarioNewComponent implements OnInit {
           this.systemLoadSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'load_profile',
             'systemLoadSetting',
             this.systemLoadSettingOptions
@@ -447,7 +447,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectPortfolioSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_portfolio',
             'projectPortfolioSetting',
             this.projectPortfolioSettingOptions
@@ -465,7 +465,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectExistingCapacitySettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_existing_capacity',
             'projectExistingCapacitySetting',
             this.projectExistingCapacitySettingOptions
@@ -483,7 +483,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectExistingFixedCostSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_existing_fixed_cost',
             'projectExistingFixedCostSetting',
             this.projectExistingFixedCostSettingOptions
@@ -501,7 +501,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectNewCostSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_new_cost',
             'projectNewCostSetting',
             this.projectNewCostSettingOptions
@@ -519,7 +519,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectNewPotentialSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_new_potential',
             'projectNewPotentialSetting',
             this.projectNewPotentialSettingOptions
@@ -537,7 +537,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectAvailabilitySettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_availability',
             'projectAvailabilitySetting',
             this.projectAvailabilitySettingOptions
@@ -569,7 +569,7 @@ export class ScenarioNewComponent implements OnInit {
           this.projectOperationalCharsSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'project_operational_characteristics',
             'projectOperationalCharsSetting',
             this.projectOperationalCharsSettingOptions
@@ -602,7 +602,7 @@ export class ScenarioNewComponent implements OnInit {
           this.fuelSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'fuel_characteristics',
             'projectFuelsSetting',
             this.fuelSettingOptions
@@ -622,7 +622,7 @@ export class ScenarioNewComponent implements OnInit {
           this.fuelPricesSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'fuel_prices',
             'fuelPricesSetting',
             this.fuelPricesSettingOptions
@@ -656,7 +656,7 @@ export class ScenarioNewComponent implements OnInit {
           this.transmissionPortfolioSettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'transmission_portfolio',
             'transmissionPortfolioSetting',
             this.transmissionPortfolioSettingOptions
@@ -674,7 +674,7 @@ export class ScenarioNewComponent implements OnInit {
           this.transmissionExistingCapacitySettingOptions = scenarioSetting;
 
           // Create the row
-          const newRow = this.createRow(
+          const newRow = createRow(
             'transmission_existing_capacity',
             'transmissionExistingCapacitySetting',
             this.transmissionExistingCapacitySettingOptions
@@ -698,20 +698,7 @@ export class ScenarioNewComponent implements OnInit {
     socket.emit('add_new_scenario', this.newScenarioForm.value);
   }
 
-  featureSelectionOptions() {
-    return ['', 'yes', 'no']
-  }
 
-  createRow(rowName: string,
-            rowFormControlName: string,
-            settingOptions: Setting[]) {
-      const settingRow = new SettingRow();
-      settingRow.rowName = rowName;
-      settingRow.rowFormControlName = rowFormControlName;
-      settingRow.settingOptions = settingOptions;
-
-      return settingRow
-  }
 
 }
 
@@ -732,3 +719,17 @@ class SettingRow {
   settingOptions: Setting[]
 }
 
+function featureSelectionOptions() {
+    return ['', 'yes', 'no']
+  }
+
+function createRow(rowName: string,
+            rowFormControlName: string,
+            settingOptions: Setting[]) {
+      const settingRow = new SettingRow();
+      settingRow.rowName = rowName;
+      settingRow.rowFormControlName = rowFormControlName;
+      settingRow.settingOptions = settingOptions;
+
+      return settingRow
+  }
