@@ -283,6 +283,42 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/carbon-cap-req`
     )
   }
+
+  getSettingPRMAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/prm-areas`
+    )
+  }
+
+  getSettingProjectPRMAreas(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-prm-areas`
+    )
+  }
+
+  getSettingPRMRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/prm-req`
+    )
+  }
+
+  getSettingELCCSurface(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/elcc-surface`
+    )
+  }
+
+  getSettingProjectELCCChars(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-elcc-chars`
+    )
+  }
+
+  getSettingProjectEnergyOnly(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-energy-only`
+    )
+  }
 }
 
 

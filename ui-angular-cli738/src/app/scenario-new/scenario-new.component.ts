@@ -125,7 +125,8 @@ export class ScenarioNewComponent implements OnInit {
   transmissionCarbonCapAreasSettingOptions: Setting[];
 
   // PRM settings
-  prmRequirementSettingsTable: SettingsTable;
+  prmSettingsTable: SettingsTable;
+  geographyPRMAreasSettingOptions: Setting[];
   prmRequirementSettingOptions: Setting[];
   projectPRMAreasSettingOptions: Setting[];
   projectELCCCharsSettingOptions: Setting[];
@@ -206,6 +207,7 @@ export class ScenarioNewComponent implements OnInit {
     carbonCapTargetSetting: new FormControl(''),
     projectCarbonCapAreasSetting: new FormControl(''),
     transmissionCarbonCapAreasSetting: new FormControl(''),
+    geographyPRMAreasSetting: new FormControl(''),
     prmRequirementSetting: new FormControl(''),
     projectPRMAreasSetting: new FormControl(''),
     projectELCCCharsSetting: new FormControl(''),
@@ -326,6 +328,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsFrequencyResponse();
     this.getSettingOptionsRPS();
     this.getSettingOptionsCarbonCap();
+    this.getSettingOptionsPRM();
   }
 
   getSettingOptionsTemporal(): void {
@@ -1421,6 +1424,134 @@ export class ScenarioNewComponent implements OnInit {
 
     // Add the table to the scenario structure
     this.ScenarioNewStructure.push(this.carbonCapSettingsTable);
+
+  }
+  
+  getSettingOptionsPRM(): void {
+    // Set the setting table captions
+    this.prmSettingsTable = new SettingsTable();
+    this.prmSettingsTable.tableCaption =
+      'PRM settings';
+    this.prmSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingPRMAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyPRMAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'prm_areas',
+            'geographyPRMAreasSetting',
+            this.geographyPRMAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectPRMAreas()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectPRMAreasSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_prm_areas',
+            'projectPRMAreasSetting',
+            this.projectPRMAreasSettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingPRMRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.prmRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'prm_requirement',
+            'prmRequirementSetting',
+            this.prmRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    this.scenarioNewService.getSettingELCCSurface()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.elccSurfaceSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'elcc_surface',
+            'elccSurfaceSetting',
+            this.elccSurfaceSettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectELCCChars()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectELCCCharsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_elcc_chars',
+            'projectELCCCharsSetting',
+            this.projectELCCCharsSettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectEnergyOnly()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectPRMEnergyOnlySettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_energy_only',
+            'projectPRMEnergyOnlySetting',
+            this.projectPRMEnergyOnlySettingOptions
+          );
+
+          // Add the row to the table
+          this.prmSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.prmSettingsTable);
 
   }
 

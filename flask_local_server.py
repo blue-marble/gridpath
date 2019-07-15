@@ -1245,6 +1245,91 @@ class SettingCarbonCapRequirement(Resource):
         return setting_options_api
 
 
+class SettingPRMAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='prm_zone_scenario_id',
+            table='subscenarios_geography_prm_zones'
+        )
+        return setting_options_api
+
+
+class SettingPRMRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='prm_requirement_scenario_id',
+            table='subscenarios_system_prm_requirement'
+        )
+        return setting_options_api
+
+
+class SettingProjectPRMAreas(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_prm_zone_scenario_id',
+            table='subscenarios_project_prm_zones'
+        )
+        return setting_options_api
+
+
+# TODO: two ids
+class SettingProjectELCCChars(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_elcc_chars_scenario_id',
+            table='subscenarios_project_elcc_chars'
+        )
+        return setting_options_api
+
+
+class SettingProjectPRMEnergyOnly(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='prm_energy_only_scenario_id',
+            table='subscenarios_project_prm_energy_only'
+        )
+        return setting_options_api
+
+
+class SettingELCCSurface(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='elcc_surface_scenario_id',
+            table='subscenarios_system_elcc_surface'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1447,6 +1532,16 @@ api.add_resource(SettingTransmissionCarbonCapAreas,
 api.add_resource(SettingCarbonCapRequirement,
                  '/scenario-settings/carbon-cap-req')
 
+api.add_resource(SettingPRMAreas, '/scenario-settings/prm-areas')
+api.add_resource(SettingPRMRequirement, '/scenario-settings/prm-req')
+api.add_resource(SettingProjectPRMAreas,
+                 '/scenario-settings/project-prm-areas')
+api.add_resource(SettingELCCSurface, '/scenario-settings/elcc-surface')
+api.add_resource(SettingProjectELCCChars,
+                 '/scenario-settings/project-elcc-chars')
+api.add_resource(SettingProjectPRMEnergyOnly,
+                 '/scenario-settings/project-energy-only')
+
 # Server status
 api.add_resource(ServerStatus, '/server-status')
 
@@ -1614,7 +1709,11 @@ def add_new_scenario(msg):
             table='subscenarios_geography_carbon_cap_zones',
             setting_name=msg['geographyCarbonCapAreasSetting']
         ),
-        prm_zone_scenario_id='NULL',
+        prm_zone_scenario_id=get_setting_option_id(
+            id_column='prm_zone_scenario_id',
+            table='subscenarios_geography_prm_zones',
+            setting_name=msg['geographyPRMAreasSetting']
+        ),
         local_capacity_zone_scenario_id='NULL',
         project_portfolio_scenario_id=get_setting_option_id(
             id_column='project_portfolio_scenario_id',
@@ -1681,9 +1780,21 @@ def add_new_scenario(msg):
             table='subscenarios_project_carbon_cap_zones',
             setting_name=msg['projectCarbonCapAreasSetting']
         ),
-        project_prm_zone_scenario_id='NULL',
-        project_elcc_chars_scenario_id='NULL',
-        prm_energy_only_scenario_id='NULL',
+        project_prm_zone_scenario_id=get_setting_option_id(
+            id_column='project_prm_zone_scenario_id',
+            table='subscenarios_project_prm_zones',
+            setting_name=msg['projectPRMAreasSetting']
+        ),
+        project_elcc_chars_scenario_id=get_setting_option_id(
+            id_column='project_elcc_chars_scenario_id',
+            table='subscenarios_project_elcc_chars',
+            setting_name=msg['projectELCCCharsSetting']
+        ),
+        prm_energy_only_scenario_id=get_setting_option_id(
+            id_column='prm_energy_only_scenario_id',
+            table='subscenarios_project_prm_energy_only',
+            setting_name=msg['projectPRMEnergyOnlySetting']
+        ),
         project_local_capacity_zone_scenario_id='NULL',
         project_local_capacity_chars_scenario_id='NULL',
         project_existing_capacity_scenario_id=get_setting_option_id(
@@ -1801,8 +1912,16 @@ def add_new_scenario(msg):
             table='subscenarios_system_carbon_cap_targets',
             setting_name=msg['carbonCapTargetSetting']
         ),
-        prm_requirement_scenario_id='NULL',
-        elcc_surface_scenario_id='NULL',
+        prm_requirement_scenario_id=get_setting_option_id(
+            id_column='prm_requirement_scenario_id',
+            table='subscenarios_system_prm_requirement',
+            setting_name=msg['prmRequirementSetting']
+        ),
+        elcc_surface_scenario_id=get_setting_option_id(
+            id_column='elcc_surface_scenario_id',
+            table='subscenarios_system_elcc_surface',
+            setting_name=msg['elccSurfaceSetting']
+        ),
         local_capacity_requirement_scenario_id='NULL',
         tuning_scenario_id='NULL'
     )
