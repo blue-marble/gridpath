@@ -878,6 +878,260 @@ class SettingTransmissionSimFlowLimitGroups(Resource):
         return setting_options_api
 
 
+class SettingLFReservesUpBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='lf_reserves_up_ba_scenario_id',
+            table='subscenarios_geography_lf_reserves_up_bas'
+        )
+        return setting_options_api
+
+
+# TODO: link two IDs
+class SettingProjectLFReservesUpBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_lf_reserves_up_ba_scenario_id',
+            table='subscenarios_project_lf_reserves_up_bas'
+        )
+        return setting_options_api
+
+
+class SettingLFReservesUpRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='lf_reserves_up_scenario_id',
+            table='subscenarios_system_lf_reserves_up'
+        )
+        return setting_options_api
+ 
+    
+class SettingLFReservesDownBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='lf_reserves_down_ba_scenario_id',
+            table='subscenarios_geography_lf_reserves_down_bas'
+        )
+        return setting_options_api
+
+
+# TODO: link two IDs
+class SettingProjectLFReservesDownBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_lf_reserves_down_ba_scenario_id',
+            table='subscenarios_project_lf_reserves_down_bas'
+        )
+        return setting_options_api
+
+
+class SettingLFReservesDownRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='lf_reserves_down_scenario_id',
+            table='subscenarios_system_lf_reserves_down'
+        )
+        return setting_options_api
+
+
+class SettingRegulationUpBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='regulation_up_ba_scenario_id',
+            table='subscenarios_geography_regulation_up_bas'
+        )
+        return setting_options_api
+
+
+class SettingProjectRegulationUpBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_regulation_up_ba_scenario_id',
+            table='subscenarios_project_regulation_up_bas'
+        )
+        return setting_options_api
+
+
+class SettingRegulationUpRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='regulation_up_scenario_id',
+            table='subscenarios_system_regulation_up'
+        )
+        return setting_options_api
+
+
+class SettingRegulationDownBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='regulation_down_ba_scenario_id',
+            table='subscenarios_geography_regulation_down_bas'
+        )
+        return setting_options_api
+
+
+class SettingProjectRegulationDownBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_regulation_down_ba_scenario_id',
+            table='subscenarios_project_regulation_down_bas'
+        )
+        return setting_options_api
+
+
+class SettingRegulationDownRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='regulation_down_scenario_id',
+            table='subscenarios_system_regulation_down'
+        )
+        return setting_options_api
+
+
+class SettingSpinningReservesBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='spinning_reserves_ba_scenario_id',
+            table='subscenarios_geography_spinning_reserves_bas'
+        )
+        return setting_options_api
+
+
+class SettingProjectSpinningReservesBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_spinning_reserves_ba_scenario_id',
+            table='subscenarios_project_spinning_reserves_bas'
+        )
+        return setting_options_api
+
+
+class SettingSpinningReservesRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='spinning_reserves_scenario_id',
+            table='subscenarios_system_spinning_reserves'
+        )
+        return setting_options_api
+    
+    
+class SettingFrequencyResponseBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='frequency_response_ba_scenario_id',
+            table='subscenarios_geography_frequency_response_bas'
+        )
+        return setting_options_api
+
+
+class SettingProjectFrequencyResponseBAs(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='project_frequency_response_ba_scenario_id',
+            table='subscenarios_project_frequency_response_bas'
+        )
+        return setting_options_api
+
+
+class SettingFrequencyResponseRequirement(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='frequency_response_scenario_id',
+            table='subscenarios_system_frequency_response'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1028,7 +1282,42 @@ api.add_resource(SettingTransmissionSimFlowLimits,
                  '/scenario-settings/transmission-simflow-limits')
 api.add_resource(SettingTransmissionSimFlowLimitGroups,
                  '/scenario-settings/transmission-simflow-limit-groups')
-
+api.add_resource(SettingLFReservesUpBAs,
+                 '/scenario-settings/lf-reserves-up-bas')
+api.add_resource(SettingProjectLFReservesUpBAs,
+                 '/scenario-settings/project-lf-reserves-up-bas')
+api.add_resource(SettingLFReservesUpRequirement,
+                 '/scenario-settings/lf-reserves-up-req')
+api.add_resource(SettingLFReservesDownBAs,
+                 '/scenario-settings/lf-reserves-down-bas')
+api.add_resource(SettingProjectLFReservesDownBAs,
+                 '/scenario-settings/project-lf-reserves-down-bas')
+api.add_resource(SettingLFReservesDownRequirement,
+                 '/scenario-settings/lf-reserves-down-req')
+api.add_resource(SettingRegulationUpBAs,
+                 '/scenario-settings/regulation-up-bas')
+api.add_resource(SettingProjectRegulationUpBAs,
+                 '/scenario-settings/project-regulation-up-bas')
+api.add_resource(SettingRegulationUpRequirement,
+                 '/scenario-settings/regulation-up-req')
+api.add_resource(SettingRegulationDownBAs,
+                 '/scenario-settings/regulation-down-bas')
+api.add_resource(SettingProjectRegulationDownBAs,
+                 '/scenario-settings/project-regulation-down-bas')
+api.add_resource(SettingRegulationDownRequirement,
+                 '/scenario-settings/regulation-down-req')
+api.add_resource(SettingSpinningReservesBAs,
+                 '/scenario-settings/spin-bas')
+api.add_resource(SettingProjectSpinningReservesBAs,
+                 '/scenario-settings/project-spin-bas')
+api.add_resource(SettingSpinningReservesRequirement,
+                 '/scenario-settings/spin-req')
+api.add_resource(SettingFrequencyResponseBAs,
+                 '/scenario-settings/freq-resp-bas')
+api.add_resource(SettingProjectFrequencyResponseBAs,
+                 '/scenario-settings/project-freq-resp-bas')
+api.add_resource(SettingFrequencyResponseRequirement,
+                 '/scenario-settings/freq-resp-req')
 
 # Server status
 api.add_resource(ServerStatus, '/server-status')
@@ -1157,12 +1446,36 @@ def add_new_scenario(msg):
             table='subscenarios_geography_load_zones',
             setting_name=msg['geographyLoadZonesSetting']
         ),
-        lf_reserves_up_ba_scenario_id='NULL',
-        lf_reserves_down_ba_scenario_id='NULL',
-        regulation_up_ba_scenario_id='NULL',
-        regulation_down_ba_scenario_id='NULL',
-        frequency_response_ba_scenario_id='NULL',
-        spinning_reserves_ba_scenario_id='NULL',
+        lf_reserves_up_ba_scenario_id=get_setting_option_id(
+            id_column='lf_reserves_up_ba_scenario_id',
+            table='subscenarios_geography_lf_reserves_up_bas',
+            setting_name=msg['geographyLoadFollowingUpBAsSetting']
+        ),
+        lf_reserves_down_ba_scenario_id=get_setting_option_id(
+            id_column='lf_reserves_down_ba_scenario_id',
+            table='subscenarios_geography_lf_reserves_down_bas',
+            setting_name=msg['geographyLoadFollowingDownBAsSetting']
+        ),
+        regulation_up_ba_scenario_id=get_setting_option_id(
+            id_column='regulation_up_ba_scenario_id',
+            table='subscenarios_geography_regulation_up_bas',
+            setting_name=msg['geographyRegulationUpBAsSetting']
+        ),
+        regulation_down_ba_scenario_id=get_setting_option_id(
+            id_column='regulation_down_ba_scenario_id',
+            table='subscenarios_geography_regulation_down_bas',
+            setting_name=msg['geographyRegulationDownBAsSetting']
+        ),
+        frequency_response_ba_scenario_id=get_setting_option_id(
+            id_column='frequency_response_ba_scenario_id',
+            table='subscenarios_geography_frequency_response_bas',
+            setting_name=msg['geographyFrequencyResponseBAsSetting']
+        ),
+        spinning_reserves_ba_scenario_id=get_setting_option_id(
+            id_column='spinning_reserves_ba_scenario_id',
+            table='subscenarios_geography_spinning_reserves_bas',
+            setting_name=msg['geographySpinningReservesBAsSetting']
+        ),
         rps_zone_scenario_id='NULL',
         carbon_cap_zone_scenario_id='NULL',
         prm_zone_scenario_id='NULL',
@@ -1192,12 +1505,36 @@ def add_new_scenario(msg):
             table='subscenarios_project_load_zones',
             setting_name=msg['geographyProjectLoadZonesSetting']
         ),
-        project_lf_reserves_up_ba_scenario_id='NULL',
-        project_lf_reserves_down_ba_scenario_id='NULL',
-        project_regulation_up_ba_scenario_id='NULL',
-        project_regulation_down_ba_scenario_id='NULL',
-        project_frequency_response_ba_scenario_id='NULL',
-        project_spinning_reserves_ba_scenario_id='NULL',
+        project_lf_reserves_up_ba_scenario_id=get_setting_option_id(
+            id_column='project_lf_reserves_up_ba_scenario_id',
+            table='subscenarios_project_lf_reserves_up_bas',
+            setting_name=msg['projectLoadFollowingUpBAsSetting']
+        ),
+        project_lf_reserves_down_ba_scenario_id=get_setting_option_id(
+            id_column='project_lf_reserves_down_ba_scenario_id',
+            table='subscenarios_project_lf_reserves_down_bas',
+            setting_name=msg['projectLoadFollowingDownBAsSetting']
+        ),
+        project_regulation_up_ba_scenario_id=get_setting_option_id(
+            id_column='project_regulation_up_ba_scenario_id',
+            table='subscenarios_project_regulation_up_bas',
+            setting_name=msg['projectRegulationUpBAsSetting']
+        ),
+        project_regulation_down_ba_scenario_id=get_setting_option_id(
+            id_column='project_regulation_down_ba_scenario_id',
+            table='subscenarios_project_regulation_down_bas',
+            setting_name=msg['projectRegulationDownBAsSetting']
+        ),
+        project_frequency_response_ba_scenario_id=get_setting_option_id(
+            id_column='project_frequency_response_ba_scenario_id',
+            table='subscenarios_project_frequency_response_bas',
+            setting_name=msg['projectFrequencyResponseBAsSetting']
+        ),
+        project_spinning_reserves_ba_scenario_id=get_setting_option_id(
+            id_column='project_spinning_reserves_ba_scenario_id',
+            table='subscenarios_project_spinning_reserves_bas',
+            setting_name=msg['projectSpinningReservesBAsSetting']
+        ),
         project_rps_zone_scenario_id='NULL',
         project_carbon_cap_zone_scenario_id='NULL',
         project_prm_zone_scenario_id='NULL',
@@ -1276,12 +1613,36 @@ def add_new_scenario(msg):
             table='subscenarios_system_load',
             setting_name=msg['systemLoadSetting']
         ),
-        lf_reserves_up_scenario_id='NULL',
-        lf_reserves_down_scenario_id='NULL',
-        regulation_up_scenario_id='NULL',
-        regulation_down_scenario_id='NULL',
-        frequency_response_scenario_id='NULL',
-        spinning_reserves_scenario_id='NULL',
+        lf_reserves_up_scenario_id=get_setting_option_id(
+            id_column='lf_reserves_up_scenario_id',
+            table='subscenarios_system_lf_reserves_up',
+            setting_name=msg['loadFollowingUpRequirementSetting']
+        ),
+        lf_reserves_down_scenario_id=get_setting_option_id(
+            id_column='lf_reserves_down_scenario_id',
+            table='subscenarios_system_lf_reserves_down',
+            setting_name=msg['loadFollowingDownRequirementSetting']
+        ),
+        regulation_up_scenario_id=get_setting_option_id(
+            id_column='regulation_up_scenario_id',
+            table='subscenarios_system_regulation_up',
+            setting_name=msg['regulationUpRequirementSetting']
+        ),
+        regulation_down_scenario_id=get_setting_option_id(
+            id_column='regulation_down_scenario_id',
+            table='subscenarios_system_regulation_down',
+            setting_name=msg['regulationDownRequirementSetting']
+        ),
+        frequency_response_scenario_id=get_setting_option_id(
+            id_column='frequency_response_scenario_id',
+            table='subscenarios_system_frequency_response',
+            setting_name=msg['frequencyResponseRequirementSetting']
+        ),
+        spinning_reserves_scenario_id=get_setting_option_id(
+            id_column='spinning_reserves_scenario_id',
+            table='subscenarios_system_spinning_reserves',
+            setting_name=msg['spinningReservesRequirementSetting']
+        ),
         rps_target_scenario_id='NULL',
         carbon_cap_target_scenario_id='NULL',
         prm_requirement_scenario_id='NULL',

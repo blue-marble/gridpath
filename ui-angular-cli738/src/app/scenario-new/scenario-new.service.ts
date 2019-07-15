@@ -133,6 +133,114 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/transmission-simflow-limit-groups`
     )
   }
+
+  getSettingLFReservesUpBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-up-bas`
+    )
+  }
+
+  getSettingProjectLFReservesUpBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-lf-reserves-up-bas`
+    )
+  }
+
+  getSettingLFReservesUpRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-up-req`
+    )
+  }
+
+  getSettingLFReservesDownBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-down-bas`
+    )
+  }
+
+  getSettingProjectLFReservesDownBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-lf-reserves-down-bas`
+    )
+  }
+
+  getSettingLFReservesDownRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-down-req`
+    )
+  }
+
+  getSettingRegulationUpBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/regulation-up-bas`
+    )
+  }
+
+  getSettingProjectRegulationUpBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-regulation-up-bas`
+    )
+  }
+
+  getSettingRegulationUpRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/regulation-up-req`
+    )
+  }
+
+  getSettingRegulationDownBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/regulation-down-bas`
+    )
+  }
+
+  getSettingProjectRegulationDownBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-regulation-down-bas`
+    )
+  }
+
+  getSettingRegulationDownRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/regulation-down-req`
+    )
+  }
+
+  getSettingSpinningReservesBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/spin-bas`
+    )
+  }
+
+  getSettingProjectSpinningReservesBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-spin-bas`
+    )
+  }
+
+  getSettingSpinningReservesRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/spin-req`
+    )
+  }
+
+    getSettingFrequencyResponseBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/freq-resp-bas`
+    )
+  }
+
+  getSettingProjectFrequencyResponseBAs(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/project-freq-resp-bas`
+    )
+  }
+
+  getSettingFrequencyResponseRequirement(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/freq-resp-req`
+    )
+  }
 }
 
 

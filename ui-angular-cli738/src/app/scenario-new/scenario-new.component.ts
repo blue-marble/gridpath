@@ -32,8 +32,8 @@ export class ScenarioNewComponent implements OnInit {
   // Load zone settings
   loadZoneSettingsTable: SettingsTable;
   geographyLoadZonesSettingOptions: Setting[];
-  geographyProjectLoadZonesSettingOptions: Setting[];
-  geographyTxLoadZonesSettingOptions: Setting[];
+  projectLoadZonesSettingOptions: Setting[];
+  transmissionLoadZonesSettingOptions: Setting[];
 
   // System load settings
   systemLoadSettingsTable: SettingsTable;
@@ -76,33 +76,39 @@ export class ScenarioNewComponent implements OnInit {
   transmissionSimultaneousFlowLimitLineGroupsSettingOptions: Setting[];
 
   // Load-following-up settings
-  loadFollowingUpProfileSettingsTable: SettingsTable;
-  loadFollowingUpProfileSettingOptions: Setting[];
+  loadFollowingUpSettingsTable: SettingsTable;
+  geographyLoadFollowingUpBAsSettingOptions: Setting[];
+  loadFollowingUpRequirementSettingOptions: Setting[];
   projectLoadFollowingUpBAsSettingOptions: Setting[];
 
   // Load-following-down settings
-  loadFollowingDownProfileSettingsTable: SettingsTable;
-  loadFollowingDownProfileSettingOptions: Setting[];
+  loadFollowingDownSettingsTable: SettingsTable;
+  geographyLoadFollowingDownBAsSettingOptions: Setting[];
+  loadFollowingDownRequirementSettingOptions: Setting[];
   projectLoadFollowingDownBAsSettingOptions: Setting[];
 
   // Regulation up settings
-  regulationUpProfileSettingsTable: SettingsTable;
-  regulationUpProfileSettingOptions: Setting[];
+  regulationUpSettingsTable: SettingsTable;
+  geographyRegulationUpBAsSettingOptions: Setting[];
+  regulationUpRequirementSettingOptions: Setting[];
   projectRegulationUpBAsSettingOptions: Setting[];
 
   // Regulation down settings
-  regulationDownProfileSettingsTable: SettingsTable;
-  regulationDownProfileSettingOptions: Setting[];
+  regulationDownSettingsTable: SettingsTable;
+  geographyRegulationDownBAsSettingOptions: Setting[];
+  regulationDownRequirementSettingOptions: Setting[];
   projectRegulationDownBAsSettingOptions: Setting[];
 
   // Spinning reserves settings
-  spinningReservesProfileSettingsTable: SettingsTable;
-  spinningReservesProfileSettingOptions: Setting[];
+  spinningReservesSettingsTable: SettingsTable;
+  geographySpinningReservesBAsSettingOptions: Setting[];
+  spinningReservesRequirementSettingOptions: Setting[];
   projectSpinningReservesBAsSettingOptions: Setting[];
 
   // Frequency response settings
   frequencyResponseSettingsTable: SettingsTable;
-  frequencyResponseSettingOptions: Setting[];
+  geographyFrequencyResponseBAsSettingOptions: Setting[];
+  frequencyResponseRequirementSettingOptions: Setting[];
   projectFrequencyResponseBAsSettingOptions: Setting[];
 
   // RPS settings
@@ -173,17 +179,23 @@ export class ScenarioNewComponent implements OnInit {
     transmissionHurdleRatesSetting: new FormControl(''),
     transmissionSimultaneousFlowLimitsSetting: new FormControl(''),
     transmissionSimultaneousFlowLimitLineGroupsSetting: new FormControl(''),
-    loadFollowingUpProfileSetting: new FormControl(''),
+    geographyLoadFollowingUpBAsSetting: new FormControl(''),
+    loadFollowingUpRequirementSetting: new FormControl(''),
     projectLoadFollowingUpBAsSetting: new FormControl(''),
-    loadFollowingDownProfileSetting: new FormControl(''),
+    geographyLoadFollowingDownBAsSetting: new FormControl(''),
+    loadFollowingDownRequirementSetting: new FormControl(''),
     projectLoadFollowingDownBAsSetting: new FormControl(''),
-    regulationUpProfileSetting: new FormControl(''),
+    geographyRegulationUpBAsSetting: new FormControl(''),
+    regulationUpRequirementSetting: new FormControl(''),
     projectRegulationUpBAsSetting: new FormControl(''),
-    regulationDownProfileSetting: new FormControl(''),
+    geographyRegulationDownBAsSetting: new FormControl(''),
+    regulationDownRequirementSetting: new FormControl(''),
     projectRegulationDownBAsSetting: new FormControl(''),
-    spinningReservesProfileSetting: new FormControl(''),
+    geographySpinningReservesBAsSetting: new FormControl(''),
+    spinningReservesRequirementSetting: new FormControl(''),
     projectSpinningReservesBAsSetting: new FormControl(''),
-    frequencyResponseSetting: new FormControl(''),
+    geographyFrequencyResponseBAsSetting: new FormControl(''),
+    frequencyResponseRequirementSetting: new FormControl(''),
     projectFrequencyResponseBAsSetting: new FormControl(''),
     rpsTargetSetting: new FormControl(''),
     projectRPSAreasSetting: new FormControl(''),
@@ -302,6 +314,12 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsTransmissionOperationalChars();
     this.getSettingOptionsTransmissionHurdleRates();
     this.getSettingOptionsTransmissionSimultaneousFlowLimits();
+    this.getSettingOptionsLFReservesUp();
+    this.getSettingOptionsLFReservesDown();
+    this.getSettingOptionsRegulationUp();
+    this.getSettingOptionsRegulationDown();
+    this.getSettingOptionsSpinningReserves();
+    this.getSettingOptionsFrequencyResponse();
   }
 
   getSettingOptionsTemporal(): void {
@@ -366,13 +384,13 @@ export class ScenarioNewComponent implements OnInit {
       .subscribe(
         scenarioSetting => {
           // Get the settings from the server
-          this.geographyProjectLoadZonesSettingOptions = scenarioSetting;
+          this.projectLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
           const newRow = createRow(
             'project_load_zones',
             'geographyProjectLoadZonesSetting',
-            this.geographyProjectLoadZonesSettingOptions
+            this.projectLoadZonesSettingOptions
           );
 
           // Add the row to the table
@@ -384,13 +402,13 @@ export class ScenarioNewComponent implements OnInit {
       .subscribe(
         scenarioSetting => {
           // Get the settings from the server
-          this.geographyTxLoadZonesSettingOptions = scenarioSetting;
+          this.transmissionLoadZonesSettingOptions = scenarioSetting;
 
           // Create the row
           const newRow = createRow(
             'transmission_load_zones',
             'geographyTxLoadZonesSetting',
-            this.geographyTxLoadZonesSettingOptions
+            this.transmissionLoadZonesSettingOptions
           );
 
           // Add the row to the table
@@ -816,6 +834,428 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(
       this.transmissionSimultaneousFlowLimitsSettingsTable
     );
+  }
+
+  getSettingOptionsLFReservesUp(): void {
+    // Set the setting table captions
+    this.loadFollowingUpSettingsTable = new SettingsTable();
+    this.loadFollowingUpSettingsTable.tableCaption = 'Load following up settings';
+    this.loadFollowingUpSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingLFReservesUpBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyLoadFollowingUpBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_load_following_up_bas',
+            'geographyLoadFollowingUpBAsSetting',
+            this.geographyLoadFollowingUpBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingUpSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectLFReservesUpBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectLoadFollowingUpBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_load_following_up_bas',
+            'projectLoadFollowingUpBAsSetting',
+            this.projectLoadFollowingUpBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingUpSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingLFReservesUpRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.loadFollowingUpRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'load_following_up_requirement',
+            'loadFollowingUpRequirementSetting',
+            this.loadFollowingUpRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingUpSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.loadFollowingUpSettingsTable);
+
+  }
+  
+  getSettingOptionsLFReservesDown(): void {
+    // Set the setting table captions
+    this.loadFollowingDownSettingsTable = new SettingsTable();
+    this.loadFollowingDownSettingsTable.tableCaption = 'Load following down settings';
+    this.loadFollowingDownSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingLFReservesDownBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyLoadFollowingDownBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_load_following_down_bas',
+            'geographyLoadFollowingDownBAsSetting',
+            this.geographyLoadFollowingDownBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingDownSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectLFReservesDownBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectLoadFollowingDownBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_load_following_down_bas',
+            'projectLoadFollowingDownBAsSetting',
+            this.projectLoadFollowingDownBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingDownSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingLFReservesDownRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.loadFollowingDownRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'load_following_down_requirement',
+            'loadFollowingDownRequirementSetting',
+            this.loadFollowingDownRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.loadFollowingDownSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.loadFollowingDownSettingsTable);
+
+  }
+  
+  getSettingOptionsRegulationUp(): void {
+    // Set the setting table captions
+    this.regulationUpSettingsTable = new SettingsTable();
+    this.regulationUpSettingsTable.tableCaption = 'Regulation up settings';
+    this.regulationUpSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingRegulationUpBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyRegulationUpBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_regulation_up_bas',
+            'geographyRegulationUpBAsSetting',
+            this.geographyRegulationUpBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationUpSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectRegulationUpBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectRegulationUpBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_regulation_up_bas',
+            'projectRegulationUpBAsSetting',
+            this.projectRegulationUpBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationUpSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingRegulationUpRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.regulationUpRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'regulation_up_requirement',
+            'regulationUpRequirementSetting',
+            this.regulationUpRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationUpSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.regulationUpSettingsTable);
+
+  }
+  
+  getSettingOptionsRegulationDown(): void {
+    // Set the setting table captions
+    this.regulationDownSettingsTable = new SettingsTable();
+    this.regulationDownSettingsTable.tableCaption = 'Regulation down settings';
+    this.regulationDownSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingRegulationDownBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyRegulationDownBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_regulation_down_bas',
+            'geographyRegulationDownBAsSetting',
+            this.geographyRegulationDownBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationDownSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectRegulationDownBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectRegulationDownBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_regulation_down_bas',
+            'projectRegulationDownBAsSetting',
+            this.projectRegulationDownBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationDownSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingRegulationDownRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.regulationDownRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'regulation_down_requirement',
+            'regulationDownRequirementSetting',
+            this.regulationDownRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.regulationDownSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.regulationDownSettingsTable);
+
+  }
+  
+  getSettingOptionsSpinningReserves(): void {
+    // Set the setting table captions
+    this.spinningReservesSettingsTable = new SettingsTable();
+    this.spinningReservesSettingsTable.tableCaption = '' +
+      'Spinning reserves settings';
+    this.spinningReservesSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingSpinningReservesBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographySpinningReservesBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_spinning_reserves_bas',
+            'geographySpinningReservesBAsSetting',
+            this.geographySpinningReservesBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.spinningReservesSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectSpinningReservesBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectSpinningReservesBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_spinning_reserves_bas',
+            'projectSpinningReservesBAsSetting',
+            this.projectSpinningReservesBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.spinningReservesSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingSpinningReservesRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.spinningReservesRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'spinning_reserves_requirement',
+            'spinningReservesRequirementSetting',
+            this.spinningReservesRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.spinningReservesSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.spinningReservesSettingsTable);
+
+  }
+  
+  getSettingOptionsFrequencyResponse(): void {
+    // Set the setting table captions
+    this.frequencyResponseSettingsTable = new SettingsTable();
+    this.frequencyResponseSettingsTable.tableCaption =
+      'Frequency response settings';
+    this.frequencyResponseSettingsTable.settingRows = [];
+
+
+    // Get the settings
+    this.scenarioNewService.getSettingFrequencyResponseBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.geographyFrequencyResponseBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'geography_frequency_response_bas',
+            'geographyFrequencyResponseBAsSetting',
+            this.geographyFrequencyResponseBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.frequencyResponseSettingsTable.settingRows.push(newRow);
+
+
+        }
+      );
+
+    this.scenarioNewService.getSettingProjectFrequencyResponseBAs()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.projectFrequencyResponseBAsSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'project_frequency_response_bas',
+            'projectFrequencyResponseBAsSetting',
+            this.projectFrequencyResponseBAsSettingOptions
+          );
+
+          // Add the row to the table
+          this.frequencyResponseSettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingFrequencyResponseRequirement()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.frequencyResponseRequirementSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = createRow(
+            'frequency_response_requirement',
+            'frequencyResponseRequirementSetting',
+            this.frequencyResponseRequirementSettingOptions
+          );
+
+          // Add the row to the table
+          this.frequencyResponseSettingsTable.settingRows.push(newRow);
+
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.frequencyResponseSettingsTable);
+
   }
 
   saveNewScenario() {
