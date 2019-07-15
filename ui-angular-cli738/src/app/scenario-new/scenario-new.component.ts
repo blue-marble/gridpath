@@ -56,7 +56,7 @@ export class ScenarioNewComponent implements OnInit {
   fuelPricesSettingOptions: Setting[];
 
   // Transmission capacity settings
-  transmissionPortfolioSettingsTable: SettingsTable;
+  transmissionCapacitySettingsTable: SettingsTable;
   transmissionPortfolioSettingOptions: Setting[];
   transmissionExistingCapacitySettingOptions: Setting[];
 
@@ -296,6 +296,7 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsProjectCapacity();
     this.getSettingOptionsProjectOperationalChars();
     this.getSettingOptionsFuels();
+    this.getSettingOptionsTransmissionCapacity();
   }
 
   getSettingOptionsTemporal(): void {
@@ -638,7 +639,56 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.fuelSettingsTable);
 
   }
+  
+  getSettingOptionsTransmissionCapacity(): void {
+    // Set the setting table captions
+    this.transmissionCapacitySettingsTable = new SettingsTable();
+    this.transmissionCapacitySettingsTable.tableCaption =
+      'Transmission capacity';
+    this.transmissionCapacitySettingsTable.settingRows = [];
 
+
+    // Get the settings
+    this.scenarioNewService.getSettingTransmissionPortfolio()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionPortfolioSettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'transmission_portfolio',
+            'transmissionPortfolioSetting',
+            this.transmissionPortfolioSettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    this.scenarioNewService.getSettingTransmissionExistingCapacity()
+      .subscribe(
+        scenarioSetting => {
+          // Get the settings from the server
+          this.transmissionExistingCapacitySettingOptions = scenarioSetting;
+
+          // Create the row
+          const newRow = this.createRow(
+            'transmission_existing_capacity',
+            'transmissionExistingCapacitySetting',
+            this.transmissionExistingCapacitySettingOptions
+          );
+
+          // Add the row to the table
+          this.transmissionCapacitySettingsTable.settingRows.push(newRow);
+        }
+      );
+
+    // Add the table to the scenario structure
+    this.ScenarioNewStructure.push(this.transmissionCapacitySettingsTable);
+
+  }
 
   saveNewScenario() {
     const socket = io.connect('http://127.0.0.1:8080/');

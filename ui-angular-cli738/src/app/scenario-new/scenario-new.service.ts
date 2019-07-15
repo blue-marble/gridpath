@@ -97,6 +97,18 @@ export class ScenarioNewService {
       `${this.scenarioSettingsBaseURL}/fuel-prices`
     )
   }
+
+  getSettingTransmissionPortfolio(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-portfolio`
+    )
+  }
+
+  getSettingTransmissionExistingCapacity(): Observable<Setting[]> {
+    return this.http.get<Setting[]>(
+      `${this.scenarioSettingsBaseURL}/transmission-existing-capacity`
+    )
+  }
 }
 
 

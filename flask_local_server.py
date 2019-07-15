@@ -792,6 +792,34 @@ class SettingFuelPrices(Resource):
         return setting_options_api
 
 
+class SettingTransmissionPortfolio(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_portfolio_scenario_id',
+            table='subscenarios_transmission_portfolios'
+        )
+        return setting_options_api
+
+
+class SettingTransmissionExistingCapacity(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        setting_options_api = get_setting_options(
+            id_column='transmission_existing_capacity_scenario_id',
+            table='subscenarios_transmission_existing_capacity'
+        )
+        return setting_options_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -930,6 +958,10 @@ api.add_resource(SettingFuels,
                  '/scenario-settings/fuels')
 api.add_resource(SettingFuelPrices,
                  '/scenario-settings/fuel-prices')
+api.add_resource(SettingTransmissionPortfolio,
+                 '/scenario-settings/transmission-portfolio')
+api.add_resource(SettingTransmissionExistingCapacity,
+                 '/scenario-settings/transmission-existing-capacity')
 
 
 # Server status
@@ -1132,13 +1164,21 @@ def add_new_scenario(msg):
             table='subscenarios_project_new_potential',
             setting_name=msg['projectNewPotentialSetting']
         ),
-        transmission_portfolio_scenario_id='NULL',
+        transmission_portfolio_scenario_id=get_setting_option_id(
+            id_column='transmission_portfolio_scenario_id',
+            table='subscenarios_transmission_portfolios',
+            setting_name=msg['transmissionPortfolioSetting']
+        ),
         transmission_load_zone_scenario_id=get_setting_option_id(
             id_column='transmission_load_zone_scenario_id',
             table='subscenarios_transmission_load_zones',
             setting_name=msg['geographyTxLoadZonesSetting']
         ),
-        transmission_existing_capacity_scenario_id='NULL',
+        transmission_existing_capacity_scenario_id=get_setting_option_id(
+            id_column='transmission_existing_capacity_scenario_id',
+            table='subscenarios_transmission_existing_capacity',
+            setting_name=msg['transmissionExistingCapacitySetting']
+        ),
         transmission_operational_chars_scenario_id='NULL',
         transmission_hurdle_rate_scenario_id='NULL',
         transmission_carbon_cap_zone_scenario_id='NULL',
