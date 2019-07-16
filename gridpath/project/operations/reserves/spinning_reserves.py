@@ -144,13 +144,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -164,10 +163,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             subscenarios.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID
         )
     ).fetchall()
-    # Make a dict for easy access
-    prj_ba_dict = dict()
-    for (prj, ba) in project_bas:
-        prj_ba_dict[str(prj)] = "." if ba is None else str(ba)
 
     # Get spinning_reserves footroom derate
     prj_derates = c.execute(
@@ -177,10 +172,50 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
     ).fetchall()
+
+    return project_bas, prj_derates
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # project_bas, prj_derates = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    projects.tab file (to be precise, amend it).
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    project_bas, prj_derates = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
+    # Make a dict for easy access
+    prj_ba_dict = dict()
+    for (prj, ba) in project_bas:
+        prj_ba_dict[str(prj)] = "." if ba is None else (str(ba))
+
     # Make a dict for easy access
     prj_derate_dict = dict()
     for (prj, derate) in prj_derates:
         prj_derate_dict[str(prj)] = "." if derate is None else str(derate)
+
 
     # Add params to projects file
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
@@ -220,10 +255,14 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
         writer.writerows(new_rows)
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
-    :param scenario_id: 
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c: 
     :param db: 
     :param results_directory:

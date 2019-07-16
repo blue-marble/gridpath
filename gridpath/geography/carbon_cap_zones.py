@@ -30,32 +30,63 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # carbon_cap_zones.tab
+    carbon_cap_zone = c.execute(
+        """SELECT carbon_cap_zone
+        FROM inputs_geography_carbon_cap_zones
+        WHERE carbon_cap_zone_scenario_id = {};
+        """.format(
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
+        )
+    )
+
+    return carbon_cap_zone
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # carbon_cap_zone = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    carbon_cap_zones.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    carbon_cap_zone = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "carbon_cap_zones.tab"), "w") as \
             carbon_cap_zones_file:
         writer = csv.writer(carbon_cap_zones_file, delimiter="\t")
 
         # Write header
-        writer.writerow(
-            ["carbon_cap_zone"]
-        )
+        writer.writerow(["carbon_cap_zone"])
 
-        carbon_cap_zone = c.execute(
-            """SELECT carbon_cap_zone
-            FROM inputs_geography_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {};
-            """.format(
-                subscenarios.CARBON_CAP_ZONE_SCENARIO_ID
-            )
-        )
         for row in carbon_cap_zone:
             writer.writerow(row)

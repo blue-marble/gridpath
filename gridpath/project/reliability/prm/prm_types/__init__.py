@@ -120,13 +120,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_required_prm_type_modules(subscenarios, c):
     """
-
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    Get the required prm  type submodules based on the user-specified database
+    inputs.
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param c: database cursor
+    :return:
     """
 
     # Required modules are the unique set of generator PRM types in
@@ -153,23 +153,65 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         ).fetchall()
     ]
 
-    # Get module-specific inputs
-    # Load in the required operational modules
+    return required_prm_type_modules
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # Load in the required prm type modules
+    required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
     imported_prm_modules = \
         load_prm_type_modules(required_prm_type_modules)
 
+    # Validate module-specific inputs
     for prm_m in required_prm_type_modules:
         if hasattr(imported_prm_modules[prm_m],
-                   "get_module_specific_inputs_from_database"):
+                   "validate_module_specific_inputs"):
             imported_prm_modules[prm_m]. \
-                get_module_specific_inputs_from_database(
-                subscenarios, c, inputs_directory
-            )
+                validate_module_specific_inputs(
+                    subscenarios, subproblem, stage, c)
         else:
             pass
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input .tab files.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # Load in the required prm type modules
+    required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
+    imported_prm_modules = \
+        load_prm_type_modules(required_prm_type_modules)
+
+    # Write module-specific inputs
+    for prm_m in required_prm_type_modules:
+        if hasattr(imported_prm_modules[prm_m],
+                   "write_module_specific_model_inputs"):
+            imported_prm_modules[prm_m]. \
+                write_module_specific_model_inputs(
+                    inputs_directory, subscenarios, subproblem, stage, c)
+        else:
+            pass
+
+
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id:

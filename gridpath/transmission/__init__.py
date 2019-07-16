@@ -26,9 +26,11 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
 
     # Get the capacity type of each generator
     dynamic_components = \
-        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                 "transmission_lines.tab"),
-                    sep="\t", usecols=["TRANSMISSION_LINES", "tx_capacity_type"]
+        pd.read_csv(os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "transmission_lines.tab"),
+                    sep="\t",
+                    usecols=["TRANSMISSION_LINES", "tx_capacity_type"]
                     )
 
     # Required modules are the unique set of generator operational types
@@ -66,8 +68,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                           "transmission_lines.tab"),
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "transmission_lines.tab"),
                      select=("TRANSMISSION_LINES", "tx_capacity_type",
                              "load_zone_from", "load_zone_to"),
                      index=m.TRANSMISSION_LINES,
@@ -76,16 +79,71 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
-    # transmission_lines.tab
+    transmission_lines = c.execute(
+        """SELECT transmission_line, capacity_type,
+        load_zone_from, load_zone_to
+        FROM inputs_transmission_portfolios
+        LEFT OUTER JOIN
+        (SELECT transmission_line, load_zone_from, load_zone_to
+        FROM inputs_transmission_load_zones
+        WHERE load_zone_scenario_id = {}
+        AND transmission_load_zone_scenario_id = {}) as tx_load_zones
+        USING (transmission_line)
+        INNER JOIN
+        (SELECT transmission_line
+        FROM inputs_transmission_operational_chars
+        WHERE transmission_operational_chars_scenario_id = {})
+        USING (transmission_line)
+        WHERE transmission_portfolio_scenario_id = {};""".format(
+            subscenarios.LOAD_ZONE_SCENARIO_ID,
+            subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
+            subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+        )
+    ).fetchall()
+
+    return transmission_lines
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # transmission_lines = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    transmission_lines.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    transmission_lines = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
               "w") as \
             transmission_lines_tab_file:
@@ -96,29 +154,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["TRANSMISSION_LINES", "tx_capacity_type", "load_zone_from",
              "load_zone_to"]
         )
-
-        transmission_lines = c.execute(
-            """SELECT transmission_line, capacity_type,
-            load_zone_from, load_zone_to
-            FROM inputs_transmission_portfolios
-            LEFT OUTER JOIN
-            (SELECT transmission_line, load_zone_from, load_zone_to
-            FROM inputs_transmission_load_zones
-            WHERE load_zone_scenario_id = {}
-            AND transmission_load_zone_scenario_id = {}) as tx_load_zones
-            USING (transmission_line)
-            INNER JOIN
-            (SELECT transmission_line
-            FROM inputs_transmission_operational_chars
-            WHERE transmission_operational_chars_scenario_id = {})
-            USING (transmission_line)
-            WHERE transmission_portfolio_scenario_id = {};""".format(
-                subscenarios.LOAD_ZONE_SCENARIO_ID,
-                subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
-                subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
-                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
-            )
-        ).fetchall()
 
         for row in transmission_lines:
             replace_nulls = ["." if i is None else i for i in row]

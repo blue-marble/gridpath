@@ -97,17 +97,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                  "transmission_simultaneous_flow_limits.tab"),
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "transmission_simultaneous_flow_limits.tab"),
                      select=("simultaneous_flow_limit", "period",
                              "simultaneous_flow_limit_mw"),
                      index=m.SIMULTANEOUS_FLOW_LIMIT_PERIODS,
                      param=m.simultaneous_flow_limit_mw
                      )
 
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage, "inputs",
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
                         "transmission_simultaneous_flow_limit_lines.tab"),
                      select=("simultaneous_flow_limit", "transmission_line",
                              "simultaneous_flow_direction"),
@@ -150,14 +150,87 @@ def save_duals(m):
         ["simultaneous_flow_limit", "timepoint", "dual"]
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
+    flow_limits = c.execute(
+        """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
+        FROM inputs_transmission_simultaneous_flow_limits
+        INNER JOIN
+        (SELECT period
+         FROM inputs_temporal_periods
+         WHERE temporal_scenario_id = {}) as relevant_periods
+         USING (period)
+         WHERE transmission_simultaneous_flow_limit_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
+        )
+    ).fetchall()
+
+    limit_lines = c.execute(
+        """SELECT transmission_simultaneous_flow_limit, transmission_line,
+        simultaneous_flow_direction
+        FROM inputs_transmission_simultaneous_flow_limit_line_groups
+        INNER JOIN
+        (SELECT DISTINCT transmission_simultaneous_flow_limit
+        FROM inputs_transmission_simultaneous_flow_limits
+        WHERE transmission_simultaneous_flow_limit_scenario_id = {}) as
+        relevant_limits
+        USING (transmission_simultaneous_flow_limit)
+        INNER JOIN
+        (SELECT transmission_line
+        FROM inputs_transmission_portfolios
+        WHERE transmission_portfolio_scenario_id = {})
+        USING (transmission_line)
+        WHERE transmission_simultaneous_flow_limit_line_group_scenario_id
+        = {};
+        """.format(
+            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID
+        )
+    ).fetchall()
+    return flow_limits, limit_lines
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # flow_limits, limit_lines = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    transmission_simultaneous_flow_limits.tab and
+    transmission_simultaneous_flow_limit_lines files.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    flow_limits, limit_lines = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(inputs_directory,
                            "transmission_simultaneous_flow_limits.tab"),
@@ -170,20 +243,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["simultaneous_flow_limit", "period", "simultaneous_flow_limit_mw"]
         )
 
-        flow_limits = c.execute(
-            """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
-            FROM inputs_transmission_simultaneous_flow_limits
-            INNER JOIN
-            (SELECT period
-             FROM inputs_temporal_periods
-             WHERE temporal_scenario_id = {}) as relevant_periods
-             USING (period)
-             WHERE transmission_simultaneous_flow_limit_scenario_id = {};
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
-            )
-        )
         for row in flow_limits:
             writer.writerow(row)
 
@@ -201,29 +260,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
              "simultaneous_flow_direction"]
         )
 
-        limit_lines = c.execute(
-            """SELECT transmission_simultaneous_flow_limit, transmission_line,
-            simultaneous_flow_direction
-            FROM inputs_transmission_simultaneous_flow_limit_line_groups
-            INNER JOIN
-            (SELECT DISTINCT transmission_simultaneous_flow_limit
-            FROM inputs_transmission_simultaneous_flow_limits
-            WHERE transmission_simultaneous_flow_limit_scenario_id = {}) as
-            relevant_limits
-            USING (transmission_simultaneous_flow_limit)
-            INNER JOIN
-            (SELECT transmission_line
-            FROM inputs_transmission_portfolios
-            WHERE transmission_portfolio_scenario_id = {})
-            USING (transmission_line)
-            WHERE transmission_simultaneous_flow_limit_line_group_scenario_id
-            = {};
-            """.format(
-                subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID,
-                subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
-                subscenarios.
-                TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID
-            )
-        )
         for row in limit_lines:
             writer.writerow(row)

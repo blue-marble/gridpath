@@ -36,16 +36,75 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                             )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # lf_reserves_down_requirement.tab
+
+    lf_reserves_down = c.execute(
+        """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
+        FROM inputs_system_lf_reserves_down
+        INNER JOIN
+        (SELECT timepoint
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}) as relevant_timepoints
+        USING (timepoint)
+        INNER JOIN
+        (SELECT lf_reserves_down_ba
+        FROM inputs_geography_lf_reserves_down_bas
+        WHERE lf_reserves_down_ba_scenario_id = {}) as relevant_bas
+        USING (lf_reserves_down_ba)
+        WHERE lf_reserves_down_scenario_id = {}
+        AND stage_id = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID,
+            subscenarios.LF_RESERVES_DOWN_SCENARIO_ID,
+            stage
+        )
+    )
+
+    return lf_reserves_down
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # lf_reserves_down = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    lf_reserves_down_requirement.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    lf_reserves_down = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "lf_reserves_down_requirement.tab"), "w") as \
             lf_reserves_down_tab_file:
@@ -57,31 +116,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             ["LOAD_ZONES", "TIMEPOINTS", "downward_reserve_requirement"]
         )
 
-        lf_reserves_down = c.execute(
-            """SELECT lf_reserves_down_ba, timepoint, lf_reserves_down_mw
-            FROM inputs_system_lf_reserves_down
-            INNER JOIN
-            (SELECT timepoint
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            INNER JOIN
-            (SELECT lf_reserves_down_ba
-            FROM inputs_geography_lf_reserves_down_bas
-            WHERE lf_reserves_down_ba_scenario_id = {}) as relevant_bas
-            USING (lf_reserves_down_ba)
-            WHERE lf_reserves_down_scenario_id = {}
-            AND stage_id = {}
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.LF_RESERVES_DOWN_BA_SCENARIO_ID,
-                subscenarios.LF_RESERVES_DOWN_SCENARIO_ID,
-                stage
-            )
-        )
         for row in lf_reserves_down:
             writer.writerow(row)

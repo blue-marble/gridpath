@@ -184,15 +184,15 @@ def load_module_specific_data(
         determine_period_params()[2]
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+def load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
 ):
     """
-    existing_generation_period_params.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
 
     # Select generators of 'existing_gen_no_economic_retirement' capacity
@@ -225,6 +225,44 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
+    return ep_capacities
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # ep_capacities = load_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do validation
+    # make sure existing capacity is a postive number
+    # make sure annual fixed costs are positive
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Load the inputs from database and write out the model input
+    existing_generation_period_params.tab file
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    ep_capacities = load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     # If existing_generation_period_params.tab file already exists, append
     # rows to it

@@ -145,15 +145,15 @@ def load_module_specific_data(m,
                      )
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+def load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
 ):
     """
-    storage_specified_capacities.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
 
     stor_capacities = c.execute(
@@ -188,6 +188,44 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
+    return stor_capacities
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # stor_capacities = load_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do validation
+    # make sure existing capacity is a postive number
+    # make sure annual fixed costs are positive
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Load the inputs from database and write out the model input
+    storage_specified_capacities.tab file
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    stor_capacities = load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory,
                            "storage_specified_capacities.tab"), "w") as \

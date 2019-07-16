@@ -30,15 +30,55 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # rps_zones.tab
+
+    rps_zones = c.execute(
+        """SELECT rps_zone
+           FROM inputs_geography_rps_zones
+           WHERE rps_zone_scenario_id = {};""".format(
+            subscenarios.RPS_ZONE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    return rps_zones
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # rps_zones = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    rps_zones.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    rps_zones = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory, "rps_zones.tab"),
               "w") as \
@@ -47,14 +87,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
 
         # Write header
         writer.writerow(["rps_zone"])
-
-        rps_zones = c.execute(
-            """SELECT rps_zone
-               FROM inputs_geography_rps_zones
-               WHERE rps_zone_scenario_id = {};""".format(
-                subscenarios.RPS_ZONE_SCENARIO_ID
-            )
-        ).fetchall()
 
         for row in rps_zones:
             writer.writerow(row)

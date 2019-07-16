@@ -93,12 +93,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -119,6 +119,39 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             subscenarios.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID
         )
     ).fetchall()
+
+    return project_frac
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # project_frac = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    projects.tab file (to be precise, amend it).
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    project_frac = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     prj_frac_dict = {p: "." if f is None else f for (p, f) in project_frac}
 
@@ -150,7 +183,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         writer.writerows(new_rows)
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id: 

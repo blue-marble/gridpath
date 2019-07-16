@@ -19,6 +19,7 @@ from gridpath.auxiliary.auxiliary import is_number
 
 
 # TODO: should we take this out of __init__.py
+#   can we create operations.py like we have capacity.py and put it there?
 def add_model_components(m, d):
     """
     Add operational subsets (that can include more than one operational type).
@@ -192,8 +193,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
         data_portal.data()["shutdown_cost_per_mw"] = \
             determine_shutdown_cost_projects()[1]
-    else:
-        pass
 
     def determine_fuel_project_segments():
         # TODO: read_csv seems to fail silently if file not found; check and
@@ -246,8 +245,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = \
             intercept_dict
-    else:
-        pass
 
     # STARTUP FUEL_PROJECTS
     def determine_startup_fuel_projects():
@@ -282,8 +279,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         }
         data_portal.data()["startup_fuel_mmbtu_per_mw"] = \
             determine_startup_fuel_projects()[1]
-    else:
-        pass
 
     # Availability derates
     availability_file = os.path.join(
@@ -300,21 +295,19 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
-    # Write project availability file if project_availability_scenario_id is
+    # Load project availability file if project_availability_scenario_id is
     #  not NULL
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        pass
+        availabilities = []  # TODO: think of best way to deal with this case
     else:
-        # Project availabilities
         availabilities = c.execute(
             """SELECT project, horizon, availability
             FROM inputs_project_availability
@@ -333,19 +326,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             )
-        )
+        ).fetchall()
 
-        with open(os.path.join(inputs_directory, "project_availability.tab"),
-                  "w") as \
-                availability_tab_file:
-            writer = csv.writer(availability_tab_file, delimiter="\t")
-
-            writer.writerow(["project", "horizon", "availability_derate"])
-
-            for row in availabilities:
-                writer.writerow(row)
-
-    # Write heat rate curves files
+    # Load heat rate curves files
     # Select only heat rate curves of projects in the portfolio
     heat_rates = c.execute(
         """
@@ -363,7 +346,64 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
         WHERE project_portfolio_scenario_id = {}
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
-    )
+    ).fetchall()
+
+    return availabilities, heat_rates
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # availabilities, heat_rates = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+    # do stuff here to validate inputs in the heat rates
+    # 1. for each project:
+    #     slice out load points and heat rates
+    #     calculate heat_rates --> will throw error if things are wrong
+    # PROBLEM: need to only do this for fuel projects, so would need to read
+    # in projects table as well (see load_model_data above where this is done)
+    # PROBLEM: how to avoid doing this twice? (once here and once when creating
+    # the model inputs in load_model_data
+
+    # 2. Check that you don't specify heat rate curves for projects that don't
+    # need it.
+    # NOTE; foreign key already checks that you can't have null for a project
+    # that is in the heat_rate_curves table
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    project_availability.tab and heat_rate_curves.tab files
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    availabilities, heat_rates = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
+    if availabilities:
+        with open(os.path.join(inputs_directory, "project_availability.tab"),
+                  "w") as \
+                availability_tab_file:
+            writer = csv.writer(availability_tab_file, delimiter="\t")
+
+            writer.writerow(["project", "horizon", "availability_derate"])
+
+            for row in availabilities:
+                writer.writerow(row)
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
               "w") as \

@@ -116,8 +116,9 @@ def generic_load_model_data(
         pass
 
     # Load the needed data
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "projects.tab"),
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "projects.tab"),
                      select=columns_to_import,
                      param=params_to_import
                      )

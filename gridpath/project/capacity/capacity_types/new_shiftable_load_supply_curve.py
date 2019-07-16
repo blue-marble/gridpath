@@ -254,16 +254,14 @@ def load_module_specific_data(
     )
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+def load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
 ):
     """
-    Get min build and max potential
-    Max potential is required for this module,
-    so PROJECT_NEW_POTENTIAL_SCENARIO_ID can't be NULL
-    :param subscenarios:
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -294,6 +292,84 @@ def get_module_specific_inputs_from_database(
         )
     )
 
+    supply_curve_count = c.execute(
+        """SELECT project, COUNT(DISTINCT(supply_curve_scenario_id))
+        FROM inputs_project_portfolios
+        LEFT OUTER JOIN inputs_project_new_cost
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_new_cost_scenario_id = {}
+        AND capacity_type = 'new_shiftable_load_supply_curve'
+        GROUP BY project;""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID
+        )
+    ).fetchall()
+
+    supply_curve_id = c.execute(
+        """SELECT DISTINCT supply_curve_scenario_id
+        FROM inputs_project_portfolios
+        LEFT OUTER JOIN inputs_project_new_cost
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND project_new_cost_scenario_id = {}
+        AND project = 'Shift_DR';""".format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.PROJECT_NEW_COST_SCENARIO_ID
+        )
+    ).fetchone()[0]
+
+    supply_curve = c.execute(
+        """SELECT project, supply_curve_point, supply_curve_slope, 
+        supply_curve_intercept
+        FROM inputs_project_shiftable_load_supply_curve
+        WHERE supply_curve_scenario_id = {}""".format(
+            supply_curve_id
+        )
+    ).fetchall()
+
+    return min_max_builds, supply_curve_count, supply_curve_id, supply_curve
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
+    #     load_module_specific_inputs_from_database(
+    #         subscenarios, subproblem, stage, c)
+
+    # validate inputs
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Load the inputs from database and write out the model input
+    new_shiftable_load_supply_curve_potential.tab and
+    new_shiftable_load_supply_curve.tab files
+
+    Max potential is required for this module, so
+    PROJECT_NEW_POTENTIAL_SCENARIO_ID can't be NULL
+
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
+        load_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, c)
+
     with open(os.path.join(
             inputs_directory,
             "new_shiftable_load_supply_curve_potential.tab"
@@ -312,7 +388,6 @@ def get_module_specific_inputs_from_database(
     # Supply curve
     # No supply curve periods for now, so check that we have only specified
     # a single supply curve for all periods in inputs_project_new_cost
-
     with open(os.path.join(
             inputs_directory,
             "new_shiftable_load_supply_curve.tab"
@@ -323,20 +398,6 @@ def get_module_specific_inputs_from_database(
             "project", "point", "slope", "intercept"
         ])
 
-        supply_curve_count = c.execute(
-            """SELECT project, COUNT(DISTINCT(supply_curve_scenario_id))
-            FROM inputs_project_portfolios
-            LEFT OUTER JOIN inputs_project_new_cost
-            USING (project)
-            WHERE project_portfolio_scenario_id = {}
-            AND project_new_cost_scenario_id = {}
-            AND capacity_type = 'new_shiftable_load_supply_curve'
-            GROUP BY project;""".format(
-                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_NEW_COST_SCENARIO_ID
-            )
-        ).fetchall()
-
         for proj in supply_curve_count:
             project = proj[0]
             if proj[1] > 1:
@@ -346,27 +407,6 @@ def get_module_specific_inputs_from_database(
                                  "'new_shiftable_load_supply_curve' capacity "
                                  "type.".format(project))
             else:
-                supply_curve_id = c.execute(
-                    """SELECT DISTINCT supply_curve_scenario_id
-                    FROM inputs_project_portfolios
-                    LEFT OUTER JOIN inputs_project_new_cost
-                    USING (project)
-                    WHERE project_portfolio_scenario_id = {}
-                    AND project_new_cost_scenario_id = {}
-                    AND project = 'Shift_DR';""".format(
-                        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                        subscenarios.PROJECT_NEW_COST_SCENARIO_ID
-                    )
-                ).fetchone()[0]
-
-                supply_curve = c.execute(
-                    """SELECT project, supply_curve_point, supply_curve_slope, 
-                    supply_curve_intercept
-                    FROM inputs_project_shiftable_load_supply_curve
-                    WHERE supply_curve_scenario_id = {}""".format(
-                        supply_curve_id
-                    )
-                ).fetchall()
 
                 for row in supply_curve:
                     writer.writerow(row)

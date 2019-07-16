@@ -39,7 +39,8 @@ def add_model_components(m, d):
     # The coefficient for each project contributing to the ELCC surface
     # Surface is limited to 1000 facets
     m.PROJECT_PERIOD_ELCC_SURFACE_FACETS = Set(
-        dimen=3, within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
+        dimen=3,
+        within=m.ELCC_SURFACE_PROJECTS * m.PERIODS * list(range(1, 1001))
     )
 
     # The project coefficient for the surface
@@ -87,17 +88,17 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
     # Projects that contribute to the ELCC surface
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "projects.tab"),
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "projects.tab"),
                      select=("project", "contributes_to_elcc_surface"),
                      param=(m.contributes_to_elcc_surface,)
                      )
 
     # Project-period-facet
     data_portal.load(filename=os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "project_elcc_surface_coefficients.tab"
-    ),
+                        scenario_directory, subproblem, stage, "inputs",
+                        "project_elcc_surface_coefficients.tab"),
                      index=m.PROJECT_PERIOD_ELCC_SURFACE_FACETS,
                      param=m.elcc_surface_coefficient,
                      select=("project", "period", "facet",
@@ -140,12 +141,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -167,6 +168,61 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
     ).fetchall()
+
+    # The coefficients for the surface
+    coefficients = c.execute(
+        """SELECT project, period, facet, elcc_surface_coefficient
+        FROM inputs_project_elcc_surface
+        JOIN inputs_project_portfolios
+        USING (project)
+        INNER JOIN inputs_temporal_periods
+        USING (period)
+        WHERE prm_zone_scenario_id = {}
+        AND project_prm_zone_scenario_id = {}
+        AND elcc_surface_scenario_id = {}
+        AND project_portfolio_scenario_id = {}
+        AND temporal_scenario_id = {};""".format(
+            subscenarios.PRM_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
+            subscenarios.ELCC_SURFACE_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            subscenarios.TEMPORAL_SCENARIO_ID
+        )
+    ).fetchall()
+
+    return project_contr, coefficients
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # project_contr, coefficients = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    projects.tab (to be precise, amend it) and
+    project_elcc_surface_coefficients.tab files.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    project_contr, coefficients = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     # Make a dict for easy access
     prj_contr_dict = dict()
@@ -200,27 +256,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)
 
-    # The coefficients for the surface
-    coefficients = c.execute(
-        """SELECT project, period, facet, elcc_surface_coefficient
-        FROM inputs_project_elcc_surface
-        JOIN inputs_project_portfolios
-        USING (project)
-        INNER JOIN inputs_temporal_periods
-        USING (period)
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND elcc_surface_scenario_id = {}
-        AND project_portfolio_scenario_id = {}
-        AND temporal_scenario_id = {};""".format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
-            subscenarios.ELCC_SURFACE_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID
-        )
-    ).fetchall()
-
     with open(os.path.join(inputs_directory,
                            "project_elcc_surface_coefficients.tab"), "w") as \
             coefficients_file:
@@ -235,7 +270,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             writer.writerow(row)
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id: 
@@ -278,7 +315,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             elcc_eligible_capacity_mw FLOAT,
             elcc_surface_coefficient FLOAT,
             elcc_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id, facet)
+            PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id, 
+            facet)
                 );"""
     )
     db.commit()

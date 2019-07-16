@@ -42,16 +42,60 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-    local_capacity_zones.tab
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    with open(os.path.join(inputs_directory,
-                           "local_capacity_zones.tab"), "w") as \
+
+    local_capacity_zones = c.execute(
+        """SELECT local_capacity_zone, 
+        local_capacity_shortage_penalty_per_mw
+        FROM inputs_geography_local_capacity_zones
+        WHERE local_capacity_zone_scenario_id = {};
+        """.format(
+            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID
+        )
+    )
+
+    return local_capacity_zones
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # prm_zones = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    local_capacity_zones.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    local_capacity_zones = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
+    with open(os.path.join(inputs_directory, "local_capacity_zones.tab"),
+              "w") as \
             local_capacity_zones_file:
         writer = csv.writer(local_capacity_zones_file, delimiter="\t")
 
@@ -60,14 +104,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["local_capacity_zone", "local_capacity_shortage_penalty_per_mw"]
         )
 
-        local_capacity_zones = c.execute(
-            """SELECT local_capacity_zone, 
-            local_capacity_shortage_penalty_per_mw
-            FROM inputs_geography_local_capacity_zones
-            WHERE local_capacity_zone_scenario_id = {};
-            """.format(
-                subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID
-            )
-        )
         for row in local_capacity_zones:
             writer.writerow([row[0], row[1]])

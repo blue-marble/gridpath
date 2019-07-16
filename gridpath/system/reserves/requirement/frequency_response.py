@@ -59,16 +59,76 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # frequency_response_requirement.tab
+
+    frequency_response = c.execute(
+        """SELECT frequency_response_ba, timepoint, 
+        frequency_response_mw, frequency_response_partial_mw
+        FROM inputs_system_frequency_response
+        INNER JOIN
+        (SELECT timepoint 
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}) as relevant_timepoints
+        USING (timepoint)
+        INNER JOIN
+        (SELECT frequency_response_ba
+        FROM inputs_geography_frequency_response_bas
+        WHERE frequency_response_ba_scenario_id = {}) as relevant_bas
+        USING (frequency_response_ba)
+        WHERE frequency_response_scenario_id = {}
+        AND stage_id = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
+            subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID,
+            stage
+        )
+    )
+
+    return frequency_response
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # frequency_response = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    frequency_response_requirement.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    frequency_response = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "frequency_response_requirement.tab"), "w") as \
             frequency_response_tab_file:
@@ -79,32 +139,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             ["ba", "timepoint", "requirement_mw", "partial_requirement_mw"]
         )
 
-        frequency_response = c.execute(
-            """SELECT frequency_response_ba, timepoint, 
-            frequency_response_mw, frequency_response_partial_mw
-            FROM inputs_system_frequency_response
-            INNER JOIN
-            (SELECT timepoint 
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            INNER JOIN
-            (SELECT frequency_response_ba
-            FROM inputs_geography_frequency_response_bas
-            WHERE frequency_response_ba_scenario_id = {}) as relevant_bas
-            USING (frequency_response_ba)
-            WHERE frequency_response_scenario_id = {}
-            AND stage_id = {}
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
-                subscenarios.FREQUENCY_RESPONSE_SCENARIO_ID,
-                stage
-            )
-        )
         for row in frequency_response:
             writer.writerow(row)

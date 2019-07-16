@@ -47,15 +47,69 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # carbon_cap.tab
+
+    carbon_cap_targets = c.execute(
+        """SELECT carbon_cap_zone, period, carbon_cap_mmt
+        FROM inputs_system_carbon_cap_targets
+        JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        USING (period)
+        JOIN
+        (SELECT carbon_cap_zone
+        FROM inputs_geography_carbon_cap_zones
+        WHERE carbon_cap_zone_scenario_id = {}) as relevant_zones
+        using (carbon_cap_zone)
+        WHERE carbon_cap_target_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
+        )
+    )
+
+    return carbon_cap_targets
+
+
+def validate_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    pass
+    # Validation to be added
+    # carbon_cap_targets = load_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and write out the model input
+    carbon_cap.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    carbon_cap_targets = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "carbon_cap.tab"), "w") as \
             carbon_cap_file:
@@ -66,25 +120,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["carbon_cap_zone", "period", "carbon_cap_target_mmt"]
         )
 
-        carbon_cap_targets = c.execute(
-            """SELECT carbon_cap_zone, period, carbon_cap_mmt
-            FROM inputs_system_carbon_cap_targets
-            JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {}) as relevant_periods
-            USING (period)
-            JOIN
-            (SELECT carbon_cap_zone
-            FROM inputs_geography_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {}) as relevant_zones
-            using (carbon_cap_zone)
-            WHERE carbon_cap_target_scenario_id = {};
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
-                subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
-            )
-        )
         for row in carbon_cap_targets:
             writer.writerow(row)

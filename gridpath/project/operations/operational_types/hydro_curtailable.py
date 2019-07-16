@@ -506,15 +506,14 @@ def export_module_specific_results(mod, d,
             ])
 
 
-def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
-                                             c, inputs_directory):
+def load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
+):
     """
-    Write operational chars to  hydro_conventional_horizon_params.tab
-    If file does not yet exist, write header first
-    :param subscenarios
-    :param subproblem
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -578,6 +577,41 @@ def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
         )
     )
 
+    return hydro_chars
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # hydro_chars = load_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Load the inputs from database and write out the model input
+    hydro_conventional_horizon_params.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    hydro_chars = load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     # If hydro_conventional_horizon_params.tab file already exists,
     # append rows to it
     if os.path.isfile(os.path.join(inputs_directory,
@@ -590,9 +624,9 @@ def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
             writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
             for row in hydro_chars:
                 writer.writerow(row)
-    else:
     # If hydro_conventional_horizon_params.tab does not exist, write header
     # first, then add inputs data
+    else:
         with open(os.path.join(inputs_directory,
                                "hydro_conventional_horizon_params.tab"),
                   "w") as \

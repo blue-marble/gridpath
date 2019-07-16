@@ -433,15 +433,15 @@ def summarize_module_specific_results(
             outfile.write("\n")
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+def load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
 ):
     """
-    new_build_generator_vintage_costs.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
 
     get_potentials = \
@@ -484,6 +484,44 @@ def get_module_specific_inputs_from_database(
         )
     )
 
+    return new_gen_costs
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+    """
+    Load the inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    # new_gen_costs = load_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # validate inputs
+    # check that annualize real cost is positive
+    # check that maximum new build doesn't decrease
+    # ...
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Load the inputs from database and write out the model input
+    new_build_generator_vintage_costs.tab file
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    new_gen_costs = load_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "new_build_generator_vintage_costs.tab"), "w") as \
             new_gen_costs_tab_file:
@@ -494,8 +532,8 @@ def get_module_specific_inputs_from_database(
             ["project", "vintage", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr"] +
             ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-            else ["min_cumulative_new_build_mw",
-                  "max_cumulative_new_build_mw"])
+             else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+             )
         )
 
         for row in new_gen_costs:
