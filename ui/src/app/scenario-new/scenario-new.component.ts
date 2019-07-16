@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
+import { Router } from "@angular/router";
 
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -222,7 +223,9 @@ export class ScenarioNewComponent implements OnInit {
     tuningSetting: new FormControl('')
     });
 
-  constructor(private scenarioNewService: ScenarioNewService) {
+  constructor(private scenarioNewService: ScenarioNewService,
+              private router: Router,
+              private zone: NgZone) {
     this.features = [];
     const featureFuels = new Feature();
     featureFuels.featureName = 'feature_fuels';
@@ -1687,6 +1690,15 @@ export class ScenarioNewComponent implements OnInit {
         console.log(`Connection established: ${socket.connected}`);
     });
     socket.emit('add_new_scenario', this.newScenarioForm.value);
+
+    socket.on('return_new_scenario_id', (newScenarioID) => {
+      console.log('New scenario ID is ', newScenarioID);
+      this.zone.run(
+        () => {
+          this.router.navigate(['/scenario/', newScenarioID])
+        }
+      )
+    });
   }
 
 }

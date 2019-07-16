@@ -2027,6 +2027,11 @@ def add_new_scenario(msg):
         )
     )
 
+    scenario_id = c.execute("SELECT scenario_id FROM scenarios WHERE "
+                        "scenario_name = '{"
+              "}'".format(msg['scenarioName'])).fetchone()[0]
+
+    emit('return_new_scenario_id', scenario_id)
 
 # ### RUNNING SCENARIOS ### #
 # TODO: incomplete functionality
