@@ -15,18 +15,148 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
 
+# 3 STEP PROCESS
+# 1. load inputs for each module. Store into dict with module name as key
+# 2. OPTIONAL - validate inputs (can stop here)
+# 3. write modules for each dict
+# TODO: is this too memory intensive?
+#   Does this help us eventually skip the .tab files and work with a giant dict?
 
-def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
-                             cursor, scenario_directory):
+
+def load_inputs_from_database(subproblems, loaded_modules, subscenarios,
+                              cursor):
     """
+    Load all database inputs into a dictionary with the module name as key
+    and the module-specific raw inputs as value.
 
-    :param loaded_modules:
-    :param subscenarios:
-    :param cursor:
-    :param scenario_directory:
+    NOTE: for modules with submodules, such as capacity_types, the dictionary
+    will be nested.
+
+    :param subproblems: SubProblems object with info on the subproblem/stage
+        structure
+    :param loaded_modules: list of imported modules (Python <class 'module'>
+        objects)
+    :param subscenarios: SubScenarios object with all subscenario info
+
+    :param cursor: database cursor
     :return:
     """
 
+    # TODO: initialize an empty dict with a full nested structure with all
+    #  modules somewhere beforehand and simply fill it up?
+    #  Would make it a bit easier for someone to understand the
+    #  data structure and could build in some checks that way?
+    inputs = {}
+
+    subproblems_list = subproblems.SUBPROBLEMS
+    for subproblem in subproblems_list:
+        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        for stage in stages:
+            nested_inputs = {}
+            for m in loaded_modules:
+                if hasattr(m, "load_inputs_from_database"):
+                    nested_inputs[m.__name__] = m.load_inputs_from_database(
+                        subscenarios=subscenarios,
+                        subproblem=subproblem,
+                        stage=stage,
+                        c=cursor
+                    )
+                else:
+                    pass
+
+            # if there are subproblems/stages, inputs dictionary will be nested
+            if len(subproblems_list) > 1 and len(stages) > 1:
+                inputs[str(subproblem)] = {}
+                inputs[str(subproblem)][str(stage)] = nested_inputs
+            elif len(subproblems.SUBPROBLEMS) > 1:
+                inputs[str(subproblem)] = nested_inputs
+            elif len(stages) > 1:
+                inputs[str(stage)] = nested_inputs
+            else:
+                inputs = nested_inputs
+
+    return inputs
+
+
+# TODO: move validation into separate script similar to get_scenarip_inputs.py?
+#   like get get_scenario_inputs.py you will have a separate script that just
+#   does the validation
+def validate_inputs(subproblems, loaded_modules, inputs, subscenarios, cursor):
+    """""
+    :param subproblems: SubProblems object with info on the subproblem/stage
+        structure
+    :param loaded_modules: list of imported modules (Python <class 'module'>
+        objects)
+    :param inputs: dictionary with inputs (loaded from database) by module name
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param cursor: database cursor
+    :return:
+    """
+
+    # TODO: check if we even need database cursor and (and subscenarios?)
+    #   since presumably we already have our data in the inputs.
+    #   need to go through each module's input validation to check this
+
+    # TODO: do we need to pass a data container that collects all the input
+    #   validation outputs (since we don't want to print)?
+
+    subproblems_list = subproblems.SUBPROBLEMS
+    for subproblem in subproblems_list:
+        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        for stage in stages:
+
+            # if there are subproblems/stages, inputs dictionary will be nested
+            if len(subproblems_list) > 1 and len(stages) > 1:
+                relevant_inputs = inputs[str(subproblem)][str(stage)]
+            elif len(subproblems.SUBPROBLEMS) > 1:
+                relevant_inputs = inputs[str(subproblem)]
+            elif len(stages) > 1:
+                relevant_inputs = inputs[str(stage)]
+            else:
+                relevant_inputs = inputs
+
+            # 1. input validation within each module
+            for m in loaded_modules:
+                if hasattr(m, "validate_inputs"):
+                    m.validate_inputs(
+                        inputs=relevant_inputs,
+                        subscenarios=subscenarios,
+                        c=cursor
+                    )
+                else:
+                    pass
+
+            # 2. input validation across modules
+            #    validate_operational_and_capacity_types:
+            #    check that you don't combine new build with continuous or
+            #    binary commit
+            #
+            #    make sure geography and projects are in line
+            #    ... (see Evernote validation list)
+            #    create separate function for each validation that you call here
+
+
+# TODO: verify there is no complicated pre-processing of inputs before writing
+#   them into .tab files that would not allow the current structure
+def write_model_inputs(subproblems, loaded_modules, inputs, scenario_directory,
+                       subscenarios):
+    """
+    After loading the inputs from the database into a dictionary, write out the
+    the inputs into .tab files, which will be used to construct the optimization
+    problem.
+
+    For each module, pass the inputs to the 'write_model_inputs' function and
+    write out the inputs (if applicable).
+
+    :param subproblems: SubProblems object with info on the subproblem/stage
+        structure
+    :param loaded_modules: list of imported modules (Python <class 'module'>
+        objects)
+    :param inputs: dictionary with inputs (loaded from database) by module name
+    :param scenario_directory: local scenario directory
+    :param subscenarios: SubScenarios object with all subscenario info
+    :return:
+    """
     subproblems_list = subproblems.SUBPROBLEMS
     # create subproblem.csv file for subproblems if appropriate:
     if len(subproblems_list) > 1:
@@ -35,26 +165,29 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
         # create subproblem.csv file for stages if appropriate:
-        # TODO; handle edge case where only 1 subproblem and multiple stages?
         if len(stages) > 1:
             target_directory = os.path.join(scenario_directory, str(subproblem))
             write_subproblems_csv(target_directory, stages)
 
         for stage in stages:
-            # if there are subproblems/stages, input directory will be nested
+            # if there are subproblems/stages, inputs from database will be
+            # nested dictioanry and and inputs directory will be nested folder
             if len(subproblems_list) > 1 and len(stages) > 1:
                 inputs_directory = os.path.join(scenario_directory,
                                                 str(subproblem),
                                                 str(stage),
                                                 "inputs")
+                relevant_inputs = inputs[str(subproblem)][str(stage)]
             elif len(subproblems.SUBPROBLEMS) > 1:
                 inputs_directory = os.path.join(scenario_directory,
                                                 str(subproblem),
                                                 "inputs")
+                relevant_inputs = inputs[str(subproblem)]
             elif len(stages) > 1:
                 inputs_directory = os.path.join(scenario_directory,
                                                 str(stage),
                                                 "inputs")
+                relevant_inputs = inputs[str(stage)]
             else:
                 inputs_directory = os.path.join(scenario_directory,
                                                 "inputs")
@@ -63,20 +196,18 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
 
             delete_prior_inputs(inputs_directory)
 
-            # Get input .tab files for each of the loaded_modules if appropriate
-            # Note that all input files are saved in the input_directory, even
-            # the non-temporal inputs that are not dependent on the subproblem.
-            # or stage. This simplifies the file structure at the expense of
-            # unnecessarily duplicating non-temporal input files such as
-            # projects.tab.
+            # Write model input .tab files for each of the loaded_modules if
+            # appropriate. Note that all input files are saved in the
+            # input_directory, even the non-temporal inputs that are not
+            # dependent on the subproblem or stage. This simplifies the file
+            # structure at the expense ofunnecessarily duplicating non-temporal
+            # input files such as projects.tab.
             for m in loaded_modules:
-                if hasattr(m, "get_inputs_from_database"):
-                    m.get_inputs_from_database(
-                        subscenarios=subscenarios,
-                        subproblem=subproblem,
-                        stage=stage,
-                        c=cursor,
-                        inputs_directory=inputs_directory
+                if hasattr(m, "write_model_inputs"):
+                    m.write_model_inputs(
+                        inputs=relevant_inputs,
+                        inputs_directory=inputs_directory,
+                        subscenarios=subscenarios
                     )
                 else:
                     pass
@@ -84,9 +215,8 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
 
 def delete_prior_inputs(inputs_directory):
     """
-    Delete all .tab files that may exist in the inputs directory to avoid
-    phantom inputs.
-    :param inputs_directory: 
+    Delete all .tab files that may exist in the specified directory
+    :param inputs_directory: local directory where .tab files are saved
     :return: 
     """
     prior_input_tab_files = [
@@ -100,7 +230,7 @@ def delete_prior_inputs(inputs_directory):
 def parse_arguments(args):
     """
     Parse arguments
-    :param args: 
+    :param args:
     :return: 
     """
     parser = ArgumentParser(add_help=True)
@@ -113,7 +243,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-# TODO: if stages, also write stage subproblems!
 def write_subproblems_csv(scenario_directory, subproblems):
     """
     Write the subproblems.csv file that will be used when solving multiple
@@ -371,34 +500,26 @@ def main(args=None):
     """
     print("Getting inputs...")
 
+    # Retrieve scenario_id and/or name from args
     if args is None:
         args = sys.argv[1:]
-
     parsed_arguments = parse_arguments(args=args)
-
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
-    # For now, assume script is run from root directory and the the
-    # database is ./db and named io.db
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
+    # Connect to database; For now, assume script is run from root directory
+    # and the the database is ./db and named io.db
+    io = sqlite3.connect(os.path.join(os.getcwd(), 'db', 'io.db'))
     c = io.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(
-        scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
-        c=c, script="get_scenario_inputs"
+        scenario_id_arg=scenario_id_arg,
+        scenario_name_arg=scenario_name_arg,
+        c=c,
+        script="get_scenario_inputs"
     )
 
-    # Get scenario characteristics (features, subscenarios, subproblems)
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-
-    # TODO: make this compatible with subscenarios
-    #   --> we will need more directories if there are more scenarios
-    # Make inputs directory
+    # Make scenario directories
     scenarios_main_directory = os.path.join(
         os.getcwd(), "scenarios")
     if not os.path.exists(scenarios_main_directory):
@@ -410,22 +531,33 @@ def main(args=None):
     if not os.path.exists(scenario_directory):
         os.makedirs(scenario_directory)
 
+    # Delete input files that may have existed before to avoid phantom inputs
+    delete_prior_inputs(scenario_directory)
+
+    # Get scenario characteristics (features, subscenarios, subproblems)
+    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
     # Write features.csv file with optional features and use this feature
-    # file to determine what modules to GridPath will use
+    # file to determine what modules to load for GridPath
     feature_list = optional_features.determine_feature_list()
     write_features_csv(scenario_directory, feature_list)
     modules_to_use = determine_modules(scenario_directory=scenario_directory)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    # Read in appropriate inputs from database and create .tab file model inputs
-    get_inputs_from_database(loaded_modules, subscenarios, subproblems,
-                             c, scenario_directory)
+    # Read in appropriate inputs from database
+    inputs = load_inputs_from_database(loaded_modules, subscenarios, c)
+    # Validate inputs
+    # TODO: add option to skip this
+    validate_inputs(inputs, loaded_modules, subscenarios, c)
+    # Write .tab file model inputs
+    # TODO: add option to stop here (if only validating)
+    write_model_inputs(inputs, inputs_directory, loaded_modules, subscenarios)
 
     # Save the scenario ID to a file
-    save_scenario_id(
-        scenario_directory=scenario_directory, scenario_id=scenario_id
-    )
-
+    save_scenario_id(scenario_directory=scenario_directory,
+                     scenario_id=scenario_id)
     # Write full scenario description
     write_scenario_description(
         scenario_directory=scenario_directory, 

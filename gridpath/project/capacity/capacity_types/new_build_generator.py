@@ -433,15 +433,13 @@ def summarize_module_specific_results(
             outfile.write("\n")
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-    new_build_generator_vintage_costs.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
 
     get_potentials = \
@@ -484,6 +482,38 @@ def get_module_specific_inputs_from_database(
         )
     )
 
+    return new_gen_costs
+
+
+def validate_module_specific_inputs(inputs, subscenarios, c):
+    """
+
+    :param inputs: dictionary with submodule inputs (loaded from database) by
+        submodule name
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param c: database cursor
+    :return:
+    """
+    new_gen_costs = inputs[__name__]
+
+    # validate inputs
+    # check that annualize real cost is positive
+    # check that maximum new build doesn't decrease
+    # ...
+
+
+def write_module_specific_inputs(inputs, inputs_directory, subscenarios):
+    """
+    Write inputs to new_build_generator_vintage_costs.tab
+    :param inputs: dictionary with submodule inputs (loaded from database) by
+        submodule name
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :return::
+    """
+
+    new_gen_costs = inputs[__name__]
+
     with open(os.path.join(inputs_directory,
                            "new_build_generator_vintage_costs.tab"), "w") as \
             new_gen_costs_tab_file:
@@ -494,8 +524,8 @@ def get_module_specific_inputs_from_database(
             ["project", "vintage", "lifetime_yrs",
              "annualized_real_cost_per_mw_yr"] +
             ([] if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None
-            else ["min_cumulative_new_build_mw",
-                  "max_cumulative_new_build_mw"])
+             else ["min_cumulative_new_build_mw", "max_cumulative_new_build_mw"]
+             )
         )
 
         for row in new_gen_costs:

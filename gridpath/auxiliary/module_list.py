@@ -26,6 +26,14 @@ def all_modules_list():
 
     This is the list of all GridPath modules in the order they would be
     loaded if all optional features were selected.
+
+    Note: technically speaking some modules listed below are "packages", i.e.
+    they are a collection of Python modules. For example,  "project" is a
+    directory that contains both modules (project.fuels) and other sub-packages
+    (project.capacity.capacity_types, project.operations, etc.). A package must
+    contain an additional __init__.py file to distinguish a package from a
+    directory that just happens to contain a bunch of Python scripts.
+    When Python imports a package, it will return a Python module object.
     """
     all_modules = [
         "temporal.operations.timepoints",
@@ -281,7 +289,7 @@ def determine_modules(scenario_directory):
     :param scenario_directory: the scenario directory, where we will look
         for the list of requested features
     :return: the list of modules -- a subset of all GridPath modules -- needed
-        for a scenario
+        for a scenario. These are the module names, not the actual modules.
 
     This method determines which modules are needed for a scenario based on
     the features specified for the scenario. We start with the list of all

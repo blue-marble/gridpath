@@ -105,3 +105,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         )
         for row in fuels:
             writer.writerow(row)
+
+# TODO: validate inputs and make sure that the fuels we have cover all the
+# fuels specified in projects_inputs_operational_chars
+
+# look at what fuels you're supposed to have (by looking at projects)
+# and then make sure you have data for all of them
+# fuels + fuel prices for the periods and months you are modeling

@@ -362,15 +362,13 @@ def summarize_module_specific_results(
             outfile.write("\n")
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-    existing_generation_period_params.tab
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
     """
 
     # Select generators of 'existing_gen_linear_economic_retirement' capacity
@@ -404,6 +402,37 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
+
+    return ep_capacities
+
+
+def validate_module_specific_inputs(inputs, subscenarios, c):
+    """
+
+    :param inputs: dictionary with submodule inputs (loaded from database) by
+        submodule name (here: by capacity_type)
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param c: database cursor
+    :return:
+    """
+    ep_capacities = inputs[__name__]
+
+    # do validation
+    # make sure existing capacity is a postive number
+    # make sure annual fixed costs are positive
+
+
+def write_module_specific_inputs(inputs, inputs_directory, subscenarios):
+    """
+    Write inputs to existing_generation_period_params.tab
+    :param inputs: dictionary with submodule inputs (loaded from database)
+        by submodule name (here: by capacity_type)
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :return::
+    """
+
+    ep_capacities = inputs[__name__]
 
     # If existing_generation_period_params.tab file already exists, append
     # rows to it

@@ -55,17 +55,52 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def load_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios:
+    :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
-    :param c:
-    :param inputs_directory:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # timepoints.tab
+    timepoints = c.execute(
+        """SELECT timepoint, period, horizon, 
+           number_of_hours_in_timepoint, previous_stage_timepoint_map
+           FROM inputs_temporal_timepoints
+           WHERE temporal_scenario_id = {}
+           AND subproblem_id = {}
+           AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    ).fetchall()
+
+    return timepoints
+
+
+def validate_inputs(inputs, subscenarios, c):
+    """
+
+    :param inputs: dictionary with inputs (loaded from database) by module name
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param c: database cursor
+    :return:
+    """
+    timepoints = inputs[__name__]
+    # validate timepoint inputs
+
+
+def write_model_inputs(inputs, inputs_directory, subscenarios):
+    """
+    Wrote model inputs into timepoints.tab
+    :param inputs: dictionary with inputs (loaded from database) by module name
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :return:
+    """
+
+    timepoints = inputs[__name__]
     with open(os.path.join(inputs_directory, "timepoints.tab"), "w") as \
             timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t")
@@ -75,18 +110,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
                          "number_of_hours_in_timepoint",
                          "previous_stage_timepoint_map"])
 
-        timepoints = c.execute(
-            """SELECT timepoint, period, horizon, number_of_hours_in_timepoint, previous_stage_timepoint_map
-               FROM inputs_temporal_timepoints
-               WHERE temporal_scenario_id = {}
-               AND subproblem_id = {}
-               AND stage_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage
-            )
-        ).fetchall()
-
+        # Write timepoints
         for row in timepoints:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)

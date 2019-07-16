@@ -20,13 +20,17 @@ def load_subtype_modules(
 ):
     """
     Load subtype modules (e.g. capacity types, operational types, etc).
-    This function will also check that the subtype module have certain
+    This function will also check that the subtype modules have certain
     required attributes.
 
-    :param required_subtype_modules:
-    :param package:
-    :param required_attributes:
-    :return:
+    :param required_subtype_modules: name of the subtype_modules to be loaded
+    :param package: The name of the package the subtype modules reside in. E.g.
+        capacity_type modules live in gridpath.project.capacity.capacity_types
+    :param required_attributes: module attributes that are required for each of
+        the specified required_subtype_modules. E.g. each capacity_type will
+        need to have a "capacity_rule" attribute.
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
     """
     imported_subtype_modules = dict()
     for m in required_subtype_modules:
@@ -51,46 +55,75 @@ def load_subtype_modules(
 
 
 def load_gen_storage_capacity_type_modules(required_capacity_modules):
+    """
+    Load a specified set of capacity type modules
+    :param required_capacity_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
     return load_subtype_modules(
-            required_capacity_modules,
-            "gridpath.project.capacity.capacity_types",
-            ["capacity_rule", "capacity_cost_rule"]
-        )
+        required_subtype_modules=required_capacity_modules,
+        package="gridpath.project.capacity.capacity_types",
+        required_attributes=["capacity_rule", "capacity_cost_rule"]
+    )
 
 
 def load_reserve_type_modules(required_reserve_modules):
+    """
+    Load a specified set of reserve modules
+    :param required_reserve_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
     return load_subtype_modules(
-        required_reserve_modules,
-        "gridpath.project.operations.reserves",
-        []
-         )
+        required_subtype_modules=required_reserve_modules,
+        package="gridpath.project.operations.reserves",
+        required_attributes=[]
+    )
 
 
 # TODO: add curtailment rules as required?
 def load_operational_type_modules(required_operational_modules):
+    """
+    Load a specified set of operational type modules
+    :param required_operational_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
     return load_subtype_modules(
-        required_operational_modules,
-        "gridpath.project.operations.operational_types",
-        ["power_provision_rule",
-         "startup_shutdown_rule"]
-         )
+        required_subtype_modules=required_operational_modules,
+        package="gridpath.project.operations.operational_types",
+        required_attributes=["power_provision_rule", "startup_shutdown_rule"]
+    )
 
 
 def load_prm_type_modules(required_prm_modules):
+    """
+    Load a specified set of prm type modules
+    :param required_prm_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
     return load_subtype_modules(
-        required_prm_modules,
-        "gridpath.project.reliability.prm.prm_types",
-        ["elcc_eligible_capacity_rule",]
-         )
+        required_subtype_modules=required_prm_modules,
+        package="gridpath.project.reliability.prm.prm_types",
+        required_attributes=["elcc_eligible_capacity_rule",]
+    )
 
 
 def load_tx_capacity_type_modules(required_tx_capacity_modules):
+    """
+    Load a specified set of transmission capacity type modules
+    :param required_tx_capacity_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
     return load_subtype_modules(
-            required_tx_capacity_modules,
-            "gridpath.transmission.capacity.capacity_types",
-            ["min_transmission_capacity_rule",
-             "max_transmission_capacity_rule"]
-        )
+        required_subtype_modules=required_tx_capacity_modules,
+        package="gridpath.transmission.capacity.capacity_types",
+        required_attributes=["min_transmission_capacity_rule",
+                             "max_transmission_capacity_rule"]
+    )
 
 
 def join_sets(mod, set_list):
