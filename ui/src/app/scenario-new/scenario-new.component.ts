@@ -1,5 +1,6 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { Router } from "@angular/router";
+import { Location } from '@angular/common';
 
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -225,7 +226,8 @@ export class ScenarioNewComponent implements OnInit {
 
   constructor(private scenarioNewService: ScenarioNewService,
               private router: Router,
-              private zone: NgZone) {
+              private zone: NgZone,
+              private location: Location) {
     this.features = [];
     const featureFuels = new Feature();
     featureFuels.featureName = 'feature_fuels';
@@ -1351,7 +1353,7 @@ export class ScenarioNewComponent implements OnInit {
     // Set the setting table captions
     this.carbonCapSettingsTable = new SettingsTable();
     this.carbonCapSettingsTable.tableCaption =
-      'CarbonCap settings';
+      'Carbon cap';
     this.carbonCapSettingsTable.settingRows = [];
 
 
@@ -1699,6 +1701,10 @@ export class ScenarioNewComponent implements OnInit {
         }
       )
     });
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
 }
