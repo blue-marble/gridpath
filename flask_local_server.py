@@ -90,13 +90,14 @@ class Scenarios(Resource):
 
 
 # ### API: Scenario Detail ### #
-class ScenarioDetailAll(Resource):
+class ScenarioDetailName(Resource):
     """
     Detailed information for a scenario.
     """
     @staticmethod
     def get(scenario_id):
-        scenario_detail_api = get_scenario_detail(scenario_id, '*')
+        scenario_detail_api = \
+            get_scenario_detail(scenario_id, 'scenario_name')[0]["value"]
 
         return scenario_detail_api
 
@@ -1418,7 +1419,7 @@ api.add_resource(Scenarios, '/scenarios/')
 
 # ### API Routes Scenario Detail ### #
 # All
-api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
+api.add_resource(ScenarioDetailName, '/scenarios/<scenario_id>/name')
 # Features
 api.add_resource(ScenarioDetailFeatures, '/scenarios/<scenario_id>/features')
 # Temporal

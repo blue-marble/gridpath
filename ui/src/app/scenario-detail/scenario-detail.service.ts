@@ -14,134 +14,140 @@ export class ScenarioDetailService {
 
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
-  getScenarioDetailAll(id: number): Observable<ScenarioDetail[]> {
-    console.log(`${this.scenariosBaseURL}${id}`);
-    return this.http.get<ScenarioDetail[]>(`${this.scenariosBaseURL}${id}`)
+  getScenarioDetailAll(scenarioID: number): Observable<ScenarioDetail[]> {
+    console.log(`${this.scenariosBaseURL}${scenarioID}`);
+    return this.http.get<ScenarioDetail[]>(`${this.scenariosBaseURL}${scenarioID}`)
   }
 
-  getScenarioDetailFeatures(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailFeatures(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/features`
+      `${this.scenariosBaseURL}${scenarioID}/features`
     )
   }
 
-  getScenarioDetailTemporal(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailTemporal(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/temporal`
+      `${this.scenariosBaseURL}${scenarioID}/temporal`
     )
   }
 
-  getScenarioDetailGeographyLoadZones(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailGeographyLoadZones(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/geography-load-zones`
+      `${this.scenariosBaseURL}${scenarioID}/geography-load-zones`
     )
   }
 
-  getScenarioDetailProjectCapacity(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailProjectCapacity(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/project-capacity`
+      `${this.scenariosBaseURL}${scenarioID}/project-capacity`
     )
   }
 
-  getScenarioDetailProjectOpChars(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailProjectOpChars(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/project-opchars`
+      `${this.scenariosBaseURL}${scenarioID}/project-opchars`
     )
   }
 
-  getScenarioDetailFuels(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailFuels(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/fuels`
+      `${this.scenariosBaseURL}${scenarioID}/fuels`
     )
   }
 
-  getScenarioDetailTransmissionCapacity(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailTransmissionCapacity(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/transmission-capacity`
+      `${this.scenariosBaseURL}${scenarioID}/transmission-capacity`
     )
   }
 
-  getScenarioDetailTransmissionOpChars(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailTransmissionOpChars(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/transmission-opchars`
+      `${this.scenariosBaseURL}${scenarioID}/transmission-opchars`
     )
   }
 
-  getScenarioDetailTransmissionHurdleRates(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailTransmissionHurdleRates(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/transmission-hurdle-rates`
+      `${this.scenariosBaseURL}${scenarioID}/transmission-hurdle-rates`
     )
   }
 
-  getScenarioDetailTransmissionSimFlow(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailTransmissionSimFlow(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/transmission-sim-flow`
+      `${this.scenariosBaseURL}${scenarioID}/transmission-sim-flow`
     )
   }
 
-  getScenarioDetailLoad(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailLoad(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/load`
+      `${this.scenariosBaseURL}${scenarioID}/load`
     )
   }
 
-  getScenarioDetailLFUp(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailLFUp(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/lf-up`
+      `${this.scenariosBaseURL}${scenarioID}/lf-up`
     )
   }
 
-  getScenarioDetailLFDown(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailLFDown(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/lf-down`
+      `${this.scenariosBaseURL}${scenarioID}/lf-down`
     )
   }
 
-  getScenarioDetailRegUp(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailRegUp(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/reg-up`
+      `${this.scenariosBaseURL}${scenarioID}/reg-up`
     )
   }
 
-  getScenarioDetailRegDown(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailRegDown(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/reg-down`
+      `${this.scenariosBaseURL}${scenarioID}/reg-down`
     )
   }
 
-  getScenarioDetailSpin(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailSpin(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/spin`
+      `${this.scenariosBaseURL}${scenarioID}/spin`
     )
   }
 
-  getScenarioDetailFreqResp(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailFreqResp(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/freq-resp`
+      `${this.scenariosBaseURL}${scenarioID}/freq-resp`
     )
   }
 
-  getScenarioDetailRPS(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailRPS(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/rps`
+      `${this.scenariosBaseURL}${scenarioID}/rps`
     )
   }
 
-  getScenarioDetailCarbonCap(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailCarbonCap(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/carbon-cap`
+      `${this.scenariosBaseURL}${scenarioID}/carbon-cap`
     )
   }
 
-  getScenarioDetailPRM(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailPRM(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/prm`
+      `${this.scenariosBaseURL}${scenarioID}/prm`
     )
   }
 
-  getScenarioDetailLocalCapacity(id: number): Observable<ScenarioDetail[]> {
+  getScenarioDetailLocalCapacity(scenarioID: number): Observable<ScenarioDetail[]> {
     return this.http.get<ScenarioDetail[]>(
-      `${this.scenariosBaseURL}${id}/local-capacity`
+      `${this.scenariosBaseURL}${scenarioID}/local-capacity`
+    )
+  }
+
+  getScenarioName(scenarioID: number): Observable<string> {
+    return this.http.get<string>(
+      `${this.scenariosBaseURL}${scenarioID}/name`
     )
   }
 }
