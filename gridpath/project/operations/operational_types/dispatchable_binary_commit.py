@@ -1130,10 +1130,13 @@ def export_module_specific_results(mod, d,
             ])
 
 
-def import_module_specific_results_to_database(scenario_id, c, db,
-                                               results_directory):
+def import_module_specific_results_to_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -1143,9 +1146,10 @@ def import_module_specific_results_to_database(scenario_id, c, db,
     # dispatch_binary_commit.csv
     c.execute(
         """DELETE FROM results_project_dispatch_binary_commit
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -1163,6 +1167,8 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -1174,7 +1180,7 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             committed_units INTEGER,
             started_units INTEGER,
             stopped_units INTEGER,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -1203,11 +1209,13 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_binary_commit"""
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    (scenario_id, project, period, subproblem_id, stage_id, 
+                    horizon, timepoint, horizon_weight, 
+                    number_of_hours_in_timepoint,
+                    load_zone, technology, 
+                    power_mw, committed_mw, committed_units, 
+                    started_units, stopped_units)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}',
                     {}, {}, {});""".format(
                     scenario_id, project, period, horizon, timepoint,
                     horizon_weight, number_of_hours_in_timepoint,
@@ -1220,18 +1228,20 @@ def import_module_specific_results_to_database(scenario_id, c, db,
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_binary_commit
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw,
-        committed_units, started_units, stopped_units)
+        (scenario_id, project, period, , subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, 
+        committed_mw, committed_units, started_units, stopped_units)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw, committed_units,
-        started_units, stopped_units
-        FROM temp_results_project_dispatch_binary_commit""" + str(
-            scenario_id) + """
-            ORDER BY scenario_id, project, timepoint;"""
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, 
+        committed_mw, committed_units, started_units, stopped_units
+        FROM temp_results_project_dispatch_binary_commit"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

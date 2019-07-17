@@ -344,13 +344,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             for row in availabilities:
                 writer.writerow(row)
 
-    # TODO; test this once database integration is merged into piecewise
-    #   fuel cost branch.
     # Write heat rate curves files
     # Select only heat rate curves of projects in the portfolio
     heat_rates = c.execute(
         """
-        SELECT project, segment_id, load_point_mw, 
+        SELECT project, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
@@ -358,7 +356,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) AS op_char
         USING(project)
-        LEFT OUTER JOIN
+        INNER JOIN
         inputs_project_heat_rate_curves
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
@@ -371,7 +369,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             heat_rate_tab_file:
         writer = csv.writer(heat_rate_tab_file, delimiter="\t")
 
-        writer.writerow(["project", "segment_id", "load_point_mw",
+        writer.writerow(["project", "load_point_mw",
                          "average_heat_rate_mmbtu_per_mwh"])
 
         for row in heat_rates:
