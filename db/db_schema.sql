@@ -47,6 +47,29 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
 ('storage_generic'), ('variable'), ('always_on');
 
+-- Run status
+DROP TABLE IF EXISTS mod_run_status_types;
+CREATE TABLE mod_run_status_types (
+status VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
+INSERT INTO mod_run_status_types (status)
+VALUES ('not_launched'), ('running'), ('completed'), ('encountered_error');
+
+-- TODO: figure out foreign keys for subproblems/stages when structure in place
+-- TODO: what happens if user deletes scenario in scenarios table
+DROP TABLE IF EXISTS mod_run_status;
+CREATE TABLE mod_run_status (
+scenario_id INTEGER,
+scenario_name VARCHAR(64),
+subproblem INTEGER,
+stage INTEGER,
+status VARCHAR(32),
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
+FOREIGN KEY (status) REFERENCES mod_run_status_types (status)
+);
+
 
 --------------------
 -- -- TEMPORAL -- --
@@ -1853,6 +1876,8 @@ FOREIGN KEY (regulation_up_scenario_id) REFERENCES
 subscenarios_system_regulation_up (regulation_up_scenario_id),
 FOREIGN KEY (regulation_down_scenario_id) REFERENCES
 subscenarios_system_regulation_down (regulation_down_scenario_id),
+FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
+subscenarios_system_spinning_reserves (spinning_reserves_scenario_id),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
 subscenarios_system_frequency_response (frequency_response_scenario_id),
 FOREIGN KEY (rps_target_scenario_id) REFERENCES
@@ -2796,3 +2821,290 @@ dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 );
+
+
+-- Views
+DROP VIEW IF EXISTS scenarios_view;
+CREATE VIEW scenarios_view (
+scenario_id,
+scenario_name,
+feature_fuels,
+feature_multi_stage,
+feature_transmission,
+feature_transmission_hurdle_rates,
+feature_simultaneous_flow_limits,
+feature_load_following_up,
+feature_load_following_down,
+feature_regulation_up,
+feature_regulation_down,
+feature_frequency_response,
+feature_spinning_reserves,
+feature_rps,
+feature_carbon_cap,
+feature_track_carbon_imports,
+feature_prm,
+feature_elcc_surface,
+feature_local_capacity,
+temporal,
+geography_load_zones,
+geography_lf_up_bas,
+geography_lf_down_bas,
+geography_reg_up_bas,
+geography_reg_down_bas,
+geography_spin_bas,
+geography_freq_resp_bas,
+geography_rps_areas,
+carbon_cap_areas,
+prm_areas,
+local_capacity_areas,
+project_portfolio,
+project_operating_chars,
+project_availability,
+project_fuels,
+fuel_prices,
+project_load_zones,
+project_lf_up_bas,
+project_lf_down_bas,
+project_reg_up_bas,
+project_reg_down_bas,
+project_spin_bas,
+project_freq_resp_bas,
+project_rps_areas,
+project_carbon_cap_areas,
+project_prm_areas,
+project_elcc_chars,
+project_prm_energy_only,
+project_local_capacity_areas,
+project_local_capacity_chars,
+project_existing_capacity,
+project_existing_fixed_cost,
+project_new_cost,
+project_new_potential,
+transmission_portfolio,
+transmission_load_zones,
+transmission_existing_capacity,
+transmission_operational_chars,
+transmission_hurdle_rates,
+transmission_carbon_cap_zones,
+transmission_simultaneous_flow_limits,
+transmission_simultaneous_flow_limit_line_groups,
+load_profile,
+load_following_reserves_up_profile,
+load_following_reserves_down_profile,
+regulation_up_profile,
+regulation_down_profile,
+spinning_reserves_profile,
+frequency_response_profile,
+rps_target,
+carbon_cap,
+prm_requirement,
+elcc_surface,
+local_capacity_requirement,
+tuning
+)
+AS
+SELECT
+scenario_id,
+scenario_name,
+CASE WHEN (of_fuels=1) THEN 'yes' ELSE 'no' END AS feature_fuels,
+CASE WHEN (of_multi_stage=1) THEN 'yes' ELSE 'no' END AS feature_multi_stage,
+CASE WHEN (of_transmission=1) THEN 'yes' ELSE 'no' END AS feature_transmission,
+CASE WHEN (of_transmission_hurdle_rates=1) THEN 'yes' ELSE 'no' END
+    AS feature_transmission_hurdle_rates,
+CASE WHEN (of_simultaneous_flow_limits) THEN 'yes' ELSE 'no' END
+    AS feature_simultaneous_flow_limits,
+CASE WHEN (of_lf_reserves_up) THEN 'yes' ELSE 'no' END
+    AS feature_load_following_up,
+CASE WHEN (of_lf_reserves_down) THEN 'yes' ELSE 'no' END
+    AS feature_load_following_down,
+CASE WHEN (of_regulation_up) THEN 'yes' ELSE 'no' END
+    AS feature_regulation_up,
+CASE WHEN (of_regulation_down) THEN 'yes' ELSE 'no' END
+    AS feature_regulation_down,
+CASE WHEN (of_frequency_response) THEN 'yes' ELSE 'no' END
+    AS feature_frequency_response,
+CASE WHEN (of_spinning_reserves) THEN 'yes' ELSE 'no' END
+    AS feature_spinning_reserves,
+CASE WHEN (of_rps) THEN 'yes' ELSE 'no' END AS feature_rps,
+CASE WHEN (of_carbon_cap) THEN 'yes' ELSE 'no' END
+    AS feature_carbon_cap,
+CASE WHEN (of_track_carbon_imports) THEN 'yes' ELSE 'no' END
+    AS feature_track_carbon_imports,
+CASE WHEN (of_prm) THEN 'yes' ELSE 'no' END AS feature_prm,
+CASE WHEN (of_elcc_surface) THEN 'yes' ELSE 'no' END
+    AS feature_elcc_surface,
+CASE WHEN (of_local_capacity) THEN 'yes' ELSE 'no' END
+    AS feature_local_capacity,
+subscenarios_temporal.name AS temporal,
+subscenarios_geography_load_zones.name AS geography_load_zones,
+subscenarios_geography_lf_reserves_up_bas.name AS geography_lf_up_bas,
+subscenarios_geography_lf_reserves_down_bas.name AS geography_lf_down_bas,
+subscenarios_geography_regulation_up_bas.name AS geography_reg_up_bas,
+subscenarios_geography_regulation_down_bas.name AS geography_reg_down_bas,
+subscenarios_geography_spinning_reserves_bas.name AS geography_spin_bas,
+subscenarios_geography_frequency_response_bas.name AS geography_freq_resp_bas,
+subscenarios_geography_rps_zones.name AS geography_rps_areas,
+subscenarios_geography_carbon_cap_zones.name AS carbon_cap_areas,
+subscenarios_geography_prm_zones.name AS prm_areas,
+subscenarios_geography_local_capacity_zones.name AS local_capacity_areas,
+subscenarios_project_portfolios.name AS project_portfolio,
+subscenarios_project_operational_chars.name AS project_operating_chars,
+subscenarios_project_availability.name AS project_availability,
+subscenarios_project_fuels.name AS project_fuels,
+subscenarios_project_fuel_prices.name AS fuel_prices,
+subscenarios_project_load_zones.name AS project_load_zones,
+subscenarios_project_lf_reserves_up_bas.name AS project_lf_up_bas,
+subscenarios_project_lf_reserves_down_bas.name AS project_lf_down_bas,
+subscenarios_project_regulation_up_bas.name AS project_reg_up_bas,
+subscenarios_project_regulation_down_bas.name AS project_reg_down_bas,
+subscenarios_project_spinning_reserves_bas.name AS project_spin_bas,
+subscenarios_project_frequency_response_bas.name AS project_freq_resp_bas,
+subscenarios_project_rps_zones.name AS project_rps_areas,
+subscenarios_project_carbon_cap_zones.name AS project_carbon_cap_areas,
+subscenarios_project_prm_zones.name AS project_prm_areas,
+subscenarios_project_elcc_chars.name AS project_elcc_chars,
+subscenarios_project_prm_energy_only.name AS project_prm_energy_only,
+subscenarios_project_local_capacity_zones.name AS project_local_capacity_areas,
+subscenarios_project_local_capacity_chars.name AS project_local_capacity_chars,
+subscenarios_project_existing_capacity.name AS project_existing_capacity,
+subscenarios_project_existing_fixed_cost.name AS project_existing_fixed_cost,
+subscenarios_project_new_cost.name AS project_new_cost,
+subscenarios_project_new_potential.name AS project_new_potential,
+subscenarios_transmission_portfolios.name AS transmission_portfolio,
+subscenarios_transmission_load_zones.name AS transmission_load_zones,
+subscenarios_transmission_existing_capacity.name
+    AS transmission_existing_capacity,
+subscenarios_transmission_operational_chars.name
+    AS transmission_operational_chars,
+subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
+subscenarios_transmission_carbon_cap_zones.name
+    AS transmission_carbon_cap_zones,
+subscenarios_transmission_simultaneous_flow_limits.name
+    AS transmission_simultaneous_flow_limits,
+subscenarios_transmission_simultaneous_flow_limit_line_groups.name AS
+    transmission_simultaneous_flow_limit_line_groups,
+subscenarios_system_load.name AS load_profile,
+subscenarios_system_lf_reserves_up.name AS load_following_reserves_up_profile,
+subscenarios_system_lf_reserves_down.name
+    AS load_following_reserves_down_profile,
+subscenarios_system_regulation_up.name AS regulation_up_profile,
+subscenarios_system_regulation_down.name AS regulation_down_profile,
+subscenarios_system_spinning_reserves.name AS spinning_reserves_profile,
+subscenarios_system_frequency_response.name AS frequency_response_profile,
+subscenarios_system_rps_targets.name AS rps_target,
+subscenarios_system_carbon_cap_targets.name AS carbon_cap,
+subscenarios_system_prm_requirement.name AS prm_requirement,
+subscenarios_system_elcc_surface.name AS elcc_surface,
+subscenarios_system_local_capacity_requirement.name
+    AS local_capacity_requirement,
+subscenarios_tuning.name AS tuning
+FROM scenarios
+LEFT JOIN subscenarios_temporal USING (temporal_scenario_id)
+LEFT JOIN subscenarios_geography_load_zones USING (load_zone_scenario_id)
+LEFT JOIN subscenarios_geography_lf_reserves_up_bas
+    USING (lf_reserves_up_ba_scenario_id)
+LEFT JOIN subscenarios_geography_lf_reserves_down_bas
+    USING (lf_reserves_down_ba_scenario_id)
+LEFT JOIN subscenarios_geography_regulation_up_bas
+    USING (regulation_up_ba_scenario_id)
+LEFT JOIN subscenarios_geography_regulation_down_bas
+    USING (regulation_down_ba_scenario_id)
+LEFT JOIN subscenarios_geography_spinning_reserves_bas
+    USING (spinning_reserves_ba_scenario_id)
+LEFT JOIN subscenarios_geography_frequency_response_bas
+    USING (frequency_response_ba_scenario_id)
+LEFT JOIN subscenarios_geography_rps_zones USING (rps_zone_scenario_id)
+LEFT JOIN subscenarios_geography_carbon_cap_zones
+    USING (carbon_cap_zone_scenario_id)
+LEFT JOIN subscenarios_geography_prm_zones USING (prm_zone_scenario_id)
+LEFT JOIN subscenarios_geography_local_capacity_zones
+    USING (local_capacity_zone_scenario_id)
+LEFT JOIN subscenarios_project_portfolios USING (project_portfolio_scenario_id)
+LEFT JOIN subscenarios_project_operational_chars
+    USING (project_operational_chars_scenario_id)
+LEFT JOIN subscenarios_project_availability
+    USING (project_availability_scenario_id)
+LEFT JOIN subscenarios_project_fuels USING (fuel_scenario_id)
+LEFT JOIN subscenarios_project_fuel_prices USING (fuel_price_scenario_id)
+LEFT JOIN subscenarios_project_load_zones
+    USING (load_zone_scenario_id, project_load_zone_scenario_id)
+LEFT JOIN subscenarios_project_lf_reserves_up_bas
+    USING (lf_reserves_up_ba_scenario_id,
+           project_lf_reserves_up_ba_scenario_id)
+LEFT JOIN subscenarios_project_lf_reserves_down_bas
+    USING (lf_reserves_down_ba_scenario_id,
+           project_lf_reserves_down_ba_scenario_id)
+LEFT JOIN subscenarios_project_regulation_up_bas
+    USING (regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id)
+LEFT JOIN subscenarios_project_regulation_down_bas
+    USING (regulation_down_ba_scenario_id,
+           project_regulation_down_ba_scenario_id)
+LEFT JOIN subscenarios_project_spinning_reserves_bas
+    USING (spinning_reserves_ba_scenario_id,
+           project_spinning_reserves_ba_scenario_id)
+LEFT JOIN subscenarios_project_frequency_response_bas
+    USING (frequency_response_ba_scenario_id,
+           project_frequency_response_ba_scenario_id)
+LEFT JOIN subscenarios_project_rps_zones
+    USING (rps_zone_scenario_id, project_rps_zone_scenario_id)
+LEFT JOIN subscenarios_project_carbon_cap_zones
+    USING (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id)
+LEFT JOIN subscenarios_project_prm_zones
+    USING (prm_zone_scenario_id, project_prm_zone_scenario_id)
+LEFT JOIN subscenarios_project_elcc_chars
+    USING (project_elcc_chars_scenario_id)
+LEFT JOIN subscenarios_project_prm_energy_only
+    USING (prm_energy_only_scenario_id)
+LEFT JOIN subscenarios_project_local_capacity_zones
+    USING (local_capacity_zone_scenario_id,
+           project_local_capacity_zone_scenario_id)
+LEFT JOIN subscenarios_project_local_capacity_chars
+    USING (project_local_capacity_chars_scenario_id)
+LEFT JOIN subscenarios_project_existing_capacity
+    USING (project_existing_capacity_scenario_id)
+LEFT JOIN subscenarios_project_existing_fixed_cost
+    USING (project_existing_fixed_cost_scenario_id)
+LEFT JOIN subscenarios_project_new_cost USING (project_new_cost_scenario_id)
+LEFT JOIN subscenarios_project_new_potential
+    USING (project_new_potential_scenario_id)
+LEFT JOIN subscenarios_transmission_portfolios
+    USING (transmission_portfolio_scenario_id)
+LEFT JOIN subscenarios_transmission_load_zones
+    USING (load_zone_scenario_id, transmission_load_zone_scenario_id)
+LEFT JOIN subscenarios_transmission_existing_capacity
+    USING (transmission_existing_capacity_scenario_id)
+LEFT JOIN subscenarios_transmission_operational_chars
+    USING (transmission_operational_chars_scenario_id)
+LEFT JOIN subscenarios_transmission_hurdle_rates
+    USING (transmission_hurdle_rate_scenario_id)
+LEFT JOIN subscenarios_transmission_carbon_cap_zones
+    USING (carbon_cap_zone_scenario_id,
+          transmission_carbon_cap_zone_scenario_id)
+LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
+    USING (transmission_simultaneous_flow_limit_scenario_id)
+LEFT JOIN subscenarios_transmission_simultaneous_flow_limit_line_groups
+    USING (transmission_simultaneous_flow_limit_line_group_scenario_id)
+LEFT JOIN subscenarios_system_load USING (load_scenario_id)
+LEFT JOIN subscenarios_system_lf_reserves_up
+    USING (lf_reserves_up_scenario_id)
+LEFT JOIN subscenarios_system_lf_reserves_down
+    USING (lf_reserves_down_scenario_id)
+LEFT JOIN subscenarios_system_regulation_up
+    USING (regulation_up_scenario_id)
+LEFT JOIN subscenarios_system_regulation_down
+    USING (regulation_down_scenario_id)
+LEFT JOIN subscenarios_system_spinning_reserves
+    USING (spinning_reserves_scenario_id)
+LEFT JOIN subscenarios_system_frequency_response
+    USING (frequency_response_scenario_id)
+LEFT JOIN subscenarios_system_rps_targets USING (rps_target_scenario_id)
+LEFT JOIN subscenarios_system_carbon_cap_targets
+    USING (carbon_cap_target_scenario_id)
+LEFT JOIN subscenarios_system_prm_requirement
+    USING (prm_requirement_scenario_id)
+LEFT JOIN subscenarios_system_elcc_surface
+    USING (prm_zone_scenario_id, elcc_surface_scenario_id)
+LEFT JOIN subscenarios_system_local_capacity_requirement
+    USING (local_capacity_requirement_scenario_id)
+LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
+;

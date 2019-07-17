@@ -1,0 +1,24 @@
+<h2>{{scenarioName}}<span> Scenario Details</span></h2>
+
+ <ng-container *ngFor="let tbl of scenarioDetailStructure">
+  <table class="scenario-detail">
+    <caption>{{tbl.tableCaption}}</caption>
+  <tr>
+  <th>Name</th>
+  <th>Value</th>
+  </tr>
+    <ng-container *ngFor="let sd of tbl.settingRows">
+       <tr>
+         <td>{{sd.name}}</td>
+         <td>{{sd.value}}</td>
+       </tr>
+    </ng-container>
+  </table>
+</ng-container>
+
+
+<button id="runScenarioButton" class="button-primary"
+      (click)="runScenario(scenarioID)">Run Scenario</button>
+
+<button id="goBackButton" class="button-primary"
+      (click)="goBack()">Back</button>

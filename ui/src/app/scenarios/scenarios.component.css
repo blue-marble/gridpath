@@ -1,0 +1,39 @@
+/* scenariosComponent's private CSS styles */
+.scenarios {
+  list-style-type: none;
+  background: aliceblue;
+  padding: 0.3em;
+  width: 30em;
+}
+.scenarios li {
+  cursor: pointer;
+  position: relative;
+  background-color: midnightblue;
+  padding: .3em .5em;
+  border-radius: 4px;
+  margin: 0.5em;
+}
+
+.scenarios li:hover {
+  color: midnightblue;
+  background-color: lightsteelblue;
+}
+
+
+.scenarios a:link {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button-primary a:link {
+  color: midnightblue;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button-primary a:link:hover {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+}
