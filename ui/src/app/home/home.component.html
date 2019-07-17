@@ -1,3 +1,7 @@
-<div><span>Server Status: </span>{{serverStatus}}</div>
+<p>Server Status:</p>
+<p [ngClass]="{
+            'red' : serverStatus == 'down',
+            'green' : serverStatus == 'running'
+         }">{{serverStatus}}</p>
 <button id="checkServerStatusClick" class="button-primary"
             (click)="updateServerStatus()">Update server status</button>
