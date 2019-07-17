@@ -28,17 +28,17 @@ def add_model_components(m, d):
         )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    generic_export_results(scenario_directory, horizon, stage, m, d,
+    generic_export_results(scenario_directory, subproblem, stage, m, d,
                            "lf_reserves_down_violation.csv",
                            "lf_reserves_down_violation_mw",
                            "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
@@ -55,7 +55,7 @@ def save_duals(m):
     generic_save_duals(m, "Meet_LF_Reserves_Down_Constraint")
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -69,6 +69,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     generic_import_results_to_database(
         scenario_id=scenario_id,
+        subproblem=subproblem,
+        stage=stage,
         c=c,
         db=db,
         results_directory=results_directory,

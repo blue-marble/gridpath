@@ -85,20 +85,20 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
-                                           "inputs",
-                                           "transmission_hurdle_rates.tab"),
+    data_portal.load(filename=
+                     os.path.join(scenario_directory, subproblem, stage, "inputs",
+                                  "transmission_hurdle_rates.tab"),
                      select=("transmission_line", "period",
                              "hurdle_rate_positive_direction_per_mwh",
                              "hurdle_rate_negative_direction_per_mwh"),
@@ -107,7 +107,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
@@ -150,11 +150,11 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             writer.writerow(row)
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export transmission operational cost results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     The Pyomo abstract model
@@ -163,7 +163,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     :return:
     Nothing
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
               "costs_transmission_hurdle.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -187,7 +187,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -200,7 +200,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("transmission hurdle costs")
     c.execute(
         """DELETE FROM results_transmission_hurdle_costs
-        WHERE scenario_id = {};""".format(scenario_id)
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -217,6 +220,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id INTEGER,
         transmission_line VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
         horizon_weight FLOAT,
@@ -225,7 +230,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         load_zone_to VARCHAR(32),
         hurdle_cost_positive_direction FLOAT,
         hurdle_cost_negative_direction FLOAT,
-        PRIMARY KEY (scenario_id, transmission_line, timepoint)
+        PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -251,15 +256,18 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_transmission_hurdle_costs"""
                 + str(scenario_id) + """
-                (scenario_id, transmission_line, period, horizon, timepoint,
-                horizon_weight, number_of_hours_in_timepoint,
-                load_zone_from, load_zone_to, hurdle_cost_positive_direction,
-                hurdle_cost_negative_direction)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
-                {}, {});""".format(
-                    scenario_id, tx_line, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    lz_from, lz_to, hurdle_cost_positve_direction,
+                (scenario_id, transmission_line, period, subproblem_id, stage_id,
+                horizon, timepoint, horizon_weight,
+                number_of_hours_in_timepoint,
+                load_zone_from, load_zone_to, 
+                hurdle_cost_positive_direction, hurdle_cost_negative_direction)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
+                '{}', '{}', {}, {});""".format(
+                    scenario_id, tx_line, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    lz_from, lz_to,
+                    hurdle_cost_positve_direction,
                     hurdle_cost_negative_direction
                 )
             )
@@ -268,24 +276,27 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_transmission_hurdle_costs
-        (scenario_id, transmission_line, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        (scenario_id, transmission_line, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction)
         SELECT
-        scenario_id, transmission_line, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        scenario_id, transmission_line, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction
-        FROM temp_results_transmission_hurdle_costs""" + str(scenario_id) + """
-        ORDER BY scenario_id, transmission_line, timepoint;"""
+        FROM temp_results_transmission_hurdle_costs"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
+        timepoint;
+        """
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
         """DROP TABLE temp_results_transmission_hurdle_costs"""
-        + str(scenario_id) +
-        """;"""
+        + str(scenario_id) + """;"""
     )
     db.commit()

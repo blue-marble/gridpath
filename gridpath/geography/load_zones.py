@@ -24,26 +24,26 @@ def add_model_components(m, d):
     m.LOAD_ZONES = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, "inputs",
-                                           "load_zones.tab"),
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
+                                           "inputs", "load_zones.tab"),
                      select=("load_zone",),
                      index=m.LOAD_ZONES,
                      param=()
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

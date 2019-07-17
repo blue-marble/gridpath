@@ -12,32 +12,80 @@ from argparse import ArgumentParser
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
-from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios
+from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
+    SubProblems
 
 
-def get_inputs_from_database(loaded_modules, subscenarios, cursor,
-                             inputs_directory):
+def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
+                             cursor, scenario_directory):
     """
 
     :param loaded_modules:
     :param subscenarios:
     :param cursor:
-    :param inputs_directory:
+    :param scenario_directory:
     :return:
     """
-    for m in loaded_modules:
-        if hasattr(m, "get_inputs_from_database"):
-            m.get_inputs_from_database(
-                subscenarios=subscenarios, c=cursor,
-                inputs_directory=inputs_directory
-            )
-        else:
-            pass
+
+    subproblems_list = subproblems.SUBPROBLEMS
+    # create subproblem.csv file for subproblems if appropriate:
+    if len(subproblems_list) > 1:
+        write_subproblems_csv(scenario_directory, subproblems_list)
+
+    for subproblem in subproblems_list:
+        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        # create subproblem.csv file for stages if appropriate:
+        # TODO; handle edge case where only 1 subproblem and multiple stages?
+        if len(stages) > 1:
+            target_directory = os.path.join(scenario_directory, str(subproblem))
+            write_subproblems_csv(target_directory, stages)
+
+        for stage in stages:
+            # if there are subproblems/stages, input directory will be nested
+            if len(subproblems_list) > 1 and len(stages) > 1:
+                inputs_directory = os.path.join(scenario_directory,
+                                                str(subproblem),
+                                                str(stage),
+                                                "inputs")
+            elif len(subproblems.SUBPROBLEMS) > 1:
+                inputs_directory = os.path.join(scenario_directory,
+                                                str(subproblem),
+                                                "inputs")
+            elif len(stages) > 1:
+                inputs_directory = os.path.join(scenario_directory,
+                                                str(stage),
+                                                "inputs")
+            else:
+                inputs_directory = os.path.join(scenario_directory,
+                                                "inputs")
+            if not os.path.exists(inputs_directory):
+                os.makedirs(inputs_directory)
+
+            delete_prior_inputs(inputs_directory)
+
+            # Get input .tab files for each of the loaded_modules if appropriate
+            # Note that all input files are saved in the input_directory, even
+            # the non-temporal inputs that are not dependent on the subproblem.
+            # or stage. This simplifies the file structure at the expense of
+            # unnecessarily duplicating non-temporal input files such as
+            # projects.tab.
+            for m in loaded_modules:
+                if hasattr(m, "get_inputs_from_database"):
+                    m.get_inputs_from_database(
+                        subscenarios=subscenarios,
+                        subproblem=subproblem,
+                        stage=stage,
+                        c=cursor,
+                        inputs_directory=inputs_directory
+                    )
+                else:
+                    pass
 
 
 def delete_prior_inputs(inputs_directory):
     """
-    Delete all .tab files that may exist in the inputs directory
+    Delete all .tab files that may exist in the inputs directory to avoid
+    phantom inputs.
     :param inputs_directory: 
     :return: 
     """
@@ -63,6 +111,27 @@ def parse_arguments(args):
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
+
+
+# TODO: if stages, also write stage subproblems!
+def write_subproblems_csv(scenario_directory, subproblems):
+    """
+    Write the subproblems.csv file that will be used when solving multiple
+    subproblems/stages in 'production cost' mode.
+    :return:
+    """
+
+    if not os.path.exists(scenario_directory):
+        os.makedirs(scenario_directory)
+    with open(os.path.join(scenario_directory, "subproblems.csv"), "w") as \
+            subproblems_csv_file:
+        writer = csv.writer(subproblems_csv_file, delimiter=",")
+
+        # Write header
+        writer.writerow(["subproblems"])
+
+        for subproblem in subproblems:
+            writer.writerow([subproblem])
 
 
 def write_features_csv(scenario_directory, feature_list):
@@ -322,6 +391,13 @@ def main(args=None):
         c=c, script="get_scenario_inputs"
     )
 
+    # Get scenario characteristics (features, subscenarios, subproblems)
+    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
+    # TODO: make this compatible with subscenarios
+    #   --> we will need more directories if there are more scenarios
     # Make inputs directory
     scenarios_main_directory = os.path.join(
         os.getcwd(), "scenarios")
@@ -334,34 +410,21 @@ def main(args=None):
     if not os.path.exists(scenario_directory):
         os.makedirs(scenario_directory)
 
-    inputs_directory = os.path.join(
-        scenario_directory, "inputs")
-    if not os.path.exists(inputs_directory):
-        os.makedirs(inputs_directory)
+    # Write features.csv file with optional features and use this feature
+    # file to determine what modules to GridPath will use
+    feature_list = optional_features.determine_feature_list()
+    write_features_csv(scenario_directory, feature_list)
+    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    # Delete input files that may have existed before to avoid phantom inputs
-    delete_prior_inputs(inputs_directory)
+    # Read in appropriate inputs from database and create .tab file model inputs
+    get_inputs_from_database(loaded_modules, subscenarios, subproblems,
+                             c, scenario_directory)
 
     # Save the scenario ID to a file
     save_scenario_id(
         scenario_directory=scenario_directory, scenario_id=scenario_id
     )
-
-    # What optional features are needed for this scenario
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-    feature_list = optional_features.determine_feature_list()
-
-    # Write the features file that is used to determine which GridPath 
-    # modules to include
-    write_features_csv(
-        scenario_directory=scenario_directory, feature_list=feature_list
-    )
-    
-    # Determine features
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
-    loaded_modules = load_modules(modules_to_use=modules_to_use)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-    get_inputs_from_database(loaded_modules, subscenarios, c, inputs_directory)
 
     # Write full scenario description
     write_scenario_description(

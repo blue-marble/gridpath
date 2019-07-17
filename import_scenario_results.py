@@ -11,26 +11,62 @@ import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
+from gridpath.auxiliary.scenario_chars import SubScenarios, SubProblems
 
 
-def import_results_into_database(
-        loaded_modules, scenario_id, cursor, db, results_directory
-):
+def import_results_into_database(loaded_modules, scenario_id, subproblems,
+                                 cursor, db, scenario_directory):
     """
 
     :param loaded_modules:
     :param scenario_id:
+    :param subproblems:
     :param cursor:
     :param db:
-    :param results_directory:
+    :param scenario_directory:
     :return:
     """
-    for m in loaded_modules:
-        if hasattr(m, "import_results_into_database"):
-            m.import_results_into_database(
-                scenario_id, cursor, db, results_directory)
-        else:
-            pass
+
+    subproblems_list = subproblems.SUBPROBLEMS
+    for subproblem in subproblems_list:
+        stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+        for stage in stages:
+            # if there are subproblems/stages, input directory will be nested
+            if len(subproblems_list) > 1 and len(stages) > 1:
+                results_directory = os.path.join(scenario_directory,
+                                                 str(subproblem),
+                                                 str(stage),
+                                                 "results")
+                print("--- subproblem {}".format(str(subproblem)))
+                print("--- stage {}".format(str(stage)))
+            elif len(subproblems.SUBPROBLEMS) > 1:
+                results_directory = os.path.join(scenario_directory,
+                                                 str(subproblem),
+                                                 "results")
+                print("--- subproblem {}".format(str(subproblem)))
+            elif len(stages) > 1:
+                results_directory = os.path.join(scenario_directory,
+                                                 str(stage),
+                                                 "results")
+                print("--- stage {}".format(str(stage)))
+            else:
+                results_directory = os.path.join(scenario_directory,
+                                                 "results")
+            if not os.path.exists(results_directory):
+                os.makedirs(results_directory)
+
+            for m in loaded_modules:
+                if hasattr(m, "import_results_into_database"):
+                    m.import_results_into_database(
+                        scenario_id=scenario_id,
+                        subproblem=subproblem,
+                        stage=stage,
+                        c=cursor,
+                        db=db,
+                        results_directory=results_directory
+                    )
+                else:
+                    pass
 
 
 def parse_arguments(args):
@@ -77,16 +113,15 @@ def main(args=None):
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
         c=c, script="import_scenario_results")
 
+    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
+
     # Directory structure
     scenarios_main_directory = os.path.join(
         os.getcwd(), "scenarios")
 
     scenario_directory = os.path.join(
         scenarios_main_directory, str(scenario_name)
-    )
-
-    results_directory = os.path.join(
-        scenario_directory, "results"
     )
 
     # Check that the saved scenario_id matches
@@ -100,9 +135,14 @@ def main(args=None):
     modules_to_use = determine_modules(scenario_directory)
     loaded_modules = load_modules(modules_to_use)
 
+    # Import appropriate results into database
     import_results_into_database(
-        loaded_modules=loaded_modules, scenario_id=scenario_id, cursor=c,
-        db=io, results_directory=results_directory
+        loaded_modules=loaded_modules,
+        scenario_id=scenario_id,
+        subproblems=subproblems,
+        cursor=c,
+        db=io,
+        scenario_directory=scenario_directory
     )
 
 

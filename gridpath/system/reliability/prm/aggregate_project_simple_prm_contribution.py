@@ -48,17 +48,17 @@ def add_model_components(m, d):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "prm_elcc_simple.csv"), "w") as \
             results_file:
         writer = csv.writer(results_file)
@@ -71,9 +71,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -86,9 +84,10 @@ def import_results_into_database(
     print("system prm simple elcc")
     c.execute(
         """DELETE FROM results_system_prm 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -106,8 +105,10 @@ def import_results_into_database(
          scenario_id INTEGER,
          prm_zone VARCHAR(64),
          period INTEGER,
+         subproblem_id INTEGER,
+         stage_id INTEGER,
          elcc_simple_mw FLOAT,
-         PRIMARY KEY (scenario_id, prm_zone, period)
+         PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
          );"""
     )
     db.commit()
@@ -128,9 +129,10 @@ def import_results_into_database(
                 """INSERT INTO 
                 temp_results_system_prm"""
                 + str(scenario_id) + """
-                 (scenario_id, prm_zone, period, elcc_simple_mw)
-                 VALUES ({}, '{}', {}, {});""".format(
-                    scenario_id, prm_zone, period, elcc
+                 (scenario_id, prm_zone, period, subproblem_id, stage_id, 
+                 elcc_simple_mw)
+                 VALUES ({}, '{}', {}, {}, {}, {});""".format(
+                    scenario_id, prm_zone, period, subproblem, stage, elcc
                 )
             )
     db.commit()
@@ -138,12 +140,12 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_prm
-        (scenario_id, prm_zone, period, elcc_simple_mw)
-        SELECT scenario_id, prm_zone, period, elcc_simple_mw
+        (scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw)
+        SELECT scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw
         FROM temp_results_system_prm"""
         + str(scenario_id)
         + """
-         ORDER BY scenario_id, prm_zone, period;"""
+         ORDER BY scenario_id, prm_zone, period, subproblem_id, stage_id;"""
     )
     db.commit()
 

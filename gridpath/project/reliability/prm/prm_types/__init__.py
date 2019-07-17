@@ -15,22 +15,22 @@ from gridpath.auxiliary.auxiliary import load_prm_type_modules
 
 # TODO: rename to deliverability types; the PRM types are really 'simple'
 #  and 'elcc surface'
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
 
-    project_dynamic_data = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", usecols=["project",
-                               "prm_type"]
-        )
+    project_dynamic_data = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "prm_type"]
+    )
 
     # Required modules are the unique set of generator PRM types
     # This list will be used to know which PRM type modules to load
@@ -69,14 +69,14 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -86,16 +86,16 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         if hasattr(imported_prm_modules[prm_m],
                    "load_module_specific_data"):
             imported_prm_modules[prm_m].load_module_specific_data(
-                m, data_portal, scenario_directory, horizon, stage)
+                m, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     The Pyomo abstract model
@@ -114,15 +114,13 @@ def export_results(scenario_directory, horizon, stage, m, d):
                    "export_module_specific_results"):
             imported_prm_modules[prm_m]. \
                 export_module_specific_results(
-                m, d, scenario_directory, horizon, stage,
+                m, d, scenario_directory, subproblem, stage,
             )
         else:
             pass
 
 
-def get_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios: 
@@ -171,7 +169,7 @@ def get_inputs_from_database(
             pass
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -186,7 +184,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         """SELECT prm_zone_scenario_id, project_prm_zone_scenario_id, 
         project_elcc_chars_scenario_id
         FROM scenarios
-        WHERE scenario_id = {};""".format(scenario_id)
+        WHERE scenario_id = {}
+        """.format(scenario_id)
     ).fetchone()
 
     # Required modules are the unique set of generator PRM types in
@@ -223,7 +222,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
                    "import_module_specific_results_into_database"):
             imported_prm_modules[prm_m]. \
                 import_module_specific_results_into_database(
-                scenario_id, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory
             )
         else:
             pass

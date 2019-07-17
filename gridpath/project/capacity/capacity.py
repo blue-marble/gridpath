@@ -197,14 +197,14 @@ def add_model_components(m, d):
         Set(m.TIMEPOINTS, initialize=op_gens_by_tmp)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     
     :param m: 
     :param d: 
     :param data_portal: 
     :param scenario_directory: 
-    :param horizon: 
+    :param subproblem:
     :param stage: 
     :return: 
     """
@@ -216,16 +216,16 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         if hasattr(imported_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, horizon, stage)
+                m, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
@@ -233,7 +233,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
     """
 
     # Total capacity for all projects
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "capacity_all.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -259,24 +259,24 @@ def export_results(scenario_directory, horizon, stage, m, d):
                    "export_module_specific_results"):
             imported_capacity_modules[
                 op_m].export_module_specific_results(
-                scenario_directory, horizon, stage, m, d
+                scenario_directory, subproblem, stage, m, d
             )
         else:
             pass
 
 
-def summarize_results(d, problem_directory, horizon, stage):
+def summarize_results(d, scenario_directory, subproblem, stage):
     """
     Summarize capacity results
     :param d:
-    :param problem_directory:
-    :param horizon:
+    :param scenario_directory:
+    :param subproblem:
     :param stage:
     :return:
     """
 
     summary_results_file = os.path.join(
-        problem_directory, horizon, stage, "results", "summary_results.txt"
+        scenario_directory, subproblem, stage, "results", "summary_results.txt"
     )
     # Check if the 'technology' exists in  projects.tab; if it doesn't, we
     # don't have a category to aggregate by, so we'll skip summarizing results
@@ -290,7 +290,7 @@ def summarize_results(d, problem_directory, horizon, stage):
 
     # Get the results CSV as dataframe
     capacity_results_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "results",
                                  "capacity_all.csv")
                     )
 
@@ -309,13 +309,13 @@ def summarize_results(d, problem_directory, horizon, stage):
                    "summarize_module_specific_results"):
             imported_capacity_modules[
                 op_m].summarize_module_specific_results(
-                problem_directory, horizon, stage, summary_results_file
+                scenario_directory, subproblem, stage, summary_results_file
             )
         else:
             pass
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -328,9 +328,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("project capacity")
     c.execute(
         """DELETE FROM results_project_capacity_all 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -347,11 +348,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         technology VARCHAR(32),
         load_zone VARCHAR(32),
         capacity_mw FLOAT,
         energy_capacity_mwh FLOAT,
-        PRIMARY KEY (scenario_id, project, period)
+        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -373,11 +376,12 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_project_capacity_all"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, technology, load_zone,
-                capacity_mw, energy_capacity_mwh)
-                VALUES ({}, '{}', {}, '{}', '{}', {}, {});""".format(
-                    scenario_id, project, period, technology, load_zone,
-                    capacity_mw, energy_capacity_mwh,
+                (scenario_id, project, period, subproblem_id, stage_id,
+                technology, load_zone, capacity_mw, energy_capacity_mwh)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {}, {});
+                """.format(
+                    scenario_id, project, period, subproblem, stage,
+                    technology, load_zone, capacity_mw, energy_capacity_mwh
                 )
             )
     db.commit()
@@ -385,13 +389,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_capacity_all
-        (scenario_id, project, period, technology, load_zone,
-        capacity_mw, energy_capacity_mwh)
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, capacity_mw, energy_capacity_mwh)
         SELECT
-        scenario_id, project, period, technology, load_zone,
-        capacity_mw, energy_capacity_mwh
+        scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, capacity_mw, energy_capacity_mwh
         FROM temp_results_project_capacity_all""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, period;"""
+        ORDER BY scenario_id, project, period, subproblem_id, stage_id;"""
     )
     db.commit()
 

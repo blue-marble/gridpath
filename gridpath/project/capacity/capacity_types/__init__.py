@@ -17,9 +17,7 @@ from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 #  the capacity type modules
 
 
-def get_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios: 
@@ -63,7 +61,7 @@ def get_inputs_from_database(
             pass
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -75,12 +73,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
 
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
-    # Get the list based on the project_portfoio_scenario_id of this
+    # Get the list based on the project_portfolio_scenario_id of this
     # scenario_id
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(scenario_id)
+        WHERE scenario_id = {};
+        """.format(scenario_id)
     ).fetchone()[0]
 
     required_capacity_type_modules = [
@@ -98,13 +97,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     imported_capacity_type_modules = \
         load_gen_storage_capacity_type_modules(required_capacity_type_modules)
 
-    # Get module-specific inputs
+    # Import module-specific results
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
                    "import_module_specific_results_into_database"):
             imported_capacity_type_modules[op_m]. \
                 import_module_specific_results_into_database(
-                scenario_id, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory
             )
         else:
             pass

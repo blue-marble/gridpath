@@ -108,19 +108,19 @@ def add_model_components(m, d):
                    rule=ramp_down_rule)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     Get tuning param value from file if file exists
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     tuning_param_file = os.path.join(
-        scenario_directory, horizon, stage, "inputs", "tuning_params.tab"
+        scenario_directory, subproblem, stage, "inputs", "tuning_params.tab"
     )
 
     if os.path.exists(tuning_param_file):
@@ -132,7 +132,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         pass
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

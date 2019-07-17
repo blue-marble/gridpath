@@ -964,17 +964,18 @@ def fix_commitment(mod, g, tmp):
     :param tmp:
     :return:
     """
-    mod.Commit_Continuous[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Continuous[g, tmp] = \
+        mod.fixed_commitment[g, mod.previous_stage_timepoint_map[tmp]]
     mod.Commit_Continuous[g, tmp].fixed = True
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -987,9 +988,11 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     min_up_time = dict()
     min_down_time = dict()
 
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     optional_columns = ["startup_plus_ramp_up_rate",
                         "shutdown_plus_ramp_down_rate",
@@ -999,14 +1002,13 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                         "min_down_time_hours"]
     used_columns = [c for c in optional_columns if c in header]
 
-    dynamic_components = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type",
-                     "min_stable_level_fraction"] + used_columns
-        )
-
+    dynamic_components = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type",
+                 "min_stable_level_fraction"] + used_columns
+    )
     for row in zip(dynamic_components["project"],
                    dynamic_components["operational_type"],
                    dynamic_components["min_stable_level_fraction"]):
@@ -1092,16 +1094,17 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
             min_down_time
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
     """
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_continuous_commit.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -1112,7 +1115,7 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
                          ])
 
         for (p, tmp) \
-                in mod. \
+                in mod.\
                 DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
@@ -1132,10 +1135,13 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
             ])
 
 
-def import_module_specific_results_to_database(scenario_id, c, db,
-                                               results_directory):
+def import_module_specific_results_to_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -1145,9 +1151,10 @@ def import_module_specific_results_to_database(scenario_id, c, db,
     # dispatch_continuous_commit.csv
     c.execute(
         """DELETE FROM results_project_dispatch_continuous_commit
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -1165,6 +1172,8 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -1176,7 +1185,7 @@ def import_module_specific_results_to_database(scenario_id, c, db,
             committed_units INTEGER,
             started_units INTEGER,
             stopped_units INTEGER,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -1207,11 +1216,13 @@ def import_module_specific_results_to_database(scenario_id, c, db,
                 INSERT INTO temp_results_project_dispatch_continuous_commit
                 """
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
+                    (scenario_id, project, period, subproblem_id, stage_id, 
+                    horizon, timepoint, horizon_weight, 
+                    number_of_hours_in_timepoint,
+                    load_zone, technology, 
+                    power_mw, committed_mw, committed_units, 
+                    started_units, stopped_units)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}',
                     {}, {}, {});""".format(
                     scenario_id, project, period, horizon, timepoint,
                     horizon_weight, number_of_hours_in_timepoint,
@@ -1224,18 +1235,20 @@ def import_module_specific_results_to_database(scenario_id, c, db,
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_continuous_commit
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw,
-        committed_units, started_units, stopped_units)
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, 
+        committed_mw, committed_units, started_units, stopped_units)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw, committed_units,
-        started_units, stopped_units
-        FROM temp_results_project_dispatch_continuous_commit""" + str(
-            scenario_id) + """
-            ORDER BY scenario_id, project, timepoint;"""
+        scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, 
+        committed_mw, committed_units, started_units, stopped_units
+        FROM temp_results_project_dispatch_continuous_commit"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

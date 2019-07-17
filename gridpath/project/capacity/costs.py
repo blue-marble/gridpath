@@ -55,17 +55,17 @@ def add_model_components(m, d):
                    rule=capacity_cost_rule)
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "costs_capacity_all_projects.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -82,7 +82,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -95,9 +95,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("project capacity costs")
     c.execute(
         """DELETE FROM results_project_costs_capacity
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -114,10 +115,12 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         technology VARCHAR(32),
         load_zone VARCHAR(32),
         annualized_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, project, period)
+        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -139,11 +142,12 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_project_costs_capacity"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, technology, load_zone,
-                annualized_capacity_cost)
-                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
-                    scenario_id, project, period, technology, load_zone,
-                    annualized_capacity_cost
+                (scenario_id, project, period, subproblem_id, stage_id,
+                technology, load_zone, annualized_capacity_cost)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {});
+                """.format(
+                    scenario_id, project, period, subproblem, stage,
+                    technology, load_zone, annualized_capacity_cost
                 )
             )
     db.commit()
@@ -151,13 +155,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_costs_capacity
-        (scenario_id, project, period, technology, load_zone,
-        annualized_capacity_cost)
+        (scenario_id, project, period, subproblem_id, stage_id,
+        technology, load_zone, annualized_capacity_cost)
         SELECT
-        scenario_id, project, period, technology, load_zone,
-        annualized_capacity_cost
+        scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, annualized_capacity_cost
         FROM temp_results_project_costs_capacity""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, period;"""
+        ORDER BY scenario_id, project, period, subproblem_id, stage_id;"""
     )
     db.commit()
 

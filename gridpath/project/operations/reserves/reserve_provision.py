@@ -21,7 +21,7 @@ from gridpath.auxiliary.auxiliary import check_list_items_are_unique, \
 
 
 def generic_determine_dynamic_components(
-        d, scenario_directory, horizon, stage,
+        d, scenario_directory, subproblem, stage,
         reserve_module,
         headroom_or_footroom_dict,
         ba_column_name,
@@ -33,7 +33,7 @@ def generic_determine_dynamic_components(
     """
     :param d: the DynamicComponents class we'll be populating
     :param scenario_directory: the base scenario directory
-    :param horizon: the horizon subproblem, not used here
+    :param stage: the horizon subproblem, not used here
     :param stage: the stage subproblem, not used here
     :param reserve_module: which reserve module we are calling from
     :param headroom_or_footroom_dict: the headroom or footroom dictionary
@@ -121,7 +121,7 @@ def generic_determine_dynamic_components(
     # 'ba_column_name'); add the variable name for the current reserve type
     # to the list of variables in the headroom/footroom dictionary for the
     # project
-    with open(os.path.join(scenario_directory, "inputs", "projects.tab"),
+    with open(os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
               "r") as projects_file:
         projects_file_reader = csv.reader(projects_file, delimiter="\t")
         headers = next(projects_file_reader)
@@ -241,7 +241,7 @@ def generic_add_model_components(m, d,
 
 
 def generic_load_model_data(
-        m, d, data_portal, scenario_directory, horizon, stage,
+        m, d, data_portal, scenario_directory, subproblem, stage,
         ba_column_name,
         derate_column_name,
         reserve_balancing_area_param,
@@ -255,7 +255,7 @@ def generic_load_model_data(
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :param ba_column_name:
     :param derate_column_name:
@@ -269,10 +269,11 @@ def generic_load_model_data(
 
     columns_to_import = ("project", ba_column_name,)
     params_to_import = (getattr(m, reserve_balancing_area_param),)
-    projects_file_header = pd.read_csv(os.path.join(scenario_directory,
-                                                    "inputs", "projects.tab"),
-                                       sep="\t", header=None, nrows=1
-                                       ).values[0]
+    projects_file_header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     # Import reserve provision headroom/footroom de-rate parameter only if
     # column is present
@@ -284,7 +285,7 @@ def generic_load_model_data(
         pass
 
     # Load the needed data
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=columns_to_import,
                      param=params_to_import
@@ -297,21 +298,24 @@ def generic_load_model_data(
     # Load reserve provision subhourly energy adjustment (e.g. for storage
     # state of charge adjustment or delivered variable RPS energy adjustment)
     # if specified; otherwise it will default to 0
-    ba_file_header = pd.read_csv(os.path.join(
-        scenario_directory, "inputs", reserve_balancing_areas_input_file),
-        sep="\t", header=None, nrows=1).values[0]
+    ba_file_header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     reserve_balancing_areas_input_file),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
     if "reserve_to_energy_adjustment" in ba_file_header:
-        data_portal.load(filename=os.path.join(
-            scenario_directory, "inputs", reserve_balancing_areas_input_file),
+        data_portal.load(
+            filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+                                  reserve_balancing_areas_input_file),
             select=("balancing_area",
                     "reserve_to_energy_adjustment"),
             param=reserve_to_energy_adjustment_param
-                         )
+        )
 
 
 def generic_export_module_specific_results(
-        m, d, scenario_directory, horizon, stage,
+        m, d, scenario_directory, subproblem, stage,
         module_name,
         reserve_project_operational_timepoints_set,
         reserve_provision_variable_name,
@@ -321,7 +325,7 @@ def generic_export_module_specific_results(
     :param m:
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param module_name:
     :param reserve_project_operational_timepoints_set:
@@ -329,7 +333,7 @@ def generic_export_module_specific_results(
     :param reserve_ba_param_name:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "reserves_provision_" + module_name + ".csv"),
               "w") as f:
         writer = csv.writer(f)
@@ -352,9 +356,7 @@ def generic_export_module_specific_results(
             ])
 
 
-def generic_import_results_into_database(
-    scenario_id, c, db, results_directory, reserve_type
-):
+def generic_import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory, reserve_type):
     """
     
     :param scenario_id: 
@@ -366,9 +368,10 @@ def generic_import_results_into_database(
     """
     c.execute(
         """DELETE FROM results_project_""" + reserve_type +
-        """ WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        """ WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -385,6 +388,8 @@ def generic_import_results_into_database(
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -393,7 +398,7 @@ def generic_import_results_into_database(
         reserve_type + """_ba VARCHAR(32),
             technology VARCHAR(32),
             reserve_provision_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -419,15 +424,17 @@ def generic_import_results_into_database(
             c.execute(
                 """INSERT INTO temp_results_project_""" + reserve_type
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    (scenario_id, project, period, subproblem_id, stage_id,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     load_zone, """ + reserve_type + """_ba, technology, 
                     reserve_provision_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}',
-                    {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint, ba,
-                    load_zone, technology, reserve_provision
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
+                    '{}', '{}', '{}', {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    ba, load_zone, technology, reserve_provision
                 )
             )
     db.commit()
@@ -435,15 +442,15 @@ def generic_import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_""" + reserve_type + """
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint, """
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, """
         + reserve_type + """_ba, load_zone, technology, reserve_provision_mw)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint, """
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, """
         + reserve_type + """_ba, load_zone, technology, reserve_provision_mw
         FROM temp_results_project_""" + reserve_type + str(scenario_id) +
-        """ ORDER BY scenario_id, project, timepoint;"""
+        """ ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 

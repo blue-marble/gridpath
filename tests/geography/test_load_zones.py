@@ -36,7 +36,7 @@ class TestLoadZones(unittest.TestCase):
         create_abstract_model(prereq_modules=[],
                               module_to_test=MODULE_BEING_TESTED,
                               test_data_dir=TEST_DATA_DIRECTORY,
-                              horizon="",
+                              subproblem="",
                               stage=""
                               )
 
@@ -48,7 +48,7 @@ class TestLoadZones(unittest.TestCase):
         add_components_and_load_data(prereq_modules=[],
                                      module_to_test=MODULE_BEING_TESTED,
                                      test_data_dir=TEST_DATA_DIRECTORY,
-                                     horizon="",
+                                     subproblem="",
                                      stage=""
                                      )
 
@@ -61,7 +61,7 @@ class TestLoadZones(unittest.TestCase):
             add_components_and_load_data(prereq_modules=[],
                                          module_to_test=MODULE_BEING_TESTED,
                                          test_data_dir=TEST_DATA_DIRECTORY,
-                                         horizon="",
+                                         subproblem="",
                                          stage="")
         instance = m.create_instance(data)
         expected = sorted(["Zone1", "Zone2"])

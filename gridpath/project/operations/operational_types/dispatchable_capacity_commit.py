@@ -858,18 +858,19 @@ def fix_commitment(mod, g, tmp):
     :param tmp:
     :return:
     """
-    mod.Commit_Capacity_MW[g, tmp] = mod.fixed_commitment[g, tmp]
+    mod.Commit_Capacity_MW[g, tmp] = \
+        mod.fixed_commitment[g, mod.previous_stage_timepoint_map[tmp]]
     mod.Commit_Capacity_MW[g, tmp].fixed = True
 
 
 def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+                              subproblem, stage):
     """
 
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -883,8 +884,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     min_up_time = dict()
     min_down_time = dict()
 
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                      "inputs", "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
     optional_columns = ["startup_plus_ramp_up_rate",
@@ -896,7 +897,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "operational_type", "unit_size_mw",
                      "min_stable_level_fraction"] + used_columns
@@ -999,17 +1000,17 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
             min_down_time
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d, scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_capacity_commit.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -1037,23 +1038,26 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
 
 
 def import_module_specific_results_to_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
 
     :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :return:
+    :param subproblem:
+    :param stage:
+    :param c: 
+    :param db: 
+    :param results_directory: 
+    :return: 
     """
     print("project dispatch capacity commit")
     # dispatch_capacity_commit.csv
     c.execute(
         """DELETE FROM results_project_dispatch_capacity_commit
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -1071,6 +1075,8 @@ def import_module_specific_results_to_database(
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -1080,7 +1086,7 @@ def import_module_specific_results_to_database(
             power_mw FLOAT,
             committed_mw FLOAT,
             committed_units FLOAT,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -1107,16 +1113,18 @@ def import_module_specific_results_to_database(
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_capacity_commit"""
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
-                    {}, {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units
+                    (scenario_id, project, period, subproblem_id, stage_id, 
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone, technology, 
+                    power_mw, committed_mw, committed_units)
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
+                    '{}', '{}', {}, {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone, technology,
+                    power_mw, committed_mw, committed_units
                 )
             )
     db.commit()
@@ -1124,17 +1132,18 @@ def import_module_specific_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_capacity_commit
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw,
-        committed_units)
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, committed_mw, committed_units)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, committed_mw, committed_units
-        FROM temp_results_project_dispatch_capacity_commit""" + str(
-            scenario_id) + """
-            ORDER BY scenario_id, project, timepoint;"""
+        FROM temp_results_project_dispatch_capacity_commit"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

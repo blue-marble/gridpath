@@ -22,15 +22,15 @@ def add_model_components(m, d):
     m.RPS_ZONES = Set()
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "rps_zones.tab"),
                      set=m.RPS_ZONES
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

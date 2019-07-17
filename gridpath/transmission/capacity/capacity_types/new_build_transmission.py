@@ -117,7 +117,7 @@ def tx_capacity_cost_rule(mod, g, p):
 
 
 def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+                              data_portal, scenario_directory, subproblem, stage):
 
     # TODO: throw an error when a line of the 'new_build_transmission' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
@@ -135,7 +135,7 @@ def load_module_specific_data(m,
                      )
 
 
-def export_module_specific_results(m, d, scenario_directory, horizon, stage):
+def export_module_specific_results(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
@@ -144,7 +144,7 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage):
     """
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_new_capacity.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",

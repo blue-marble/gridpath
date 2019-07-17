@@ -47,7 +47,7 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=None,  # No need to name since not adding components
             test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
+            subproblem="",
             stage=""
         )
         instance = m.create_instance(data)

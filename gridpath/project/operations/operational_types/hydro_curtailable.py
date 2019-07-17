@@ -361,26 +361,26 @@ def power_delta_rule(mod, g, tmp):
                 ])
 
 
-def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+def load_module_specific_data(m, data_portal,
+                              scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     # Determine list of projects
     projects = list()
 
-    prj_op_type_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", usecols=["project",
-                               "operational_type"]
-        )
+    prj_op_type_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
@@ -395,17 +395,13 @@ def load_module_specific_data(m,
     min_mw = dict()
     max_mw = dict()
 
-    prj_hor_opchar_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, horizon, "inputs",
-                         "hydro_conventional_horizon_params.tab"),
-            sep="\t", usecols=[
-                "project", "horizon",
-                "hydro_average_power_mwa",
-                "hydro_min_power_mw",
-                "hydro_max_power_mw"
-            ]
-        )
+    prj_hor_opchar_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "hydro_conventional_horizon_params.tab"),
+        sep="\t",
+        usecols=["project", "horizon", "hydro_average_power_mwa",
+                 "hydro_min_power_mw", "hydro_max_power_mw"]
+    )
     for row in zip(prj_hor_opchar_df["project"],
                    prj_hor_opchar_df["horizon"],
                    prj_hor_opchar_df["hydro_average_power_mwa"],
@@ -432,7 +428,7 @@ def load_module_specific_data(m,
     # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "inputs",
                                       "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
@@ -442,7 +438,7 @@ def load_module_specific_data(m,
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "operational_type"] + used_columns
             )
@@ -474,17 +470,18 @@ def load_module_specific_data(m,
             ramp_down_rate
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_hydro_curtailable.csv"),
               "w") as f:
         writer = csv.writer(f)
@@ -509,13 +506,13 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
             ])
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
+                                             c, inputs_directory):
     """
     Write operational chars to  hydro_conventional_horizon_params.tab
     If file does not yet exist, write header first
     :param subscenarios
+    :param subproblem
     :param c:
     :param inputs_directory:
     :return:
@@ -523,8 +520,8 @@ def get_module_specific_inputs_from_database(
 
     # Select only budgets/min/max of projects in the portfolio
     # Select only budgets/min/max of projects with 'hydro_curtailable'
-    # Select only budgets/min/max for horizons from the correct timepoint
-    # scenario
+    # Select only budgets/min/max for horizons from the correct temporal
+    # scenario and subproblem
     # Select only horizons on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
@@ -541,7 +538,8 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT horizon
         FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {})
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {})
         LEFT OUTER JOIN
         inputs_project_hydro_operational_chars
         USING (hydro_operational_chars_scenario_id, project, horizon)
@@ -571,6 +569,7 @@ def get_module_specific_inputs_from_database(
         """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
@@ -612,11 +611,13 @@ def get_module_specific_inputs_from_database(
 
 
 def import_module_specific_results_to_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
 
-    :param scenario_id: 
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c: 
     :param db: 
     :param results_directory: 
@@ -626,9 +627,10 @@ def import_module_specific_results_to_database(
     # dispatch_hydro_curtailable.csv
     c.execute(
         """DELETE FROM results_project_dispatch_hydro_curtailable
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -647,6 +649,8 @@ def import_module_specific_results_to_database(
             scenario_id INTEGER,
             project VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -655,7 +659,7 @@ def import_module_specific_results_to_database(
             technology VARCHAR(32),
             power_mw FLOAT,
             scheduled_curtailment_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, timepoint)
+            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -682,13 +686,15 @@ def import_module_specific_results_to_database(
                 """INSERT INTO
                 temp_results_project_dispatch_hydro_curtailable"""
                 + str(scenario_id) + """
-                    (scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    (scenario_id, project, period, subproblem_id, stage_id, 
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, scheduled_curtailment_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
-                    {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
+                    '{}', '{}', {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, scheduled_curtailment_mw
                 )
             )
@@ -697,16 +703,18 @@ def import_module_specific_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_hydro_curtailable
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw
         FROM temp_results_project_dispatch_hydro_curtailable"""
-        + str(scenario_id) + """
-            ORDER BY scenario_id, project, timepoint;"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

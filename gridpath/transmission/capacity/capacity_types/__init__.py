@@ -14,9 +14,7 @@ import os.path
 from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules
 
 
-def get_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios: 

@@ -208,14 +208,14 @@ def capacity_cost_rule(mod, g, p):
 
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, horizon, stage
+        m, data_portal, scenario_directory, subproblem, stage
 ):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -229,7 +229,7 @@ def load_module_specific_data(
 
         dynamic_components = \
             pd.read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
+                os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
                 sep="\t", usecols=["project",
                                    "capacity_type"]
             )
@@ -253,7 +253,7 @@ def load_module_specific_data(
         existing_lin_econ_ret_fixed_cost_per_mw_yr_dict = dict()
         dynamic_components = \
             pd.read_csv(
-                os.path.join(scenario_directory, "inputs",
+                os.path.join(scenario_directory, subproblem, stage, "inputs",
                              "existing_generation_period_params.tab"),
                 sep="\t"
             )
@@ -289,17 +289,17 @@ def load_module_specific_data(
         determine_period_params()[2]
 
 
-def export_module_specific_results(scenario_directory, horizon, stage, m, d):
+def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     """
     Export existing gen linear economic retirement results.
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "capacity_existing_gen_linear_economic_retirement"
                            ".csv"), "w") as f:
         writer = csv.writer(f)
@@ -317,12 +317,12 @@ def export_module_specific_results(scenario_directory, horizon, stage, m, d):
 
 
 def summarize_module_specific_results(
-    problem_directory, horizon, stage, summary_results_file
+    scenario_directory, subproblem, stage, summary_results_file
 ):
     """
     Summarize existing gen linear economic retirement capacity results.
-    :param problem_directory:
-    :param horizon:
+    :param scenario_directory:
+    :param subproblem:
     :param stage:
     :param summary_results_file:
     :return:
@@ -331,7 +331,7 @@ def summarize_module_specific_results(
     # Get the results CSV as dataframe
     capacity_results_df = \
         pd.read_csv(os.path.join(
-            problem_directory, horizon, stage, "results",
+            scenario_directory, subproblem, stage, "results",
             "capacity_existing_gen_linear_economic_retirement.csv"
         ))
 
@@ -438,11 +438,13 @@ def get_module_specific_inputs_from_database(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -452,9 +454,10 @@ def import_module_specific_results_into_database(
     print("project linear economic retirements")
     c.execute(
         """DELETE FROM results_project_capacity_linear_economic_retirement 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -473,10 +476,12 @@ def import_module_specific_results_into_database(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         technology VARCHAR(32),
         load_zone VARCHAR(32),
         retired_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, period)
+        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -500,11 +505,11 @@ def import_module_specific_results_into_database(
                 """INSERT INTO 
                 temp_results_project_capacity_linear_economic_retirement"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, technology, load_zone,
-                retired_mw)
-                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
-                    scenario_id, project, period, technology, load_zone,
-                    retired_mw
+                (scenario_id, project, period, subproblem_id, stage_id,
+                technology, load_zone, retired_mw)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    technology, load_zone, retired_mw
                 )
             )
     db.commit()
@@ -512,13 +517,16 @@ def import_module_specific_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_capacity_linear_economic_retirement
-        (scenario_id, project, period, technology, load_zone, retired_mw)
+        (scenario_id, project, period, subproblem_id, stage_id,
+        technology, load_zone, retired_mw)
         SELECT
-        scenario_id, project, period, technology, load_zone, retired_mw
+        scenario_id, project, period, subproblem_id, stage_id,
+        technology, load_zone, retired_mw
         FROM temp_results_project_capacity_linear_economic_retirement"""
-        + str(scenario_id)
-        + """
-        ORDER BY scenario_id, project, period;"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 

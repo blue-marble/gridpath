@@ -188,10 +188,10 @@ def next_timepoint_init(mod, tmp):
     return next_tmp_dict
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    data_portal.load(filename=os.path.join(scenario_directory, horizon,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "horizons.tab"),
                      select=("HORIZONS", "boundary", "horizon_weight",
                              "month"),
@@ -199,7 +199,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      param=(m.boundary, m.horizon_weight, m.month)
                      )
 
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      select=("TIMEPOINTS","horizon"),
                      index=m.TIMEPOINTS,
@@ -207,10 +207,13 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios:
+    :param subproblem:
+    :param stage:
     :param c:
     :param inputs_directory:
     :return:
@@ -227,8 +230,10 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         horizons = c.execute(
             """SELECT horizon, boundary, horizon_weight, month
                FROM inputs_temporal_horizons
-               WHERE temporal_scenario_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID
+               WHERE temporal_scenario_id = {}
+               AND subproblem_id = {};""".format(
+                subscenarios.TEMPORAL_SCENARIO_ID,
+                subproblem
             )
         ).fetchall()
 

@@ -337,15 +337,15 @@ def power_delta_rule(mod, g, tmp):
             )
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
     Capacity factors vary by horizon and stage, so get inputs from appropriate
     directory
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -356,12 +356,12 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     # (to avoid throwing warning unnecessarily)
     var_no_curt_proj = list()
 
-    prj_op_type_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", usecols=["project",
-                               "operational_type"]
-        )
+    prj_op_type_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
@@ -376,12 +376,12 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     project_timepoints = list()
     cap_factor = dict()
 
-    prj_tmp_cf_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, horizon, stage, "inputs",
-                         "variable_generator_profiles.tab"),
-            sep="\t", usecols=["project", "timepoint", "cap_factor"]
-        )
+    prj_tmp_cf_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "variable_generator_profiles.tab"),
+        sep="\t",
+        usecols=["project", "timepoint", "cap_factor"]
+    )
     for row in zip(prj_tmp_cf_df["project"],
                    prj_tmp_cf_df["timepoint"],
                    prj_tmp_cf_df["cap_factor"]):
@@ -409,17 +409,18 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     data_portal.data()["cap_factor"] = cap_factor
 
 
-def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
+def export_module_specific_results(mod, d,
+                                   scenario_directory, subproblem, stage):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param mod:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_variable.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -450,13 +451,13 @@ def export_module_specific_results(mod, d, scenario_directory, horizon, stage):
             ])
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
+                                             c, inputs_directory):
     """
     Write profiles to variable_generator_profiles.tab
     If file does not yet exist, write header first
     :param subscenarios
+    :param subproblem
     :param c:
     :param inputs_directory:
     :return:
@@ -464,8 +465,8 @@ def get_module_specific_inputs_from_database(
     # Select only profiles of projects in the portfolio
     # Select only profiles of projects with 'variable'
     # operational type
-    # Select only profiles for timepoints from the correct timepoint
-    # scenario
+    # Select only profiles for timepoints from the correct temporal scenario
+    # and the correct subproblem
     # Select only timepoints on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
@@ -482,7 +483,9 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT timepoint, period
         FROM inputs_temporal_timepoints
-        WHERE temporal_scenario_id = {})
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {})
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
         USING (variable_generator_profile_scenario_id, project, timepoint)
@@ -508,14 +511,18 @@ def get_module_specific_inputs_from_database(
         USING (period)
         WHERE project_new_cost_scenario_id = {})
         USING (project, period)
-        WHERE project_portfolio_scenario_id = {}""".format(
+        WHERE project_portfolio_scenario_id = {}
+        AND stage_id = {}""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            stage
         )
     )
 
@@ -546,11 +553,13 @@ def get_module_specific_inputs_from_database(
 
 
 def import_module_specific_results_to_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
     
-    :param scenario_id: 
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c: 
     :param db: 
     :param results_directory: 
@@ -561,9 +570,10 @@ def import_module_specific_results_to_database(
     # dispatch_variable.csv
     c.execute(
         """DELETE FROM results_project_dispatch_variable
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -580,6 +590,8 @@ def import_module_specific_results_to_database(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
         horizon_weight FLOAT,
@@ -591,7 +603,7 @@ def import_module_specific_results_to_database(
         subhourly_curtailment_mw FLOAT,
         subhourly_energy_delivered_mw FLOAT,
         total_curtailment_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, timepoint)
+        PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -619,18 +631,20 @@ def import_module_specific_results_to_database(
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_variable"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, horizon, timepoint,
-                horizon_weight, number_of_hours_in_timepoint,
-                load_zone, technology, power_mw, scheduled_curtailment_mw,
-                subhourly_curtailment_mw, subhourly_energy_delivered_mw,
-                total_curtailment_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}',
-                {}, {}, {}, {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, scheduled_curtailment_mw,
-                    subhourly_curtailment_mw, subhourly_energy_delivered_mw,
-                    total_curtailment_mw
+                (scenario_id, project, period, subproblem_id, stage_id,
+                horizon, timepoint, horizon_weight,
+                number_of_hours_in_timepoint,
+                load_zone, technology, power_mw, 
+                scheduled_curtailment_mw, subhourly_curtailment_mw,
+                subhourly_energy_delivered_mw, total_curtailment_mw)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
+                '{}', '{}', {}, {}, {}, {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw,
+                    scheduled_curtailment_mw, subhourly_curtailment_mw,
+                    subhourly_energy_delivered_mw, total_curtailment_mw
                 )
             )
     db.commit()
@@ -638,19 +652,21 @@ def import_module_specific_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_variable
-        (scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, scheduled_curtailment_mw,
-        subhourly_curtailment_mw, subhourly_energy_delivered_mw,
-        total_curtailment_mw)
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw, 
+        scheduled_curtailment_mw, subhourly_curtailment_mw,
+        subhourly_energy_delivered_mw, total_curtailment_mw)
         SELECT
-        scenario_id, project, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, scheduled_curtailment_mw,
-        subhourly_curtailment_mw, subhourly_energy_delivered_mw,
-        total_curtailment_mw
-        FROM temp_results_project_dispatch_variable""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, timepoint;"""
+        scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw,
+        scheduled_curtailment_mw, subhourly_curtailment_mw,
+        subhourly_energy_delivered_mw, total_curtailment_mw
+        FROM temp_results_project_dispatch_variable"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 

@@ -89,19 +89,19 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
 
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "transmission_lines.tab"),
                      select=("TRANSMISSION_LINES", "carbon_cap_zone",
                              "carbon_cap_zone_import_direction",
@@ -139,17 +139,17 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
         return 0
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "carbon_emission_imports_by_tx_line.csv"), "w") \
             as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
@@ -171,7 +171,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
@@ -232,9 +232,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer.writerows(new_rows)
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -247,9 +245,10 @@ def import_results_into_database(
     print("transmission carbon emissions")
     c.execute(
         """DELETE FROM results_transmission_carbon_emissions 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -267,6 +266,8 @@ def import_results_into_database(
          scenario_id INTEGER,
          tx_line VARCHAR(64),
          period INTEGER,
+         subproblem_id INTEGER,
+         stage_id INTEGER,
          horizon INTEGER,
          timepoint INTEGER,
          horizon_weight FLOAT,
@@ -299,13 +300,16 @@ def import_results_into_database(
                 """INSERT INTO 
                 temp_results_transmission_carbon_emissions"""
                 + str(scenario_id) + """
-                 (scenario_id, tx_line, period, horizon, timepoint, 
-                 horizon_weight, number_of_hours_in_timepoint, 
-                 carbon_emission_imports_tons,
+                 (scenario_id, tx_line, period, subproblem_id, stage_id, 
+                 horizon, timepoint, horizon_weight, 
+                 number_of_hours_in_timepoint, 
+                 carbon_emission_imports_tons, 
                  carbon_emission_imports_tons_degen)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
-                    scenario_id, tx_line, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
+                 """.format(
+                    scenario_id, tx_line, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     carbon_emission_imports_tons,
                     carbon_emission_imports_tons_degen
                 )
@@ -315,17 +319,18 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_transmission_carbon_emissions
-        (scenario_id, tx_line, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, 
+        (scenario_id, tx_line, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
         SELECT
-        scenario_id, tx_line, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, 
+        scenario_id, tx_line, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen
         FROM temp_results_transmission_carbon_emissions"""
-        + str(scenario_id)
-        + """
-         ORDER BY scenario_id, tx_line, timepoint;"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, tx_line, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

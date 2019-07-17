@@ -6,13 +6,13 @@ from gridpath.auxiliary.dynamic_components import DynamicComponents
 
 
 def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
-                                 horizon, stage):
+                                 subproblem, stage):
     """
 
     :param prereq_modules:
     :param module_to_test:
     :param dynamic_inputs:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
@@ -23,7 +23,7 @@ def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
             mod.determine_dynamic_components(d, test_data_dir, "", "")
     if hasattr(module_to_test, "determine_dynamic_components"):
         module_to_test.determine_dynamic_components(
-            d, test_data_dir, horizon, stage)
+            d, test_data_dir, subproblem, stage)
 
     return d
 
@@ -50,18 +50,18 @@ def add_model_components(prereq_modules, module_to_test, model, dynamic_inputs):
 
 
 def create_abstract_model(prereq_modules, module_to_test, test_data_dir,
-                          horizon, stage):
+                          subproblem, stage):
     """
     Determine dynamic components and build abstract model
     :param prereq_modules:
     :param module_to_test:
     :param test_data_dir:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
     d = determine_dynamic_components(prereq_modules, module_to_test,
-                                     test_data_dir, horizon, stage)
+                                     test_data_dir, subproblem, stage)
     m = AbstractModel()
     add_model_components(prereq_modules, module_to_test, m, d)
 
@@ -69,23 +69,23 @@ def create_abstract_model(prereq_modules, module_to_test, test_data_dir,
 
 
 def add_components_and_load_data(prereq_modules, module_to_test, test_data_dir,
-                                 horizon, stage):
+                                 subproblem, stage):
     """
     Test that data are loaded with no errors
     :return:
     """
 
     m, d = create_abstract_model(prereq_modules, module_to_test, test_data_dir,
-                                 horizon, stage)
+                                 subproblem, stage)
     data = DataPortal()
     for mod in prereq_modules:
         if hasattr(mod, 'load_model_data'):
-            mod.load_model_data(m, d, data, test_data_dir, horizon, stage)
+            mod.load_model_data(m, d, data, test_data_dir, subproblem, stage)
     if hasattr(module_to_test, "load_model_data"):
         module_to_test.load_model_data(m, d, data, test_data_dir,
-                                       horizon, stage)
+                                       subproblem, stage)
     if hasattr(module_to_test, "load_module_specific_data"):
         module_to_test.load_module_specific_data(m, data, test_data_dir,
-                                                  horizon, stage)
+                                                  subproblem, stage)
 
     return m, data

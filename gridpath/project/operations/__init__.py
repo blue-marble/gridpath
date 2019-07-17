@@ -97,21 +97,22 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
 
     # Get column names as a few columns will be optional;
     # won't load data if column does not exist
-    with open(os.path.join(scenario_directory, "inputs", "projects.tab")
+    with open(os.path.join(scenario_directory, subproblem, stage, "inputs",
+                           "projects.tab")
               ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t")
         headers = next(reader)
@@ -129,12 +130,12 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         startup_cost_projects = list()
         startup_cost_per_mw = dict()
 
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "startup_cost_per_mw"]
-                )
+        dynamic_components = read_csv(
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
+            sep="\t",
+            usecols=["project", "startup_cost_per_mw"]
+        )
         for row in zip(dynamic_components["project"],
                        dynamic_components["startup_cost_per_mw"]):
             if is_number(row[1]) and float(row[1]) > 0:
@@ -169,12 +170,12 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         shutdown_cost_projects = list()
         shutdown_cost_per_mw = dict()
 
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "shutdown_cost_per_mw"]
-                )
+        dynamic_components = read_csv(
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs","projects.tab"),
+            sep="\t",
+            usecols=["project", "shutdown_cost_per_mw"]
+        )
         for row in zip(dynamic_components["project"],
                        dynamic_components["shutdown_cost_per_mw"]):
             if is_number(row[1]) and float(row[1]) > 0:
@@ -197,12 +198,14 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
     def determine_fuel_project_segments():
         hr_df = read_csv(
-            os.path.join(scenario_directory, "inputs", "heat_rate_curves.tab"),
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "heat_rate_curves.tab"),
             sep="\t"
         )
 
         pr_df = read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "fuel"]
         )
@@ -255,12 +258,12 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         startup_fuel_projects = list()
         startup_fuel_mmbtu_per_mw = dict()
 
-        dynamic_components = \
-            read_csv(
-                os.path.join(scenario_directory, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "startup_fuel_mmbtu_per_mw"]
-                )
+        dynamic_components = read_csv(
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
+            sep="\t",
+            usecols=["project", "startup_fuel_mmbtu_per_mw"]
+        )
 
         for row in zip(dynamic_components["project"],
                        dynamic_components["startup_fuel_mmbtu_per_mw"]):
@@ -283,7 +286,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
 
     # Availability derates
     availability_file = os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "project_availability.tab"
     )
 
@@ -296,9 +299,8 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         pass
 
 
-def get_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios: 
@@ -317,14 +319,18 @@ def get_inputs_from_database(
             FROM inputs_project_availability
             INNER JOIN inputs_project_portfolios
             USING (project)
-            INNER JOIN inputs_temporal_horizons
+            INNER JOIN
+            (SELECT horizon
+            FROM inputs_temporal_horizons
+            WHERE temporal_scenario_id = {}
+            AND subproblem_id = {}) as relevant_horizons
             USING (horizon)
             WHERE project_portfolio_scenario_id = {}
-            AND project_availability_scenario_id = {}
-            AND temporal_scenario_id = {};""".format(
+            AND project_availability_scenario_id = {};""".format(
+                subscenarios.TEMPORAL_SCENARIO_ID,
+                subproblem,
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-                subscenarios.TEMPORAL_SCENARIO_ID
             )
         )
 
@@ -338,13 +344,11 @@ def get_inputs_from_database(
             for row in availabilities:
                 writer.writerow(row)
 
-    # TODO; test this once database integration is merged into piecewise
-    #   fuel cost branch.
     # Write heat rate curves files
     # Select only heat rate curves of projects in the portfolio
     heat_rates = c.execute(
         """
-        SELECT project, segment_id, load_point_mw, 
+        SELECT project, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
@@ -352,7 +356,7 @@ def get_inputs_from_database(
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) AS op_char
         USING(project)
-        LEFT OUTER JOIN
+        INNER JOIN
         inputs_project_heat_rate_curves
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
@@ -365,7 +369,7 @@ def get_inputs_from_database(
             heat_rate_tab_file:
         writer = csv.writer(heat_rate_tab_file, delimiter="\t")
 
-        writer.writerow(["project", "segment_id", "load_point_mw",
+        writer.writerow(["project", "load_point_mw",
                          "average_heat_rate_mmbtu_per_mwh"])
 
         for row in heat_rates:

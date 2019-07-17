@@ -398,26 +398,26 @@ def power_delta_rule(mod, g, tmp):
                ]
 
 
-def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+def load_module_specific_data(m, data_portal,
+                              scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     # Determine list of projects
     projects = list()
 
-    prj_op_type_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
-            sep="\t", usecols=["project",
-                               "operational_type"]
-        )
+    prj_op_type_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
@@ -434,7 +434,7 @@ def load_module_specific_data(m,
 
     prj_tmp_cf_df = \
         pd.read_csv(
-            os.path.join(scenario_directory, horizon, "inputs",
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
                          "hydro_conventional_horizon_params.tab"),
             sep="\t", usecols=[
                 "project", "horizon",
@@ -469,7 +469,7 @@ def load_module_specific_data(m,
     # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "inputs",
                                       "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
@@ -479,7 +479,7 @@ def load_module_specific_data(m,
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "operational_type"] + used_columns
             )
@@ -511,13 +511,13 @@ def load_module_specific_data(m,
             ramp_down_rate
 
 
-def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
-):
+def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
+                                             c, inputs_directory):
     """
-    Write operational chars to  hydro_conventional_horizon_params.tab
+    Write operational chars to hydro_conventional_horizon_params.tab
     If file does not yet exist, write header first
     :param subscenarios
+    :param subproblem
     :param c:
     :param inputs_directory:
     :return:
@@ -525,8 +525,8 @@ def get_module_specific_inputs_from_database(
 
     # Select only budgets/min/max of projects in the portfolio
     # Select only budgets/min/max of projects with 'hydro_curtailable'
-    # Select only budgets/min/max for horizons from the correct timepoint
-    # scenario
+    # Select only budgets/min/max for horizons from the correct temporal
+    # scenario and subproblem
     # Select only horizons on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
@@ -543,7 +543,8 @@ def get_module_specific_inputs_from_database(
         CROSS JOIN
         (SELECT horizon
         FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {})
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {})
         LEFT OUTER JOIN
         inputs_project_hydro_operational_chars
         USING (hydro_operational_chars_scenario_id, project, horizon)
@@ -573,6 +574,7 @@ def get_module_specific_inputs_from_database(
         """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,

@@ -46,7 +46,7 @@ def generic_add_model_components(
                        rule=meet_reserve_rule))
 
 
-def generic_export_results(scenario_directory, horizon, stage, m, d,
+def generic_export_results(scenario_directory, subproblem, stage, m, d,
                            filename,
                            column_name,
                            reserve_zone_timepoint_set,
@@ -55,7 +55,7 @@ def generic_export_results(scenario_directory, horizon, stage, m, d,
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
@@ -65,7 +65,7 @@ def generic_export_results(scenario_directory, horizon, stage, m, d,
     :param reserve_violation_variable:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            filename), "w") \
             as results_file:
         writer = csv.writer(results_file)
@@ -99,13 +99,13 @@ def generic_save_duals(m, reserve_constraint_name):
         ["zone", "timepoint", "dual"]
 
 
-def generic_import_results_to_database(
-        scenario_id, c, db, results_directory,
-        reserve_type
-):
+def generic_import_results_to_database(scenario_id, subproblem, stage,
+                                       c, db, results_directory, reserve_type):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -115,7 +115,9 @@ def generic_import_results_to_database(
 
     c.execute(
         """DELETE FROM results_system_""" + reserve_type + """_balance
-        WHERE scenario_id = {};""".format(scenario_id)
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};""".format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -133,6 +135,8 @@ def generic_import_results_to_database(
         scenario_id INTEGER,
         """ + reserve_type + """_ba VARCHAR(32),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
         discount_factor FLOAT,
@@ -140,7 +144,8 @@ def generic_import_results_to_database(
         horizon_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         violation_mw FLOAT,
-        PRIMARY KEY (scenario_id, """ + reserve_type + """_ba, timepoint)
+        PRIMARY KEY (scenario_id, """ + reserve_type + """_ba,
+        subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()
@@ -166,15 +171,17 @@ def generic_import_results_to_database(
                 """INSERT INTO 
                 temp_results_system_""" + reserve_type + """_balance"""
                 + str(scenario_id) + """
-                (scenario_id, """ + reserve_type + """_ba, period, horizon, 
-                timepoint, discount_factor, 
-                number_years_represented, horizon_weight, 
+                (scenario_id, """ + reserve_type + """_ba, period,
+                subproblem_id, stage_id, horizon, timepoint, 
+                discount_factor, number_years_represented, horizon_weight, 
                 number_of_hours_in_timepoint,
                 violation_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {});""".format(
-                    scenario_id, ba, period, horizon, timepoint,
-                    discount_factor, number_years_represented,
-                    horizon_weight, number_of_hours_in_timepoint,
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                """.format(
+                    scenario_id, ba, period,
+                    subproblem, stage, horizon, timepoint,
+                    discount_factor, number_years_represented, horizon_weight,
+                    number_of_hours_in_timepoint,
                     violation
                 )
             )
@@ -183,16 +190,19 @@ def generic_import_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_""" + reserve_type + """_balance
-        (scenario_id, """ + reserve_type + """_ba, period, horizon, timepoint,
-        discount_factor, number_years_represented,
-        horizon_weight, number_of_hours_in_timepoint, violation_mw)
+        (scenario_id, """ + reserve_type + """_ba, period, 
+        subproblem_id, stage_id, horizon, timepoint,
+        discount_factor, number_years_represented, horizon_weight, 
+        number_of_hours_in_timepoint, violation_mw)
         SELECT
-        scenario_id, """ + reserve_type + """_ba, period, horizon, timepoint,
-        discount_factor, number_years_represented,
-        horizon_weight, number_of_hours_in_timepoint, violation_mw
+        scenario_id, """ + reserve_type + """_ba, period, 
+        subproblem_id, stage_id, horizon, timepoint,
+        discount_factor, number_years_represented, horizon_weight, 
+        number_of_hours_in_timepoint, violation_mw
         FROM temp_results_system_""" + reserve_type + """_balance"""
-        + str(scenario_id) + """
-        ORDER BY scenario_id, """ + reserve_type + """_ba, timepoint;"""
+        + str(scenario_id) +
+        """ ORDER BY scenario_id, """ + reserve_type + """_ba, 
+        subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 
@@ -228,8 +238,12 @@ def generic_import_results_to_database(
                 SET dual = {}
                 WHERE {}_ba = '{}'
                 AND timepoint = {}
-                AND scenario_id = {};""".format(
-                    row[2], reserve_type, row[0], row[1], scenario_id
+                AND scenario_id = {}
+                AND subproblem_id = {}
+                AND stage_id = {};
+                """.format(
+                    row[2], reserve_type, row[0], row[1], scenario_id,
+                    subproblem, stage
                 )
             )
     db.commit()
@@ -240,8 +254,9 @@ def generic_import_results_to_database(
         SET marginal_price_per_mw = 
         dual / (discount_factor * number_years_represented * horizon_weight 
         * number_of_hours_in_timepoint)
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()

@@ -49,7 +49,7 @@ class TestTxCapacity(unittest.TestCase):
         create_abstract_model(prereq_modules=IMPORTED_PREREQ_MODULES,
                               module_to_test=MODULE_BEING_TESTED,
                               test_data_dir=TEST_DATA_DIRECTORY,
-                              horizon="",
+                              subproblem="",
                               stage=""
                               )
 
@@ -61,7 +61,7 @@ class TestTxCapacity(unittest.TestCase):
         add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
                                      module_to_test=MODULE_BEING_TESTED,
                                      test_data_dir=TEST_DATA_DIRECTORY,
-                                     horizon="",
+                                     subproblem="",
                                      stage=""
                                      )
 
@@ -74,7 +74,7 @@ class TestTxCapacity(unittest.TestCase):
             prereq_modules=IMPORTED_PREREQ_MODULES,
             module_to_test=MODULE_BEING_TESTED,
             test_data_dir=TEST_DATA_DIRECTORY,
-            horizon="",
+            subproblem="",
             stage=""
         )
         instance = m.create_instance(data)

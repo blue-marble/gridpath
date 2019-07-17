@@ -104,14 +104,14 @@ def add_model_components(m, d):
     getattr(d, total_cost_components).append("Total_Tx_Capacity_Costs")
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -121,16 +121,16 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "load_module_specific_data"):
             imported_tx_capacity_modules[op_m].load_module_specific_data(
-                m, data_portal, scenario_directory, horizon, stage)
+                m, data_portal, scenario_directory, subproblem, stage)
         else:
             pass
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
@@ -144,13 +144,13 @@ def export_results(scenario_directory, horizon, stage, m, d):
         if hasattr(imported_tx_capacity_modules[op_m],
                    "export_module_specific_results"):
             imported_tx_capacity_modules[op_m].export_module_specific_results(
-                m, d, scenario_directory, horizon, stage
+                m, d, scenario_directory, subproblem, stage
             )
         else:
             pass
 
     # Export transmission capacity
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_capacity.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
@@ -167,7 +167,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
     # Export transmission capacity costs
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
               "costs_transmission_capacity.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(
@@ -184,7 +184,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -197,9 +197,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("transmission capacity")
     c.execute(
         """DELETE FROM results_transmission_capacity
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -216,11 +217,13 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             scenario_id INTEGER,
             tx_line VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             load_zone_from VARCHAR(32),
             load_zone_to VARCHAR(32),
             min_mw FLOAT,
             max_mw FLOAT,
-            PRIMARY KEY (scenario_id, tx_line, period)
+            PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
             );"""
     )
     db.commit()
@@ -243,26 +246,31 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_transmission_capacity"""
                 + str(scenario_id) + """
-                    (scenario_id, tx_line, period, 
+                    (scenario_id, tx_line, period, subproblem_id, stage_id,
                     load_zone_from, load_zone_to,
                     min_mw, max_mw)
-                    VALUES ({}, '{}', {}, '{}', '{}', {}, {});""".format(
-                    scenario_id, tx_line, period, load_zone_from, load_zone_to,
-                    min_mw, max_mw
-                )
+                    VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {}, {});
+                    """.format(
+                        scenario_id, tx_line, period, subproblem, stage,
+                        load_zone_from, load_zone_to,
+                        min_mw, max_mw
+                    )
             )
     db.commit()
 
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_transmission_capacity
-        (scenario_id, tx_line, period, load_zone_from, load_zone_to,
-        min_mw, max_mw)
+        (scenario_id, tx_line, period, subproblem_id, stage_id,
+        load_zone_from, load_zone_to, min_mw, max_mw)
         SELECT
-        scenario_id, tx_line, period, load_zone_from, load_zone_to,
-        min_mw, max_mw
-        FROM temp_results_transmission_capacity""" + str(scenario_id) + """
-            ORDER BY scenario_id, tx_line, period;"""
+        scenario_id, tx_line, period, subproblem_id, stage_id,
+        load_zone_from, load_zone_to, min_mw, max_mw
+        FROM temp_results_transmission_capacity"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 
@@ -278,9 +286,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("transmission capacity costs")
     c.execute(
         """DELETE FROM results_transmission_costs_capacity
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, stage, subproblem)
     )
     db.commit()
 
@@ -297,10 +306,12 @@ def import_results_into_database(scenario_id, c, db, results_directory):
         scenario_id INTEGER,
         tx_line VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         load_zone_from VARCHAR(32),
         load_zone_to VARCHAR(32),
         annualized_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, tx_line, period)
+        PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -322,11 +333,11 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_transmission_costs_capacity"""
                 + str(scenario_id) + """
-                (scenario_id, tx_line, period, load_zone_from, load_zone_to,
-                annualized_capacity_cost)
-                VALUES ({}, '{}', {}, '{}', '{}', {});""".format(
-                    scenario_id, tx_line, period, load_zone_from, load_zone_to,
-                    annualized_capacity_cost
+                (scenario_id, tx_line, period, subproblem_id, stage_id,
+                load_zone_from, load_zone_to, annualized_capacity_cost)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {});""".format(
+                    scenario_id, tx_line, period, subproblem, stage,
+                    load_zone_from, load_zone_to, annualized_capacity_cost
                 )
             )
     db.commit()
@@ -334,19 +345,22 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_transmission_costs_capacity
-        (scenario_id, tx_line, period, load_zone_from, load_zone_to,
-        annualized_capacity_cost)
+        (scenario_id, tx_line, period, subproblem_id, stage_id, 
+        load_zone_from, load_zone_to, annualized_capacity_cost)
         SELECT
-        scenario_id, tx_line, period, load_zone_from, load_zone_to,
-        annualized_capacity_cost
-        FROM temp_results_transmission_costs_capacity""" + str(scenario_id) + """
-        ORDER BY scenario_id, tx_line, period;"""
+        scenario_id, tx_line, period, subproblem_id, stage_id, 
+        load_zone_from, load_zone_to, annualized_capacity_cost
+        FROM temp_results_transmission_costs_capacity"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 
     # Drop the temporary table
     c.execute(
-        """DROP TABLE temp_results_transmission_costs_capacity""" + str(scenario_id) +
-        """;"""
+        """DROP TABLE temp_results_transmission_costs_capacity"""
+        + str(scenario_id) + """;"""
     )
     db.commit()

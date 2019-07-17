@@ -245,7 +245,7 @@ def group_cost_rule(mod, group, period):
 
 
 def load_module_specific_data(
-        m, data_portal, scenario_directory, horizon, stage
+        m, data_portal, scenario_directory, subproblem, stage
 ):
     """
     Optionally load data for costs incurred only when a capacity threshold 
@@ -255,13 +255,13 @@ def load_module_specific_data(
     :param d: 
     :param data_portal: 
     :param scenario_directory: 
-    :param horizon: 
+    :param subproblem:
     :param stage: 
     :return: 
     """
 
     group_threshold_costs_file = os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "deliverability_group_params.tab"
     )
     if os.path.exists(group_threshold_costs_file):
@@ -276,7 +276,7 @@ def load_module_specific_data(
         pass
 
     group_projects_file = os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "deliverability_group_projects.tab"
     )
 
@@ -289,20 +289,20 @@ def load_module_specific_data(
         pass
 
 
-def export_module_specific_results(m, d, scenario_directory, horizon, stage,):
+def export_module_specific_results(m, d, scenario_directory, subproblem, stage,):
     """
 
     :param m:
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
 
     # Energy-only vs deliverable capacity by project
     with open(os.path.join(
-            scenario_directory, horizon, stage, "results",
+            scenario_directory, subproblem, stage, "results",
             "project_prm_energy_only_and_deliverable_capacity.csv"
     ), "w") as f:
         writer = csv.writer(f)
@@ -322,7 +322,7 @@ def export_module_specific_results(m, d, scenario_directory, horizon, stage,):
             ])
 
     # Total capacity for all projects in group
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "deliverability_group_capacity_and_costs.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow([
@@ -434,11 +434,13 @@ def get_module_specific_inputs_from_database(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -449,9 +451,10 @@ def import_module_specific_results_into_database(
     print("project energy-only and deliverable capacities")
     c.execute(
         """DELETE FROM results_project_prm_deliverability
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -470,11 +473,13 @@ def import_module_specific_results_into_database(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         prm_zone VARCHAR(64),
         capacity_mw FLOAT,
         deliverable_capacity_mw FLOAT,
         energy_only_capacity_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, period)
+        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -499,14 +504,12 @@ def import_module_specific_results_into_database(
                 """INSERT INTO 
                 temp_results_project_prm_deliverability"""
                 + str(scenario_id) + """
-                (scenario_id, project, period, 
+                (scenario_id, project, period, subproblem_id, stage_id,
                 prm_zone, capacity_mw, 
-                deliverable_capacity_mw, 
-                energy_only_capacity_mw)
-                VALUES ({}, '{}', {}, '{}', {}, {}, {});""".format(
-                    scenario_id, project, period,
-                    prm_zone,
-                    total_capacity_mw,
+                deliverable_capacity_mw, energy_only_capacity_mw)
+                VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    prm_zone, total_capacity_mw,
                     deliverable_capacity, energy_only_capacity
                 )
             )
@@ -515,14 +518,18 @@ def import_module_specific_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_prm_deliverability
-        (scenario_id, project, period, prm_zone, capacity_mw, 
+        (scenario_id, project, period, subproblem_id, stage_id,
+        prm_zone, capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw)
         SELECT
-        scenario_id, project, period, prm_zone, capacity_mw, 
+        scenario_id, project, period, subproblem_id, stage_id,
+        prm_zone, capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw
         FROM temp_results_project_prm_deliverability"""
-        + str(scenario_id) + """
-        ORDER BY scenario_id, project, period;"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 
@@ -541,9 +548,9 @@ def import_module_specific_results_into_database(
     c.execute(
         """DELETE FROM 
         results_project_prm_deliverability_group_capacity_and_costs
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};""".format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -562,13 +569,15 @@ def import_module_specific_results_into_database(
         scenario_id INTEGER,
         deliverability_group VARCHAR(64),
         period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
         deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
         deliverability_group_deliverability_cost_per_mw FLOAT,
         total_capacity_mw FLOAT,
         deliverable_capacity_mw FLOAT,
         energy_only_capacity_mw FLOAT,
         deliverable_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, deliverability_group, period)
+        PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
         );"""
     )
     db.commit()
@@ -594,15 +603,16 @@ def import_module_specific_results_into_database(
                 """INSERT INTO 
                 temp_results_project_prm_deliverability_group_capacity_and_costs"""
                 + str(scenario_id) + """
-                (scenario_id, deliverability_group, period, 
+                (scenario_id, deliverability_group, period, subproblem_id, stage_id,
                 deliverability_group_no_cost_deliverable_capacity_mw, 
                 deliverability_group_deliverability_cost_per_mw,
                 total_capacity_mw, 
                 deliverable_capacity_mw, 
                 energy_only_capacity_mw,
                 deliverable_capacity_cost)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {});""".format(
-                    scenario_id, group, period,
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
+                """.format(
+                    scenario_id, group, period, subproblem, stage,
                     deliverability_group_no_cost_deliverable_capacity_mw,
                     deliverability_group_deliverability_cost_per_mw,
                     total_capacity_mw,
@@ -616,14 +626,14 @@ def import_module_specific_results_into_database(
     c.execute(
         """INSERT INTO 
         results_project_prm_deliverability_group_capacity_and_costs
-        (scenario_id, deliverability_group, period, 
+        (scenario_id, deliverability_group, period, subproblem_id, stage_id,
         deliverability_group_no_cost_deliverable_capacity_mw, 
         deliverability_group_deliverability_cost_per_mw,
         total_capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw,
         deliverable_capacity_cost)
         SELECT
-        scenario_id, deliverability_group, period, 
+        scenario_id, deliverability_group, period, subproblem_id, stage_id,
         deliverability_group_no_cost_deliverable_capacity_mw, 
         deliverability_group_deliverability_cost_per_mw,
         total_capacity_mw, 
@@ -631,8 +641,10 @@ def import_module_specific_results_into_database(
         deliverable_capacity_cost
         FROM 
         temp_results_project_prm_deliverability_group_capacity_and_costs"""
-        + str(scenario_id) + """
-        ORDER BY scenario_id, deliverability_group, period;"""
+        + str(scenario_id) +
+        """
+         ORDER BY scenario_id, deliverability_group, period, subproblem_id, stage_id;
+        """
     )
     db.commit()
 

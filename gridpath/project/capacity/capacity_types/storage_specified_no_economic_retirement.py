@@ -127,10 +127,9 @@ def capacity_cost_rule(mod, g, p):
 
 
 def load_module_specific_data(m,
-                              data_portal, scenario_directory, horizon, stage):
+                              data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=
-                     os.path.join(scenario_directory,
-                                  "inputs",
+                     os.path.join(scenario_directory, subproblem, stage, "inputs",
                                   "storage_specified_capacities.tab"),
                      index=
                      m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,

@@ -86,29 +86,29 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-        scenario_directory, "inputs",
-        "transmission_simultaneous_flow_limits.tab"),
+    data_portal.load(filename=
+                     os.path.join(scenario_directory, subproblem, stage, "inputs",
+                                  "transmission_simultaneous_flow_limits.tab"),
                      select=("simultaneous_flow_limit", "period",
                              "simultaneous_flow_limit_mw"),
                      index=m.SIMULTANEOUS_FLOW_LIMIT_PERIODS,
                      param=m.simultaneous_flow_limit_mw
                      )
 
-    data_portal.load(filename=os.path.join(
-        scenario_directory, "inputs",
-        "transmission_simultaneous_flow_limit_lines.tab"),
+    data_portal.load(filename=
+                     os.path.join(scenario_directory, subproblem, stage, "inputs",
+                        "transmission_simultaneous_flow_limit_lines.tab"),
                      select=("simultaneous_flow_limit", "transmission_line",
                              "simultaneous_flow_direction"),
                      index=m.SIMULTANEOUS_FLOW_LIMIT_LINES,
@@ -116,17 +116,17 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export transmission operations
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_simultaneous_flow_limits.csv"),
               "w") as \
             tx_op_results_file:
@@ -150,7 +150,7 @@ def save_duals(m):
         ["simultaneous_flow_limit", "timepoint", "dual"]
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

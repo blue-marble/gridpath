@@ -40,21 +40,27 @@ def add_model_components(m, d):
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
     m.number_of_hours_in_timepoint = \
         Param(m.TIMEPOINTS, within=NonNegativeReals)
+    m.previous_stage_timepoint_map = \
+        Param(m.TIMEPOINTS, within=NonNegativeIntegers)
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
-    data_portal.load(filename=os.path.join(scenario_directory, horizon, stage,
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
-                     param=m.number_of_hours_in_timepoint,
-                     select=("TIMEPOINTS", "number_of_hours_in_timepoint")
+                     param=(m.number_of_hours_in_timepoint,
+                            m.previous_stage_timepoint_map),
+                     select=("TIMEPOINTS", "number_of_hours_in_timepoint",
+                             "previous_stage_timepoint_map")
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage,
+                             c, inputs_directory):
     """
 
     :param subscenarios:
+    :param subproblem:
     :param c:
     :param inputs_directory:
     :return:
@@ -66,15 +72,21 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
 
         # Write header
         writer.writerow(["TIMEPOINTS", "period", "horizon",
-                         "number_of_hours_in_timepoint"])
+                         "number_of_hours_in_timepoint",
+                         "previous_stage_timepoint_map"])
 
         timepoints = c.execute(
-            """SELECT timepoint, period, horizon, number_of_hours_in_timepoint
+            """SELECT timepoint, period, horizon, number_of_hours_in_timepoint, previous_stage_timepoint_map
                FROM inputs_temporal_timepoints
-               WHERE temporal_scenario_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID
+               WHERE temporal_scenario_id = {}
+               AND subproblem_id = {}
+               AND stage_id = {};""".format(
+                subscenarios.TEMPORAL_SCENARIO_ID,
+                subproblem,
+                stage
             )
         ).fetchall()
 
         for row in timepoints:
-            writer.writerow(row)
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)

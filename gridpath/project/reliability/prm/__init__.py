@@ -40,18 +40,18 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=("project", "prm_zone", "prm_type"),
                      param=(m.prm_zone, m.prm_type)
@@ -62,7 +62,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     }
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

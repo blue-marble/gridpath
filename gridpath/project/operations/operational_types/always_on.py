@@ -405,14 +405,14 @@ def power_delta_rule(mod, g, tmp):
                ]
 
 
-def load_module_specific_data(mod, data_portal, scenario_directory,
-                              horizon, stage):
+def load_module_specific_data(mod, data_portal,
+                              scenario_directory, subproblem, stage):
     """
 
     :param mod:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -421,8 +421,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     min_stable_fraction = dict()
     ramp_up_rate = dict()
     ramp_down_rate = dict()
-    header = pd.read_csv(os.path.join(scenario_directory, "inputs",
-                                      "projects.tab"),
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                      "inputs", "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
     optional_columns = ["ramp_up_when_on_rate",
@@ -431,7 +431,8 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
 
     dynamic_components = \
         pd.read_csv(
-            os.path.join(scenario_directory, "inputs", "projects.tab"),
+            os.path.join(scenario_directory, subproblem, stage,
+                         "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "operational_type", "unit_size_mw",
                      "min_stable_level_fraction"] + used_columns

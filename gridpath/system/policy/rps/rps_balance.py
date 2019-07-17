@@ -40,17 +40,17 @@ def add_model_components(m, d):
                                          rule=rps_target_rule)
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "rps.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period",
@@ -85,18 +85,18 @@ def save_duals(m):
         ["rps_zone", "period", "dual"]
 
 
-def summarize_results(d, problem_directory, horizon, stage):
+def summarize_results(d, scenario_directory, subproblem, stage):
     """
     Summarize RPS policy results
     :param d:
     :param problem_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
 
     summary_results_file = os.path.join(
-        problem_directory, horizon, stage, "results", "summary_results.txt"
+        scenario_directory, subproblem, stage, "results", "summary_results.txt"
     )
 
     # Open in 'append' mode, so that results already written by other
@@ -110,19 +110,19 @@ def summarize_results(d, problem_directory, horizon, stage):
 
     # Get the main RPS results file
     rps_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "results",
                                  "rps.csv")
                     )
 
     # Get the RPS dual results
     rps_duals_df = \
-        pd.read_csv(os.path.join(problem_directory, horizon, stage, "results",
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "results",
                                  "RPS_Target_Constraint.csv")
                     )
 
     # # Get the input metadata for periods
     # periods_df = \
-    #     pd.read_csv(os.path.join(problem_directory, "inputs", "periods.tab"),
+    #     pd.read_csv(os.path.join(scenario_directory, "inputs", "periods.tab"),
     #                 sep="\t")
 
     # Join the above
@@ -178,9 +178,7 @@ def summarize_results(d, problem_directory, horizon, stage):
         outfile.write("\n")
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -193,9 +191,10 @@ def import_results_into_database(
     print("system rps")
     c.execute(
         """DELETE FROM results_system_rps 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -213,6 +212,8 @@ def import_results_into_database(
          scenario_id INTEGER,
          rps_zone VARCHAR(64),
          period INTEGER,
+         subproblem_id INTEGER,
+         stage_id INTEGER,
          discount_factor FLOAT,
          number_years_represented FLOAT,
          rps_target_mwh FLOAT,
@@ -221,7 +222,7 @@ def import_results_into_database(
          total_rps_energy_mwh FLOAT,
          fraction_of_rps_target_met FLOAT,
          fraction_of_rps_energy_curtailed FLOAT,
-         PRIMARY KEY (scenario_id, rps_zone, period)
+         PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
          );"""
     )
     db.commit()
@@ -249,16 +250,17 @@ def import_results_into_database(
                 """INSERT INTO 
                 temp_results_system_rps"""
                 + str(scenario_id) + """
-                 (scenario_id, rps_zone, period, 
+                 (scenario_id, rps_zone, period, subproblem_id, stage_id,
                  discount_factor, number_years_represented, rps_target_mwh, 
                  delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
                  total_rps_energy_mwh,
                  fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}
-                 );""".format(
-                    scenario_id, rps_zone, period, discount_factor,
-                    number_years, rps_target, rps_provision, curtailment,
-                    total, fraction_met, fraction_curtailed
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                 """.format(
+                    scenario_id, rps_zone, period, subproblem, stage,
+                    discount_factor, number_years, rps_target,
+                    rps_provision, curtailment, total,
+                    fraction_met, fraction_curtailed
                 )
             )
     db.commit()
@@ -266,12 +268,12 @@ def import_results_into_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_rps
-        (scenario_id, rps_zone, period,
+        (scenario_id, rps_zone, period, subproblem_id, stage_id,
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
-        SELECT scenario_id, rps_zone, period,
+        SELECT scenario_id, rps_zone, period, subproblem_id, stage_id,
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
@@ -279,7 +281,7 @@ def import_results_into_database(
         FROM temp_results_system_rps"""
         + str(scenario_id)
         + """
-         ORDER BY scenario_id, rps_zone, period;"""
+         ORDER BY scenario_id, rps_zone, period, subproblem_id, stage_id;"""
     )
     db.commit()
 
@@ -292,7 +294,7 @@ def import_results_into_database(
     db.commit()
 
     # Update duals
-    with open(os.path.join( results_directory, "RPS_Target_Constraint.csv"),
+    with open(os.path.join(results_directory, "RPS_Target_Constraint.csv"),
               "r") as rps_duals_file:
         reader = csv.reader(rps_duals_file)
 
@@ -304,8 +306,10 @@ def import_results_into_database(
                 SET dual = {}
                 WHERE rps_zone = '{}'
                 AND period = {}
-                AND scenario_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id
+                AND scenario_id = {}
+                AND subproblem_id = {}
+                AND stage_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id, subproblem, stage
                 )
             )
     db.commit()
@@ -315,8 +319,9 @@ def import_results_into_database(
         """UPDATE results_system_rps
         SET rps_marginal_cost_per_mwh = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        and stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()

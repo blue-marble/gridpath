@@ -14,19 +14,19 @@ from pyomo.environ import Set, Param
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules
 
 
-def determine_dynamic_components(d, scenario_directory, horizon, stage):
+def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
 
     :param d:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
 
     # Get the capacity type of each generator
     dynamic_components = \
-        pd.read_csv(os.path.join(scenario_directory, "inputs",
+        pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "inputs",
                                  "transmission_lines.tab"),
                     sep="\t", usecols=["TRANSMISSION_LINES", "tx_capacity_type"]
                     )
@@ -55,18 +55,18 @@ def add_model_components(m, d):
     m.tx_capacity_type_operational_period_sets = []
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory, "inputs",
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                                            "transmission_lines.tab"),
                      select=("TRANSMISSION_LINES", "tx_capacity_type",
                              "load_zone_from", "load_zone_to"),
@@ -76,7 +76,7 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios

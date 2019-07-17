@@ -121,18 +121,18 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(scenario_directory,
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "projects.tab"),
                      select=("project", "rps_zone"),
                      param=(m.rps_zone,)
@@ -143,17 +143,17 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     }
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "rps_by_project.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["project", "load_zone", "rps_zone",
@@ -181,7 +181,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             ])
 
     # Export list of RPS projects and their zones for later use
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "rps_project_zones.csv"), "w") as \
             rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)
@@ -190,7 +190,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
             writer.writerow([p, m.rps_zone[p]])
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
@@ -242,7 +242,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
         writer.writerows(new_rows)
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
     
     :param scenario_id:
@@ -255,9 +255,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("project recs")
     c.execute(
         """DELETE FROM results_project_rps 
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -275,6 +276,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
          scenario_id INTEGER,
          project VARCHAR(64),
          period INTEGER,
+         subproblem_id INTEGER,
+         stage_id INTEGER,
          horizon INTEGER,
          timepoint INTEGER,
          horizon_weight FLOAT,
@@ -286,7 +289,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
          scheduled_curtailment_mw FLOAT,
          subhourly_rps_energy_delivered_mw FLOAT,
          subhourly_curtailment_mw FLOAT,
-         PRIMARY KEY (scenario_id, project, timepoint)
+         PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
          );"""
     )
     db.commit()
@@ -317,16 +320,18 @@ def import_results_into_database(scenario_id, c, db, results_directory):
                 """INSERT INTO 
                 temp_results_project_rps"""
                 + str(scenario_id) + """
-                 (scenario_id, project, period, horizon, timepoint, 
-                 horizon_weight, number_of_hours_in_timepoint, load_zone,
-                 rps_zone, technology, scheduled_rps_energy_mw, 
-                 scheduled_curtailment_mw, 
+                 (scenario_id, project, period, subproblem_id, stage_id, 
+                 horizon, timepoint, horizon_weight, 
+                 number_of_hours_in_timepoint, 
+                 load_zone, rps_zone, technology, 
+                 scheduled_rps_energy_mw, scheduled_curtailment_mw, 
                  subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, '{}', '{}', '{}', 
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}', 
                  {}, {}, {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, hours_in_tmp, load_zone, rps_zone,
-                    technology, scheduled_energy, scheduled_curtailment,
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight, hours_in_tmp,
+                    load_zone, rps_zone, technology,
+                    scheduled_energy, scheduled_curtailment,
                     subhourly_energy, subhourly_curtailment
                 )
             )
@@ -335,21 +340,21 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_rps
-        (scenario_id, project, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, load_zone,
-        rps_zone, technology, scheduled_rps_energy_mw, 
-        scheduled_curtailment_mw, 
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
+        load_zone, rps_zone, technology, 
+        scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
         SELECT
-        scenario_id, project, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint, load_zone,
-        rps_zone, technology, scheduled_rps_energy_mw, 
-        scheduled_curtailment_mw, 
+        scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
+        load_zone, rps_zone, technology, 
+        scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw
         FROM temp_results_project_rps"""
         + str(scenario_id)
         + """
-         ORDER BY scenario_id, project, timepoint;"""
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
     )
     db.commit()
 

@@ -51,7 +51,7 @@ def generic_add_model_components(
 
 
 def generic_load_model_data(m, d, data_portal,
-                            scenario_directory, horizon, stage,
+                            scenario_directory, subproblem, stage,
                             ba_list_filename,
                             reserve_violation_penalty_param
                             ):
@@ -61,7 +61,7 @@ def generic_load_model_data(m, d, data_portal,
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param ba_list_filename:
     :param reserve_violation_penalty_param:
@@ -71,7 +71,7 @@ def generic_load_model_data(m, d, data_portal,
     :return:
     """
 
-    data_portal.load(filename=os.path.join(scenario_directory, "inputs",
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                                            ba_list_filename),
                      select=("balancing_area", "violation_penalty_per_mw"),
                      param=getattr(m, reserve_violation_penalty_param)

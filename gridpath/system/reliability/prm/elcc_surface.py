@@ -72,20 +72,20 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
     # PRM zone-period-facet
     data_portal.load(filename=os.path.join(
-        scenario_directory, horizon, stage, "inputs",
+        scenario_directory, subproblem, stage, "inputs",
         "prm_zone_surface_facets_and_intercept.tab"
     ),
                      index=m.PRM_ZONE_PERIOD_ELCC_SURFACE_FACETS,
@@ -95,17 +95,17 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
                      )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "prm_elcc_surface.csv"), "w") as \
             results_file:
         writer = csv.writer(results_file)
@@ -123,7 +123,7 @@ def save_duals(m):
         ["prm_zone", "period", "facet", "dual"]
 
 
-def get_inputs_from_database(subscenarios, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
     """
 
     :param subscenarios
@@ -160,9 +160,7 @@ def get_inputs_from_database(subscenarios, c, inputs_directory):
             writer.writerow(row)
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -181,9 +179,10 @@ def import_results_into_database(
     c.execute(
         """UPDATE results_system_prm
         SET elcc_surface_mw = NULL
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -203,8 +202,10 @@ def import_results_into_database(
                 SET elcc_surface_mw = {}
                 WHERE scenario_id = {}
                 AND prm_zone = '{}'
-                AND period = {}""".format(
-                    elcc, scenario_id, prm_zone, period
+                AND period = {}
+                AND subproblem_id = {}
+                AND stage_id = {}""".format(
+                    elcc, scenario_id, prm_zone, period, subproblem, stage
                 )
             )
     db.commit()

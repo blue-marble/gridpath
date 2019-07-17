@@ -50,18 +50,18 @@ def add_model_components(m, d):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export zone-level imports and exports
     :param scenario_directory:
-    :param horizon:
+    :param stage:
     :param stage:
     :param m:
     :param d:
     :return:
     """
 
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "imports_exports.csv"), "w") as imp_exp_file:
         writer = csv.writer(imp_exp_file)
         writer.writerow(
@@ -85,7 +85,7 @@ def export_results(scenario_directory, horizon, stage, m, d):
                 ])
 
 
-def import_results_into_database(scenario_id, c, db, results_directory):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -97,7 +97,10 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     print("imports and exports")
     c.execute(
         """DELETE FROM results_transmission_imports_exports
-        WHERE scenario_id = {};""".format(scenario_id)
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -114,6 +117,8 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             scenario_id INTEGER,
             load_zone VARCHAR(64),
             period INTEGER,
+            subproblem_id INTEGER,
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -121,7 +126,7 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             imports_mw FLOAT,
             exports_mw FLOAT,
             net_imports_mw FLOAT,
-            PRIMARY KEY (scenario_id, load_zone, timepoint)
+            PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
                 );"""
     )
     db.commit()
@@ -146,13 +151,15 @@ def import_results_into_database(scenario_id, c, db, results_directory):
             c.execute(
                 """INSERT INTO temp_results_transmission_imports_exports"""
                 + str(scenario_id) + """
-                    (scenario_id, load_zone, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    (scenario_id, load_zone, period, subproblem_id, stage_id, 
+                    horizon, timepoint, horizon_weight, 
+                    number_of_hours_in_timepoint, 
                     imports_mw, exports_mw, net_imports_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {},'{}', '{}',
-                    {});""".format(
-                    scenario_id, load_zone, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                    """.format(
+                    scenario_id, load_zone, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
                     imports_mw, exports_mw, net_imports_mw
                 )
             )
@@ -161,15 +168,17 @@ def import_results_into_database(scenario_id, c, db, results_directory):
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_transmission_imports_exports
-        (scenario_id, load_zone, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        (scenario_id, load_zone, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         imports_mw, exports_mw, net_imports_mw)
         SELECT
-        scenario_id, load_zone, period, horizon, timepoint,
-        horizon_weight, number_of_hours_in_timepoint,
+        scenario_id, load_zone, period, subproblem_id, stage_id, 
+        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         imports_mw, exports_mw, net_imports_mw
-        FROM temp_results_transmission_imports_exports""" + str(scenario_id) + """
-            ORDER BY scenario_id, load_zone, timepoint;"""
+        FROM temp_results_transmission_imports_exports"""
+        + str(scenario_id) +
+        """ ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;
+        """
     )
     db.commit()
 

@@ -61,14 +61,14 @@ def add_model_components(m, d):
     )
 
 
-def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
     :param data_portal:
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :return:
     """
@@ -80,17 +80,17 @@ def load_model_data(m, d, data_portal, scenario_directory, horizon, stage):
     )
 
 
-def export_results(scenario_directory, horizon, stage, m, d):
+def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     :param scenario_directory:
-    :param horizon:
+    :param subproblem:
     :param stage:
     :param m:
     :param d:
     :return:
     """
-    with open(os.path.join(scenario_directory, horizon, stage, "results",
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "local_capacity.csv"), "w") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["local_capacity_zone", "period",
@@ -115,9 +115,7 @@ def save_duals(m):
         ["local_capacity_zone", "period", "dual"]
 
 
-def import_results_into_database(
-        scenario_id, c, db, results_directory
-):
+def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -134,9 +132,10 @@ def import_results_into_database(
         """UPDATE results_system_local_capacity
         SET local_capacity_requirement_mw = NULL,
         local_capacity_provision_mw = NULL
-        WHERE scenario_id = {}""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
 
@@ -183,8 +182,10 @@ def import_results_into_database(
                 SET dual = {}
                 WHERE local_capacity_zone = '{}'
                 AND period = {}
-                AND scenario_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id
+                AND scenario_id = {}
+                AND subproblem_id = {}
+                AND stage_id = {};""".format(
+                    row[2], row[0], row[1], scenario_id, subproblem, stage
                 )
             )
     db.commit()
@@ -194,8 +195,9 @@ def import_results_into_database(
         """UPDATE results_system_local_capacity
         SET local_capacity_marginal_cost_per_mw = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
     )
     db.commit()
