@@ -5,19 +5,19 @@
 --> Retired Capacity <--
                              Retired Capacity (MW)
 load_zone technology period                       
-Zone1     Coal       2020                        8
-                     2030                        8
+Zone1     Coal       2020                       10
+                     2030                       10
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                          3             11
-                 Gas                          12             40
-                 Nuclear                      12             40
-                 Wind                          3              9
-          2030   Coal                          3             11
-                 Gas                          12             40
-                 Nuclear                      12             40
-                 Wind                          3              9
+Zone1     2020   Coal                          4             14
+                 Gas                          13             44
+                 Nuclear                      12             39
+                 Wind                          1              3
+          2030   Coal                          4             14
+                 Gas                          13             44
+                 Nuclear                      12             39
+                 Wind                          1              3
