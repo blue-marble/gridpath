@@ -529,7 +529,7 @@ def solve(instance, parsed_arguments):
         symbolic_solver_labels=parsed_arguments.symbolic
     )
 
-    log_infeasible_constraints(instance)
+    log_infeasible_constraints(instance, tol=1E-3)
 
 
 def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
