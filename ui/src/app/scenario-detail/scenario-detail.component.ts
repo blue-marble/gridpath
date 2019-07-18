@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
-const electron = (<any>window).require('electron');
+const electron = ( window as any).require('electron');
 
-import { ScenarioDetail } from './scenario-detail'
-import { ScenarioDetailService } from './scenario-detail.service'
+import { ScenarioDetail } from './scenario-detail';
+import { ScenarioDetailService } from './scenario-detail.service';
+import { ScenarioEditService } from './scenario-edit.service';
 
 
 @Component({
@@ -21,12 +22,18 @@ export class ScenarioDetailComponent implements OnInit {
 
   scenarioName: string;
 
-  // Needed for routing
+  // For editing a scenario
+  message: string;
+
+  // To get the right route
   scenarioID: number;
   private sub: any;
 
-  constructor(private route: ActivatedRoute,
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
     private scenarioDetailService: ScenarioDetailService,
+    private scenarioEditService: ScenarioEditService,
     private location: Location) {
   }
 
@@ -40,6 +47,7 @@ export class ScenarioDetailComponent implements OnInit {
        this.scenarioID = +params['id'];
        console.log(`Scenario ID is ${this.scenarioID}`)
     });
+
 
     // Get the scenario detail data
     this.getScenarioName(this.scenarioID);
@@ -64,6 +72,7 @@ export class ScenarioDetailComponent implements OnInit {
     this.getScenarioDetailCarbonCap(this.scenarioID);
     this.getScenarioDetailPRM(this.scenarioID);
     this.getScenarioDetailLocalCapacity(this.scenarioID);
+
   }
 
   getScenarioName(scenarioID): void {
@@ -371,7 +380,7 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   goBack(): void {
@@ -381,6 +390,15 @@ export class ScenarioDetailComponent implements OnInit {
   runScenario(scenarioID): void {
     console.log(`Running scenario ${scenarioID}`);
     electron.ipcRenderer.send('runScenario', scenarioID)
+  }
+
+  editScenario(scenarioID): void {
+    // Send init setting values to the scenario edit service that the
+    // scenario-new component uses to set initial setting values
+    this.scenarioEditService.changeMessage(this.scenarioID);
+    // Switch to the new scenario view
+    this.router.navigate(['/scenario-new/']);
+
   }
 
 }

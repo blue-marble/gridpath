@@ -1,12 +1,13 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import { Router } from "@angular/router";
+import { Router } from '@angular/router';
 import { Location } from '@angular/common';
 
 import { FormControl, FormGroup } from '@angular/forms';
 
-const io = (<any>window).require('socket.io-client');
+const io = ( window as any ).require('socket.io-client');
 
 import { Setting, ScenarioNewService } from './scenario-new.service'
+import { ScenarioEditService } from '../scenario-detail/scenario-edit.service'
 
 @Component({
   selector: 'app-scenario-new',
@@ -19,6 +20,9 @@ export class ScenarioNewComponent implements OnInit {
 
   // The final structure we'll iterate over
   ScenarioNewStructure: SettingsTable[];
+
+  // Message if editing scenario
+  message:string;
 
   // Setting elements
 
@@ -225,6 +229,7 @@ export class ScenarioNewComponent implements OnInit {
     });
 
   constructor(private scenarioNewService: ScenarioNewService,
+              private scenarioEditService: ScenarioEditService,
               private router: Router,
               private zone: NgZone,
               private location: Location) {
@@ -318,6 +323,8 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.getScenarioIdToEdit();
+
     this.ScenarioNewStructure = [];
     this.getSettingOptionsTemporal();
     this.getSettingOptionsLoadZones();
@@ -633,7 +640,7 @@ export class ScenarioNewComponent implements OnInit {
   getSettingOptionsFuels(): void {
     // Set the setting table captions
     this.fuelSettingsTable = new SettingsTable();
-    this.fuelSettingsTable.tableCaption ='Fuels settings';
+    this.fuelSettingsTable.tableCaption = 'Fuels settings';
     this.fuelSettingsTable.settingRows = [];
 
 
@@ -682,7 +689,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.fuelSettingsTable);
 
   }
-  
+
   getSettingOptionsTransmissionCapacity(): void {
     // Set the setting table captions
     this.transmissionCapacitySettingsTable = new SettingsTable();
@@ -732,7 +739,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.transmissionCapacitySettingsTable);
 
   }
-  
+
   getSettingOptionsTransmissionOperationalChars(): void {
     // Set the setting table captions
     this.transmissionOperationalCharsSettingsTable = new SettingsTable();
@@ -768,7 +775,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
 
   }
-  
+
   getSettingOptionsTransmissionHurdleRates(): void {
     // Set the setting table captions
     this.transmissionHurdleRatesSettingsTable = new SettingsTable();
@@ -925,7 +932,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.loadFollowingUpSettingsTable);
 
   }
-  
+
   getSettingOptionsLFReservesDown(): void {
     // Set the setting table captions
     this.loadFollowingDownSettingsTable = new SettingsTable();
@@ -995,7 +1002,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.loadFollowingDownSettingsTable);
 
   }
-  
+
   getSettingOptionsRegulationUp(): void {
     // Set the setting table captions
     this.regulationUpSettingsTable = new SettingsTable();
@@ -1065,7 +1072,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.regulationUpSettingsTable);
 
   }
-  
+
   getSettingOptionsRegulationDown(): void {
     // Set the setting table captions
     this.regulationDownSettingsTable = new SettingsTable();
@@ -1135,7 +1142,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.regulationDownSettingsTable);
 
   }
-  
+
   getSettingOptionsSpinningReserves(): void {
     // Set the setting table captions
     this.spinningReservesSettingsTable = new SettingsTable();
@@ -1206,7 +1213,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.spinningReservesSettingsTable);
 
   }
-  
+
   getSettingOptionsFrequencyResponse(): void {
     // Set the setting table captions
     this.frequencyResponseSettingsTable = new SettingsTable();
@@ -1277,7 +1284,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.frequencyResponseSettingsTable);
 
   }
-  
+
   getSettingOptionsRPS(): void {
     // Set the setting table captions
     this.rpsSettingsTable = new SettingsTable();
@@ -1348,7 +1355,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.rpsSettingsTable);
 
   }
-  
+
   getSettingOptionsCarbonCap(): void {
     // Set the setting table captions
     this.carbonCapSettingsTable = new SettingsTable();
@@ -1437,7 +1444,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.carbonCapSettingsTable);
 
   }
-  
+
   getSettingOptionsPRM(): void {
     // Set the setting table captions
     this.prmSettingsTable = new SettingsTable();
@@ -1565,7 +1572,7 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.prmSettingsTable);
 
   }
-  
+
   getSettingOptionsLocalCapacity(): void {
     // Set the setting table captions
     this.localCapacitySettingsTable = new SettingsTable();
@@ -1686,9 +1693,17 @@ export class ScenarioNewComponent implements OnInit {
     this.ScenarioNewStructure.push(this.tuningSettingsTable);
   }
 
+  getScenarioIdToEdit(): void {
+    this.scenarioEditService.currentScenarioToEdit
+      .subscribe((scenarioIdToEdit) => {
+        console.log(`Scenario ID received in new scenario component is ${scenarioIdToEdit}`);
+      }
+    );
+  }
+
   saveNewScenario() {
     const socket = io.connect('http://127.0.0.1:8080/');
-    socket.on('connect', function() {
+    socket.on('connect', () => {
         console.log(`Connection established: ${socket.connected}`);
     });
     socket.emit('add_new_scenario', this.newScenarioForm.value);
@@ -1697,9 +1712,9 @@ export class ScenarioNewComponent implements OnInit {
       console.log('New scenario ID is ', newScenarioID);
       this.zone.run(
         () => {
-          this.router.navigate(['/scenario/', newScenarioID])
+          this.router.navigate(['/scenario/', newScenarioID]);
         }
-      )
+      );
     });
   }
 
@@ -1723,20 +1738,22 @@ class SettingsTable {
 class SettingRow {
   rowName: string;
   rowFormControlName: string;
-  settingOptions: Setting[]
+  settingOptions: Setting[];
 }
 
 function featureSelectionOptions() {
-    return ['', 'yes', 'no']
+    return ['', 'yes', 'no'];
   }
 
-function createRow(rowName: string,
-            rowFormControlName: string,
-            settingOptions: Setting[]) {
+function createRow(
+  rowName: string,
+  rowFormControlName: string,
+  settingOptions: Setting[]
+) {
       const settingRow = new SettingRow();
       settingRow.rowName = rowName;
       settingRow.rowFormControlName = rowFormControlName;
       settingRow.settingOptions = settingOptions;
 
-      return settingRow
+      return settingRow;
   }
