@@ -1,4 +1,7 @@
 <h2>My Scenarios</h2>
+<button ng-click="newScenario" class="button-primary">
+        <a [routerLink]="['/scenario-new']">New scenario</a>
+</button>
 <button ng-click="updateScenarios" class="button-primary"
         (click)="updateScenarios()">Update scenarios list</button>
 <ul class="scenarios">

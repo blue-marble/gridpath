@@ -1,13 +1,13 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { Location } from '@angular/common';
-
 import { FormControl, FormGroup } from '@angular/forms';
 
 const io = ( window as any ).require('socket.io-client');
 
 import { Setting, ScenarioNewService } from './scenario-new.service';
 import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
+
 
 @Component({
   selector: 'app-scenario-new',
@@ -1940,9 +1940,16 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
     });
+
+    // Change the edit scenario starting values to null when navigating away
+    // TODO: set up an event when this happens
+    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
   }
 
   goBack(): void {
+    // Change the edit scenario starting values to null when navigating away
+    // TODO: set up an event when this happens
+    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
     this.location.back();
   }
 
@@ -2060,3 +2067,82 @@ function createRow(
 
       return settingRow;
   }
+
+// TODO: need to set on navigation away from this page, not just button clicks
+export const emptyStartingValues = {
+  // tslint:disable:variable-name
+  scenario_id: null,
+  scenario_name: null,
+  feature_fuels: null,
+  feature_transmission: null,
+  feature_transmission_hurdle_rates: null,
+  feature_simultaneous_flow_limits: null,
+  feature_load_following_up: null,
+  feature_load_following_down: null,
+  feature_regulation_up: null,
+  feature_regulation_down: null,
+  feature_frequency_response: null,
+  feature_spinning_reserves: null,
+  feature_rps: null,
+  feature_carbon_cap: null,
+  feature_track_carbon_imports: null,
+  feature_prm: null,
+  feature_elcc_surface: null,
+  feature_local_capacity: null,
+  temporal: null,
+  geography_load_zones: null,
+  geography_lf_up_bas: null,
+  geography_lf_down_bas: null,
+  geography_reg_up_bas: null,
+  geography_reg_down_bas: null,
+  geography_spin_bas: null,
+  geography_freq_resp_bas: null,
+  geography_rps_areas: null,
+  carbon_cap_areas: null,
+  prm_areas: null,
+  local_capacity_areas: null,
+  project_portfolio: null,
+  project_operating_chars: null,
+  project_availability: null,
+  project_fuels: null,
+  fuel_prices: null,
+  project_load_zones: null,
+  project_lf_up_bas: null,
+  project_lf_down_bas: null,
+  project_reg_up_bas: null,
+  project_reg_down_bas: null,
+  project_spin_bas: null,
+  project_freq_resp_bas: null,
+  project_rps_areas: null,
+  project_carbon_cap_areas: null,
+  project_prm_areas: null,
+  project_elcc_chars: null,
+  project_prm_energy_only: null,
+  project_local_capacity_areas: null,
+  project_local_capacity_chars: null,
+  project_existing_capacity: null,
+  project_existing_fixed_cost: null,
+  project_new_cost: null,
+  project_new_potential: null,
+  transmission_portfolio: null,
+  transmission_load_zones: null,
+  transmission_existing_capacity: null,
+  transmission_operational_chars: null,
+  transmission_hurdle_rates: null,
+  transmission_carbon_cap_zones: null,
+  transmission_simultaneous_flow_limits: null,
+  transmission_simultaneous_flow_limit_line_groups: null,
+  load_profile: null,
+  load_following_reserves_up_profile: null,
+  load_following_reserves_down_profile: null,
+  regulation_up_profile: null,
+  regulation_down_profile: null,
+  spinning_reserves_profile: null,
+  frequency_response_profile: null,
+  rps_target: null,
+  carbon_cap: null,
+  prm_requirement: null,
+  elcc_surface: null,
+  local_capacity_requirement: null,
+  tuning: null
+};
