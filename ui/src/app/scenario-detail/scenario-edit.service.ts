@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, ReplaySubject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 import { StartingValues } from '../scenario-new/scenario-new.component';
@@ -9,7 +9,7 @@ import { StartingValues } from '../scenario-new/scenario-new.component';
 })
 export class ScenarioEditService {
 
-  startingValuesSubject = new ReplaySubject(1);
+  startingValuesSubject = new BehaviorSubject(null);
 
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
