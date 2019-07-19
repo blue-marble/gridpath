@@ -1,5 +1,8 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-const electron = (<any>window).require('electron');
+const electron = ( window as any ).require('electron');
+
+import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
+import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 
 @Component({
   selector: 'app-settings',
@@ -45,7 +48,10 @@ export class SettingsComponent implements OnInit {
   currentPythonBinarySetting: Array<string>;
 
 
-  constructor(private zone: NgZone) {
+  constructor(
+    private zone: NgZone,
+    private scenarioEditService: ScenarioEditService
+  ) {
     console.log("Constructing the settings...");
 
     // Get current settings from Electron
@@ -270,7 +276,10 @@ export class SettingsComponent implements OnInit {
 
 
   ngOnInit() {
-    console.log("Initializing settings...")
+    console.log('Initializing settings...');
+
+    // TODO: this should happen on navigating away from scenario-new
+    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
   }
 
   requestStoredSettings() {

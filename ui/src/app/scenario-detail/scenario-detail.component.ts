@@ -1,11 +1,13 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
-const electron = (<any>window).require('electron');
+const electron = ( window as any).require('electron');
 
-import { ScenarioDetail } from './scenario-detail'
-import { ScenarioDetailService } from './scenario-detail.service'
+import { ScenarioDetail } from './scenario-detail';
+import { ScenarioDetailService } from './scenario-detail.service';
+import { ScenarioEditService } from './scenario-edit.service';
+import { StartingValues } from '../scenario-new/scenario-new.component';
 
 
 @Component({
@@ -21,12 +23,19 @@ export class ScenarioDetailComponent implements OnInit {
 
   scenarioName: string;
 
-  // Needed for routing
+  // For editing a scenario
+  message: string;
+  startingValues: StartingValues;
+
+  // To get the right route
   scenarioID: number;
   private sub: any;
 
-  constructor(private route: ActivatedRoute,
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
     private scenarioDetailService: ScenarioDetailService,
+    private scenarioEditService: ScenarioEditService,
     private location: Location) {
   }
 
@@ -40,6 +49,7 @@ export class ScenarioDetailComponent implements OnInit {
        this.scenarioID = +params['id'];
        console.log(`Scenario ID is ${this.scenarioID}`)
     });
+
 
     // Get the scenario detail data
     this.getScenarioName(this.scenarioID);
@@ -64,6 +74,10 @@ export class ScenarioDetailComponent implements OnInit {
     this.getScenarioDetailCarbonCap(this.scenarioID);
     this.getScenarioDetailPRM(this.scenarioID);
     this.getScenarioDetailLocalCapacity(this.scenarioID);
+
+    // We may need this if the user decides to edit the scenario
+    this.getScenarioStartingSettings(this.scenarioID)
+
   }
 
   getScenarioName(scenarioID): void {
@@ -371,8 +385,16 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
+
+  getScenarioStartingSettings(scenarioID): void {
+    this.scenarioEditService.getScenarioDetailAll(scenarioID)
+      .subscribe(startingValues => {
+        this.startingValues = startingValues;
+      });
+  }
+
 
   goBack(): void {
     this.location.back();
@@ -383,9 +405,18 @@ export class ScenarioDetailComponent implements OnInit {
     electron.ipcRenderer.send('runScenario', scenarioID)
   }
 
+  editScenario(scenarioID): void {
+    // Send init setting values to the scenario edit service that the
+    // scenario-new component uses to set initial setting values
+    this.scenarioEditService.changeStartingScenario(this.startingValues);
+    // Switch to the new scenario view
+    this.router.navigate(['/scenario-new/']);
+
+  }
+
 }
 
 class SettingsTable {
   tableCaption: string;
-  settingRows: ScenarioDetail[]
+  settingRows: ScenarioDetail[];
 }
