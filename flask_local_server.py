@@ -92,7 +92,7 @@ class Scenarios(Resource):
 # ### API: Scenario Detail ### #
 class ScenarioDetailName(Resource):
     """
-    Detailed information for a scenario.
+    The name of the a scenario by scenario ID
     """
     @staticmethod
     def get(scenario_id):
@@ -100,6 +100,23 @@ class ScenarioDetailName(Resource):
             get_scenario_detail(scenario_id, 'scenario_name')[0]["value"]
 
         return scenario_detail_api
+
+
+class ScenarioDetailAll(Resource):
+    """
+    All settings for a scenario ID.
+    """
+    @staticmethod
+    def get(scenario_id):
+        scenario_detail_api = \
+            get_scenario_detail(scenario_id, '*')
+
+        scenario_edit_api = {}
+        for column in scenario_detail_api:
+            scenario_edit_api[column['name']] = column['value']
+
+        return scenario_edit_api
+
 
 
 class ScenarioDetailFeatures(Resource):
@@ -1420,6 +1437,8 @@ api.add_resource(Scenarios, '/scenarios/')
 # ### API Routes Scenario Detail ### #
 # All
 api.add_resource(ScenarioDetailName, '/scenarios/<scenario_id>/name')
+# All
+api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
 # Features
 api.add_resource(ScenarioDetailFeatures, '/scenarios/<scenario_id>/features')
 # Temporal
@@ -2103,8 +2122,8 @@ def check_scenario_process_status(message):
 
 # ### Common functions ### #
 def connect_to_database():
-    # io = sqlite3.connect('/Users/ana/dev/gridpath-ui-dev/db/io.db')
-    io = sqlite3.connect(DATABASE_PATH)
+    io = sqlite3.connect('/Users/ana/dev/gridpath-ui-dev/db/io.db')
+    # io = sqlite3.connect(DATABASE_PATH)
     c = io.cursor()
     return io, c
 
@@ -2112,6 +2131,7 @@ def connect_to_database():
 if __name__ == '__main__':
     socketio.run(
         app,
+        host='127.0.0.1',
         port='8080',
         debug=True,
         use_reloader=False  # Reload manually for code changes to take effect

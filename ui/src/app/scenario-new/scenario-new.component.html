@@ -24,7 +24,10 @@
            <td>{{sd.featureName}}</td>
            <td>
              <select formControlName="{{sd.formControlName}}">
-                <option *ngFor="let selectionOption of featureSelectionOption">
+                <option
+                  *ngFor="let selectionOption of featureSelectionOption"
+                  [ngValue]="selectionOption"
+                >
                   {{selectionOption}}
                 </option>
               </select>

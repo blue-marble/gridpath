@@ -1,18 +1,28 @@
 import { Injectable } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+
+import { StartingValues } from '../scenario-new/scenario-new.component';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ScenarioEditService {
 
-  private scenarioToEditObservable = new Subject();
-  currentScenarioToEdit = this.scenarioToEditObservable;
+  scenarioObservable = new BehaviorSubject(0);
 
-  constructor() {}
+  private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
+
+  constructor(private http: HttpClient) {}
 
   // TODO: https://stackoverflow.com/questions/39950743/angular-2-rxjs-observable-skipping-subscribe-on-first-call
-  changeMessage(scenarioToEditID: number) {
-    this.scenarioToEditObservable.next(scenarioToEditID);
+  changeStartingScenario(scenarioToEditID: number) {
+    this.scenarioObservable.next(scenarioToEditID);
   }
+
+  getScenarioDetailAll(scenarioID: number): Observable<StartingValues> {
+    console.log('Call for the starting values for scenario ', scenarioID);
+    return this.http.get<StartingValues>(`${this.scenariosBaseURL}${scenarioID}`);
+  }
+
 }

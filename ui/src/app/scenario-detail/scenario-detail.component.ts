@@ -395,7 +395,7 @@ export class ScenarioDetailComponent implements OnInit {
   editScenario(scenarioID): void {
     // Send init setting values to the scenario edit service that the
     // scenario-new component uses to set initial setting values
-    this.scenarioEditService.changeMessage(this.scenarioID);
+    this.scenarioEditService.changeStartingScenario(this.scenarioID);
     // Switch to the new scenario view
     this.router.navigate(['/scenario-new/']);
 
@@ -405,5 +405,5 @@ export class ScenarioDetailComponent implements OnInit {
 
 class SettingsTable {
   tableCaption: string;
-  settingRows: ScenarioDetail[]
+  settingRows: ScenarioDetail[];
 }
