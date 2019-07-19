@@ -151,80 +151,80 @@ export class ScenarioNewComponent implements OnInit {
 
   // Create the form
   newScenarioForm = new FormGroup({
-    scenarioName: new FormControl(''),
-    scenarioDescription: new FormControl(''),
-    featureFuels: new FormControl(''),
-    featureTransmission: new FormControl(''),
-    featureTransmissionHurdleRates: new FormControl(''),
-    featureSimFlowLimits: new FormControl(''),
-    featureLFUp: new FormControl(''),
-    featureLFDown: new FormControl(''),
-    featureRegUp: new FormControl(''),
-    featureRegDown: new FormControl(''),
-    featureSpin: new FormControl(''),
-    featureFreqResp: new FormControl(''),
-    featureRPS: new FormControl(''),
-    featureCarbonCap: new FormControl(''),
-    featureTrackCarbonImports: new FormControl(''),
-    featurePRM: new FormControl(''),
-    featureELCCSurface: new FormControl(''),
-    featureLocalCapacity: new FormControl(''),
-    temporalSetting: new FormControl(''),
-    geographyLoadZonesSetting: new FormControl(''),
-    geographyProjectLoadZonesSetting: new FormControl(''),
-    geographyTxLoadZonesSetting: new FormControl(''),
-    systemLoadSetting: new FormControl(''),
-    projectPortfolioSetting: new FormControl(''),
-    projectExistingCapacitySetting: new FormControl(''),
-    projectExistingFixedCostSetting: new FormControl(''),
-    projectNewCostSetting: new FormControl(''),
-    projectNewPotentialSetting: new FormControl(''),
-    projectAvailabilitySetting: new FormControl(''),
-    projectOperationalCharsSetting: new FormControl(''),
-    projectFuelsSetting: new FormControl(''),
-    fuelPricesSetting: new FormControl(''),
-    transmissionPortfolioSetting: new FormControl(''),
-    transmissionExistingCapacitySetting: new FormControl(''),
-    transmissionOperationalCharsSetting: new FormControl(''),
-    transmissionHurdleRatesSetting: new FormControl(''),
-    transmissionSimultaneousFlowLimitsSetting: new FormControl(''),
-    transmissionSimultaneousFlowLimitLineGroupsSetting: new FormControl(''),
-    geographyLoadFollowingUpBAsSetting: new FormControl(''),
-    loadFollowingUpRequirementSetting: new FormControl(''),
-    projectLoadFollowingUpBAsSetting: new FormControl(''),
-    geographyLoadFollowingDownBAsSetting: new FormControl(''),
-    loadFollowingDownRequirementSetting: new FormControl(''),
-    projectLoadFollowingDownBAsSetting: new FormControl(''),
-    geographyRegulationUpBAsSetting: new FormControl(''),
-    regulationUpRequirementSetting: new FormControl(''),
-    projectRegulationUpBAsSetting: new FormControl(''),
-    geographyRegulationDownBAsSetting: new FormControl(''),
-    regulationDownRequirementSetting: new FormControl(''),
-    projectRegulationDownBAsSetting: new FormControl(''),
-    geographySpinningReservesBAsSetting: new FormControl(''),
-    spinningReservesRequirementSetting: new FormControl(''),
-    projectSpinningReservesBAsSetting: new FormControl(''),
-    geographyFrequencyResponseBAsSetting: new FormControl(''),
-    frequencyResponseRequirementSetting: new FormControl(''),
-    projectFrequencyResponseBAsSetting: new FormControl(''),
-    geographyRPSAreasSetting: new FormControl(''),
-    rpsTargetSetting: new FormControl(''),
-    projectRPSAreasSetting: new FormControl(''),
-    geographyCarbonCapAreasSetting: new FormControl(''),
-    carbonCapTargetSetting: new FormControl(''),
-    projectCarbonCapAreasSetting: new FormControl(''),
-    transmissionCarbonCapAreasSetting: new FormControl(''),
-    geographyPRMAreasSetting: new FormControl(''),
-    prmRequirementSetting: new FormControl(''),
-    projectPRMAreasSetting: new FormControl(''),
-    projectELCCCharsSetting: new FormControl(''),
-    elccSurfaceSetting: new FormControl(''),
-    projectPRMEnergyOnlySetting: new FormControl(''),
-    geographyLocalCapacityAreasSetting: new FormControl(''),
-    localCapacityRequirementSetting: new FormControl(''),
-    projectLocalCapacityAreasSetting: new FormControl(''),
-    projectLocalCapacityCharsSetting: new FormControl(''),
-    tuningSetting: new FormControl('')
+    scenarioName: new FormControl(),
+    scenarioDescription: new FormControl(),
+    featureFuels: new FormControl(),
+    featureTransmission: new FormControl(),
+    featureTransmissionHurdleRates: new FormControl(),
+    featureSimFlowLimits: new FormControl(),
+    featureLFUp: new FormControl(),
+    featureLFDown: new FormControl(),
+    featureRegUp: new FormControl(),
+    featureRegDown: new FormControl(),
+    featureSpin: new FormControl(),
+    featureFreqResp: new FormControl(),
+    featureRPS: new FormControl(),
+    featureCarbonCap: new FormControl(),
+    featureTrackCarbonImports: new FormControl(),
+    featurePRM: new FormControl(),
+    featureELCCSurface: new FormControl(),
+    featureLocalCapacity: new FormControl(),
+    temporalSetting: new FormControl(),
+    geographyLoadZonesSetting: new FormControl(),
+    geographyProjectLoadZonesSetting: new FormControl(),
+    geographyTxLoadZonesSetting: new FormControl(),
+    systemLoadSetting: new FormControl(),
+    projectPortfolioSetting: new FormControl(),
+    projectExistingCapacitySetting: new FormControl(),
+    projectExistingFixedCostSetting: new FormControl(),
+    projectNewCostSetting: new FormControl(),
+    projectNewPotentialSetting: new FormControl(),
+    projectAvailabilitySetting: new FormControl(),
+    projectOperationalCharsSetting: new FormControl(),
+    projectFuelsSetting: new FormControl(),
+    fuelPricesSetting: new FormControl(),
+    transmissionPortfolioSetting: new FormControl(),
+    transmissionExistingCapacitySetting: new FormControl(),
+    transmissionOperationalCharsSetting: new FormControl(),
+    transmissionHurdleRatesSetting: new FormControl(),
+    transmissionSimultaneousFlowLimitsSetting: new FormControl(),
+    transmissionSimultaneousFlowLimitLineGroupsSetting: new FormControl(),
+    geographyLoadFollowingUpBAsSetting: new FormControl(),
+    loadFollowingUpRequirementSetting: new FormControl(),
+    projectLoadFollowingUpBAsSetting: new FormControl(),
+    geographyLoadFollowingDownBAsSetting: new FormControl(),
+    loadFollowingDownRequirementSetting: new FormControl(),
+    projectLoadFollowingDownBAsSetting: new FormControl(),
+    geographyRegulationUpBAsSetting: new FormControl(),
+    regulationUpRequirementSetting: new FormControl(),
+    projectRegulationUpBAsSetting: new FormControl(),
+    geographyRegulationDownBAsSetting: new FormControl(),
+    regulationDownRequirementSetting: new FormControl(),
+    projectRegulationDownBAsSetting: new FormControl(),
+    geographySpinningReservesBAsSetting: new FormControl(),
+    spinningReservesRequirementSetting: new FormControl(),
+    projectSpinningReservesBAsSetting: new FormControl(),
+    geographyFrequencyResponseBAsSetting: new FormControl(),
+    frequencyResponseRequirementSetting: new FormControl(),
+    projectFrequencyResponseBAsSetting: new FormControl(),
+    geographyRPSAreasSetting: new FormControl(),
+    rpsTargetSetting: new FormControl(),
+    projectRPSAreasSetting: new FormControl(),
+    geographyCarbonCapAreasSetting: new FormControl(),
+    carbonCapTargetSetting: new FormControl(),
+    projectCarbonCapAreasSetting: new FormControl(),
+    transmissionCarbonCapAreasSetting: new FormControl(),
+    geographyPRMAreasSetting: new FormControl(),
+    prmRequirementSetting: new FormControl(),
+    projectPRMAreasSetting: new FormControl(),
+    projectELCCCharsSetting: new FormControl(),
+    elccSurfaceSetting: new FormControl(),
+    projectPRMEnergyOnlySetting: new FormControl(),
+    geographyLocalCapacityAreasSetting: new FormControl(),
+    localCapacityRequirementSetting: new FormControl(),
+    projectLocalCapacityAreasSetting: new FormControl(),
+    projectLocalCapacityCharsSetting: new FormControl(),
+    tuningSetting: new FormControl()
     });
 
   constructor(private scenarioNewService: ScenarioNewService,
@@ -1698,235 +1698,231 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   setStartingFormState(): void {
-    this.scenarioEditService.scenarioObservable
-      .subscribe((scenarioIdToEdit: number) => {
-        console.log(`Scenario ID received in new scenario component is ${scenarioIdToEdit}`);
-        this.scenarioEditService.getScenarioDetailAll(scenarioIdToEdit)
-          .subscribe(startingValues => {
-            this.startingValues = startingValues;
-            console.log('Setting the scenario name initial value');
-            this.newScenarioForm.controls.scenarioName.setValue(
-              this.startingValues.scenario_name, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureFuels.setValue(
-              this.startingValues.feature_fuels, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureTransmission.setValue(
-              this.startingValues.feature_transmission, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureTransmissionHurdleRates.setValue(
-              this.startingValues.feature_transmission_hurdle_rates, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureSimFlowLimits.setValue(
-              this.startingValues.feature_simultaneous_flow_limits, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureLFUp.setValue(
-              this.startingValues.feature_load_following_up, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureLFDown.setValue(
-              this.startingValues.feature_load_following_down, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureRegUp.setValue(
-              this.startingValues.feature_regulation_up, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureRegDown.setValue(
-              this.startingValues.feature_regulation_down, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureSpin.setValue(
-              this.startingValues.feature_frequency_response, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureFreqResp.setValue(
-              this.startingValues.feature_spinning_reserves, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureRPS.setValue(
-              this.startingValues.feature_rps, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureCarbonCap.setValue(
-              this.startingValues.feature_carbon_cap, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureTrackCarbonImports.setValue(
-              this.startingValues.feature_track_carbon_imports, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featurePRM.setValue(
-              this.startingValues.feature_prm, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureELCCSurface.setValue(
-              this.startingValues.feature_elcc_surface, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.featureLocalCapacity.setValue(
-              this.startingValues.feature_local_capacity, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.temporalSetting.setValue(
-              this.startingValues.temporal, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyLoadZonesSetting.setValue(
-              this.startingValues.geography_load_zones, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyProjectLoadZonesSetting.setValue(
-              this.startingValues.project_load_zones, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyTxLoadZonesSetting.setValue(
-              this.startingValues.transmission_load_zones, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.systemLoadSetting.setValue(
-              this.startingValues.load_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectPortfolioSetting.setValue(
-              this.startingValues.project_portfolio, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectExistingCapacitySetting.setValue(
-              this.startingValues.project_existing_capacity, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectExistingFixedCostSetting.setValue(
-              this.startingValues.project_existing_fixed_cost, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectNewCostSetting.setValue(
-              this.startingValues.project_new_cost, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectNewPotentialSetting.setValue(
-              this.startingValues.project_new_potential, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectAvailabilitySetting.setValue(
-              this.startingValues.project_availability, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectOperationalCharsSetting.setValue(
-              this.startingValues.project_operating_chars, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectFuelsSetting.setValue(
-              this.startingValues.project_fuels, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.fuelPricesSetting.setValue(
-              this.startingValues.fuel_prices, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionPortfolioSetting.setValue(
-              this.startingValues.transmission_portfolio, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionExistingCapacitySetting.setValue(
-              this.startingValues.transmission_existing_capacity, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionOperationalCharsSetting.setValue(
-              this.startingValues.transmission_operational_chars, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionHurdleRatesSetting.setValue(
-              this.startingValues.transmission_hurdle_rates, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionSimultaneousFlowLimitsSetting.setValue(
-              this.startingValues.transmission_simultaneous_flow_limits, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionSimultaneousFlowLimitLineGroupsSetting.setValue(
-              this.startingValues.transmission_simultaneous_flow_limit_line_groups, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyLoadFollowingUpBAsSetting.setValue(
-              this.startingValues.geography_lf_up_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.loadFollowingUpRequirementSetting.setValue(
-              this.startingValues.load_following_reserves_up_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectLoadFollowingUpBAsSetting.setValue(
-              this.startingValues.project_lf_up_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyLoadFollowingDownBAsSetting.setValue(
-              this.startingValues.geography_lf_down_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.loadFollowingDownRequirementSetting.setValue(
-              this.startingValues.load_following_reserves_down_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectLoadFollowingDownBAsSetting.setValue(
-              this.startingValues.project_lf_down_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyRegulationUpBAsSetting.setValue(
-              this.startingValues.geography_reg_up_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.regulationUpRequirementSetting.setValue(
-              this.startingValues.regulation_up_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectRegulationUpBAsSetting.setValue(
-              this.startingValues.project_reg_up_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyRegulationDownBAsSetting.setValue(
-              this.startingValues.geography_reg_down_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.regulationDownRequirementSetting.setValue(
-              this.startingValues.regulation_down_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectRegulationDownBAsSetting.setValue(
-              this.startingValues.project_reg_down_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographySpinningReservesBAsSetting.setValue(
-              this.startingValues.geography_spin_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.spinningReservesRequirementSetting.setValue(
-              this.startingValues.spinning_reserves_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectSpinningReservesBAsSetting.setValue(
-              this.startingValues.project_spin_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyFrequencyResponseBAsSetting.setValue(
-              this.startingValues.geography_freq_resp_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.frequencyResponseRequirementSetting.setValue(
-              this.startingValues.frequency_response_profile, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectFrequencyResponseBAsSetting.setValue(
-              this.startingValues.project_freq_resp_bas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyRPSAreasSetting.setValue(
-              this.startingValues.geography_rps_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.rpsTargetSetting.setValue(
-              this.startingValues.rps_target, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectRPSAreasSetting.setValue(
-              this.startingValues.project_rps_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyCarbonCapAreasSetting.setValue(
-              this.startingValues.carbon_cap_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.carbonCapTargetSetting.setValue(
-              this.startingValues.carbon_cap, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectCarbonCapAreasSetting.setValue(
-              this.startingValues.project_carbon_cap_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.transmissionCarbonCapAreasSetting.setValue(
-              this.startingValues.transmission_carbon_cap_zones, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyPRMAreasSetting.setValue(
-              this.startingValues.prm_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.prmRequirementSetting.setValue(
-              this.startingValues.prm_requirement, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectPRMAreasSetting.setValue(
-              this.startingValues.project_prm_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectELCCCharsSetting.setValue(
-              this.startingValues.project_elcc_chars, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.elccSurfaceSetting.setValue(
-              this.startingValues.elcc_surface, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectPRMEnergyOnlySetting.setValue(
-              this.startingValues.project_prm_energy_only, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.geographyLocalCapacityAreasSetting.setValue(
-              this.startingValues.local_capacity_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.localCapacityRequirementSetting.setValue(
-              this.startingValues.local_capacity_requirement, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectLocalCapacityAreasSetting.setValue(
-              this.startingValues.project_local_capacity_areas, {onlySelf: true}
-            );
-            this.newScenarioForm.controls.projectLocalCapacityCharsSetting.setValue(
-              this.startingValues.project_local_capacity_chars, {onlySelf: true}
-            );
-            console.log('Setting the tuning initial value');
-            this.newScenarioForm.controls.tuningSetting.setValue(
-              this.startingValues.tuning, {onlySelf: true}
-            );
+    this.scenarioEditService.startingValuesSubject
+      .subscribe((startingValues: StartingValues) => {
+        this.startingValues = startingValues;
+        console.log('Setting the scenario name initial value');
+        this.newScenarioForm.controls.scenarioName.setValue(
+          this.startingValues.scenario_name, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureFuels.setValue(
+          this.startingValues.feature_fuels, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureTransmission.setValue(
+          this.startingValues.feature_transmission, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureTransmissionHurdleRates.setValue(
+          this.startingValues.feature_transmission_hurdle_rates, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureSimFlowLimits.setValue(
+          this.startingValues.feature_simultaneous_flow_limits, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureLFUp.setValue(
+          this.startingValues.feature_load_following_up, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureLFDown.setValue(
+          this.startingValues.feature_load_following_down, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureRegUp.setValue(
+          this.startingValues.feature_regulation_up, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureRegDown.setValue(
+          this.startingValues.feature_regulation_down, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureSpin.setValue(
+          this.startingValues.feature_frequency_response, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureFreqResp.setValue(
+          this.startingValues.feature_spinning_reserves, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureRPS.setValue(
+          this.startingValues.feature_rps, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureCarbonCap.setValue(
+          this.startingValues.feature_carbon_cap, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureTrackCarbonImports.setValue(
+          this.startingValues.feature_track_carbon_imports, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featurePRM.setValue(
+          this.startingValues.feature_prm, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureELCCSurface.setValue(
+          this.startingValues.feature_elcc_surface, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.featureLocalCapacity.setValue(
+          this.startingValues.feature_local_capacity, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.temporalSetting.setValue(
+          this.startingValues.temporal, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyLoadZonesSetting.setValue(
+          this.startingValues.geography_load_zones, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyProjectLoadZonesSetting.setValue(
+          this.startingValues.project_load_zones, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyTxLoadZonesSetting.setValue(
+          this.startingValues.transmission_load_zones, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.systemLoadSetting.setValue(
+          this.startingValues.load_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectPortfolioSetting.setValue(
+          this.startingValues.project_portfolio, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectExistingCapacitySetting.setValue(
+          this.startingValues.project_existing_capacity, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectExistingFixedCostSetting.setValue(
+          this.startingValues.project_existing_fixed_cost, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectNewCostSetting.setValue(
+          this.startingValues.project_new_cost, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectNewPotentialSetting.setValue(
+          this.startingValues.project_new_potential, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectAvailabilitySetting.setValue(
+          this.startingValues.project_availability, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectOperationalCharsSetting.setValue(
+          this.startingValues.project_operating_chars, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectFuelsSetting.setValue(
+          this.startingValues.project_fuels, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.fuelPricesSetting.setValue(
+          this.startingValues.fuel_prices, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionPortfolioSetting.setValue(
+          this.startingValues.transmission_portfolio, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionExistingCapacitySetting.setValue(
+          this.startingValues.transmission_existing_capacity, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionOperationalCharsSetting.setValue(
+          this.startingValues.transmission_operational_chars, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionHurdleRatesSetting.setValue(
+          this.startingValues.transmission_hurdle_rates, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionSimultaneousFlowLimitsSetting.setValue(
+          this.startingValues.transmission_simultaneous_flow_limits, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionSimultaneousFlowLimitLineGroupsSetting.setValue(
+          this.startingValues.transmission_simultaneous_flow_limit_line_groups, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyLoadFollowingUpBAsSetting.setValue(
+          this.startingValues.geography_lf_up_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.loadFollowingUpRequirementSetting.setValue(
+          this.startingValues.load_following_reserves_up_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectLoadFollowingUpBAsSetting.setValue(
+          this.startingValues.project_lf_up_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyLoadFollowingDownBAsSetting.setValue(
+          this.startingValues.geography_lf_down_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.loadFollowingDownRequirementSetting.setValue(
+          this.startingValues.load_following_reserves_down_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectLoadFollowingDownBAsSetting.setValue(
+          this.startingValues.project_lf_down_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyRegulationUpBAsSetting.setValue(
+          this.startingValues.geography_reg_up_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.regulationUpRequirementSetting.setValue(
+          this.startingValues.regulation_up_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectRegulationUpBAsSetting.setValue(
+          this.startingValues.project_reg_up_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyRegulationDownBAsSetting.setValue(
+          this.startingValues.geography_reg_down_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.regulationDownRequirementSetting.setValue(
+          this.startingValues.regulation_down_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectRegulationDownBAsSetting.setValue(
+          this.startingValues.project_reg_down_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographySpinningReservesBAsSetting.setValue(
+          this.startingValues.geography_spin_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.spinningReservesRequirementSetting.setValue(
+          this.startingValues.spinning_reserves_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectSpinningReservesBAsSetting.setValue(
+          this.startingValues.project_spin_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyFrequencyResponseBAsSetting.setValue(
+          this.startingValues.geography_freq_resp_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.frequencyResponseRequirementSetting.setValue(
+          this.startingValues.frequency_response_profile, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectFrequencyResponseBAsSetting.setValue(
+          this.startingValues.project_freq_resp_bas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyRPSAreasSetting.setValue(
+          this.startingValues.geography_rps_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.rpsTargetSetting.setValue(
+          this.startingValues.rps_target, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectRPSAreasSetting.setValue(
+          this.startingValues.project_rps_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyCarbonCapAreasSetting.setValue(
+          this.startingValues.carbon_cap_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.carbonCapTargetSetting.setValue(
+          this.startingValues.carbon_cap, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectCarbonCapAreasSetting.setValue(
+          this.startingValues.project_carbon_cap_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.transmissionCarbonCapAreasSetting.setValue(
+          this.startingValues.transmission_carbon_cap_zones, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyPRMAreasSetting.setValue(
+          this.startingValues.prm_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.prmRequirementSetting.setValue(
+          this.startingValues.prm_requirement, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectPRMAreasSetting.setValue(
+          this.startingValues.project_prm_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectELCCCharsSetting.setValue(
+          this.startingValues.project_elcc_chars, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.elccSurfaceSetting.setValue(
+          this.startingValues.elcc_surface, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectPRMEnergyOnlySetting.setValue(
+          this.startingValues.project_prm_energy_only, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.geographyLocalCapacityAreasSetting.setValue(
+          this.startingValues.local_capacity_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.localCapacityRequirementSetting.setValue(
+          this.startingValues.local_capacity_requirement, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectLocalCapacityAreasSetting.setValue(
+          this.startingValues.project_local_capacity_areas, {onlySelf: true}
+        );
+        this.newScenarioForm.controls.projectLocalCapacityCharsSetting.setValue(
+          this.startingValues.project_local_capacity_chars, {onlySelf: true}
+        );
+        console.log('Setting the tuning initial value');
+        this.newScenarioForm.controls.tuningSetting.setValue(
+          this.startingValues.tuning, {onlySelf: true}
+        );
           });
-      });
   }
 
   saveNewScenario() {

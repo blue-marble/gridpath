@@ -7,6 +7,7 @@ const electron = ( window as any).require('electron');
 import { ScenarioDetail } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
+import { StartingValues } from '../scenario-new/scenario-new.component';
 
 
 @Component({
@@ -24,6 +25,7 @@ export class ScenarioDetailComponent implements OnInit {
 
   // For editing a scenario
   message: string;
+  startingValues: StartingValues;
 
   // To get the right route
   scenarioID: number;
@@ -72,6 +74,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.getScenarioDetailCarbonCap(this.scenarioID);
     this.getScenarioDetailPRM(this.scenarioID);
     this.getScenarioDetailLocalCapacity(this.scenarioID);
+
+    // We may need this if the user decides to edit the scenario
+    this.getScenarioStartingSettings(this.scenarioID)
 
   }
 
@@ -383,6 +388,14 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailStructure.push(settingsTable);
   }
 
+  getScenarioStartingSettings(scenarioID): void {
+    this.scenarioEditService.getScenarioDetailAll(scenarioID)
+      .subscribe(startingValues => {
+        this.startingValues = startingValues;
+      });
+  }
+
+
   goBack(): void {
     this.location.back();
   }
@@ -395,7 +408,7 @@ export class ScenarioDetailComponent implements OnInit {
   editScenario(scenarioID): void {
     // Send init setting values to the scenario edit service that the
     // scenario-new component uses to set initial setting values
-    this.scenarioEditService.changeStartingScenario(this.scenarioID);
+    this.scenarioEditService.changeStartingScenario(this.startingValues);
     // Switch to the new scenario view
     this.router.navigate(['/scenario-new/']);
 
