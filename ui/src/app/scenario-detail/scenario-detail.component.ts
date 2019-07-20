@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
 const electron = ( window as any).require('electron');
+const io = ( window as any ).require('socket.io-client');
 
 import { ScenarioDetail } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
@@ -401,8 +402,25 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   runScenario(scenarioID): void {
-    console.log(`Running scenario ${scenarioID}`);
-    electron.ipcRenderer.send('runScenario', scenarioID)
+    console.log(
+      `Running scenario ${this.scenarioName}, scenario_id ${scenarioID}`
+    );
+
+    // TODO: refactor server-connection code to be reused
+    const socket = io.connect('http://127.0.0.1:8080/');
+    socket.on('connect', () => {
+        console.log(`Connection established: ${socket.connected}`);
+    });
+
+    socket.emit(
+            'launch_scenario_process',
+            {scenario: scenarioID}
+        );
+    // Keep track of process ID for this scenario run
+    socket.on('scenario_already_running', (msg) => {
+        console.log('in scenario_already_running');
+        console.log (msg);
+    });
   }
 
   editScenario(scenarioID): void {
