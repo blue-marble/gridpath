@@ -12,7 +12,7 @@ def insert_system_static_loads(
         load_scenario_id,
         scenario_name,
         scenario_description,
-        zone_timepoint_static_loads
+        zone_stage_timepoint_static_loads
 ):
     """
     :param io: 
@@ -20,7 +20,7 @@ def insert_system_static_loads(
     :param load_scenario_id: 
     :param scenario_name: 
     :param scenario_description: 
-    :param zone_timepoint_static_loads: 
+    :param zone_stage_timepoint_static_loads:
     :return: 
     """
 
@@ -37,16 +37,19 @@ def insert_system_static_loads(
     io.commit()
 
     # Insert data
-    for z in list(zone_timepoint_static_loads.keys()):
-        for tmp in list(zone_timepoint_static_loads[z].keys()):
-            c.execute(
-                """INSERT INTO inputs_system_load
-                (load_scenario_id, load_zone, timepoint, load_mw)
-                VALUES ({}, '{}', {}, {});""".format(
-                    load_scenario_id, z, tmp,
-                    zone_timepoint_static_loads[z][tmp]
+    for z in list(zone_stage_timepoint_static_loads.keys()):
+        for stage in list(zone_stage_timepoint_static_loads[z].keys()):
+            for tmp in list(
+                    zone_stage_timepoint_static_loads[z][stage].keys()
+            ):
+                c.execute(
+                    """INSERT INTO inputs_system_load
+                    (load_scenario_id, load_zone, stage_id, timepoint, load_mw)
+                    VALUES ({}, '{}', {}, {}, {});""".format(
+                        load_scenario_id, z, stage, tmp,
+                        zone_stage_timepoint_static_loads[z][tmp]
+                    )
                 )
-            )
 
 
 if __name__ == "__main__":

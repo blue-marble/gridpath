@@ -379,6 +379,7 @@ def main(args=None):
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
+    # TODO: make this a user input
     # For now, assume script is run from root directory and the the
     # database is ./db and named io.db
     io = sqlite3.connect(
@@ -392,6 +393,8 @@ def main(args=None):
     )
 
     # Get scenario characteristics (features, subscenarios, subproblems)
+    # TODO: it seems these fail silently if empty; we may want ot implement
+    #  some validation
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
