@@ -148,8 +148,9 @@ def update_project_variable_profiles(
     scenario name and the scenario description
     :param proj_tmp_profiles:
     Nested dictionary: top-level key is the project name, second-level key
-    is the scenario id, third-level key is the timepoint, and the value is the
-    capacity factor for that project-timepoint.
+    is the scenario id, third-level key is the stage, fourth level
+    key is the timepoint, and the value is the capacity factor for that
+    project-timepoint.
     :return:
     """
     print("project variable profiles")
@@ -170,16 +171,19 @@ def update_project_variable_profiles(
     for prj in list(proj_tmp_profiles.keys()):
         print("..." + prj)
         for scenario in list(proj_tmp_profiles[prj].keys()):
-            for tmp in list(proj_tmp_profiles[prj][scenario].keys()):
-                c.execute(
-                    """INSERT INTO inputs_project_variable_generator_profiles
-                    (project, variable_generator_profile_scenario_id, 
-                    timepoint, cap_factor)
-                    VALUES ('{}', {}, {}, {});""".format(
-                        prj, scenario, tmp,
-                        proj_tmp_profiles[prj][scenario][tmp]
+            for stage in proj_tmp_profiles[prj][scenario].keys():
+                for tmp in list(
+                        proj_tmp_profiles[prj][scenario][stage].keys()
+                ):
+                    c.execute(
+                        """INSERT INTO inputs_project_variable_generator_profiles
+                        (project, variable_generator_profile_scenario_id, stage_id,
+                        timepoint, cap_factor)
+                        VALUES ('{}', {}, {}, {}, {});""".format(
+                            prj, scenario, stage, tmp,
+                            proj_tmp_profiles[prj][scenario][tmp]
+                        )
                     )
-                )
             io.commit()
 
 
@@ -227,6 +231,57 @@ def update_project_hydro_opchar(
                         proj_horizon_chars[p][scenario][h]["mwa"],
                         proj_horizon_chars[p][scenario][h]["min_mw"],
                         proj_horizon_chars[p][scenario][h]["max_mw"]
+                    )
+                )
+    io.commit()
+
+
+def update_project_hr_curves(
+        io, c,
+        proj_opchar_names,
+        proj_hr_chars
+):
+    """
+
+    :param io:
+    :param c:
+    :param proj_opchar_names: nested dictionary; top level key is the
+    project, second key is the heat_rate_curves_scenario_id, the value is a
+    tuple with the name and description of heat rate curve scenario
+    :param proj_hr_chars: nested dictionary; top level key is the project,
+    second-level key is the heat_rate_curves_scenario_id, the third-level
+    key is the heat rate curve point and the value is a tuple with the load
+    point and average heat rate at that load point
+    :return:
+    """
+    print("project heat rate curves")
+
+    # Subscenarios
+    for prj in proj_opchar_names.keys():
+        for scenario_id in proj_opchar_names[prj].keys():
+            c.execute(
+                """INSERT INTO subscenarios_project_heat_rate_curves
+                (project, heat_rate_curves_scenario_id, name, description)
+                VALUES ('{}', {}, '{}', '{}');""".format(
+                    prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
+                    proj_opchar_names[prj][scenario_id][1]
+                )
+            )
+    io.commit()
+
+    # Insert data
+    for p in list(proj_hr_chars.keys()):
+        for scenario in list(proj_hr_chars[p].keys()):
+            for hr_curve_point in list(proj_hr_chars[p][scenario].keys()):
+                print(proj_hr_chars[p][scenario][hr_curve_point])
+                c.execute(
+                    """INSERT INTO inputs_project_heat_rate_curves
+                    (project, heat_rate_curves_scenario_id, load_point_mw, 
+                    average_heat_rate_mmbtu_per_mwh)
+                    VALUES ('{}', {}, {}, {});""".format(
+                        p, scenario,
+                        proj_hr_chars[p][scenario][hr_curve_point][0],
+                        proj_hr_chars[p][scenario][hr_curve_point][1]
                     )
                 )
     io.commit()

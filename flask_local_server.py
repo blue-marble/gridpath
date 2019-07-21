@@ -7,6 +7,11 @@ import sqlite3
 
 from flask_restful import Resource, Api
 
+# Gridpath modules
+from db.utilities.create_scenario import create_scenario
+from db.utilities.update_scenario import update_scenario_multiple_columns
+# from run_start_to_end import main as run_start_to_end
+
 # Turn off signal handlers (in order to be able to spawn solvers from a
 # Pyomo running in a thread)
 # See: https://groups.google.com/forum/#!searchin/pyomo-forum
@@ -15,9 +20,6 @@ from flask_restful import Resource, Api
 #
 pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
-# Gridpath modules
-from db.utilities.create_scenario import create_scenario
-from db.utilities.update_scenario import update_scenario_multiple_columns
 
 # Global variables
 GRIDPATH_DIRECTORY = str()
@@ -2386,14 +2388,23 @@ def add_new_scenario(msg):
 # TODO: needs update
 def _run_scenario(message):
     p = multiprocessing.current_process()
-    scenario_name = str(message['scenario'])
+    scenario_id = str(message['scenario'])
+
+    io, c = connect_to_database()
+
+    scenario_name = c.execute(
+        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
+            scenario_id
+        )
+    ).fetchone()[0]
+
     print("Running " + scenario_name)
     print("Process name and ID: ", p.name, p.pid)
 
     os.chdir(GRIDPATH_DIRECTORY)
 
-    import run_scenario
-    run_scenario.main(
+    import run_start_to_end
+    run_start_to_end.main(
         args=['--scenario', scenario_name, '--scenario_location',
               'scenarios', '--solver', SOLVER, '--update_db_run_status']
     )
@@ -2402,7 +2413,7 @@ def _run_scenario(message):
 # TODO: probably will do this directly from Angular
 @socketio.on('launch_scenario_process')
 def launch_scenario_process(message):
-    scenario_name = str(message['scenario'])
+    scenario_id = str(message['scenario'])
     # TODO: there needs to be a check that this scenario isn't already running
     process_status = check_scenario_process_status(message=message)
     if process_status:
@@ -2412,10 +2423,10 @@ def launch_scenario_process(message):
             'scenario already running'
         )
     else:
-        print("Starting process for scenario " + scenario_name)
+        print("Starting process for scenario_id " + scenario_id)
         p = multiprocessing.Process(
             target=_run_scenario,
-            name=scenario_name,
+            name=scenario_id,
             args=(message,),
         )
         p.start()
@@ -2425,8 +2436,8 @@ def launch_scenario_process(message):
         # p.join()
 
         global SCENARIO_STATUS
-        SCENARIO_STATUS[scenario_name] = dict()
-        SCENARIO_STATUS[scenario_name]['process_id'] = p.pid
+        SCENARIO_STATUS[scenario_id] = dict()
+        SCENARIO_STATUS[scenario_id]['process_id'] = p.pid
 
 
 # TODO: figure out how to deal with scenarios that are already running
