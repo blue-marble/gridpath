@@ -18,6 +18,7 @@ from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sqlite3
 import sys
+import traceback
 
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
@@ -153,6 +154,7 @@ class ScenarioStructure(object):
                 """ERROR! Subproblems file {} not found""".
                 format(subproblems_file)
             )
+            traceback.print_exc()
             sys.exit(1)
 
 
@@ -813,6 +815,7 @@ def main(args=None):
         if parsed_args.update_db_run_status:
             update_run_status(scenario=parsed_args.scenario,
                               status='error_encountered')
+        traceback.print_exc()
 
 
 def update_run_status(scenario, status):
