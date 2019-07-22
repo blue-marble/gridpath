@@ -16,7 +16,6 @@ import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
-import sqlite3
 import sys
 
 from gridpath.auxiliary.auxiliary import Logging
@@ -789,46 +788,16 @@ def main(args=None):
     # Parse arguments
     parsed_args = parse_arguments(args)
 
-    # Update run status to 'running'
-    if parsed_args.update_db_run_status:
-        update_run_status(scenario=parsed_args.scenario, status='running')
-
     # Figure out the scenario structure (i.e. horizons and stages)
     scenario_structure = ScenarioStructure(parsed_args.scenario,
                                            parsed_args.scenario_location)
+
     # Run the scenario (can be multiple optimization subproblems)
-    try:
-        expected_objective_values = run_scenario(
-            scenario_structure, parsed_args)
+    expected_objective_values = run_scenario(
+        scenario_structure, parsed_args)
 
-        # Update run status to 'completed'
-        if parsed_args.update_db_run_status:
-            update_run_status(scenario=parsed_args.scenario,
-                              status='completed')
-
-        # Return the objective function values (used in testing)
-        return expected_objective_values
-    # TODO: make exceptions less broad, give more useful message
-    except:
-        if parsed_args.update_db_run_status:
-            update_run_status(scenario=parsed_args.scenario,
-                              status='error_encountered')
-
-
-def update_run_status(scenario, status):
-    # For now, assume script is run from root directory and the the
-    # database is ./db and named io.db
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
-    c = io.cursor()
-
-    c.execute(
-        """UPDATE mod_run_status
-        SET status = '{}'
-        WHERE scenario_name = '{}';""".format(status, scenario)
-    )
-    io.commit()
+    # Return the objective function values (used in testing)
+    return expected_objective_values
 
 
 if __name__ == "__main__":
