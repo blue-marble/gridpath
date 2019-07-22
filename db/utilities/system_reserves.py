@@ -12,7 +12,7 @@ def insert_system_reserves(
         reserve_scenario_id,
         scenario_name,
         scenario_description,
-        ba_timepoint_reserve_req,
+        ba_stage_timepoint_reserve_req,
         reserve_type
 ):
     """
@@ -20,8 +20,9 @@ def insert_system_reserves(
     :param c: 
     :param reserve_scenario_id: 
     :param scenario_name: 
-    :param scenario_description: 
-    :param ba_timepoint_reserve_req: 
+    :param scenario_description:
+    :param stage_id:
+    :param ba_stage_timepoint_reserve_req:
     :param reserve_type:
     :return: 
     """
@@ -42,18 +43,19 @@ def insert_system_reserves(
     io.commit()
 
     # Insert data
-    for ba in list(ba_timepoint_reserve_req.keys()):
-        for tmp in list(ba_timepoint_reserve_req[ba].keys()):
-            c.execute(
-                """INSERT INTO inputs_system_{}
-                ({}_scenario_id, {}_ba, timepoint, {}_mw)
-                VALUES ({}, '{}', {}, {})
-                ;""".format(
-                    reserve_type, reserve_type, reserve_type, reserve_type,
-                    reserve_scenario_id,
-                    ba, tmp, ba_timepoint_reserve_req[ba][tmp]
+    for ba in list(ba_stage_timepoint_reserve_req.keys()):
+        for stage in list(ba_stage_timepoint_reserve_req[ba].keys()):
+            for tmp in list(ba_stage_timepoint_reserve_req[ba][stage].keys()):
+                c.execute(
+                    """INSERT INTO inputs_system_{}
+                    ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw)
+                    VALUES ({}, '{}', {}, {}, {})
+                    ;""".format(
+                        reserve_type, reserve_type, reserve_type, reserve_type,
+                        reserve_scenario_id,
+                        ba, stage, tmp, ba_stage_timepoint_reserve_req[ba][tmp]
+                    )
                 )
-            )
 
 
 if __name__ == "__main__":

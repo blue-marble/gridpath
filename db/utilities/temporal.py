@@ -9,26 +9,31 @@ from __future__ import print_function
 
 def temporal(
         io, c,
-        temporal_scenario_id, scenario_name, scenario_description,
+        temporal_scenario_id, subproblem_id, stage_id, stage_name,
+        scenario_name,
+        scenario_description,
         periods, horizons, hours, number_of_hours_in_timepoint,
         boundary, discount_factors_and_years_represented,
         horizon_weights_and_months
 ):
     """
-    
-    :param io: 
-    :param c: 
+
+    :param io:
+    :param c:
     :param temporal_scenario_id:
-    :param scenario_name: 
-    :param scenario_description: 
-    :param periods: 
-    :param horizons: 
-    :param hours: 
-    :param number_of_hours_in_timepoint: 
-    :param boundary: 
-    :param discount_factors_and_years_represented: 
-    :param horizon_weights_and_months: 
-    :return: 
+    :param subproblem_id:
+    :param stage_id:
+    :param stage_name:
+    :param scenario_name:
+    :param scenario_description:
+    :param periods:
+    :param horizons:
+    :param hours:
+    :param number_of_hours_in_timepoint:
+    :param boundary:
+    :param discount_factors_and_years_represented:
+    :param horizon_weights_and_months:
+    :return:
     """
 
     print("timepoints")
@@ -43,18 +48,38 @@ def temporal(
     )
     io.commit()
 
+    # Subproblems
+    c.execute(
+        """INSERT INTO inputs_temporal_subproblems
+        (temporal_scenario_id, subproblem_id)
+        VALUES ({}, {});""".format(
+            temporal_scenario_id, subproblem_id
+        )
+    )
+    io.commit()
+
+    # Stages
+    c.execute(
+        """INSERT INTO inputs_temporal_subproblems_stages
+        (temporal_scenario_id, subproblem_id, stage_id, stage_name)
+        VALUES ({}, {}, {}, '{}')""".format(
+            temporal_scenario_id, subproblem_id, stage_id, stage_name
+        )
+    )
+
     # Timepoints
     # Timepoint_id = period * 10^4 + horizon * 10^2 + hour
     # Horizon_id = period * 10^2 + horizon
+    # TODO: timepoint ID calculation needs to be more flexible
     for period in periods:
         for horizon in horizons:
             for hour in hours:
                 c.execute(
                     """INSERT INTO inputs_temporal_timepoints
-                    (temporal_scenario_id, timepoint,
+                    (temporal_scenario_id, subproblem_id, stage_id, timepoint,
                     period, horizon, number_of_hours_in_timepoint)
-                    VALUES ({}, {}, {}, {}, {});""".format(
-                        temporal_scenario_id,
+                    VALUES ({}, {}, {},  {}, {}, {}, {});""".format(
+                        temporal_scenario_id, subproblem_id, stage_id,
                         (period * 10**4 + horizon * 10**2 + hour),
                         period, period * 10**2 + horizon,
                         number_of_hours_in_timepoint
@@ -82,10 +107,12 @@ def temporal(
             horizon_id = period * 100 + horizon
             c.execute(
                 """INSERT INTO inputs_temporal_horizons
-                (temporal_scenario_id, horizon, period, boundary,
+                (temporal_scenario_id, subproblem_id, horizon, period, 
+                boundary,
                 horizon_weight, month)
-                VALUES ({}, {}, {}, '{}', {}, {});""".format(
-                    temporal_scenario_id, horizon_id, period, boundary,
+                VALUES ({}, {}, {}, {}, '{}', {}, {});""".format(
+                    temporal_scenario_id, subproblem_id, horizon_id, period,
+                    boundary,
                     horizon_weights_and_months[horizon]["weight"],
                     horizon_weights_and_months[horizon]["month"]
 
@@ -95,17 +122,4 @@ def temporal(
 
 
 if __name__ == "__main__":
-    temporal(
-        io=None,
-        c=None,
-        temporal_scenario_id=None,
-        scenario_name=None,
-        scenario_description=None,
-        periods=None,
-        horizons=None,
-        hours=None,
-        number_of_hours_in_timepoint=None,
-        boundary=None,
-        discount_factors_and_years_represented=None,
-        horizon_weights_and_months=None
-    )
+    pass

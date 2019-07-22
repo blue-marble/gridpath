@@ -17,6 +17,7 @@ from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
 from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
+import traceback
 
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
@@ -152,6 +153,7 @@ class ScenarioStructure(object):
                 """ERROR! Subproblems file {} not found""".
                 format(subproblems_file)
             )
+            traceback.print_exc()
             sys.exit(1)
 
 

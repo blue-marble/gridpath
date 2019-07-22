@@ -13,8 +13,7 @@ import csv
 from pandas import read_csv
 import numpy as np
 import os.path
-from pyomo.environ import Set, Param, PositiveReals, PercentFraction, \
-    NonNegativeReals, Reals
+from pyomo.environ import Set, Param, PositiveReals, PercentFraction, Reals
 
 from gridpath.auxiliary.auxiliary import is_number
 
@@ -197,6 +196,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
     def determine_fuel_project_segments():
+        # TODO: read_csv seems to fail silently if file not found; check and
+        #  implement validation
         hr_df = read_csv(
             os.path.join(scenario_directory, subproblem, stage,
                          "inputs", "heat_rate_curves.tab"),
