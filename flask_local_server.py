@@ -89,14 +89,18 @@ class Scenarios(Resource):
         io, c = connect_to_database()
 
         scenarios_query = c.execute(
-            """SELECT *
+            """SELECT scenario_id, scenario_name, validation_status, run_status
             FROM scenarios_view
             ORDER by scenario_id ASC;"""
         )
 
         scenarios_api = []
         for s in scenarios_query:
-            scenarios_api.append({'id': s[0], 'name': s[1]})
+            # TODO: make this more robust than relying on column order
+            scenarios_api.append(
+                {'id': s[0], 'name': s[1], 'validationStatus': s[2],
+                 'runStatus': s[3]}
+            )
 
         return scenarios_api
 
@@ -1749,10 +1753,12 @@ def add_new_scenario(msg):
     # Check if this is a new scenario or if we're updating an existing scenario
     # TODO: implement UI warnings if updating
     scenario_exists = c.execute(
-            "SELECT '{}' FROM scenarios;".format(msg['scenarioName'])
-    ).fetchone()[0]
+            "SELECT scenario_name"
+            " FROM scenarios "
+            "WHERE scenario_name = '{}';".format(msg['scenarioName'])
+    ).fetchone()
 
-    if scenario_exists == msg['scenarioName']:
+    if scenario_exists is not None:
         print('Updating scenario {}'.format(msg['scenarioName']))
         # TODO: this won't work if updating the scenario name; need a
         #  different process & warnings for it

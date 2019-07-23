@@ -11,6 +11,24 @@
     </a>
   </li>
 </ul>
-<button ng-click="newScenario" class="button-primary">
-        <a [routerLink]="['/scenario-new']">New scenario</a>
-</button>
+
+
+<table >
+<tr>
+<th>Scenario Name</th>
+<th>Validation Status</th>
+<th>Run Status</th>
+</tr>
+  <ng-container *ngFor="let scenario of scenarios">
+     <tr>
+       <td>
+         <button class="button-primary">
+            <a [routerLink]="['/scenario', scenario.id]">{{ scenario.name }}
+            </a>
+          </button>
+       </td>
+       <td>{{scenario.validationStatus}}</td>
+       <td>{{scenario.runStatus}}</td>
+     </tr>
+  </ng-container>
+</table>
