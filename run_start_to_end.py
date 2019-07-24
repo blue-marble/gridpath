@@ -7,6 +7,7 @@ Get inputs, run scenario, and import results.
 
 from argparse import ArgumentParser
 import os.path
+import signal
 import sys
 import sqlite3
 import traceback
@@ -82,17 +83,16 @@ def update_run_status(scenario, status_id):
         WHERE scenario_name = '{}';""".format(status_id, scenario)
     )
     io.commit()
+    io.close()
 
 
 # TODO: add more run status types?
 def main(args):
     parsed_args = parse_arguments(args)
-    update_run_status(parsed_args.scenario, 1)
 
     try:
         get_scenario_inputs.main(args=args)
     except Exception:
-        print("Made it to the exception")
         update_run_status(parsed_args.scenario, 3)
         print('Error encountered when getting inputs from the database for '
               'scenario {}.'.format(args.scenario))
@@ -100,7 +100,6 @@ def main(args):
     try:
         run_scenario.main(args=args)
     except Exception:
-        print('Made it here')
         update_run_status(parsed_args.scenario, 3)
         print('Error encountered when running scenario {}.'.format(
             args.scenario))
@@ -126,5 +125,34 @@ def main(args):
     update_run_status(parsed_args.scenario, 2)
 
 
+def exit_gracefully():
+    """
+    Exit when SIGINT received
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print('Exiting gracefully')
+    update_run_status(parsed_args.scenario, 3)
+
+
+def sigint_handler(signal, frame):
+    """
+    Exit when SIGINT received
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print("SIGINT received by run_start_to_end.py. Interrupting process.")
+    exit_gracefully()
+    sys.exit()
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    args = sys.argv[1:]
+    parsed_args = parse_arguments(args)
+    update_run_status(parsed_args.scenario, 1)
+
     main(args=sys.argv[1:])
