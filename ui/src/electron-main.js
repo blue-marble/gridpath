@@ -70,7 +70,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  serverChildProcess.kill('SIGINT')
+  serverChildProcess.kill('SIGTERM')
 });
 
 app.on('activate', () => {

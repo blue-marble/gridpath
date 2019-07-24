@@ -136,6 +136,18 @@ def exit_gracefully():
     update_run_status(parsed_args.scenario, 3)
 
 
+def sigterm_handler(signal, frame):
+    """
+    Exit when SIGTERM received
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print("SIGTERM received by run_start_to_end.py. Terminating process.")
+    exit_gracefully()
+    sys.exit()
+
+
 def sigint_handler(signal, frame):
     """
     Exit when SIGINT received
@@ -143,12 +155,13 @@ def sigint_handler(signal, frame):
     :param frame:
     :return:
     """
-    print("SIGINT received by run_start_to_end.py. Interrupting process.")
+    print("SIGINT received by run_start_to_end.py. Terminating process.")
     exit_gracefully()
     sys.exit()
 
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, sigterm_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
     args = sys.argv[1:]

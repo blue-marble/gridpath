@@ -15,19 +15,32 @@ from db.utilities.create_scenario import create_scenario
 from db.utilities.update_scenario import update_scenario_multiple_columns
 
 
-# Define custom signal handler
-def handler(signal, frame):
+# Define custom signal handlers
+def sigterm_handler(signal, frame):
     """
-    Exit when SIGINT received (we're sending SIGINT from Electron on app exit)
+    Exit when SIGTERM received (we're sending SIGTERM from Electron on app
+    exit)
     :param signal:
     :param frame:
     :return:
     """
-    print('SIGINT received by server!')
+    print('SIGTERM received by server. Terminating server process.')
     sys.exit(0)
 
 
-signal.signal(signal.SIGINT, handler)
+def sigint_handler(signal, frame):
+    """
+    Exit when SIGINT received
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print('SIGINT received by server. Terminating server process.')
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+signal.signal(signal.SIGINT, sigint_handler)
 
 
 # Global server variables
