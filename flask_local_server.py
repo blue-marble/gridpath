@@ -2497,10 +2497,12 @@ def check_scenario_process_status(client_message):
     ).fetchone()[0]
 
     global SCENARIO_STATUS
+
     if (scenario_id, scenario_name) in SCENARIO_STATUS.keys():
         pid = SCENARIO_STATUS[(scenario_id, scenario_name)]['process_id']
-        if psutil.pid_exists(pid):
-            # Process ID saved in global and process is still running
+        # Process ID saved in global and process is still running
+        if pid in [p.pid for p in psutil.process_iter()] \
+                and psutil.Process(pid).status() == 'running':
             return True
         else:
             # Process ID saved in global but process is not running
