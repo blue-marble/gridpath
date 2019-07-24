@@ -10,6 +10,7 @@ import os.path
 import signal
 import sys
 import sqlite3
+import time
 import traceback
 
 # GridPath modules
@@ -70,20 +71,39 @@ def parse_arguments(arguments):
 
 
 def update_run_status(scenario, status_id):
-    # For now, assume script is run from root directory and the the
-    # database is ./db and named io.db
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
-    c = io.cursor()
-
-    c.execute(
-        """UPDATE scenarios
+    sql = """UPDATE scenarios
         SET run_status_id = {}
         WHERE scenario_name = '{}';""".format(status_id, scenario)
+
+    spin_database_lock(
+        db=io,
+        cursor=c,
+        sql=sql,
+        timeout=120,
+        interval=1
     )
-    io.commit()
-    io.close()
+
+
+def spin_database_lock(db, cursor, sql, timeout, interval):
+    for i in range(1, timeout+1):  # give up after timeout seconds
+        print("Attempt {} of {}".format(i, timeout))
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except sqlite3.OperationalError as e:
+            traceback.print_exc()
+            if "locked" in str(e):
+                print("Database is locked, sleeping for {} second, "
+                      "then retrying".format(interval))
+                if i == timeout - 1:
+                    print("Database still locked after {} seconds. "
+                          "Exiting.".format(timeout))
+                    sys.exit(1)
+                else:
+                    time.sleep(interval)
+        # Do this if exception not caught
+        else:
+            break
 
 
 # TODO: add more run status types?
@@ -125,12 +145,11 @@ def main(args):
     update_run_status(parsed_args.scenario, 2)
 
 
+# TODO: need to make sure that the database can be closed properly, pending
+#  transactions rolled pack, etc.
 def exit_gracefully():
     """
-    Exit when SIGINT received
-    :param signal:
-    :param frame:
-    :return:
+    Clean up before exit
     """
     print('Exiting gracefully')
     update_run_status(parsed_args.scenario, 3)
@@ -163,6 +182,18 @@ def sigint_handler(signal, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, sigterm_handler)
     signal.signal(signal.SIGINT, sigint_handler)
+
+    # Open database and create cursor
+    # For now, assume script is run from root directory and the the
+    # database is ./db and named io.db
+    io = sqlite3.connect(
+        os.path.join(os.getcwd(), 'db', 'io.db')
+    )
+    c = io.cursor()
+
+    # TODO: what's the best place for setting this
+    # Allow concurrent reading and writing
+    io.execute("PRAGMA journal_mode=WAL")
 
     args = sys.argv[1:]
     parsed_args = parse_arguments(args)
