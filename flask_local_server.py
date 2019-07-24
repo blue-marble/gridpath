@@ -1,11 +1,11 @@
 import atexit
 from flask import Flask
 from flask_socketio import SocketIO, emit
-import multiprocessing
 import os
 import psutil
 import signal
 import sqlite3
+import subprocess
 import sys
 
 from flask_restful import Resource, Api
@@ -18,7 +18,7 @@ from db.utilities.update_scenario import update_scenario_multiple_columns
 # Define custom signal handler
 def handler(signal, frame):
     """
-    Exit when SIGINT received (we're sending SIGING from Electron on app exit)
+    Exit when SIGINT received (we're sending SIGINT from Electron on app exit)
     :param signal:
     :param frame:
     :return:
@@ -2401,27 +2401,27 @@ def add_new_scenario(msg):
 # ### RUNNING SCENARIOS ### #
 # TODO: incomplete functionality
 # TODO: needs update
-def run_scenario(scenario_name):
-    #
-    p = multiprocessing.current_process()
-
-    print("Running " + scenario_name)
-    print(
-        "Process name and ID for scenario {} run: {}, {}".format(
-            scenario_name, p.name, p.pid
-        )
-    )
-
-    # TODO: what is the best way to get the right directories?
-    # os.chdir(GRIDPATH_DIRECTORY)
-    os.chdir('/Users/ana/dev/ui-run-scenario')
-    import run_start_to_end
-
-    # TODO: what should the default settings be and what should we allow the
-    #  user to select?
-    run_start_to_end.main(
-        args=['--scenario', scenario_name, '--log']
-    )
+# def run_scenario(scenario_name):
+#     #
+#     p = multiprocessing.current_process()
+#
+#     print("Running " + scenario_name)
+#     print(
+#         "Process name and ID for scenario {} run: {}, {}".format(
+#             scenario_name, p.name, p.pid
+#         )
+#     )
+#
+#     # TODO: what is the best way to get the right directories?
+#     # os.chdir(GRIDPATH_DIRECTORY)
+#     os.chdir('/Users/ana/dev/ui-run-scenario')
+#     import run_start_to_end
+#
+#     # TODO: what should the default settings be and what should we allow the
+#     #  user to select?
+#     run_start_to_end.main(
+#         args=['--scenario', scenario_name, '--log']
+#     )
 
 
 @socketio.on('launch_scenario_process')
@@ -2458,12 +2458,17 @@ def launch_scenario_process(client_message):
     # multiprocessing process
     else:
         print("Starting process for scenario_id " + scenario_id)
-        p = multiprocessing.Process(
-            target=run_scenario,
-            name=scenario_id,
-            args=(scenario_name,),
-        )
-        p.start()
+        # p = multiprocessing.Process(
+        #     target=run_scenario,
+        #     name=scenario_id,
+        #     args=(scenario_name,),
+        # )
+        # p.start()
+        os.chdir('/Users/ana/dev/ui-run-scenario')
+        p = subprocess.Popen(
+            [sys.executable, '-u',
+             os.path.join(GRIDPATH_DIRECTORY, 'run_start_to_end.py'),
+             '--log', '--scenario', scenario_name])
 
         # Needed to ensure child processes are terminated when server exits
         atexit.register(p.terminate)
