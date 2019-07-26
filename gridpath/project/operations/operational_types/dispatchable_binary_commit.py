@@ -1168,7 +1168,7 @@ def import_module_specific_results_to_database(
             project VARCHAR(64),
             period INTEGER,
             subproblem_id INTEGER,
-            stage_id INTEGER
+            stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
             horizon_weight FLOAT,
@@ -1208,19 +1208,21 @@ def import_module_specific_results_to_database(
             stopped_units = row[12]
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_binary_commit"""
-                + str(scenario_id) + """
+                + str(scenario_id) + """ 
                     (scenario_id, project, period, subproblem_id, stage_id, 
                     horizon, timepoint, horizon_weight, 
                     number_of_hours_in_timepoint,
                     load_zone, technology, 
                     power_mw, committed_mw, committed_units, 
                     started_units, stopped_units)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}',
-                    {}, {}, {});""".format(
-                    scenario_id, project, period, horizon, timepoint,
-                    horizon_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', 
+                    {}, {}, {}, {}, {});""".format(
+                    scenario_id, project, period, subproblem, stage,
+                    horizon, timepoint, horizon_weight,
+                    number_of_hours_in_timepoint,
+                    load_zone, technology,
+                    power_mw, committed_mw, committed_units,
+                    started_units, stopped_units
                 )
             )
     db.commit()
@@ -1228,7 +1230,7 @@ def import_module_specific_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_binary_commit
-        (scenario_id, project, period, , subproblem_id, stage_id,
+        (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units)
