@@ -117,6 +117,7 @@ def main(args):
         print('Error encountered when getting inputs from the database for '
               'scenario {}.'.format(args.scenario))
         traceback.print_exc()
+        sys.exit(1)
     try:
         run_scenario.main(args=args)
     except Exception:
@@ -124,6 +125,7 @@ def main(args):
         print('Error encountered when running scenario {}.'.format(
             args.scenario))
         traceback.print_exc()
+        sys.exit(1)
 
     try:
         import_scenario_results.main(args=args)
@@ -132,6 +134,7 @@ def main(args):
         print('Error encountered when importing results for '
               'scenario {}.'.format(parsed_args.scenario))
         traceback.print_exc()
+        sys.exit(1)
 
     try:
         process_results.main(args=args)
@@ -140,6 +143,7 @@ def main(args):
         print('Error encountered when importing results for '
               'scenario {}.'.format(parsed_args.scenario))
         traceback.print_exc()
+        sys.exit(1)
 
     # If we make it here, mark run as complete
     update_run_status(parsed_args.scenario, 2)
