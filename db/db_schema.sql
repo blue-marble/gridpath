@@ -1,3 +1,5 @@
+-- noinspection SqlNoDataSourceInspectionForFile
+
 -- Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 -----------------
@@ -47,15 +49,26 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
 ('storage_generic'), ('variable'), ('always_on');
 
+-- Scenario validation status
+DROP TABLE IF EXISTS mod_validation_status_types;
+CREATE TABLE mod_validation_status_types (
+validation_status_id INTEGER PRIMARY KEY,
+validation_status_name VARCHAR(32) UNIQUE
+);
+
+INSERT INTO mod_validation_status_types
+    (validation_status_id, validation_status_name)
+VALUES (0, 'not_validated'), (1, 'valid'), (2, 'invalid');
+
 -- Run status
 DROP TABLE IF EXISTS mod_run_status_types;
 CREATE TABLE mod_run_status_types (
-status VARCHAR(32) PRIMARY KEY,
-description VARCHAR(128)
+run_status_id INTEGER PRIMARY KEY,
+run_status_name VARCHAR(32) UNIQUE
 );
 
-INSERT INTO mod_run_status_types (status)
-VALUES ('not_launched'), ('running'), ('completed'), ('encountered_error');
+INSERT INTO mod_run_status_types (run_status_id, run_status_name)
+VALUES (0, 'not_run'), (1, 'running'), (2, 'complete'), (3, 'run_error');
 
 -- TODO: figure out foreign keys for subproblems/stages when structure in place
 -- TODO: what happens if user deletes scenario in scenarios table
@@ -63,11 +76,11 @@ DROP TABLE IF EXISTS mod_run_status;
 CREATE TABLE mod_run_status (
 scenario_id INTEGER,
 scenario_name VARCHAR(64),
-subproblem INTEGER,
-stage INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 status VARCHAR(32),
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
-FOREIGN KEY (status) REFERENCES mod_run_status_types (status)
+FOREIGN KEY (status) REFERENCES mod_run_status_types (run_status_id)
 );
 
 
@@ -1677,6 +1690,8 @@ DROP TABLE IF EXISTS scenarios;
 CREATE TABLE scenarios (
 scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 scenario_name VARCHAR(64) UNIQUE,
+validation_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
+run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 of_fuels INTEGER,
 of_multi_stage INTEGER,
 of_transmission INTEGER,
@@ -1750,151 +1765,162 @@ prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
+FOREIGN KEY (validation_status_id) REFERENCES
+    mod_validation_status_types (validation_status_id),
+FOREIGN KEY (run_status_id) REFERENCES mod_run_status_types (run_status_id),
 FOREIGN KEY (temporal_scenario_id) REFERENCES
-subscenarios_temporal (temporal_scenario_id),
+    subscenarios_temporal (temporal_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones (load_zone_scenario_id),
+    subscenarios_geography_load_zones (load_zone_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
+    subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
+    subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id),
+    subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id),
 FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id),
+    subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
-subscenarios_geography_frequency_response_bas
-(frequency_response_ba_scenario_id),
+    subscenarios_geography_frequency_response_bas
+        (frequency_response_ba_scenario_id),
 FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
-subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
+    subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-subscenarios_geography_rps_zones (rps_zone_scenario_id),
+    subscenarios_geography_rps_zones (rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
+    subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
-subscenarios_geography_prm_zones (prm_zone_scenario_id),
+    subscenarios_geography_prm_zones (prm_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
-subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
+    subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
 FOREIGN KEY (project_portfolio_scenario_id) REFERENCES
-subscenarios_project_portfolios (project_portfolio_scenario_id),
+    subscenarios_project_portfolios (project_portfolio_scenario_id),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
-subscenarios_project_operational_chars (project_operational_chars_scenario_id),
+    subscenarios_project_operational_chars (project_operational_chars_scenario_id),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
-subscenarios_project_availability (project_availability_scenario_id),
+    subscenarios_project_availability (project_availability_scenario_id),
 FOREIGN KEY (fuel_scenario_id) REFERENCES
-subscenarios_project_fuels (fuel_scenario_id),
+    subscenarios_project_fuels (fuel_scenario_id),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
-subscenarios_project_fuel_prices (fuel_price_scenario_id),
+    subscenarios_project_fuel_prices (fuel_price_scenario_id),
 FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
-subscenarios_project_load_zones
-(load_zone_scenario_id, project_load_zone_scenario_id),
+    subscenarios_project_load_zones
+        (load_zone_scenario_id, project_load_zone_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id,
-project_lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_project_lf_reserves_up_bas
-(lf_reserves_up_ba_scenario_id, project_lf_reserves_up_ba_scenario_id),
+    project_lf_reserves_up_ba_scenario_id) REFERENCES
+        subscenarios_project_lf_reserves_up_bas
+            (lf_reserves_up_ba_scenario_id,
+             project_lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id,
-project_lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_project_lf_reserves_down_bas
-(lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
+    project_lf_reserves_down_ba_scenario_id) REFERENCES
+        subscenarios_project_lf_reserves_down_bas
+            (lf_reserves_down_ba_scenario_id,
+             project_lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (regulation_up_ba_scenario_id,
-project_regulation_up_ba_scenario_id) REFERENCES
-subscenarios_project_regulation_up_bas
-(regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id),
+             project_regulation_up_ba_scenario_id) REFERENCES
+                 subscenarios_project_regulation_up_bas
+                    (regulation_up_ba_scenario_id,
+                     project_regulation_up_ba_scenario_id),
 FOREIGN KEY (regulation_down_ba_scenario_id,
-project_regulation_down_ba_scenario_id) REFERENCES
-subscenarios_project_regulation_down_bas
-(regulation_down_ba_scenario_id, project_regulation_down_ba_scenario_id),
+    project_regulation_down_ba_scenario_id) REFERENCES
+        subscenarios_project_regulation_down_bas
+            (regulation_down_ba_scenario_id,
+             project_regulation_down_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id,
-project_frequency_response_ba_scenario_id) REFERENCES
-subscenarios_project_frequency_response_bas
-(frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
+    project_frequency_response_ba_scenario_id) REFERENCES
+        subscenarios_project_frequency_response_bas
+            (frequency_response_ba_scenario_id,
+             project_frequency_response_ba_scenario_id),
 FOREIGN KEY (spinning_reserves_ba_scenario_id,
-project_spinning_reserves_ba_scenario_id) REFERENCES
-subscenarios_project_spinning_reserves_bas
-(spinning_reserves_ba_scenario_id, project_spinning_reserves_ba_scenario_id),
+    project_spinning_reserves_ba_scenario_id) REFERENCES
+        subscenarios_project_spinning_reserves_bas
+            (spinning_reserves_ba_scenario_id,
+             project_spinning_reserves_ba_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
-subscenarios_project_rps_zones
-(rps_zone_scenario_id, project_rps_zone_scenario_id),
+    subscenarios_project_rps_zones
+        (rps_zone_scenario_id, project_rps_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id,
-project_carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_project_carbon_cap_zones
-(carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
+    project_carbon_cap_zone_scenario_id) REFERENCES
+        subscenarios_project_carbon_cap_zones
+            (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
-subscenarios_project_prm_zones
-(prm_zone_scenario_id, project_prm_zone_scenario_id),
+    subscenarios_project_prm_zones
+        (prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
-subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
+    subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
-subscenarios_project_prm_energy_only
-(prm_energy_only_scenario_id),
+    subscenarios_project_prm_energy_only (prm_energy_only_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id,
-project_local_capacity_zone_scenario_id) REFERENCES
-subscenarios_project_local_capacity_zones
-(local_capacity_zone_scenario_id, project_local_capacity_zone_scenario_id),
+    project_local_capacity_zone_scenario_id) REFERENCES
+        subscenarios_project_local_capacity_zones
+            (local_capacity_zone_scenario_id,
+             project_local_capacity_zone_scenario_id),
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
-subscenarios_project_local_capacity_chars
-(project_local_capacity_chars_scenario_id),
+    subscenarios_project_local_capacity_chars
+        (project_local_capacity_chars_scenario_id),
 FOREIGN KEY (project_existing_capacity_scenario_id) REFERENCES
-subscenarios_project_existing_capacity (project_existing_capacity_scenario_id),
+    subscenarios_project_existing_capacity
+        (project_existing_capacity_scenario_id),
 FOREIGN KEY (project_existing_fixed_cost_scenario_id) REFERENCES
-subscenarios_project_existing_fixed_cost
-(project_existing_fixed_cost_scenario_id),
+    subscenarios_project_existing_fixed_cost
+        (project_existing_fixed_cost_scenario_id),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
-subscenarios_project_new_cost (project_new_cost_scenario_id),
+    subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
-subscenarios_project_new_potential (project_new_potential_scenario_id),
+    subscenarios_project_new_potential (project_new_potential_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
-subscenarios_transmission_portfolios
-(transmission_portfolio_scenario_id),
+    subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
 FOREIGN KEY (load_zone_scenario_id, transmission_load_zone_scenario_id)
-REFERENCES subscenarios_transmission_load_zones (load_zone_scenario_id,
-transmission_load_zone_scenario_id),
+    REFERENCES subscenarios_transmission_load_zones
+        (load_zone_scenario_id, transmission_load_zone_scenario_id),
 FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
-subscenarios_transmission_existing_capacity
-(transmission_existing_capacity_scenario_id),
+    subscenarios_transmission_existing_capacity
+        (transmission_existing_capacity_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
-subscenarios_transmission_operational_chars
-(transmission_operational_chars_scenario_id),
+    subscenarios_transmission_operational_chars
+        (transmission_operational_chars_scenario_id),
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
-subscenarios_transmission_hurdle_rates (transmission_hurdle_rate_scenario_id),
+    subscenarios_transmission_hurdle_rates
+        (transmission_hurdle_rate_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id,
-transmission_carbon_cap_zone_scenario_id)
-REFERENCES subscenarios_transmission_carbon_cap_zones
-(carbon_cap_zone_scenario_id, transmission_carbon_cap_zone_scenario_id),
+             transmission_carbon_cap_zone_scenario_id)
+    REFERENCES subscenarios_transmission_carbon_cap_zones
+        (carbon_cap_zone_scenario_id,
+         transmission_carbon_cap_zone_scenario_id),
 FOREIGN KEY (transmission_simultaneous_flow_limit_scenario_id)
-REFERENCES subscenarios_transmission_simultaneous_flow_limits
-(transmission_simultaneous_flow_limit_scenario_id),
+    REFERENCES subscenarios_transmission_simultaneous_flow_limits
+        (transmission_simultaneous_flow_limit_scenario_id),
 FOREIGN KEY (transmission_simultaneous_flow_limit_line_group_scenario_id)
-REFERENCES subscenarios_transmission_simultaneous_flow_limit_line_groups
-(transmission_simultaneous_flow_limit_line_group_scenario_id),
-FOREIGN KEY (load_scenario_id) REFERENCES subscenarios_system_load
-(load_scenario_id),
+    REFERENCES subscenarios_transmission_simultaneous_flow_limit_line_groups
+        (transmission_simultaneous_flow_limit_line_group_scenario_id),
+FOREIGN KEY (load_scenario_id) REFERENCES
+    subscenarios_system_load (load_scenario_id),
 FOREIGN KEY (lf_reserves_up_scenario_id) REFERENCES
-subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id),
+    subscenarios_system_lf_reserves_up (lf_reserves_up_scenario_id),
 FOREIGN KEY (lf_reserves_down_scenario_id) REFERENCES
-subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id),
+    subscenarios_system_lf_reserves_down (lf_reserves_down_scenario_id),
 FOREIGN KEY (regulation_up_scenario_id) REFERENCES
-subscenarios_system_regulation_up (regulation_up_scenario_id),
+    subscenarios_system_regulation_up (regulation_up_scenario_id),
 FOREIGN KEY (regulation_down_scenario_id) REFERENCES
-subscenarios_system_regulation_down (regulation_down_scenario_id),
+    subscenarios_system_regulation_down (regulation_down_scenario_id),
 FOREIGN KEY (spinning_reserves_scenario_id) REFERENCES
-subscenarios_system_spinning_reserves (spinning_reserves_scenario_id),
+    subscenarios_system_spinning_reserves (spinning_reserves_scenario_id),
 FOREIGN KEY (frequency_response_scenario_id) REFERENCES
-subscenarios_system_frequency_response (frequency_response_scenario_id),
+    subscenarios_system_frequency_response (frequency_response_scenario_id),
 FOREIGN KEY (rps_target_scenario_id) REFERENCES
-subscenarios_system_rps_targets (rps_target_scenario_id),
+    subscenarios_system_rps_targets (rps_target_scenario_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
-subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
+    subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
-subscenarios_system_prm_requirement (prm_requirement_scenario_id),
+    subscenarios_system_prm_requirement (prm_requirement_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
-subscenarios_system_elcc_surface
-(prm_zone_scenario_id, elcc_surface_scenario_id),
+    subscenarios_system_elcc_surface
+        (prm_zone_scenario_id, elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
-subscenarios_system_local_capacity_requirement
-(local_capacity_requirement_scenario_id),
-FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
-(tuning_scenario_id)
+    subscenarios_system_local_capacity_requirement
+        (local_capacity_requirement_scenario_id),
+FOREIGN KEY (tuning_scenario_id) REFERENCES
+    subscenarios_tuning (tuning_scenario_id)
 );
 
 --------------------------
@@ -2829,6 +2855,8 @@ DROP VIEW IF EXISTS scenarios_view;
 CREATE VIEW scenarios_view (
 scenario_id,
 scenario_name,
+validation_status,
+run_status,
 feature_fuels,
 feature_multi_stage,
 feature_transmission,
@@ -2907,6 +2935,8 @@ AS
 SELECT
 scenario_id,
 scenario_name,
+mod_validation_status_types.validation_status_name as validation_status,
+mod_run_status_types.run_status_name as run_status,
 CASE WHEN (of_fuels=1) THEN 'yes' ELSE 'no' END AS feature_fuels,
 CASE WHEN (of_multi_stage=1) THEN 'yes' ELSE 'no' END AS feature_multi_stage,
 CASE WHEN (of_transmission=1) THEN 'yes' ELSE 'no' END AS feature_transmission,
@@ -3000,6 +3030,8 @@ subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning
 FROM scenarios
+LEFT JOIN mod_validation_status_types USING (validation_status_id)
+LEFT JOIN mod_run_status_types USING (run_status_id)
 LEFT JOIN subscenarios_temporal USING (temporal_scenario_id)
 LEFT JOIN subscenarios_geography_load_zones USING (load_zone_scenario_id)
 LEFT JOIN subscenarios_geography_lf_reserves_up_bas

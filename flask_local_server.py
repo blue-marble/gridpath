@@ -1,27 +1,49 @@
+import atexit
 from flask import Flask
 from flask_socketio import SocketIO, emit
-import multiprocessing
 import os
-import pyutilib.subprocess.GlobalData
+import psutil
+import signal
 import sqlite3
+import subprocess
+import sys
 
 from flask_restful import Resource, Api
 
 # Gridpath modules
 from db.utilities.create_scenario import create_scenario
 from db.utilities.update_scenario import update_scenario_multiple_columns
-# from run_start_to_end import main as run_start_to_end
-
-# Turn off signal handlers (in order to be able to spawn solvers from a
-# Pyomo running in a thread)
-# See: https://groups.google.com/forum/#!searchin/pyomo-forum
-# /flask$20main$20thread%7Csort:date/pyomo-forum/TRwSIjQMtHI
-# /e41wDAkPCgAJ and https://github.com/PyUtilib/pyutilib/issues/31
-#
-pyutilib.subprocess.GlobalData.DEFINE_SIGNAL_HANDLERS_DEFAULT = False
 
 
-# Global variables
+# Define custom signal handlers
+def sigterm_handler(signal, frame):
+    """
+    Exit when SIGTERM received (we're sending SIGTERM from Electron on app
+    exit)
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print('SIGTERM received by server. Terminating server process.')
+    sys.exit(0)
+
+
+def sigint_handler(signal, frame):
+    """
+    Exit when SIGINT received
+    :param signal:
+    :param frame:
+    :return:
+    """
+    print('SIGINT received by server. Terminating server process.')
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, sigterm_handler)
+signal.signal(signal.SIGINT, sigint_handler)
+
+
+# Global server variables
 GRIDPATH_DIRECTORY = str()
 DATABASE_PATH = str()
 SOLVER = str()
@@ -80,14 +102,18 @@ class Scenarios(Resource):
         io, c = connect_to_database()
 
         scenarios_query = c.execute(
-            """SELECT *
+            """SELECT scenario_id, scenario_name, validation_status, run_status
             FROM scenarios_view
             ORDER by scenario_id ASC;"""
         )
 
         scenarios_api = []
         for s in scenarios_query:
-            scenarios_api.append({'id': s[0], 'name': s[1]})
+            # TODO: make this more robust than relying on column order
+            scenarios_api.append(
+                {'id': s[0], 'name': s[1], 'validationStatus': s[2],
+                 'runStatus': s[3]}
+            )
 
         return scenarios_api
 
@@ -1740,10 +1766,12 @@ def add_new_scenario(msg):
     # Check if this is a new scenario or if we're updating an existing scenario
     # TODO: implement UI warnings if updating
     scenario_exists = c.execute(
-            "SELECT '{}' FROM scenarios;".format(msg['scenarioName'])
-    ).fetchone()[0]
+            "SELECT scenario_name"
+            " FROM scenarios "
+            "WHERE scenario_name = '{}';".format(msg['scenarioName'])
+    ).fetchone()
 
-    if scenario_exists == msg['scenarioName']:
+    if scenario_exists is not None:
         print('Updating scenario {}'.format(msg['scenarioName']))
         # TODO: this won't work if updating the scenario name; need a
         #  different process & warnings for it
@@ -2386,74 +2414,111 @@ def add_new_scenario(msg):
 # ### RUNNING SCENARIOS ### #
 # TODO: incomplete functionality
 # TODO: needs update
-def _run_scenario(message):
-    p = multiprocessing.current_process()
-    scenario_id = str(message['scenario'])
+# def run_scenario(scenario_name):
+#     #
+#     p = multiprocessing.current_process()
+#
+#     print("Running " + scenario_name)
+#     print(
+#         "Process name and ID for scenario {} run: {}, {}".format(
+#             scenario_name, p.name, p.pid
+#         )
+#     )
+#
+#     # TODO: what is the best way to get the right directories?
+#     # os.chdir(GRIDPATH_DIRECTORY)
+#     os.chdir('/Users/ana/dev/ui-run-scenario')
+#     import run_start_to_end
+#
+#     # TODO: what should the default settings be and what should we allow the
+#     #  user to select?
+#     run_start_to_end.main(
+#         args=['--scenario', scenario_name, '--log']
+#     )
 
+
+@socketio.on('launch_scenario_process')
+def launch_scenario_process(client_message):
+    """
+    Launch a process to run the scenario.
+    :param client_message:
+    :return:
+    """
+    scenario_id = str(client_message['scenario'])
+
+    # Get the scenario name for this scenario ID
+    # TODO: pass both from the client and do a check here that they exist
     io, c = connect_to_database()
-
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
             scenario_id
         )
     ).fetchone()[0]
 
-    print("Running " + scenario_name)
-    print("Process name and ID: ", p.name, p.pid)
-
-    os.chdir(GRIDPATH_DIRECTORY)
-
-    import run_start_to_end
-    run_start_to_end.main(
-        args=['--scenario', scenario_name, '--scenario_location',
-              'scenarios', '--solver', SOLVER, '--update_db_run_status']
-    )
-
-
-# TODO: probably will do this directly from Angular
-@socketio.on('launch_scenario_process')
-def launch_scenario_process(message):
-    scenario_id = str(message['scenario'])
-    # TODO: there needs to be a check that this scenario isn't already running
-    process_status = check_scenario_process_status(message=message)
+    # First, check if the scenario is already running
+    process_status = check_scenario_process_status(
+        client_message=client_message)
     if process_status:
-        print("Scenario already running")
+        # TODO: what should happen if the scenario is already running? At a
+        #  minimum, it should be a warning and perhaps a way to stop the
+        #  process and re-start the scenario run.
+        print("Scenario already running.")
         emit(
             'scenario_already_running',
             'scenario already running'
         )
+    # If the scenario is not found among the running processes, launch a
+    # multiprocessing process
     else:
         print("Starting process for scenario_id " + scenario_id)
-        p = multiprocessing.Process(
-            target=_run_scenario,
-            name=scenario_id,
-            args=(message,),
-        )
-        p.start()
+        # p = multiprocessing.Process(
+        #     target=run_scenario,
+        #     name=scenario_id,
+        #     args=(scenario_name,),
+        # )
+        # p.start()
+        os.chdir('/Users/ana/dev/ui-run-scenario')
+        p = subprocess.Popen(
+            [sys.executable, '-u',
+             os.path.join(GRIDPATH_DIRECTORY, 'run_start_to_end.py'),
+             '--log', '--scenario', scenario_name])
 
-        print("Sending PID to client ", p.pid)
-        # # TODO: should we be joining
-        # p.join()
+        # Needed to ensure child processes are terminated when server exits
+        atexit.register(p.terminate)
 
+        # Save the scenario's process ID
+        # TODO: we should save to Electron instead, as closing the UI will
+        #  delete the global data for the server
         global SCENARIO_STATUS
-        SCENARIO_STATUS[scenario_id] = dict()
-        SCENARIO_STATUS[scenario_id]['process_id'] = p.pid
+        SCENARIO_STATUS[(scenario_id, scenario_name)] = dict()
+        SCENARIO_STATUS[(scenario_id, scenario_name)]['process_id'] = p.pid
 
 
-# TODO: figure out how to deal with scenarios that are already running
+# TODO: implement functionality to check on the process from the UI (
+#  @socketio is not linked to anything yet)
 @socketio.on('check_scenario_process_status')
-def check_scenario_process_status(message):
+def check_scenario_process_status(client_message):
     """
-    Check if there is any running process that contains the given name processName.
+    Check if there is any running process that contains the given scenario
     """
-    scenario_name = str(message['scenario'])
+    scenario_id = str(client_message['scenario'])
+    io, c = connect_to_database()
+    scenario_name = c.execute(
+        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
+            scenario_id
+        )
+    ).fetchone()[0]
+
     global SCENARIO_STATUS
-    if scenario_name in SCENARIO_STATUS.keys():
-        if SCENARIO_STATUS[scenario_name]['process_id'] is not None:
-            # TODO: will assume running for now, but will need to actually
-            #  check process status later
+
+    if (scenario_id, scenario_name) in SCENARIO_STATUS.keys():
+        pid = SCENARIO_STATUS[(scenario_id, scenario_name)]['process_id']
+        # Process ID saved in global and process is still running
+        if pid in [p.pid for p in psutil.process_iter()] \
+                and psutil.Process(pid).status() == 'running':
             return True
         else:
+            # Process ID saved in global but process is not running
             return False
     else:
         return False
@@ -2461,7 +2526,7 @@ def check_scenario_process_status(message):
 
 # ### Common functions ### #
 def connect_to_database():
-    # io = sqlite3.connect('/Users/ana/dev/gridpath-ui-dev/db/io.db')
+    # io = sqlite3.connect('/Users/ana/dev/ui-run-scenario/db/io.db')
     io = sqlite3.connect(DATABASE_PATH)
     c = io.cursor()
     return io, c
@@ -2475,4 +2540,3 @@ if __name__ == '__main__':
         debug=True,
         use_reloader=False  # Reload manually for code changes to take effect
     )
-

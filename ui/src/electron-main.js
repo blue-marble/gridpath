@@ -70,7 +70,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  serverChildProcess.kill('SIGINT')
+  serverChildProcess.kill('SIGTERM')
 });
 
 app.on('activate', () => {
@@ -184,6 +184,17 @@ function startServer () {
         serverChildProcess.on('close', function(exit_code) {
             console.log('Python process closing code: ' + exit_code.toString());
         });
+
+        // Handle 'kill' signals; this is perhaps redundant since we're
+        // also catching SIGINT on the server side
+        serverChildProcess.on(
+          'SIGINT',
+          () => { serverChildProcess.exit() }
+          ); // catch ctrl-c
+        serverChildProcess.on(
+          'SIGTERM',
+          () => { serverChildProcess.exit() }
+          ); // catch kill
 
       }
     }

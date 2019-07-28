@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-import { Scenario } from './scenario'
+import {Scenario} from './scenarios.component';
 
 
 @Injectable({
@@ -19,7 +19,7 @@ export class ScenariosService {
 
   getScenarios(): Observable<Scenario[]> {
     console.log(this.http.get<Scenario[]>(this.scenariosURL));
-    return this.http.get<Scenario[]>(this.scenariosURL)
+    return this.http.get<Scenario[]>(this.scenariosURL);
   }
 
 }

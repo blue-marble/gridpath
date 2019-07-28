@@ -1,9 +1,15 @@
-import { Component, OnInit } from '@angular/core';
-import { Scenario } from './scenario';
-import { ScenariosService} from './scenarios.service';
+import {Component, OnInit} from '@angular/core';
+import {ScenariosService} from './scenarios.service';
 
-import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
-import { emptyStartingValues } from '../scenario-new/scenario-new.component';
+import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
+import {emptyStartingValues} from '../scenario-new/scenario-new.component';
+
+export class Scenario {
+  id: number;
+  name: string;
+  validationStatus: string;
+  runStatus: string;
+}
 
 @Component({
   selector: 'app-scenarios',
