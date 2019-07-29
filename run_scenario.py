@@ -14,7 +14,7 @@ from csv import writer
 import os.path
 import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
-from pyomo.util.infeasible import log_infeasible_constraints
+# from pyomo.util.infeasible import log_infeasible_constraints
 from pyutilib.services import TempfileManager
 import sys
 import traceback
@@ -530,7 +530,10 @@ def solve(instance, parsed_arguments):
         symbolic_solver_labels=parsed_arguments.symbolic
     )
 
-    log_infeasible_constraints(instance)
+    # Can optionally log infeasibilities but this has resulted in false
+    # positives due to rounding errors larger than the default tolerance
+    # of 1E-6.
+    # log_infeasible_constraints(instance)
 
 
 def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
