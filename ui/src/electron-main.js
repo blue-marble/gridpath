@@ -2,11 +2,13 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 const storage = require('electron-json-storage');
-
+const process = require('process');
+const path = require('path');
 const { spawn } = require('child_process');
-
-// // Socket IO
 const io = require('socket.io-client');
+
+// Are we on Windows
+const isWindows = process.platform === "win32";
 
 // Keep a global reference of each window object; if we don't, the window will
 // be closed automatically when the JavaScript object is garbage-collected.
@@ -14,7 +16,6 @@ let mainWindow;
 
 // Keep a global reference to the server process
 let serverChildProcess;
-
 
 // // Main window //
 function createMainWindow () {
@@ -32,7 +33,6 @@ function createMainWindow () {
       // get 'require' to work in
       // both main and renderer processes in Electron 5+
     });
-
 
     // and load the index.html of the app.
     mainWindow.loadFile('./ng-build/index.html');
@@ -70,7 +70,29 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  serverChildProcess.kill('SIGTERM')
+  if (isWindows) {
+    // Signals don't really work on Windows, so we can't use them to shut down the server process: see
+    // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
+    // TL;DR: just look at the first comment
+    // Can't kill process with ps.kill, as serverChildProcess.pid seems to return an incorrect pid here. I don't think
+    // this is a closure issue, as it appears the wrong pid is returned even right after the process is spawned whereas
+    // on Mac the correct one is returned. Commenting out the ps.kill code since it doesn't work on the wrong PID.
+    // TODO: perhaps IPC process communciation will work?
+    // For now server must be manually shut down by closing its console window
+
+    // ps.kill(serverChildProcess.pid, ( err ) => {
+    //   if (err) {
+    //       throw new Error( err );
+    //   }
+    //   else {
+    //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
+    //   }
+    // });
+  }
+  else {
+    serverChildProcess.kill('SIGTERM')
+  }
+
 });
 
 app.on('activate', () => {
@@ -151,7 +173,6 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
   );
 });
 
-
 // Flask server
 function startServer () {
   console.log("Starting server...");
@@ -162,27 +183,58 @@ function startServer () {
       if (error) throw error;
       console.log(data);
 
-      let options = {
-        pythonPath: `${data['pythonBinary']['value'][0]}/python`,
-        scriptPath: data['gridPathDirectory']['value'][0],
-      };
+      const pythonPath = path.join(
+        data['pythonBinary']['value'][0],
+        'python'
+      );
+      const scriptPath = path.join(
+        data['gridPathDirectory']['value'][0],
+        'flask_local_server.py'
+      );
 
-      if (options.pythonPath == null || options.scriptPath == null) {
+      const commandToRun = `${pythonPath} ${scriptPath}`;
+
+      if (pythonPath == null || scriptPath == null) {
         console.log("No Python path and server script path set.")
       }
       else {
         // Start Flask server
-        serverChildProcess = spawn(
-           options.pythonPath,
-          [`${options.scriptPath}/flask_local_server.py`],
-          {stdio: 'inherit'}
-        );
+        // TODO: lots of issues with child_process on Windows.
+        //  Enough to switch back to python-shell?
+        if (isWindows) {
+          // Windows requirements for server: commandToRun, shell: true, detached: true
+          // Tried:
+          // commandToRun, shell: false, detached: false --> ENOENT error
+          // commandToRun, shell: true, detached: false --> Python process closing code: 120
+          // commandToRun, shell: false, detached: true --> ENOENT error
+          // pythonPath, scriptPath, shell: true, detached: true --> Python process closing code: 120
+          // The 'Python process closing code: 120' error appears to be that the Anaconda environment is not activated
+          // on opening the shell, at least in the case of having a separate command (Python binary path) and arguments
+          // (script path); I'm not totally sure why using commandToRun with shell set to true but not detached also
+          // results in that error
+          // https://github.com/nodejs/node/issues/21825
+          // Also, windowsHide does not work: https://github.com/nodejs/node/issues/21825
+          // In addition, it's hard to kill the server, as the PID of the spawned process appears to be incorrect on
+          // Windows (and signals
+          serverChildProcess = spawn(
+           commandToRun, [],
+            {shell: true, detached: true, windowsHide: true}
+            );
+          // Why are we getting the wrong pid here? On Mac, it's the correct one...
+          // How to kill the server process on app exit?
+          console.log(serverChildProcess.pid);
+        }
+        else {
+          serverChildProcess = spawn(
+            pythonPath, [scriptPath], {stdio: 'inherit'}
+          );
+        }
+        // Some basic error-tracking
         serverChildProcess.on('error', function(error) {
           console.log("Server process failed to spawn");
-          console.log(error)
         });
         serverChildProcess.on('close', function(exit_code) {
-            console.log('Python process closing code: ' + exit_code.toString());
+          console.log('Python process closing code: ' + exit_code.toString());
         });
 
         // Handle 'kill' signals; this is perhaps redundant since we're

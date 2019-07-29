@@ -2477,7 +2477,7 @@ def launch_scenario_process(client_message):
         #     args=(scenario_name,),
         # )
         # p.start()
-        os.chdir('/Users/ana/dev/ui-run-scenario')
+        os.chdir(GRIDPATH_DIRECTORY)
         p = subprocess.Popen(
             [sys.executable, '-u',
              os.path.join(GRIDPATH_DIRECTORY, 'run_start_to_end.py'),
