@@ -71,12 +71,15 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   if (isWindows) {
-    // Signals don't really work on Windows, so we can't use them to shut down the server process: see
+    // Signals don't really work on Windows, so we can't use them to shut
+    // down the server process: see
     // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
     // TL;DR: just look at the first comment
-    // Can't kill process with ps.kill, as serverChildProcess.pid seems to return an incorrect pid here. I don't think
-    // this is a closure issue, as it appears the wrong pid is returned even right after the process is spawned whereas
-    // on Mac the correct one is returned. Commenting out the ps.kill code since it doesn't work on the wrong PID.
+    // Can't kill process with ps.kill, as serverChildProcess.pid seems to
+    // return an incorrect pid here. I don't think this is a closure issue,
+    // as it appears the wrong pid is returned even right after the process
+    // is spawned whereas on Mac the correct one is returned. Commenting out
+    // the ps.kill code since it doesn't work on the wrong PID.
     // TODO: perhaps IPC process communciation will work?
     // For now server must be manually shut down by closing its console window
 
@@ -88,6 +91,9 @@ app.on('before-quit', () => {
     //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
     //   }
     // });
+
+    // This does not kill the process, even if it's not detached.
+    serverChildProcess.kill()
   }
   else {
     serverChildProcess.kill('SIGTERM')
@@ -202,26 +208,44 @@ function startServer () {
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
         if (isWindows) {
-          // Windows requirements for server: commandToRun, shell: true, detached: true
-          // Tried:
-          // commandToRun, shell: false, detached: false --> ENOENT error
-          // commandToRun, shell: true, detached: false --> Python process closing code: 120
-          // commandToRun, shell: false, detached: true --> ENOENT error
-          // pythonPath, scriptPath, shell: true, detached: true --> Python process closing code: 120
-          // The 'Python process closing code: 120' error appears to be that the Anaconda environment is not activated
-          // on opening the shell, at least in the case of having a separate command (Python binary path) and arguments
-          // (script path); I'm not totally sure why using commandToRun with shell set to true but not detached also
-          // results in that error
+          // Using Anaconda, the Windows requirements for the server were:
+          // commandToRun, shell: true, detached: true
+          // With Anaconda, tried:
+          // 1. commandToRun, shell: false, detached: false --> ENOENT error
+          // 2. commandToRun, shell: true, detached: false -->
+          // Python process closing code: 120
+          // 3. commandToRun, shell: false, detached: true --> ENOENT error
+          // 4. pythonPath, scriptPath, shell: true, detached: true -->
+          // Python process closing code: 120
+          // The 'Python process closing code: 120' error appears to be that
+          // the Anaconda environment is not activated on opening the
+          // shell, at least in the case of having a separate command
+          // (Python binary path) and arguments (script path); I'm not
+          // totally sure why using commandToRun with shell set to true but
+          // not detached also results in that error
+          // Also, windowsHide does not work:
           // https://github.com/nodejs/node/issues/21825
-          // Also, windowsHide does not work: https://github.com/nodejs/node/issues/21825
-          // In addition, it's hard to kill the server, as the PID of the spawned process appears to be incorrect on
-          // Windows (and signals
+
+          // Using Python 3.7 distribution downloaded from python.org and
+          // venv for managing environments, 'shell' must be 'true'
+          // 1. commandToRun, shell: false, detached: false --> fail with
+          // Python process closing code: -4058
+          // 2. commandToRun, shell: true, detached: false -->
+          // DO THIS LAST
+          // 3. commandToRun, shell: false, detached: true --> fail with
+          // Python process closing code: -4058
+          // 4. pythonPath, scriptPath, shell: true, detached: true -->
+          // Python process closing code: 120
+          // While the process does not need to be detached with a pyenv
+          // environment, I'm leaving it as detached, as I still don't know
+          // how to kill the server process upon exit.
           serverChildProcess = spawn(
            commandToRun, [],
-            {shell: true, detached: true, windowsHide: true}
+            {shell: true, detached: true, windowsHide: false},
             );
           // Why are we getting the wrong pid here? On Mac, it's the correct one...
-          // How to kill the server process on app exit?
+          // How to kill the server process on app exit without knowing its
+          // PID?
           console.log(serverChildProcess.pid);
         }
         else {
