@@ -47,7 +47,7 @@ INSERT INTO mod_operational_types (operational_type)
 VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('dispatchable_continuous_commit'), ('dispatchable_no_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
-('storage_generic'), ('variable'), ('always_on');
+('storage_generic'), ('variable'), ('variable_no_curtailment'), ('always_on');
 
 -- Scenario validation status
 DROP TABLE IF EXISTS mod_validation_status_types;
@@ -1309,6 +1309,28 @@ subscenarios_transmission_existing_capacity
 (transmission_existing_capacity_scenario_id)
 );
 
+-- New transmission cost
+DROP TABLE IF EXISTS subscenarios_transmission_new_cost;
+CREATE TABLE subscenarios_transmission_new_cost (
+transmission_new_cost_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_transmission_new_cost;
+CREATE TABLE inputs_transmission_new_cost (
+transmission_new_cost_scenario_id INTEGER,
+transmission_line VARCHAR(64),
+vintage INTEGER,
+tx_lifetime_yrs FLOAT,
+tx_annualized_real_cost_per_mw_yr FLOAT,
+PRIMARY KEY (transmission_new_cost_scenario_id, transmission_line,
+period),
+FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
+subscenarios_transmission_new_cost
+(transmission_new_cost_scenario_id)
+);
+
 -- Operational characteristics
 -- This currently makes no difference, as we only have one operational type
 -- for transmission
@@ -2537,6 +2559,20 @@ max_mw FLOAT,
 PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
 );
 
+DROP TABLE IF EXISTS results_transmission_capacity_new_build;
+CREATE TABLE results_transmission_capacity_new_build (
+scenario_id INTEGER,
+transmission_line VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+load_zone_from VARCHAR(32),
+load_zone_to VARCHAR(32),
+new_build_transmission_capacity_mw FLOAT,
+PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
+);
+
+-- TODO: add table for costs new build?
 DROP TABLE IF EXISTS results_transmission_costs_capacity;
 CREATE TABLE results_transmission_costs_capacity (
 scenario_id INTEGER,

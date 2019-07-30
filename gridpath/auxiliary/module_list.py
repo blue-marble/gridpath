@@ -26,6 +26,16 @@ def all_modules_list():
 
     This is the list of all GridPath modules in the order they would be
     loaded if all optional features were selected.
+
+    Note: technically speaking some modules listed below are "packages", i.e.
+    they are a collection of Python modules. For example,  "project" is a
+    directory that contains both modules (project.fuels) and other sub-packages
+    (project.capacity.capacity_types, project.operations, etc.). A package must
+    contain an additional __init__.py file to distinguish a package from a
+    directory that just happens to contain a bunch of Python scripts. In some
+    cases, these __init__.py files will contain code and functions as well which
+    can be accessed by importing the respective package.
+    When Python imports a package, it will return a Python module object.
     """
     all_modules = [
         "temporal.operations.timepoints",
