@@ -118,7 +118,7 @@ def load_module_specific_data(
                      )
 
 
-def load_module_specific_inputs_from_database(
+def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c
 ):
     """
@@ -153,7 +153,7 @@ def load_module_specific_inputs_from_database(
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -162,7 +162,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
     pass
     # Validation to be added
-    # project_zone_dur =load_module_specific_inputs_from_database(
+    # project_zone_dur =get_module_specific_inputs_from_database(
     #    subscenarios, subproblem, stage, c)
 
 
@@ -170,7 +170,7 @@ def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, c
 ):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -180,7 +180,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    project_zone_dur = load_module_specific_inputs_from_database(
+    project_zone_dur = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     # Make a dict for easy access

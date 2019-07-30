@@ -55,7 +55,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -87,14 +87,14 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     :param c: database cursor
     :return:
     """
-    # timepoints = load_inputs_from_database(
+    # timepoints = get_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
     # validate timepoint inputs
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     timepoints.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -104,7 +104,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
 
-    timepoints = load_inputs_from_database(
+    timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory, "timepoints.tab"), "w") as \

@@ -36,7 +36,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -58,7 +58,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -67,13 +67,13 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     """
     pass
     # Validation to be added
-    # reg_up_bas = load_inputs_from_database(
+    # reg_up_bas = get_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     regulation_up_balancing_areas.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -83,7 +83,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
 
-    reg_up_bas = load_inputs_from_database(
+    reg_up_bas = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory,

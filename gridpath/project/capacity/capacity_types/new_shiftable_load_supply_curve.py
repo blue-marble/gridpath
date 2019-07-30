@@ -254,7 +254,7 @@ def load_module_specific_data(
     )
 
 
-def load_module_specific_inputs_from_database(
+def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c
 ):
     """
@@ -333,7 +333,7 @@ def load_module_specific_inputs_from_database(
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -341,7 +341,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     :return:
     """
     # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
-    #     load_module_specific_inputs_from_database(
+    #     get_module_specific_inputs_from_database(
     #         subscenarios, subproblem, stage, c)
 
     # validate inputs
@@ -351,7 +351,7 @@ def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, c
 ):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     new_shiftable_load_supply_curve_potential.tab and
     new_shiftable_load_supply_curve.tab files
 
@@ -367,7 +367,7 @@ def write_module_specific_model_inputs(
     """
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
-        load_module_specific_inputs_from_database(
+        get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, c)
 
     with open(os.path.join(

@@ -506,7 +506,7 @@ def export_module_specific_results(mod, d,
             ])
 
 
-def load_module_specific_inputs_from_database(
+def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c
 ):
     """
@@ -582,7 +582,7 @@ def load_module_specific_inputs_from_database(
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -590,7 +590,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     :return:
     """
 
-    # hydro_chars = load_module_specific_inputs_from_database(
+    # hydro_chars = get_module_specific_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
 
     # do stuff here to validate inputs
@@ -600,7 +600,7 @@ def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, c
 ):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     hydro_conventional_horizon_params.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -609,7 +609,7 @@ def write_module_specific_model_inputs(
     :param c: database cursor
     :return:
     """
-    hydro_chars = load_module_specific_inputs_from_database(
+    hydro_chars = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     # If hydro_conventional_horizon_params.tab file already exists,

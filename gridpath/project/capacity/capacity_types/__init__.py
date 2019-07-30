@@ -25,7 +25,7 @@ def get_required_capacity_type_modules(scenario_id, c):
     on the project_operational_chars_scenario_id of the scenario_id.
 
     This list will be used to know for which capacity type submodules we
-    should validate inputs, load inputs from database , or save results to
+    should validate inputs, get inputs from database , or save results to
     database.
 
     Note: once we have determined the dynamic components, this information
@@ -57,7 +57,7 @@ def get_required_capacity_type_modules(scenario_id, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -85,7 +85,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input .tab files
+    Get inputs from database and write out the model input .tab files
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:

@@ -16,12 +16,6 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
 
 
-# TODO:
-#   1. pass conn instead of cursor
-#   2. commit after each validate inputs
-#   3. change name of load_inputs to get_intputs
-
-
 def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
     """"
     For each module, load the inputs from the database and validate them

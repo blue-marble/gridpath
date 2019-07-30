@@ -353,7 +353,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
                 ])
 
 
-def load_module_specific_inputs_from_database(
+def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c
 ):
     """
@@ -405,7 +405,7 @@ def load_module_specific_inputs_from_database(
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -415,7 +415,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     pass
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
-    #   load_module_specific_inputs_from_database(
+    #   get_module_specific_inputs_from_database(
     #       subscenarios, subproblem, stage, c)
 
 
@@ -423,7 +423,7 @@ def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, c
 ):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     deliverability_group_params.tab and
     deliverability_group_projects.tab files.
     :param inputs_directory: local directory where .tab files will be saved
@@ -435,7 +435,7 @@ def write_module_specific_model_inputs(
     """
 
     group_threshold_costs, project_deliverability_groups = \
-        load_module_specific_inputs_from_database(
+        get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, c)
 
     if group_threshold_costs:

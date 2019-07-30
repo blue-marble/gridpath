@@ -172,7 +172,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -197,7 +197,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -206,13 +206,13 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     """
     pass
     # Validation to be added
-    # transmission_zones = load_inputs_from_database(
+    # transmission_zones = get_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     transmission_lines.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -222,7 +222,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
 
-    transmission_zones = load_inputs_from_database(
+    transmission_zones = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     # Make a dict for easy access

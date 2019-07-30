@@ -635,7 +635,7 @@ def summarize_module_specific_results(
             outfile.write("\n")
 
 
-def load_module_specific_inputs_from_database(
+def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c
 ):
     """
@@ -695,14 +695,14 @@ def load_module_specific_inputs_from_database(
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
     :param c: database cursor
     :return:
     """
-    # new_stor_costs = load_module_specific_inputs_from_database(
+    # new_stor_costs = get_module_specific_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
 
     # validate inputs
@@ -715,7 +715,7 @@ def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, c
 ):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     new_build_storage_vintage_costs.tab file
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -725,7 +725,7 @@ def write_module_specific_model_inputs(
     :return:
     """
 
-    new_stor_costs = load_module_specific_inputs_from_database(
+    new_stor_costs = get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory,

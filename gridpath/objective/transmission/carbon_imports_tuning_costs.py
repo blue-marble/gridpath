@@ -79,7 +79,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -101,7 +101,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -110,13 +110,13 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     """
     pass
     # Validation to be added
-    # import_carbon_tuning_cost = load_inputs_from_database(
+    # import_carbon_tuning_cost = get_inputs_from_database(
     #     subscenarios, subproblem, stage, c)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     tuning_params.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -126,7 +126,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
 
-    import_carbon_tuning_cost = load_inputs_from_database(
+    import_carbon_tuning_cost = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     # If tuning params file exists, add column to file, else create file and

@@ -162,7 +162,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                          )
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -226,7 +226,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -237,7 +237,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     validation_results = []
 
     # Read in the project input data into a dataframe
-    projects = load_inputs_from_database(subscenarios, subproblem, stage, c)
+    projects = get_inputs_from_database(subscenarios, subproblem, stage, c)
     df = pd.DataFrame(projects.fetchall())
     df.columns = [s[0] for s in projects.description]
 
@@ -413,7 +413,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     projects.tab file.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -423,7 +423,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
 
-    projects = load_inputs_from_database(subscenarios, subproblem, stage, c)
+    projects = get_inputs_from_database(subscenarios, subproblem, stage, c)
 
     # TODO: decide how to deal with projects.tab -- currently, a large table
     #  is created with NULL values for projects that don't have certain
@@ -433,7 +433,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     #  just a subset of the params, which would mean that the submodules
     #  won't have to parse the large file
 
-    # TODO: make load_inputs_from_database return dataframe and simplify writing
+    # TODO: make get_inputs_from_database return dataframe and simplify writing
     #   of the tab files. If going this route, would need to make sure database
     #   columns and tab file column names are the same everywhere
     #   projects.fillna(".", inplace=True)

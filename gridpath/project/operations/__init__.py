@@ -297,7 +297,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def load_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -305,8 +305,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
     :param c: database cursor
     :return:
     """
-    # Load project availability file if project_availability_scenario_id is
-    #  not NULL
+    # Get project availability if project_availability_scenario_id is not NULL
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
         availabilities = pd.DataFrame()
     else:
@@ -333,7 +332,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
     availabilities_df = pd.DataFrame(availabilities.fetchall())
     availabilities_df.columns = [s[0] for s in availabilities.description]
 
-    # Load heat rate curves files
+    # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
     heat_rates = c.execute(
         """
@@ -361,7 +360,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
 
 def validate_inputs(subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and validate the inputs
+    Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
@@ -372,7 +371,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     validation_results = []
 
     # Read in the project input data into a dataframe
-    av_df, hr_df = load_inputs_from_database(
+    av_df, hr_df = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     # Check data types availability:
@@ -435,7 +434,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
-    Load the inputs from database and write out the model input
+    Get inputs from database and write out the model input
     project_availability.tab and heat_rate_curves.tab files
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
@@ -444,7 +443,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param c: database cursor
     :return:
     """
-    availabilities, heat_rates = load_inputs_from_database(
+    availabilities, heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
     if not availabilities.empty:
