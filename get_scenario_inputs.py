@@ -423,8 +423,12 @@ def main(args=None):
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Load appropriate inputs from database and write the .tab file model inputs
-    write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       subscenarios, c)
+    write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblems=subproblems,
+        loaded_modules=loaded_modules,
+        subscenarios=subscenarios,
+        cursor=c)
 
     # Save the list of optional features to a file (will be used to determine
     # modules without database connection)
