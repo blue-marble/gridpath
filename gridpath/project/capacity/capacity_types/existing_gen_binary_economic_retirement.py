@@ -384,13 +384,13 @@ def get_module_specific_inputs_from_database(
     return ep_capacities
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, c):
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     pass

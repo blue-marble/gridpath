@@ -358,16 +358,17 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
     return availabilities_df, heat_rates_df
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
+    c = conn.cursor()
     validation_results = []
 
     # Read in the project input data into a dataframe
@@ -430,6 +431,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, c)
+    conn.commit()
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):

@@ -55,17 +55,18 @@ def get_required_capacity_type_modules(scenario_id, c):
     return required_capacity_type_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Load in the required capacity type modules
+    c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
     required_capacity_type_modules = get_required_capacity_type_modules(
         scenario_id, c)
@@ -78,7 +79,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
                    "validate_module_specific_inputs"):
             imported_capacity_type_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, c)
+                    subscenarios, subproblem, stage, conn)
         else:
             pass
 

@@ -156,17 +156,18 @@ def get_required_prm_type_modules(subscenarios, c):
     return required_prm_type_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Load in the required prm type modules
+    c = conn.cursor()
     required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
     imported_prm_modules = \
         load_prm_type_modules(required_prm_type_modules)
@@ -177,7 +178,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
                    "validate_module_specific_inputs"):
             imported_prm_modules[prm_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, c)
+                    subscenarios, subproblem, stage, conn)
         else:
             pass
 

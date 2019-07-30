@@ -137,17 +137,18 @@ def get_required_opchar_modules(scenario_id, c):
     return required_opchar_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Load in the required operational modules
+    c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
@@ -159,7 +160,7 @@ def validate_inputs(subscenarios, subproblem, stage, c):
                    "validate_module_specific_inputs"):
             imported_operational_modules[op_m]. \
                 validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, c)
+                    subscenarios, subproblem, stage, conn)
         else:
             pass
 

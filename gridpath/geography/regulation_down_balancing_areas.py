@@ -57,13 +57,13 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
     return reg_down_bas
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     pass

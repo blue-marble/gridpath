@@ -79,12 +79,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
     return timepoints
 
 
-def validate_inputs(subscenarios, subproblem, stage, c):
+def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     :param inputs: dictionary with inputs (loaded from database) by module name
     :param subscenarios: SubScenarios object with all subscenario info
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     # timepoints = get_inputs_from_database(

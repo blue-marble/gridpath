@@ -16,7 +16,7 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
 
 
-def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
+def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     """"
     For each module, load the inputs from the database and validate them
 
@@ -25,7 +25,7 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
     :param loaded_modules: list of imported modules (Python <class 'module'>
         objects)
     :param subscenarios: SubScenarios object with all subscenario info
-    :param cursor: database cursor
+    :param conn: database connection
     :return:
     """
 
@@ -50,7 +50,7 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
-                        c=cursor
+                        conn=conn
                     )
                 else:
                     pass
@@ -70,9 +70,9 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
 
     # check that specified load zones are actual load zones that are available
 
-
     # Update Validation Status:
-    update_validation_status(cursor, subscenarios.SCENARIO_ID)
+    update_validation_status(conn.cursor(), subscenarios.SCENARIO_ID)
+    conn.commit()
 
 
 def reset_input_validation(c, scenario_id):
@@ -152,8 +152,8 @@ def main(args=None):
 
     # Connect to database; For now, assume script is run from root directory
     # and the the database is ./db and named io.db
-    io = sqlite3.connect(os.path.join(os.getcwd(), 'db', 'io.db'))
-    c = io.cursor()
+    conn = sqlite3.connect(os.path.join(os.getcwd(), 'db', 'io.db'))
+    c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg,
@@ -164,7 +164,7 @@ def main(args=None):
 
     # Reset input validation status and results
     reset_input_validation(c, scenario_id)
-    io.commit()
+    conn.commit()
 
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
@@ -178,11 +178,7 @@ def main(args=None):
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Read in appropriate inputs from database and validate inputs
-    validate_inputs(subproblems, loaded_modules, subscenarios, c)
-
-    # Commit changes to database
-    # --> input validation populates mod_input_validation
-    io.commit()
+    validate_inputs(subproblems, loaded_modules, subscenarios, conn)
 
 
 if __name__ == "__main__":
