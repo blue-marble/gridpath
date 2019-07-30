@@ -1446,6 +1446,24 @@ class SettingTuning(Resource):
         return setting_options_api
 
 
+# ### API: View Data ### #
+# TODO: add the subscenario names (not just IDs) to the inputs tables --
+#  this will make it easier to show the right information to the user
+#  without having to resort to JOINS
+
+class ViewDataTemporalTimepoints(Resource):
+    """
+
+    """
+
+    @staticmethod
+    def get():
+        view_data_api = get_table_data(
+            table='inputs_temporal_timepoints'
+        )
+        return view_data_api
+
+
 # ### API: Status ### #
 class ServerStatus(Resource):
     """
@@ -1463,7 +1481,8 @@ class ServerStatus(Resource):
 api.add_resource(Scenarios, '/scenarios/')
 
 # ### API Routes Scenario Detail ### #
-# All
+# Name
+# TODO: is this used?
 api.add_resource(ScenarioDetailName, '/scenarios/<scenario_id>/name')
 # All
 api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
@@ -1671,7 +1690,11 @@ api.add_resource(SettingProjectLocalCapacityChars,
 api.add_resource(SettingTuning,
                  '/scenario-settings/tuning')
 
-# Server status
+# ### API Routes View Input Data Tables ### #
+api.add_resource(ViewDataTemporalTimepoints,
+                 '/view-data/temporal-timepoints')
+
+# ### API Routes Server Status ### #
 api.add_resource(ServerStatus, '/server-status')
 
 
@@ -1757,6 +1780,26 @@ def check_feature(scenario_id, column_string):
     ).fetchone()[0]
 
     return scenario_feature_on
+
+
+def get_table_data(table):
+    """
+
+    """
+    io, c = connect_to_database()
+
+    table_data_query = c.execute("""SELECT * FROM {};""".format(table))
+
+    column_names = [s[0] for s in table_data_query.description]
+
+    table_data_api = []
+    for row in table_data_query.fetchall():
+        row_values = list(row)
+        row_dict = dict(zip(column_names, row_values))
+        table_data_api.append(row_dict)
+
+    return table_data_api
+
 
 # ### Socket Communication ### #
 @socketio.on('add_new_scenario')

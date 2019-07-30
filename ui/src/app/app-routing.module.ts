@@ -3,16 +3,16 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { HomeComponent } from './home/home.component';
 import { ScenariosComponent } from './scenarios/scenarios.component';
-import { ScenarioDetailComponent }
-  from './scenario-detail/scenario-detail.component';
-import { ScenarioNewComponent }
-  from './scenario-new/scenario-new.component';
+import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.component';
+import { ViewDataComponent } from './view-data/view-data.component';
+import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 import { SettingsComponent } from './settings/settings.component';
 
 const appRoutes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'scenarios', component: ScenariosComponent },
   { path: 'scenario/:id', component: ScenarioDetailComponent },
+  { path: 'view-data', component: ViewDataComponent },
   { path: 'scenario-new', component: ScenarioNewComponent },
   { path: 'settings', component: SettingsComponent },
   { path: '',
