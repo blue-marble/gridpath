@@ -7,7 +7,10 @@
 
 import csv
 import os.path
+import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
+from gridpath.auxiliary.auxiliary import check_dtypes, \
+    write_validation_to_database
 
 
 def add_model_components(m, d):
@@ -94,18 +97,131 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # fuels, fuel_prices = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
 
+    validation_results = []
 
-    # TODO: validate inputs and make sure that the fuels we have cover all the
-    # fuels specified in projects_inputs_operational_chars
+    # Get the fuel input data
+    fuels, fuel_prices = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
 
-    # look at what fuels you're supposed to have (by looking at projects)
-    # and then make sure you have data for all of them
-    # fuels + fuel prices for the periods and months you are modeling
+    # Get the projects fuels
+    c1 = conn.cursor()
+    projects = c1.execute(
+        """SELECT project, fuel
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, fuel
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) AS op_char
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    # Get the relevant periods and months
+    c2 = conn.cursor()
+    periods_months = c2.execute(
+        """SELECT DISTINCT period, month
+        FROM inputs_temporal_timepoints
+        LEFT OUTER JOIN
+        (SELECT horizon, month
+        FROM inputs_temporal_horizons
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {})
+        USING (horizon)
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem,
+            subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
+        )
+    ).fetchall()
+
+    # Convert input data into pandas DataFrame
+    fuels_df = pd.DataFrame(fuels.fetchall())
+    fuels_df.columns = [s[0] for s in fuels.description]
+    fuel_prices_df = pd.DataFrame(fuel_prices.fetchall())
+    fuel_prices_df.columns = [s[0] for s in fuel_prices.description]
+    prj_df = pd.DataFrame(projects.fetchall())
+    prj_df.columns = [s[0] for s in projects.description]
+
+    # Check data types fuels:
+    expected_dtypes = {
+        "fuel": "string",
+        "co2_intensity_tons_per_mmbtu": "numeric"
+    }
+    dtype_errors, error_columns = check_dtypes(fuels_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_FUELS",
+             "inputs_project_fuels",
+             "Invalid data type",
+             error
+             )
+        )
+
+    # Check data types fuel prices:
+    expected_dtypes = {
+        "fuel": "string",
+        "period": "numeric",
+        "month": "numeric",
+        "fuel_price_per_mmbtu": "numeric"
+    }
+    dtype_errors, error_columns = check_dtypes(fuel_prices_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_FUEL_PRICES",
+             "inputs_project_fuel_prices",
+             "Invalid data type",
+             error
+             )
+        )
+
+    # Check that fuels specified for projects exist in fuels table
+    fuel_mask = pd.notna(prj_df["fuel"])
+    existing_fuel_mask = prj_df["fuel"].isin(fuels_df["fuel"])
+    invalids = fuel_mask & ~existing_fuel_mask
+    if invalids.any():
+        bad_projects = prj_df["project"][invalids].values
+        bad_fuels = prj_df["fuel"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        print_bad_fuels = ", ".join(bad_fuels)
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Non existent fuel",
+             "Project(s) '{}': Specified fuel(s) '{}' do(es) not exist"
+             .format(print_bad_projects, print_bad_fuels)
+             )
+        )
+
+    # Check that fuel prices exist for the period and month
+    for f in fuels_df["fuel"].values:
+        df = fuel_prices_df[fuel_prices_df["fuel"] == f]
+        for period, month in periods_months:
+            if not ((df.period == period) & (df.month == month)).any():
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     __name__,
+                     "PROJECT_FUEL_PRICES",
+                     "inputs_project_fuel_prices",
+                     "Missing fuel price",
+                     "Fuel '{}': Missing price for period '{}', month '{}')"
+                     .format(f, str(period), str(month))
+                     )
+                )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """

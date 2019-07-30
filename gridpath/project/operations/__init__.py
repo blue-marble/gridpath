@@ -335,15 +335,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c2 = conn.cursor()
     heat_rates = c2.execute(
         """
-        SELECT project, load_point_mw, 
-        average_heat_rate_mmbtu_per_mwh
+        SELECT project, operational_type, fuel, heat_rate_curves_scenario_id, 
+        load_point_mw, average_heat_rate_mmbtu_per_mwh
         FROM inputs_project_portfolios
         INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id
+        (SELECT project, operational_type, fuel, heat_rate_curves_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) AS op_char
         USING(project)
-        INNER JOIN
+        LEFT OUTER JOIN
         inputs_project_heat_rate_curves
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
@@ -364,8 +364,13 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # TODO: make validation works when no availabilities specified
     validation_results = []
+
+    # TODO: make validation works when no availabilities specified
+    # TODO: fix read inputs to deal with matches where there's no fuel
+    #   plus don't use some of the columns
+    # TODO: should we allow for any dispatchable project to have no fuel?
+    #   right now we assumes that's okay
 
     # Get the project input data
     availabilities, heat_rates = get_inputs_from_database(
@@ -377,13 +382,19 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     hr_df = pd.DataFrame(heat_rates.fetchall())
     hr_df.columns = [s[0] for s in heat_rates.description]
 
+    # Define masks (list of true/false dependent on conditions checked)
+    hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
+    fuel_mask = pd.notna(hr_df["fuel"])
+    load_point_mask = pd.notna(hr_df["load_point_mw"])
+    operational_mask = \
+        hr_df["operational_type"].isin(["must_run", "dispatchable_no_commit"])
+
     # Check data types availability:
     expected_dtypes = {
         "project": "string",
         "horizon": "numeric",
         "availability": "numeric",
     }
-
     dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
@@ -396,14 +407,34 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
+    # check 0 < availability <= 1
+    if "availability" not in error_columns:
+        invalids = ((av_df["availability"] <= 0) |
+                    (av_df["availability"] > 1))
+        if invalids.any():
+            bad_projects = av_df["project"][invalids].values
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_AVAILABILITY",
+                 "inputs_project_availability",
+                 "Invalid availability",
+                 "Project(s) '{}': expected 0 < availability <= 1"
+                 .format(print_bad_projects)
+                 )
+            )
+
     # Check data types heat_rates:
+    sub_hr_df = hr_df[hr_curve_mask][
+        ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+    ]
     expected_dtypes = {
         "project": "string",
         "load_point_mw": "numeric",
         "average_heat_rate_mmbtu_per_mwh": "numeric",
     }
-
-    dtype_errors, error_columns = check_dtypes(hr_df, expected_dtypes)
+    dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -415,21 +446,142 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check that availability is not > 1
+    # Check valid numeric columns in heat rates are positive
+    numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
+    valid_numeric_columns = set(numeric_columns) - set(error_columns)
+    for column in valid_numeric_columns:
+        is_negative = (sub_hr_df[column] <= 0)
+        if is_negative.any():
+            bad_projects = sub_hr_df["project"][is_negative].values
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_HEAT_RATE_CURVES",
+                 "inputs_project_heat_rate_curves",
+                 "Invalid numeric sign",
+                 "Project(s) '{}'; Expected '{}' > 0"
+                 .format(print_bad_projects, column)
+                 )
+            )
 
-    # Check Heat Rates
-    # 1. for each project:
-    #     slice out load points and heat rates
-    #     calculate heat_rates --> will throw error if things are wrong
-    # PROBLEM: need to only do this for fuel projects, so would need to read
-    # in projects table as well (see load_model_data above where this is done)
-    # PROBLEM: how to avoid doing this twice? (once here and once when creating
-    # the model inputs in load_model_data
+    # Check for consistency between fuel and heat rate curve inputs
+    # 1. Make sure projects with fuel have a heat rate scenario specified
+    invalids = fuel_mask & ~hr_curve_mask
+    if invalids.any():
+        bad_projects = hr_df["project"][invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Missing heat rate scenario inputs",
+             "Project(s) '{}': Missing heat_rate_curves_scenario_id"
+             .format(print_bad_projects)
+             )
+        )
+    # 2. Make sure projects without fuel have no heat rate scenario specified
+    invalids = ~fuel_mask & hr_curve_mask
+    if invalids.any():
+        bad_projects = pd.unique(hr_df["project"][invalids])
+        print_bad_projects = ", ".join(bad_projects)
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Unnecessary heat rate scenario inputs",
+             "Project(s) '{}': No fuel specified so no heat rate expected"
+             .format(print_bad_projects)
+             )
+        )
 
-    # 2. Check that you don't specify heat rate curves for projects that don't
-    # need it.
-    # NOTE; foreign key already checks that you can't have null for a project
-    # that is in the heat_rate_curves table
+    # Check that specified hr scenarios actually have inputs in the hr table
+    invalids = hr_curve_mask & ~load_point_mask
+    if invalids.any():
+        bad_projects = hr_df["project"][invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_HEAT_RATE_CURVES",
+             "inputs_project_heat_rate_curves",
+             "Missing heat rate inputs",
+             "Project(s) '{}': Expected at least one load point"
+             .format(print_bad_projects)
+             )
+        )
+
+    # Check that must-run and no-commit only have one load point
+    relevant_mask = fuel_mask & operational_mask
+    n_load_points = hr_df[relevant_mask].groupby(['project']).size()
+    invalids = (n_load_points > 1)
+    if invalids.any():
+        bad_projects = hr_df["project"][invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        op_types = hr_df["operational_type"][invalids]
+        print_op_types = ", ".join(op_types)
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_HEAT_RATE_CURVES",
+             "inputs_project_heat_rate_curves",
+             "Too many load points",
+             "Project(s) '{}': Expected only one load point for op_type(s) '{}'"
+             .format(print_bad_projects, print_op_types)
+             )
+        )
+
+    # Check that each project has convex heat rates etc.
+    relevant_mask = fuel_mask & load_point_mask
+    for project in pd.unique(hr_df["project"][relevant_mask]):
+        # read in the power setpoints and average heat rates
+        hr_slice = hr_df[hr_df["project"] == project]
+        hr_slice = hr_slice.sort_values(by=["load_point_mw"])
+        load_points = hr_slice["load_point_mw"].values
+        heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
+
+        if len(load_points) > 1:
+            fuel_burn = load_points * heat_rates
+            incr_loads = np.diff(load_points)
+            incr_fuel_burn = np.diff(fuel_burn)
+            slopes = incr_fuel_burn / incr_loads
+
+            if np.any(incr_loads == 0):
+                # note: primary key should already prohibit this
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     __name__,
+                     "PROJECT_HEAT_RATE_CURVES",
+                     "inputs_project_heat_rate_curves",
+                     "Identical load points",
+                     "Project(s) '{}': load points can not be identical"
+                     .format(project)
+                     )
+                )
+            if np.any(incr_fuel_burn <= 0):
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     __name__,
+                     "PROJECT_HEAT_RATE_CURVES",
+                     "inputs_project_heat_rate_curves",
+                     "Decreasing fuel burn",
+                     "Project(s) '{}': Total fuel burn should increase with increasing load"
+                     .format(project)
+                     )
+                )
+            if np.any(np.diff(slopes) <= 0):
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     __name__,
+                     "PROJECT_HEAT_RATE_CURVES",
+                     "inputs_project_heat_rate_curves",
+                     "Non convex fuel burn function",
+                     "Project(s) '{}': Marginal heat rate should increase with increading load"
+                     .format(project)
+                     )
+                )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
@@ -448,6 +600,15 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     availabilities, heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
+
+    # Convert heat rates to dataframes to pre-process data
+    hr_df = pd.DataFrame(heat_rates.fetchall())
+    hr_df.columns = [s[0] for s in heat_rates.description]
+
+    # Pre-process (filter out only projects with fuel; select columns)
+    fuel_mask = pd.notna(hr_df["fuel"])
+    columns = ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+    heat_rates = hr_df[columns][fuel_mask].values
 
     if availabilities:
         with open(os.path.join(inputs_directory, "project_availability.tab"),
@@ -487,7 +648,6 @@ def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):
 
     # Data checks
     assert len(load_points) == len(heat_rates)
-    # TODO: remove once proper data validation with database?
     if np.any(load_points <= 0) or np.any(heat_rates <= 0):
         raise ValueError(
             """
