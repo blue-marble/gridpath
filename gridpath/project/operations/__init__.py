@@ -12,10 +12,12 @@ from builtins import zip
 import csv
 from pandas import read_csv
 import numpy as np
+import pandas as pd
 import os.path
 from pyomo.environ import Set, Param, PositiveReals, PercentFraction, Reals
 
-from gridpath.auxiliary.auxiliary import is_number
+from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
+    write_validation_to_database
 
 
 # TODO: should we take this out of __init__.py
@@ -306,7 +308,7 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
     # Load project availability file if project_availability_scenario_id is
     #  not NULL
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = []  # TODO: think of best way to deal with this case
+        availabilities = pd.DataFrame()
     else:
         availabilities = c.execute(
             """SELECT project, horizon, availability
@@ -326,7 +328,10 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             )
-        ).fetchall()
+        )
+
+    availabilities_df = pd.DataFrame(availabilities.fetchall())
+    availabilities_df.columns = [s[0] for s in availabilities.description]
 
     # Load heat rate curves files
     # Select only heat rate curves of projects in the portfolio
@@ -346,9 +351,12 @@ def load_inputs_from_database(subscenarios, subproblem, stage, c):
         WHERE project_portfolio_scenario_id = {}
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
-    ).fetchall()
+    )
 
-    return availabilities, heat_rates
+    heat_rates_df = pd.DataFrame(heat_rates.fetchall())
+    heat_rates_df.columns = [s[0] for s in heat_rates.description]
+
+    return availabilities_df, heat_rates_df
 
 
 def validate_inputs(subscenarios, subproblem, stage, c):
@@ -361,9 +369,47 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     :return:
     """
 
-    # availabilities, heat_rates = load_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    validation_results = []
 
+    # Read in the project input data into a dataframe
+    av_df, hr_df = load_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
+    # Check data types availability:
+    expected_dtypes = {
+        "project": "string",
+        "horizon": "numeric",
+        "availability": "numeric",
+    }
+
+    dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (__name__,
+             "PROJECT_AVAILABILITY",
+             "inputs_project_availability",
+             "Invalid data type",
+             error
+             )
+        )
+
+    # Check data types heat_rates:
+    expected_dtypes = {
+        "project": "string",
+        "load_point_mw": "numeric",
+        "average_heat_rate_mmbtu_per_mwh": "numeric",
+    }
+
+    dtype_errors, error_columns = check_dtypes(hr_df, expected_dtypes)
+    for error in dtype_errors:
+        validation_results.append(
+            (__name__,
+             "PROJECT_HEAT_RATE_CURVES",
+             "inputs_project_heat_rate_curves",
+             "Invalid data type",
+             error
+             )
+        )
 
     # do stuff here to validate inputs in the heat rates
     # 1. for each project:
@@ -378,6 +424,9 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     # need it.
     # NOTE; foreign key already checks that you can't have null for a project
     # that is in the heat_rate_curves table
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, c)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
@@ -394,7 +443,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     availabilities, heat_rates = load_inputs_from_database(
         subscenarios, subproblem, stage, c)
 
-    if availabilities:
+    if not availabilities.empty:
+        availabilities.to_csv(
+            os.path.join(inputs_directory, "project_availability.tab"),
+            sep="\t",
+            index=False
+        )
         with open(os.path.join(inputs_directory, "project_availability.tab"),
                   "w") as \
                 availability_tab_file:
@@ -402,7 +456,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
 
             writer.writerow(["project", "horizon", "availability_derate"])
 
-            for row in availabilities:
+            for i, row in availabilities.iterrows():
                 writer.writerow(row)
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
@@ -413,7 +467,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
         writer.writerow(["project", "load_point_mw",
                          "average_heat_rate_mmbtu_per_mwh"])
 
-        for row in heat_rates:
+        for i, row in heat_rates.iterrows():
             writer.writerow(row)
 
 
