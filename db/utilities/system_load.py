@@ -47,7 +47,7 @@ def insert_system_static_loads(
                     (load_scenario_id, load_zone, stage_id, timepoint, load_mw)
                     VALUES ({}, '{}', {}, {}, {});""".format(
                         load_scenario_id, z, stage, tmp,
-                        zone_stage_timepoint_static_loads[z][tmp]
+                        zone_stage_timepoint_static_loads[z][stage][tmp]
                     )
                 )
 
