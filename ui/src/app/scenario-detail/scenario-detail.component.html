@@ -1,6 +1,9 @@
+<button id="goBackButtonTop" class="button-primary"
+      (click)="goBack()">Back</button>
+
 <h2>{{scenarioName}}<span> Scenario Details</span></h2>
 
- <ng-container *ngFor="let tbl of scenarioDetailStructure">
+<ng-container *ngFor="let tbl of scenarioDetailStructure">
   <table class="scenario-detail">
     <caption>{{tbl.tableCaption}}</caption>
   <tr>
@@ -12,17 +15,19 @@
        <tr>
          <td>{{sd.name}}</td>
          <td>{{sd.value}}</td>
-         <td><a [routerLink]="['/view-data']">View Data</a></td>
+          <td><button (click)="viewData(sd.name)">
+            View Data
+          </button></td>
        </tr>
     </ng-container>
   </table>
 </ng-container>
 
 <button id="editScenarioButton" class="button-primary"
-      (click)="editScenario(scenarioID)">Edit Scenario</button>
+      (click)="editScenario()">Edit Scenario</button>
 
 <button id="runScenarioButton" class="button-primary"
       (click)="runScenario(scenarioID)">Run Scenario</button>
 
-<button id="goBackButton" class="button-primary"
+<button id="goBackButtonBottom" class="button-primary"
       (click)="goBack()">Back</button>

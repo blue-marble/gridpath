@@ -25,9 +25,19 @@ export class ViewDataComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    // Get flag for which table/s to show
+    this.getDataToShow();
+    console.log('Received data to show, ', this.dataToShow);
 
     // Temporal timepoints input data table
     this.getTemporalTimepointsData();
+  }
+
+  getDataToShow(): void {
+    this.viewDataService.dataToViewSubject
+      .subscribe((dataToShow: string) => {
+        this.dataToShow = dataToShow;
+      });
   }
 
   getTemporalTimepointsData(): void {

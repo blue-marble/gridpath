@@ -1,7 +1,7 @@
 <button id="goBackButtonTop" class="button-primary"
       (click)="goBack()">Back</button>
 
-<table>
+<table *ngIf="dataToShow=='temporal'">
   <caption>Timepoints</caption>
 <tr>
 <th>temporal_scenario_id</th>
