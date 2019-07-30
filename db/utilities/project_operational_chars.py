@@ -181,7 +181,7 @@ def update_project_variable_profiles(
                         timepoint, cap_factor)
                         VALUES ('{}', {}, {}, {}, {});""".format(
                             prj, scenario, stage, tmp,
-                            proj_tmp_profiles[prj][scenario][tmp]
+                            proj_tmp_profiles[prj][scenario][stage][tmp]
                         )
                     )
             io.commit()
