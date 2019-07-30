@@ -22,11 +22,11 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
 
     :param loaded_modules:
     :param subscenarios:
+    :param subproblems:
     :param cursor:
     :param scenario_directory:
     :return:
     """
-
     subproblems_list = subproblems.SUBPROBLEMS
     # create subproblem.csv file for subproblems if appropriate:
     if len(subproblems_list) > 1:
@@ -35,7 +35,6 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
         # create subproblem.csv file for stages if appropriate:
-        # TODO; handle edge case where only 1 subproblem and multiple stages?
         if len(stages) > 1:
             target_directory = os.path.join(scenario_directory, str(subproblem))
             write_subproblems_csv(target_directory, stages)
@@ -61,6 +60,8 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
 
+            # Delete input files that may have existed before to avoid phantom
+            # inputs
             delete_prior_inputs(inputs_directory)
 
             # Get input .tab files for each of the loaded_modules if appropriate
@@ -84,9 +85,8 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
 
 def delete_prior_inputs(inputs_directory):
     """
-    Delete all .tab files that may exist in the inputs directory to avoid
-    phantom inputs.
-    :param inputs_directory: 
+    Delete all .tab files that may exist in the specified directory
+    :param inputs_directory: local directory where .tab files are saved
     :return: 
     """
     prior_input_tab_files = [
@@ -100,7 +100,7 @@ def delete_prior_inputs(inputs_directory):
 def parse_arguments(args):
     """
     Parse arguments
-    :param args: 
+    :param args:
     :return: 
     """
     parser = ArgumentParser(add_help=True)
@@ -113,7 +113,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-# TODO: if stages, also write stage subproblems!
 def write_subproblems_csv(scenario_directory, subproblems):
     """
     Write the subproblems.csv file that will be used when solving multiple
@@ -371,37 +370,28 @@ def main(args=None):
     """
     print("Getting inputs...")
 
+    # Retrieve scenario_id and/or name from args
     if args is None:
         args = sys.argv[1:]
-
     parsed_arguments = parse_arguments(args=args)
-
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
     # TODO: make this a user input
     # For now, assume script is run from root directory and the the
     # database is ./db and named io.db
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
-    )
-    c = io.cursor()
+    db_path = os.path.join(os.getcwd(), 'db', 'io.db')
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(
-        scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
-        c=c, script="get_scenario_inputs"
+        scenario_id_arg=scenario_id_arg,
+        scenario_name_arg=scenario_name_arg,
+        c=c,
+        script="get_scenario_inputs"
     )
 
-    # Get scenario characteristics (features, subscenarios, subproblems)
-    # TODO: it seems these fail silently if empty; we may want ot implement
-    #  some validation
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-
-    # TODO: make this compatible with subscenarios
-    #   --> we will need more directories if there are more scenarios
-    # Make inputs directory
+    # Make scenario directories
     scenarios_main_directory = os.path.join(
         os.getcwd(), "scenarios")
     if not os.path.exists(scenarios_main_directory):
@@ -413,22 +403,39 @@ def main(args=None):
     if not os.path.exists(scenario_directory):
         os.makedirs(scenario_directory)
 
-    # Write features.csv file with optional features and use this feature
-    # file to determine what modules to GridPath will use
+    # Get scenario characteristics (features, subscenarios, subproblems)
+    # TODO: it seems these fail silently if empty; we may want to implement
+    #  some validation
+    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
+    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
+    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
+    # Determine requested features and use this to determine what modules to
+    # load for Gridpath
     feature_list = optional_features.determine_feature_list()
-    write_features_csv(scenario_directory, feature_list)
     modules_to_use = determine_modules(scenario_directory=scenario_directory)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
     # Read in appropriate inputs from database and create .tab file model inputs
-    get_inputs_from_database(loaded_modules, subscenarios, subproblems,
-                             c, scenario_directory)
-
-    # Save the scenario ID to a file
-    save_scenario_id(
-        scenario_directory=scenario_directory, scenario_id=scenario_id
+    get_inputs_from_database(
+        loaded_modules=loaded_modules,
+        subscenarios=subscenarios,
+        subproblems=subproblems,
+        cursor=c,
+        scenario_directory=scenario_directory
     )
 
+    # Save the list of optional features to a file (will be used to determine
+    # modules without database connection)
+    write_features_csv(
+        scenario_directory=scenario_directory,
+        feature_list=feature_list
+    )
+    # Save the scenario ID to a file
+    save_scenario_id(
+        scenario_directory=scenario_directory,
+        scenario_id=scenario_id
+    )
     # Write full scenario description
     write_scenario_description(
         scenario_directory=scenario_directory, 
