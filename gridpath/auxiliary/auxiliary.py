@@ -315,8 +315,8 @@ def write_validation_to_database(validation_results, c):
     """
     for row in validation_results:
         query = """INSERT into mod_input_validation
-                (gridpath_module, related_subscenario, related_database_table,
-                issue_type, issue_description)
+                (scenario_id, gridpath_module, related_subscenario, 
+                related_database_table, issue_type, issue_description)
                 VALUES ({});""".format(','.join(['?' for item in row]))
 
         c.execute(query, row)
@@ -358,6 +358,7 @@ def check_dtypes(df, expected_dtypes):
             )
             columns.append(column)
 
+    # Alternative that avoids pd.api.types:
     # numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
     # string_columns = [k for k, v in expected_dtypes.items() if v == "string"]
     # is_number = np.vectorize(lambda x: np.issubdtype(x, np.number))

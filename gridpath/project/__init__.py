@@ -269,7 +269,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     dtype_errors, error_columns = check_dtypes(df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
              "inputs_project_operational_chars, inputs_project_portfolios",
              "Invalid data type",
@@ -286,7 +287,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
             bad_projects = df["project"][is_negative].values
             print_bad_projects = ", ".join(bad_projects)
             validation_results.append(
-                (__name__,
+                (subscenarios.SCENARIO_ID,
+                 __name__,
                  "PROJECT_OPERATIONAL_CHARS",
                  "inputs_project_operational_chars",
                  "Invalid numeric sign",
@@ -303,7 +305,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
             bad_projects = df["project"][invalids].values
             print_bad_projects = ", ".join(bad_projects)
             validation_results.append(
-                (__name__,
+                (subscenarios.SCENARIO_ID,
+                 __name__,
                  "PROJECT_OPERATIONAL_CHARS",
                  "inputs_project_operational_chars",
                  "Invalid min_stable_level",
@@ -334,7 +337,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
             bad_projects = df['project'][bad_combos].values
             print_bad_projects = ", ".join(bad_projects)
             validation_results.append(
-                (__name__,
+                (subscenarios.SCENARIO_ID,
+                 __name__,
                  "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
                  "inputs_project_operational_chars, inputs_project_portfolios",
                  "Invalid combination of capacity type and operational type",
@@ -353,7 +357,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
         bad_projects = df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_PORTFOLIO",
              "inputs_project_portfolios",
              "Invalid capacity type",
@@ -373,7 +378,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
         bad_projects = df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
              "Invalid operational type",
@@ -391,7 +397,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
         bad_projects = df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
              "Missing inputs for operational type",

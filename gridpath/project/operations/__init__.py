@@ -385,7 +385,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_AVAILABILITY",
              "inputs_project_availability",
              "Invalid data type",
@@ -403,7 +404,8 @@ def validate_inputs(subscenarios, subproblem, stage, c):
     dtype_errors, error_columns = check_dtypes(hr_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
-            (__name__,
+            (subscenarios.SCENARIO_ID,
+             __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
              "Invalid data type",
@@ -411,7 +413,9 @@ def validate_inputs(subscenarios, subproblem, stage, c):
              )
         )
 
-    # do stuff here to validate inputs in the heat rates
+    # Check that availability is not > 1
+
+    # Check Heat Rates
     # 1. for each project:
     #     slice out load points and heat rates
     #     calculate heat_rates --> will throw error if things are wrong

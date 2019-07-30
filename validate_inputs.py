@@ -16,6 +16,12 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
 
 
+# TODO:
+#   1. pass conn instead of cursor
+#   2. commit after each validate inputs
+#   3. change name of load_inputs to get_intputs
+
+
 def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
     """"
     For each module, load the inputs from the database and validate them
@@ -33,12 +39,11 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
     #   since presumably we already have our data in the inputs.
     #   need to go through each module's input validation to check this
 
-    # TODO: do we need to pass a data container that collects all the input
-    #   validation outputs (since we don't want to print)?
-    #   dictionary could work, see project/__init__
+    # TODO: link db outputs for validation to validation status
 
-    # TODO: output a general validation status. If the data container is empty
-    #   i.e. no invalid inputs, return True, otherwise false
+    # TODO: see if we can do some sort of automatic dtype validation for
+    #  each table in the database? Problem is that you don't necessarily want
+    #  to check the full table but only the appropriate subscenario
 
     subproblems_list = subproblems.SUBPROBLEMS
     for subproblem in subproblems_list:
@@ -69,16 +74,56 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, cursor):
     # check that SU and SD * timepoint duration is larger than Pmin
     # this requires multiple tables so cross validation?
 
+    # check that specified load zones are actual load zones that are available
 
-# TODO: add this somewhere?
-def delete_prior_input_validation(c):
+
+    # Update Validation Status:
+    update_validation_status(cursor, subscenarios.SCENARIO_ID)
+
+
+def reset_input_validation(c, scenario_id):
     """
-    Delete old input validation outputs
+    Reset input validation: delete old input validation outputs and reset the
+    input validation status.
     :param c: database cursor
+    :param scenario_id: scenario_id
     :return: 
     """
-    query = """DELETE FROM mod_input_validation;"""
-    c.execute(query)
+    c.execute(
+        """DELETE FROM mod_input_validation
+        WHERE scenario_id = {};""".format(str(scenario_id))
+    )
+
+    c.execute(
+        """UPDATE scenarios
+        SET validation_status_id = 0
+        WHERE scenario_id = {};""".format(str(scenario_id))
+    )
+
+
+def update_validation_status(c, scenario_id):
+    """
+
+    :param c:
+    :param scenario_id:
+    :return:
+    """
+    validations = c.execute(
+        """SELECT scenario_id 
+        FROM mod_input_validation
+        WHERE scenario_id = {}""".format(str(scenario_id))
+    ).fetchall()
+
+    if validations:
+        status = 2
+    else:
+        status = 1
+
+    c.execute(
+        """UPDATE scenarios
+        SET validation_status_id = {}
+        WHERE scenario_id = {};""".format(str(status), str(scenario_id))
+    )
 
 
 def parse_arguments(args):
@@ -97,23 +142,6 @@ def parse_arguments(args):
     return parsed_arguments
 
 
-def write_features_csv(scenario_directory, feature_list):
-    """
-    Write the features.csv file that will be used to determine which 
-    GridPath modules to include
-    :return: 
-    """
-    with open(os.path.join(scenario_directory, "features.csv"), "w") as \
-            features_csv_file:
-        writer = csv.writer(features_csv_file, delimiter=",")
-
-        # Write header
-        writer.writerow(["features"])
-
-        for feature in feature_list:
-            writer.writerow([feature])
-
-    
 def main(args=None):
     """
 
@@ -140,20 +168,8 @@ def main(args=None):
         script="validate_inputs"
     )
 
-    # Make scenario directories
-    scenarios_main_directory = os.path.join(
-        os.getcwd(), "scenarios")
-    if not os.path.exists(scenarios_main_directory):
-        os.makedirs(scenarios_main_directory)
-
-    scenario_directory = os.path.join(
-        scenarios_main_directory, str(scenario_name)
-    )
-    if not os.path.exists(scenario_directory):
-        os.makedirs(scenario_directory)
-
-    # Delete validation files that may have existed before to avoid phantom validations
-    delete_prior_input_validation(c)
+    # Reset input validation status and results
+    reset_input_validation(c, scenario_id)
     io.commit()
 
     # Get scenario characteristics (features, subscenarios, subproblems)

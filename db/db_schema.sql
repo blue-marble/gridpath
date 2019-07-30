@@ -83,16 +83,16 @@ FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
 FOREIGN KEY (status) REFERENCES mod_run_status_types (run_status_id)
 );
 
-
--- TODO: add scenario id?
 -- Validation Results
 DROP TABLE IF EXISTS mod_input_validation
 CREATE TABLE mod_input_validation (
+scenario_id INTEGER,
 gridpath_module VARCHAR(64),
 related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
 issue_type VARCHAR(32),
 issue_description VARCHAR(64)
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
 );
 
 --------------------
