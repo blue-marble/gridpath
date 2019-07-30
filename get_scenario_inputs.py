@@ -422,7 +422,7 @@ def main(args=None):
     modules_to_use = determine_modules(features=feature_list)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    # Load appropriate inputs from database and write the .tab file model inputs
+    # Get appropriate inputs from database and write the .tab file model inputs
     write_model_inputs(
         scenario_directory=scenario_directory,
         subproblems=subproblems,
