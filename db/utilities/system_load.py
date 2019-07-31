@@ -50,6 +50,7 @@ def insert_system_static_loads(
                         zone_stage_timepoint_static_loads[z][stage][tmp]
                     )
                 )
+    io.commit()      
 
 
 if __name__ == "__main__":
