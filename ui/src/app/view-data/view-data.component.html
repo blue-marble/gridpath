@@ -1,32 +1,25 @@
 <button id="goBackButtonTop" class="button-primary"
       (click)="goBack()">Back</button>
 
-<table class="view-data-table" *ngIf="dataToShow=='temporal'">
-  <caption>Timepoints</caption>
+
+<ng-container *ngFor="let inputDataTable of allTables">
+<table class="view-data-table" *ngIf="dataToShow==inputDataTable.ngIfKey">
+  <caption>{{inputDataTable.caption}}</caption>
 <tr>
-<th>temporal_scenario_id</th>
-<th>subproblem_id</th>
-<th>stage_id</th>
-<th>timepoint</th>
-<th>horizon</th>
-<th>period</th>
-<th>number_of_hours_in_timepoint</th>
-<th>previous_stage_timepoint_map</th>
-<th>spinup_or_lookahead</th>
+     <ng-container *ngFor="let column of inputDataTable.columns">
+       <th>{{column}}</th>
+     </ng-container>
 </tr>
-  <ng-container *ngFor="let row of timepointsTemporalRows">
-     <tr>
-       <td>{{row.temporal_scenario_id}}</td>
-       <td>{{row.subproblem_id}}</td>
-       <td>{{row.stage_id}}</td>
-       <td>{{row.timepoint}}</td>
-       <td>{{row.horizon}}</td>
-       <td>{{row.period}}</td>
-       <td>{{row.number_of_hours_in_timepoint}}</td>
-       <td>{{row.spinup_or_lookahead}}</td>
-     </tr>
-  </ng-container>
+
+<ng-container *ngFor="let row of inputDataTable.rowsData">
+   <tr>
+     <ng-container *ngFor="let column of inputDataTable.columns">
+       <td>{{row[column]}}</td>
+     </ng-container>
+   </tr>
+</ng-container>
 </table>
+</ng-container>
 
 <button id="goBackButtonBottom" class="button-primary"
       (click)="goBack()">Back</button>

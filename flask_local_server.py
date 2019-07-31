@@ -1458,10 +1458,20 @@ class ViewDataTemporalTimepoints(Resource):
 
     @staticmethod
     def get():
-        view_data_api = get_table_data(
+        """
+
+        :return:
+        """
+        timepoints_data_table_api = dict()
+        timepoints_data_table_api['ngIfKey'] = 'temporal'
+        timepoints_data_table_api['caption'] = 'Timepoints'
+        column_names, data_rows = get_table_data(
             table='inputs_temporal_timepoints'
         )
-        return view_data_api
+        timepoints_data_table_api['columns'] = column_names
+        timepoints_data_table_api['rowsData'] = data_rows
+
+        return timepoints_data_table_api
 
 
 # ### API: Status ### #
@@ -1792,13 +1802,13 @@ def get_table_data(table):
 
     column_names = [s[0] for s in table_data_query.description]
 
-    table_data_api = []
+    rows_data = []
     for row in table_data_query.fetchall():
         row_values = list(row)
         row_dict = dict(zip(column_names, row_values))
-        table_data_api.append(row_dict)
+        rows_data.append(row_dict)
 
-    return table_data_api
+    return column_names, rows_data
 
 
 # ### Socket Communication ### #

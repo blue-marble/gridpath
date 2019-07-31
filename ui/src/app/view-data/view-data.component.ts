@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
 import { ViewDataService } from './view-data.service';
-import { TimepointsTemporalRow } from './view-data';
+import { ViewDataTable } from './view-data';
 
 @Component({
   selector: 'app-view-data',
@@ -14,8 +14,11 @@ export class ViewDataComponent implements OnInit {
 
   dataToShow: string;
 
-  // For viewing input table data
-  timepointsTemporalRows: TimepointsTemporalRow[];
+  // All tables
+  allTables: ViewDataTable[];
+
+  // Input data tables
+  timepointsTemporalTable: ViewDataTable;
 
   constructor(
     private route: ActivatedRoute,
@@ -25,6 +28,8 @@ export class ViewDataComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.allTables = [];
+
     // Get flag for which table/s to show
     this.getDataToShow();
     console.log('Received data to show, ', this.dataToShow);
@@ -43,7 +48,8 @@ export class ViewDataComponent implements OnInit {
   getTemporalTimepointsData(): void {
     this.viewDataService.getTemporalTimepointsData()
       .subscribe(inputTableRows => {
-        this.timepointsTemporalRows = inputTableRows;
+        this.timepointsTemporalTable = inputTableRows;
+        this.allTables.push(this.timepointsTemporalTable);
       });
   }
 

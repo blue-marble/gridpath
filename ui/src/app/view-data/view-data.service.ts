@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 
-import { TimepointsTemporalRow } from './view-data';
+import { ViewDataTable } from './view-data';
 
 @Injectable({
   providedIn: 'root'
@@ -20,8 +20,8 @@ export class ViewDataService {
     console.log('Data to view changed to, ', dataToView);
   }
 
-  getTemporalTimepointsData(): Observable<TimepointsTemporalRow[]> {
-    return this.http.get<TimepointsTemporalRow[]>(
+  getTemporalTimepointsData(): Observable<ViewDataTable> {
+    return this.http.get<ViewDataTable>(
       `${this.viewDataBaseURL}temporal-timepoints`
     );
   }
