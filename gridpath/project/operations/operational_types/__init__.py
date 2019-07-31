@@ -24,7 +24,7 @@ def add_model_components(m, d):
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
 
-    # First, add any components specific to the operational modules
+    # Add any components specific to the operational modules
     for op_m in getattr(d, required_operational_modules):
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "add_module_specific_components"):
@@ -44,6 +44,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
+    # Import needed operational modules
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
     for op_m in getattr(d, required_operational_modules):
@@ -84,84 +85,30 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+# TODO: move this into SubScenarios class?
+def get_required_opchar_modules(scenario_id, c):
     """
-    
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
+    Get the required operational type submodules based on the database inputs
+    for the specified scenario_id. Required modules are the unique set of
+    generator operational types in the scenario's portfolio. Get the list based
+    on the project_operational_chars_scenario_id of the scenario_id.
+
+    This list will be used to know for which operational type submodules we
+    should validate inputs, get inputs from database, or save results to
+    database.
+
+    Note: once we have determined the dynamic components, this information
+    will also be stored in the DynamicComponents class object.
+
+    :param scenario_id: user-specified scenario ID
+    :param c: database cursor
+    :return: List of the required operational type submodules
     """
 
-    # Required modules are the unique set of generator operational types in
-    # the scenario's portfolio
-    # This list will be used to know which operational type modules to load
-    # Get the list based on the project_operational_chars_scenario_id of this
-    # scenario_id
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
-    ).fetchone()[0]
-
-    project_opchars_scenario_id = c.execute(
-        """SELECT project_operational_chars_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
-    ).fetchone()[0]
-
-    required_opchar_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT operational_type 
-            FROM 
-            (SELECT project FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}) as prj_tbl
-            LEFT OUTER JOIN 
-            (SELECT project, operational_type
-            FROM inputs_project_operational_chars
-            WHERE project_operational_chars_scenario_id = {}) as op_type_tbl
-            USING (project);""".format(
-                project_portfolio_scenario_id,
-                project_opchars_scenario_id
-            )
-        ).fetchall()
-    ]
-
-    # Get module-specific inputs
-    # Load in the required operational modules
-    imported_operational_modules = \
-        load_operational_type_modules(required_opchar_modules)
-
-    for op_m in required_opchar_modules:
-        if hasattr(imported_operational_modules[op_m],
-                   "get_module_specific_inputs_from_database"):
-            imported_operational_modules[op_m]. \
-                get_module_specific_inputs_from_database(
-                subscenarios, subproblem, stage, c, inputs_directory
-            )
-        else:
-            pass
-
-
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
-    """
-
-    :param scenario_id:
-    :param c:
-    :param db:
-    :param results_directory:
-    :return:
-    """
-    # Required modules are the unique set of generator operational types in
-    # the scenario's portfolio
-    # This list will be used to know which operational type modules to load
-    # Get the list based on the project_operational_chars_scenario_id of this
-    # scenario_id
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {}
-        """.format(scenario_id)
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     project_opchars_scenario_id = c.execute(
@@ -187,11 +134,83 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         ).fetchall()
     ]
 
-    # Import module-specific results
+    return required_opchar_modules
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
     # Load in the required operational modules
+    c = conn.cursor()
+    scenario_id = subscenarios.SCENARIO_ID
+    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
+    imported_operational_modules = load_operational_type_modules(
+        required_opchar_modules)
+
+    # Validate module-specific inputs
+    for op_m in required_opchar_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "validate_module_specific_inputs"):
+            imported_operational_modules[op_m]. \
+                validate_module_specific_inputs(
+                    subscenarios, subproblem, stage, conn)
+        else:
+            pass
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input .tab files
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # Load in the required operational modules
+    scenario_id = subscenarios.SCENARIO_ID
+    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
+    imported_operational_modules = load_operational_type_modules(
+        required_opchar_modules)
+
+    # Write module-specific inputs
+    for op_m in required_opchar_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "write_module_specific_model_inputs"):
+            imported_operational_modules[op_m].\
+                write_module_specific_model_inputs(
+                    inputs_directory, subscenarios, subproblem, stage, c)
+        else:
+            pass
+
+
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+
+    # Load in the required operational modules
+    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = \
         load_operational_type_modules(required_opchar_modules)
 
+    # Import module-specific results
     for op_m in required_opchar_modules:
         if hasattr(imported_operational_modules[op_m],
                    "import_module_specific_results_to_database"):

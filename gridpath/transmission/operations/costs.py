@@ -96,9 +96,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                  "transmission_hurdle_rates.tab"),
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "transmission_hurdle_rates.tab"),
                      select=("transmission_line", "period",
                              "hurdle_rate_positive_direction_per_mwh",
                              "hurdle_rate_negative_direction_per_mwh"),
@@ -107,16 +107,65 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
-    # transmission_hurdle_rates.tab
+    hurdle_rates = c.execute(
+        """SELECT transmission_line, period, 
+        hurdle_rate_positive_direction_per_mwh,
+        hurdle_rate_negative_direction_per_mwh
+        FROM inputs_transmission_hurdle_rates
+        INNER JOIN
+        (SELECT period
+         FROM inputs_temporal_periods
+         WHERE temporal_scenario_id = {}) as relevant_periods
+         USING (period)
+         WHERE transmission_hurdle_rate_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
+        )
+    )
+
+    return hurdle_rates
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # hurdle_rates = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    transmission_hurdle_rates.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    hurdle_rates = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "transmission_hurdle_rates.tab"),
               "w") as \
@@ -130,22 +179,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
              "hurdle_rate_negative_direction_per_mwh"]
         )
 
-        hurdle_rates = c.execute(
-            """SELECT transmission_line, period, 
-            hurdle_rate_positive_direction_per_mwh,
-            hurdle_rate_negative_direction_per_mwh
-            FROM inputs_transmission_hurdle_rates
-            INNER JOIN
-            (SELECT period
-             FROM inputs_temporal_periods
-             WHERE temporal_scenario_id = {}) as relevant_periods
-             USING (period)
-             WHERE transmission_hurdle_rate_scenario_id = {};
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.TRANSMISSION_HURDLE_RATE_SCENARIO_ID
-            )
-        )
         for row in hurdle_rates:
             writer.writerow(row)
 
@@ -187,7 +220,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory):
     """
 
     :param scenario_id:
@@ -230,7 +264,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         load_zone_to VARCHAR(32),
         hurdle_cost_positive_direction FLOAT,
         hurdle_cost_negative_direction FLOAT,
-        PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
+        PRIMARY KEY (scenario_id, transmission_line, 
+        subproblem_id, stage_id, timepoint)
             );"""
     )
     db.commit()

@@ -36,16 +36,75 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                             )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # regulation_up_requirement.tab
+
+    regulation_up = c.execute(
+        """SELECT regulation_up_ba, timepoint, regulation_up_mw
+        FROM inputs_system_regulation_up
+        INNER JOIN
+        (SELECT timepoint 
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {}) as relevant_timepoints
+        USING (timepoint)
+        INNER JOIN
+        (SELECT regulation_up_ba
+        FROM inputs_geography_regulation_up_bas
+        WHERE regulation_up_ba_scenario_id = {}) as relevant_bas
+        USING (regulation_up_ba)
+        WHERE regulation_up_scenario_id = {}
+        AND stage_id = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.REGULATION_UP_BA_SCENARIO_ID,
+            subscenarios.REGULATION_UP_SCENARIO_ID,
+            stage
+        )
+    )
+
+    return regulation_up
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # regulation_up = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    regulation_up_requirement.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    regulation_up = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "regulation_up_requirement.tab"), "w") as \
             regulation_up_tab_file:
@@ -57,31 +116,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             ["LOAD_ZONES", "TIMEPOINTS", "upward_reserve_requirement"]
         )
 
-        regulation_up = c.execute(
-            """SELECT regulation_up_ba, timepoint, regulation_up_mw
-            FROM inputs_system_regulation_up
-            INNER JOIN
-            (SELECT timepoint 
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            INNER JOIN
-            (SELECT regulation_up_ba
-            FROM inputs_geography_regulation_up_bas
-            WHERE regulation_up_ba_scenario_id = {}) as relevant_bas
-            USING (regulation_up_ba)
-            WHERE regulation_up_scenario_id = {}
-            AND stage_id = {}
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.REGULATION_UP_BA_SCENARIO_ID,
-                subscenarios.REGULATION_UP_SCENARIO_ID,
-                stage
-            )
-        )
         for row in regulation_up:
             writer.writerow(row)

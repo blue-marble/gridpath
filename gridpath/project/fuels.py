@@ -51,15 +51,76 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # fuels.tab
+
+    fuels = c.execute(
+        """SELECT fuel, co2_intensity_tons_per_mmbtu
+        FROM inputs_project_fuels
+        WHERE fuel_scenario_id = {}""".format(
+            subscenarios.FUEL_SCENARIO_ID
+        )
+    ).fetchall()
+
+    fuel_prices = c.execute(
+        """SELECT fuel, period, month, fuel_price_per_mmbtu
+        FROM inputs_project_fuel_prices
+        INNER JOIN
+        (SELECT period from inputs_temporal_periods
+        WHERE temporal_scenario_id = {})
+        USING (period)
+        WHERE fuel_price_scenario_id = {}""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.FUEL_PRICE_SCENARIO_ID
+        )
+    ).fetchall()
+
+    return fuels, fuel_prices
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # fuels, fuel_prices = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+    # TODO: validate inputs and make sure that the fuels we have cover all the
+    # fuels specified in projects_inputs_operational_chars
+
+    # look at what fuels you're supposed to have (by looking at projects)
+    # and then make sure you have data for all of them
+    # fuels + fuel prices for the periods and months you are modeling
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    fuels.tab and fuel_prices.tab files.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    fuels, fuel_prices = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "fuels.tab"), "w") as \
             fuels_tab_file:
@@ -70,38 +131,18 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["FUELS", "co2_intensity_tons_per_mmbtu"]
         )
 
-        fuels = c.execute(
-            """SELECT fuel, co2_intensity_tons_per_mmbtu
-            FROM inputs_project_fuels
-            WHERE fuel_scenario_id = {}""".format(
-                subscenarios.FUEL_SCENARIO_ID
-            )
-        )
         for row in fuels:
             writer.writerow(row)
 
-    # fuel_prices.tab
     with open(os.path.join(inputs_directory,
                            "fuel_prices.tab"), "w") as \
-            fuels_tab_file:
-        writer = csv.writer(fuels_tab_file, delimiter="\t")
+            fuel_prices_tab_file:
+        writer = csv.writer(fuel_prices_tab_file, delimiter="\t")
 
         # Write header
         writer.writerow(
             ["fuel", "period", "month", "fuel_price_per_mmbtu"]
         )
 
-        fuels = c.execute(
-            """SELECT fuel, period, month, fuel_price_per_mmbtu
-            FROM inputs_project_fuel_prices
-            INNER JOIN
-            (SELECT period from inputs_temporal_periods
-            WHERE temporal_scenario_id = {})
-            USING (period)
-            WHERE fuel_price_scenario_id = {}""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.FUEL_PRICE_SCENARIO_ID
-            )
-        )
-        for row in fuels:
+        for row in fuel_prices:
             writer.writerow(row)

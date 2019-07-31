@@ -354,17 +354,19 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+        subscenarios, subproblem, stage, c
 ):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
     if subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID is None:
-        pass
+        group_threshold_costs = []
+        project_deliverability_groups = []
     else:
         # Threshold groups with threshold for ELCC eligibility, cost,
         # and energy-only limit
@@ -379,6 +381,64 @@ def get_module_specific_inputs_from_database(
             )
         ).fetchall()
 
+        # Projects by group
+        project_deliverability_groups = c.execute(
+            """SELECT deliverability_group, project 
+            FROM 
+            (SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}) as prj_tbl
+            LEFT OUTER JOIN 
+            (SELECT deliverability_group, project 
+            FROM inputs_project_elcc_chars
+            WHERE project_elcc_chars_scenario_id = {}
+            ORDER BY deliverability_group, project) as grp_tbl
+            USING (project)
+            WHERE deliverability_group IS NOT NULL;""".format(
+                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+                subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
+            )
+        )
+
+    return group_threshold_costs, project_deliverability_groups
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # group_threshold_costs, project_deliverability_groups = \
+    #   get_module_specific_inputs_from_database(
+    #       subscenarios, subproblem, stage, c)
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Get inputs from database and write out the model input
+    deliverability_group_params.tab and
+    deliverability_group_projects.tab files.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    group_threshold_costs, project_deliverability_groups = \
+        get_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, c)
+
+    if group_threshold_costs:
         with open(os.path.join(
                 inputs_directory,
                 "deliverability_group_params.tab"), "w") as \
@@ -398,26 +458,6 @@ def get_module_specific_inputs_from_database(
             for row in group_threshold_costs:
                 writer.writerow(row)
 
-        # Projects by group
-        project_deliverability_groups \
-            = c.execute(
-                """SELECT deliverability_group, project 
-                FROM 
-                (SELECT project
-                FROM inputs_project_portfolios
-                WHERE project_portfolio_scenario_id = {}) as prj_tbl
-                LEFT OUTER JOIN 
-                (SELECT deliverability_group, project 
-                FROM inputs_project_elcc_chars
-                WHERE project_elcc_chars_scenario_id = {}
-                ORDER BY deliverability_group, project) as grp_tbl
-                USING (project)
-                WHERE deliverability_group IS NOT NULL;""".format(
-                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                    subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
-                )
-            )
-
         with open(os.path.join(
                 inputs_directory,
                 "deliverability_group_projects.tab"), "w"
@@ -428,9 +468,10 @@ def get_module_specific_inputs_from_database(
             writer.writerow(["deliverability_group", "project"])
 
             # Input data
-            for row in \
-                project_deliverability_groups:
-                    writer.writerow(row)
+            for row in project_deliverability_groups:
+                writer.writerow(row)
+    else:
+        pass
 
 
 def import_module_specific_results_into_database(
@@ -577,7 +618,8 @@ def import_module_specific_results_into_database(
         deliverable_capacity_mw FLOAT,
         energy_only_capacity_mw FLOAT,
         deliverable_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, stage_id)
+        PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, 
+        stage_id)
         );"""
     )
     db.commit()
@@ -603,7 +645,8 @@ def import_module_specific_results_into_database(
                 """INSERT INTO 
                 temp_results_project_prm_deliverability_group_capacity_and_costs"""
                 + str(scenario_id) + """
-                (scenario_id, deliverability_group, period, subproblem_id, stage_id,
+                (scenario_id, deliverability_group, period, subproblem_id, 
+                stage_id,
                 deliverability_group_no_cost_deliverable_capacity_mw, 
                 deliverability_group_deliverability_cost_per_mw,
                 total_capacity_mw, 
@@ -643,7 +686,8 @@ def import_module_specific_results_into_database(
         temp_results_project_prm_deliverability_group_capacity_and_costs"""
         + str(scenario_id) +
         """
-         ORDER BY scenario_id, deliverability_group, period, subproblem_id, stage_id;
+         ORDER BY scenario_id, deliverability_group, period, subproblem_id, 
+         stage_id;
         """
     )
     db.commit()

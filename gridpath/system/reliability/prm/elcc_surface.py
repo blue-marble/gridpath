@@ -123,14 +123,15 @@ def save_duals(m):
         ["prm_zone", "period", "facet", "dual"]
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
     # The intercepts for the surface
     intercepts = c.execute(
         """SELECT prm_zone, period, facet, elcc_surface_intercept
@@ -146,6 +147,39 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         )
     ).fetchall()
 
+    return intercepts
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # intercepts = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    prm_zone_surface_facets_and_intercept.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    intercepts = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(
             inputs_directory, "prm_zone_surface_facets_and_intercept.tab"
     ), "w") as intercepts_file:
@@ -160,7 +194,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             writer.writerow(row)
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id:

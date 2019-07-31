@@ -99,7 +99,7 @@ def elcc_eligible_capacity_rule(mod, g, p):
 
 def load_module_specific_data(
             m, data_portal, scenario_directory, subproblem, stage
-    ):
+):
     """
 
     :param m:
@@ -119,16 +119,16 @@ def load_module_specific_data(
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, c, inputs_directory
+        subscenarios, subproblem, stage, c
 ):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    
+
     project_zone_dur = c.execute(
         """SELECT project, prm_zone, 
         min_duration_for_full_capacity_credit_hours
@@ -147,6 +147,41 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
     ).fetchall()
+
+    return project_zone_dur
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # project_zone_dur =get_module_specific_inputs_from_database(
+    #    subscenarios, subproblem, stage, c)
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Get inputs from database and write out the model input
+    projects.tab file (to be precise, amend it).
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    project_zone_dur = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     # Make a dict for easy access
     # Only assign a min duration to projects that contribute to a PRM zone in
@@ -177,7 +212,6 @@ def get_module_specific_inputs_from_database(
             else:
                 row.append(".")
                 new_rows.append(row)
-
     with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")

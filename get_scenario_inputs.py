@@ -16,15 +16,21 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
 
 
-def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
-                             cursor, scenario_directory):
+def write_model_inputs(scenario_directory, subproblems, loaded_modules,
+                       subscenarios, cursor):
     """
+    For each module, load the inputs from the database and write out the inputs
+    into .tab files, which will be used to construct the optimization problem.
 
-    :param loaded_modules:
-    :param subscenarios:
-    :param subproblems:
-    :param cursor:
-    :param scenario_directory:
+    :param scenario_directory: local scenario directory
+    :param subproblems: SubProblems object with info on the subproblem/stage
+        structure
+    :param loaded_modules: list of imported modules (Python <class 'module'>
+        objects)
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param cursor: database cursor
+
+
     :return:
     """
     subproblems_list = subproblems.SUBPROBLEMS
@@ -64,20 +70,20 @@ def get_inputs_from_database(loaded_modules, subscenarios, subproblems,
             # inputs
             delete_prior_inputs(inputs_directory)
 
-            # Get input .tab files for each of the loaded_modules if appropriate
-            # Note that all input files are saved in the input_directory, even
-            # the non-temporal inputs that are not dependent on the subproblem.
-            # or stage. This simplifies the file structure at the expense of
-            # unnecessarily duplicating non-temporal input files such as
-            # projects.tab.
+            # Write model input .tab files for each of the loaded_modules if
+            # appropriate. Note that all input files are saved in the
+            # input_directory, even the non-temporal inputs that are not
+            # dependent on the subproblem or stage. This simplifies the file
+            # structure at the expense of unnecessarily duplicating non-temporal
+            # input files such as projects.tab.
             for m in loaded_modules:
-                if hasattr(m, "get_inputs_from_database"):
-                    m.get_inputs_from_database(
+                if hasattr(m, "write_model_inputs"):
+                    m.write_model_inputs(
+                        inputs_directory=inputs_directory,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
                         c=cursor,
-                        inputs_directory=inputs_directory
                     )
                 else:
                     pass
@@ -413,17 +419,16 @@ def main(args=None):
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
     feature_list = optional_features.determine_feature_list()
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = determine_modules(features=feature_list)
     loaded_modules = load_modules(modules_to_use=modules_to_use)
 
-    # Read in appropriate inputs from database and create .tab file model inputs
-    get_inputs_from_database(
+    # Get appropriate inputs from database and write the .tab file model inputs
+    write_model_inputs(
+        scenario_directory=scenario_directory,
+        subproblems=subproblems,
         loaded_modules=loaded_modules,
         subscenarios=subscenarios,
-        subproblems=subproblems,
-        cursor=c,
-        scenario_directory=scenario_directory
-    )
+        cursor=c)
 
     # Save the list of optional features to a file (will be used to determine
     # modules without database connection)

@@ -17,22 +17,29 @@ from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
 #  the capacity type modules
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_required_capacity_type_modules(scenario_id, c):
+    """
+    Get the required capacity type submodules based on the database inputs
+    for the specified scenario_id. Required modules are the unique set of
+    generator capacity types in the scenario's portfolio. Get the list based
+    on the project_operational_chars_scenario_id of the scenario_id.
+
+    This list will be used to know for which capacity type submodules we
+    should validate inputs, get inputs from database , or save results to
+    database.
+
+    Note: once we have determined the dynamic components, this information
+    will also be stored in the DynamicComponents class object.
+
+    :param scenario_id: user-specified scenario ID
+    :param c: database cursor
+    :return: List of the required capacity type submodules
     """
 
-    :param subscenarios: 
-    :param c: 
-    :param inputs_directory: 
-    :return: 
-    """
-    # Required modules are the unique set of generator capacity types
-    # This list will be used to know which capacity type modules to load
-    # Get the list based on the project_portfoio_scenario_id of this
-    # scenario_id
     project_portfolio_scenario_id = c.execute(
         """SELECT project_portfolio_scenario_id 
         FROM scenarios 
-        WHERE scenario_id = {}""".format(subscenarios.SCENARIO_ID)
+        WHERE scenario_id = {}""".format(scenario_id)
     ).fetchone()[0]
 
     required_capacity_type_modules = [
@@ -45,23 +52,68 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         ).fetchall()
     ]
 
-    # Load in the required capacity type modules
-    imported_capacity_type_modules = \
-        load_gen_storage_capacity_type_modules(required_capacity_type_modules)
+    return required_capacity_type_modules
 
-    # Get module-specific inputs
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Load in the required capacity type modules
+    c = conn.cursor()
+    scenario_id = subscenarios.SCENARIO_ID
+    required_capacity_type_modules = get_required_capacity_type_modules(
+        scenario_id, c)
+    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_type_modules)
+
+    # Validate module-specific inputs
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
-                   "get_module_specific_inputs_from_database"):
+                   "validate_module_specific_inputs"):
             imported_capacity_type_modules[op_m]. \
-                get_module_specific_inputs_from_database(
-                subscenarios, c, inputs_directory
-            )
+                validate_module_specific_inputs(
+                    subscenarios, subproblem, stage, conn)
         else:
             pass
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input .tab files
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # Load in the required capacity type modules
+    scenario_id = subscenarios.SCENARIO_ID
+    required_capacity_type_modules = get_required_capacity_type_modules(
+        scenario_id, c)
+    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_type_modules)
+
+    # Get module-specific inputs
+    for op_m in required_capacity_type_modules:
+        if hasattr(imported_capacity_type_modules[op_m],
+                   "write_module_specific_model_inputs"):
+            imported_capacity_type_modules[op_m].write_module_specific_model_inputs(
+                inputs_directory, subscenarios, subproblem, stage, c)
+        else:
+            pass
+
+
+def import_results_into_database(scenario_id, subproblem, stage,
+                                 c, db, results_directory):
     """
 
     :param scenario_id:
@@ -71,31 +123,11 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     :return:
     """
 
-    # Required modules are the unique set of generator capacity types
-    # This list will be used to know which capacity type modules to load
-    # Get the list based on the project_portfolio_scenario_id of this
-    # scenario_id
-    project_portfolio_scenario_id = c.execute(
-        """SELECT project_portfolio_scenario_id 
-        FROM scenarios 
-        WHERE scenario_id = {};
-        """.format(scenario_id)
-    ).fetchone()[0]
-
-    required_capacity_type_modules = [
-        p[0] for p in c.execute(
-            """SELECT DISTINCT capacity_type 
-            FROM inputs_project_portfolios
-            WHERE project_portfolio_scenario_id = {}""".format(
-                project_portfolio_scenario_id
-            )
-        ).fetchall()
-    ]
-
-    # Import module-specific results
     # Load in the required capacity type modules
-    imported_capacity_type_modules = \
-        load_gen_storage_capacity_type_modules(required_capacity_type_modules)
+    required_capacity_type_modules = get_required_capacity_type_modules(
+        scenario_id, c)
+    imported_capacity_type_modules = load_gen_storage_capacity_type_modules(
+        required_capacity_type_modules)
 
     # Import module-specific results
     for op_m in required_capacity_type_modules:

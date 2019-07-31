@@ -207,35 +207,64 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios:
+    :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c:
-    :param inputs_directory:
+    :param c: database cursor
     :return:
     """
 
-    # horizons.tab
+    horizons = c.execute(
+        """SELECT horizon, boundary, horizon_weight, month
+           FROM inputs_temporal_horizons
+           WHERE temporal_scenario_id = {}
+           AND subproblem_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem
+        )
+    ).fetchall()
+
+    return horizons
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # horizons = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    horizons.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    horizons = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory, "horizons.tab"), "w") as \
             horizons_tab_file:
         writer = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
         writer.writerow(["HORIZONS", "boundary", "horizon_weight", "month"])
-
-        horizons = c.execute(
-            """SELECT horizon, boundary, horizon_weight, month
-               FROM inputs_temporal_horizons
-               WHERE temporal_scenario_id = {}
-               AND subproblem_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem
-            )
-        ).fetchall()
 
         for row in horizons:
             writer.writerow(row)

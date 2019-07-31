@@ -51,16 +51,80 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # load_mw.tab
+
+    # Select only profiles for timepoints form the correct temporal
+    # scenario and the correct subproblem
+    # Select only profiles of load_zones that are part of the correct
+    # load_zone_scenario
+    # Select only profiles for the correct load_scenario
+    loads = c.execute(
+        """SELECT load_zone, timepoint, load_mw
+        FROM inputs_system_load
+        INNER JOIN
+        (SELECT timepoint
+        FROM inputs_temporal_timepoints
+        WHERE temporal_scenario_id = {}
+        AND subproblem_id ={}
+        AND stage_id = {}) as relevant_timepoints
+        USING (timepoint)
+        INNER JOIN
+        (SELECT load_zone
+        FROM inputs_geography_load_zones
+        WHERE load_zone_scenario_id = {}) as relevant_load_zones
+        USING (load_zone)
+        WHERE load_scenario_id = {}
+        and stage_id = {}
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage,
+            subscenarios.LOAD_ZONE_SCENARIO_ID,
+            subscenarios.LOAD_SCENARIO_ID,
+            stage
+        )
+    )
+
+    return loads
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # loads = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    load_mw.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    loads = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "load_mw.tab"), "w") as \
             load_tab_file:
@@ -70,36 +134,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
         writer.writerow(
             ["LOAD_ZONES", "TIMEPOINTS", "load_mw"]
         )
-        # Select only profiles for timepoints form the correct temporal
-        # scenario and the correct subproblem
-        # Select only profiles of load_zones that are part of the correct
-        # load_zone_scenario
-        # Select only profiles for the correct load_scenario
-        loads = c.execute(
-            """SELECT load_zone, timepoint, load_mw
-            FROM inputs_system_load
-            INNER JOIN
-            (SELECT timepoint
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id ={}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            INNER JOIN
-            (SELECT load_zone
-            FROM inputs_geography_load_zones
-            WHERE load_zone_scenario_id = {}) as relevant_load_zones
-            USING (load_zone)
-            WHERE load_scenario_id = {}
-            and stage_id = {}
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.LOAD_ZONE_SCENARIO_ID,
-                subscenarios.LOAD_SCENARIO_ID,
-                stage
-            )
-        )
+
         for row in loads:
             writer.writerow(row)

@@ -356,7 +356,9 @@ def generic_export_module_specific_results(
             ])
 
 
-def generic_import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory, reserve_type):
+def generic_import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, reserve_type
+):
     """
     
     :param scenario_id: 

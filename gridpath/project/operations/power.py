@@ -171,8 +171,9 @@ def summarize_results(d, scenario_directory, subproblem, stage):
         outfile.write("\n")
 
 
-def import_results_into_database(scenario_id, subproblem, stage,
-                                 c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id:
@@ -202,7 +203,8 @@ def import_results_into_database(scenario_id, subproblem, stage,
     db.commit()
 
     c.execute(
-        """CREATE TABLE temp_results_project_dispatch_all""" + str(scenario_id) + """(
+        """CREATE TABLE temp_results_project_dispatch_all"""
+        + str(scenario_id) + """(
         scenario_id INTEGER,
         project VARCHAR(64),
         period INTEGER,
@@ -216,7 +218,7 @@ def import_results_into_database(scenario_id, subproblem, stage,
         technology VARCHAR(32),
         power_mw FLOAT,
         PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-            );"""
+        );"""
     )
     db.commit()
 

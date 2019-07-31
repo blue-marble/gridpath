@@ -47,14 +47,69 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-    local_capacity_requirement.tab
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
+    local_capacity_requirement = c.execute(
+        """SELECT local_capacity_zone, period, 
+        local_capacity_requirement_mw
+        FROM inputs_system_local_capacity_requirement
+        JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        USING (period)
+        JOIN
+        (SELECT local_capacity_zone
+        FROM inputs_geography_local_capacity_zones
+        WHERE local_capacity_zone_scenario_id = {}) as relevant_zones
+        using (local_capacity_zone)
+        WHERE local_capacity_requirement_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
+            subscenarios.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID
+        )
+    )
+    return local_capacity_requirement
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # local_capacity_requirement = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    local_capacity_requirement.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    local_capacity_requirement = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "local_capacity_requirement.tab"), "w") as \
             local_capacity_requirement_tab_file:
@@ -66,26 +121,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             ["local_capacity_zone", "period", "local_capacity_requirement_mw"]
         )
 
-        local_capacity_requirement = c.execute(
-            """SELECT local_capacity_zone, period, 
-            local_capacity_requirement_mw
-            FROM inputs_system_local_capacity_requirement
-            JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {}) as relevant_periods
-            USING (period)
-            JOIN
-            (SELECT local_capacity_zone
-            FROM inputs_geography_local_capacity_zones
-            WHERE local_capacity_zone_scenario_id = {}) as relevant_zones
-            using (local_capacity_zone)
-            WHERE local_capacity_requirement_scenario_id = {};
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
-                subscenarios.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID
-            )
-        )
         for row in local_capacity_requirement:
             writer.writerow(row)

@@ -46,16 +46,69 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage,
-                             c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
-    # rps_targets.tab
+
+    rps_targets = c.execute(
+        """SELECT rps_zone, period, rps_target_mwh
+        FROM inputs_system_rps_targets
+        JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        USING (period)
+        JOIN
+        (SELECT rps_zone
+        FROM inputs_geography_rps_zones
+        WHERE rps_zone_scenario_id = {}) as relevant_zones
+        using (rps_zone)
+        WHERE rps_target_scenario_id = {};
+        """.format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.RPS_ZONE_SCENARIO_ID,
+            subscenarios.RPS_TARGET_SCENARIO_ID
+        )
+    )
+
+    return rps_targets
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # rps_targets = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    rps_targets.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    rps_targets = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
     with open(os.path.join(inputs_directory,
                            "rps_targets.tab"), "w") as \
             rps_targets_tab_file:
@@ -67,25 +120,5 @@ def get_inputs_from_database(subscenarios, subproblem, stage,
             ["rps_zone", "period", "rps_target_mwh"]
         )
 
-        rps_targets = c.execute(
-            """SELECT rps_zone, period, rps_target_mwh
-            FROM inputs_system_rps_targets
-            JOIN
-            (SELECT period
-            FROM inputs_temporal_periods
-            WHERE temporal_scenario_id = {}) as relevant_periods
-            USING (period)
-            JOIN
-            (SELECT rps_zone
-            FROM inputs_geography_rps_zones
-            WHERE rps_zone_scenario_id = {}) as relevant_zones
-            using (rps_zone)
-            WHERE rps_target_scenario_id = {};
-            """.format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subscenarios.RPS_ZONE_SCENARIO_ID,
-                subscenarios.RPS_TARGET_SCENARIO_ID
-            )
-        )
         for row in rps_targets:
             writer.writerow(row)

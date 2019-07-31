@@ -451,17 +451,17 @@ def export_module_specific_results(mod, d,
             ])
 
 
-def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
-                                             c, inputs_directory):
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c
+):
     """
-    Write profiles to variable_generator_profiles.tab
-    If file does not yet exist, write header first
-    :param subscenarios
-    :param subproblem
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
     # Select only profiles of projects in the portfolio
     # Select only profiles of projects with 'variable'
     # operational type
@@ -525,6 +525,41 @@ def get_module_specific_inputs_from_database(subscenarios, subproblem, stage,
             stage
         )
     )
+
+    return variable_profiles
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # variable_profiles = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    variable_profiles = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     # If variable_generator_profiles.tab file already exists, append rows to it
     if os.path.isfile(os.path.join(inputs_directory,

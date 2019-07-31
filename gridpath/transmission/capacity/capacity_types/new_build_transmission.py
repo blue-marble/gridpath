@@ -121,12 +121,10 @@ def load_module_specific_data(m,
 
     # TODO: throw an error when a line of the 'new_build_transmission' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
-    data_portal.load(filename=
-                     os.path.join(scenario_directory,
-                                  "inputs",
-                                  "new_build_transmission_vintage_costs.tab"),
-                     index=
-                     m.NEW_BUILD_TRANSMISSION_VINTAGES,
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "new_build_transmission_vintage_costs.tab"),
+                     index=m.NEW_BUILD_TRANSMISSION_VINTAGES,
                      select=("transmission_line", "vintage",
                              "tx_lifetime_yrs",
                              "tx_annualized_real_cost_per_mw_yr"),
@@ -135,11 +133,100 @@ def load_module_specific_data(m,
                      )
 
 
+# TODO: untested
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    # TODO: add inputs_transmission_new_cost and
+    #  subscenarios_transmission_new_cost tables to testing database
+    tx_cost = c.execute(
+        """SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        tx_annualized_real_cost_per_mw_yr
+        FROM inputs_transmission_portfolios
+        CROSS JOIN
+        (SELECT period
+        FROM inputs_temporal_periods
+        WHERE temporal_scenario_id = {}) as relevant_periods
+        INNER JOIN
+        (SELECT transmission_line, vintage, tx_lifetime_yrs, 
+        tx_annualized_real_cost_per_mw_yr
+        FROM inputs_transmission_new_cost
+        WHERE transmission_new_cost_scenario_id = {} ) as cost
+        USING (transmission_line, vintage   )
+        WHERE transmission_portfolio_scenario_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subscenarios.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
+    return tx_cost
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # tx_cost = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+# TODO: untested
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    .tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    tx_cost = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, c)
+
+    with open(os.path.join(inputs_directory,
+                           "new_build_transmission_vintage_costs.tab"),
+              "w") as existing_tx_capacity_tab_file:
+        writer = csv.writer(existing_tx_capacity_tab_file,
+                            delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["transmission_line", "vintage",
+             "tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]
+        )
+
+        for row in tx_cost:
+            writer.writerow(row)
+
+
+# TODO: untested
 def export_module_specific_results(m, d, scenario_directory, subproblem, stage):
     """
 
     :param m:
     :param d:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
     :return:
     """
 
@@ -147,13 +234,116 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage):
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_new_capacity.csv"), "w") as f:
         writer = csv.writer(f)
-        writer.writerow(["tx_line", "period", "load_zone_from", "load_zone_to",
+        writer.writerow(["transmission_line", "period",
+                         "load_zone_from", "load_zone_to",
                          "new_build_transmission_capacity_mw"])
-        for (tx_line, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
+        for (transmission_line, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
             writer.writerow([
-                tx_line,
+                transmission_line,
                 p,
-                m.load_zone_from[tx_line],
-                m.load_zone_to[tx_line],
-                value(m.Build_Transmission_MW[tx_line, p])
+                m.load_zone_from[transmission_line],
+                m.load_zone_to[transmission_line],
+                value(m.Build_Transmission_MW[transmission_line, p])
             ])
+
+
+# TODO: untested
+def import_module_specific_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # New build capacity results
+    print("transmission new build")
+    c.execute(
+        """DELETE FROM results_transmission_capacity_new_build
+        WHERE scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
+        """.format(scenario_id, subproblem, stage)
+    )
+    db.commit()
+
+    # Create temporary table, which we'll use to sort results and then drop
+    c.execute(
+        """DROP TABLE IF EXISTS 
+        temp_results_transmission_capacity_new_build"""
+        + str(scenario_id) + """;"""
+    )
+    db.commit()
+
+    c.execute(
+        """CREATE TABLE temp_results_transmission_capacity_new_build"""
+        + str(scenario_id) + """(
+        scenario_id INTEGER,
+        transmission_line VARCHAR(64),
+        period INTEGER,
+        subproblem_id INTEGER,
+        stage_id INTEGER,
+        load_zone_from VARCHAR(32),
+        load_zone_to VARCHAR(32),
+        new_build_transmission_capacity_mw FLOAT,
+        PRIMARY KEY (scenario_id, transmission_line, period)
+        );"""
+    )
+    db.commit()
+
+    # Load results into the temporary table
+    with open(os.path.join(results_directory,
+                           "transmission_new_capacity.csv"), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            transmission_line = row[0]
+            period = row[1]
+            load_zone_from = row[2]
+            load_zone_to = row[3]
+            new_build_transmission_capacity_mw = row[4]
+
+            c.execute(
+                """INSERT INTO 
+                temp_results_transmission_capacity_new_build"""
+                + str(scenario_id) + """
+                (scenario_id, transmission_line, period, subproblem_id, stage_id, 
+                load_zone_from, load_zone_to, 
+                new_build_transmission_capacity_mw)
+                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {});""".format(
+                    scenario_id, transmission_line, period, subproblem, stage,
+                    load_zone_from, load_zone_to,
+                    new_build_transmission_capacity_mw
+                )
+            )
+    db.commit()
+
+    # Insert sorted results into permanent results table
+    c.execute(
+        """INSERT INTO results_transmission_capacity_new_build
+        (scenario_id, transmission_line, period, subproblem_id, stage_id,
+        load_zone_from, load_zone_to, new_build_transmission_capacity_mw)
+        SELECT
+        scenario_id, transmission_line, period, subproblem_id, stage_id, 
+        load_zone_from, load_zone_to, new_build_transmission_capacity_mw
+        FROM temp_results_transmission_capacity_new_build"""
+        + str(scenario_id)
+        + """
+        ORDER BY scenario_id, transmission_line, period, subproblem_id, stage_id;"""
+    )
+    db.commit()
+
+    # Drop the temporary table
+    c.execute(
+        """DROP TABLE temp_results_transmission_capacity_new_build"""
+        + str(scenario_id) +
+        """;"""
+    )
+    db.commit()

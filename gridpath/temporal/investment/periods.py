@@ -103,14 +103,55 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
+
+    periods = c.execute(
+        """SELECT period, discount_factor, number_years_represented
+           FROM inputs_temporal_periods
+           WHERE temporal_scenario_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID
+        )
+    ).fetchall()
+
+    return periods
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # periods = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    periods.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+
+    periods = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     with open(os.path.join(inputs_directory, "periods.tab"), "w") as \
             periods_tab_file:
@@ -119,14 +160,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
         # Write header
         writer.writerow(
             ["PERIODS", "discount_factor", "number_years_represented"])
-
-        periods = c.execute(
-            """SELECT period, discount_factor, number_years_represented
-               FROM inputs_temporal_periods
-               WHERE temporal_scenario_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID
-            )
-        ).fetchall()
 
         for row in periods:
             writer.writerow(row)

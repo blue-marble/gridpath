@@ -132,12 +132,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_directory):
+def get_inputs_from_database(subscenarios, subproblem, stage, c):
     """
-
-    :param subscenarios
-    :param c:
-    :param inputs_directory:
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
     :return:
     """
 
@@ -148,6 +148,39 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c, inputs_director
             subscenarios.TUNING_SCENARIO_ID
         )
     ).fetchone()[0]
+
+    return ramp_tuning_cost
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # ramp_tuning_cost = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, c)
+
+    # do stuff here to validate inputs
+
+
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+    """
+    Get inputs from database and write out the model input
+    tuning_params.tab file (to be precise, amend it).
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param c: database cursor
+    :return:
+    """
+    ramp_tuning_cost = get_inputs_from_database(
+        subscenarios, subproblem, stage, c)
 
     # If tuning params file exists, add column to file, else create file and
     #  writer header and tuning param value

@@ -286,33 +286,47 @@ def cross_feature_modules_list():
     return cross_modules
 
 
-def determine_modules(scenario_directory):
+def determine_modules(features=None, scenario_directory=None,):
     """
+    :param features: List of requested features. Optional input; if
+        not specified, function will try to load 'features.csv' file to
+        determine the requested features.
     :param scenario_directory: the scenario directory, where we will look
-        for the list of requested features
+        for the list of requested features. Optional input; if not specified,
+        function will look for the 'features' input parameter
     :return: the list of modules -- a subset of all GridPath modules -- needed
-        for a scenario
+        for a scenario. These are the module names, not the actual modules.
 
     This method determines which modules are needed for a scenario based on
-    the features specified for the scenario. We start with the list of all
-    GridPath modules from *all_modules_list()* as the list of modules to
-    use in the scenario. We then iterate over all optional features, which we
-    get from the keys of the *optional_modules_list()* method above; if the
-    feature is in the list of user-requested features, we do nothing; if it
-    is not, we remove all of the feature's modules from the list of modules
-    to use. Similarly, for the cross feature modules, which we get from the
-    *cross_feature_module_list()* method, we check if all features they
-    depend on are included and, if not, remove those modules from the list
-    of modules to use.
+    the features specified for the scenario. The features can be either
+    directly specified as a list or by providing the directory where a
+    'features.csv' file lists the requested features.
+
+    We start with the list of all GridPath modules from *all_modules_list()*
+    as the list of modules to use in the scenario. We then iterate over all
+    optional features, which we get from the keys of the
+    *optional_modules_list()* method above; if the feature is in the list of
+    user-requested features, we do nothing; if it is not, we remove all of the
+    feature's modules from the list of modules to use. Similarly, for the cross
+    feature modules, which we get from the *cross_feature_module_list()* method,
+    we check if all features they depend on are included and, if not, remove
+    those modules from the list of modules to use.
     """
-    features_file = os.path.join(scenario_directory, "features.csv")
-    try:
-        requested_features = pd.read_csv(features_file)["features"].tolist()
-    except IOError:
-        print("ERROR! Features file {} not found in {}.".format(
-            features_file, scenario_directory
-        ))
-        sys.exit(1)
+    if (scenario_directory is None) and (features is None):
+        raise IOError("""Need to specify either 'scenario_directory', the
+                      directory where 'features.csv' is saved, or 'features',
+                      the list of requested features""")
+    elif features is not None:
+        requested_features = features
+    elif scenario_directory is not None:
+        features_file = os.path.join(scenario_directory, "features.csv")
+        try:
+            requested_features = pd.read_csv(features_file)["features"].tolist()
+        except IOError:
+            print("ERROR! Features file {} not found in {}.".format(
+                features_file, scenario_directory
+            ))
+            sys.exit(1)
 
     # Remove any modules not requested by user
     modules_to_use = all_modules_list()

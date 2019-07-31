@@ -87,7 +87,7 @@ def main(args=None):
     )
 
     # Go through modules
-    modules_to_use = determine_modules(scenario_directory)
+    modules_to_use = determine_modules(scenario_directory=scenario_directory)
     loaded_modules = load_modules(modules_to_use)
 
     # Subscenarios
