@@ -152,7 +152,7 @@ def main(args=None):
 
     # Connect to database; For now, assume script is run from root directory
     # and the the database is ./db and named io.db
-    conn = sqlite3.connect(os.path.join(os.getcwd(), 'db', 'io.db'))
+    conn = sqlite3.connect(os.path.join(os.getcwd(), "..", "db", "io.db"))
     c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(

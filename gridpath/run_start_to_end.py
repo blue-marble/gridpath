@@ -14,10 +14,8 @@ import time
 import traceback
 
 # GridPath modules
-import get_scenario_inputs
-import run_scenario
-import import_scenario_results
-import process_results
+from gridpath import get_scenario_inputs, run_scenario, \
+    import_scenario_results, process_results
 
 
 # TODO: can these be consolidated with run scenario
@@ -191,7 +189,7 @@ if __name__ == "__main__":
     # For now, assume script is run from root directory and the the
     # database is ./db and named io.db
     io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
+        os.path.join(os.getcwd(), "..", "db", "io.db")
     )
     c = io.cursor()
 
