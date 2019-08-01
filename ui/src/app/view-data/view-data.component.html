@@ -1,0 +1,25 @@
+<button id="goBackButtonTop" class="button-primary"
+      (click)="goBack()">Back</button>
+
+
+<ng-container *ngFor="let inputDataTable of allTables">
+<table class="view-data-table" *ngIf="dataToShow==inputDataTable.ngIfKey">
+  <caption>{{inputDataTable.caption}}</caption>
+<tr>
+     <ng-container *ngFor="let column of inputDataTable.columns">
+       <th>{{column}}</th>
+     </ng-container>
+</tr>
+
+<ng-container *ngFor="let row of inputDataTable.rowsData">
+   <tr>
+     <ng-container *ngFor="let column of inputDataTable.columns">
+       <td>{{row[column]}}</td>
+     </ng-container>
+   </tr>
+</ng-container>
+</table>
+</ng-container>
+
+<button id="goBackButtonBottom" class="button-primary"
+      (click)="goBack()">Back</button>

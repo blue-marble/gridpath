@@ -2,12 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
-const electron = ( window as any).require('electron');
 const io = ( window as any ).require('socket.io-client');
 
 import { ScenarioDetail } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
+import { ViewDataService } from '../view-data/view-data.service';
 import { StartingValues } from '../scenario-new/scenario-new.component';
 
 
@@ -37,6 +37,7 @@ export class ScenarioDetailComponent implements OnInit {
     private router: Router,
     private scenarioDetailService: ScenarioDetailService,
     private scenarioEditService: ScenarioEditService,
+    private viewDataService: ViewDataService,
     private location: Location) {
   }
 
@@ -103,7 +104,7 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTemporal(scenarioID): void {
@@ -423,13 +424,21 @@ export class ScenarioDetailComponent implements OnInit {
     });
   }
 
-  editScenario(scenarioID): void {
+  editScenario(): void {
     // Send init setting values to the scenario edit service that the
     // scenario-new component uses to set initial setting values
     this.scenarioEditService.changeStartingScenario(this.startingValues);
     // Switch to the new scenario view
     this.router.navigate(['/scenario-new/']);
+  }
 
+  viewData(dataToView): void {
+    // Send the table name to the view-data service that view-data component
+    // uses to determine which tables to show
+    this.viewDataService.changeDataToView(dataToView);
+    console.log('Sending data to view, ', dataToView);
+    // Switch to the new scenario view
+    this.router.navigate(['/view-data']);
   }
 
 }
