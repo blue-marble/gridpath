@@ -54,6 +54,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    c = conn.cursor()
 
     rps_targets = c.execute(
         """SELECT rps_zone, period, rps_target_mwh
