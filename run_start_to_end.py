@@ -114,16 +114,16 @@ def main(args):
         get_scenario_inputs.main(args=args)
     except Exception:
         update_run_status(parsed_args.scenario, 3)
-        print('Error encountered when getting inputs from the database for '
-              'scenario {}.'.format(args.scenario))
+        print("Error encountered when getting inputs from the database for "
+              "scenario {}.".format(parsed_args.scenario))
         traceback.print_exc()
         sys.exit(1)
     try:
         run_scenario.main(args=args)
     except Exception:
         update_run_status(parsed_args.scenario, 3)
-        print('Error encountered when running scenario {}.'.format(
-            args.scenario))
+        print("Error encountered when running scenario {}.".format(
+            parsed_args.scenario))
         traceback.print_exc()
         sys.exit(1)
 
@@ -131,8 +131,8 @@ def main(args):
         import_scenario_results.main(args=args)
     except Exception:
         update_run_status(args.scenario, 3)
-        print('Error encountered when importing results for '
-              'scenario {}.'.format(parsed_args.scenario))
+        print("Error encountered when importing results for "
+              "scenario {}.".format(parsed_args.scenario))
         traceback.print_exc()
         sys.exit(1)
 
