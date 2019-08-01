@@ -305,16 +305,16 @@ def load_module_specific_data(mod, data_portal,
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Select only profiles of projects in the portfolio
     # Select only profiles of projects with 'variable_no_curtailment'
     # operational type
@@ -393,13 +393,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # variable_profiles = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -412,7 +412,7 @@ def write_module_specific_model_inputs(
     :return:
     """
     variable_profiles = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # If variable_generator_profiles.tab file already exists, append rows to it
     if os.path.isfile(os.path.join(inputs_directory,

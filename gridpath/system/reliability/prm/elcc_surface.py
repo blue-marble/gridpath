@@ -123,7 +123,7 @@ def save_duals(m):
         ["prm_zone", "period", "facet", "dual"]
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -131,7 +131,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
     :param c: database cursor
     :return:
     """
-
+    c = conn.cursor()
     # The intercepts for the surface
     intercepts = c.execute(
         """SELECT prm_zone, period, facet, elcc_surface_intercept
@@ -145,7 +145,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return intercepts
 
@@ -161,12 +161,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # intercepts = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     prm_zone_surface_facets_and_intercept.tab file.
@@ -178,7 +178,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :return:
     """
     intercepts = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
             inputs_directory, "prm_zone_surface_facets_and_intercept.tab"

@@ -135,15 +135,15 @@ def load_module_specific_data(m,
 
 # TODO: untested
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c):
+        subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # TODO: add inputs_transmission_new_cost and
     #  subscenarios_transmission_new_cost tables to testing database
     tx_cost = c.execute(
@@ -182,12 +182,12 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # tx_cost = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
 
 # TODO: untested
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c):
+        inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     .tab file.
@@ -195,12 +195,12 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     tx_cost = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "new_build_transmission_vintage_costs.tab"),

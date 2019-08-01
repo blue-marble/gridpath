@@ -192,15 +192,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, rps_zone
         FROM inputs_project_rps_zones
@@ -209,7 +209,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             subscenarios.RPS_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return project_zones
 
@@ -225,12 +225,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # project_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -238,11 +238,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_zone_dict = dict()

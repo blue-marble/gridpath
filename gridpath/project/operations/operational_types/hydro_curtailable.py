@@ -507,16 +507,16 @@ def export_module_specific_results(mod, d,
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Select only budgets/min/max of projects in the portfolio
     # Select only budgets/min/max of projects with 'hydro_curtailable'
     # Select only budgets/min/max for horizons from the correct temporal
@@ -591,13 +591,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # hydro_chars = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -606,11 +606,11 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     hydro_chars = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # If hydro_conventional_horizon_params.tab file already exists,
     # append rows to it

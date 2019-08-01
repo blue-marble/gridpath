@@ -119,16 +119,16 @@ def load_module_specific_data(
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     project_zone_dur = c.execute(
         """SELECT project, prm_zone, 
         min_duration_for_full_capacity_credit_hours
@@ -146,7 +146,7 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return project_zone_dur
 
@@ -163,11 +163,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # project_zone_dur =get_module_specific_inputs_from_database(
-    #    subscenarios, subproblem, stage, c)
+    #    subscenarios, subproblem, stage, conn
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -176,12 +176,12 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     project_zone_dur = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     # Only assign a min duration to projects that contribute to a PRM zone in

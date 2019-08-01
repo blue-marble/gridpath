@@ -36,15 +36,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                             )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     lf_reserves_up = c.execute(
         """SELECT lf_reserves_up_ba, timepoint, lf_reserves_up_mw
         FROM inputs_system_lf_reserves_up
@@ -87,10 +87,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # lf_reserves_up = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     lf_reserves_up_requirement.tab file.
@@ -98,12 +98,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     lf_reserves_up = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "lf_reserves_up_requirement.tab"), "w") as \

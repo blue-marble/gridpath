@@ -36,15 +36,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    ::param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     reg_down_bas = c.execute(
         """SELECT regulation_down_ba, 
            violation_penalty_per_mw, reserve_to_energy_adjustment
@@ -52,7 +52,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
            WHERE regulation_down_ba_scenario_id = {};""".format(
             subscenarios.REGULATION_DOWN_BA_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return reg_down_bas
 
@@ -69,10 +69,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # reg_down_bas = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     regulation_down_balancing_areas.tab file.
@@ -80,12 +80,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    ::param conn: database connection
     :return:
     """
 
     reg_down_bas = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "regulation_down_balancing_areas.tab"), "w") as \

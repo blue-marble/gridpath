@@ -146,16 +146,16 @@ def load_module_specific_data(m,
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     stor_capacities = c.execute(
         """SELECT project, period, existing_capacity_mw,
         existing_capacity_mwh,
@@ -203,7 +203,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # stor_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
     # do validation
     # make sure existing capacity is a postive number
@@ -211,7 +211,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -220,12 +220,12 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     stor_capacities = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "storage_specified_capacities.tab"), "w") as \

@@ -17,7 +17,7 @@ from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
-                       subscenarios, cursor):
+                       subscenarios, conn):
     """
     For each module, load the inputs from the database and write out the inputs
     into .tab files, which will be used to construct the optimization problem.
@@ -28,7 +28,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
     :param loaded_modules: list of imported modules (Python <class 'module'>
         objects)
     :param subscenarios: SubScenarios object with all subscenario info
-    :param cursor: database cursor
+    :param conn: database connection
 
 
     :return:
@@ -83,7 +83,7 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                         subscenarios=subscenarios,
                         subproblem=subproblem,
                         stage=stage,
-                        c=cursor,
+                        conn=conn,
                     )
                 else:
                     pass
@@ -428,7 +428,7 @@ def main(args=None):
         subproblems=subproblems,
         loaded_modules=loaded_modules,
         subscenarios=subscenarios,
-        cursor=c)
+        conn=conn)
 
     # Save the list of optional features to a file (will be used to determine
     # modules without database connection)

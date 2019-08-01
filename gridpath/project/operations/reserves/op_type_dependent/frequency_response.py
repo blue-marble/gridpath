@@ -77,23 +77,24 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Get frequency_response ramp rate limit
+    c = conn.cursor()
     prj_ramp_rates = c.execute(
         """SELECT project, frequency_response_ramp_rate
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {};""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return prj_ramp_rates
 
@@ -109,12 +110,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # prj_ramp_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -122,11 +123,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     prj_ramp_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_ramp_rate_dict = dict()

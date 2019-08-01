@@ -141,17 +141,17 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c1 = conn.cursor()
     # Which projects will contribute to the surface
-    project_contr = c.execute(
+    project_contr = c1.execute(
         """SELECT project, contributes_to_elcc_surface
         FROM 
         (SELECT project
@@ -167,10 +167,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
+    c2 = conn.cursor()
     # The coefficients for the surface
-    coefficients = c.execute(
+    coefficients = c2.execute(
         """SELECT project, period, facet, elcc_surface_coefficient
         FROM inputs_project_elcc_surface
         JOIN inputs_project_portfolios
@@ -188,7 +189,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return project_contr, coefficients
 
@@ -204,12 +205,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # project_contr, coefficients = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab (to be precise, amend it) and
@@ -218,11 +219,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     project_contr, coefficients = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_contr_dict = dict()

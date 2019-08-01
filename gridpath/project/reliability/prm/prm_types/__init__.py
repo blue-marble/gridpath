@@ -183,17 +183,17 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files.
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Load in the required prm type modules
     required_prm_type_modules = get_required_prm_type_modules(subscenarios, c)
     imported_prm_modules = \
@@ -205,7 +205,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
                    "write_module_specific_model_inputs"):
             imported_prm_modules[prm_m]. \
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, c)
+                    inputs_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

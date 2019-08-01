@@ -162,15 +162,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                          )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     projects = c.execute(
         """SELECT project, capacity_type, operational_type, technology,
         load_zone, fuel, variable_cost_per_mwh,
@@ -238,7 +238,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Read in the project input data into a dataframe
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, c)
+    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
     df = pd.DataFrame(projects.fetchall())
     df.columns = [s[0] for s in projects.description]
 
@@ -409,11 +409,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Write all input validation errors to database
-    write_validation_to_database(validation_results, c)
-    conn.commit()
+    write_validation_to_database(validation_results, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file.
@@ -421,11 +420,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
-    projects = get_inputs_from_database(subscenarios, subproblem, stage, c)
+    projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
 
     # TODO: decide how to deal with projects.tab -- currently, a large table
     #  is created with NULL values for projects that don't have certain
