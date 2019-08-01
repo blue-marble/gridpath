@@ -112,7 +112,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :return:
     """
     project_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     prj_zones_dict = {p: "." if z is None else z for (p, z) in project_zones}
 
