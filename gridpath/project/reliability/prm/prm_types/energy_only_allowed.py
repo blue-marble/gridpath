@@ -354,13 +354,13 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
@@ -416,11 +416,11 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
     #   get_module_specific_inputs_from_database(
-    #       subscenarios, subproblem, stage, c)
+    #       subscenarios, subproblem, stage, conn
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -430,13 +430,13 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     group_threshold_costs, project_deliverability_groups = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, c)
+            subscenarios, subproblem, stage, conn)
 
     if group_threshold_costs:
         with open(os.path.join(

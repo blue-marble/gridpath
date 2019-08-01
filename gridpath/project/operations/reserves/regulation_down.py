@@ -143,17 +143,18 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Get project BA
-    project_bas = c.execute(
+    c1 = conn.cursor()
+    project_bas = c1.execute(
         """SELECT project, regulation_down_ba
         FROM inputs_project_regulation_down_bas
             WHERE regulation_down_ba_scenario_id = {}
@@ -161,16 +162,17 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             subscenarios.REGULATION_DOWN_BA_SCENARIO_ID,
             subscenarios.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     # Get regulation_down footroom derate
-    prj_derates = c.execute(
+    c2 = conn.cursor()
+    prj_derates = c2.execute(
         """SELECT project, regulation_down_derate
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {};""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return project_bas, prj_derates
 
@@ -186,12 +188,12 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn
 
     # do stuff here to validate inputs
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     projects.tab file (to be precise, amend it).
@@ -199,11 +201,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     project_bas, prj_derates = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_ba_dict = dict()

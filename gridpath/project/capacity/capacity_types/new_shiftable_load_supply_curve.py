@@ -261,7 +261,7 @@ def get_module_specific_inputs_from_database(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :"numeric"
     :return:
     """
 
@@ -342,13 +342,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
     #     get_module_specific_inputs_from_database(
-    #         subscenarios, subproblem, stage, c)
+    #         subscenarios, subproblem, stage, conn)
 
     # validate inputs
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input
@@ -362,13 +362,13 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
         get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, c)
+            subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(
             inputs_directory,

@@ -297,19 +297,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         pass
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     # Get project availability if project_availability_scenario_id is not NULL
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = pd.DataFrame()
+        availabilities = []
     else:
-        availabilities = c.execute(
+        c1 = conn.cursor()
+        availabilities = c1.execute(
             """SELECT project, horizon, availability
             FROM inputs_project_availability
             INNER JOIN inputs_project_portfolios
@@ -329,12 +330,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
             )
         )
 
-    availabilities_df = pd.DataFrame(availabilities.fetchall())
-    availabilities_df.columns = [s[0] for s in availabilities.description]
-
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
-    heat_rates = c.execute(
+    c2 = conn.cursor()
+    heat_rates = c2.execute(
         """
         SELECT project, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh
@@ -352,10 +351,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    heat_rates_df = pd.DataFrame(heat_rates.fetchall())
-    heat_rates_df.columns = [s[0] for s in heat_rates.description]
-
-    return availabilities_df, heat_rates_df
+    return availabilities, heat_rates
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -368,12 +364,18 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    c = conn.cursor()
+    # TODO: make validation works when no availabilities specified
     validation_results = []
 
-    # Read in the project input data into a dataframe
-    av_df, hr_df = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+    # Get the project input data
+    availabilities, heat_rates = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    # Convert input data into dataframe
+    av_df = pd.DataFrame(availabilities.fetchall())
+    av_df.columns = [s[0] for s in availabilities.description]
+    hr_df = pd.DataFrame(heat_rates.fetchall())
+    hr_df.columns = [s[0] for s in heat_rates.description]
 
     # Check data types availability:
     expected_dtypes = {
@@ -434,7 +436,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     conn.commit()
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     project_availability.tab and heat_rate_curves.tab files
@@ -442,13 +444,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     availabilities, heat_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
-    if not availabilities.empty:
+    if availabilities:
         availabilities.to_csv(
             os.path.join(inputs_directory, "project_availability.tab"),
             sep="\t",

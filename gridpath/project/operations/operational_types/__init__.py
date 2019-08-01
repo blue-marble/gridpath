@@ -165,7 +165,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab files
     :param inputs_directory: local directory where .tab files will be saved
@@ -188,7 +188,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
                    "write_module_specific_model_inputs"):
             imported_operational_modules[op_m].\
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, c)
+                    inputs_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

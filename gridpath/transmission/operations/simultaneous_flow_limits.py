@@ -150,7 +150,7 @@ def save_duals(m):
         ["simultaneous_flow_limit", "timepoint", "dual"]
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -212,10 +212,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # flow_limits, limit_lines = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     transmission_simultaneous_flow_limits.tab and
@@ -229,7 +229,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     """
 
     flow_limits, limit_lines = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn
 
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(inputs_directory,

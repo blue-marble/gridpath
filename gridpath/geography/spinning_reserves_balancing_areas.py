@@ -36,15 +36,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     )
 
 
-def get_inputs_from_database(subscenarios, subproblem, stage, c):
+def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    ::param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     spinning_reserves_bas = c.execute(
         """SELECT spinning_reserves_ba, 
            violation_penalty_per_mw, reserve_to_energy_adjustment
@@ -52,7 +52,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, c):
            WHERE spinning_reserves_ba_scenario_id = {};""".format(
             subscenarios.SPINNING_RESERVES_BA_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return spinning_reserves_bas
 
@@ -69,10 +69,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # spinning_bas = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, c)
+    #     subscenarios, subproblem, stage, conn)
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
     spinning_reserves_balancing_areas.tab file.
@@ -80,12 +80,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    ::param conn: database connection
     :return:
     """
 
     spinning_reserves_bas = get_inputs_from_database(
-        subscenarios, subproblem, stage, c)
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "spinning_reserves_balancing_areas.tab"), "w") as \

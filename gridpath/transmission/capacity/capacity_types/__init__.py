@@ -89,7 +89,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
             pass
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, c):
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input .tab file.
     :param inputs_directory: local directory where .tab files will be saved
