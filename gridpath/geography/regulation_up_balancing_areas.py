@@ -44,7 +44,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     ::param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     reg_up_bas = c.execute(
         """SELECT regulation_up_ba, 
            violation_penalty_per_mw, reserve_to_energy_adjustment
@@ -52,7 +52,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
            WHERE regulation_up_ba_scenario_id = {};""".format(
             subscenarios.REGULATION_UP_BA_SCENARIO_ID
         )
-    ).fetchall()
+    )
     return reg_up_bas
 
 

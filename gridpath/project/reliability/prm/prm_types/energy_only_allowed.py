@@ -363,14 +363,14 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
-
     if subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID is None:
         group_threshold_costs = []
         project_deliverability_groups = []
     else:
+        c1 = conn.cursor()
         # Threshold groups with threshold for ELCC eligibility, cost,
         # and energy-only limit
-        group_threshold_costs = c.execute(
+        group_threshold_costs = c1.execute(
             """SELECT deliverability_group, 
             deliverability_group_no_cost_deliverable_capacity_mw, 
             deliverability_group_deliverability_cost_per_mw,
@@ -379,10 +379,11 @@ def get_module_specific_inputs_from_database(
             WHERe prm_energy_only_scenario_id = {}""".format(
                 subscenarios.PRM_ENERGY_ONLY_SCENARIO_ID
             )
-        ).fetchall()
+        )
 
+        c2 = conn.cursor()
         # Projects by group
-        project_deliverability_groups = c.execute(
+        project_deliverability_groups = c2.execute(
             """SELECT deliverability_group, project 
             FROM 
             (SELECT project
@@ -416,7 +417,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Validation to be added
     # group_threshold_costs, project_deliverability_groups = \
     #   get_module_specific_inputs_from_database(
-    #       subscenarios, subproblem, stage, conn
+    #       subscenarios, subproblem, stage, conn)
 
 
 def write_module_specific_model_inputs(

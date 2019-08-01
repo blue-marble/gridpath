@@ -177,10 +177,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     transmission_zones = c.execute(
         """SELECT transmission_line, carbon_cap_zone, import_direction,
         tx_co2_intensity_tons_per_mwh
@@ -190,7 +190,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
             subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return transmission_zones
 
@@ -207,7 +207,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # transmission_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -218,12 +218,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     transmission_zones = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_zone_dict = dict()

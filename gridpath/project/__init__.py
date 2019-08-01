@@ -170,7 +170,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     projects = c.execute(
         """SELECT project, capacity_type, operational_type, technology,
         load_zone, fuel, variable_cost_per_mwh,
@@ -409,8 +409,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Write all input validation errors to database
-    write_validation_to_database(validation_results, c)
-    conn.commit()
+    write_validation_to_database(validation_results, conn)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):

@@ -155,11 +155,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
-    flow_limits = c.execute(
+    c1 = conn.cursor()
+    flow_limits = c1.execute(
         """SELECT transmission_simultaneous_flow_limit, period, max_flow_mw
         FROM inputs_transmission_simultaneous_flow_limits
         INNER JOIN
@@ -172,9 +172,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
-    limit_lines = c.execute(
+    c2 = conn.cursor()
+    limit_lines = c2.execute(
         """SELECT transmission_simultaneous_flow_limit, transmission_line,
         simultaneous_flow_direction
         FROM inputs_transmission_simultaneous_flow_limit_line_groups
@@ -196,7 +197,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID,
             subscenarios.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID
         )
-    ).fetchall()
+    )
+
     return flow_limits, limit_lines
 
 
@@ -212,7 +214,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # flow_limits, limit_lines = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -224,12 +226,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     flow_limits, limit_lines = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(inputs_directory,

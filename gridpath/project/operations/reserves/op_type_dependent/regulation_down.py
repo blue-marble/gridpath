@@ -82,10 +82,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Get regulation_down ramp rate limit
     prj_ramp_rates = c.execute(
         """SELECT project, regulation_down_ramp_rate
@@ -93,7 +93,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE project_operational_chars_scenario_id = {};""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return prj_ramp_rates
 
@@ -109,7 +109,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # prj_ramp_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 
@@ -122,11 +122,11 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     prj_ramp_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     # Make a dict for easy access
     prj_ramp_rate_dict = dict()

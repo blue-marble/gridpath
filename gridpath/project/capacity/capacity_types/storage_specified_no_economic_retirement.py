@@ -211,7 +211,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, c
+        inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
     Get inputs from database and write out the model input

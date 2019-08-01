@@ -59,16 +59,17 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-
-    fuels = c.execute(
+    c1 = conn.cursor()
+    fuels = c1.execute(
         """SELECT fuel, co2_intensity_tons_per_mmbtu
         FROM inputs_project_fuels
         WHERE fuel_scenario_id = {}""".format(
             subscenarios.FUEL_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
-    fuel_prices = c.execute(
+    c2 = conn.cursor()
+    fuel_prices = c2.execute(
         """SELECT fuel, period, month, fuel_price_per_mmbtu
         FROM inputs_project_fuel_prices
         INNER JOIN
@@ -79,7 +80,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.FUEL_PRICE_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return fuels, fuel_prices
 

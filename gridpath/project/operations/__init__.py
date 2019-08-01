@@ -432,8 +432,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # that is in the heat_rate_curves table
 
     # Write all input validation errors to database
-    write_validation_to_database(validation_results, c)
-    conn.commit()
+    write_validation_to_database(validation_results, conn)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -451,11 +450,6 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     if availabilities:
-        availabilities.to_csv(
-            os.path.join(inputs_directory, "project_availability.tab"),
-            sep="\t",
-            index=False
-        )
         with open(os.path.join(inputs_directory, "project_availability.tab"),
                   "w") as \
                 availability_tab_file:
@@ -463,7 +457,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
             writer.writerow(["project", "horizon", "availability_derate"])
 
-            for i, row in availabilities.iterrows():
+            for row in availabilities:
                 writer.writerow(row)
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
@@ -474,7 +468,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer.writerow(["project", "load_point_mw",
                          "average_heat_rate_mmbtu_per_mwh"])
 
-        for i, row in heat_rates.iterrows():
+        for row in heat_rates:
             writer.writerow(row)
 
 

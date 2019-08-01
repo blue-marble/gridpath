@@ -62,10 +62,10 @@ def get_module_specific_inputs_from_database(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     tx_capacities = c.execute(
         """SELECT transmission_line, period, min_mw, max_mw
         FROM inputs_transmission_portfolios
@@ -100,7 +100,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # tx_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
 
 def write_module_specific_model_inputs(
@@ -112,12 +112,12 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     tx_capacities = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "specified_transmission_line_capacities.tab"),

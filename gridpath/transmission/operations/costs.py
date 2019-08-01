@@ -112,10 +112,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     hurdle_rates = c.execute(
         """SELECT transmission_line, period, 
         hurdle_rate_positive_direction_per_mwh,
@@ -148,7 +148,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     pass
     # Validation to be added
     # hurdle_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -159,12 +159,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     hurdle_rates = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn
+        subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
                            "transmission_hurdle_rates.tab"),

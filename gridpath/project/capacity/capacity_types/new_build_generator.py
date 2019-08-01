@@ -434,7 +434,7 @@ def summarize_module_specific_results(
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
@@ -443,6 +443,7 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
+    c = conn.cursor()
 
     get_potentials = \
         (" ", " ") if subscenarios.PROJECT_NEW_POTENTIAL_SCENARIO_ID is None \

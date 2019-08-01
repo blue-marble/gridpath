@@ -311,7 +311,7 @@ def get_module_specific_inputs_from_database(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     c = conn.cursor()

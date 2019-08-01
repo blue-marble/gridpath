@@ -38,6 +38,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     ::param conn: database connection
     :return:
     """
+    c = conn.cursor()
     carbon_cap_zone = c.execute(
         """SELECT carbon_cap_zone
         FROM inputs_geography_carbon_cap_zones

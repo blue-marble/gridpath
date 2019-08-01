@@ -106,8 +106,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     for op_m in required_capacity_type_modules:
         if hasattr(imported_capacity_type_modules[op_m],
                    "write_module_specific_model_inputs"):
-            imported_capacity_type_modules[op_m].write_module_specific_model_inputs(
-                inputs_directory, subscenarios, subproblem, stage, conn)
+            imported_capacity_type_modules[op_m].\
+                write_module_specific_model_inputs(
+                    inputs_directory, subscenarios, subproblem, stage, conn)
         else:
             pass
 

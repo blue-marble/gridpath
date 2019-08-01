@@ -255,13 +255,13 @@ def load_module_specific_data(
 
 
 def get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, c
+        subscenarios, subproblem, stage, conn
 ):
     """
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :"numeric"
+    :param conn: database connection
     :return:
     """
 
@@ -269,7 +269,8 @@ def get_module_specific_inputs_from_database(
         raise ValueError("Maximum potential must be specified for new "
                          "shiftable load supply curve projects.")
 
-    min_max_builds = c.execute(
+    c1 = conn.cursor()
+    min_max_builds = c1.execute(
         """SELECT project, period, 
         minimum_cumulative_new_build_mwh, maximum_cumulative_new_build_mwh
         FROM inputs_project_portfolios
@@ -292,7 +293,8 @@ def get_module_specific_inputs_from_database(
         )
     )
 
-    supply_curve_count = c.execute(
+    c2 = conn.cursor()
+    supply_curve_count = c2.execute(
         """SELECT project, COUNT(DISTINCT(supply_curve_scenario_id))
         FROM inputs_project_portfolios
         LEFT OUTER JOIN inputs_project_new_cost
@@ -304,9 +306,10 @@ def get_module_specific_inputs_from_database(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
-    supply_curve_id = c.execute(
+    c3 = conn.cursor()
+    supply_curve_id = c3.execute(
         """SELECT DISTINCT supply_curve_scenario_id
         FROM inputs_project_portfolios
         LEFT OUTER JOIN inputs_project_new_cost
@@ -319,14 +322,15 @@ def get_module_specific_inputs_from_database(
         )
     ).fetchone()[0]
 
-    supply_curve = c.execute(
+    c4 = conn.cursor()
+    supply_curve = c4.execute(
         """SELECT project, supply_curve_point, supply_curve_slope, 
         supply_curve_intercept
         FROM inputs_project_shiftable_load_supply_curve
         WHERE supply_curve_scenario_id = {}""".format(
             supply_curve_id
         )
-    ).fetchall()
+    )
 
     return min_max_builds, supply_curve_count, supply_curve_id, supply_curve
 

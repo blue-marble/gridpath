@@ -51,7 +51,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     ::param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     load_zones = c.execute(
         """SELECT load_zone, overgeneration_penalty_per_mw,
            unserved_energy_penalty_per_mw
@@ -59,7 +59,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
            WHERE load_zone_scenario_id = {};""".format(
             subscenarios.LOAD_ZONE_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return load_zones
 

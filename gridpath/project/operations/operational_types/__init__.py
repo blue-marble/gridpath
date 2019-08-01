@@ -172,11 +172,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
 
     # Load in the required operational modules
+    c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(

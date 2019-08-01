@@ -14,7 +14,7 @@ import os.path
 from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules
 
 
-def get_required_capacity_type_modules(subscenarios, c):
+def get_required_capacity_type_modules(subscenarios, conn):
     """
     Get the required tx capacity type submodules based on the database inputs
     for the specified scenario_id. Required modules are the unique set of
@@ -29,10 +29,10 @@ def get_required_capacity_type_modules(subscenarios, c):
     will also be stored in the DynamicComponents class object.
 
     :param subscenarios: SubScenarios object with all subscenario info
-    :param c: database cursor
+    :param conn: database connection
     :return: List of the required tx capacity type submodules
     """
-
+    c = conn.cursor()
     required_tx_capacity_modules = [
         p[0] for p in c.execute(
             """SELECT DISTINCT capacity_type
@@ -71,10 +71,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # Load in the required tx capacity type modules
-    c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
     required_capacity_type_modules = get_required_capacity_type_modules(
-        subscenarios, c)
+        subscenarios, conn)
     imported_capacity_type_modules = load_tx_capacity_type_modules(
             required_capacity_type_modules)
 
@@ -96,13 +95,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
-
     # Load in the required capacity type modules
     required_capacity_type_modules = get_required_capacity_type_modules(
-        subscenarios, c)
+        subscenarios, conn)
     imported_capacity_type_modules = load_tx_capacity_type_modules(
             required_capacity_type_modules)
 
@@ -112,7 +110,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                    "write_module_specific_model_inputs"):
             imported_capacity_type_modules[op_m]. \
                 write_module_specific_model_inputs(
-                    inputs_directory, subscenarios, subproblem, stage, c
+                    inputs_directory, subscenarios, subproblem, stage, conn
             )
         else:
             pass

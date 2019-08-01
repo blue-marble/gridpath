@@ -59,7 +59,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Select only profiles for timepoints form the correct temporal
     # scenario and the correct subproblem
     # Select only profiles of load_zones that are part of the correct

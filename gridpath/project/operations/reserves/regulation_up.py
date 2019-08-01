@@ -192,7 +192,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
     # project_bas, prj_derates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+    #     subscenarios, subproblem, stage, conn)
 
     # do stuff here to validate inputs
 

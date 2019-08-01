@@ -304,15 +304,16 @@ def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     return scenario_id, scenario_name
 
 
-def write_validation_to_database(validation_results, c):
+def write_validation_to_database(validation_results, conn):
     """
     Writes the validation results to database. Helper function for input
     validation.
     :param validation_results: list of tuples with results from input validation.
         Each row represents an identified input validation issue.
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
+    c = conn.cursor()
     for row in validation_results:
         query = """INSERT into mod_input_validation
                 (scenario_id, gridpath_module, related_subscenario, 
@@ -320,6 +321,8 @@ def write_validation_to_database(validation_results, c):
                 VALUES ({});""".format(','.join(['?' for item in row]))
 
         c.execute(query, row)
+
+    conn.commit()
 
 
 def check_dtypes(df, expected_dtypes):
