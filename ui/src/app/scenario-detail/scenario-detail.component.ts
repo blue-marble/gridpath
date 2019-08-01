@@ -104,7 +104,7 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTemporal(scenarioID): void {

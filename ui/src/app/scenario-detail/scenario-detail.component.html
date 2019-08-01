@@ -9,13 +9,13 @@
   <tr>
   <th>Name</th>
   <th>Value</th>
-  <th>View Data</th>
+  <th *ngIf="tbl.tableCaption!=='Features'">View Data</th>
   </tr>
     <ng-container *ngFor="let sd of tbl.settingRows">
        <tr>
          <td>{{sd.name}}</td>
          <td>{{sd.value}}</td>
-          <td><button (click)="viewData(sd.name)">
+          <td *ngIf="tbl.tableCaption!=='Features'"><button (click)="viewData(sd.name)">
             View Data
           </button></td>
        </tr>
