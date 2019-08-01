@@ -132,7 +132,7 @@ def main(args=None):
             raise AssertionError("ERROR: saved scenario_id does not match")
 
     # Go through modules
-    modules_to_use = determine_modules(scenario_directory)
+    modules_to_use = determine_modules(scenario_directory=scenario_directory)
     loaded_modules = load_modules(modules_to_use)
 
     # Import appropriate results into database
