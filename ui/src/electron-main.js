@@ -195,6 +195,7 @@ function startServer () {
       );
       const scriptPath = path.join(
         data['gridPathDirectory']['value'][0],
+        'ui', 'api',
         'flask_local_server.py'
       );
 
