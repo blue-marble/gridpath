@@ -348,7 +348,7 @@ def get_module_specific_inputs_from_database(
     :param conn: database connection
     :return:
     """
-
+    c = conn.cursor()
     # Select generators of 'existing_gen_binary_economic_retirement' capacity
     # type only
     ep_capacities = c.execute(
