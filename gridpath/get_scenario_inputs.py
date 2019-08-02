@@ -4,11 +4,11 @@
 from __future__ import print_function
 
 from builtins import str
+from argparse import ArgumentParser
 import csv
 import os.path
 import sqlite3
 import sys
-from argparse import ArgumentParser
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -93,7 +93,7 @@ def delete_prior_inputs(inputs_directory):
     """
     Delete all .tab files that may exist in the specified directory
     :param inputs_directory: local directory where .tab files are saved
-    :return: 
+    :return:
     """
     prior_input_tab_files = [
         f for f in os.listdir(inputs_directory) if f.endswith('.tab')
@@ -105,11 +105,14 @@ def delete_prior_inputs(inputs_directory):
 
 def parse_arguments(args):
     """
-    Parse arguments
-    :param args:
-    :return: 
+    :param arguments: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
     """
     parser = ArgumentParser(add_help=True)
+    parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario_id",
                         help="The scenario_id from the database.")
     parser.add_argument("--scenario",
@@ -141,9 +144,9 @@ def write_subproblems_csv(scenario_directory, subproblems):
 
 def write_features_csv(scenario_directory, feature_list):
     """
-    Write the features.csv file that will be used to determine which 
+    Write the features.csv file that will be used to determine which
     GridPath modules to include
-    :return: 
+    :return:
     """
     with open(os.path.join(scenario_directory, "features.csv"), "w") as \
             features_csv_file:
@@ -159,9 +162,9 @@ def write_features_csv(scenario_directory, feature_list):
 def save_scenario_id(scenario_directory, scenario_id):
     """
     Save the scenario ID to file
-    :param scenario_directory: 
-    :param scenario_id: 
-    :return: 
+    :param scenario_directory:
+    :param scenario_id:
+    :return:
     """
     with open(os.path.join(scenario_directory, "scenario_id.txt"), "w") as \
             scenario_id_file:
@@ -169,17 +172,17 @@ def save_scenario_id(scenario_directory, scenario_id):
 
 
 def write_scenario_description(
-        scenario_directory, scenario_id, scenario_name, 
+        scenario_directory, scenario_id, scenario_name,
         optional_features, subscenarios
 ):
     """
-    
-    :param scenario_directory: 
-    :param scenario_id: 
-    :param scenario_name: 
-    :param optional_features: 
-    :param subscenarios: 
-    :return: 
+
+    :param scenario_directory:
+    :param scenario_id:
+    :param scenario_name:
+    :param optional_features:
+    :param subscenarios:
+    :return:
     """
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
               "w") as \
@@ -368,27 +371,39 @@ def write_scenario_description(
         writer.writerow(["tuning_scenario_id",
                          subscenarios.TUNING_SCENARIO_ID])
 
-    
+
 def main(args=None):
     """
 
     :return:
     """
-    print("Getting inputs...")
-
-    # Retrieve scenario_id and/or name from args
+    # Retrieve DB location and scenario_id and/or name from args
     if args is None:
         args = sys.argv[1:]
+
     parsed_arguments = parse_arguments(args=args)
+
+    db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
-    # TODO: make this a user input
-    # For now, assume script is run from root directory and the the
-    # database is ./db and named io.db
-    db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
+    # If no database is specified, assume script is run from the 'gridpath'
+    # directory and the database is in ../db and named io.db
+    if db_path is None:
+        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
+
+    if not os.path.isfile(db_path):
+        raise OSError(
+            "The database file {} was not found. Did you mean to "
+            "specify a different database file?".format(
+                os.path.abspath(db_path)
+            )
+        )
+
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
+
+    print("Getting inputs... (connected to database {})".format(db_path))
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg,
@@ -443,7 +458,7 @@ def main(args=None):
     )
     # Write full scenario description
     write_scenario_description(
-        scenario_directory=scenario_directory, 
+        scenario_directory=scenario_directory,
         scenario_id=scenario_id, scenario_name=scenario_name,
         optional_features=optional_features, subscenarios=subscenarios
     )
