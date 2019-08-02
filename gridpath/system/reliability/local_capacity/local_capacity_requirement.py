@@ -55,7 +55,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param c: database cursor
     :return:
     """
-
+    c = conn.cursor()
     local_capacity_requirement = c.execute(
         """SELECT local_capacity_zone, period, 
         local_capacity_requirement_mw

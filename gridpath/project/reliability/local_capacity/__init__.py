@@ -70,7 +70,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param c: database cursor
     :return:
     """
-
+    c = conn.cursor()
     project_zones = c.execute(
         """SELECT project, local_capacity_zone
         FROM inputs_project_local_capacity_zones
@@ -79,7 +79,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID
         )
-    ).fetchall()
+    )
 
     return project_zones
 
@@ -108,7 +108,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     project_zones = get_inputs_from_database(
