@@ -84,7 +84,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    ::param conn: database connection
+    :param conn: database connection
     :return:
     """
     c = conn.cursor()
@@ -137,7 +137,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    ::param conn: database connection
+    :param conn: database connection
     :return:
     """
 
