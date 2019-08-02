@@ -5,22 +5,22 @@ GridPath is developed and tested on Python 3.7. You can install all needed
 packages, including those for the extra features, by navigating to the the 
 GridPath root directory (which is where this `README.txt` file is located) and 
 running:
->> pip install .[all]
+>> pip install -e .[all]
 
 The extra features are 1) building/editing documentation and 2) the GridPath
 user interface.
 
 Alternatively, if you don't want the extra features, you can install only the 
 required packages with:
->> pip install .
+>> pip install -e .
 
 GridPath's optional features can be installed individually as follows.
 
 For editing or building documentation from source, run:
->> pip install .[documentation]
+>> pip install -e .[documentation]
 
 For using the GridPath user interface, run:
->> pip install .[ui]
+>> pip install -e .[ui]
 
 The exact package versions for GridPath's development environment can be 
 found in the `requirements.txt` file in the root directory.
