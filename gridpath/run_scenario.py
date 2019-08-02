@@ -516,8 +516,6 @@ def solve(instance, parsed_arguments):
     """
     # Get solver
     solver = SolverFactory(parsed_arguments.solver)
-    solver.options["lpmethod"] = 4
-    solver.options["threads"] = 4
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.
