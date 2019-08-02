@@ -34,5 +34,10 @@ setup(name='GridPath',
           'ui': extras_ui,
           'all': extras_all
       },
-      include_package_data=True
+      include_package_data=True,
+      entry_points={
+          'console_scripts': [
+              'run_gridpath = gridpath.run_scenario:main'
+          ]
+      }
       )
