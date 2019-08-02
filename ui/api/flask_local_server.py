@@ -3787,7 +3787,7 @@ def connect_to_database():
     return io, c
 
 
-if __name__ == '__main__':
+def main():
     socketio.run(
         app,
         host='127.0.0.1',
@@ -3795,3 +3795,7 @@ if __name__ == '__main__':
         debug=True,
         use_reloader=False  # Reload manually for code changes to take effect
     )
+
+
+if __name__ == '__main__':
+    main()
