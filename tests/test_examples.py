@@ -5,10 +5,11 @@ from builtins import str
 import os
 import unittest
 
-import run_scenario
+from gridpath import run_scenario
 
-# Change directory to base directory, as that"s what run_scenario.py expects
-os.chdir(os.path.join(os.path.dirname(__file__), ".."))
+# Change directory to 'gridpath' directory, as that's what run_scenario.py
+# expects
+os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 
 
 class TestExamples(unittest.TestCase):

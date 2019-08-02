@@ -69,7 +69,7 @@ def main(args=None):
     # Assume script is run from root directory and that the database is named
     # io.db and is in a subdirectory ./db
     io = sqlite3.connect(
-        os.path.join(os.getcwd(), 'db', 'io.db')
+        os.path.join(os.getcwd(), "..", "db", "io.db")
     )
     c = io.cursor()
 
@@ -80,7 +80,7 @@ def main(args=None):
 
     # Directory structure
     scenarios_main_directory = os.path.join(
-        os.getcwd(), "scenarios")
+        os.getcwd(), "..", "scenarios")
 
     scenario_directory = os.path.join(
         scenarios_main_directory, str(scenario_name)

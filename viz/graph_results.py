@@ -40,7 +40,7 @@ def parse_arguments(arguments):
     # Scenario name and location options
     parser.add_argument("--db_name", default="io",
                         help="Name of the database.")
-    parser.add_argument("--db_location", default="./db",
+    parser.add_argument("--db_location", default="../db",
                         help="Path to the database (relative to script).")
     parser.add_argument("--scenario", help="The scenario name.")
     parser.add_argument("--load_zone", help="The name of the load zone.")

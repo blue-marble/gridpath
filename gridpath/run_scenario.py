@@ -39,7 +39,7 @@ class ScenarioStructure(object):
     """
     def __init__(self, scenario, scenario_location):
         self.main_scenario_directory = \
-            os.path.join(os.getcwd(), scenario_location, scenario)
+            os.path.join(os.getcwd(), "..", scenario_location, scenario)
 
         # Check if the scenario actually exists
         if not os.path.exists(self.main_scenario_directory):
@@ -516,6 +516,8 @@ def solve(instance, parsed_arguments):
     """
     # Get solver
     solver = SolverFactory(parsed_arguments.solver)
+    solver.options["lpmethod"] = 4
+    solver.options["threads"] = 4
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.

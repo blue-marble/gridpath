@@ -386,7 +386,7 @@ def main(args=None):
     # TODO: make this a user input
     # For now, assume script is run from root directory and the the
     # database is ./db and named io.db
-    db_path = os.path.join(os.getcwd(), 'db', 'io.db')
+    db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
@@ -399,7 +399,7 @@ def main(args=None):
 
     # Make scenario directories
     scenarios_main_directory = os.path.join(
-        os.getcwd(), "scenarios")
+        os.getcwd(), "..", "scenarios")
     if not os.path.exists(scenarios_main_directory):
         os.makedirs(scenarios_main_directory)
 
