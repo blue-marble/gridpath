@@ -247,8 +247,10 @@ function startServer () {
           // While the process does not need to be detached with a pyenv
           // environment, I'm leaving it as detached, as I still don't know
           // how to kill the server process upon exit.
+
+          // Process now spawned via the server entry point
           serverChildProcess = spawn(
-           commandToRun, [],
+           serverEntryPoint, [],
             {shell: true, detached: true, windowsHide: false},
             );
           // Why are we getting the wrong pid here? On Mac, it's the correct one...
