@@ -199,6 +199,13 @@ function startServer () {
         'flask_local_server.py'
       );
 
+      const serverEntryPoint = path.join(
+        data['pythonBinary']['value'][0],
+        'run_gridpath_server'
+      );
+
+      console.log(serverEntryPoint);
+
       const commandToRun = `${pythonPath} ${scriptPath}`;
 
       if (pythonPath == null || scriptPath == null) {
@@ -251,7 +258,7 @@ function startServer () {
         }
         else {
           serverChildProcess = spawn(
-            pythonPath, [scriptPath], {stdio: 'inherit'}
+            serverEntryPoint, [], {stdio: 'inherit'}
           );
         }
         // Some basic error-tracking
