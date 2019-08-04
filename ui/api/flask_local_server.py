@@ -44,8 +44,9 @@ signal.signal(signal.SIGINT, sigint_handler)
 
 
 # Global server variables
-GRIDPATH_DIRECTORY = str()
-DATABASE_PATH = str()
+GRIDPATH_DIRECTORY = os.environ['GRIDPATH_DIRECTORY']
+# DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
+DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
 SOLVER = str()
 
 # TODO: not sure we'll need this
@@ -68,26 +69,6 @@ def welcome():
 @socketio.on('connect')
 def connection():
     print('Client connection established.')
-
-
-# ### User settings ### #
-
-@socketio.on('set_gridpath_directory')
-def set_database_path(gp_directory):
-    print('GridPath directory set to ', str(gp_directory))
-    global GRIDPATH_DIRECTORY
-    GRIDPATH_DIRECTORY = gp_directory
-
-
-@socketio.on('set_database_path')
-def set_database_path(db_path):
-    print('Database path set to ', str(db_path))
-    global DATABASE_PATH
-    DATABASE_PATH = db_path
-
-    # Get the scenarios
-    # TODO: when to call this?
-    Scenarios.get()
 
 
 # ################################### API ################################### #

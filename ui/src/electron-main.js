@@ -184,10 +184,13 @@ function startServer () {
   console.log("Starting server...");
 
   storage.getMany(
-    ['gridPathDirectory', 'pythonBinary'],
+    ['gridPathDatabase', 'gridPathDirectory', 'pythonBinary'],
     (error, data) => {
       if (error) throw error;
       console.log(data);
+
+      const dbPath = data['gridPathDatabase']['value'][0];
+      const gpDir = data['gridPathDirectory']['value'][0];
 
       const pythonPath = path.join(
         data['pythonBinary']['value'][0],
@@ -251,7 +254,13 @@ function startServer () {
           // Process now spawned via the server entry point
           serverChildProcess = spawn(
            serverEntryPoint, [],
-            {shell: true, detached: true, windowsHide: false},
+            {
+              shell: true, detached: true, windowsHide: false,
+              env: {
+                GRIDPATH_DATABASE_PATH: dbPath,
+                GRIDPATH_DIRECTORY: gpDir
+              }
+            },
             );
           // Why are we getting the wrong pid here? On Mac, it's the correct one...
           // How to kill the server process on app exit without knowing its
@@ -260,7 +269,14 @@ function startServer () {
         }
         else {
           serverChildProcess = spawn(
-            serverEntryPoint, [], {stdio: 'inherit'}
+            serverEntryPoint, [],
+            {
+              stdio: 'inherit',
+              env: {
+                GRIDPATH_DATABASE_PATH: dbPath,
+                GRIDPATH_DIRECTORY: gpDir
+              }
+            }
           );
         }
         // Some basic error-tracking
