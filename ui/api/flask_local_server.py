@@ -78,9 +78,11 @@ class Scenarios(Resource):
     """
     The list of scenarios.
     """
-    @staticmethod
-    def get():
-        io, c = connect_to_database()
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self):
+        io, c = connect_to_database(self.db_path)
 
         scenarios_query = c.execute(
             """SELECT scenario_id, scenario_name, validation_status, run_status
@@ -104,10 +106,15 @@ class ScenarioDetailName(Resource):
     """
     The name of the a scenario by scenario ID
     """
-    @staticmethod
-    def get(scenario_id):
-        scenario_detail_api = \
-            get_scenario_detail(scenario_id, 'scenario_name')[0]["value"]
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='scenario_name'
+        )[0]["value"]
 
         return scenario_detail_api
 
@@ -116,10 +123,16 @@ class ScenarioDetailAll(Resource):
     """
     All settings for a scenario ID.
     """
-    @staticmethod
-    def get(scenario_id):
-        scenario_detail_api = \
-            get_scenario_detail(scenario_id, '*')
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        scenario_detail_api = get_scenario_detail(
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='*'
+        )
 
         scenario_edit_api = {}
         for column in scenario_detail_api:
@@ -131,10 +144,15 @@ class ScenarioDetailAll(Resource):
 class ScenarioDetailFeatures(Resource):
     """
     """
-    @staticmethod
-    def get(scenario_id):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
         scenario_detail_api = get_scenario_detail(
-            scenario_id,
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string=
             'feature_fuels, feature_transmission, '
             'feature_transmission_hurdle_rates,'
             'feature_simultaneous_flow_limits, feature_load_following_up, '
@@ -152,11 +170,15 @@ class ScenarioDetailTemporal(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
         scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'temporal'
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='temporal'
         )
 
         return scenario_detail_api
@@ -166,20 +188,27 @@ class ScenarioDetailGeographyLoadZones(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_transmission'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_transmission'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_load_zones, project_load_zones, '
-                'transmission_load_zones'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_load_zones, project_load_zones, '
+                               'transmission_load_zones'
             )
         else:
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_load_zones, project_load_zones, '
-                '"WARNING: transmission feature disabled" AS '
-                'transmission_load_zones'
+              db_path=self.db_path,
+              scenario_id=scenario_id,
+              columns_string='geography_load_zones, project_load_zones, '
+                             '"WARNING: transmission feature disabled" AS '
+                             'transmission_load_zones'
             )
 
         return scenario_detail_api
@@ -189,11 +218,15 @@ class ScenarioDetailLoad(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
         scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'load_profile'
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='load_profile'
         )
 
         return scenario_detail_api
@@ -203,13 +236,17 @@ class ScenarioDetailProjectCapacity(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
         scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'project_portfolio, project_existing_capacity, '
-            'project_existing_fixed_cost, project_new_cost, '
-            'project_new_potential, project_availability'
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='project_portfolio, project_existing_capacity, '
+                           'project_existing_fixed_cost, project_new_cost, '
+                           'project_new_potential, project_availability'
         )
 
         return scenario_detail_api
@@ -219,11 +256,15 @@ class ScenarioDetailProjectOpChars(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
         scenario_detail_api = get_scenario_detail(
-            scenario_id,
-            'project_operating_chars'
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            columns_string='project_operating_chars'
         )
 
         return scenario_detail_api
@@ -233,12 +274,18 @@ class ScenarioDetailFuels(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_fuels'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_fuels'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'project_fuels, fuel_prices'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='project_fuels, fuel_prices'
             )
         else:
             scenario_detail_api = [
@@ -255,12 +302,19 @@ class ScenarioDetailTransmissionCapacity(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_transmission'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_transmission'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'transmission_portfolio, transmission_existing_capacity '
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='transmission_portfolio, '
+                               'transmission_existing_capacity '
             )
         else:
             scenario_detail_api = [
@@ -277,12 +331,18 @@ class ScenarioDetailTransmissionOpChars(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_transmission'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_transmission'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'transmission_operational_chars'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='transmission_operational_chars'
             )
         else:
             scenario_detail_api = [
@@ -297,24 +357,42 @@ class ScenarioDetailTransmissionHurdleRates(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_transmission') \
-                and check_feature(scenario_id, 'of_transmission_hurdle_rates'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_transmission') \
+                and check_feature(db_path=self.db_path,
+                                  scenario_id=scenario_id,
+                                  column_string=
+                                  'of_transmission_hurdle_rates'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'transmission_hurdle_rates'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='transmission_hurdle_rates'
             )
-        elif not check_feature(scenario_id, 'of_transmission') \
-                and not check_feature(scenario_id,
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_transmission') \
+                and not check_feature(db_path=self.db_path,
+                                      scenario_id=scenario_id,
+                                      column_string=
                                       'of_transmission_hurdle_rates'):
             scenario_detail_api = [
                 {"name": "transmission_hurdle_rates",
                  "value": "WARNING: both transmission and transmission "
                           "hurdle rates features disabled"}
             ]
-        elif not check_feature(scenario_id, 'of_transmission') \
-                and check_feature(scenario_id, 'of_transmission_hurdle_rates'):
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_transmission') \
+                and check_feature(db_path=self.db_path,
+                                  scenario_id=scenario_id,
+                                  column_string=
+                                  'of_transmission_hurdle_rates'):
             scenario_detail_api = [
                 {"name": "transmission_hurdle_rates",
                  "value": "WARNING: transmission feature disabled"}
@@ -333,17 +411,30 @@ class ScenarioDetailTransmissionSimFlow(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_transmission') \
-                and check_feature(scenario_id, 'of_simultaneous_flow_limits'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_transmission') \
+                and check_feature(db_path=self.db_path,
+                                  scenario_id=scenario_id,
+                                  column_string='of_simultaneous_flow_limits'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string=
                 'transmission_simultaneous_flow_limits, '
                 'transmission_simultaneous_flow_limit_line_groups'
             )
-        elif not check_feature(scenario_id, 'of_transmission') \
-                and not check_feature(scenario_id,
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_transmission') \
+                and not check_feature(db_path=self.db_path,
+                                      scenario_id=scenario_id,
+                                      column_string=
                                       'of_simultaneous_flow_limits'):
             scenario_detail_api = [
                 {"name": "transmission_simultaneous_flow_limits",
@@ -353,8 +444,12 @@ class ScenarioDetailTransmissionSimFlow(Resource):
                  "value": "WARNING: both transmission and simultaneous flow "
                           "limits features disabled"}
             ]
-        elif not check_feature(scenario_id, 'of_transmission') \
-                and check_feature(scenario_id, 'of_simultaneous_flow_limits'):
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_transmission') \
+                and check_feature(db_path=self.db_path,
+                                  scenario_id=scenario_id,
+                                  column_string='of_simultaneous_flow_limits'):
             scenario_detail_api = [
                 {"name": "transmission_simultaneous_flow_limits",
                  "value": "WARNING: transmission feature disabled"},
@@ -378,13 +473,20 @@ class ScenarioDetailLoadFollowingUp(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_lf_reserves_up'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_lf_reserves_up'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_lf_up_bas, load_following_reserves_up_profile, '
-                'project_lf_up_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_lf_up_bas, '
+                               'load_following_reserves_up_profile, '
+                               'project_lf_up_bas'
             )
         else:
             scenario_detail_api = [
@@ -403,13 +505,20 @@ class ScenarioDetailLoadFollowingDown(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_lf_reserves_down'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_lf_reserves_down'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_lf_down_bas, load_following_reserves_down_profile, '
-                'project_lf_down_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_lf_down_bas, '
+                               'load_following_reserves_down_profile, '
+                               'project_lf_down_bas'
             )
         else:
             scenario_detail_api = [
@@ -428,13 +537,20 @@ class ScenarioDetailRegulationUp(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_regulation_up'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_regulation_up'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_reg_up_bas, regulation_up_profile, '
-                'project_reg_up_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_reg_up_bas, '
+                               'regulation_up_profile, '
+                               'project_reg_up_bas'
             )
         else:
             scenario_detail_api = [
@@ -451,13 +567,20 @@ class ScenarioDetailRegulationDown(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_regulation_down'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_regulation_down'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_reg_down_bas, regulation_down_profile, '
-                'project_reg_down_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_reg_down_bas, '
+                               'regulation_down_profile, '
+                               'project_reg_down_bas'
             )
         else:
             scenario_detail_api = [
@@ -474,13 +597,20 @@ class ScenarioDetailSpinningReserves(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_spinning_reserves'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_spinning_reserves'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_spin_bas, spinning_reserves_profile, '
-                'project_spin_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_spin_bas, '
+                               'spinning_reserves_profile, '
+                               'project_spin_bas'
             )
         else:
             scenario_detail_api = [
@@ -497,13 +627,20 @@ class ScenarioDetailFrequencyResponse(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_frequency_response'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_frequency_response'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_freq_resp_bas, frequency_response_profile, '
-                'project_freq_resp_bas'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='geography_freq_resp_bas, '
+                               'frequency_response_profile, '
+                               'project_freq_resp_bas'
             )
         else:
             scenario_detail_api = [
@@ -521,12 +658,20 @@ class ScenarioDetailRPS(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_rps'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_rps'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'geography_rps_areas, rps_target, project_rps_areas'
+              db_path=self.db_path,
+              scenario_id=scenario_id,
+              columns_string='geography_rps_areas, '
+                             'rps_target, '
+                             'project_rps_areas'
             )
         else:
             scenario_detail_api = [
@@ -543,16 +688,28 @@ class ScenarioDetailCarbonCap(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_carbon_cap') \
-                and check_feature(scenario_id, 'of_track_carbon_imports'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_carbon_cap') \
+                and check_feature(db_path=self.db_path,
+                                  scenario_id=scenario_id,
+                                  column_string='of_track_carbon_imports'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'carbon_cap_areas, carbon_cap, project_carbon_cap_areas, '
-                'transmission_carbon_cap_zones'
+              db_path=self.db_path,
+              scenario_id=scenario_id,
+              columns_string='carbon_cap_areas, '
+                             'carbon_cap, '
+                             'project_carbon_cap_areas, '
+                             'transmission_carbon_cap_zones'
             )
-        elif not check_feature(scenario_id, 'of_carbon_cap'):
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_carbon_cap'):
             scenario_detail_api = [
                 {"name": "carbon_cap_areas",
                  "value": "WARNING: carbon cap feature disabled"},
@@ -565,10 +722,14 @@ class ScenarioDetailCarbonCap(Resource):
             ]
         else:
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'carbon_cap_areas, carbon_cap, project_carbon_cap_areas, '
-                '"WARNING: tracking carbon imports feature disabled" AS'
-                'transmission_carbon_cap_zone_scenario_id'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='carbon_cap_areas, '
+                               'carbon_cap, '
+                               'project_carbon_cap_areas, '
+                               '"WARNING: tracking carbon imports feature '
+                               'disabled" AS'
+                               'transmission_carbon_cap_zone_scenario_id'
             )
 
         return scenario_detail_api
@@ -578,15 +739,27 @@ class ScenarioDetailPRM(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_prm'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_prm'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'prm_areas, prm_requirement, project_prm_areas, '
-                'project_elcc_chars, elcc_surface, project_prm_energy_only'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='prm_areas, '
+                               'prm_requirement, '
+                               'project_prm_areas, '
+                               'project_elcc_chars, '
+                               'elcc_surface, '
+                               'project_prm_energy_only'
             )
-        elif not check_feature(scenario_id, 'of_prm'):
+        elif not check_feature(db_path=self.db_path,
+                               scenario_id=scenario_id,
+                               column_string='of_prm'):
             scenario_detail_api = [
                 {"name": "prm_areas",
                  "value": "WARNING: PRM feature disabled"},
@@ -603,12 +776,17 @@ class ScenarioDetailPRM(Resource):
             ]
         else:
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'prm_areas, prm_requirement, project_prm_areas, '
-                '"WARNING: ELCC surface feature disabled" AS elcc_surface, '
-                'project_prm_areas, '
-                '"WARNING: ELCC surface feature disabled" AS '
-                'project_elcc_chars, project_prm_energy_only'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='prm_areas, '
+                               'prm_requirement, '
+                               'project_prm_areas, '
+                               '"WARNING: ELCC surface feature disabled" '
+                               'AS elcc_surface, '
+                               'project_prm_areas, '
+                               '"WARNING: ELCC surface feature disabled" '
+                               'AS project_elcc_chars, '
+                               'project_prm_energy_only'
             )
 
         return scenario_detail_api
@@ -618,14 +796,21 @@ class ScenarioDetailLocalCapacity(Resource):
     """
 
     """
-    @staticmethod
-    def get(scenario_id):
-        if check_feature(scenario_id, 'of_local_capacity'):
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        if check_feature(db_path=self.db_path,
+                         scenario_id=scenario_id,
+                         column_string='of_local_capacity'):
             scenario_detail_api = get_scenario_detail(
-                scenario_id,
-                'local_capacity_areas, local_capacity_requirement, '
-                'project_local_capacity_areas, '
-                'project_local_capacity_chars'
+                db_path=self.db_path,
+                scenario_id=scenario_id,
+                columns_string='local_capacity_areas, '
+                               'local_capacity_requirement, '
+                               'project_local_capacity_areas, '
+                               'project_local_capacity_chars'
             )
         else:
             scenario_detail_api = [
@@ -647,9 +832,12 @@ class SettingTemporal(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='temporal_scenario_id',
             table='subscenarios_temporal'
         )
@@ -660,9 +848,13 @@ class SettingLoadZones(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='load_zone_scenario_id',
             table='subscenarios_geography_load_zones'
         )
@@ -676,9 +868,13 @@ class SettingProjectLoadZones(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_load_zone_scenario_id',
             table='subscenarios_project_load_zones'
         )
@@ -691,9 +887,13 @@ class SettingTxLoadZones(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+      self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_load_zone_scenario_id',
             table='subscenarios_transmission_load_zones'
         )
@@ -704,9 +904,12 @@ class SettingSystemLoad(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='load_scenario_id',
             table='subscenarios_system_load'
         )
@@ -717,9 +920,13 @@ class SettingProjectPorftolio(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+      self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_portfolio_scenario_id',
             table='subscenarios_project_portfolios'
         )
@@ -730,9 +937,12 @@ class SettingProjectExistingCapacity(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_existing_capacity_scenario_id',
             table='subscenarios_project_existing_capacity'
         )
@@ -743,9 +953,13 @@ class SettingProjectExistingFixedCost(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_existing_fixed_cost_scenario_id',
             table='subscenarios_project_existing_fixed_cost'
         )
@@ -756,9 +970,13 @@ class SettingProjectNewCost(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_new_cost_scenario_id',
             table='subscenarios_project_new_cost'
         )
@@ -769,9 +987,13 @@ class SettingProjectNewPotential(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_new_potential_scenario_id',
             table='subscenarios_project_new_potential'
         )
@@ -782,9 +1004,13 @@ class SettingProjectAvailability(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_availability_scenario_id',
             table='subscenarios_project_availability'
         )
@@ -795,9 +1021,13 @@ class SettingProjectOpChar(Resource):
     """
 
     """
-    @staticmethod
-    def get():
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_operational_chars_scenario_id',
             table='subscenarios_project_operational_chars'
         )
@@ -809,9 +1039,12 @@ class SettingFuels(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='fuel_scenario_id',
             table='subscenarios_project_fuels'
         )
@@ -823,9 +1056,12 @@ class SettingFuelPrices(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='fuel_price_scenario_id',
             table='subscenarios_project_fuel_prices'
         )
@@ -837,9 +1073,12 @@ class SettingTransmissionPortfolio(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_portfolio_scenario_id',
             table='subscenarios_transmission_portfolios'
         )
@@ -851,9 +1090,12 @@ class SettingTransmissionExistingCapacity(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_existing_capacity_scenario_id',
             table='subscenarios_transmission_existing_capacity'
         )
@@ -865,9 +1107,12 @@ class SettingTransmissionOpChar(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_operational_chars_scenario_id',
             table='subscenarios_transmission_operational_chars'
         )
@@ -879,9 +1124,12 @@ class SettingTransmissionHurdleRates(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_hurdle_rate_scenario_id',
             table='subscenarios_transmission_hurdle_rates'
         )
@@ -893,9 +1141,12 @@ class SettingTransmissionSimFlowLimits(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_simultaneous_flow_limit_scenario_id',
             table='subscenarios_transmission_simultaneous_flow_limits'
         )
@@ -907,9 +1158,12 @@ class SettingTransmissionSimFlowLimitGroups(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column=
             'transmission_simultaneous_flow_limit_line_group_scenario_id',
             table=
@@ -923,9 +1177,12 @@ class SettingLFReservesUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='lf_reserves_up_ba_scenario_id',
             table='subscenarios_geography_lf_reserves_up_bas'
         )
@@ -938,9 +1195,12 @@ class SettingProjectLFReservesUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_lf_reserves_up_ba_scenario_id',
             table='subscenarios_project_lf_reserves_up_bas'
         )
@@ -952,9 +1212,12 @@ class SettingLFReservesUpRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='lf_reserves_up_scenario_id',
             table='subscenarios_system_lf_reserves_up'
         )
@@ -966,9 +1229,12 @@ class SettingLFReservesDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='lf_reserves_down_ba_scenario_id',
             table='subscenarios_geography_lf_reserves_down_bas'
         )
@@ -981,9 +1247,12 @@ class SettingProjectLFReservesDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_lf_reserves_down_ba_scenario_id',
             table='subscenarios_project_lf_reserves_down_bas'
         )
@@ -995,9 +1264,12 @@ class SettingLFReservesDownRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='lf_reserves_down_scenario_id',
             table='subscenarios_system_lf_reserves_down'
         )
@@ -1009,9 +1281,12 @@ class SettingRegulationUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='regulation_up_ba_scenario_id',
             table='subscenarios_geography_regulation_up_bas'
         )
@@ -1023,9 +1298,12 @@ class SettingProjectRegulationUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_regulation_up_ba_scenario_id',
             table='subscenarios_project_regulation_up_bas'
         )
@@ -1037,9 +1315,12 @@ class SettingRegulationUpRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='regulation_up_scenario_id',
             table='subscenarios_system_regulation_up'
         )
@@ -1051,9 +1332,12 @@ class SettingRegulationDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='regulation_down_ba_scenario_id',
             table='subscenarios_geography_regulation_down_bas'
         )
@@ -1065,9 +1349,12 @@ class SettingProjectRegulationDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_regulation_down_ba_scenario_id',
             table='subscenarios_project_regulation_down_bas'
         )
@@ -1079,9 +1366,12 @@ class SettingRegulationDownRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='regulation_down_scenario_id',
             table='subscenarios_system_regulation_down'
         )
@@ -1093,9 +1383,12 @@ class SettingSpinningReservesBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='spinning_reserves_ba_scenario_id',
             table='subscenarios_geography_spinning_reserves_bas'
         )
@@ -1107,9 +1400,12 @@ class SettingProjectSpinningReservesBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_spinning_reserves_ba_scenario_id',
             table='subscenarios_project_spinning_reserves_bas'
         )
@@ -1121,9 +1417,12 @@ class SettingSpinningReservesRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='spinning_reserves_scenario_id',
             table='subscenarios_system_spinning_reserves'
         )
@@ -1135,9 +1434,12 @@ class SettingFrequencyResponseBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='frequency_response_ba_scenario_id',
             table='subscenarios_geography_frequency_response_bas'
         )
@@ -1149,9 +1451,12 @@ class SettingProjectFrequencyResponseBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_frequency_response_ba_scenario_id',
             table='subscenarios_project_frequency_response_bas'
         )
@@ -1163,9 +1468,12 @@ class SettingFrequencyResponseRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='frequency_response_scenario_id',
             table='subscenarios_system_frequency_response'
         )
@@ -1177,9 +1485,12 @@ class SettingRPSAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='rps_zone_scenario_id',
             table='subscenarios_geography_rps_zones'
         )
@@ -1192,9 +1503,12 @@ class SettingProjectRPSAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_rps_zone_scenario_id',
             table='subscenarios_project_rps_zones'
         )
@@ -1206,9 +1520,12 @@ class SettingRPSRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='rps_target_scenario_id',
             table='subscenarios_system_rps_targets'
         )
@@ -1220,9 +1537,12 @@ class SettingCarbonCapAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='carbon_cap_zone_scenario_id',
             table='subscenarios_geography_carbon_cap_zones'
         )
@@ -1235,9 +1555,12 @@ class SettingProjectCarbonCapAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_carbon_cap_zone_scenario_id',
             table='subscenarios_project_carbon_cap_zones'
         )
@@ -1249,9 +1572,12 @@ class SettingTransmissionCarbonCapAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='transmission_carbon_cap_zone_scenario_id',
             table='subscenarios_transmission_carbon_cap_zones'
         )
@@ -1263,9 +1589,12 @@ class SettingCarbonCapRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='carbon_cap_target_scenario_id',
             table='subscenarios_system_carbon_cap_targets'
         )
@@ -1277,9 +1606,12 @@ class SettingPRMAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='prm_zone_scenario_id',
             table='subscenarios_geography_prm_zones'
         )
@@ -1291,9 +1623,12 @@ class SettingPRMRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='prm_requirement_scenario_id',
             table='subscenarios_system_prm_requirement'
         )
@@ -1305,9 +1640,12 @@ class SettingProjectPRMAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_prm_zone_scenario_id',
             table='subscenarios_project_prm_zones'
         )
@@ -1320,9 +1658,12 @@ class SettingProjectELCCChars(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_elcc_chars_scenario_id',
             table='subscenarios_project_elcc_chars'
         )
@@ -1334,9 +1675,12 @@ class SettingProjectPRMEnergyOnly(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='prm_energy_only_scenario_id',
             table='subscenarios_project_prm_energy_only'
         )
@@ -1348,9 +1692,12 @@ class SettingELCCSurface(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='elcc_surface_scenario_id',
             table='subscenarios_system_elcc_surface'
         )
@@ -1362,9 +1709,12 @@ class SettingLocalCapacityAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='local_capacity_zone_scenario_id',
             table='subscenarios_geography_local_capacity_zones'
         )
@@ -1376,9 +1726,12 @@ class SettingLocalCapacityRequirement(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='local_capacity_requirement_scenario_id',
             table='subscenarios_system_local_capacity_requirement'
         )
@@ -1390,9 +1743,12 @@ class SettingProjectLocalCapacityAreas(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_local_capacity_zone_scenario_id',
             table='subscenarios_project_local_capacity_zones'
         )
@@ -1404,9 +1760,12 @@ class SettingProjectLocalCapacityChars(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='project_local_capacity_chars_scenario_id',
             table='subscenarios_project_local_capacity_chars'
         )
@@ -1418,9 +1777,12 @@ class SettingTuning(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         setting_options_api = get_setting_options(
+            db_path=self.db_path,
             id_column='tuning_scenario_id',
             table='subscenarios_tuning'
         )
@@ -1437,13 +1799,16 @@ class ViewDataTemporalTimepoints(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='temporal',
             caption='Timepoints',
             table='inputs_temporal_timepoints'
@@ -1455,14 +1820,17 @@ class ViewDataGeographyLoadZones(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_load_zones',
             caption='Load Zones',
             table='inputs_geography_load_zones'
@@ -1474,13 +1842,16 @@ class ViewDataProjectLoadZones(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_load_zones',
             caption='Project Load Zones',
             table='inputs_project_load_zones'
@@ -1492,13 +1863,16 @@ class ViewDataTransmissionLoadZones(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_load_zones',
             caption='Transmission Load Zones',
             table='inputs_transmission_load_zones'
@@ -1510,14 +1884,17 @@ class ViewDataSystemLoad(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='load_profile',
             caption='System Load',
             table='inputs_system_load'
@@ -1529,14 +1906,17 @@ class ViewDataProjectPortfolio(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_portfolio',
             caption='Project Portfolio',
             table='inputs_project_portfolios'
@@ -1548,14 +1928,17 @@ class ViewDataProjectExistingCapacity(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_existing_capacity',
             caption='Project Specified Capacity',
             table='inputs_project_existing_capacity'
@@ -1567,14 +1950,17 @@ class ViewDataProjectExistingFixedCost(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_existing_fixed_cost',
             caption='Project Specified Fixed Cost',
             table='inputs_project_existing_fixed_cost'
@@ -1586,14 +1972,17 @@ class ViewDataProjectNewPotential(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_new_potential',
             caption='Project New Potential',
             table='inputs_project_new_potential'
@@ -1605,14 +1994,17 @@ class ViewDataProjectNewCost(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_new_cost',
             caption='Project New Costs',
             table='inputs_project_new_cost'
@@ -1624,14 +2016,17 @@ class ViewDataProjectAvailability(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_availability',
             caption='Project Availability',
             table='inputs_project_availability'
@@ -1643,14 +2038,17 @@ class ViewDataProjectOpChar(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_operating_chars',
             caption='Project Operational Characteristics',
             table='inputs_project_operational_chars'
@@ -1662,14 +2060,17 @@ class ViewDataFuels(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_fuels',
             caption='Fuels',
             table='inputs_project_fuels'
@@ -1681,14 +2082,17 @@ class ViewDataFuelPrices(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='fuel_prices',
             caption='Fuel Prices',
             table='inputs_project_fuel_prices'
@@ -1700,14 +2104,17 @@ class ViewDataTransmissionPortfolio(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_portfolio',
             caption='Transmission',
             table='inputs_transmission_portfolios'
@@ -1719,14 +2126,17 @@ class ViewDataTransmissionExistingCapacity(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_existing_capacity',
             caption='Transmission Specified Capacity',
             table='inputs_transmission_existing_capacity'
@@ -1738,14 +2148,17 @@ class ViewDataTransmissionOpChar(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_operational_chars',
             caption='Transmission Operational Characteristics',
             table='inputs_transmission_operational_chars'
@@ -1757,14 +2170,17 @@ class ViewDataTransmissionHurdleRates(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_hurdle_rates',
             caption='Transmission Hurdle Rates',
             table='inputs_transmission_hurdle_rates'
@@ -1776,14 +2192,17 @@ class ViewDataTransmissionSimFlowLimits(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_simultaneous_flow_limits',
             caption='Transmission Simultaneous Flow Limits',
             table='inputs_transmission_simultaneous_flow_limits'
@@ -1795,14 +2214,17 @@ class ViewDataTransmissionSimFlowLimitsLineGroups(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_simultaneous_flow_limit_line_groups',
             caption='Transmission Simultaneous Flow Limits Line Groups',
             table='inputs_transmission_simultaneous_flow_limit_line_groups'
@@ -1814,14 +2236,17 @@ class ViewDataLFUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_lf_up_bas',
             caption='Load Following Up Balancing Areas',
             table='inputs_geography_lf_reserves_up_bas'
@@ -1833,14 +2258,17 @@ class ViewDataProjectLFUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_lf_up_bas',
             caption='Project Load Following Up Balancing Areas',
             table='inputs_project_lf_reserves_up_bas'
@@ -1852,14 +2280,17 @@ class ViewDataLFUpReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='load_following_reserves_up_profile',
             caption='Load Following Up Requirement',
             table='inputs_system_lf_reserves_up'
@@ -1871,14 +2302,17 @@ class ViewDataLFDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_lf_down_bas',
             caption='Load Following Down Balancing Areas',
             table='inputs_geography_lf_reserves_down_bas'
@@ -1890,14 +2324,17 @@ class ViewDataProjectLFDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_lf_down_bas',
             caption='Project Load Following Down Balancing Areas',
             table='inputs_project_lf_reserves_down_bas'
@@ -1909,14 +2346,17 @@ class ViewDataLFDownReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='load_following_reserves_down_profile',
             caption='Load Following Down Requirement',
             table='inputs_system_lf_reserves_down'
@@ -1928,14 +2368,17 @@ class ViewDataRegUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_reg_up_bas',
             caption='Regulation Up Balancing Areas',
             table='inputs_geography_regulation_up_bas'
@@ -1947,14 +2390,17 @@ class ViewDataProjectRegUpBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_reg_up_bas',
             caption='Project Regulation Up Balancing Areas',
             table='inputs_project_regulation_up_bas'
@@ -1966,14 +2412,17 @@ class ViewDataRegUpReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='regulation_up_profile',
             caption='Regulation Up Requirement',
             table='inputs_system_regulation_up'
@@ -1985,14 +2434,17 @@ class ViewDataRegDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_reg_down_bas',
             caption='Regulation Down Balancing Areas',
             table='inputs_geography_regulation_down_bas'
@@ -2004,14 +2456,17 @@ class ViewDataProjectRegDownBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_reg_down_bas',
             caption='Project Regulation Down Balancing Areas',
             table='inputs_project_regulation_down_bas'
@@ -2023,14 +2478,17 @@ class ViewDataRegDownReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='regulation_down_profile',
             caption='Regulation Down Requirement',
             table='inputs_system_regulation_down'
@@ -2042,14 +2500,17 @@ class ViewDataSpinBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_spin_bas',
             caption='Spinning Reserves Balancing Areas',
             table='inputs_geography_spinning_reserves_bas'
@@ -2061,14 +2522,17 @@ class ViewDataProjectSpinBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_spin_bas',
             caption='Project Spinning Reserves Balancing Areas',
             table='inputs_project_spinning_reserves_bas'
@@ -2080,14 +2544,17 @@ class ViewDataSpinReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='spinning_reserves_profile',
             caption='Spinning Reserves Requirement',
             table='inputs_system_spinning_reserves'
@@ -2099,14 +2566,17 @@ class ViewDataFreqRespBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_freq_resp_bas',
             caption='Frequency Response Balancing Areas',
             table='inputs_geography_frequency_response_bas'
@@ -2118,14 +2588,17 @@ class ViewDataProjectFreqRespBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_freq_resp_bas',
             caption='Project Frequency Response Balancing Areas',
             table='inputs_project_frequency_response_bas'
@@ -2137,14 +2610,17 @@ class ViewDataFreqRespReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='frequency_response_profile',
             caption='Frequency Response Requirement',
             table='inputs_system_frequency_response'
@@ -2156,14 +2632,17 @@ class ViewDataRPSBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_rps_areas',
             caption='RPS Areas',
             table='inputs_geography_rps_zones'
@@ -2175,14 +2654,17 @@ class ViewDataProjectRPSBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_rps_areas',
             caption='Project RPS Areas',
             table='inputs_project_rps_zones'
@@ -2194,14 +2676,17 @@ class ViewDataRPSReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='rps_target',
             caption='RPS Target',
             table='inputs_system_rps_targets'
@@ -2213,14 +2698,17 @@ class ViewDataCarbonCapBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='geography_carbon_cap_areas',
             caption='Carbon Cap Areas',
             table='inputs_geography_carbon_cap_zones'
@@ -2232,14 +2720,17 @@ class ViewDataProjectCarbonCapBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_carbon_cap_areas',
             caption='Project Carbon Cap Areas',
             table='inputs_project_carbon_cap_zones'
@@ -2251,14 +2742,17 @@ class ViewDataTransmissionCarbonCapBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='transmission_carbon_cap_zones',
             caption='Transmission Carbon Cap Areas',
             table='inputs_transmission_carbon_cap_zones'
@@ -2270,14 +2764,17 @@ class ViewDataCarbonCapReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='carbon_cap_target',
             caption='Carbon Cap Target',
             table='inputs_system_carbon_cap_targets'
@@ -2289,14 +2786,17 @@ class ViewDataPRMBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='prm_areas',
             caption='PRM Areas',
             table='inputs_geography_prm_zones'
@@ -2308,14 +2808,17 @@ class ViewDataProjectPRMBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_prm_areas',
             caption='Project PRM Areas',
             table='inputs_project_prm_zones'
@@ -2327,14 +2830,17 @@ class ViewDataPRMReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='prm_requirement',
             caption='PRM Target',
             table='inputs_system_prm_requirement'
@@ -2346,14 +2852,17 @@ class ViewDataProjectELCCChars(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_elcc_chars',
             caption='Project ELCC Characteristics',
             table='inputs_project_elcc_chars'
@@ -2365,14 +2874,17 @@ class ViewDataELCCSurface(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='elcc_surface',
             caption='ELCC Surface',
             table='inputs_project_elcc_surface'
@@ -2384,14 +2896,17 @@ class ViewDataEnergyOnly(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_prm_energy_only',
             caption='Project Energy-Only Characteristics',
             table='inputs_project_prm_energy_only'
@@ -2403,14 +2918,17 @@ class ViewDataLocalCapacityBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='local_capacity_areas',
             caption='Local Capacity Areas',
             table='inputs_geography_local_capacity_zones'
@@ -2422,14 +2940,17 @@ class ViewDataProjectLocalCapacityBAs(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_local_capacity_areas',
             caption='Project Local Capacity Areas',
             table='inputs_project_local_capacity_zones'
@@ -2441,14 +2962,17 @@ class ViewDataLocalCapacityReq(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='local_capacity_requirement',
             caption='Local Capacity Target',
             table='inputs_system_local_capacity_requirement'
@@ -2460,14 +2984,17 @@ class ViewDataProjectLocalCapacityChars(Resource):
 
     """
 
-    @staticmethod
-    def get():
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+        
+    def get(self):
         """
 
         :return:
         """
 
         return create_data_table_api(
+            db_path=self.db_path,
             ngifkey='project_local_capacity_chars',
             caption='Project Local Capacity Characteristics',
             table='inputs_project_local_capacity_chars'
@@ -2480,7 +3007,8 @@ class ServerStatus(Resource):
     Server status; response will be 'running'; if HTTP error is caught,
     server status will be set to 'down'
     """
-    @staticmethod
+
+    @staticmethod        
     def get():
         return 'running'
 
@@ -2488,385 +3016,755 @@ class ServerStatus(Resource):
 # ##### API: Routes ##### #
 # ### API Routes Scenario List ### #
 # Scenario list
-api.add_resource(Scenarios, '/scenarios/')
+api.add_resource(Scenarios, '/scenarios/',
+                 resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
 # ### API Routes Scenario Detail ### #
 # Name
 # TODO: is this used?
-api.add_resource(ScenarioDetailName, '/scenarios/<scenario_id>/name')
+api.add_resource(
+    ScenarioDetailName,
+    '/scenarios/<scenario_id>/name',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 # All
-api.add_resource(ScenarioDetailAll, '/scenarios/<scenario_id>')
+api.add_resource(
+  ScenarioDetailAll,
+  '/scenarios/<scenario_id>',
+  resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 # Features
-api.add_resource(ScenarioDetailFeatures, '/scenarios/<scenario_id>/features')
+api.add_resource(
+    ScenarioDetailFeatures,
+    '/scenarios/<scenario_id>/features',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 # Temporal
-api.add_resource(ScenarioDetailTemporal, '/scenarios/<scenario_id>/temporal')
+api.add_resource(
+    ScenarioDetailTemporal,
+    '/scenarios/<scenario_id>/temporal',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 # Geography load zones
 api.add_resource(
     ScenarioDetailGeographyLoadZones,
-    '/scenarios/<scenario_id>/geography-load-zones'
+    '/scenarios/<scenario_id>/geography-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # System load
 api.add_resource(
     ScenarioDetailLoad,
-    '/scenarios/<scenario_id>/load'
+    '/scenarios/<scenario_id>/load',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Project capacity
 api.add_resource(
     ScenarioDetailProjectCapacity,
-    '/scenarios/<scenario_id>/project-capacity'
+    '/scenarios/<scenario_id>/project-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Project operating characteristics
 api.add_resource(
     ScenarioDetailProjectOpChars,
-    '/scenarios/<scenario_id>/project-opchars'
+    '/scenarios/<scenario_id>/project-opchars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Fuels
 api.add_resource(
     ScenarioDetailFuels,
-    '/scenarios/<scenario_id>/fuels'
+    '/scenarios/<scenario_id>/fuels',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Transmission capacity
 api.add_resource(
     ScenarioDetailTransmissionCapacity,
-    '/scenarios/<scenario_id>/transmission-capacity'
+    '/scenarios/<scenario_id>/transmission-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Transmission operating characteristics
 api.add_resource(
     ScenarioDetailTransmissionOpChars,
-    '/scenarios/<scenario_id>/transmission-opchars'
+    '/scenarios/<scenario_id>/transmission-opchars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Transmission hurdle rates
 api.add_resource(
     ScenarioDetailTransmissionHurdleRates,
-    '/scenarios/<scenario_id>/transmission-hurdle-rates'
+    '/scenarios/<scenario_id>/transmission-hurdle-rates',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Transmission simultaneous flow limits
 api.add_resource(
     ScenarioDetailTransmissionSimFlow,
-    '/scenarios/<scenario_id>/transmission-sim-flow'
+    '/scenarios/<scenario_id>/transmission-sim-flow',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Reserves
 api.add_resource(
     ScenarioDetailLoadFollowingUp,
-    '/scenarios/<scenario_id>/lf-up'
+    '/scenarios/<scenario_id>/lf-up',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailLoadFollowingDown,
-    '/scenarios/<scenario_id>/lf-down'
+    '/scenarios/<scenario_id>/lf-down',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailRegulationUp,
-    '/scenarios/<scenario_id>/reg-up'
+    '/scenarios/<scenario_id>/reg-up',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailRegulationDown,
-    '/scenarios/<scenario_id>/reg-down'
+    '/scenarios/<scenario_id>/reg-down',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailSpinningReserves,
-    '/scenarios/<scenario_id>/spin'
+    '/scenarios/<scenario_id>/spin',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailFrequencyResponse,
-    '/scenarios/<scenario_id>/freq-resp'
+    '/scenarios/<scenario_id>/freq-resp',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 # Policy and reliability
 api.add_resource(
     ScenarioDetailRPS,
-    '/scenarios/<scenario_id>/rps'
+    '/scenarios/<scenario_id>/rps',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailCarbonCap,
-    '/scenarios/<scenario_id>/carbon-cap'
+    '/scenarios/<scenario_id>/carbon-cap',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailPRM,
-    '/scenarios/<scenario_id>/prm'
+    '/scenarios/<scenario_id>/prm',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 api.add_resource(
     ScenarioDetailLocalCapacity,
-    '/scenarios/<scenario_id>/local-capacity'
+    '/scenarios/<scenario_id>/local-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
 )
 
 # ### API Routes New Scenario Settings ### #
-api.add_resource(SettingTemporal, '/scenario-settings/temporal')
-api.add_resource(SettingLoadZones, '/scenario-settings/load-zones')
-api.add_resource(SettingProjectLoadZones,
-                 '/scenario-settings/project-load-zones')
-api.add_resource(SettingTxLoadZones,
-                 '/scenario-settings/tx-load-zones')
-api.add_resource(SettingSystemLoad,
-                 '/scenario-settings/system-load')
-api.add_resource(SettingProjectPorftolio,
-                 '/scenario-settings/project-portfolio')
-api.add_resource(SettingProjectExistingCapacity,
-                 '/scenario-settings/project-existing-capacity')
-api.add_resource(SettingProjectExistingFixedCost,
-                 '/scenario-settings/project-existing-fixed-cost')
-api.add_resource(SettingProjectNewCost,
-                 '/scenario-settings/project-new-cost')
-api.add_resource(SettingProjectNewPotential,
-                 '/scenario-settings/project-new-potential')
-api.add_resource(SettingProjectAvailability,
-                 '/scenario-settings/project-availability')
-api.add_resource(SettingProjectOpChar,
-                 '/scenario-settings/project-opchar')
-api.add_resource(SettingFuels,
-                 '/scenario-settings/fuels')
-api.add_resource(SettingFuelPrices,
-                 '/scenario-settings/fuel-prices')
-api.add_resource(SettingTransmissionPortfolio,
-                 '/scenario-settings/transmission-portfolio')
-api.add_resource(SettingTransmissionExistingCapacity,
-                 '/scenario-settings/transmission-existing-capacity')
-api.add_resource(SettingTransmissionOpChar,
-                 '/scenario-settings/transmission-opchar')
-api.add_resource(SettingTransmissionHurdleRates,
-                 '/scenario-settings/transmission-hurdle-rates')
-api.add_resource(SettingTransmissionSimFlowLimits,
-                 '/scenario-settings/transmission-simflow-limits')
-api.add_resource(SettingTransmissionSimFlowLimitGroups,
-                 '/scenario-settings/transmission-simflow-limit-groups')
-api.add_resource(SettingLFReservesUpBAs,
-                 '/scenario-settings/lf-reserves-up-bas')
-api.add_resource(SettingProjectLFReservesUpBAs,
-                 '/scenario-settings/project-lf-reserves-up-bas')
-api.add_resource(SettingLFReservesUpRequirement,
-                 '/scenario-settings/lf-reserves-up-req')
-api.add_resource(SettingLFReservesDownBAs,
-                 '/scenario-settings/lf-reserves-down-bas')
-api.add_resource(SettingProjectLFReservesDownBAs,
-                 '/scenario-settings/project-lf-reserves-down-bas')
-api.add_resource(SettingLFReservesDownRequirement,
-                 '/scenario-settings/lf-reserves-down-req')
-api.add_resource(SettingRegulationUpBAs,
-                 '/scenario-settings/regulation-up-bas')
-api.add_resource(SettingProjectRegulationUpBAs,
-                 '/scenario-settings/project-regulation-up-bas')
-api.add_resource(SettingRegulationUpRequirement,
-                 '/scenario-settings/regulation-up-req')
-api.add_resource(SettingRegulationDownBAs,
-                 '/scenario-settings/regulation-down-bas')
-api.add_resource(SettingProjectRegulationDownBAs,
-                 '/scenario-settings/project-regulation-down-bas')
-api.add_resource(SettingRegulationDownRequirement,
-                 '/scenario-settings/regulation-down-req')
-api.add_resource(SettingSpinningReservesBAs,
-                 '/scenario-settings/spin-bas')
-api.add_resource(SettingProjectSpinningReservesBAs,
-                 '/scenario-settings/project-spin-bas')
-api.add_resource(SettingSpinningReservesRequirement,
-                 '/scenario-settings/spin-req')
-api.add_resource(SettingFrequencyResponseBAs,
-                 '/scenario-settings/freq-resp-bas')
-api.add_resource(SettingProjectFrequencyResponseBAs,
-                 '/scenario-settings/project-freq-resp-bas')
-api.add_resource(SettingFrequencyResponseRequirement,
-                 '/scenario-settings/freq-resp-req')
-api.add_resource(SettingRPSAreas,
-                 '/scenario-settings/rps-areas')
-api.add_resource(SettingProjectRPSAreas,
-                 '/scenario-settings/project-rps-areas')
-api.add_resource(SettingRPSRequirement,
-                 '/scenario-settings/rps-req')
+api.add_resource(
+    SettingTemporal, '/scenario-settings/temporal',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLoadZones,
+    '/scenario-settings/load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectLoadZones,
+    '/scenario-settings/project-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTxLoadZones,
+    '/scenario-settings/tx-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingSystemLoad,
+    '/scenario-settings/system-load',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectPorftolio,
+    '/scenario-settings/project-portfolio',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectExistingCapacity,
+    '/scenario-settings/project-existing-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectExistingFixedCost,
+    '/scenario-settings/project-existing-fixed-cost',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectNewCost,
+    '/scenario-settings/project-new-cost',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectNewPotential,
+    '/scenario-settings/project-new-potential',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectAvailability,
+    '/scenario-settings/project-availability',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectOpChar,
+    '/scenario-settings/project-opchar',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingFuels,
+    '/scenario-settings/fuels',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingFuelPrices,
+    '/scenario-settings/fuel-prices',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionPortfolio,
+    '/scenario-settings/transmission-portfolio',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionExistingCapacity,
+    '/scenario-settings/transmission-existing-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionOpChar,
+    '/scenario-settings/transmission-opchar',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionHurdleRates,
+    '/scenario-settings/transmission-hurdle-rates',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionSimFlowLimits,
+    '/scenario-settings/transmission-simflow-limits',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionSimFlowLimitGroups,
+    '/scenario-settings/transmission-simflow-limit-groups',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLFReservesUpBAs,
+    '/scenario-settings/lf-reserves-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectLFReservesUpBAs,
+    '/scenario-settings/project-lf-reserves-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLFReservesUpRequirement,
+    '/scenario-settings/lf-reserves-up-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLFReservesDownBAs,
+    '/scenario-settings/lf-reserves-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectLFReservesDownBAs,
+    '/scenario-settings/project-lf-reserves-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLFReservesDownRequirement,
+    '/scenario-settings/lf-reserves-down-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRegulationUpBAs,
+    '/scenario-settings/regulation-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectRegulationUpBAs,
+    '/scenario-settings/project-regulation-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRegulationUpRequirement,
+    '/scenario-settings/regulation-up-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRegulationDownBAs,
+    '/scenario-settings/regulation-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectRegulationDownBAs,
+    '/scenario-settings/project-regulation-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRegulationDownRequirement,
+                 '/scenario-settings/regulation-down-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingSpinningReservesBAs,
+    '/scenario-settings/spin-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectSpinningReservesBAs,
+    '/scenario-settings/project-spin-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingSpinningReservesRequirement,
+    '/scenario-settings/spin-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingFrequencyResponseBAs,
+    '/scenario-settings/freq-resp-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectFrequencyResponseBAs,
+    '/scenario-settings/project-freq-resp-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingFrequencyResponseRequirement,
+    '/scenario-settings/freq-resp-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRPSAreas,
+    '/scenario-settings/rps-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectRPSAreas,
+    '/scenario-settings/project-rps-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingRPSRequirement,
+    '/scenario-settings/rps-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(SettingCarbonCapAreas,
-                 '/scenario-settings/carbon-cap-areas')
-api.add_resource(SettingProjectCarbonCapAreas,
-                 '/scenario-settings/project-carbon-cap-areas')
-api.add_resource(SettingTransmissionCarbonCapAreas,
-                 '/scenario-settings/transmission-carbon-cap-areas')
-api.add_resource(SettingCarbonCapRequirement,
-                 '/scenario-settings/carbon-cap-req')
+api.add_resource(
+    SettingCarbonCapAreas,
+  '/scenario-settings/carbon-cap-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectCarbonCapAreas,
+    '/scenario-settings/project-carbon-cap-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTransmissionCarbonCapAreas,
+    '/scenario-settings/transmission-carbon-cap-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingCarbonCapRequirement,
+    '/scenario-settings/carbon-cap-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(SettingPRMAreas, '/scenario-settings/prm-areas')
-api.add_resource(SettingPRMRequirement, '/scenario-settings/prm-req')
-api.add_resource(SettingProjectPRMAreas,
-                 '/scenario-settings/project-prm-areas')
-api.add_resource(SettingELCCSurface, '/scenario-settings/elcc-surface')
-api.add_resource(SettingProjectELCCChars,
-                 '/scenario-settings/project-elcc-chars')
-api.add_resource(SettingProjectPRMEnergyOnly,
-                 '/scenario-settings/project-energy-only')
-
-api.add_resource(SettingLocalCapacityAreas,
-                 '/scenario-settings/local-capacity-areas')
-api.add_resource(SettingProjectLocalCapacityAreas,
-                 '/scenario-settings/project-local-capacity-areas')
-api.add_resource(SettingLocalCapacityRequirement,
-                 '/scenario-settings/local-capacity-req')
-api.add_resource(SettingProjectLocalCapacityChars,
-                 '/scenario-settings/project-local-capacity-chars')
-api.add_resource(SettingTuning,
-                 '/scenario-settings/tuning')
+api.add_resource(
+    SettingPRMAreas,
+    '/scenario-settings/prm-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingPRMRequirement,
+    '/scenario-settings/prm-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectPRMAreas,
+    '/scenario-settings/project-prm-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingELCCSurface,
+    '/scenario-settings/elcc-surface',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectELCCChars,
+    '/scenario-settings/project-elcc-chars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectPRMEnergyOnly,
+    '/scenario-settings/project-energy-only',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLocalCapacityAreas,
+    '/scenario-settings/local-capacity-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectLocalCapacityAreas,
+    '/scenario-settings/project-local-capacity-areas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingLocalCapacityRequirement,
+    '/scenario-settings/local-capacity-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingProjectLocalCapacityChars,
+    '/scenario-settings/project-local-capacity-chars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
+api.add_resource(
+    SettingTuning,
+    '/scenario-settings/tuning',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
 # ### API Routes View Input Data Tables ### #
-api.add_resource(ViewDataTemporalTimepoints,
-                 '/view-data/temporal-timepoints')
+api.add_resource(
+    ViewDataTemporalTimepoints,
+    '/view-data/temporal-timepoints',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataGeographyLoadZones,
-                 '/view-data/geography-load-zones')
+api.add_resource(
+    ViewDataGeographyLoadZones,
+    '/view-data/geography-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectLoadZones,
-                 '/view-data/project-load-zones')
+api.add_resource(
+    ViewDataProjectLoadZones,
+    '/view-data/project-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionLoadZones,
-                 '/view-data/transmission-load-zones')
+api.add_resource(
+    ViewDataTransmissionLoadZones,
+    '/view-data/transmission-load-zones',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataSystemLoad,
-                 '/view-data/system-load')
+api.add_resource(
+    ViewDataSystemLoad,
+    '/view-data/system-load',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectPortfolio,
-                 '/view-data/project-portfolio')
+api.add_resource(
+    ViewDataProjectPortfolio,
+    '/view-data/project-portfolio',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectExistingCapacity,
-                 '/view-data/project-existing-capacity')
+api.add_resource(
+    ViewDataProjectExistingCapacity,
+    '/view-data/project-existing-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectExistingFixedCost,
-                 '/view-data/project-fixed-cost')
+api.add_resource(
+    ViewDataProjectExistingFixedCost,
+    '/view-data/project-fixed-cost',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectNewPotential,
-                 '/view-data/project-new-potential')
+api.add_resource(
+    ViewDataProjectNewPotential,
+    '/view-data/project-new-potential',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectNewCost,
-                 '/view-data/project-new-cost')
+api.add_resource(
+    ViewDataProjectNewCost,
+    '/view-data/project-new-cost',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectAvailability,
-                 '/view-data/project-availability')
+api.add_resource(
+    ViewDataProjectAvailability,
+    '/view-data/project-availability',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectOpChar,
-                 '/view-data/project-opchar')
+api.add_resource(
+    ViewDataProjectOpChar,
+    '/view-data/project-opchar',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataFuels,
-                 '/view-data/fuels')
+api.add_resource(
+    ViewDataFuels,
+    '/view-data/fuels',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataFuelPrices,
-                 '/view-data/fuel-prices')
+api.add_resource(
+    ViewDataFuelPrices,
+    '/view-data/fuel-prices',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionPortfolio,
-                 '/view-data/transmission-portfolio')
+api.add_resource(
+    ViewDataTransmissionPortfolio,
+    '/view-data/transmission-portfolio',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionExistingCapacity,
-                 '/view-data/transmission-existing-capacity')
+api.add_resource(
+    ViewDataTransmissionExistingCapacity,
+    '/view-data/transmission-existing-capacity',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionOpChar,
-                 '/view-data/transmission-opchar')
+api.add_resource(
+    ViewDataTransmissionOpChar,
+    '/view-data/transmission-opchar',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionHurdleRates,
-                 '/view-data/transmission-hurdle-rates')
+api.add_resource(
+    ViewDataTransmissionHurdleRates,
+    '/view-data/transmission-hurdle-rates',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionSimFlowLimits,
-                 '/view-data/transmission-sim-flow-limits')
+api.add_resource(
+    ViewDataTransmissionSimFlowLimits,
+    '/view-data/transmission-sim-flow-limits',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionSimFlowLimitsLineGroups,
-                 '/view-data/transmission-sim-flow-limit-line-groups')
+api.add_resource(
+    ViewDataTransmissionSimFlowLimitsLineGroups,
+    '/view-data/transmission-sim-flow-limit-line-groups',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataLFUpBAs,
-                 '/view-data/geography-lf-up-bas')
+api.add_resource(
+    ViewDataLFUpBAs,
+    '/view-data/geography-lf-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectLFUpBAs,
-                 '/view-data/project-lf-up-bas')
+api.add_resource(
+    ViewDataProjectLFUpBAs,
+    '/view-data/project-lf-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataLFUpReq,
-                 '/view-data/system-lf-up-req')
+api.add_resource(
+    ViewDataLFUpReq,
+    '/view-data/system-lf-up-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataLFDownBAs,
-                 '/view-data/geography-lf-down-bas')
+api.add_resource(
+    ViewDataLFDownBAs,
+    '/view-data/geography-lf-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectLFDownBAs,
-                 '/view-data/project-lf-down-bas')
+api.add_resource(
+    ViewDataProjectLFDownBAs,
+    '/view-data/project-lf-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataLFDownReq,
-                 '/view-data/system-lf-down-req')
+api.add_resource(
+    ViewDataLFDownReq,
+    '/view-data/system-lf-down-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataRegUpBAs,
-                 '/view-data/geography-reg-up-bas')
+api.add_resource(
+    ViewDataRegUpBAs,
+    '/view-data/geography-reg-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectRegUpBAs,
-                 '/view-data/project-reg-up-bas')
+api.add_resource(
+    ViewDataProjectRegUpBAs,
+    '/view-data/project-reg-up-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataRegUpReq,
-                 '/view-data/system-reg-up-req')
+api.add_resource(
+    ViewDataRegUpReq,
+    '/view-data/system-reg-up-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataRegDownBAs,
-                 '/view-data/geography-reg-down-bas')
+api.add_resource(
+    ViewDataRegDownBAs,
+    '/view-data/geography-reg-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectRegDownBAs,
-                 '/view-data/project-reg-down-bas')
+api.add_resource(
+    ViewDataProjectRegDownBAs,
+    '/view-data/project-reg-down-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataRegDownReq,
-                 '/view-data/system-reg-down-req')
+api.add_resource(
+    ViewDataRegDownReq,
+    '/view-data/system-reg-down-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataSpinBAs,
-                 '/view-data/geography-spin-bas')
+api.add_resource(
+    ViewDataSpinBAs,
+    '/view-data/geography-spin-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectSpinBAs,
-                 '/view-data/project-spin-bas')
+api.add_resource(
+    ViewDataProjectSpinBAs,
+    '/view-data/project-spin-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataSpinReq,
-                 '/view-data/system-spin-req')
+api.add_resource(
+    ViewDataSpinReq,
+    '/view-data/system-spin-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataFreqRespBAs,
-                 '/view-data/geography-freq-resp-bas')
+api.add_resource(
+    ViewDataFreqRespBAs,
+    '/view-data/geography-freq-resp-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectFreqRespBAs,
-                 '/view-data/project-freq-resp-bas')
+api.add_resource(
+    ViewDataProjectFreqRespBAs,
+    '/view-data/project-freq-resp-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataFreqRespReq,
-                 '/view-data/system-freq-resp-req')
+api.add_resource(
+    ViewDataFreqRespReq,
+    '/view-data/system-freq-resp-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
 
-api.add_resource(ViewDataRPSBAs,
-                 '/view-data/geography-rps-bas')
+api.add_resource(
+    ViewDataRPSBAs,
+    '/view-data/geography-rps-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectRPSBAs,
-                 '/view-data/project-rps-bas')
+api.add_resource(
+    ViewDataProjectRPSBAs,
+    '/view-data/project-rps-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataRPSReq,
-                 '/view-data/system-rps-req')
+api.add_resource(
+    ViewDataRPSReq,
+    '/view-data/system-rps-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataCarbonCapBAs,
-                 '/view-data/geography-carbon-cap-bas')
+api.add_resource(
+    ViewDataCarbonCapBAs,
+    '/view-data/geography-carbon-cap-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectCarbonCapBAs,
-                 '/view-data/project-carbon-cap-bas')
+api.add_resource(
+    ViewDataProjectCarbonCapBAs,
+    '/view-data/project-carbon-cap-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataTransmissionCarbonCapBAs,
-                 '/view-data/transmission-carbon-cap-bas')
+api.add_resource(
+    ViewDataTransmissionCarbonCapBAs,
+    '/view-data/transmission-carbon-cap-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataCarbonCapReq,
-                 '/view-data/system-carbon-cap-req')
+api.add_resource(
+    ViewDataCarbonCapReq,
+    '/view-data/system-carbon-cap-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataPRMBAs,
-                 '/view-data/geography-prm-bas')
+api.add_resource(
+    ViewDataPRMBAs,
+    '/view-data/geography-prm-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectPRMBAs,
-                 '/view-data/project-prm-bas')
+api.add_resource(
+    ViewDataProjectPRMBAs,
+    '/view-data/project-prm-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataPRMReq,
-                 '/view-data/system-prm-req')
+api.add_resource(
+    ViewDataPRMReq,
+    '/view-data/system-prm-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectELCCChars,
-                 '/view-data/project-elcc-chars')
+api.add_resource(
+    ViewDataProjectELCCChars,
+    '/view-data/project-elcc-chars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataELCCSurface,
-                 '/view-data/project-elcc-surface')
+api.add_resource(
+    ViewDataELCCSurface,
+    '/view-data/project-elcc-surface',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataEnergyOnly,
-                 '/view-data/project-energy-only')
+api.add_resource(
+    ViewDataEnergyOnly,
+    '/view-data/project-energy-only')
 
-api.add_resource(ViewDataLocalCapacityBAs,
-                 '/view-data/geography-local-capacity-bas')
+api.add_resource(
+    ViewDataLocalCapacityBAs,
+    '/view-data/geography-local-capacity-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectLocalCapacityBAs,
-                 '/view-data/project-local-capacity-bas')
+api.add_resource(
+    ViewDataProjectLocalCapacityBAs,
+    '/view-data/project-local-capacity-bas',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataLocalCapacityReq,
-                 '/view-data/local-capacity-req')
+api.add_resource(
+    ViewDataLocalCapacityReq,
+    '/view-data/local-capacity-req',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
-api.add_resource(ViewDataProjectLocalCapacityChars,
-                 '/view-data/project-local-capacity-chars')
-
+api.add_resource(
+    ViewDataProjectLocalCapacityChars,
+    '/view-data/project-local-capacity-chars',
+    resource_class_kwargs={'db_path': DATABASE_PATH}
+)
 
 
 # ### API Routes Server Status ### #
@@ -2874,14 +3772,16 @@ api.add_resource(ServerStatus, '/server-status')
 
 
 # ### API common functions ### #
-def get_scenario_detail(scenario_id, columns_string):
+def get_scenario_detail(db_path, scenario_id, columns_string):
     """
-
-    :param scenario_id:
-    :param columns_string:
+    :param db_path: the path to the database
+    :param scenario_id: integer, the scenario ID
+    :param columns_string: string defining which columns to select
     :return:
+
+
     """
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
 
     scenario_detail_query = c.execute(
         """SELECT {}
@@ -2902,11 +3802,14 @@ def get_scenario_detail(scenario_id, columns_string):
     return scenario_detail_api
 
 
-def get_setting_options(id_column, table):
+def get_setting_options(db_path, id_column, table):
     """
-
+    :param db_path: the path to the database file
+    :param id_column: subscenario ID column name
+    :param table: the table to select from
+    :return: 
     """
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
 
     setting_options_query = c.execute(
         """SELECT {}, name FROM {};""".format(id_column, table)
@@ -2921,15 +3824,15 @@ def get_setting_options(id_column, table):
     return setting_options_api
 
 
-def get_setting_option_id(id_column, table, setting_name):
+def get_setting_option_id(db_path, id_column, table, setting_name):
     """
-
+    :param db_path: the path to the database file
     :param id_column:
     :param table:
     :param setting_name:
     :return:
     """
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
     setting_id = c.execute(
         """SELECT {} FROM {} WHERE name = '{}'""".format(
             id_column, table, setting_name
@@ -2939,14 +3842,14 @@ def get_setting_option_id(id_column, table, setting_name):
     return setting_id
 
 
-def check_feature(scenario_id, column_string):
+def check_feature(db_path, scenario_id, column_string):
     """
-
-    :param scenario_id:
-    :param column_string:
-    :return:
+    :param db_path: path to to the database file
+    :param scenario_id: integer, the scenario_id value in the database
+    :param column_string: the columns to check
+    :return: 1 or 0, depending on whether the feature is selected
     """
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
 
     scenario_feature_on = c.execute(
         """SELECT {}
@@ -2957,11 +3860,13 @@ def check_feature(scenario_id, column_string):
     return scenario_feature_on
 
 
-def get_table_data(table):
+def get_table_data(db_path, table):
     """
-
+    :param db_path: 
+    :param table: 
+    :return: 
     """
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
 
     table_data_query = c.execute("""SELECT * FROM {};""".format(table))
 
@@ -2976,9 +3881,9 @@ def get_table_data(table):
     return column_names, rows_data
 
 
-def create_data_table_api(ngifkey, caption, table):
+def create_data_table_api(db_path, ngifkey, caption, table):
     """
-
+    :param db_path:
     :param ngifkey:
     :param caption:
     :param table:
@@ -2987,7 +3892,7 @@ def create_data_table_api(ngifkey, caption, table):
     data_table_api = dict()
     data_table_api['ngIfKey'] = ngifkey
     data_table_api['caption'] = caption
-    column_names, data_rows = get_table_data(table=table)
+    column_names, data_rows = get_table_data(db_path=db_path, table=table)
     data_table_api['columns'] = column_names
     data_table_api['rowsData'] = data_rows
 
@@ -2997,7 +3902,7 @@ def create_data_table_api(ngifkey, caption, table):
 # ### Socket Communication ### #
 @socketio.on('add_new_scenario')
 def add_new_scenario(msg):
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=DATABASE_PATH)
 
     # Check if this is a new scenario or if we're updating an existing scenario
     # TODO: implement UI warnings if updating
@@ -3038,289 +3943,344 @@ def add_new_scenario(msg):
             'of_elcc_surface':
                 1 if msg['featureLocalCapacity'] == 'yes' else 0,
             'temporal_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='temporal_scenario_id',
              table='subscenarios_temporal',
              setting_name=msg['temporalSetting']
             ),
             'load_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='load_zone_scenario_id',
              table='subscenarios_geography_load_zones',
              setting_name=msg['geographyLoadZonesSetting']
             ),
             'lf_reserves_up_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='lf_reserves_up_ba_scenario_id',
              table='subscenarios_geography_lf_reserves_up_bas',
              setting_name=msg['geographyLoadFollowingUpBAsSetting']
             ),
             'lf_reserves_down_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='lf_reserves_down_ba_scenario_id',
              table='subscenarios_geography_lf_reserves_down_bas',
              setting_name=msg['geographyLoadFollowingDownBAsSetting']
             ),
             'regulation_up_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='regulation_up_ba_scenario_id',
              table='subscenarios_geography_regulation_up_bas',
              setting_name=msg['geographyRegulationUpBAsSetting']
             ),
             'regulation_down_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='regulation_down_ba_scenario_id',
              table='subscenarios_geography_regulation_down_bas',
              setting_name=msg['geographyRegulationDownBAsSetting']
             ),
             'frequency_response_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='frequency_response_ba_scenario_id',
              table='subscenarios_geography_frequency_response_bas',
              setting_name=msg['geographyFrequencyResponseBAsSetting']
             ),
             'spinning_reserves_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='spinning_reserves_ba_scenario_id',
              table='subscenarios_geography_spinning_reserves_bas',
              setting_name=msg['geographySpinningReservesBAsSetting']
             ),
             'rps_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='rps_zone_scenario_id',
              table='subscenarios_geography_rps_zones',
              setting_name=msg['geographyRPSAreasSetting']
             ),
             'carbon_cap_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='carbon_cap_zone_scenario_id',
              table='subscenarios_geography_carbon_cap_zones',
              setting_name=msg['geographyCarbonCapAreasSetting']
             ),
             'prm_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='prm_zone_scenario_id',
              table='subscenarios_geography_prm_zones',
              setting_name=msg['geographyPRMAreasSetting']
             ),
             'local_capacity_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='local_capacity_zone_scenario_id',
              table='subscenarios_geography_local_capacity_zones',
              setting_name=msg['geographyLocalCapacityAreasSetting']
             ),
             'project_portfolio_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_portfolio_scenario_id',
              table='subscenarios_project_portfolios',
              setting_name=msg['projectPortfolioSetting']
             ),
             'project_operational_chars_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_operational_chars_scenario_id',
              table='subscenarios_project_operational_chars',
              setting_name=msg['projectOperationalCharsSetting']
             ),
             'project_availability_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_availability_scenario_id',
              table='subscenarios_project_availability',
              setting_name=msg['projectAvailabilitySetting']
             ),
             'fuel_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='fuel_scenario_id',
              table='subscenarios_project_fuels',
              setting_name=msg['projectFuelsSetting']
             ),
             'project_load_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_load_zone_scenario_id',
              table='subscenarios_project_load_zones',
              setting_name=msg['geographyProjectLoadZonesSetting']
             ),
             'project_lf_reserves_up_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_lf_reserves_up_ba_scenario_id',
              table='subscenarios_project_lf_reserves_up_bas',
              setting_name=msg['projectLoadFollowingUpBAsSetting']
             ),
             'project_lf_reserves_down_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_lf_reserves_down_ba_scenario_id',
              table='subscenarios_project_lf_reserves_down_bas',
              setting_name=msg['projectLoadFollowingDownBAsSetting']
             ),
             'project_regulation_up_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_regulation_up_ba_scenario_id',
              table='subscenarios_project_regulation_up_bas',
              setting_name=msg['projectRegulationUpBAsSetting']
             ),
             'project_regulation_down_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_regulation_down_ba_scenario_id',
              table='subscenarios_project_regulation_down_bas',
              setting_name=msg['projectRegulationDownBAsSetting']
             ),
             'project_frequency_response_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_frequency_response_ba_scenario_id',
              table='subscenarios_project_frequency_response_bas',
              setting_name=msg['projectFrequencyResponseBAsSetting']
             ),
             'project_spinning_reserves_ba_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_spinning_reserves_ba_scenario_id',
              table='subscenarios_project_spinning_reserves_bas',
              setting_name=msg['projectSpinningReservesBAsSetting']
             ),
             'project_rps_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_rps_zone_scenario_id',
              table='subscenarios_project_rps_zones',
              setting_name=msg['projectRPSAreasSetting']
             ),
             'project_carbon_cap_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_carbon_cap_zone_scenario_id',
              table='subscenarios_project_carbon_cap_zones',
              setting_name=msg['projectCarbonCapAreasSetting']
             ),
             'project_prm_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_prm_zone_scenario_id',
              table='subscenarios_project_prm_zones',
              setting_name=msg['projectPRMAreasSetting']
             ),
             'project_elcc_chars_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_elcc_chars_scenario_id',
              table='subscenarios_project_elcc_chars',
              setting_name=msg['projectELCCCharsSetting']
             ),
             'prm_energy_only_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='prm_energy_only_scenario_id',
              table='subscenarios_project_prm_energy_only',
              setting_name=msg['projectPRMEnergyOnlySetting']
             ),
             'project_local_capacity_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_local_capacity_zone_scenario_id',
              table='subscenarios_project_local_capacity_zones',
              setting_name=msg['projectLocalCapacityAreasSetting']
             ),
             'project_local_capacity_chars_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_local_capacity_chars_scenario_id',
              table='subscenarios_project_local_capacity_chars',
              setting_name=msg['projectLocalCapacityCharsSetting']
             ),
             'project_existing_capacity_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_existing_capacity_scenario_id',
              table='subscenarios_project_existing_capacity',
              setting_name=msg['projectExistingCapacitySetting']
             ),
             'project_existing_fixed_cost_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_existing_fixed_cost_scenario_id',
              table='subscenarios_project_existing_fixed_cost',
              setting_name=msg['projectExistingFixedCostSetting']
             ),
             'fuel_price_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='fuel_price_scenario_id',
              table='subscenarios_project_fuel_prices',
              setting_name=msg['fuelPricesSetting']
             ),
             'project_new_cost_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_new_cost_scenario_id',
              table='subscenarios_project_new_cost',
              setting_name=msg['projectNewCostSetting']
             ),
             'project_new_potential_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='project_new_potential_scenario_id',
              table='subscenarios_project_new_potential',
              setting_name=msg['projectNewPotentialSetting']
             ),
             'transmission_portfolio_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_portfolio_scenario_id',
              table='subscenarios_transmission_portfolios',
              setting_name=msg['transmissionPortfolioSetting']
             ),
             'transmission_load_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_load_zone_scenario_id',
              table='subscenarios_transmission_load_zones',
              setting_name=msg['geographyTxLoadZonesSetting']
             ),
             'transmission_existing_capacity_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_existing_capacity_scenario_id',
              table='subscenarios_transmission_existing_capacity',
              setting_name=msg['transmissionExistingCapacitySetting']
             ),
             'transmission_operational_chars_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_operational_chars_scenario_id',
              table='subscenarios_transmission_operational_chars',
              setting_name=msg['transmissionOperationalCharsSetting']
             ),
             'transmission_hurdle_rate_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_hurdle_rate_scenario_id',
              table='subscenarios_transmission_hurdle_rates',
              setting_name=msg['transmissionHurdleRatesSetting']
             ),
             'transmission_carbon_cap_zone_scenario_id': get_setting_option_id(
+             db_path=DATABASE_PATH,
              id_column='transmission_carbon_cap_zone_scenario_id',
              table='subscenarios_transmission_carbon_cap_zones',
              setting_name=msg['transmissionCarbonCapAreasSetting']
             ),
-            'transmission_simultaneous_flow_limit_scenario_id': get_setting_option_id(
-             id_column='transmission_simultaneous_flow_limit_scenario_id',
-             table='subscenarios_transmission_simultaneous_flow_limits',
-             setting_name=msg['transmissionSimultaneousFlowLimitsSetting']
-            ),
+            'transmission_simultaneous_flow_limit_scenario_id':
+                get_setting_option_id(
+                    db_path=DATABASE_PATH,
+                    id_column=
+                    'transmission_simultaneous_flow_limit_scenario_id',
+                    table='subscenarios_transmission_simultaneous_flow_limits',
+                    setting_name=msg[
+                      'transmissionSimultaneousFlowLimitsSetting']
+                ),
             'transmission_simultaneous_flow_limit_line_group_scenario_id':
-             get_setting_option_id(
-                 id_column=
-                 'transmission_simultaneous_flow_limit_line_group_scenario_id',
-                 table=
-                 'subscenarios_transmission_simultaneous_flow_limit_line_groups',
-                 setting_name=msg[
-                     'transmissionSimultaneousFlowLimitLineGroupsSetting'
-                 ]
+                get_setting_option_id(
+                    db_path=DATABASE_PATH,
+                    id_column='transmission_simultaneous_flow_limit_line_group_scenario_id',
+                    table='subscenarios_transmission_simultaneous_flow_limit_line_groups',
+                    setting_name=msg['transmissionSimultaneousFlowLimitLineGroupsSetting']
              ),
             'load_scenario_id': get_setting_option_id(
-             id_column='load_scenario_id',
-             table='subscenarios_system_load',
-             setting_name=msg['systemLoadSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='load_scenario_id',
+                 table='subscenarios_system_load',
+                 setting_name=msg['systemLoadSetting']
             ),
             'lf_reserves_up_scenario_id': get_setting_option_id(
-             id_column='lf_reserves_up_scenario_id',
-             table='subscenarios_system_lf_reserves_up',
-             setting_name=msg['loadFollowingUpRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='lf_reserves_up_scenario_id',
+                 table='subscenarios_system_lf_reserves_up',
+                 setting_name=msg['loadFollowingUpRequirementSetting']
             ),
             'lf_reserves_down_scenario_id': get_setting_option_id(
-             id_column='lf_reserves_down_scenario_id',
-             table='subscenarios_system_lf_reserves_down',
-             setting_name=msg['loadFollowingDownRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='lf_reserves_down_scenario_id',
+                 table='subscenarios_system_lf_reserves_down',
+                 setting_name=msg['loadFollowingDownRequirementSetting']
             ),
             'regulation_up_scenario_id': get_setting_option_id(
-             id_column='regulation_up_scenario_id',
-             table='subscenarios_system_regulation_up',
-             setting_name=msg['regulationUpRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='regulation_up_scenario_id',
+                 table='subscenarios_system_regulation_up',
+                 setting_name=msg['regulationUpRequirementSetting']
             ),
             'regulation_down_scenario_id': get_setting_option_id(
-             id_column='regulation_down_scenario_id',
-             table='subscenarios_system_regulation_down',
-             setting_name=msg['regulationDownRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='regulation_down_scenario_id',
+                 table='subscenarios_system_regulation_down',
+                 setting_name=msg['regulationDownRequirementSetting']
             ),
             'frequency_response_scenario_id': get_setting_option_id(
-             id_column='frequency_response_scenario_id',
-             table='subscenarios_system_frequency_response',
-             setting_name=msg['frequencyResponseRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='frequency_response_scenario_id',
+                 table='subscenarios_system_frequency_response',
+                 setting_name=msg['frequencyResponseRequirementSetting']
             ),
             'spinning_reserves_scenario_id': get_setting_option_id(
-             id_column='spinning_reserves_scenario_id',
-             table='subscenarios_system_spinning_reserves',
-             setting_name=msg['spinningReservesRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='spinning_reserves_scenario_id',
+                 table='subscenarios_system_spinning_reserves',
+                 setting_name=msg['spinningReservesRequirementSetting']
             ),
             'rps_target_scenario_id': get_setting_option_id(
-             id_column='rps_target_scenario_id',
-             table='subscenarios_system_rps_targets',
-             setting_name=msg['rpsTargetSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='rps_target_scenario_id',
+                 table='subscenarios_system_rps_targets',
+                 setting_name=msg['rpsTargetSetting']
             ),
             'carbon_cap_target_scenario_id': get_setting_option_id(
-             id_column='carbon_cap_target_scenario_id',
-             table='subscenarios_system_carbon_cap_targets',
-             setting_name=msg['carbonCapTargetSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='carbon_cap_target_scenario_id',
+                 table='subscenarios_system_carbon_cap_targets',
+                 setting_name=msg['carbonCapTargetSetting']
             ),
             'prm_requirement_scenario_id': get_setting_option_id(
-             id_column='prm_requirement_scenario_id',
-             table='subscenarios_system_prm_requirement',
-             setting_name=msg['prmRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='prm_requirement_scenario_id',
+                 table='subscenarios_system_prm_requirement',
+                 setting_name=msg['prmRequirementSetting']
             ),
             'elcc_surface_scenario_id': get_setting_option_id(
-             id_column='elcc_surface_scenario_id',
-             table='subscenarios_system_elcc_surface',
-             setting_name=msg['elccSurfaceSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='elcc_surface_scenario_id',
+                 table='subscenarios_system_elcc_surface',
+                 setting_name=msg['elccSurfaceSetting']
             ),
             'local_capacity_requirement_scenario_id': get_setting_option_id(
-             id_column='local_capacity_requirement_scenario_id',
-             table='subscenarios_system_local_capacity_requirement',
-             setting_name=msg['localCapacityRequirementSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='local_capacity_requirement_scenario_id',
+                 table='subscenarios_system_local_capacity_requirement',
+                 setting_name=msg['localCapacityRequirementSetting']
             ),
             'tuning_scenario_id': get_setting_option_id(
-             id_column='tuning_scenario_id',
-             table='subscenarios_tuning',
-             setting_name=msg['tuningSetting']
+                 db_path=DATABASE_PATH,
+                 id_column='tuning_scenario_id',
+                 table='subscenarios_tuning',
+                 setting_name=msg['tuningSetting']
             )
         }
         update_scenario_multiple_columns(
@@ -3351,218 +4311,261 @@ def add_new_scenario(msg):
             of_prm=1 if msg['featurePRM'] == 'yes' else 0,
             of_local_capacity=1 if msg['featureELCCSurface'] == 'yes' else 0,
             of_elcc_surface=1 if msg['featureLocalCapacity'] == 'yes' else 0,
-            temporal_scenario_id= get_setting_option_id(
+            temporal_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='temporal_scenario_id',
                 table='subscenarios_temporal',
                 setting_name=msg['temporalSetting']
             ),
-            load_zone_scenario_id= get_setting_option_id(
+            load_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='load_zone_scenario_id',
                 table='subscenarios_geography_load_zones',
                 setting_name=msg['geographyLoadZonesSetting']
             ),
-            lf_reserves_up_ba_scenario_id= get_setting_option_id(
+            lf_reserves_up_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='lf_reserves_up_ba_scenario_id',
                 table='subscenarios_geography_lf_reserves_up_bas',
                 setting_name=msg['geographyLoadFollowingUpBAsSetting']
             ),
-            lf_reserves_down_ba_scenario_id= get_setting_option_id(
+            lf_reserves_down_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='lf_reserves_down_ba_scenario_id',
                 table='subscenarios_geography_lf_reserves_down_bas',
                 setting_name=msg['geographyLoadFollowingDownBAsSetting']
             ),
-            regulation_up_ba_scenario_id= get_setting_option_id(
+            regulation_up_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='regulation_up_ba_scenario_id',
                 table='subscenarios_geography_regulation_up_bas',
                 setting_name=msg['geographyRegulationUpBAsSetting']
             ),
-            regulation_down_ba_scenario_id= get_setting_option_id(
+            regulation_down_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='regulation_down_ba_scenario_id',
                 table='subscenarios_geography_regulation_down_bas',
                 setting_name=msg['geographyRegulationDownBAsSetting']
             ),
-            frequency_response_ba_scenario_id= get_setting_option_id(
+            frequency_response_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='frequency_response_ba_scenario_id',
                 table='subscenarios_geography_frequency_response_bas',
                 setting_name=msg['geographyFrequencyResponseBAsSetting']
             ),
-            spinning_reserves_ba_scenario_id= get_setting_option_id(
+            spinning_reserves_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='spinning_reserves_ba_scenario_id',
                 table='subscenarios_geography_spinning_reserves_bas',
                 setting_name=msg['geographySpinningReservesBAsSetting']
             ),
-            rps_zone_scenario_id= get_setting_option_id(
+            rps_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='rps_zone_scenario_id',
                 table='subscenarios_geography_rps_zones',
                 setting_name=msg['geographyRPSAreasSetting']
             ),
-            carbon_cap_zone_scenario_id= get_setting_option_id(
+            carbon_cap_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='carbon_cap_zone_scenario_id',
                 table='subscenarios_geography_carbon_cap_zones',
                 setting_name=msg['geographyCarbonCapAreasSetting']
             ),
-            prm_zone_scenario_id= get_setting_option_id(
+            prm_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='prm_zone_scenario_id',
                 table='subscenarios_geography_prm_zones',
                 setting_name=msg['geographyPRMAreasSetting']
             ),
-            local_capacity_zone_scenario_id= get_setting_option_id(
+            local_capacity_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='local_capacity_zone_scenario_id',
                 table='subscenarios_geography_local_capacity_zones',
                 setting_name=msg['geographyLocalCapacityAreasSetting']
             ),
-            project_portfolio_scenario_id= get_setting_option_id(
+            project_portfolio_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_portfolio_scenario_id',
                 table='subscenarios_project_portfolios',
                 setting_name=msg['projectPortfolioSetting']
             ),
-            project_operational_chars_scenario_id= get_setting_option_id(
+            project_operational_chars_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_operational_chars_scenario_id',
                 table='subscenarios_project_operational_chars',
                 setting_name=msg['projectOperationalCharsSetting']
             ),
-            project_availability_scenario_id= get_setting_option_id(
+            project_availability_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_availability_scenario_id',
                 table='subscenarios_project_availability',
                 setting_name=msg['projectAvailabilitySetting']
             ),
-            fuel_scenario_id= get_setting_option_id(
+            fuel_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='fuel_scenario_id',
                 table='subscenarios_project_fuels',
                 setting_name=msg['projectFuelsSetting']
             ),
-            project_load_zone_scenario_id= get_setting_option_id(
+            project_load_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_load_zone_scenario_id',
                 table='subscenarios_project_load_zones',
                 setting_name=msg['geographyProjectLoadZonesSetting']
             ),
-            project_lf_reserves_up_ba_scenario_id= get_setting_option_id(
+            project_lf_reserves_up_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_lf_reserves_up_ba_scenario_id',
                 table='subscenarios_project_lf_reserves_up_bas',
                 setting_name=msg['projectLoadFollowingUpBAsSetting']
             ),
-            project_lf_reserves_down_ba_scenario_id= get_setting_option_id(
+            project_lf_reserves_down_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_lf_reserves_down_ba_scenario_id',
                 table='subscenarios_project_lf_reserves_down_bas',
                 setting_name=msg['projectLoadFollowingDownBAsSetting']
             ),
-            project_regulation_up_ba_scenario_id= get_setting_option_id(
+            project_regulation_up_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_regulation_up_ba_scenario_id',
                 table='subscenarios_project_regulation_up_bas',
                 setting_name=msg['projectRegulationUpBAsSetting']
             ),
-            project_regulation_down_ba_scenario_id= get_setting_option_id(
+            project_regulation_down_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_regulation_down_ba_scenario_id',
                 table='subscenarios_project_regulation_down_bas',
                 setting_name=msg['projectRegulationDownBAsSetting']
             ),
-            project_frequency_response_ba_scenario_id= get_setting_option_id(
+            project_frequency_response_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_frequency_response_ba_scenario_id',
                 table='subscenarios_project_frequency_response_bas',
                 setting_name=msg['projectFrequencyResponseBAsSetting']
             ),
-            project_spinning_reserves_ba_scenario_id= get_setting_option_id(
+            project_spinning_reserves_ba_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_spinning_reserves_ba_scenario_id',
                 table='subscenarios_project_spinning_reserves_bas',
                 setting_name=msg['projectSpinningReservesBAsSetting']
             ),
-            project_rps_zone_scenario_id= get_setting_option_id(
+            project_rps_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_rps_zone_scenario_id',
                 table='subscenarios_project_rps_zones',
                 setting_name=msg['projectRPSAreasSetting']
             ),
-            project_carbon_cap_zone_scenario_id= get_setting_option_id(
+            project_carbon_cap_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_carbon_cap_zone_scenario_id',
                 table='subscenarios_project_carbon_cap_zones',
                 setting_name=msg['projectCarbonCapAreasSetting']
             ),
-            project_prm_zone_scenario_id= get_setting_option_id(
+            project_prm_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_prm_zone_scenario_id',
                 table='subscenarios_project_prm_zones',
                 setting_name=msg['projectPRMAreasSetting']
             ),
-            project_elcc_chars_scenario_id= get_setting_option_id(
+            project_elcc_chars_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_elcc_chars_scenario_id',
                 table='subscenarios_project_elcc_chars',
                 setting_name=msg['projectELCCCharsSetting']
             ),
-            prm_energy_only_scenario_id= get_setting_option_id(
+            prm_energy_only_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='prm_energy_only_scenario_id',
                 table='subscenarios_project_prm_energy_only',
                 setting_name=msg['projectPRMEnergyOnlySetting']
             ),
-            project_local_capacity_zone_scenario_id= get_setting_option_id(
+            project_local_capacity_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_local_capacity_zone_scenario_id',
                 table='subscenarios_project_local_capacity_zones',
                 setting_name=msg['projectLocalCapacityAreasSetting']
             ),
-            project_local_capacity_chars_scenario_id= get_setting_option_id(
+            project_local_capacity_chars_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_local_capacity_chars_scenario_id',
                 table='subscenarios_project_local_capacity_chars',
                 setting_name=msg['projectLocalCapacityCharsSetting']
             ),
-            project_existing_capacity_scenario_id= get_setting_option_id(
+            project_existing_capacity_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_existing_capacity_scenario_id',
                 table='subscenarios_project_existing_capacity',
                 setting_name=msg['projectExistingCapacitySetting']
             ),
-            project_existing_fixed_cost_scenario_id= get_setting_option_id(
+            project_existing_fixed_cost_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_existing_fixed_cost_scenario_id',
                 table='subscenarios_project_existing_fixed_cost',
                 setting_name=msg['projectExistingFixedCostSetting']
             ),
-            fuel_price_scenario_id= get_setting_option_id(
+            fuel_price_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='fuel_price_scenario_id',
                 table='subscenarios_project_fuel_prices',
                 setting_name=msg['fuelPricesSetting']
             ),
-            project_new_cost_scenario_id= get_setting_option_id(
+            project_new_cost_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_new_cost_scenario_id',
                 table='subscenarios_project_new_cost',
                 setting_name=msg['projectNewCostSetting']
             ),
-            project_new_potential_scenario_id= get_setting_option_id(
+            project_new_potential_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='project_new_potential_scenario_id',
                 table='subscenarios_project_new_potential',
                 setting_name=msg['projectNewPotentialSetting']
             ),
-            transmission_portfolio_scenario_id= get_setting_option_id(
+            transmission_portfolio_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_portfolio_scenario_id',
                 table='subscenarios_transmission_portfolios',
                 setting_name=msg['transmissionPortfolioSetting']
             ),
-            transmission_load_zone_scenario_id= get_setting_option_id(
+            transmission_load_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_load_zone_scenario_id',
                 table='subscenarios_transmission_load_zones',
                 setting_name=msg['geographyTxLoadZonesSetting']
             ),
-            transmission_existing_capacity_scenario_id= get_setting_option_id(
+            transmission_existing_capacity_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_existing_capacity_scenario_id',
                 table='subscenarios_transmission_existing_capacity',
                 setting_name=msg['transmissionExistingCapacitySetting']
             ),
-            transmission_operational_chars_scenario_id= get_setting_option_id(
+            transmission_operational_chars_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_operational_chars_scenario_id',
                 table='subscenarios_transmission_operational_chars',
                 setting_name=msg['transmissionOperationalCharsSetting']
             ),
-            transmission_hurdle_rate_scenario_id= get_setting_option_id(
+            transmission_hurdle_rate_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_hurdle_rate_scenario_id',
                 table='subscenarios_transmission_hurdle_rates',
                 setting_name=msg['transmissionHurdleRatesSetting']
             ),
-            transmission_carbon_cap_zone_scenario_id= get_setting_option_id(
+            transmission_carbon_cap_zone_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_carbon_cap_zone_scenario_id',
                 table='subscenarios_transmission_carbon_cap_zones',
                 setting_name=msg['transmissionCarbonCapAreasSetting']
             ),
-            transmission_simultaneous_flow_limit_scenario_id= get_setting_option_id(
+            transmission_simultaneous_flow_limit_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='transmission_simultaneous_flow_limit_scenario_id',
                 table='subscenarios_transmission_simultaneous_flow_limits',
                 setting_name=msg['transmissionSimultaneousFlowLimitsSetting']
             ),
             transmission_simultaneous_flow_limit_line_group_scenario_id=
             get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column=
                 'transmission_simultaneous_flow_limit_line_group_scenario_id',
                 table=
@@ -3571,67 +4574,80 @@ def add_new_scenario(msg):
                     'transmissionSimultaneousFlowLimitLineGroupsSetting'
                 ]
             ),
-            load_scenario_id= get_setting_option_id(
+            load_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='load_scenario_id',
                 table='subscenarios_system_load',
                 setting_name=msg['systemLoadSetting']
             ),
-            lf_reserves_up_scenario_id= get_setting_option_id(
+            lf_reserves_up_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='lf_reserves_up_scenario_id',
                 table='subscenarios_system_lf_reserves_up',
                 setting_name=msg['loadFollowingUpRequirementSetting']
             ),
-            lf_reserves_down_scenario_id= get_setting_option_id(
+            lf_reserves_down_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='lf_reserves_down_scenario_id',
                 table='subscenarios_system_lf_reserves_down',
                 setting_name=msg['loadFollowingDownRequirementSetting']
             ),
-            regulation_up_scenario_id= get_setting_option_id(
+            regulation_up_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='regulation_up_scenario_id',
                 table='subscenarios_system_regulation_up',
                 setting_name=msg['regulationUpRequirementSetting']
             ),
-            regulation_down_scenario_id= get_setting_option_id(
+            regulation_down_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='regulation_down_scenario_id',
                 table='subscenarios_system_regulation_down',
                 setting_name=msg['regulationDownRequirementSetting']
             ),
-            frequency_response_scenario_id= get_setting_option_id(
+            frequency_response_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='frequency_response_scenario_id',
                 table='subscenarios_system_frequency_response',
                 setting_name=msg['frequencyResponseRequirementSetting']
             ),
-            spinning_reserves_scenario_id= get_setting_option_id(
+            spinning_reserves_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='spinning_reserves_scenario_id',
                 table='subscenarios_system_spinning_reserves',
                 setting_name=msg['spinningReservesRequirementSetting']
             ),
-            rps_target_scenario_id= get_setting_option_id(
+            rps_target_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='rps_target_scenario_id',
                 table='subscenarios_system_rps_targets',
                 setting_name=msg['rpsTargetSetting']
             ),
-            carbon_cap_target_scenario_id= get_setting_option_id(
+            carbon_cap_target_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='carbon_cap_target_scenario_id',
                 table='subscenarios_system_carbon_cap_targets',
                 setting_name=msg['carbonCapTargetSetting']
             ),
-            prm_requirement_scenario_id= get_setting_option_id(
+            prm_requirement_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='prm_requirement_scenario_id',
                 table='subscenarios_system_prm_requirement',
                 setting_name=msg['prmRequirementSetting']
             ),
-            elcc_surface_scenario_id= get_setting_option_id(
+            elcc_surface_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='elcc_surface_scenario_id',
                 table='subscenarios_system_elcc_surface',
                 setting_name=msg['elccSurfaceSetting']
             ),
-            local_capacity_requirement_scenario_id= get_setting_option_id(
+            local_capacity_requirement_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='local_capacity_requirement_scenario_id',
                 table='subscenarios_system_local_capacity_requirement',
                 setting_name=msg['localCapacityRequirementSetting']
             ),
-            tuning_scenario_id= get_setting_option_id(
+            tuning_scenario_id=get_setting_option_id(
+                db_path=DATABASE_PATH,
                 id_column='tuning_scenario_id',
                 table='subscenarios_tuning',
                 setting_name=msg['tuningSetting']
@@ -3649,29 +4665,6 @@ def add_new_scenario(msg):
 
 # ### RUNNING SCENARIOS ### #
 # TODO: incomplete functionality
-# TODO: needs update
-# def run_scenario(scenario_name):
-#     #
-#     p = multiprocessing.current_process()
-#
-#     print("Running " + scenario_name)
-#     print(
-#         "Process name and ID for scenario {} run: {}, {}".format(
-#             scenario_name, p.name, p.pid
-#         )
-#     )
-#
-#     # TODO: what is the best way to get the right directories?
-#     # os.chdir(GRIDPATH_DIRECTORY)
-#     os.chdir('/Users/ana/dev/ui-run-scenario')
-#     import run_start_to_end
-#
-#     # TODO: what should the default settings be and what should we allow the
-#     #  user to select?
-#     run_start_to_end.main(
-#         args=['--scenario', scenario_name, '--log']
-#     )
-
 
 @socketio.on('launch_scenario_process')
 def launch_scenario_process(client_message):
@@ -3733,12 +4726,12 @@ def launch_scenario_process(client_message):
 # TODO: implement functionality to check on the process from the UI (
 #  @socketio is not linked to anything yet)
 @socketio.on('check_scenario_process_status')
-def check_scenario_process_status(client_message):
+def check_scenario_process_status(db_path, client_message):
     """
     Check if there is any running process that contains the given scenario
     """
     scenario_id = str(client_message['scenario'])
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=db_path)
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
             scenario_id
@@ -3761,10 +4754,19 @@ def check_scenario_process_status(client_message):
 
 
 # ### Common functions ### #
-def connect_to_database():
-    # io = sqlite3.connect('/Users/ana/dev/ui-run-scenario/db/io.db')
-    io = sqlite3.connect(DATABASE_PATH)
+# TODO: use flask built-in DB tools?
+def connect_to_database(db_path):
+    """
+    :param db_path: the path to the database we're connecting to
+    :return: the database connection object and a cursor object for the
+      connection
+
+    Connect to a database and return the connection object and a
+    connection cursor object.
+    """
+    io = sqlite3.connect(db_path)
     c = io.cursor()
+
     return io, c
 
 
