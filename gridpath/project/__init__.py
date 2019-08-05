@@ -316,6 +316,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  )
             )
 
+    # TODO: move into database table (don't hard code)
     # Check that we're not combining incompatible capacity and operational types
     incompatible_combinations = [
         ("new_build_generator", "dispatchable_binary_commit"),
@@ -326,10 +327,14 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
          "dispatchable_binary_commit"),
         ("existing_gen_linear_economic_retirement",
          "dispatchable_continuous_commit"),
+        ("existing_gen_linear_economic_retirement",
+         "hydro_curtailable"),
+        ("existing_gen_linear_economic_retirement",
+         "hydro_noncurtailable"),
         ("existing_gen_binary_economic_retirement",
-         "dispatchable_binary_commit"),
+         "hydro_curtailable"),
         ("existing_gen_binary_economic_retirement",
-         "dispatchable_continuous_commit"),
+         "hydro_noncurtailable"),
     ]
     for combo in incompatible_combinations:
         bad_combos = ((df["capacity_type"] == combo[0]) &
@@ -385,25 +390,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              "inputs_project_operational_chars",
              "Invalid operational type",
              "Project(s) '{}': Invalid operational type"
-             .format(print_bad_projects)
-             )
-        )
-
-    # Check that unit size is defined for capacity commit and must-run types
-    op_types_w_unit_size = ["dispatchable_capacity_commit", "always_on"]
-    proj_req_unit_size = df["operational_type"].isin(op_types_w_unit_size)
-    proj_wo_unit_size = pd.isna(df["unit_size_mw"])
-    invalids = proj_req_unit_size & proj_wo_unit_size
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Missing inputs for operational type",
-             "Project(s) '{}': Missing unit size inputs"
              .format(print_bad_projects)
              )
         )
