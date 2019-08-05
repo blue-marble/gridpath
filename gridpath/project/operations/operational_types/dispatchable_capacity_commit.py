@@ -9,6 +9,7 @@ This approach can be good for modeling 'fleets' of generators, e.g. a total
 are committed. Integer commitment is not enforced; capacity commitment with
 this approach is continuous.
 """
+
 from __future__ import division
 from __future__ import print_function
 
@@ -21,7 +22,8 @@ import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
     NonPositiveReals, PercentFraction, Reals, value, Expression
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import generator_subset_init, \
+    write_validation_to_database
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -1154,3 +1156,90 @@ def import_module_specific_results_to_database(
         """;"""
     )
     db.commit()
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    validation_results = []
+
+    c = conn.cursor()
+    projects = c.execute(
+        """SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) as prj_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND operational_type = '{}'""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "dispatchable_capacity_commit"
+        )
+    )
+
+    df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
+
+    # Check that unit size and min stable level are specified
+    # (not all operational types require this input)
+    required_columns = [
+        "min_stable_level",
+        "unit_size_mw"
+    ]
+    for column in required_columns:
+        isna = pd.isna(df[column])
+        if isna.any():
+            bad_projects = df["project"][isna]
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "Missing inputs",
+                 "Project(s) '{}'; Dispatchable_capacity_commit should have inputs for '{}'"
+                 .format(print_bad_projects, column)
+                 )
+            )
+
+    # Check that there are no unexpected operational inputs
+    expected_na_columns = [
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours"
+    ]
+    for column in expected_na_columns:
+        notna = pd.notna(df[column])
+        if notna.any():
+            bad_projects = df["project"][notna]
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "Unexpected inputs",
+                 "Project(s) '{}'; Dispatchable_capacity_commit should not have inputs for '{}'"
+                 .format(print_bad_projects, column)
+                 )
+            )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)

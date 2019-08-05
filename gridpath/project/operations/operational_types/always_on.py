@@ -6,6 +6,7 @@ This module describes the operations of always-on generators. These are
 generators that are always  committed but can ramp up and down between a
 minimum stable level above 0 and full output.
 """
+
 from __future__ import division
 
 from builtins import zip
@@ -14,7 +15,8 @@ import pandas as pd
 from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.auxiliary.auxiliary import generator_subset_init, \
+    write_validation_to_database
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -479,3 +481,105 @@ def load_module_specific_data(mod, data_portal,
         data_portal.data()[
             "always_on_ramp_down_rate"] = \
             ramp_down_rate
+
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    validation_results = []
+
+    c = conn.cursor()
+    projects = c.execute(
+        """SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) as prj_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND operational_type = '{}'""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "always_on"
+        )
+    )
+
+    df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
+
+    # Check that unit size and min stable level are specified
+    # (not all operational types require this input)
+    required_columns = [
+        "min_stable_level",
+        "unit_size_mw"
+    ]
+    for column in required_columns:
+        isna = pd.isna(df[column])
+        if isna.any():
+            bad_projects = df["project"][isna]
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "Missing inputs",
+                 "Project(s) '{}'; Always_on should have inputs for '{}'"
+                 .format(print_bad_projects, column)
+                 )
+            )
+
+    # Check that there are no unexpected operational inputs
+    expected_na_columns = [
+        "startup_cost_per_mw", "shutdown_cost_per_mw",
+        "startup_fuel_mmbtu_per_mw",
+        "startup_plus_ramp_up_rate",
+        "shutdown_plus_ramp_down_rate",
+        "min_up_time_hours", "min_down_time_hours",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours"
+    ]
+    for column in expected_na_columns:
+        notna = pd.notna(df[column])
+        if notna.any():
+            bad_projects = df["project"][notna]
+            print_bad_projects = ", ".join(bad_projects)
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 __name__,
+                 "PROJECT_OPERATIONAL_CHARS",
+                 "inputs_project_operational_chars",
+                 "Unexpected inputs",
+                 "Project(s) '{}'; Always_on should not have inputs for '{}'"
+                 .format(print_bad_projects, column)
+                 )
+            )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)

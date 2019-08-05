@@ -305,6 +305,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+    # TODO: make validation work when no availabilities specified
+    #    returning empty list will get you error
     # Get project availability if project_availability_scenario_id is not NULL
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
         availabilities = []
@@ -366,28 +368,24 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     validation_results = []
 
-    # TODO: make validation works when no availabilities specified
-    # TODO: fix read inputs to deal with matches where there's no fuel
-    #   plus don't use some of the columns
-    # TODO: should we allow for any dispatchable project to have no fuel?
-    #   right now we assumes that's okay
-
     # Get the project input data
     availabilities, heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into dataframe
-    av_df = pd.DataFrame(availabilities.fetchall())
-    av_df.columns = [s[0] for s in availabilities.description]
-    hr_df = pd.DataFrame(heat_rates.fetchall())
-    hr_df.columns = [s[0] for s in heat_rates.description]
+    av_df = pd.DataFrame(
+        data=availabilities.fetchall(),
+        columns=[s[0] for s in availabilities.description]
+    )
+    hr_df = pd.DataFrame(
+        data=heat_rates.fetchall(),
+        columns=[s[0] for s in heat_rates.description]
+    )
 
     # Define masks (list of true/false dependent on conditions checked)
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
     fuel_mask = pd.notna(hr_df["fuel"])
     load_point_mask = pd.notna(hr_df["load_point_mw"])
-    operational_mask = \
-        hr_df["operational_type"].isin(["must_run", "dispatchable_no_commit"])
 
     # Check data types availability:
     expected_dtypes = {
@@ -510,26 +508,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              "Missing heat rate inputs",
              "Project(s) '{}': Expected at least one load point"
              .format(print_bad_projects)
-             )
-        )
-
-    # Check that must-run and no-commit only have one load point
-    relevant_mask = fuel_mask & operational_mask
-    n_load_points = hr_df[relevant_mask].groupby(['project']).size()
-    invalids = (n_load_points > 1)
-    if invalids.any():
-        bad_projects = hr_df["project"][invalids]
-        print_bad_projects = ", ".join(bad_projects)
-        op_types = hr_df["operational_type"][invalids]
-        print_op_types = ", ".join(op_types)
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             __name__,
-             "PROJECT_HEAT_RATE_CURVES",
-             "inputs_project_heat_rate_curves",
-             "Too many load points",
-             "Project(s) '{}': Expected only one load point for op_type(s) '{}'"
-             .format(print_bad_projects, print_op_types)
              )
         )
 

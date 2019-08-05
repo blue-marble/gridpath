@@ -394,44 +394,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check that unit size is defined for capacity commit and always-on types
-    op_types_w_unit_size = ["dispatchable_capacity_commit", "always_on"]
-    op_type_mask = df["operational_type"].isin(op_types_w_unit_size)
-    no_unit_size_mask = pd.isna(df["unit_size_mw"])
-    invalids = op_type_mask & no_unit_size_mask
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Missing inputs for operational type",
-             "Project(s) '{}': Missing unit size inputs"
-             .format(print_bad_projects)
-             )
-        )
-
-    # Check that no-commit and must-run types have no min stable level
-    op_types_wo_min_stable = ["dispatchable_no_commit", "must_run"]
-    op_type_mask = df["operational_type"].isin(op_types_wo_min_stable)
-    min_stable_mask = pd.notna(df["min_stable_level"])
-    invalids = op_type_mask & min_stable_mask
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Too many inputs for operational type",
-             "Project(s) '{}': Can not have a minimum stable level"
-             .format(print_bad_projects)
-             )
-        )
-
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
 
