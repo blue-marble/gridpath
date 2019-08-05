@@ -894,7 +894,9 @@ api.add_resource(
 api.add_resource(ServerStatus, '/server-status')
 
 
-# ### Socket Communication ### #
+# ########################## Socket Communication ########################### #
+
+# ### Database operations ### #
 @socketio.on('add_new_scenario')
 def socket_add_or_edit_new_scenario(msg):
     add_or_update_scenario(db_path=DATABASE_PATH, msg=msg)
@@ -914,7 +916,7 @@ def launch_scenario_process(client_message):
 
     # Get the scenario name for this scenario ID
     # TODO: pass both from the client and do a check here that they exist
-    io, c = connect_to_database()
+    io, c = connect_to_database(db_path=DATABASE_PATH)
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
             scenario_id
@@ -923,7 +925,9 @@ def launch_scenario_process(client_message):
 
     # First, check if the scenario is already running
     process_status = check_scenario_process_status(
-        client_message=client_message)
+        db_path=DATABASE_PATH,
+        client_message=client_message
+    )
     if process_status:
         # TODO: what should happen if the scenario is already running? At a
         #  minimum, it should be a warning and perhaps a way to stop the
@@ -943,10 +947,11 @@ def launch_scenario_process(client_message):
         #     args=(scenario_name,),
         # )
         # p.start()
-        os.chdir(GRIDPATH_DIRECTORY)
+        os.chdir(os.path.join(GRIDPATH_DIRECTORY, 'gridpath'))
         p = subprocess.Popen(
             [sys.executable, '-u',
-             os.path.join(GRIDPATH_DIRECTORY, 'run_start_to_end.py'),
+             os.path.join(GRIDPATH_DIRECTORY, 'gridpath',
+                          'run_start_to_end.py'),
              '--log', '--scenario', scenario_name])
 
         # Needed to ensure child processes are terminated when server exits
