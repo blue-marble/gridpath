@@ -18,6 +18,7 @@
 <th>Scenario Name</th>
 <th>Validation Status</th>
 <th>Run Status</th>
+<th>Results</th>
 </tr>
   <ng-container *ngFor="let scenario of scenarios">
      <tr>
@@ -29,6 +30,13 @@
        </td>
        <td>{{scenario.validationStatus}}</td>
        <td>{{scenario.runStatus}}</td>
+       <td>
+         <button class="button-primary">
+            <a [routerLink]="['/scenario', scenario.id, 'results']">View
+              Results
+            </a>
+          </button>
+       </td>
      </tr>
   </ng-container>
 </table>
