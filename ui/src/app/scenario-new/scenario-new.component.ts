@@ -7,6 +7,7 @@ const io = ( window as any ).require('socket.io-client');
 
 import { Setting, ScenarioNewService } from './scenario-new.service';
 import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
+import { ViewDataService } from '../view-data/view-data.service';
 
 
 @Component({
@@ -19,7 +20,7 @@ import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
 export class ScenarioNewComponent implements OnInit {
 
   // The final structure we'll iterate over
-  ScenarioNewStructure: SettingsTable[];
+  scenarioNewStructure: SettingsTable[];
 
   // If editing scenario, we'll give starting values for settings
   message: string;
@@ -229,6 +230,7 @@ export class ScenarioNewComponent implements OnInit {
 
   constructor(private scenarioNewService: ScenarioNewService,
               private scenarioEditService: ScenarioEditService,
+              private viewDataService: ViewDataService,
               private router: Router,
               private zone: NgZone,
               private location: Location) {
@@ -238,8 +240,8 @@ export class ScenarioNewComponent implements OnInit {
     // Set the starting form state depending
     this.setStartingFormState();
 
-    // Tralala
-    this.ScenarioNewStructure = [];
+    // Get setting subscriptions
+    this.scenarioNewStructure = [];
     this.createFeaturesTable();
     this.getSettingOptionsTemporal();
     this.getSettingOptionsLoadZones();
@@ -263,6 +265,9 @@ export class ScenarioNewComponent implements OnInit {
     this.getSettingOptionsLocalCapacity();
     this.getSettingOptionsTuning();
   }
+
+  // TODO: how to standardize the table captions and row names here and in
+  //  the scenario-detail component?
 
   createFeaturesTable(): void {
     this.features = [];
@@ -379,7 +384,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.temporalSettingsTable);
+    this.scenarioNewStructure.push(this.temporalSettingsTable);
   }
 
   getSettingOptionsLoadZones(): void {
@@ -448,7 +453,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.loadZoneSettingsTable);
+    this.scenarioNewStructure.push(this.loadZoneSettingsTable);
 
   }
 
@@ -481,7 +486,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.systemLoadSettingsTable);
+    this.scenarioNewStructure.push(this.systemLoadSettingsTable);
 
   }
 
@@ -602,7 +607,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.projectCapacitySettingsTable);
+    this.scenarioNewStructure.push(this.projectCapacitySettingsTable);
 
   }
 
@@ -623,7 +628,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_operational_characteristics',
+            'project_operating_chars',
             'projectOperationalCharsSetting',
             this.projectOperationalCharsSettingOptions
           );
@@ -636,7 +641,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
+    this.scenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
 
   }
 
@@ -656,7 +661,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'fuel_characteristics',
+            'project_fuels',
             'projectFuelsSetting',
             this.fuelSettingOptions
           );
@@ -689,7 +694,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.fuelSettingsTable);
+    this.scenarioNewStructure.push(this.fuelSettingsTable);
 
   }
 
@@ -739,7 +744,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.transmissionCapacitySettingsTable);
+    this.scenarioNewStructure.push(this.transmissionCapacitySettingsTable);
 
   }
 
@@ -760,7 +765,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'transmission_operational_characteristics',
+            'transmission_operational_chars',
             'transmissionOperationalCharsSetting',
             this.transmissionOperationalCharsSettingOptions
           );
@@ -775,7 +780,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
+    this.scenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
 
   }
 
@@ -809,7 +814,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.transmissionHurdleRatesSettingsTable);
+    this.scenarioNewStructure.push(this.transmissionHurdleRatesSettingsTable);
   }
 
   getSettingOptionsTransmissionSimultaneousFlowLimits(): void {
@@ -861,7 +866,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(
+    this.scenarioNewStructure.push(
       this.transmissionSimultaneousFlowLimitsSettingsTable
     );
   }
@@ -882,7 +887,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_load_following_up_bas',
+            'geography_lf_up_bas',
             'geographyLoadFollowingUpBAsSetting',
             this.geographyLoadFollowingUpBAsSettingOptions
           );
@@ -902,7 +907,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_load_following_up_bas',
+            'project_lf_up_bas',
             'projectLoadFollowingUpBAsSetting',
             this.projectLoadFollowingUpBAsSettingOptions
           );
@@ -920,7 +925,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'load_following_up_requirement',
+            'load_following_reserves_up_profile',
             'loadFollowingUpRequirementSetting',
             this.loadFollowingUpRequirementSettingOptions
           );
@@ -932,7 +937,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.loadFollowingUpSettingsTable);
+    this.scenarioNewStructure.push(this.loadFollowingUpSettingsTable);
 
   }
 
@@ -952,7 +957,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_load_following_down_bas',
+            'geography_lf_down_bas',
             'geographyLoadFollowingDownBAsSetting',
             this.geographyLoadFollowingDownBAsSettingOptions
           );
@@ -972,7 +977,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_load_following_down_bas',
+            'project_lf_down_bas',
             'projectLoadFollowingDownBAsSetting',
             this.projectLoadFollowingDownBAsSettingOptions
           );
@@ -990,7 +995,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'load_following_down_requirement',
+            'load_following_reserves_down_profile',
             'loadFollowingDownRequirementSetting',
             this.loadFollowingDownRequirementSettingOptions
           );
@@ -1002,7 +1007,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.loadFollowingDownSettingsTable);
+    this.scenarioNewStructure.push(this.loadFollowingDownSettingsTable);
 
   }
 
@@ -1022,7 +1027,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_regulation_up_bas',
+            'geography_reg_up_bas',
             'geographyRegulationUpBAsSetting',
             this.geographyRegulationUpBAsSettingOptions
           );
@@ -1042,7 +1047,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_regulation_up_bas',
+            'project_reg_up_bas',
             'projectRegulationUpBAsSetting',
             this.projectRegulationUpBAsSettingOptions
           );
@@ -1060,7 +1065,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'regulation_up_requirement',
+            'regulation_up_profile',
             'regulationUpRequirementSetting',
             this.regulationUpRequirementSettingOptions
           );
@@ -1072,7 +1077,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.regulationUpSettingsTable);
+    this.scenarioNewStructure.push(this.regulationUpSettingsTable);
 
   }
 
@@ -1092,7 +1097,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_regulation_down_bas',
+            'geography_reg_down_bas',
             'geographyRegulationDownBAsSetting',
             this.geographyRegulationDownBAsSettingOptions
           );
@@ -1112,7 +1117,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_regulation_down_bas',
+            'project_reg_down_bas',
             'projectRegulationDownBAsSetting',
             this.projectRegulationDownBAsSettingOptions
           );
@@ -1130,7 +1135,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'regulation_down_requirement',
+            'regulation_down_profile',
             'regulationDownRequirementSetting',
             this.regulationDownRequirementSettingOptions
           );
@@ -1142,7 +1147,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.regulationDownSettingsTable);
+    this.scenarioNewStructure.push(this.regulationDownSettingsTable);
 
   }
 
@@ -1163,7 +1168,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_spinning_reserves_bas',
+            'geography_spin_bas',
             'geographySpinningReservesBAsSetting',
             this.geographySpinningReservesBAsSettingOptions
           );
@@ -1183,7 +1188,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_spinning_reserves_bas',
+            'project_spin_bas',
             'projectSpinningReservesBAsSetting',
             this.projectSpinningReservesBAsSettingOptions
           );
@@ -1201,7 +1206,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'spinning_reserves_requirement',
+            'spinning_reserves_profile',
             'spinningReservesRequirementSetting',
             this.spinningReservesRequirementSettingOptions
           );
@@ -1213,7 +1218,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.spinningReservesSettingsTable);
+    this.scenarioNewStructure.push(this.spinningReservesSettingsTable);
 
   }
 
@@ -1234,7 +1239,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'geography_frequency_response_bas',
+            'geography_freq_resp_bas',
             'geographyFrequencyResponseBAsSetting',
             this.geographyFrequencyResponseBAsSettingOptions
           );
@@ -1254,7 +1259,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_frequency_response_bas',
+            'project_freq_resp_bas',
             'projectFrequencyResponseBAsSetting',
             this.projectFrequencyResponseBAsSettingOptions
           );
@@ -1272,7 +1277,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'frequency_response_requirement',
+            'frequency_response_profile',
             'frequencyResponseRequirementSetting',
             this.frequencyResponseRequirementSettingOptions
           );
@@ -1284,7 +1289,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.frequencyResponseSettingsTable);
+    this.scenarioNewStructure.push(this.frequencyResponseSettingsTable);
 
   }
 
@@ -1305,7 +1310,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'rps_areas',
+            'geography_rps_areas',
             'geographyRPSAreasSetting',
             this.geographyRPSAreasSettingOptions
           );
@@ -1355,7 +1360,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.rpsSettingsTable);
+    this.scenarioNewStructure.push(this.rpsSettingsTable);
 
   }
 
@@ -1414,7 +1419,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'transmission_carbon_cap_areas',
+            'transmission_carbon_cap_zones',
             'transmissionCarbonCapAreasSetting',
             this.transmissionCarbonCapAreasSettingOptions
           );
@@ -1432,7 +1437,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'carbon_cap_target',
+            'carbon_cap',
             'carbonCapTargetSetting',
             this.carbonCapTargetSettingOptions
           );
@@ -1444,7 +1449,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.carbonCapSettingsTable);
+    this.scenarioNewStructure.push(this.carbonCapSettingsTable);
 
   }
 
@@ -1560,7 +1565,7 @@ export class ScenarioNewComponent implements OnInit {
 
           // Create the row
           const newRow = createRow(
-            'project_energy_only',
+            'project_prm_energy_only',
             'projectPRMEnergyOnlySetting',
             this.projectPRMEnergyOnlySettingOptions
           );
@@ -1572,7 +1577,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.prmSettingsTable);
+    this.scenarioNewStructure.push(this.prmSettingsTable);
 
   }
 
@@ -1662,7 +1667,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.localCapacitySettingsTable);
+    this.scenarioNewStructure.push(this.localCapacitySettingsTable);
 
   }
 
@@ -1694,7 +1699,7 @@ export class ScenarioNewComponent implements OnInit {
       );
 
     // Add the table to the scenario structure
-    this.ScenarioNewStructure.push(this.tuningSettingsTable);
+    this.scenarioNewStructure.push(this.tuningSettingsTable);
   }
 
   setStartingFormState(): void {
@@ -1923,6 +1928,15 @@ export class ScenarioNewComponent implements OnInit {
           this.startingValues.tuning, {onlySelf: true}
         );
           });
+  }
+
+  viewData(dataToView): void {
+    // Send the table name to the view-data service that view-data component
+    // uses to determine which tables to show
+    this.viewDataService.changeDataToView(dataToView);
+    console.log('Sending data to view, ', dataToView);
+    // Switch to the new scenario view
+    this.router.navigate(['/view-data']);
   }
 
   saveNewScenario() {

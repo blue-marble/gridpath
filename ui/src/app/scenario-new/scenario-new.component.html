@@ -38,12 +38,13 @@
       </ng-container>
 </table>
 
-<ng-container *ngFor="let tbl of ScenarioNewStructure">
+<ng-container *ngFor="let tbl of scenarioNewStructure">
   <table class="scenario-detail">
     <caption>{{tbl.tableCaption}}</caption>
         <tr>
           <th>Name</th>
           <th>Value</th>
+          <th>View Data</th>
         </tr>
       <ng-container *ngFor="let tblRow of tbl.settingRows">
          <tr>
@@ -59,6 +60,9 @@
                   {{settingOption.name}}
                 </option>
               </select>
+           </td>
+           <td>
+             <button (click)="viewData(tblRow.rowName)">View Data</button>
            </td>
         </tr>
       </ng-container>
