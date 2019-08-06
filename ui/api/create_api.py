@@ -14,7 +14,12 @@ from ui.api.resources.scenario_detail import ScenarioDetailName, \
   ScenarioDetailFrequencyResponse, ScenarioDetailRPS, ScenarioDetailCarbonCap, \
   ScenarioDetailPRM, ScenarioDetailLocalCapacity
 from ui.api.resources.scenario_results import \
-  ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements
+  ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements, \
+  ScenarioResultsProjectNewBuild, ScenarioResultsProjectDispatch, \
+  ScenarioResultsProjectCarbon, ScenarioResultsTransmissionCapacity, \
+  ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
+  ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
+  ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM
 from ui.api.resources.scenario_new import SettingTemporal, SettingLoadZones, \
   SettingProjectLoadZones, SettingTxLoadZones, SettingSystemLoad, \
   SettingProjectPorftolio, SettingProjectExistingCapacity, \
@@ -834,5 +839,65 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsProjectRetirements,
         '/scenarios/<scenario_id>/results-project-retirements',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsProjectNewBuild,
+        '/scenarios/<scenario_id>/results-project-new-build',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsProjectDispatch,
+        '/scenarios/<scenario_id>/results-project-dispatch',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsProjectCarbon,
+        '/scenarios/<scenario_id>/results-project-carbon',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsTransmissionCapacity,
+        '/scenarios/<scenario_id>/results-transmission-capacity',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsTransmissionFlows,
+        '/scenarios/<scenario_id>/results-transmission-flows',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsImportsExports,
+        '/scenarios/<scenario_id>/results-imports-exports',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsSystemLoadBalance,
+        '/scenarios/<scenario_id>/results-system-load-balance',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsSystemRPS,
+        '/scenarios/<scenario_id>/results-system-rps',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsSystemCarbonCap,
+        '/scenarios/<scenario_id>/results-system-carbon-cap',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsSystemPRM,
+        '/scenarios/<scenario_id>/results-system-prm',
         resource_class_kwargs={'db_path': db_path}
     )
