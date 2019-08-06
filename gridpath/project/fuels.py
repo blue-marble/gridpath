@@ -190,6 +190,43 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check that fuels specified for projects exist in fuels table
+    validation_errors = validate_fuel_projects(prj_df, fuels_df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Non existent fuel",
+             error)
+        )
+
+    # Check that fuel prices exist for the period and month
+    validation_errors = validate_fuel_prices(fuels_df, fuel_prices_df,
+                                             periods_months)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_FUEL_PRICES",
+             "inputs_project_fuel_prices",
+             "Missing fuel price",
+             error
+             )
+        )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+
+def validate_fuel_projects(prj_df, fuels_df):
+    """
+    Check that fuels specified for projects exist in fuels table
+    :param prj_df:
+    :param fuels_df:
+    :return:
+    """
+    results = []
     fuel_mask = pd.notna(prj_df["fuel"])
     existing_fuel_mask = prj_df["fuel"].isin(fuels_df["fuel"])
     invalids = fuel_mask & ~existing_fuel_mask
@@ -198,35 +235,33 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         bad_fuels = prj_df["fuel"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         print_bad_fuels = ", ".join(bad_fuels)
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
-             "Non existent fuel",
-             "Project(s) '{}': Specified fuel(s) '{}' do(es) not exist"
-             .format(print_bad_projects, print_bad_fuels)
-             )
+        results.append(
+            "Project(s) '{}': Specified fuel(s) '{}' do(es) not exist"
+            .format(print_bad_projects, print_bad_fuels)
         )
 
-    # Check that fuel prices exist for the period and month
+    return results
+
+
+def validate_fuel_prices(fuels_df, fuel_prices_df, periods_months):
+    """
+    Check that fuel prices exist for the period and month
+    :param fuels_df:
+    :param fuel_prices_df:
+    :param periods_months:
+    :return:
+    """
+    results = []
     for f in fuels_df["fuel"].values:
         df = fuel_prices_df[fuel_prices_df["fuel"] == f]
         for period, month in periods_months:
             if not ((df.period == period) & (df.month == month)).any():
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     __name__,
-                     "PROJECT_FUEL_PRICES",
-                     "inputs_project_fuel_prices",
-                     "Missing fuel price",
-                     "Fuel '{}': Missing price for period '{}', month '{}')"
-                     .format(f, str(period), str(month))
-                     )
+                results.append(
+                    "Fuel '{}': Missing price for period '{}', month '{}'"
+                    .format(f, str(period), str(month))
                 )
 
-    # Write all input validation errors to database
-    write_validation_to_database(validation_results, conn)
+    return results
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):

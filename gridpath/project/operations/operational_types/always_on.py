@@ -16,7 +16,7 @@ from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database
+    write_validation_to_database, check_prj_columns
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -535,25 +535,21 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check that unit size and min stable level are specified
     # (not all operational types require this input)
-    required_columns = [
+    req_columns = [
         "min_stable_level",
         "unit_size_mw"
     ]
-    for column in required_columns:
-        isna = pd.isna(df[column])
-        if isna.any():
-            bad_projects = df["project"][isna]
-            print_bad_projects = ", ".join(bad_projects)
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "Missing inputs",
-                 "Project(s) '{}'; Always_on should have inputs for '{}'"
-                 .format(print_bad_projects, column)
-                 )
-            )
+    validation_errors = check_prj_columns(df, req_columns, True, "Always_on")
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Missing inputs",
+             error
+             )
+        )
 
     # Check that there are no unexpected operational inputs
     expected_na_columns = [
@@ -565,21 +561,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    for column in expected_na_columns:
-        notna = pd.notna(df[column])
-        if notna.any():
-            bad_projects = df["project"][notna]
-            print_bad_projects = ", ".join(bad_projects)
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "Unexpected inputs",
-                 "Project(s) '{}'; Always_on should not have inputs for '{}'"
-                 .format(print_bad_projects, column)
-                 )
-            )
+    validation_errors = check_prj_columns(df, expected_na_columns, False,
+                                          "Always_on")
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Unexpected inputs",
+             error
+             )
+        )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
