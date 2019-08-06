@@ -237,10 +237,14 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     validation_results = []
 
-    # Read in the project input data into a dataframe
+    # Get the project inputs
     projects = get_inputs_from_database(subscenarios, subproblem, stage, conn)
-    df = pd.DataFrame(projects.fetchall())
-    df.columns = [s[0] for s in projects.description]
+
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
 
     # Check data types:
     expected_dtypes = {

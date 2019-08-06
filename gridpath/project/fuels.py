@@ -140,12 +140,18 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     ).fetchall()
 
     # Convert input data into pandas DataFrame
-    fuels_df = pd.DataFrame(fuels.fetchall())
-    fuels_df.columns = [s[0] for s in fuels.description]
-    fuel_prices_df = pd.DataFrame(fuel_prices.fetchall())
-    fuel_prices_df.columns = [s[0] for s in fuel_prices.description]
-    prj_df = pd.DataFrame(projects.fetchall())
-    prj_df.columns = [s[0] for s in projects.description]
+    fuels_df = pd.DataFrame(
+        data=fuels.fetchall(),
+        columns=[s[0] for s in fuels.description]
+    )
+    fuel_prices_df = pd.DataFrame(
+        data=fuel_prices.fetchall(),
+        columns = [s[0] for s in fuel_prices.description]
+    )
+    prj_df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
 
     # Check data types fuels:
     expected_dtypes = {

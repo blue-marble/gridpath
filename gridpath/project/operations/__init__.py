@@ -305,13 +305,16 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    # TODO: make validation work when no availabilities specified
-    #    returning empty list will get you error
-    # Get project availability if project_availability_scenario_id is not NULL
+
+    # Get project availability if project_availability_scenario_id is not NUL
+    c1 = conn.cursor()
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = []
+        availabilities = c1.execute(
+            """SELECT project, horizon, availability
+            FROM inputs_project_availability
+            WHERE 1=0"""
+        )
     else:
-        c1 = conn.cursor()
         availabilities = c1.execute(
             """SELECT project, horizon, availability
             FROM inputs_project_availability
@@ -372,7 +375,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     availabilities, heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # Convert input data into dataframe
+    # Convert input data into DataFrame
     av_df = pd.DataFrame(
         data=availabilities.fetchall(),
         columns=[s[0] for s in availabilities.description]
@@ -579,14 +582,18 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     availabilities, heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    # Convert heat rates to dataframes to pre-process data
-    hr_df = pd.DataFrame(heat_rates.fetchall())
-    hr_df.columns = [s[0] for s in heat_rates.description]
-
-    # Pre-process (filter out only projects with fuel; select columns)
+    # Convert heat rates to dataframes and pre-process data
+    # (filter out only projects with fuel; select columns)
+    hr_df = pd.DataFrame(
+        data=heat_rates.fetchall(),
+        columns=[s[0] for s in heat_rates.description]
+    )
     fuel_mask = pd.notna(hr_df["fuel"])
     columns = ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
     heat_rates = hr_df[columns][fuel_mask].values
+
+    # Fetch availability inputs
+    availabilities = availabilities.fetchall()
 
     if availabilities:
         with open(os.path.join(inputs_directory, "project_availability.tab"),
