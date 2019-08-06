@@ -26,4 +26,10 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-project-capacity`
     );
   }
+
+  getResultsProjectRetirements(scenarioID: number): Observable<ScenarioResults> {
+    return this.http.get<ScenarioResults>(
+      `${this.scenariosBaseURL}${scenarioID}/results-project-retirements`
+    );
+  }
 }

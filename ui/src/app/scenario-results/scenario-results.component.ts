@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ScenarioResultsService} from './scenario-results.service';
-import { ScenarioResults } from './scenario-results';
+import { ScenarioResults, ResultsButton } from './scenario-results';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
@@ -14,8 +14,15 @@ export class ScenarioResultsComponent implements OnInit {
   // Key for which results table to show
   resultsToShow: string;
 
+  // All results buttons
+  allResultsButtons: ResultsButton[];
+
+  // All tables
+  allTables: ScenarioResults[];
+
   // Results tables
   projectResultsCapacity: ScenarioResults;
+  projectResultsRetirements: ScenarioResults;
 
   // To get the right route
   scenarioID: number;
@@ -37,6 +44,13 @@ export class ScenarioResultsComponent implements OnInit {
        console.log(`Scenario ID is ${this.scenarioID}`);
     });
 
+    // Make the results buttons
+    this.allResultsButtons = [];
+    this.makeResultsButtons();
+
+    // Initiate the array of all tables
+    this.allTables = [];
+
     // Get the key for which table to show
     this.getResultsToShow();
 
@@ -44,6 +58,11 @@ export class ScenarioResultsComponent implements OnInit {
     if (this.resultsToShow === 'results-project-capacity') {
       console.log('Getting project capacity results');
       this.getResultsProjectCapacity(this.scenarioID);
+    }
+
+    if (this.resultsToShow === 'results-project-retirements') {
+      console.log('Getting project retirements results');
+      this.getResultsProjectRetirements(this.scenarioID);
     }
 
   }
@@ -59,12 +78,37 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsProjectCapacity(scenarioID)
       .subscribe(inputTableRows => {
         this.projectResultsCapacity = inputTableRows;
+        this.allTables.push(this.projectResultsCapacity);
       });
   }
 
-  showProjectCapacity(): void {
+  getResultsProjectRetirements(scenarioID): void {
+    this.scenarioResultsService.getResultsProjectRetirements(scenarioID)
+      .subscribe(inputTableRows => {
+        this.projectResultsRetirements = inputTableRows;
+        this.allTables.push(this.projectResultsRetirements);
+      });
+  }
+
+  makeResultsButtons(): void {
+    const projectCapacityButton = {
+      name: 'showResultsProjectCapacityButton',
+      ngIfKey: 'results-project-capacity',
+      caption: 'Project Capacity'
+    };
+    this.allResultsButtons.push(projectCapacityButton);
+
+    const projectRetirementsButton = {
+      name: 'showResultsProjectRetirementsButton',
+      ngIfKey: 'results-project-retirements',
+      caption: 'Project Retirements'
+    };
+    this.allResultsButtons.push(projectRetirementsButton);
+  }
+
+  showResults(resultsToShow): void {
     // Send value for show project capacity table
-    this.scenarioResultsService.changeResultsToView('results-project-capacity');
+    this.scenarioResultsService.changeResultsToView(resultsToShow);
     // Refresh the view
     this.ngOnInit();
   }

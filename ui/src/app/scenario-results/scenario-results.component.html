@@ -1,25 +1,29 @@
 <button id="goBackButtonTop" class="button-primary"
       (click)="goBack()">Back</button>
 
-<button id="showProjectCapacityTable" class="button-primary"
-      (click)="showProjectCapacity()">Project Capacity</button>
-
-<table *ngIf="resultsToShow==projectResultsCapacity.ngIfKey">
-  <caption>{{projectResultsCapacity.caption}}</caption>
-<tr>
-     <ng-container *ngFor="let column of projectResultsCapacity.columns">
-       <th>{{column}}</th>
-     </ng-container>
-</tr>
-
-<ng-container *ngFor="let row of projectResultsCapacity.rowsData">
-   <tr>
-     <ng-container *ngFor="let column of projectResultsCapacity.columns">
-       <td>{{row[column]}}</td>
-     </ng-container>
-   </tr>
+<ng-container *ngFor="let button of allResultsButtons">
+  <button id="{{button.name}}" class="button-primary"
+        (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
 </ng-container>
-</table>
+
+<ng-container *ngFor="let table of allTables">
+  <table *ngIf="resultsToShow==table.ngIfKey">
+    <caption>{{table.caption}}</caption>
+  <tr>
+       <ng-container *ngFor="let column of table.columns">
+         <th>{{column}}</th>
+       </ng-container>
+  </tr>
+
+  <ng-container *ngFor="let row of table.rowsData">
+     <tr>
+       <ng-container *ngFor="let column of table.columns">
+         <td>{{row[column]}}</td>
+       </ng-container>
+     </tr>
+  </ng-container>
+  </table>
+</ng-container>
 
 <button id="goBackButtonBottom" class="button-primary"
       (click)="goBack()">Back</button>

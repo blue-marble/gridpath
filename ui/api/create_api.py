@@ -13,7 +13,8 @@ from ui.api.resources.scenario_detail import ScenarioDetailName, \
   ScenarioDetailRegulationDown, ScenarioDetailSpinningReserves, \
   ScenarioDetailFrequencyResponse, ScenarioDetailRPS, ScenarioDetailCarbonCap, \
   ScenarioDetailPRM, ScenarioDetailLocalCapacity
-from ui.api.resources.scenario_results import ScenarioResultsProjectCapacity
+from ui.api.resources.scenario_results import \
+  ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements
 from ui.api.resources.scenario_new import SettingTemporal, SettingLoadZones, \
   SettingProjectLoadZones, SettingTxLoadZones, SettingSystemLoad, \
   SettingProjectPorftolio, SettingProjectExistingCapacity, \
@@ -827,5 +828,11 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsProjectCapacity,
         '/scenarios/<scenario_id>/results-project-capacity',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsProjectRetirements,
+        '/scenarios/<scenario_id>/results-project-retirements',
         resource_class_kwargs={'db_path': db_path}
     )

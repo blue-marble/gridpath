@@ -22,17 +22,44 @@ class ScenarioResultsProjectCapacity(Resource):
             db_path=self.db_path,
             ngifkey='results-project-capacity',
             caption='Project Capacity',
+            columns='*',
             table='results_project_capacity_all',
             scenario_id=scenario_id
         )
 
 
+class ScenarioResultsProjectRetirements(Resource):
+    """
+
+    """
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        """
+
+        :return:
+        """
+        return create_data_table_api(
+          db_path=self.db_path,
+          ngifkey='results-project-retirements',
+          caption='Project Retirements',
+          columns='*',
+          table='results_project_capacity_binary_economic_retirement UNION '
+                'SELECT * '
+                'FROM results_project_capacity_linear_economic_retirement',
+          scenario_id=scenario_id
+        )
+
+
 # TODO: common function?
-def create_data_table_api(db_path, ngifkey, caption, table, scenario_id):
+def create_data_table_api(db_path, ngifkey, caption, columns, table,
+                          scenario_id):
     """
     :param db_path:
     :param ngifkey:
     :param caption:
+    :param columns:
     :param table:
     :param scenario_id:
     :return:
@@ -42,6 +69,7 @@ def create_data_table_api(db_path, ngifkey, caption, table, scenario_id):
     data_table_api['caption'] = caption
     column_names, data_rows = get_table_data(
       db_path=db_path,
+      columns=columns,
       table=table,
       scenario_id=scenario_id
     )
@@ -51,7 +79,7 @@ def create_data_table_api(db_path, ngifkey, caption, table, scenario_id):
     return data_table_api
 
 
-def get_table_data(db_path, table, scenario_id):
+def get_table_data(db_path, columns, table, scenario_id):
     """
     :param db_path:
     :param table:
@@ -61,8 +89,8 @@ def get_table_data(db_path, table, scenario_id):
     io, c = connect_to_database(db_path=db_path)
 
     table_data_query = c.execute(
-      """SELECT * FROM {} 
-         WHERE scenario_id = {};""".format(table, scenario_id))
+      """SELECT {} FROM {} 
+         WHERE scenario_id = {};""".format(columns, table, scenario_id))
 
     column_names = [s[0] for s in table_data_query.description]
 

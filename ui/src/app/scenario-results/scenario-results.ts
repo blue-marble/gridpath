@@ -7,3 +7,9 @@ export class ScenarioResults {
   columns: [];
   rowsData: [];
 }
+
+export class ResultsButton {
+  name: string;
+  ngIfKey: string;
+  caption: string;
+}
