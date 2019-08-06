@@ -1,7 +1,25 @@
 <button id="goBackButtonTop" class="button-primary"
       (click)="goBack()">Back</button>
 
+<button id="showProjectCapacityTable" class="button-primary"
+      (click)="showProjectCapacity()">Project Capacity</button>
 
+<table *ngIf="resultsToShow==projectResultsCapacity.ngIfKey">
+  <caption>{{projectResultsCapacity.caption}}</caption>
+<tr>
+     <ng-container *ngFor="let column of projectResultsCapacity.columns">
+       <th>{{column}}</th>
+     </ng-container>
+</tr>
+
+<ng-container *ngFor="let row of projectResultsCapacity.rowsData">
+   <tr>
+     <ng-container *ngFor="let column of projectResultsCapacity.columns">
+       <td>{{row[column]}}</td>
+     </ng-container>
+   </tr>
+</ng-container>
+</table>
 
 <button id="goBackButtonBottom" class="button-primary"
       (click)="goBack()">Back</button>

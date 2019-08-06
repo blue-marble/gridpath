@@ -13,6 +13,7 @@ from ui.api.resources.scenario_detail import ScenarioDetailName, \
   ScenarioDetailRegulationDown, ScenarioDetailSpinningReserves, \
   ScenarioDetailFrequencyResponse, ScenarioDetailRPS, ScenarioDetailCarbonCap, \
   ScenarioDetailPRM, ScenarioDetailLocalCapacity
+from ui.api.resources.scenario_results import ScenarioResultsProjectCapacity
 from ui.api.resources.scenario_new import SettingTemporal, SettingLoadZones, \
   SettingProjectLoadZones, SettingTxLoadZones, SettingSystemLoad, \
   SettingProjectPorftolio, SettingProjectExistingCapacity, \
@@ -73,6 +74,7 @@ def add_api_resources(api, db_path):
     """
     add_scenarios_resources(api=api, db_path=db_path)
     add_scenario_detail_resources(api=api, db_path=db_path)
+    add_scenario_results_resources(api=api, db_path=db_path)
     add_scenario_new_resources(api=api, db_path=db_path)
     add_view_data_resources(api=api, db_path=db_path)
     add_home_resource(api=api)
@@ -813,3 +815,17 @@ def add_home_resource(api):
     """
     # Server status
     api.add_resource(ServerStatus, '/server-status')
+
+
+def add_scenario_results_resources(api, db_path):
+    """
+    :param api:
+    :param db_path:
+
+    Add the API resources for the Angular 'scenario-results' component.
+    """
+    api.add_resource(
+        ScenarioResultsProjectCapacity,
+        '/scenarios/<scenario_id>/results-project-capacity',
+        resource_class_kwargs={'db_path': db_path}
+    )
