@@ -7,7 +7,7 @@
 </ng-container>
 
 <ng-container *ngFor="let table of allTables">
-  <table *ngIf="resultsToShow==table.ngIfKey">
+  <table *ngIf="resultsToShow==table.ngIfKey" class="scenario-results-table">
     <caption>{{table.caption}}</caption>
   <tr>
        <ng-container *ngFor="let column of table.columns">
