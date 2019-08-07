@@ -115,6 +115,8 @@ export class ScenarioResultsComponent implements OnInit {
 
   }
 
+  // Subscribe to the resultsToShow BehaviorSubject, which tells us which
+  // results table the user is requesting
   getResultsToShow(): void {
     this.scenarioResultsService.resultsToViewSubject
       .subscribe((resultsToShow: string) => {
@@ -122,6 +124,17 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  // When a results button is pressed, change the value of resultsToShow to
+  // that of the respective results table and refresh the view
+  showResults(resultsToShow): void {
+    // Send value for show project capacity table
+    this.scenarioResultsService.changeResultsToView(resultsToShow);
+    // Refresh the view
+    this.ngOnInit();
+  }
+
+
+  // Fetch results table subscriptions and add to the allTables arrays
   getResultsProjectCapacity(scenarioID): void {
     this.scenarioResultsService.getResultsProjectCapacity(scenarioID)
       .subscribe(inputTableRows => {
@@ -218,6 +231,8 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  // Make the results buttons with their relevant keys that are passed to
+  // the resultsToViewSubject in scenario-results.service.ts
   makeResultsButtons(): void {
     const projectCapacityButton = {
       name: 'showResultsProjectCapacityButton',
@@ -302,13 +317,6 @@ export class ScenarioResultsComponent implements OnInit {
       caption: 'PRM'
     };
     this.allResultsButtons.push(systemPRMButton);
-  }
-
-  showResults(resultsToShow): void {
-    // Send value for show project capacity table
-    this.scenarioResultsService.changeResultsToView(resultsToShow);
-    // Refresh the view
-    this.ngOnInit();
   }
 
   goBack(): void {

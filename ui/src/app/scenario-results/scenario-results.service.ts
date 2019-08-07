@@ -8,19 +8,24 @@ import { ScenarioResults } from './scenario-results';
 })
 export class ScenarioResultsService {
 
+  // We will subscribe to this in scenario-results.component.ts and will
+  // use its value to know which table to show and which results to fetch
   resultsToViewSubject = new BehaviorSubject(null);
 
+  // Base URL
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
   constructor(
     private http: HttpClient
   ) { }
 
+  // Change the value of resultsToViewSubject
   changeResultsToView(resultsToShow: string) {
     this.resultsToViewSubject.next(resultsToShow);
     console.log('Results to show changed to, ', resultsToShow);
   }
 
+  // API subscriptions
   getResultsProjectCapacity(scenarioID: number): Observable<ScenarioResults> {
     return this.http.get<ScenarioResults>(
       `${this.scenariosBaseURL}${scenarioID}/results-project-capacity`
