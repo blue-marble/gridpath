@@ -9,7 +9,7 @@ from __future__ import print_function
 
 from builtins import str
 from builtins import object
-from argparse import ArgumentParser
+import argparse
 from csv import writer
 import os.path
 import pandas as pd
@@ -731,10 +731,12 @@ def summarize_results(scenario_directory, subproblem, stage, loaded_modules,
 def parse_arguments(arguments):
     """
     :param arguments: the script arguments specified by the user
-    :return: the parsed argument values (<class 'argparse.Namespace'> Python
-        object)
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
     """
-    parser = ArgumentParser(add_help=True)
+    parser = argparse.ArgumentParser(add_help=True)
 
     # Scenario name and location options
     parser.add_argument("--scenario",
@@ -769,13 +771,11 @@ def parse_arguments(arguments):
     parser.add_argument("--testing", default=False, action="store_true",
                         help="Flag for test suite runs.")
 
-    # Flag for updating run status in the database
-    parser.add_argument("--update_db_run_status", default=False,
-                        action="store_true",
-                        help="Flag for updating run status in the database.")
-
     # Parse arguments
-    parsed_arguments = parser.parse_args(args=arguments)
+    # TODO: should we throw warning for unknown arguments (here and in the
+    #  other scripts)? run_start_to_end does pass unknown arguments (e.g.
+    #  the database file path), so we'd have to suppress warnings then
+    parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
     return parsed_arguments
 

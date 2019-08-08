@@ -20,12 +20,20 @@ def connect_to_database(parsed_arguments):
     :param parsed_arguments:
     :return:
     """
-    conn = sqlite3.connect(
-        os.path.join(
-            str(parsed_arguments.db_location),
-            str(parsed_arguments.db_name)+".db"
+    if parsed_arguments.database is None:
+        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
+    else:
+        db_path = parsed_arguments.database
+
+    if not os.path.isfile(db_path):
+        raise OSError(
+            "The database file {} was not found. Did you mean to "
+            "specify a different database file?".format(
+                os.path.abspath(db_path)
+            )
         )
-    )
+
+    conn = sqlite3.connect(db_path)
 
     return conn
 
@@ -38,10 +46,7 @@ def parse_arguments(arguments):
     parser = ArgumentParser(add_help=True)
 
     # Scenario name and location options
-    parser.add_argument("--db_name", default="io",
-                        help="Name of the database.")
-    parser.add_argument("--db_location", default="../db",
-                        help="Path to the database (relative to script).")
+    parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario", help="The scenario name.")
     parser.add_argument("--load_zone", help="The name of the load zone.")
     parser.add_argument("--horizon", help="The horizon ID.")

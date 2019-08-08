@@ -76,6 +76,7 @@ def parse_arguments(args):
     :return: 
     """
     parser = ArgumentParser(add_help=True)
+    parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario",
                         help="The name of the scenario (the same as "
                              "the directory name)")
@@ -91,23 +92,33 @@ def main(args=None):
 
     :return:
     """
-    print("Importing results to database...")
-
     if args is None:
         args = sys.argv[1:]
 
     parsed_arguments = parse_arguments(args=args)
 
+    db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
     # Database
-    # Assume script is run from root directory and that the database is named
-    # io.db and is in a subdirectory ./db
-    io = sqlite3.connect(
-        os.path.join(os.getcwd(), "..", "db", "io.db")
-    )
-    c = io.cursor()
+    # If no database is specified, assume script is run from the 'gridpath'
+    # directory and the database is in ../db and named io.db
+    if db_path is None:
+        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
+
+    if not os.path.isfile(db_path):
+        raise OSError(
+            "The database file {} was not found. Did you mean to "
+            "specify a different database file?".format(
+                os.path.abspath(db_path)
+            )
+        )
+
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+
+    print("Importing results... (connected to database {})".format(db_path))
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
@@ -141,7 +152,7 @@ def main(args=None):
         scenario_id=scenario_id,
         subproblems=subproblems,
         cursor=c,
-        db=io,
+        db=conn,
         scenario_directory=scenario_directory
     )
 
