@@ -276,3 +276,45 @@ def import_results_into_database(
         """;"""
     )
     db.commit()
+
+
+def process_results(db, c, subscenarios):
+    """
+    Aggregate dispatch by technology
+    :param db:
+    :param c:
+    :param subscenarios:
+    :return:
+    """
+
+    print("aggregate dispatch")
+
+    # Delete old dispatch by technology
+    c.execute(
+        """DELETE FROM results_project_dispatch_by_technology 
+        WHERE scenario_id = {}
+        """.format(subscenarios.SCENARIO_ID)
+    )
+    db.commit()
+
+    # Aggregate dispatch by technology
+    c.execute(
+        """INSERT INTO results_project_dispatch_by_technology
+        (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw)
+        SELECT
+        scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, technology, sum(power_mw) AS power_mw
+        FROM results_project_dispatch_all
+        WHERE scenario_id = {}
+        GROUP BY subproblem_id, stage_id, timepoint, 
+        load_zone, technology
+        ORDER BY subproblem_id, stage_id, timepoint, 
+        load_zone, technology;""".format(
+            subscenarios.SCENARIO_ID,
+        )
+    )
+    db.commit()
+
