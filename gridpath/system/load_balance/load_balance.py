@@ -120,8 +120,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["zone", "period", "horizon", "timepoint",
                          "discount_factor", "number_years_represented",
                          "horizon_weight", "number_of_hours_in_timepiont",
-                         "overgeneration_mw",
-                         "unserved_energy_mw"]
+                         "load_mw", "overgeneration_mw", "unserved_energy_mw"]
                         )
         for z in getattr(m, "LOAD_ZONES"):
             for tmp in getattr(m, "TIMEPOINTS"):
@@ -134,6 +133,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.number_years_represented[m.period[tmp]],
                     m.horizon_weight[m.horizon[tmp]],
                     m.number_of_hours_in_timepoint[tmp],
+                    m.static_load_mw[z, tmp],
                     m.Overgeneration_MW[z, tmp].value,
                     m.Unserved_Energy_MW[z, tmp].value]
                 )
@@ -186,6 +186,7 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         number_years_represented FLOAT,
         horizon_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
+        load_mw FLOAT,
         overgeneration_mw FLOAT,
         unserved_energy_mw FLOAT,
         PRIMARY KEY (scenario_id, load_zone, subproblem_id, stage_id, timepoint)
@@ -208,8 +209,9 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             number_years = row[5]
             horizon_weight = row[6]
             number_of_hours_in_timepoint = row[7]
-            overgen = row[8]
-            unserved_energy = row[9]
+            load = row[8]
+            overgen = row[9]
+            unserved_energy = row[10]
             c.execute(
                 """INSERT INTO 
                 temp_results_system_load_balance"""
@@ -217,13 +219,14 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
                 (scenario_id, load_zone, period, subproblem_id, stage_id,
                 horizon, timepoint, discount_factor, number_years_represented,
                 horizon_weight, number_of_hours_in_timepoint,
-                overgeneration_mw, unserved_energy_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                load_mw, overgeneration_mw, unserved_energy_mw)
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, 
+                {}, {}, {});
                 """.format(
                     scenario_id, ba, period, subproblem, stage,
                     horizon, timepoint, discount_factor, number_years,
                     horizon_weight, number_of_hours_in_timepoint,
-                    overgen, unserved_energy
+                    load, overgen, unserved_energy
                 )
             )
     db.commit()
@@ -234,12 +237,12 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         (scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
         timepoint, discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
-        overgeneration_mw, unserved_energy_mw)
+        load_mw, overgeneration_mw, unserved_energy_mw)
         SELECT
         scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
         timepoint, discount_factor, number_years_represented,
         horizon_weight, number_of_hours_in_timepoint,
-        overgeneration_mw, unserved_energy_mw
+        load_mw, overgeneration_mw, unserved_energy_mw
         FROM temp_results_system_load_balance"""
         + str(scenario_id) + """
         ORDER BY scenario_id, load_zone, subproblem_id, stage_id, timepoint;"""
