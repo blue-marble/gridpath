@@ -1,79 +1,83 @@
-<h2><span>New Scenario: </span>{{newScenarioForm.value.scenarioName}}</h2>
+<div class="container-fluid">
 
-<form [formGroup]="newScenarioForm" (ngSubmit)="saveNewScenario()">
+  <h2><span>New Scenario: </span>{{newScenarioForm.value.scenarioName}}</h2>
 
-  <p><label>
-  Scenario Name:
-  <input type="text" formControlName="scenarioName">
-</label></p>
+  <form [formGroup]="newScenarioForm" (ngSubmit)="saveNewScenario()">
 
-  <p><label>
-  Description:
-  <input type="text" formControlName="scenarioDescription">
-</label></p>
+    <p><label>
+    Scenario Name:
+    <input type="text" formControlName="scenarioName">
+  </label></p>
+
+    <p><label>
+    Description:
+    <input type="text" formControlName="scenarioDescription">
+  </label></p>
 
 
-<table class="scenario-detail">
-  <caption>Features</caption>
-    <tr>
-      <th>Name</th>
-      <th>Value</th>
-    </tr>
-      <ng-container *ngFor="let sd of features">
-         <tr>
-           <td>{{sd.featureName}}</td>
-           <td>
-             <select formControlName="{{sd.formControlName}}">
-               <!--[ngValue]="selectionOption" needed for initial
-                values to work-->
-                <option
-                  *ngFor="let selectionOption of featureSelectionOption"
-                  [ngValue]="selectionOption"
-                >
-                  {{selectionOption}}
-                </option>
-              </select>
-           </td>
-         </tr>
-      </ng-container>
-</table>
-
-<ng-container *ngFor="let tbl of scenarioNewStructure">
   <table class="scenario-detail">
-    <caption>{{tbl.tableCaption}}</caption>
-        <tr>
-          <th>Name</th>
-          <th>Value</th>
-          <th>View Data</th>
-        </tr>
-      <ng-container *ngFor="let tblRow of tbl.settingRows">
-         <tr>
-           <td>{{tblRow.rowName}}</td>
-           <td>
-             <select formControlName="{{tblRow.rowFormControlName}}">
-                <option value=""></option>
-                <!--[ngValue]="settingOption.name" needed for initial
-                values to work-->
-                <option *ngFor="let settingOption of tblRow.settingOptions"
-                [ngValue]="settingOption.name"
-                >
-                  {{settingOption.name}}
-                </option>
-              </select>
-           </td>
-           <td>
-             <button (click)="viewData(tblRow.rowName)">View Data</button>
-           </td>
-        </tr>
-      </ng-container>
+    <caption>Features</caption>
+      <tr>
+        <th>Name</th>
+        <th>Value</th>
+      </tr>
+        <ng-container *ngFor="let sd of features">
+           <tr>
+             <td>{{sd.featureName}}</td>
+             <td>
+               <select formControlName="{{sd.formControlName}}">
+                 <!--[ngValue]="selectionOption" needed for initial
+                  values to work-->
+                  <option
+                    *ngFor="let selectionOption of featureSelectionOption"
+                    [ngValue]="selectionOption"
+                  >
+                    {{selectionOption}}
+                  </option>
+                </select>
+             </td>
+           </tr>
+        </ng-container>
   </table>
-</ng-container>
 
-<button class="button-primary">Validate Scenario (inactive)</button>
+  <ng-container *ngFor="let tbl of scenarioNewStructure">
+    <table class="scenario-detail">
+      <caption>{{tbl.tableCaption}}</caption>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+            <th>View Data</th>
+          </tr>
+        <ng-container *ngFor="let tblRow of tbl.settingRows">
+           <tr>
+             <td>{{tblRow.rowName}}</td>
+             <td>
+               <select formControlName="{{tblRow.rowFormControlName}}">
+                  <option value=""></option>
+                  <!--[ngValue]="settingOption.name" needed for initial
+                  values to work-->
+                  <option *ngFor="let settingOption of tblRow.settingOptions"
+                  [ngValue]="settingOption.name"
+                  >
+                    {{settingOption.name}}
+                  </option>
+                </select>
+             </td>
+             <td>
+               <button (click)="viewData(tblRow.rowName)">View Data</button>
+             </td>
+          </tr>
+        </ng-container>
+    </table>
+  </ng-container>
 
-<button type="submit" [disabled]="!newScenarioForm.valid"
-        class="button-primary">Save Scenario</button>
-</form>
+  <button class="button-primary">Validate Scenario (inactive)</button>
 
-<button id="goBackButton" class="button-primary"
-      (click)="goBack()">Back</button>
+  <button type="submit" [disabled]="!newScenarioForm.valid"
+          class="button-primary">Save Scenario</button>
+  </form>
+
+  <button id="goBackButton" class="button-primary"
+        (click)="goBack()">Back</button>
+
+</div>

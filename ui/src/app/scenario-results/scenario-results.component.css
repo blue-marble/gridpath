@@ -14,6 +14,7 @@
 }
 
 .scenario-results-table caption {
+  caption-side: top;
   font-weight: bold;
   text-align: left;
   margin-top: 10px;
