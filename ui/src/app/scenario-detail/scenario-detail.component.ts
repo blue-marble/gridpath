@@ -4,7 +4,7 @@ import { Location } from '@angular/common';
 
 const io = ( window as any ).require('socket.io-client');
 
-import { ScenarioDetail, ScenarioDetailTableRow } from './scenario-detail';
+import { ScenarioDetailTableRow } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
@@ -49,7 +49,7 @@ export class ScenarioDetailComponent implements OnInit {
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
        this.scenarioID = +params['id'];
-       console.log(`Scenario ID is ${this.scenarioID}`)
+       console.log(`Scenario ID is ${this.scenarioID}`);
     });
 
 
@@ -78,7 +78,7 @@ export class ScenarioDetailComponent implements OnInit {
     this.getScenarioDetailLocalCapacity(this.scenarioID);
 
     // We may need this if the user decides to edit the scenario
-    this.getScenarioStartingSettings(this.scenarioID)
+    this.getScenarioStartingSettings(this.scenarioID);
 
   }
 
@@ -110,7 +110,6 @@ export class ScenarioDetailComponent implements OnInit {
 
   getScenarioDetailTemporal(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Temporal settings';
 
     this.scenarioDetailService.getScenarioDetailTemporal(scenarioID)
       .subscribe(
@@ -121,12 +120,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailGeographyLoadZones(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Load zones';
 
     this.scenarioDetailService.getScenarioDetailGeographyLoadZones(scenarioID)
       .subscribe(
@@ -137,12 +135,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailLoad(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'System load';
 
     this.scenarioDetailService.getScenarioDetailLoad(scenarioID)
       .subscribe(
@@ -153,12 +150,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailProjectCapacity(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Project capacity';
 
     this.scenarioDetailService.getScenarioDetailProjectCapacity(scenarioID)
       .subscribe(
@@ -169,13 +165,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailProjectOpChars(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption =
-      'Project operational characteristics';
 
     this.scenarioDetailService.getScenarioDetailProjectOpChars(scenarioID)
       .subscribe(
@@ -186,12 +180,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailFuels(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Fuels';
 
     this.scenarioDetailService.getScenarioDetailFuels(scenarioID)
       .subscribe(
@@ -202,12 +195,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTransmissionCapacity(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Transmission capacity';
 
     this.scenarioDetailService.getScenarioDetailTransmissionCapacity(scenarioID)
       .subscribe(
@@ -218,13 +210,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTransmissionOpChars(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption =
-      'Transmission operational characteristics';
 
     this.scenarioDetailService.getScenarioDetailTransmissionOpChars(scenarioID)
       .subscribe(
@@ -235,12 +225,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTransmissionHurdleRates(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Transmission hurdle rates';
 
     this.scenarioDetailService.getScenarioDetailTransmissionHurdleRates(scenarioID)
       .subscribe(
@@ -251,13 +240,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailTransmissionSimFlow(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption =
-      'Transmission simultaneous flow limits';
 
     this.scenarioDetailService.getScenarioDetailTransmissionSimFlow(scenarioID)
       .subscribe(
@@ -268,12 +255,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailLFup(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Load-following reserves up';
 
     this.scenarioDetailService.getScenarioDetailLFUp(scenarioID)
       .subscribe(
@@ -284,12 +270,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailLFDown(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Load-following reserves down';
 
     this.scenarioDetailService.getScenarioDetailLFDown(scenarioID)
       .subscribe(
@@ -300,12 +285,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailRegUp(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Regulation up';
 
     this.scenarioDetailService.getScenarioDetailRegUp(scenarioID)
       .subscribe(
@@ -316,12 +300,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailRegDown(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Regulation down';
 
     this.scenarioDetailService.getScenarioDetailRegDown(scenarioID)
       .subscribe(
@@ -332,12 +315,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailSpin(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Spinning reserves';
 
     this.scenarioDetailService.getScenarioDetailSpin(scenarioID)
       .subscribe(
@@ -348,12 +330,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailFreqResp(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Frequency response';
 
     this.scenarioDetailService.getScenarioDetailFreqResp(scenarioID)
       .subscribe(
@@ -364,12 +345,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailRPS(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'RPS';
 
     this.scenarioDetailService.getScenarioDetailRPS(scenarioID)
       .subscribe(
@@ -380,12 +360,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailCarbonCap(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Carbon cap';
 
     this.scenarioDetailService.getScenarioDetailCarbonCap(scenarioID)
       .subscribe(
@@ -396,12 +375,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailPRM(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'PRM';
 
     this.scenarioDetailService.getScenarioDetailPRM(scenarioID)
       .subscribe(
@@ -412,12 +390,11 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
 
-    this.scenarioDetailStructure.push(settingsTable)
+    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioDetailLocalCapacity(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Local capacity';
 
     this.scenarioDetailService.getScenarioDetailLocalCapacity(scenarioID)
       .subscribe(

@@ -1,0 +1,22 @@
+﻿ui_table,ui_table_caption
+﻿features,Features
+temporal,Temporal Settings
+load_zones,Load Zone Settings
+system_load,System Load
+project_capacity,Generation and Storage Capacity
+project_opchar,Generation and Storage Operational Characteristics
+fuels,Fuels
+transmission_capacity,Transmission Capacity
+transmission_opchar,Transmission Operational Characteristics
+transmission_hurdle_rates,Transmission Hurdle Rates
+transmission_sim_flow_limits,Transmission Simultaneous Flow Limits
+load_following_up,Load Following Up
+load_following_down,Load Following Down
+regulation_up,Regulation Up
+regulation_down,Regulation Down
+spinning_reserves,Spinning Reserves
+frequency_response,Frequency Response
+rps,Renewables Portfolio Standard (RPS)
+carbon_cap,Carbon Cap
+prm,Planning Reserve Margin (PRM)
+local_capacity,Local Capacity

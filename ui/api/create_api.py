@@ -3,7 +3,7 @@
 # RESTful API resources
 from ui.api.resources.home import ServerStatus
 from ui.api.resources.scenario_detail import ScenarioDetailName, \
-  ScenarioDetailAll, ScenarioDetailFeatures, ScenarioDetailTemporal, \
+  ScenarioDetailFeatures, ScenarioDetailTemporal, \
   ScenarioDetailGeographyLoadZones, ScenarioDetailLoad, \
   ScenarioDetailProjectCapacity, ScenarioDetailProjectOpChars, \
   ScenarioDetailFuels, ScenarioDetailTransmissionCapacity, \
@@ -111,12 +111,6 @@ def add_scenario_detail_resources(api, db_path):
     api.add_resource(
         ScenarioDetailName,
         '/scenarios/<scenario_id>/name',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # All
-    api.add_resource(
-        ScenarioDetailAll,
-        '/scenarios/<scenario_id>',
         resource_class_kwargs={'db_path': db_path}
     )
     # Features
