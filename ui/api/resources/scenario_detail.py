@@ -56,15 +56,7 @@ class ScenarioDetailFeatures(Resource):
         scenario_detail_api = get_scenario_detail(
             db_path=self.db_path,
             scenario_id=scenario_id,
-            columns_string=
-            'feature_fuels, feature_transmission, '
-            'feature_transmission_hurdle_rates,'
-            'feature_simultaneous_flow_limits, feature_load_following_up, '
-            'feature_load_following_down, feature_regulation_up, '
-            'feature_regulation_down, feature_spinning_reserves, '
-            'feature_frequency_response, '
-            'feature_rps, feature_carbon_cap, feature_track_carbon_imports, '
-            'feature_prm, feature_elcc_surface, feature_local_capacity'
+            ui_table="features"
         )
 
         return scenario_detail_api
@@ -82,7 +74,7 @@ class ScenarioDetailTemporal(Resource):
         scenario_detail_api = get_scenario_detail(
             db_path=self.db_path,
             scenario_id=scenario_id,
-            columns_string='temporal'
+            ui_table='temporal'
         )
 
         return scenario_detail_api
@@ -729,10 +721,13 @@ class ScenarioDetailLocalCapacity(Resource):
         return scenario_detail_api
 
 
-def get_scenario_detail(db_path, scenario_id, columns_string):
+def get_scenario_detail(
+    db_path, scenario_id, ui_table=None
+):
     """
     :param db_path: the path to the database
     :param scenario_id: integer, the scenario ID
+    :param ui_table:
     :param columns_string: string defining which columns to select
     :return:
 
@@ -740,21 +735,61 @@ def get_scenario_detail(db_path, scenario_id, columns_string):
     """
     io, c = connect_to_database(db_path=db_path)
 
-    scenario_detail_query = c.execute(
-        """SELECT {}
-        FROM scenarios_view
-        WHERE scenario_id = {};""".format(columns_string, scenario_id)
-    )
+    # Get and set the table caption for this table
+    table_caption = c.execute(
+      """SELECT ui_table, ui_table_caption 
+      FROM ui_scenario_detail_table_metadata
+      WHERE ui_table = '{}';""".format(ui_table)
+    ).fetchone()
 
-    column_names = [s[0] for s in scenario_detail_query.description]
-    column_values = list(list(scenario_detail_query)[0])
-    scenario_detail_dict = dict(zip(column_names, column_values))
+    scenario_detail_api = {
+      "uiTableNameInDB": table_caption[0],
+      "scenarioDetailTableCaption": table_caption[1],
+      "scenarioDetailTableRows": []
+    }
 
-    scenario_detail_api = []
-    for key in scenario_detail_dict.keys():
-        scenario_detail_api.append(
-            {'name': key, 'value': scenario_detail_dict[key]}
-        )
+
+    # Get the metadata and value for the rows
+    row_metadata = c.execute(
+      """SELECT ui_table_row, ui_row_caption, ui_row_db_scenarios_view_column, 
+      ui_row_db_input_table 
+      FROM ui_scenario_detail_table_row_metadata
+      WHERE ui_table = '{}'""".format(ui_table)
+    ).fetchall()
+
+    for row in row_metadata:
+        print(row, row[1])
+        # if row_metadata[1] is None:
+        #     row_value = None
+        # else:
+        row_value = c.execute(
+          """SELECT {}
+            FROM scenarios_view
+            WHERE scenario_id = {}""".format(row[2], scenario_id)
+        ).fetchone()[0]
+
+        scenario_detail_api["scenarioDetailTableRows"].append({
+            'uiRowNameInDB': row[0],
+            'rowCaption': row[1],
+            'rowValue': row_value,
+            'inputTable':  row[3]
+        })
+
+    # scenario_detail_query = c.execute(
+    #     """SELECT {}
+    #     FROM scenarios_view
+    #     WHERE scenario_id = {};""".format(columns_string, scenario_id)
+    # )
+    #
+    # column_names = [s[0] for s in scenario_detail_query.description]
+    # column_values = list(list(scenario_detail_query)[0])
+    # scenario_detail_dict = dict(zip(column_names, column_values))
+    #
+    # scenario_detail_api = []
+    # for key in scenario_detail_dict.keys():
+    #     scenario_detail_api.append(
+    #         {'name': key, 'value': scenario_detail_dict[key]}
+    #     )
 
     return scenario_detail_api
 

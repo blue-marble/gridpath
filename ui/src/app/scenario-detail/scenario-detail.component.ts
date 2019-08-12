@@ -4,7 +4,7 @@ import { Location } from '@angular/common';
 
 const io = ( window as any ).require('socket.io-client');
 
-import { ScenarioDetail } from './scenario-detail';
+import { ScenarioDetail, ScenarioDetailTableRow } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
@@ -95,12 +95,13 @@ export class ScenarioDetailComponent implements OnInit {
 
   getScenarioDetailFeatures(scenarioID): void {
     const settingsTable = new SettingsTable();
-    settingsTable.tableCaption = 'Features';
 
     this.scenarioDetailService.getScenarioDetailFeatures(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -114,7 +115,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailTemporal(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -128,7 +131,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailGeographyLoadZones(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -142,7 +147,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailLoad(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -156,7 +163,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailProjectCapacity(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -171,7 +180,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailProjectOpChars(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -185,7 +196,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailFuels(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -199,7 +212,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailTransmissionCapacity(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -214,7 +229,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailTransmissionOpChars(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -228,7 +245,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailTransmissionHurdleRates(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -243,7 +262,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailTransmissionSimFlow(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -257,7 +278,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailLFUp(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -271,7 +294,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailLFDown(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -285,7 +310,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailRegUp(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -299,7 +326,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailRegDown(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -313,7 +342,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailSpin(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -327,7 +358,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailFreqResp(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -341,7 +374,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailRPS(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -355,7 +390,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailCarbonCap(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -369,7 +406,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailPRM(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -383,7 +422,9 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioDetailService.getScenarioDetailLocalCapacity(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.settingRows = scenarioDetail;
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
         }
       );
 
@@ -432,7 +473,8 @@ export class ScenarioDetailComponent implements OnInit {
     this.router.navigate(['/scenario-new/']);
   }
 
-  viewData(dataToView): void {
+  viewData(tableNameInDB, rowNameInDB): void {
+    const dataToView = `${tableNameInDB}-${rowNameInDB}`;
     // Send the table name to the view-data service that view-data component
     // uses to determine which tables to show
     this.viewDataService.changeDataToView(dataToView);
@@ -444,6 +486,7 @@ export class ScenarioDetailComponent implements OnInit {
 }
 
 class SettingsTable {
+  tableNameInDB: string;
   tableCaption: string;
-  settingRows: ScenarioDetail[];
+  settingRows: ScenarioDetailTableRow[];
 }

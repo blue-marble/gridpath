@@ -24,9 +24,8 @@ class ViewDataTemporalTimepoints(Resource):
         """
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='temporal',
-            caption='Timepoints',
-            table='inputs_temporal_timepoints'
+            ui_table_name_in_db='temporal',
+            ui_row_name_in_db='temporal'
         )
 
 
@@ -1216,33 +1215,46 @@ class ViewDataProjectLocalCapacityChars(Resource):
         )
 
 
-def create_data_table_api(db_path, ngifkey, caption, table):
+def create_data_table_api(db_path, ui_table_name_in_db, ui_row_name_in_db):
     """
     :param db_path:
-    :param ngifkey:
-    :param caption:
-    :param table:
+    :param ui_table_name_in_db:
+    :param ui_row_name_in_db:
     :return:
     """
+    io, c = connect_to_database(db_path=db_path)
+
     data_table_api = dict()
-    data_table_api['ngIfKey'] = ngifkey
-    data_table_api['caption'] = caption
-    column_names, data_rows = get_table_data(db_path=db_path, table=table)
+    data_table_api['ngIfKey'] = ui_table_name_in_db + '-' + ui_row_name_in_db
+
+
+    row_metadata = c.execute(
+      """SELECT ui_row_caption, ui_row_db_input_table
+      FROM ui_scenario_detail_table_row_metadata
+      WHERE ui_table = '{}' AND ui_table_row = '{}'""".format(
+        ui_table_name_in_db, ui_row_name_in_db
+      )
+    ).fetchone()
+
+
+    data_table_api['caption'] = row_metadata[0]
+    input_table = row_metadata[1]
+
+    column_names, data_rows = get_table_data(c=c,
+                                             input_table=input_table)
     data_table_api['columns'] = column_names
     data_table_api['rowsData'] = data_rows
 
     return data_table_api
 
 
-def get_table_data(db_path, table):
+def get_table_data(c, input_table):
     """
     :param db_path:
-    :param table:
+    :param input_table:
     :return:
     """
-    io, c = connect_to_database(db_path=db_path)
-
-    table_data_query = c.execute("""SELECT * FROM {};""".format(table))
+    table_data_query = c.execute("""SELECT * FROM {};""".format(input_table))
 
     column_names = [s[0] for s in table_data_query.description]
 

@@ -14,9 +14,10 @@
   </tr>
     <ng-container *ngFor="let sd of tbl.settingRows">
        <tr>
-         <td>{{sd.name}}</td>
-         <td>{{sd.value}}</td>
-          <td *ngIf="tbl.tableCaption!=='Features'"><button (click)="viewData(sd.name)">
+         <td>{{sd.rowCaption}}</td>
+         <td>{{sd.rowValue}}</td>
+          <td *ngIf="tbl.tableCaption!=='Features'"><button
+            (click)="viewData(tbl.tableNameInDB, sd.uiRowNameInDB)">
             View Data
           </button></td>
        </tr>
