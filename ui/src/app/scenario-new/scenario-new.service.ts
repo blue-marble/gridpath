@@ -14,127 +14,127 @@ export class ScenarioNewService {
 
   private scenarioSettingsBaseURL = 'http://127.0.0.1:8080/scenario-new';
 
-  getSettingTemporal(): Observable<SettingsTable> {
+  getTableTemporal(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/temporal`
     );
   }
 
-  getSettingLoadZones(): Observable<SettingsTable> {
+  getTableLoadZones(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/load-zones`
     );
   }
 
-  getSettingSystemLoad(): Observable<SettingsTable> {
+  getTableSystemLoad(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/system-load`
     );
   }
 
-  getSettingProjectPortfolio(): Observable<SettingsTable> {
+  getTableProjectCapacity(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/project-capacity`
     );
   }
 
-  getSettingProjectOpChar(): Observable<SettingsTable> {
+  getTableProjectOpChar(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/project-opchar`
     );
   }
 
-  getSettingFuels(): Observable<SettingsTable> {
+  getTableFuels(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/fuels`
     );
   }
 
-  getSettingTransmissionPortfolio(): Observable<SettingsTable> {
+  getTableTransmissionCapacity(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-capacity`
     );
   }
 
-  getSettingTransmissionOpChar(): Observable<SettingsTable> {
+  getTableTransmissionOpChar(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-opchar`
     );
   }
 
-  getSettingTransmissionHurdleRates(): Observable<SettingsTable> {
+  getTableTransmissionHurdleRates(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-hurdle-rates`
     );
   }
 
-  getSettingTransmissionSimFlowLimits(): Observable<SettingsTable> {
+  getTableTransmissionSimFlowLimits(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-simflow-limits`
     );
   }
 
-  getSettingLFReservesUpBAs(): Observable<SettingsTable> {
+  getTableLFReservesUp(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/lf-reserves-up`
     );
   }
 
-  getSettingLFReservesDownBAs(): Observable<SettingsTable> {
+  getTableLFReservesDown(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/lf-reserves-down`
     );
   }
 
-  getSettingRegulationUpBAs(): Observable<SettingsTable> {
+  getTableRegulationUp(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/regulation-up`
     );
   }
 
-  getSettingRegulationDownBAs(): Observable<SettingsTable> {
+  getTableRegulationDown(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/regulation-down`
     );
   }
 
-  getSettingSpinningReservesBAs(): Observable<SettingsTable> {
+  getTableSpinningReserves(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/spin`
     );
   }
 
-  getSettingFrequencyResponseBAs(): Observable<SettingsTable> {
+  getTableFrequencyResponse(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/freq-resp`
     );
   }
 
-  getSettingRPSAreas(): Observable<SettingsTable> {
+  getTableRPS(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/rps`
     );
   }
 
-  getSettingCarbonCapAreas(): Observable<SettingsTable> {
+  getTableCarbonCap(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/carbon-cap`
     );
   }
 
-  getSettingPRMAreas(): Observable<SettingsTable> {
+  getTablePRM(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/prm`
     );
   }
 
-  getSettingLocalCapacityAreas(): Observable<SettingsTable> {
+  getTableLocalCapacity(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/local-capacity`
     );
   }
 
-  getSettingTuning(): Observable<SettingsTable> {
+  getTableTuning(): Observable<SettingsTable> {
     return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/tuning`
     );

@@ -5,7 +5,7 @@ import {FormControl, FormGroup} from '@angular/forms';
 import {ScenarioNewService} from './scenario-new.service';
 import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
 import {ViewDataService} from '../view-data/view-data.service';
-import {SettingRow, SettingsTable, Setting} from './scenario-new';
+import {SettingsTable} from './scenario-new';
 
 const io = ( window as any ).require('socket.io-client');
 
@@ -153,10 +153,10 @@ export class ScenarioNewComponent implements OnInit {
     frequencyResponseRequirementSetting: new FormControl(),
     projectFrequencyResponseBAsSetting: new FormControl(),
     geographyRPSAreasSetting: new FormControl(),
-    rpsTargetSetting: new FormControl(),
+    rpsTargetTable: new FormControl(),
     projectRPSAreasSetting: new FormControl(),
     geographyCarbonCapAreasSetting: new FormControl(),
-    carbonCapTargetSetting: new FormControl(),
+    carbonCapTargetTable: new FormControl(),
     projectCarbonCapAreasSetting: new FormControl(),
     transmissionCarbonCapAreasSetting: new FormControl(),
     geographyPRMAreasSetting: new FormControl(),
@@ -187,27 +187,27 @@ export class ScenarioNewComponent implements OnInit {
     // Get setting subscriptions
     this.scenarioNewStructure = [];
     this.createFeaturesTable();
-    this.getSettingOptionsTemporal();
-    this.getSettingOptionsLoadZones();
-    this.getSettingOptionsLoad();
-    this.getSettingOptionsProjectCapacity();
-    this.getSettingOptionsProjectOperationalChars();
-    this.getSettingOptionsFuels();
-    this.getSettingOptionsTransmissionCapacity();
-    this.getSettingOptionsTransmissionOperationalChars();
-    this.getSettingOptionsTransmissionHurdleRates();
-    this.getSettingOptionsTransmissionSimultaneousFlowLimits();
-    this.getSettingOptionsLFReservesUp();
-    this.getSettingOptionsLFReservesDown();
-    this.getSettingOptionsRegulationUp();
-    this.getSettingOptionsRegulationDown();
-    this.getSettingOptionsSpinningReserves();
-    this.getSettingOptionsFrequencyResponse();
-    this.getSettingOptionsRPS();
-    this.getSettingOptionsCarbonCap();
-    this.getSettingOptionsPRM();
-    this.getSettingOptionsLocalCapacity();
-    this.getSettingOptionsTuning();
+    this.getTableOptionsTemporal();
+    this.getTableOptionsLoadZones();
+    this.getTableOptionsLoad();
+    this.getTableOptionsProjectCapacity();
+    this.getTableOptionsProjectOperationalChars();
+    this.getTableOptionsFuels();
+    this.getTableOptionsTransmissionCapacity();
+    this.getTableOptionsTransmissionOperationalChars();
+    this.getTableOptionsTransmissionHurdleRates();
+    this.getTableOptionsTransmissionSimultaneousFlowLimits();
+    this.getTableOptionsLFReservesUp();
+    this.getTableOptionsLFReservesDown();
+    this.getTableOptionsRegulationUp();
+    this.getTableOptionsRegulationDown();
+    this.getTableOptionsSpinningReserves();
+    this.getTableOptionsFrequencyResponse();
+    this.getTableOptionsRPS();
+    this.getTableOptionsCarbonCap();
+    this.getTableOptionsPRM();
+    this.getTableOptionsLocalCapacity();
+    this.getTableOptionsTuning();
   }
 
   createFeaturesTable(): void {
@@ -298,9 +298,9 @@ export class ScenarioNewComponent implements OnInit {
     this.featureSelectionOption = featureSelectionOptions();
   }
 
-  getSettingOptionsTemporal(): void {
+  getTableOptionsTemporal(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTemporal()
+    this.scenarioNewService.getTableTemporal()
       .subscribe(
         scenarioSetting => {
           this.temporalSettingsTable = scenarioSetting;
@@ -310,9 +310,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsLoadZones(): void {
+  getTableOptionsLoadZones(): void {
     // Get the settings
-    this.scenarioNewService.getSettingLoadZones()
+    this.scenarioNewService.getTableLoadZones()
       .subscribe(
         scenarioSetting => {
           this.loadZoneSettingsTable = scenarioSetting;
@@ -323,9 +323,9 @@ export class ScenarioNewComponent implements OnInit {
 
   }
 
-  getSettingOptionsLoad(): void {
+  getTableOptionsLoad(): void {
     // Get the settings
-    this.scenarioNewService.getSettingSystemLoad()
+    this.scenarioNewService.getTableSystemLoad()
       .subscribe(
         scenarioSetting => {
           this.systemLoadSettingsTable = scenarioSetting;
@@ -335,9 +335,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsProjectCapacity(): void {
+  getTableOptionsProjectCapacity(): void {
     // Get the settings
-    this.scenarioNewService.getSettingProjectPortfolio()
+    this.scenarioNewService.getTableProjectCapacity()
       .subscribe(
         scenarioSetting => {
           this.projectCapacitySettingsTable = scenarioSetting;
@@ -347,9 +347,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsProjectOperationalChars(): void {
+  getTableOptionsProjectOperationalChars(): void {
     // Get the settings
-    this.scenarioNewService.getSettingProjectOpChar()
+    this.scenarioNewService.getTableProjectOpChar()
       .subscribe(
         scenarioSetting => {
           this.projectOperationalCharsSettingsTable = scenarioSetting;
@@ -359,9 +359,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsFuels(): void {
+  getTableOptionsFuels(): void {
     // Get the settings
-    this.scenarioNewService.getSettingFuels()
+    this.scenarioNewService.getTableFuels()
       .subscribe(
         scenarioSetting => {
           this.fuelSettingsTable = scenarioSetting;
@@ -371,9 +371,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsTransmissionCapacity(): void {
+  getTableOptionsTransmissionCapacity(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTransmissionPortfolio()
+    this.scenarioNewService.getTableTransmissionCapacity()
       .subscribe(
         scenarioSetting => {
           this.transmissionCapacitySettingsTable = scenarioSetting;
@@ -383,9 +383,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsTransmissionOperationalChars(): void {
+  getTableOptionsTransmissionOperationalChars(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTransmissionOpChar()
+    this.scenarioNewService.getTableTransmissionOpChar()
       .subscribe(
         scenarioSetting => {
           this.transmissionOperationalCharsSettingsTable = scenarioSetting;
@@ -395,9 +395,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsTransmissionHurdleRates(): void {
+  getTableOptionsTransmissionHurdleRates(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTransmissionHurdleRates()
+    this.scenarioNewService.getTableTransmissionHurdleRates()
       .subscribe(
         scenarioSetting => {
           this.transmissionHurdleRatesSettingsTable = scenarioSetting;
@@ -407,9 +407,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsTransmissionSimultaneousFlowLimits(): void {
+  getTableOptionsTransmissionSimultaneousFlowLimits(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTransmissionSimFlowLimits()
+    this.scenarioNewService.getTableTransmissionSimFlowLimits()
       .subscribe(
         scenarioSetting => {
           this.transmissionSimultaneousFlowLimitsSettingsTable = scenarioSetting;
@@ -419,9 +419,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsLFReservesUp(): void {
+  getTableOptionsLFReservesUp(): void {
     // Get the settings
-    this.scenarioNewService.getSettingLFReservesUpBAs()
+    this.scenarioNewService.getTableLFReservesUp()
       .subscribe(
         scenarioSetting => {
           this.loadFollowingUpSettingsTable = scenarioSetting;
@@ -431,9 +431,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsLFReservesDown(): void {
+  getTableOptionsLFReservesDown(): void {
     // Get the settings
-    this.scenarioNewService.getSettingLFReservesDownBAs()
+    this.scenarioNewService.getTableLFReservesDown()
       .subscribe(
         scenarioSetting => {
           this.loadFollowingDownSettingsTable = scenarioSetting;
@@ -443,9 +443,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsRegulationUp(): void {
+  getTableOptionsRegulationUp(): void {
     // Get the settings
-    this.scenarioNewService.getSettingRegulationUpBAs()
+    this.scenarioNewService.getTableRegulationUp()
       .subscribe(
         scenarioSetting => {
           this.regulationUpSettingsTable = scenarioSetting;
@@ -455,9 +455,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsRegulationDown(): void {
+  getTableOptionsRegulationDown(): void {
     // Get the settings
-    this.scenarioNewService.getSettingRegulationDownBAs()
+    this.scenarioNewService.getTableRegulationDown()
       .subscribe(
         scenarioSetting => {
           this.regulationDownSettingsTable = scenarioSetting;
@@ -467,9 +467,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsSpinningReserves(): void {
+  getTableOptionsSpinningReserves(): void {
     // Get the settings
-    this.scenarioNewService.getSettingSpinningReservesBAs()
+    this.scenarioNewService.getTableSpinningReserves()
       .subscribe(
         scenarioSetting => {
           this.spinningReservesSettingsTable = scenarioSetting;
@@ -479,9 +479,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsFrequencyResponse(): void {
+  getTableOptionsFrequencyResponse(): void {
     // Get the settings
-    this.scenarioNewService.getSettingFrequencyResponseBAs()
+    this.scenarioNewService.getTableFrequencyResponse()
       .subscribe(
         scenarioSetting => {
           this.frequencyResponseSettingsTable = scenarioSetting;
@@ -491,9 +491,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsRPS(): void {
+  getTableOptionsRPS(): void {
     // Get the settings
-    this.scenarioNewService.getSettingRPSAreas()
+    this.scenarioNewService.getTableRPS()
       .subscribe(
         scenarioSetting => {
           this.rpsSettingsTable = scenarioSetting;
@@ -503,9 +503,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsCarbonCap(): void {
+  getTableOptionsCarbonCap(): void {
     // Get the settings
-    this.scenarioNewService.getSettingCarbonCapAreas()
+    this.scenarioNewService.getTableCarbonCap()
       .subscribe(
         scenarioSetting => {
           this.carbonCapSettingsTable = scenarioSetting;
@@ -515,9 +515,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsPRM(): void {
+  getTableOptionsPRM(): void {
     // Get the settings
-    this.scenarioNewService.getSettingPRMAreas()
+    this.scenarioNewService.getTablePRM()
       .subscribe(
         scenarioSetting => {
           this.prmSettingsTable = scenarioSetting;
@@ -527,9 +527,9 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  getSettingOptionsLocalCapacity(): void {
+  getTableOptionsLocalCapacity(): void {
     // Get the settings
-    this.scenarioNewService.getSettingLocalCapacityAreas()
+    this.scenarioNewService.getTableLocalCapacity()
       .subscribe(
         scenarioSetting => {
           this.localCapacitySettingsTable = scenarioSetting;
@@ -540,9 +540,9 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   // TODO: add tuning
-  getSettingOptionsTuning(): void {
+  getTableOptionsTuning(): void {
     // Get the settings
-    this.scenarioNewService.getSettingTuning()
+    this.scenarioNewService.getTableTuning()
       .subscribe(
         scenarioSetting => {
         }
@@ -722,7 +722,7 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.geographyRPSAreasSetting.setValue(
           this.startingValues.geography_rps_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.rpsTargetSetting.setValue(
+        this.newScenarioForm.controls.rpsTargetTable.setValue(
           this.startingValues.rps_target, {onlySelf: true}
         );
         this.newScenarioForm.controls.projectRPSAreasSetting.setValue(
@@ -731,7 +731,7 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.geographyCarbonCapAreasSetting.setValue(
           this.startingValues.carbon_cap_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.carbonCapTargetSetting.setValue(
+        this.newScenarioForm.controls.carbonCapTargetTable.setValue(
           this.startingValues.carbon_cap, {onlySelf: true}
         );
         this.newScenarioForm.controls.projectCarbonCapAreasSetting.setValue(
