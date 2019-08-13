@@ -760,3 +760,46 @@ def import_module_specific_results_to_database(
         """;"""
     )
     db.commit()
+
+
+def process_module_specific_results(db, c, subscenarios):
+    """
+    Aggregate scheduled curtailment
+    :param db:
+    :param c:
+    :param subscenarios:
+    :return:
+    """
+
+    print("aggregate hydro curtailment")
+
+
+    # Delete old aggregated hydro curtailment results
+    c.execute(
+        """DELETE FROM results_project_curtailment_hydro 
+        WHERE scenario_id = {}
+        """.format(subscenarios.SCENARIO_ID)
+    )
+    db.commit()
+
+    # Aggregate hydro curtailment (just scheduled curtailment)
+    c.execute(
+        """INSERT INTO results_project_curtailment_hydro
+        (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, scheduled_curtailment_mw)
+        SELECT
+        scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        horizon_weight, number_of_hours_in_timepoint,
+        load_zone, 
+        sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
+        FROM results_project_dispatch_hydro_curtailable
+        WHERE scenario_id = {}
+        GROUP BY subproblem_id, stage_id, timepoint, 
+        load_zone
+        ORDER BY subproblem_id, stage_id, timepoint, 
+        load_zone;""".format(
+            subscenarios.SCENARIO_ID,
+        )
+    )
+    db.commit()

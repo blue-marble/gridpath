@@ -221,3 +221,29 @@ def import_results_into_database(
             )
         else:
             pass
+
+
+def process_results(db, c, subscenarios):
+    """
+
+    :param db:
+    :param c:
+    :param subscenarios:
+    :return:
+    """
+
+    # Load in the required operational modules
+    scenario_id = subscenarios.SCENARIO_ID
+    required_opchar_modules = get_required_opchar_modules(scenario_id, c)
+    imported_operational_modules = load_operational_type_modules(
+        required_opchar_modules)
+
+    # Process module-specific results
+    for op_m in required_opchar_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "process_module_specific_results"):
+            imported_operational_modules[op_m]. \
+                process_module_specific_results(
+                    db, c, subscenarios)
+        else:
+            pass
