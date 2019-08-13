@@ -3,356 +3,140 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { SettingsTable } from './scenario-new';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ScenarioNewService {
 
-  constructor(private http: HttpClient)
-    { }
+  constructor(private http: HttpClient) { }
 
-  private scenarioSettingsBaseURL = 'http://127.0.0.1:8080/scenario-settings';
+  private scenarioSettingsBaseURL = 'http://127.0.0.1:8080/scenario-new';
 
-  getSettingTemporal(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingTemporal(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/temporal`
-    )
+    );
   }
 
-  getSettingLoadZones(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingLoadZones(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/load-zones`
-    )
+    );
   }
 
-  getSettingProjectLoadZones(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-load-zones`
-    )
-  }
-
-  getSettingTransmissionLoadZones(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/tx-load-zones`
-    )
-  }
-
-  getSettingSystemLoad(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingSystemLoad(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/system-load`
-    )
+    );
   }
 
-  getSettingProjectPortfolio(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-portfolio`
-    )
+  getSettingProjectPortfolio(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/project-capacity`
+    );
   }
 
-  getSettingProjectExistingCapacity(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-existing-capacity`
-    )
-  }
-
-  getSettingProjectExistingFixedCost(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-existing-fixed-cost`
-    )
-  }
-
-  getSettingProjectNewCost(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-new-cost`
-    )
-  }
-
-  getSettingProjectNewPotential(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-new-potential`
-    )
-  }
-
-  getSettingProjectAvailability(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-availability`
-    )
-  }
-
-  getSettingProjectOpChar(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingProjectOpChar(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/project-opchar`
-    )
+    );
   }
 
-  getSettingFuels(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingFuels(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/fuels`
-    )
+    );
   }
 
-  getSettingFuelPrices(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/fuel-prices`
-    )
+  getSettingTransmissionPortfolio(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/transmission-capacity`
+    );
   }
 
-  getSettingTransmissionPortfolio(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/transmission-portfolio`
-    )
-  }
-
-  getSettingTransmissionExistingCapacity(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/transmission-existing-capacity`
-    )
-  }
-
-  getSettingTransmissionOpChar(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingTransmissionOpChar(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-opchar`
-    )
+    );
   }
 
-  getSettingTransmissionHurdleRates(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingTransmissionHurdleRates(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-hurdle-rates`
-    )
+    );
   }
 
-  getSettingTransmissionSimFlowLimits(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingTransmissionSimFlowLimits(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/transmission-simflow-limits`
-    )
+    );
   }
 
-  getSettingTransmissionSimFlowLimitGroups(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/transmission-simflow-limit-groups`
-    )
+  getSettingLFReservesUpBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-up`
+    );
   }
 
-  getSettingLFReservesUpBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/lf-reserves-up-bas`
-    )
+  getSettingLFReservesDownBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/lf-reserves-down`
+    );
   }
 
-  getSettingProjectLFReservesUpBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-lf-reserves-up-bas`
-    )
+  getSettingRegulationUpBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/regulation-up`
+    );
   }
 
-  getSettingLFReservesUpRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/lf-reserves-up-req`
-    )
+  getSettingRegulationDownBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/regulation-down`
+    );
   }
 
-  getSettingLFReservesDownBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/lf-reserves-down-bas`
-    )
+  getSettingSpinningReservesBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/spin`
+    );
   }
 
-  getSettingProjectLFReservesDownBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-lf-reserves-down-bas`
-    )
+  getSettingFrequencyResponseBAs(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/freq-resp`
+    );
   }
 
-  getSettingLFReservesDownRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/lf-reserves-down-req`
-    )
+  getSettingRPSAreas(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/rps`
+    );
   }
 
-  getSettingRegulationUpBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/regulation-up-bas`
-    )
+  getSettingCarbonCapAreas(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/carbon-cap`
+    );
   }
 
-  getSettingProjectRegulationUpBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-regulation-up-bas`
-    )
+  getSettingPRMAreas(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/prm`
+    );
   }
 
-  getSettingRegulationUpRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/regulation-up-req`
-    )
+  getSettingLocalCapacityAreas(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
+      `${this.scenarioSettingsBaseURL}/local-capacity`
+    );
   }
 
-  getSettingRegulationDownBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/regulation-down-bas`
-    )
-  }
-
-  getSettingProjectRegulationDownBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-regulation-down-bas`
-    )
-  }
-
-  getSettingRegulationDownRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/regulation-down-req`
-    )
-  }
-
-  getSettingSpinningReservesBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/spin-bas`
-    )
-  }
-
-  getSettingProjectSpinningReservesBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-spin-bas`
-    )
-  }
-
-  getSettingSpinningReservesRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/spin-req`
-    )
-  }
-
-  getSettingFrequencyResponseBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/freq-resp-bas`
-    )
-  }
-
-  getSettingProjectFrequencyResponseBAs(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-freq-resp-bas`
-    )
-  }
-
-  getSettingFrequencyResponseRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/freq-resp-req`
-    )
-  }
-
-  getSettingRPSAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/rps-areas`
-    )
-  }
-
-  getSettingProjectRPSAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-rps-areas`
-    )
-  }
-
-  getSettingRPSRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/rps-req`
-    )
-  }
-  
-  getSettingCarbonCapAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/carbon-cap-areas`
-    )
-  }
-
-  getSettingProjectCarbonCapAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-carbon-cap-areas`
-    )
-  }
-
-  getSettingTransmissionCarbonCapAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/transmission-carbon-cap-areas`
-    )
-  }
-
-  getSettingCarbonCapRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/carbon-cap-req`
-    )
-  }
-
-  getSettingPRMAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/prm-areas`
-    )
-  }
-
-  getSettingProjectPRMAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-prm-areas`
-    )
-  }
-
-  getSettingPRMRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/prm-req`
-    )
-  }
-
-  getSettingELCCSurface(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/elcc-surface`
-    )
-  }
-
-  getSettingProjectELCCChars(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-elcc-chars`
-    )
-  }
-
-  getSettingProjectEnergyOnly(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-energy-only`
-    )
-  }
-
-  getSettingLocalCapacityAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/local-capacity-areas`
-    )
-  }
-
-  getSettingProjectLocalCapacityAreas(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-local-capacity-areas`
-    )
-  }
-
-  getSettingLocalCapacityRequirement(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/local-capacity-req`
-    )
-  }
-
-  getSettingProjectLocalCapacityChars(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
-      `${this.scenarioSettingsBaseURL}/project-local-capacity-chars`
-    )
-  }
-
-  getSettingTuning(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(
+  getSettingTuning(): Observable<SettingsTable> {
+    return this.http.get<SettingsTable>(
       `${this.scenarioSettingsBaseURL}/tuning`
-    )
+    );
   }
-}
-
-
-export class Setting {
-  id: number;
-  name: string;
 }
