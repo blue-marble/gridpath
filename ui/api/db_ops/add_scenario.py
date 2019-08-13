@@ -6,6 +6,7 @@ from ui.api.common_functions import connect_to_database
 
 
 def add_or_update_scenario(db_path, msg):
+    print(msg)
     io, c = connect_to_database(db_path=db_path)
 
     # Check if this is a new scenario or if we're updating an existing scenario
@@ -50,247 +51,247 @@ def add_or_update_scenario(db_path, msg):
              db_path=db_path,
              id_column='temporal_scenario_id',
              table='subscenarios_temporal',
-             setting_name=msg['temporalSetting']
+             setting_name=msg['temporal_scenario_id']
             ),
             'load_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='load_zone_scenario_id',
              table='subscenarios_geography_load_zones',
-             setting_name=msg['geographyLoadZonesSetting']
+             setting_name=msg['load_zone_scenario_id']
             ),
             'lf_reserves_up_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='lf_reserves_up_ba_scenario_id',
              table='subscenarios_geography_lf_reserves_up_bas',
-             setting_name=msg['geographyLoadFollowingUpBAsSetting']
+             setting_name=msg['lf_reserves_up_ba_scenario_id']
             ),
             'lf_reserves_down_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='lf_reserves_down_ba_scenario_id',
              table='subscenarios_geography_lf_reserves_down_bas',
-             setting_name=msg['geographyLoadFollowingDownBAsSetting']
+             setting_name=msg['lf_reserves_down_ba_scenario_id']
             ),
             'regulation_up_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='regulation_up_ba_scenario_id',
              table='subscenarios_geography_regulation_up_bas',
-             setting_name=msg['geographyRegulationUpBAsSetting']
+             setting_name=msg['regulation_up_ba_scenario_id']
             ),
             'regulation_down_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='regulation_down_ba_scenario_id',
              table='subscenarios_geography_regulation_down_bas',
-             setting_name=msg['geographyRegulationDownBAsSetting']
+             setting_name=msg['regulation_down_ba_scenario_id']
             ),
             'frequency_response_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='frequency_response_ba_scenario_id',
              table='subscenarios_geography_frequency_response_bas',
-             setting_name=msg['geographyFrequencyResponseBAsSetting']
+             setting_name=msg['frequency_response_ba_scenario_id']
             ),
             'spinning_reserves_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='spinning_reserves_ba_scenario_id',
              table='subscenarios_geography_spinning_reserves_bas',
-             setting_name=msg['geographySpinningReservesBAsSetting']
+             setting_name=msg['spinning_reserves_ba_scenario_id']
             ),
             'rps_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='rps_zone_scenario_id',
              table='subscenarios_geography_rps_zones',
-             setting_name=msg['geographyRPSAreasSetting']
+             setting_name=msg['rps_zone_scenario_id']
             ),
             'carbon_cap_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='carbon_cap_zone_scenario_id',
              table='subscenarios_geography_carbon_cap_zones',
-             setting_name=msg['geographyCarbonCapAreasSetting']
+             setting_name=msg['carbon_cap_zone_scenario_id']
             ),
             'prm_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='prm_zone_scenario_id',
              table='subscenarios_geography_prm_zones',
-             setting_name=msg['geographyPRMAreasSetting']
+             setting_name=msg['prm_zone_scenario_id']
             ),
             'local_capacity_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='local_capacity_zone_scenario_id',
              table='subscenarios_geography_local_capacity_zones',
-             setting_name=msg['geographyLocalCapacityAreasSetting']
+             setting_name=msg['local_capacity_zone_scenario_id']
             ),
             'project_portfolio_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_portfolio_scenario_id',
              table='subscenarios_project_portfolios',
-             setting_name=msg['projectPortfolioSetting']
+             setting_name=msg['project_portfolio_scenario_id']
             ),
             'project_operational_chars_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_operational_chars_scenario_id',
              table='subscenarios_project_operational_chars',
-             setting_name=msg['projectOperationalCharsSetting']
+             setting_name=msg['project_operational_chars_scenario_id']
             ),
             'project_availability_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_availability_scenario_id',
              table='subscenarios_project_availability',
-             setting_name=msg['projectAvailabilitySetting']
+             setting_name=msg['project_availability_scenario_id']
             ),
             'fuel_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='fuel_scenario_id',
              table='subscenarios_project_fuels',
-             setting_name=msg['projectFuelsSetting']
+             setting_name=msg['fuel_scenario_id']
             ),
             'project_load_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_load_zone_scenario_id',
              table='subscenarios_project_load_zones',
-             setting_name=msg['geographyProjectLoadZonesSetting']
+             setting_name=msg['project_load_zone_scenario_id']
             ),
             'project_lf_reserves_up_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_lf_reserves_up_ba_scenario_id',
              table='subscenarios_project_lf_reserves_up_bas',
-             setting_name=msg['projectLoadFollowingUpBAsSetting']
+             setting_name=msg['project_lf_reserves_up_ba_scenario_id']
             ),
             'project_lf_reserves_down_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_lf_reserves_down_ba_scenario_id',
              table='subscenarios_project_lf_reserves_down_bas',
-             setting_name=msg['projectLoadFollowingDownBAsSetting']
+             setting_name=msg['project_lf_reserves_down_ba_scenario_id']
             ),
             'project_regulation_up_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_regulation_up_ba_scenario_id',
              table='subscenarios_project_regulation_up_bas',
-             setting_name=msg['projectRegulationUpBAsSetting']
+             setting_name=msg['project_regulation_up_ba_scenario_id']
             ),
             'project_regulation_down_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_regulation_down_ba_scenario_id',
              table='subscenarios_project_regulation_down_bas',
-             setting_name=msg['projectRegulationDownBAsSetting']
+             setting_name=msg['project_regulation_down_ba_scenario_id']
             ),
             'project_frequency_response_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_frequency_response_ba_scenario_id',
              table='subscenarios_project_frequency_response_bas',
-             setting_name=msg['projectFrequencyResponseBAsSetting']
+             setting_name=msg['project_frequency_response_ba_scenario_id']
             ),
             'project_spinning_reserves_ba_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_spinning_reserves_ba_scenario_id',
              table='subscenarios_project_spinning_reserves_bas',
-             setting_name=msg['projectSpinningReservesBAsSetting']
+             setting_name=msg['project_spinning_reserves_ba_scenario_id']
             ),
             'project_rps_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_rps_zone_scenario_id',
              table='subscenarios_project_rps_zones',
-             setting_name=msg['projectRPSAreasSetting']
+             setting_name=msg['project_rps_zone_scenario_id']
             ),
             'project_carbon_cap_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_carbon_cap_zone_scenario_id',
              table='subscenarios_project_carbon_cap_zones',
-             setting_name=msg['projectCarbonCapAreasSetting']
+             setting_name=msg['project_carbon_cap_zone_scenario_id']
             ),
             'project_prm_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_prm_zone_scenario_id',
              table='subscenarios_project_prm_zones',
-             setting_name=msg['projectPRMAreasSetting']
+             setting_name=msg['project_prm_zone_scenario_id']
             ),
             'project_elcc_chars_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_elcc_chars_scenario_id',
              table='subscenarios_project_elcc_chars',
-             setting_name=msg['projectELCCCharsSetting']
+             setting_name=msg['project_elcc_chars_scenario_id']
             ),
             'prm_energy_only_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='prm_energy_only_scenario_id',
              table='subscenarios_project_prm_energy_only',
-             setting_name=msg['projectPRMEnergyOnlySetting']
+             setting_name=msg['prm_energy_only_scenario_id']
             ),
             'project_local_capacity_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_local_capacity_zone_scenario_id',
              table='subscenarios_project_local_capacity_zones',
-             setting_name=msg['projectLocalCapacityAreasSetting']
+             setting_name=msg['project_local_capacity_zone_scenario_id']
             ),
             'project_local_capacity_chars_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_local_capacity_chars_scenario_id',
              table='subscenarios_project_local_capacity_chars',
-             setting_name=msg['projectLocalCapacityCharsSetting']
+             setting_name=msg['project_local_capacity_chars_scenario_id']
             ),
             'project_existing_capacity_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_existing_capacity_scenario_id',
              table='subscenarios_project_existing_capacity',
-             setting_name=msg['projectExistingCapacitySetting']
+             setting_name=msg['project_existing_capacity_scenario_id']
             ),
             'project_existing_fixed_cost_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_existing_fixed_cost_scenario_id',
              table='subscenarios_project_existing_fixed_cost',
-             setting_name=msg['projectExistingFixedCostSetting']
+             setting_name=msg['project_existing_fixed_cost_scenario_id']
             ),
             'fuel_price_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='fuel_price_scenario_id',
              table='subscenarios_project_fuel_prices',
-             setting_name=msg['fuelPricesSetting']
+             setting_name=msg['fuel_price_scenario_id']
             ),
             'project_new_cost_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_new_cost_scenario_id',
              table='subscenarios_project_new_cost',
-             setting_name=msg['projectNewCostSetting']
+             setting_name=msg['project_new_cost_scenario_id']
             ),
             'project_new_potential_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='project_new_potential_scenario_id',
              table='subscenarios_project_new_potential',
-             setting_name=msg['projectNewPotentialSetting']
+             setting_name=msg['project_new_potential_scenario_id']
             ),
             'transmission_portfolio_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_portfolio_scenario_id',
              table='subscenarios_transmission_portfolios',
-             setting_name=msg['transmissionPortfolioSetting']
+             setting_name=msg['transmission_portfolio_scenario_id']
             ),
             'transmission_load_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_load_zone_scenario_id',
              table='subscenarios_transmission_load_zones',
-             setting_name=msg['geographyTxLoadZonesSetting']
+             setting_name=msg['transmission_load_zone_scenario_id']
             ),
             'transmission_existing_capacity_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_existing_capacity_scenario_id',
              table='subscenarios_transmission_existing_capacity',
-             setting_name=msg['transmissionExistingCapacitySetting']
+             setting_name=msg['transmission_existing_capacity_scenario_id']
             ),
             'transmission_operational_chars_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_operational_chars_scenario_id',
              table='subscenarios_transmission_operational_chars',
-             setting_name=msg['transmissionOperationalCharsSetting']
+             setting_name=msg['transmission_operational_chars_scenario_id']
             ),
             'transmission_hurdle_rate_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_hurdle_rate_scenario_id',
              table='subscenarios_transmission_hurdle_rates',
-             setting_name=msg['transmissionHurdleRatesSetting']
+             setting_name=msg['transmission_hurdle_rate_scenario_id']
             ),
             'transmission_carbon_cap_zone_scenario_id': get_setting_option_id(
              db_path=db_path,
              id_column='transmission_carbon_cap_zone_scenario_id',
              table='subscenarios_transmission_carbon_cap_zones',
-             setting_name=msg['transmissionCarbonCapAreasSetting']
+             setting_name=msg['transmission_carbon_cap_zone_scenario_id']
             ),
             'transmission_simultaneous_flow_limit_scenario_id':
                 get_setting_option_id(
@@ -299,32 +300,32 @@ def add_or_update_scenario(db_path, msg):
                     'transmission_simultaneous_flow_limit_scenario_id',
                     table='subscenarios_transmission_simultaneous_flow_limits',
                     setting_name=msg[
-                      'transmissionSimultaneousFlowLimitsSetting']
+                      'transmission_simultaneous_flow_limit_scenario_id']
                 ),
             'transmission_simultaneous_flow_limit_line_group_scenario_id':
                 get_setting_option_id(
                     db_path=db_path,
                     id_column='transmission_simultaneous_flow_limit_line_group_scenario_id',
                     table='subscenarios_transmission_simultaneous_flow_limit_line_groups',
-                    setting_name=msg['transmissionSimultaneousFlowLimitLineGroupsSetting']
+                    setting_name=msg['transmission_simultaneous_flow_limit_line_group_scenario_id']
              ),
             'load_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='load_scenario_id',
                  table='subscenarios_system_load',
-                 setting_name=msg['systemLoadSetting']
+                 setting_name=msg['load_scenario_id']
             ),
             'lf_reserves_up_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='lf_reserves_up_scenario_id',
                  table='subscenarios_system_lf_reserves_up',
-                 setting_name=msg['loadFollowingUpRequirementSetting']
+                 setting_name=msg['lf_reserves_up_scenario_id']
             ),
             'lf_reserves_down_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='lf_reserves_down_scenario_id',
                  table='subscenarios_system_lf_reserves_down',
-                 setting_name=msg['loadFollowingDownRequirementSetting']
+                 setting_name=msg['lf_reserves_down_scenario_id']
             ),
             'regulation_up_scenario_id': get_setting_option_id(
                  db_path=db_path,
@@ -336,56 +337,52 @@ def add_or_update_scenario(db_path, msg):
                  db_path=db_path,
                  id_column='regulation_down_scenario_id',
                  table='subscenarios_system_regulation_down',
-                 setting_name=msg['regulationDownRequirementSetting']
+                 setting_name=msg['regulation_up_scenario_id']
             ),
             'frequency_response_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='frequency_response_scenario_id',
                  table='subscenarios_system_frequency_response',
-                 setting_name=msg['frequencyResponseRequirementSetting']
+                 setting_name=msg['frequency_response_scenario_id']
             ),
             'spinning_reserves_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='spinning_reserves_scenario_id',
                  table='subscenarios_system_spinning_reserves',
-                 setting_name=msg['spinningReservesRequirementSetting']
+                 setting_name=msg['spinning_reserves_scenario_id']
             ),
             'rps_target_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='rps_target_scenario_id',
                  table='subscenarios_system_rps_targets',
-                 setting_name=msg['rpsTargetSetting']
+                 setting_name=msg['rps_target_scenario_id']
             ),
             'carbon_cap_target_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='carbon_cap_target_scenario_id',
                  table='subscenarios_system_carbon_cap_targets',
-                 setting_name=msg['carbonCapTargetSetting']
+                 setting_name=msg['carbon_cap_target_scenario_id']
             ),
             'prm_requirement_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='prm_requirement_scenario_id',
                  table='subscenarios_system_prm_requirement',
-                 setting_name=msg['prmRequirementSetting']
+                 setting_name=msg['prm_requirement_scenario_id']
             ),
             'elcc_surface_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='elcc_surface_scenario_id',
                  table='subscenarios_system_elcc_surface',
-                 setting_name=msg['elccSurfaceSetting']
+                 setting_name=msg['elcc_surface_scenario_id']
             ),
             'local_capacity_requirement_scenario_id': get_setting_option_id(
                  db_path=db_path,
                  id_column='local_capacity_requirement_scenario_id',
                  table='subscenarios_system_local_capacity_requirement',
-                 setting_name=msg['localCapacityRequirementSetting']
+                 setting_name=msg['local_capacity_requirement_scenario_id']
             ),
-            'tuning_scenario_id': get_setting_option_id(
-                 db_path=db_path,
-                 id_column='tuning_scenario_id',
-                 table='subscenarios_tuning',
-                 setting_name=msg['tuningSetting']
-            )
+            # TODO: add tuning
+            'tuning_scenario_id': 'no_tuning'
         }
         update_scenario_multiple_columns(
             io=io, c=c,
@@ -419,253 +416,253 @@ def add_or_update_scenario(db_path, msg):
                 db_path=db_path,
                 id_column='temporal_scenario_id',
                 table='subscenarios_temporal',
-                setting_name=msg['temporalSetting']
+                setting_name=msg['temporal_scenario_id']
             ),
             load_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='load_zone_scenario_id',
                 table='subscenarios_geography_load_zones',
-                setting_name=msg['geographyLoadZonesSetting']
+                setting_name=msg['load_zone_scenario_id']
             ),
             lf_reserves_up_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='lf_reserves_up_ba_scenario_id',
                 table='subscenarios_geography_lf_reserves_up_bas',
-                setting_name=msg['geographyLoadFollowingUpBAsSetting']
+                setting_name=msg['lf_reserves_up_ba_scenario_id']
             ),
             lf_reserves_down_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='lf_reserves_down_ba_scenario_id',
                 table='subscenarios_geography_lf_reserves_down_bas',
-                setting_name=msg['geographyLoadFollowingDownBAsSetting']
+                setting_name=msg['lf_reserves_down_ba_scenario_id']
             ),
             regulation_up_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='regulation_up_ba_scenario_id',
                 table='subscenarios_geography_regulation_up_bas',
-                setting_name=msg['geographyRegulationUpBAsSetting']
+                setting_name=msg['regulation_up_ba_scenario_id']
             ),
             regulation_down_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='regulation_down_ba_scenario_id',
                 table='subscenarios_geography_regulation_down_bas',
-                setting_name=msg['geographyRegulationDownBAsSetting']
+                setting_name=msg['regulation_down_ba_scenario_id']
             ),
             frequency_response_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='frequency_response_ba_scenario_id',
                 table='subscenarios_geography_frequency_response_bas',
-                setting_name=msg['geographyFrequencyResponseBAsSetting']
+                setting_name=msg['frequency_response_ba_scenario_id']
             ),
             spinning_reserves_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='spinning_reserves_ba_scenario_id',
                 table='subscenarios_geography_spinning_reserves_bas',
-                setting_name=msg['geographySpinningReservesBAsSetting']
+                setting_name=msg['spinning_reserves_ba_scenario_id']
             ),
             rps_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='rps_zone_scenario_id',
                 table='subscenarios_geography_rps_zones',
-                setting_name=msg['geographyRPSAreasSetting']
+                setting_name=msg['rps_zone_scenario_id']
             ),
             carbon_cap_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='carbon_cap_zone_scenario_id',
                 table='subscenarios_geography_carbon_cap_zones',
-                setting_name=msg['geographyCarbonCapAreasSetting']
+                setting_name=msg['carbon_cap_zone_scenario_id']
             ),
             prm_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='prm_zone_scenario_id',
                 table='subscenarios_geography_prm_zones',
-                setting_name=msg['geographyPRMAreasSetting']
+                setting_name=msg['prm_zone_scenario_id']
             ),
             local_capacity_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='local_capacity_zone_scenario_id',
                 table='subscenarios_geography_local_capacity_zones',
-                setting_name=msg['geographyLocalCapacityAreasSetting']
+                setting_name=msg['local_capacity_zone_scenario_id']
             ),
             project_portfolio_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_portfolio_scenario_id',
                 table='subscenarios_project_portfolios',
-                setting_name=msg['projectPortfolioSetting']
+                setting_name=msg['project_portfolio_scenario_id']
             ),
             project_operational_chars_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_operational_chars_scenario_id',
                 table='subscenarios_project_operational_chars',
-                setting_name=msg['projectOperationalCharsSetting']
+                setting_name=msg['project_operational_chars_scenario_id']
             ),
             project_availability_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_availability_scenario_id',
                 table='subscenarios_project_availability',
-                setting_name=msg['projectAvailabilitySetting']
+                setting_name=msg['project_availability_scenario_id']
             ),
             fuel_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='fuel_scenario_id',
                 table='subscenarios_project_fuels',
-                setting_name=msg['projectFuelsSetting']
+                setting_name=msg['fuel_scenario_id']
             ),
             project_load_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_load_zone_scenario_id',
                 table='subscenarios_project_load_zones',
-                setting_name=msg['geographyProjectLoadZonesSetting']
+                setting_name=msg['project_load_zone_scenario_id']
             ),
             project_lf_reserves_up_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_lf_reserves_up_ba_scenario_id',
                 table='subscenarios_project_lf_reserves_up_bas',
-                setting_name=msg['projectLoadFollowingUpBAsSetting']
+                setting_name=msg['project_lf_reserves_up_ba_scenario_id']
             ),
             project_lf_reserves_down_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_lf_reserves_down_ba_scenario_id',
                 table='subscenarios_project_lf_reserves_down_bas',
-                setting_name=msg['projectLoadFollowingDownBAsSetting']
+                setting_name=msg['project_lf_reserves_down_ba_scenario_id']
             ),
             project_regulation_up_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_regulation_up_ba_scenario_id',
                 table='subscenarios_project_regulation_up_bas',
-                setting_name=msg['projectRegulationUpBAsSetting']
+                setting_name=msg['project_regulation_up_ba_scenario_id']
             ),
             project_regulation_down_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_regulation_down_ba_scenario_id',
                 table='subscenarios_project_regulation_down_bas',
-                setting_name=msg['projectRegulationDownBAsSetting']
+                setting_name=msg['project_regulation_down_ba_scenario_id']
             ),
             project_frequency_response_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_frequency_response_ba_scenario_id',
                 table='subscenarios_project_frequency_response_bas',
-                setting_name=msg['projectFrequencyResponseBAsSetting']
+                setting_name=msg['project_frequency_response_ba_scenario_id']
             ),
             project_spinning_reserves_ba_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_spinning_reserves_ba_scenario_id',
                 table='subscenarios_project_spinning_reserves_bas',
-                setting_name=msg['projectSpinningReservesBAsSetting']
+                setting_name=msg['project_spinning_reserves_ba_scenario_id']
             ),
             project_rps_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_rps_zone_scenario_id',
                 table='subscenarios_project_rps_zones',
-                setting_name=msg['projectRPSAreasSetting']
+                setting_name=msg['project_rps_zone_scenario_id']
             ),
             project_carbon_cap_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_carbon_cap_zone_scenario_id',
                 table='subscenarios_project_carbon_cap_zones',
-                setting_name=msg['projectCarbonCapAreasSetting']
+                setting_name=msg['project_carbon_cap_zone_scenario_id']
             ),
             project_prm_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_prm_zone_scenario_id',
                 table='subscenarios_project_prm_zones',
-                setting_name=msg['projectPRMAreasSetting']
+                setting_name=msg['project_prm_zone_scenario_id']
             ),
             project_elcc_chars_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_elcc_chars_scenario_id',
                 table='subscenarios_project_elcc_chars',
-                setting_name=msg['projectELCCCharsSetting']
+                setting_name=msg['project_elcc_chars_scenario_id']
             ),
             prm_energy_only_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='prm_energy_only_scenario_id',
                 table='subscenarios_project_prm_energy_only',
-                setting_name=msg['projectPRMEnergyOnlySetting']
+                setting_name=msg['prm_energy_only_scenario_id']
             ),
             project_local_capacity_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_local_capacity_zone_scenario_id',
                 table='subscenarios_project_local_capacity_zones',
-                setting_name=msg['projectLocalCapacityAreasSetting']
+                setting_name=msg['project_local_capacity_zone_scenario_id']
             ),
             project_local_capacity_chars_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_local_capacity_chars_scenario_id',
                 table='subscenarios_project_local_capacity_chars',
-                setting_name=msg['projectLocalCapacityCharsSetting']
+                setting_name=msg['project_local_capacity_chars_scenario_id']
             ),
             project_existing_capacity_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_existing_capacity_scenario_id',
                 table='subscenarios_project_existing_capacity',
-                setting_name=msg['projectExistingCapacitySetting']
+                setting_name=msg['project_existing_capacity_scenario_id']
             ),
             project_existing_fixed_cost_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_existing_fixed_cost_scenario_id',
                 table='subscenarios_project_existing_fixed_cost',
-                setting_name=msg['projectExistingFixedCostSetting']
+                setting_name=msg['project_existing_fixed_cost_scenario_id']
             ),
             fuel_price_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='fuel_price_scenario_id',
                 table='subscenarios_project_fuel_prices',
-                setting_name=msg['fuelPricesSetting']
+                setting_name=msg['fuel_price_scenario_id']
             ),
             project_new_cost_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_new_cost_scenario_id',
                 table='subscenarios_project_new_cost',
-                setting_name=msg['projectNewCostSetting']
+                setting_name=msg['project_new_cost_scenario_id']
             ),
             project_new_potential_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='project_new_potential_scenario_id',
                 table='subscenarios_project_new_potential',
-                setting_name=msg['projectNewPotentialSetting']
+                setting_name=msg['project_new_potential_scenario_id']
             ),
             transmission_portfolio_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_portfolio_scenario_id',
                 table='subscenarios_transmission_portfolios',
-                setting_name=msg['transmissionPortfolioSetting']
+                setting_name=msg['transmission_portfolio_scenario_id']
             ),
             transmission_load_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_load_zone_scenario_id',
                 table='subscenarios_transmission_load_zones',
-                setting_name=msg['geographyTxLoadZonesSetting']
+                setting_name=msg['transmission_load_zone_scenario_id']
             ),
             transmission_existing_capacity_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_existing_capacity_scenario_id',
                 table='subscenarios_transmission_existing_capacity',
-                setting_name=msg['transmissionExistingCapacitySetting']
+                setting_name=msg['transmission_existing_capacity_scenario_id']
             ),
             transmission_operational_chars_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_operational_chars_scenario_id',
                 table='subscenarios_transmission_operational_chars',
-                setting_name=msg['transmissionOperationalCharsSetting']
+                setting_name=msg['transmission_operational_chars_scenario_id']
             ),
             transmission_hurdle_rate_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_hurdle_rate_scenario_id',
                 table='subscenarios_transmission_hurdle_rates',
-                setting_name=msg['transmissionHurdleRatesSetting']
+                setting_name=msg['transmission_hurdle_rate_scenario_id']
             ),
             transmission_carbon_cap_zone_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_carbon_cap_zone_scenario_id',
                 table='subscenarios_transmission_carbon_cap_zones',
-                setting_name=msg['transmissionCarbonCapAreasSetting']
+                setting_name=msg['transmission_carbon_cap_zone_scenario_id']
             ),
             transmission_simultaneous_flow_limit_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='transmission_simultaneous_flow_limit_scenario_id',
                 table='subscenarios_transmission_simultaneous_flow_limits',
-                setting_name=msg['transmissionSimultaneousFlowLimitsSetting']
+                setting_name=msg['transmission_simultaneous_flow_limit_scenario_id']
             ),
             transmission_simultaneous_flow_limit_line_group_scenario_id=
             get_setting_option_id(
@@ -675,87 +672,82 @@ def add_or_update_scenario(db_path, msg):
                 table=
                 'subscenarios_transmission_simultaneous_flow_limit_line_groups',
                 setting_name=msg[
-                    'transmissionSimultaneousFlowLimitLineGroupsSetting'
+                    'transmission_simultaneous_flow_limit_line_group_scenario_id'
                 ]
             ),
             load_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='load_scenario_id',
                 table='subscenarios_system_load',
-                setting_name=msg['systemLoadSetting']
+                setting_name=msg['load_scenario_id']
             ),
             lf_reserves_up_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='lf_reserves_up_scenario_id',
                 table='subscenarios_system_lf_reserves_up',
-                setting_name=msg['loadFollowingUpRequirementSetting']
+                setting_name=msg['lf_reserves_up_scenario_id']
             ),
             lf_reserves_down_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='lf_reserves_down_scenario_id',
                 table='subscenarios_system_lf_reserves_down',
-                setting_name=msg['loadFollowingDownRequirementSetting']
+                setting_name=msg['lf_reserves_down_scenario_id']
             ),
             regulation_up_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='regulation_up_scenario_id',
                 table='subscenarios_system_regulation_up',
-                setting_name=msg['regulationUpRequirementSetting']
+                setting_name=msg['regulation_up_scenario_id']
             ),
             regulation_down_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='regulation_down_scenario_id',
                 table='subscenarios_system_regulation_down',
-                setting_name=msg['regulationDownRequirementSetting']
+                setting_name=msg['regulation_down_scenario_id']
             ),
             frequency_response_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='frequency_response_scenario_id',
                 table='subscenarios_system_frequency_response',
-                setting_name=msg['frequencyResponseRequirementSetting']
+                setting_name=msg['frequency_response_scenario_id']
             ),
             spinning_reserves_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='spinning_reserves_scenario_id',
                 table='subscenarios_system_spinning_reserves',
-                setting_name=msg['spinningReservesRequirementSetting']
+                setting_name=msg['spinning_reserves_scenario_id']
             ),
             rps_target_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='rps_target_scenario_id',
                 table='subscenarios_system_rps_targets',
-                setting_name=msg['rpsTargetSetting']
+                setting_name=msg['rps_target_scenario_id']
             ),
             carbon_cap_target_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='carbon_cap_target_scenario_id',
                 table='subscenarios_system_carbon_cap_targets',
-                setting_name=msg['carbonCapTargetSetting']
+                setting_name=msg['carbon_cap_target_scenario_id']
             ),
             prm_requirement_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='prm_requirement_scenario_id',
                 table='subscenarios_system_prm_requirement',
-                setting_name=msg['prmRequirementSetting']
+                setting_name=msg['prm_requirement_scenario_id']
             ),
             elcc_surface_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='elcc_surface_scenario_id',
                 table='subscenarios_system_elcc_surface',
-                setting_name=msg['elccSurfaceSetting']
+                setting_name=msg['elcc_surface_scenario_id']
             ),
             local_capacity_requirement_scenario_id=get_setting_option_id(
                 db_path=db_path,
                 id_column='local_capacity_requirement_scenario_id',
                 table='subscenarios_system_local_capacity_requirement',
-                setting_name=msg['localCapacityRequirementSetting']
+                setting_name=msg['local_capacity_requirement_scenario_id']
             ),
-            tuning_scenario_id=get_setting_option_id(
-                db_path=db_path,
-                id_column='tuning_scenario_id',
-                table='subscenarios_tuning',
-                setting_name=msg['tuningSetting']
-            )
+            tuning_scenario_id=0
         )
 
     scenario_id = c.execute(
