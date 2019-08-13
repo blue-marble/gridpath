@@ -356,7 +356,6 @@ def create_scenario_new_api(db_path, ui_table_name_in_db):
     ).fetchone()
 
     scenario_new_api = {
-      "uiTableNameInDB": table_caption[0],
       "tableCaption": table_caption[1],
       "settingRows": []
     }
@@ -391,9 +390,8 @@ def create_scenario_new_api(db_path, ui_table_name_in_db):
             )
 
         scenario_new_api["settingRows"].append({
-          "uiRowNameInDB": ui_row_name_in_db,
           "rowName": row_caption,
-          "rowFormControlName": row_subscenario_id,
+          "rowFormControlName": table_caption[0] + "$" + ui_row_name_in_db,
           "settingOptions": settings
         })
 
