@@ -22,7 +22,9 @@ export class ScenarioEditService {
   }
 
   getScenarioDetailAll(scenarioID: number): Observable<StartingValues> {
-    return this.http.get<StartingValues>(`${this.scenariosBaseURL}${scenarioID}`);
+    return this.http.get<StartingValues>(
+      `${this.scenariosBaseURL}${scenarioID}/all`
+    );
   }
 
 }

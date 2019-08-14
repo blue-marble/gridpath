@@ -4,7 +4,7 @@ import { Location } from '@angular/common';
 
 const io = ( window as any ).require('socket.io-client');
 
-import { ScenarioDetailTableRow } from './scenario-detail';
+import { ScenarioDetail, ScenarioDetailTableRow } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
@@ -20,12 +20,11 @@ import { StartingValues } from '../scenario-new/scenario-new.component';
 export class ScenarioDetailComponent implements OnInit {
 
   // The final table structure we'll iterate over
-  scenarioDetailStructure: SettingsTable[];
+  scenarioDetailStructure: ScenarioDetail[];
 
   scenarioName: string;
 
   // For editing a scenario
-  message: string;
   startingValues: StartingValues;
 
   // To get the right route
@@ -42,43 +41,19 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Scenario-detail structure init with emtpy list
-    this.scenarioDetailStructure = [];
-
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
-       this.scenarioID = +params['id'];
+       this.scenarioID = +params.id;
        console.log(`Scenario ID is ${this.scenarioID}`);
     });
 
-
     // Get the scenario detail data
     this.getScenarioName(this.scenarioID);
-    this.getScenarioDetailFeatures(this.scenarioID);
-    this.getScenarioDetailTemporal(this.scenarioID);
-    this.getScenarioDetailGeographyLoadZones(this.scenarioID);
-    this.getScenarioDetailLoad(this.scenarioID);
-    this.getScenarioDetailProjectCapacity(this.scenarioID);
-    this.getScenarioDetailProjectOpChars(this.scenarioID);
-    this.getScenarioDetailFuels(this.scenarioID);
-    this.getScenarioDetailTransmissionCapacity(this.scenarioID);
-    this.getScenarioDetailTransmissionOpChars(this.scenarioID);
-    this.getScenarioDetailTransmissionHurdleRates(this.scenarioID);
-    this.getScenarioDetailTransmissionSimFlow(this.scenarioID);
-    this.getScenarioDetailLFup(this.scenarioID);
-    this.getScenarioDetailLFDown(this.scenarioID);
-    this.getScenarioDetailRegUp(this.scenarioID);
-    this.getScenarioDetailRegDown(this.scenarioID);
-    this.getScenarioDetailSpin(this.scenarioID);
-    this.getScenarioDetailFreqResp(this.scenarioID);
-    this.getScenarioDetailRPS(this.scenarioID);
-    this.getScenarioDetailCarbonCap(this.scenarioID);
-    this.getScenarioDetailPRM(this.scenarioID);
-    this.getScenarioDetailLocalCapacity(this.scenarioID);
-    this.getScenarioDetailTuning(this.scenarioID);
+    this.getScenarioDetailAPI(this.scenarioID);
 
     // We may need this if the user decides to edit the scenario
+    // TODO: only run this on scenario edit?
     this.getScenarioStartingSettings(this.scenarioID);
 
   }
@@ -94,334 +69,15 @@ export class ScenarioDetailComponent implements OnInit {
 
   }
 
-  getScenarioDetailFeatures(scenarioID): void {
-    const settingsTable = new SettingsTable();
+  getScenarioDetailAPI(scenarioID): void {
+    const settingsTable = new ScenarioDetail();
 
-    this.scenarioDetailService.getScenarioDetailFeatures(scenarioID)
+    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
       .subscribe(
         scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
+            this.scenarioDetailStructure = scenarioDetail;
         }
       );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTemporal(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTemporal(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailGeographyLoadZones(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailGeographyLoadZones(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailLoad(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailLoad(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailProjectCapacity(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailProjectCapacity(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailProjectOpChars(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailProjectOpChars(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailFuels(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailFuels(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTransmissionCapacity(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTransmissionCapacity(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTransmissionOpChars(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTransmissionOpChars(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTransmissionHurdleRates(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTransmissionHurdleRates(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTransmissionSimFlow(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTransmissionSimFlow(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailLFup(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailLFUp(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailLFDown(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailLFDown(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailRegUp(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailRegUp(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailRegDown(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailRegDown(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailSpin(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailSpin(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailFreqResp(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailFreqResp(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailRPS(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailRPS(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailCarbonCap(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailCarbonCap(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailPRM(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailPRM(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailLocalCapacity(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailLocalCapacity(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
-  }
-
-  getScenarioDetailTuning(scenarioID): void {
-    const settingsTable = new SettingsTable();
-
-    this.scenarioDetailService.getScenarioDetailTuning(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
-          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
-          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
-        }
-      );
-
-    this.scenarioDetailStructure.push(settingsTable);
   }
 
   getScenarioStartingSettings(scenarioID): void {
@@ -476,10 +132,4 @@ export class ScenarioDetailComponent implements OnInit {
     this.router.navigate(['/view-data']);
   }
 
-}
-
-class SettingsTable {
-  tableNameInDB: string;
-  tableCaption: string;
-  settingRows: ScenarioDetailTableRow[];
 }
