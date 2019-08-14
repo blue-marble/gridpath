@@ -11,15 +11,7 @@ from ui.api.resources.scenario_results import \
   ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
   ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
   ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM
-from ui.api.resources.scenario_new import ScenarioNewTemporal, \
-  ScenarioNewLoadZones, ScenarioNewLoad, ScenarioNewProjectCapacity, \
-  ScenarioNewProjectOpChar, ScenarioNewFuels, \
-  ScenarioNewTransmissionCapacity, ScenarioNewTransmissionOpChar, \
-  ScenarioNewTransmissionHurdleRates, ScenarioNewTransmissionSimFlowLimits, \
-  ScenarioNewLFReservesUp, ScenarioNewLFReservesDown, \
-  ScenarioNewRegulationUp, ScenarioNewRegulationDown, \
-  ScenarioNewSpinningReserves, ScenarioNewFrequencyResponse, ScenarioNewRPS, \
-  ScenarioNewCarbonCap, ScenarioNewPRM, ScenarioNewLocalCapacity, SettingTuning
+from ui.api.resources.scenario_new import ScenarioNewAPI
 from ui.api.resources.scenarios import Scenarios
 from ui.api.resources.view_data import ViewDataTemporalTimepoints, \
   ViewDataGeographyLoadZones, ViewDataProjectLoadZones, \
@@ -110,107 +102,8 @@ def add_scenario_new_resources(api, db_path):
     Add the API resources for the Angular 'scenario-new' component.
     """
     api.add_resource(
-        ScenarioNewTemporal, '/scenario-new/temporal',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewLoadZones,
-        '/scenario-new/load-zones',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewLoad,
-        '/scenario-new/system-load',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewProjectCapacity,
-        '/scenario-new/project-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewProjectOpChar,
-        '/scenario-new/project-opchar',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewFuels,
-        '/scenario-new/fuels',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewTransmissionCapacity,
-        '/scenario-new/transmission-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewTransmissionOpChar,
-        '/scenario-new/transmission-opchar',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewTransmissionHurdleRates,
-        '/scenario-new/transmission-hurdle-rates',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewTransmissionSimFlowLimits,
-        '/scenario-new/transmission-simflow-limits',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewLFReservesUp,
-        '/scenario-new/lf-reserves-up',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewLFReservesDown,
-        '/scenario-new/lf-reserves-down',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewRegulationUp,
-        '/scenario-new/regulation-up',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewRegulationDown,
-        '/scenario-new/regulation-down',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewSpinningReserves,
-        '/scenario-new/spin',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewFrequencyResponse,
-        '/scenario-new/freq-resp',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewRPS,
-        '/scenario-new/rps',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewCarbonCap,
-        '/scenario-new/carbon-cap',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewPRM,
-        '/scenario-new/prm',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioNewLocalCapacity,
-        '/scenario-new/local-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTuning,
-        '/scenario-new/tuning',
+        ScenarioNewAPI,
+        '/scenario-new',
         resource_class_kwargs={'db_path': db_path}
     )
 

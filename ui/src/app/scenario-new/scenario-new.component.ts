@@ -31,69 +31,6 @@ export class ScenarioNewComponent implements OnInit {
   features: Feature[];
   featureSelectionOption: string[];
 
-  // Temporal settings
-  temporalSettingsTable: SettingsTable;
-
-  // Load zone settings
-  loadZoneSettingsTable: SettingsTable;
-
-  // System load settings
-  systemLoadSettingsTable: SettingsTable;
-
-  // Project capacity settings
-  projectCapacitySettingsTable: SettingsTable;
-
-  // Project operational characteristics settings
-  projectOperationalCharsSettingsTable: SettingsTable;
-
-  // Fuel settings
-  fuelSettingsTable: SettingsTable;
-
-  // Transmission capacity settings
-  transmissionCapacitySettingsTable: SettingsTable;
-
-  // Transmission operational characteristics
-  transmissionOperationalCharsSettingsTable: SettingsTable;
-
-  // Transission hurdle rates settings
-  transmissionHurdleRatesSettingsTable: SettingsTable;
-
-  // Transmission simultaneous flow limits settings
-  transmissionSimultaneousFlowLimitsSettingsTable: SettingsTable;
-
-  // Load-following-up settings
-  loadFollowingUpSettingsTable: SettingsTable;
-
-  // Load-following-down settings
-  loadFollowingDownSettingsTable: SettingsTable;
-
-  // Regulation up settings
-  regulationUpSettingsTable: SettingsTable;
-
-  // Regulation down settings
-  regulationDownSettingsTable: SettingsTable;
-
-  // Spinning reserves settings
-  spinningReservesSettingsTable: SettingsTable;
-
-  // Frequency response settings
-  frequencyResponseSettingsTable: SettingsTable;
-
-  // RPS settings
-  rpsSettingsTable: SettingsTable;
-
-  // Carbon cap settings
-  carbonCapSettingsTable: SettingsTable;
-
-  // PRM settings
-  prmSettingsTable: SettingsTable;
-
-  // Local capacity settings
-  localCapacitySettingsTable: SettingsTable;
-
-  // Tuning settings
-  tuningSettingsTable: SettingsTable;
-
   // Create the form
   newScenarioForm = new FormGroup({
     scenarioName: new FormControl(),
@@ -184,30 +121,8 @@ export class ScenarioNewComponent implements OnInit {
     // Set the starting form state (if editing or copying a scenario)
     this.setStartingFormState();
 
-    // Get setting subscriptions
-    this.scenarioNewStructure = [];
     this.createFeaturesTable();
-    this.getTableOptionsTemporal();
-    this.getTableOptionsLoadZones();
-    this.getTableOptionsLoad();
-    this.getTableOptionsProjectCapacity();
-    this.getTableOptionsProjectOperationalChars();
-    this.getTableOptionsFuels();
-    this.getTableOptionsTransmissionCapacity();
-    this.getTableOptionsTransmissionOperationalChars();
-    this.getTableOptionsTransmissionHurdleRates();
-    this.getTableOptionsTransmissionSimultaneousFlowLimits();
-    this.getTableOptionsLFReservesUp();
-    this.getTableOptionsLFReservesDown();
-    this.getTableOptionsRegulationUp();
-    this.getTableOptionsRegulationDown();
-    this.getTableOptionsSpinningReserves();
-    this.getTableOptionsFrequencyResponse();
-    this.getTableOptionsRPS();
-    this.getTableOptionsCarbonCap();
-    this.getTableOptionsPRM();
-    this.getTableOptionsLocalCapacity();
-    this.getTableOptionsTuning();
+    this.getScenarioNewAPI();
   }
 
   createFeaturesTable(): void {
@@ -298,255 +213,12 @@ export class ScenarioNewComponent implements OnInit {
     this.featureSelectionOption = featureSelectionOptions();
   }
 
-  getTableOptionsTemporal(): void {
+  getScenarioNewAPI(): void {
     // Get the settings
-    this.scenarioNewService.getTableTemporal()
+    this.scenarioNewService.getScenarioNewAPI()
       .subscribe(
         scenarioSetting => {
-          this.temporalSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.temporalSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsLoadZones(): void {
-    // Get the settings
-    this.scenarioNewService.getTableLoadZones()
-      .subscribe(
-        scenarioSetting => {
-          this.loadZoneSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.loadZoneSettingsTable);
-        }
-      );
-
-  }
-
-  getTableOptionsLoad(): void {
-    // Get the settings
-    this.scenarioNewService.getTableSystemLoad()
-      .subscribe(
-        scenarioSetting => {
-          this.systemLoadSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.systemLoadSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsProjectCapacity(): void {
-    // Get the settings
-    this.scenarioNewService.getTableProjectCapacity()
-      .subscribe(
-        scenarioSetting => {
-          this.projectCapacitySettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.projectCapacitySettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsProjectOperationalChars(): void {
-    // Get the settings
-    this.scenarioNewService.getTableProjectOpChar()
-      .subscribe(
-        scenarioSetting => {
-          this.projectOperationalCharsSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.projectOperationalCharsSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsFuels(): void {
-    // Get the settings
-    this.scenarioNewService.getTableFuels()
-      .subscribe(
-        scenarioSetting => {
-          this.fuelSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.fuelSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsTransmissionCapacity(): void {
-    // Get the settings
-    this.scenarioNewService.getTableTransmissionCapacity()
-      .subscribe(
-        scenarioSetting => {
-          this.transmissionCapacitySettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.transmissionCapacitySettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsTransmissionOperationalChars(): void {
-    // Get the settings
-    this.scenarioNewService.getTableTransmissionOpChar()
-      .subscribe(
-        scenarioSetting => {
-          this.transmissionOperationalCharsSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.transmissionOperationalCharsSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsTransmissionHurdleRates(): void {
-    // Get the settings
-    this.scenarioNewService.getTableTransmissionHurdleRates()
-      .subscribe(
-        scenarioSetting => {
-          this.transmissionHurdleRatesSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.transmissionHurdleRatesSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsTransmissionSimultaneousFlowLimits(): void {
-    // Get the settings
-    this.scenarioNewService.getTableTransmissionSimFlowLimits()
-      .subscribe(
-        scenarioSetting => {
-          this.transmissionSimultaneousFlowLimitsSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.transmissionSimultaneousFlowLimitsSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsLFReservesUp(): void {
-    // Get the settings
-    this.scenarioNewService.getTableLFReservesUp()
-      .subscribe(
-        scenarioSetting => {
-          this.loadFollowingUpSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.loadFollowingUpSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsLFReservesDown(): void {
-    // Get the settings
-    this.scenarioNewService.getTableLFReservesDown()
-      .subscribe(
-        scenarioSetting => {
-          this.loadFollowingDownSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.loadFollowingDownSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsRegulationUp(): void {
-    // Get the settings
-    this.scenarioNewService.getTableRegulationUp()
-      .subscribe(
-        scenarioSetting => {
-          this.regulationUpSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.regulationUpSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsRegulationDown(): void {
-    // Get the settings
-    this.scenarioNewService.getTableRegulationDown()
-      .subscribe(
-        scenarioSetting => {
-          this.regulationDownSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.regulationDownSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsSpinningReserves(): void {
-    // Get the settings
-    this.scenarioNewService.getTableSpinningReserves()
-      .subscribe(
-        scenarioSetting => {
-          this.spinningReservesSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.spinningReservesSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsFrequencyResponse(): void {
-    // Get the settings
-    this.scenarioNewService.getTableFrequencyResponse()
-      .subscribe(
-        scenarioSetting => {
-          this.frequencyResponseSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.frequencyResponseSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsRPS(): void {
-    // Get the settings
-    this.scenarioNewService.getTableRPS()
-      .subscribe(
-        scenarioSetting => {
-          this.rpsSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.rpsSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsCarbonCap(): void {
-    // Get the settings
-    this.scenarioNewService.getTableCarbonCap()
-      .subscribe(
-        scenarioSetting => {
-          this.carbonCapSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.carbonCapSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsPRM(): void {
-    // Get the settings
-    this.scenarioNewService.getTablePRM()
-      .subscribe(
-        scenarioSetting => {
-          this.prmSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.prmSettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsLocalCapacity(): void {
-    // Get the settings
-    this.scenarioNewService.getTableLocalCapacity()
-      .subscribe(
-        scenarioSetting => {
-          this.localCapacitySettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.localCapacitySettingsTable);
-        }
-      );
-  }
-
-  getTableOptionsTuning(): void {
-    // Get the settings
-    this.scenarioNewService.getTableTuning()
-      .subscribe(
-        scenarioSetting => {
-          this.tuningSettingsTable = scenarioSetting;
-          // Add the table to the scenario structure
-          this.scenarioNewStructure.push(this.tuningSettingsTable);
+          this.scenarioNewStructure = scenarioSetting;
         }
       );
   }
@@ -555,7 +227,7 @@ export class ScenarioNewComponent implements OnInit {
     this.scenarioEditService.startingValuesSubject
       .subscribe((startingValues: StartingValues) => {
         this.startingValues = startingValues;
-        console.log('Setting the scenario initial value');
+        console.log('Setting the initial values');
         this.newScenarioForm.controls.scenarioName.setValue(
           this.startingValues.scenario_name, {onlySelf: true}
         );
@@ -772,8 +444,7 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.local_capacity$project_chars.setValue(
           this.startingValues.project_local_capacity_chars, {onlySelf: true}
         );
-        console.log('Setting the tuning initial value');
-        this.newScenarioForm.controls.tuningSetting.setValue(
+        this.newScenarioForm.controls.tuning$tuning.setValue(
           this.startingValues.tuning, {onlySelf: true}
         );
           });
