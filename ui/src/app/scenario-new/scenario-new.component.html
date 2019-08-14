@@ -64,7 +64,9 @@
                 </select>
              </td>
              <td>
-               <button (click)="viewData(tblRow.rowName)">View Data</button>
+               <button
+                 (click)="viewData(tbl.uiTableNameInDB, tblRow.uiRowNameInDB)">
+                 View Data</button>
              </td>
           </tr>
         </ng-container>

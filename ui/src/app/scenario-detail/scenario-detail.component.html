@@ -6,17 +6,18 @@
 
 <ng-container *ngFor="let tbl of scenarioDetailStructure">
   <table class="scenario-detail">
-    <caption>{{tbl.tableCaption}}</caption>
+    <caption>{{tbl.scenarioDetailTableCaption}}</caption>
   <tr>
   <th>Name</th>
   <th>Value</th>
-  <th *ngIf="tbl.tableCaption!=='Features'">View Data</th>
+  <th *ngIf="tbl.scenarioDetailTableCaption!=='Features'">View Data</th>
   </tr>
-    <ng-container *ngFor="let sd of tbl.settingRows">
+    <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
        <tr>
-         <td>{{sd.name}}</td>
-         <td>{{sd.value}}</td>
-          <td *ngIf="tbl.tableCaption!=='Features'"><button (click)="viewData(sd.name)">
+         <td>{{sd.rowCaption}}</td>
+         <td>{{sd.rowValue}}</td>
+          <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'"><button
+            (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
             View Data
           </button></td>
        </tr>

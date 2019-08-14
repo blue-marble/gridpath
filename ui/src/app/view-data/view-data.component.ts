@@ -75,6 +75,7 @@ export class ViewDataComponent implements OnInit {
   projectLocalCapacityBAsTable: ViewDataTable;
   localCapacityReqTable: ViewDataTable;
   projectLocalCapacityCharsTable: ViewDataTable;
+  tuningTable: ViewDataTable;
 
   constructor(
     private route: ActivatedRoute,
@@ -91,171 +92,175 @@ export class ViewDataComponent implements OnInit {
     console.log('Received data to show, ', this.dataToShow);
 
     // Temporal timepoints input data table
-    if (this.dataToShow === 'temporal') {
+    if (this.dataToShow === 'temporal-temporal') {
+      console.log('calling temporal timepoints');
       this.getTemporalTimepoints();
     }
-    if (this.dataToShow === 'geography_load_zones') {
+    if (this.dataToShow === 'load_zones-load_zones') {
       this.getGeographyLoadZones();
     }
-    if (this.dataToShow === 'project_load_zones') {
+    if (this.dataToShow === 'load_zones-project_load_zones') {
       this.getProjectLoadZones();
     }
-    if (this.dataToShow === 'transmission_load_zones') {
+    if (this.dataToShow === 'load_zones-transmission_load_zones') {
       this.getTransmissionLoadZones();
     }
     if (this.dataToShow === 'load_profile') {
       this.getSystemLoad();
     }
-    if (this.dataToShow === 'project_portfolio') {
+    if (this.dataToShow === 'project_capacity-portfolio') {
       this.getProjectPortfolio();
     }
-    if (this.dataToShow === 'project_existing_capacity') {
+    if (this.dataToShow === 'project_capacity-specified_capacity') {
       this.getProjectExistingCapacity();
     }
-    if (this.dataToShow === 'project_existing_fixed_cost') {
+    if (this.dataToShow === 'project_capacity-specified_fixed_cost') {
       this.getProjectExistingFixedCost();
     }
-    if (this.dataToShow === 'project_new_potential') {
+    if (this.dataToShow === 'project_capacity-new_potential') {
       this.getProjectNewPotential();
     }
-    if (this.dataToShow === 'project_new_cost') {
+    if (this.dataToShow === 'project_capacity-new_cost') {
       this.getProjectNewCost();
     }
-    if (this.dataToShow === 'project_availability') {
+    if (this.dataToShow === 'project_capacity-availability') {
       this.getProjectAvailability();
     }
-    if (this.dataToShow === 'project_operating_chars') {
+    if (this.dataToShow === 'project_opchar-opchar') {
       this.getProjectOpChar();
     }
-    if (this.dataToShow === 'project_fuels') {
+    if (this.dataToShow === 'fuels-fuels') {
       this.getFuels();
     }
-    if (this.dataToShow === 'fuel_prices') {
+    if (this.dataToShow === 'fuels-fuel_prices') {
       this.getFuelPrices();
     }
-    if (this.dataToShow === 'transmission_portfolio') {
+    if (this.dataToShow === 'transmission_capacity-portfolio') {
       this.getTransmissionPortfolio();
     }
-    if (this.dataToShow === 'transmission_existing_capacity') {
+    if (this.dataToShow === 'transmission_capacity-specified_capacity') {
       this.getTransmissionExistingCapacity();
     }
-    if (this.dataToShow === 'transmission_operational_chars') {
+    if (this.dataToShow === 'transmission_opchar-opchar') {
       this.getTransmissionOpChar();
     }
-    if (this.dataToShow === 'transmission_hurdle_rates') {
+    if (this.dataToShow === 'transmission_hurdle_rates-hurdle_rates') {
       this.getTransmissionHurdleRates();
     }
-    if (this.dataToShow === 'transmission_simultaneous_flow_limits') {
+    if (this.dataToShow === 'transmission_sim_flow_limits-limits') {
       this.getTransmissionSimFlowLimits();
     }
     if (this.dataToShow ===
-      'transmission_simultaneous_flow_limit_line_groups') {
+      'transmission_sim_flow_limits-groups') {
       this.getTransmissionSimFlowLimitsLineGroups();
     }
-    if (this.dataToShow === 'geography_lf_up_bas') {
+    if (this.dataToShow === 'load_following_up-bas') {
       this.getLFUpBAs();
     }
-    if (this.dataToShow === 'project_lf_up_bas') {
+    if (this.dataToShow === 'load_following_up-projects') {
       this.getProjectLFUpBAs();
     }
-    if (this.dataToShow === 'load_following_reserves_up_profile') {
+    if (this.dataToShow === 'load_following_up-req') {
       this.getLFUpReq();
     }
-    if (this.dataToShow === 'geography_lf_down_bas') {
+    if (this.dataToShow === 'load_following_down-bas') {
       this.getLFDownBAs();
     }
-    if (this.dataToShow === 'project_lf_down_bas') {
+    if (this.dataToShow === 'load_following_down-projects') {
       this.getProjectLFDownBAs();
     }
-    if (this.dataToShow === 'load_following_reserves_down_profile') {
+    if (this.dataToShow === 'load_following_down-req') {
       this.getLFDownReq();
     }
-    if (this.dataToShow === 'geography_reg_up_bas') {
+    if (this.dataToShow === 'regulation_up-bas') {
       this.getRegUpBAs();
     }
-    if (this.dataToShow === 'project_reg_up_bas') {
+    if (this.dataToShow === 'regulation_up-projects') {
       this.getProjectRegUpBAs();
     }
-    if (this.dataToShow === 'regulation_up_profile') {
+    if (this.dataToShow === 'regulation_up-req') {
       this.getRegUpReq();
     }
-    if (this.dataToShow === 'geography_reg_down_bas') {
+    if (this.dataToShow === 'regulation_down-bas') {
       this.getRegDownBAs();
     }
-    if (this.dataToShow === 'project_reg_down_bas') {
+    if (this.dataToShow === 'regulation_down-projects') {
       this.getProjectRegDownBAs();
     }
-    if (this.dataToShow === 'regulation_down_profile') {
+    if (this.dataToShow === 'regulation_down-req') {
       this.getRegDownReq();
     }
-    if (this.dataToShow === 'geography_spin_bas') {
+    if (this.dataToShow === 'spinning_reserves-bas') {
       this.getSpinBAs();
     }
-    if (this.dataToShow === 'project_spin_bas') {
+    if (this.dataToShow === 'spinning_reserves-projects') {
       this.getProjectSpinBAs();
     }
-    if (this.dataToShow === 'spinning_reserves_profile') {
+    if (this.dataToShow === 'spinning_reserves-req') {
       this.getSpinReq();
     }
-    if (this.dataToShow === 'geography_freq_resp_bas') {
+    if (this.dataToShow === 'frequency_response-bas') {
       this.getFreqRespBAs();
     }
-    if (this.dataToShow === 'project_freq_resp_bas') {
+    if (this.dataToShow === 'frequency_response-projects') {
       this.getProjectFreqRespBAs();
     }
-    if (this.dataToShow === 'frequency_response_profile') {
+    if (this.dataToShow === 'frequency_response-req') {
       this.getFreqRespReq();
     }
-    if (this.dataToShow === 'geography_rps_areas') {
+    if (this.dataToShow === 'rps-bas') {
       this.getRPSBAs();
     }
-    if (this.dataToShow === 'rps_target') {
+    if (this.dataToShow === 'rps-projects') {
       this.getProjectRPSBAs();
     }
-    if (this.dataToShow === 'project_rps_areas') {
+    if (this.dataToShow === 'rps-req') {
       this.getRPSReq();
     }
-    if (this.dataToShow === 'carbon_cap_areas') {
+    if (this.dataToShow === 'carbon_cap-bas') {
       this.getCarbonCapBAs();
     }
-    if (this.dataToShow === 'project_carbon_cap_areas') {
+    if (this.dataToShow === 'carbon_cap-projects') {
       this.getProjectCarbonCapBAs();
     }
-    if (this.dataToShow === 'transmission_carbon_cap_zones') {
+    if (this.dataToShow === 'carbon_cap-transmission') {
       this.getTransmissionCarbonCapBAs();
     }
-    if (this.dataToShow === 'carbon_cap') {
+    if (this.dataToShow === 'carbon_cap-req') {
       this.getCarbonCapReq();
     }
-    if (this.dataToShow === 'prm_areas') {
+    if (this.dataToShow === 'prm-bas') {
       this.getPRMBAs();
     }
-    if (this.dataToShow === 'project_prm_areas') {
+    if (this.dataToShow === 'prm-projects') {
       this.getProjectPRMBAs();
     }
-    if (this.dataToShow === 'prm_requirement') {
+    if (this.dataToShow === 'prm-req') {
       this.getPRMReq();
     }
-    if (this.dataToShow === 'project_elcc_chars') {
+    if (this.dataToShow === 'prm-project_elcc') {
       this.getProjectELCCChars();
     }
-    if (this.dataToShow === 'elcc_surface') {
+    if (this.dataToShow === 'prm-elcc') {
       this.getELCCSurface();
     }
-    if (this.dataToShow === 'project_prm_energy_only') {
+    if (this.dataToShow === 'prm-energy_only') {
       this.getEnergyOnly();
     }
-    if (this.dataToShow === 'local_capacity_areas') {
+    if (this.dataToShow === 'local_capacity-bas') {
       this.getLocalCapacityBAs();
     }
-    if (this.dataToShow === 'project_local_capacity_areas') {
+    if (this.dataToShow === 'local_capacity-projects') {
       this.getProjectLocalCapacityBAs();
     }
-    if (this.dataToShow === 'local_capacity_requirement') {
+    if (this.dataToShow === 'local_capacity-req') {
       this.getLocalCapacityReq();
     }
-    if (this.dataToShow === 'project_local_capacity_chars') {
+    if (this.dataToShow === 'local_capacity-project_chars') {
       this.getProjectLocalCapacityChars();
+    }
+    if (this.dataToShow === 'tuning-tuning') {
+      this.getTuning();
     }
 
   }
@@ -704,6 +709,14 @@ export class ViewDataComponent implements OnInit {
       .subscribe(inputTableRows => {
         this.projectLocalCapacityCharsTable = inputTableRows;
         this.allTables.push(this.projectLocalCapacityCharsTable);
+      });
+  }
+
+  getTuning(): void {
+    this.viewDataService.getTuning()
+      .subscribe(inputTableRows => {
+        this.tuningTable = inputTableRows;
+        this.allTables.push(this.tuningTable);
       });
   }
 

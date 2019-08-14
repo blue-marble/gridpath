@@ -350,4 +350,10 @@ export class ViewDataService {
     );
   }
 
+  getTuning(): Observable<ViewDataTable> {
+    return this.http.get<ViewDataTable>(
+      `${this.viewDataBaseURL}tuning`
+    );
+  }
+
 }

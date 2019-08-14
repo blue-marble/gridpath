@@ -24,9 +24,8 @@ class ViewDataTemporalTimepoints(Resource):
         """
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='temporal',
-            caption='Timepoints',
-            table='inputs_temporal_timepoints'
+            ui_table_name_in_db='temporal',
+            ui_row_name_in_db='temporal'
         )
 
 
@@ -46,9 +45,8 @@ class ViewDataGeographyLoadZones(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_load_zones',
-            caption='Load Zones',
-            table='inputs_geography_load_zones'
+            ui_table_name_in_db='load_zones',
+            ui_row_name_in_db='load_zones'
         )
 
 
@@ -67,9 +65,8 @@ class ViewDataProjectLoadZones(Resource):
         """
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_load_zones',
-            caption='Project Load Zones',
-            table='inputs_project_load_zones'
+            ui_table_name_in_db='load_zones',
+            ui_row_name_in_db='project_load_zones'
         )
 
 
@@ -88,9 +85,8 @@ class ViewDataTransmissionLoadZones(Resource):
         """
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_load_zones',
-            caption='Transmission Load Zones',
-            table='inputs_transmission_load_zones'
+            ui_table_name_in_db='load_zones',
+            ui_row_name_in_db='transmission_load_zones'
         )
 
 
@@ -110,9 +106,8 @@ class ViewDataSystemLoad(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='load_profile',
-            caption='System Load',
-            table='inputs_system_load'
+            ui_table_name_in_db='system_load',
+            ui_row_name_in_db='system_load'
         )
 
 
@@ -132,9 +127,8 @@ class ViewDataProjectPortfolio(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_portfolio',
-            caption='Project Portfolio',
-            table='inputs_project_portfolios'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='portfolio'
         )
 
 
@@ -154,9 +148,8 @@ class ViewDataProjectExistingCapacity(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_existing_capacity',
-            caption='Project Specified Capacity',
-            table='inputs_project_existing_capacity'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='specified_capacity'
         )
 
 
@@ -176,9 +169,8 @@ class ViewDataProjectExistingFixedCost(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_existing_fixed_cost',
-            caption='Project Specified Fixed Cost',
-            table='inputs_project_existing_fixed_cost'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='specified_fixed_cost'
         )
 
 
@@ -198,9 +190,8 @@ class ViewDataProjectNewPotential(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_new_potential',
-            caption='Project New Potential',
-            table='inputs_project_new_potential'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='new_potential'
         )
 
 
@@ -220,9 +211,8 @@ class ViewDataProjectNewCost(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_new_cost',
-            caption='Project New Costs',
-            table='inputs_project_new_cost'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='new_cost'
         )
 
 
@@ -242,9 +232,8 @@ class ViewDataProjectAvailability(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_availability',
-            caption='Project Availability',
-            table='inputs_project_availability'
+            ui_table_name_in_db='project_capacity',
+            ui_row_name_in_db='availability'
         )
 
 
@@ -264,9 +253,8 @@ class ViewDataProjectOpChar(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_operating_chars',
-            caption='Project Operational Characteristics',
-            table='inputs_project_operational_chars'
+            ui_table_name_in_db='project_opchar',
+            ui_row_name_in_db='opchar'
         )
 
 
@@ -286,9 +274,8 @@ class ViewDataFuels(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_fuels',
-            caption='Fuels',
-            table='inputs_project_fuels'
+            ui_table_name_in_db='fuels',
+            ui_row_name_in_db='fuels'
         )
 
 
@@ -308,9 +295,8 @@ class ViewDataFuelPrices(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='fuel_prices',
-            caption='Fuel Prices',
-            table='inputs_project_fuel_prices'
+            ui_table_name_in_db='fuels',
+            ui_row_name_in_db='fuel_prices'
         )
 
 
@@ -330,9 +316,8 @@ class ViewDataTransmissionPortfolio(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_portfolio',
-            caption='Transmission',
-            table='inputs_transmission_portfolios'
+            ui_table_name_in_db='transmission_capacity',
+            ui_row_name_in_db='portfolio'
         )
 
 
@@ -352,9 +337,8 @@ class ViewDataTransmissionExistingCapacity(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_existing_capacity',
-            caption='Transmission Specified Capacity',
-            table='inputs_transmission_existing_capacity'
+            ui_table_name_in_db='transmission_capacity',
+            ui_row_name_in_db='specified_capacity'
         )
 
 
@@ -374,9 +358,8 @@ class ViewDataTransmissionOpChar(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_operational_chars',
-            caption='Transmission Operational Characteristics',
-            table='inputs_transmission_operational_chars'
+            ui_table_name_in_db='transmission_opchar',
+            ui_row_name_in_db='opchar'
         )
 
 
@@ -396,9 +379,8 @@ class ViewDataTransmissionHurdleRates(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_hurdle_rates',
-            caption='Transmission Hurdle Rates',
-            table='inputs_transmission_hurdle_rates'
+            ui_table_name_in_db='transmission_hurdle_rates',
+            ui_row_name_in_db='hurdle_rates'
         )
 
 
@@ -418,9 +400,8 @@ class ViewDataTransmissionSimFlowLimits(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_simultaneous_flow_limits',
-            caption='Transmission Simultaneous Flow Limits',
-            table='inputs_transmission_simultaneous_flow_limits'
+            ui_table_name_in_db='transmission_sim_flow_limits',
+            ui_row_name_in_db='limits'
         )
 
 
@@ -440,9 +421,8 @@ class ViewDataTransmissionSimFlowLimitsLineGroups(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_simultaneous_flow_limit_line_groups',
-            caption='Transmission Simultaneous Flow Limits Line Groups',
-            table='inputs_transmission_simultaneous_flow_limit_line_groups'
+            ui_table_name_in_db='transmission_sim_flow_limits',
+            ui_row_name_in_db='groups'
         )
 
 
@@ -462,9 +442,8 @@ class ViewDataLFUpBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_lf_up_bas',
-            caption='Load Following Up Balancing Areas',
-            table='inputs_geography_lf_reserves_up_bas'
+            ui_table_name_in_db='load_following_up',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -484,9 +463,8 @@ class ViewDataProjectLFUpBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_lf_up_bas',
-            caption='Project Load Following Up Balancing Areas',
-            table='inputs_project_lf_reserves_up_bas'
+            ui_table_name_in_db='load_following_up',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -506,9 +484,8 @@ class ViewDataLFUpReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='load_following_reserves_up_profile',
-            caption='Load Following Up Requirement',
-            table='inputs_system_lf_reserves_up'
+            ui_table_name_in_db='load_following_up',
+            ui_row_name_in_db='req'
         )
 
 
@@ -528,9 +505,8 @@ class ViewDataLFDownBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_lf_down_bas',
-            caption='Load Following Down Balancing Areas',
-            table='inputs_geography_lf_reserves_down_bas'
+            ui_table_name_in_db='load_following_down',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -550,9 +526,8 @@ class ViewDataProjectLFDownBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_lf_down_bas',
-            caption='Project Load Following Down Balancing Areas',
-            table='inputs_project_lf_reserves_down_bas'
+            ui_table_name_in_db='load_following_down',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -572,9 +547,8 @@ class ViewDataLFDownReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='load_following_reserves_down_profile',
-            caption='Load Following Down Requirement',
-            table='inputs_system_lf_reserves_down'
+            ui_table_name_in_db='load_following_down',
+            ui_row_name_in_db='req'
         )
 
 
@@ -594,9 +568,8 @@ class ViewDataRegUpBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_reg_up_bas',
-            caption='Regulation Up Balancing Areas',
-            table='inputs_geography_regulation_up_bas'
+            ui_table_name_in_db='regulation_up',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -616,9 +589,8 @@ class ViewDataProjectRegUpBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_reg_up_bas',
-            caption='Project Regulation Up Balancing Areas',
-            table='inputs_project_regulation_up_bas'
+            ui_table_name_in_db='regulation_up',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -638,9 +610,8 @@ class ViewDataRegUpReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='regulation_up_profile',
-            caption='Regulation Up Requirement',
-            table='inputs_system_regulation_up'
+            ui_table_name_in_db='regulation_up',
+            ui_row_name_in_db='req'
         )
 
 
@@ -660,9 +631,8 @@ class ViewDataRegDownBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_reg_down_bas',
-            caption='Regulation Down Balancing Areas',
-            table='inputs_geography_regulation_down_bas'
+            ui_table_name_in_db='regulation_down',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -682,9 +652,8 @@ class ViewDataProjectRegDownBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_reg_down_bas',
-            caption='Project Regulation Down Balancing Areas',
-            table='inputs_project_regulation_down_bas'
+            ui_table_name_in_db='regulation_down',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -704,9 +673,8 @@ class ViewDataRegDownReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='regulation_down_profile',
-            caption='Regulation Down Requirement',
-            table='inputs_system_regulation_down'
+            ui_table_name_in_db='regulation_down',
+            ui_row_name_in_db='req'
         )
 
 
@@ -726,9 +694,8 @@ class ViewDataSpinBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_spin_bas',
-            caption='Spinning Reserves Balancing Areas',
-            table='inputs_geography_spinning_reserves_bas'
+            ui_table_name_in_db='spinning_reserves',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -748,9 +715,8 @@ class ViewDataProjectSpinBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_spin_bas',
-            caption='Project Spinning Reserves Balancing Areas',
-            table='inputs_project_spinning_reserves_bas'
+            ui_table_name_in_db='spinning_reserves',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -770,9 +736,8 @@ class ViewDataSpinReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='spinning_reserves_profile',
-            caption='Spinning Reserves Requirement',
-            table='inputs_system_spinning_reserves'
+            ui_table_name_in_db='spinning_reserves',
+            ui_row_name_in_db='req'
         )
 
 
@@ -792,9 +757,8 @@ class ViewDataFreqRespBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_freq_resp_bas',
-            caption='Frequency Response Balancing Areas',
-            table='inputs_geography_frequency_response_bas'
+            ui_table_name_in_db='frequency_response',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -814,9 +778,8 @@ class ViewDataProjectFreqRespBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_freq_resp_bas',
-            caption='Project Frequency Response Balancing Areas',
-            table='inputs_project_frequency_response_bas'
+            ui_table_name_in_db='frequency_response',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -836,9 +799,8 @@ class ViewDataFreqRespReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='frequency_response_profile',
-            caption='Frequency Response Requirement',
-            table='inputs_system_frequency_response'
+            ui_table_name_in_db='frequency_response',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -858,9 +820,8 @@ class ViewDataRPSBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_rps_areas',
-            caption='RPS Areas',
-            table='inputs_geography_rps_zones'
+            ui_table_name_in_db='rps',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -880,9 +841,8 @@ class ViewDataProjectRPSBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_rps_areas',
-            caption='Project RPS Areas',
-            table='inputs_project_rps_zones'
+            ui_table_name_in_db='rps',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -902,9 +862,8 @@ class ViewDataRPSReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='rps_target',
-            caption='RPS Target',
-            table='inputs_system_rps_targets'
+            ui_table_name_in_db='rps',
+            ui_row_name_in_db='req'
         )
 
 
@@ -924,9 +883,8 @@ class ViewDataCarbonCapBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='geography_carbon_cap_areas',
-            caption='Carbon Cap Areas',
-            table='inputs_geography_carbon_cap_zones'
+            ui_table_name_in_db='carbon_cap',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -946,9 +904,8 @@ class ViewDataProjectCarbonCapBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_carbon_cap_areas',
-            caption='Project Carbon Cap Areas',
-            table='inputs_project_carbon_cap_zones'
+            ui_table_name_in_db='carbon_cap',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -968,9 +925,8 @@ class ViewDataTransmissionCarbonCapBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='transmission_carbon_cap_zones',
-            caption='Transmission Carbon Cap Areas',
-            table='inputs_transmission_carbon_cap_zones'
+            ui_table_name_in_db='carbon_cap',
+            ui_row_name_in_db='transmission'
         )
 
 
@@ -990,9 +946,8 @@ class ViewDataCarbonCapReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='carbon_cap_target',
-            caption='Carbon Cap Target',
-            table='inputs_system_carbon_cap_targets'
+            ui_table_name_in_db='carbon_cap',
+            ui_row_name_in_db='req'
         )
 
 
@@ -1012,9 +967,8 @@ class ViewDataPRMBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='prm_areas',
-            caption='PRM Areas',
-            table='inputs_geography_prm_zones'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -1034,9 +988,8 @@ class ViewDataProjectPRMBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_prm_areas',
-            caption='Project PRM Areas',
-            table='inputs_project_prm_zones'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -1056,9 +1009,8 @@ class ViewDataPRMReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='prm_requirement',
-            caption='PRM Target',
-            table='inputs_system_prm_requirement'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='req'
         )
 
 
@@ -1078,9 +1030,8 @@ class ViewDataProjectELCCChars(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_elcc_chars',
-            caption='Project ELCC Characteristics',
-            table='inputs_project_elcc_chars'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='project_elcc'
         )
 
 
@@ -1100,9 +1051,8 @@ class ViewDataELCCSurface(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='elcc_surface',
-            caption='ELCC Surface',
-            table='inputs_project_elcc_surface'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='elcc'
         )
 
 
@@ -1122,9 +1072,8 @@ class ViewDataEnergyOnly(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_prm_energy_only',
-            caption='Project Energy-Only Characteristics',
-            table='inputs_project_prm_energy_only'
+            ui_table_name_in_db='prm',
+            ui_row_name_in_db='energy_only'
         )
 
 
@@ -1144,9 +1093,8 @@ class ViewDataLocalCapacityBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='local_capacity_areas',
-            caption='Local Capacity Areas',
-            table='inputs_geography_local_capacity_zones'
+            ui_table_name_in_db='local_capacity',
+            ui_row_name_in_db='bas'
         )
 
 
@@ -1166,9 +1114,8 @@ class ViewDataProjectLocalCapacityBAs(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_local_capacity_areas',
-            caption='Project Local Capacity Areas',
-            table='inputs_project_local_capacity_zones'
+            ui_table_name_in_db='local_capacity',
+            ui_row_name_in_db='projects'
         )
 
 
@@ -1188,9 +1135,8 @@ class ViewDataLocalCapacityReq(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='local_capacity_requirement',
-            caption='Local Capacity Target',
-            table='inputs_system_local_capacity_requirement'
+            ui_table_name_in_db='local_capacity',
+            ui_row_name_in_db='req'
         )
 
 
@@ -1210,39 +1156,70 @@ class ViewDataProjectLocalCapacityChars(Resource):
 
         return create_data_table_api(
             db_path=self.db_path,
-            ngifkey='project_local_capacity_chars',
-            caption='Project Local Capacity Characteristics',
-            table='inputs_project_local_capacity_chars'
+            ui_table_name_in_db='local_capacity',
+            ui_row_name_in_db='project_chars'
         )
 
 
-def create_data_table_api(db_path, ngifkey, caption, table):
+class ViewDataTuning(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self):
+        """
+
+        :return:
+        """
+        return create_data_table_api(
+            db_path=self.db_path,
+            ui_table_name_in_db='tuning',
+            ui_row_name_in_db='tuning'
+        )
+
+
+def create_data_table_api(db_path, ui_table_name_in_db, ui_row_name_in_db):
     """
     :param db_path:
-    :param ngifkey:
-    :param caption:
-    :param table:
+    :param ui_table_name_in_db:
+    :param ui_row_name_in_db:
     :return:
     """
+    io, c = connect_to_database(db_path=db_path)
+
     data_table_api = dict()
-    data_table_api['ngIfKey'] = ngifkey
-    data_table_api['caption'] = caption
-    column_names, data_rows = get_table_data(db_path=db_path, table=table)
+    data_table_api['ngIfKey'] = ui_table_name_in_db + '-' + ui_row_name_in_db
+
+    row_metadata = c.execute(
+      """SELECT ui_row_caption, ui_row_db_input_table
+      FROM ui_scenario_detail_table_row_metadata
+      WHERE ui_table = '{}' AND ui_table_row = '{}'""".format(
+        ui_table_name_in_db, ui_row_name_in_db
+      )
+    ).fetchone()
+
+
+    data_table_api['caption'] = row_metadata[0]
+    input_table = row_metadata[1]
+
+    column_names, data_rows = get_table_data(c=c,
+                                             input_table=input_table)
     data_table_api['columns'] = column_names
     data_table_api['rowsData'] = data_rows
 
     return data_table_api
 
 
-def get_table_data(db_path, table):
+def get_table_data(c, input_table):
     """
     :param db_path:
-    :param table:
+    :param input_table:
     :return:
     """
-    io, c = connect_to_database(db_path=db_path)
-
-    table_data_query = c.execute("""SELECT * FROM {};""".format(table))
+    table_data_query = c.execute("""SELECT * FROM {};""".format(input_table))
 
     column_names = [s[0] for s in table_data_query.description]
 

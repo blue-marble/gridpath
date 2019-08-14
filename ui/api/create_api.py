@@ -2,17 +2,7 @@
 
 # RESTful API resources
 from ui.api.resources.home import ServerStatus
-from ui.api.resources.scenario_detail import ScenarioDetailName, \
-  ScenarioDetailAll, ScenarioDetailFeatures, ScenarioDetailTemporal, \
-  ScenarioDetailGeographyLoadZones, ScenarioDetailLoad, \
-  ScenarioDetailProjectCapacity, ScenarioDetailProjectOpChars, \
-  ScenarioDetailFuels, ScenarioDetailTransmissionCapacity, \
-  ScenarioDetailTransmissionOpChars, ScenarioDetailTransmissionHurdleRates, \
-  ScenarioDetailTransmissionSimFlow, ScenarioDetailLoadFollowingUp, \
-  ScenarioDetailLoadFollowingDown, ScenarioDetailRegulationUp, \
-  ScenarioDetailRegulationDown, ScenarioDetailSpinningReserves, \
-  ScenarioDetailFrequencyResponse, ScenarioDetailRPS, ScenarioDetailCarbonCap, \
-  ScenarioDetailPRM, ScenarioDetailLocalCapacity
+from ui.api.resources.scenario_detail import ScenarioDetailAPI
 from ui.api.resources.scenario_results import \
   ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements, \
   ScenarioResultsProjectNewBuild, ScenarioResultsProjectDispatch, \
@@ -20,31 +10,7 @@ from ui.api.resources.scenario_results import \
   ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
   ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
   ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM
-from ui.api.resources.scenario_new import SettingTemporal, SettingLoadZones, \
-  SettingProjectLoadZones, SettingTxLoadZones, SettingSystemLoad, \
-  SettingProjectPorftolio, SettingProjectExistingCapacity, \
-  SettingProjectExistingFixedCost, SettingProjectNewCost, \
-  SettingProjectNewPotential, SettingProjectAvailability, SettingProjectOpChar, \
-  SettingFuels, SettingFuelPrices, SettingTransmissionPortfolio, \
-  SettingTransmissionExistingCapacity, SettingTransmissionOpChar, \
-  SettingTransmissionHurdleRates, SettingTransmissionSimFlowLimits, \
-  SettingTransmissionSimFlowLimitGroups, SettingLFReservesUpBAs, \
-  SettingProjectLFReservesUpBAs, SettingLFReservesUpRequirement, \
-  SettingLFReservesDownBAs, SettingProjectLFReservesDownBAs, \
-  SettingLFReservesDownRequirement, SettingRegulationUpBAs, \
-  SettingProjectRegulationUpBAs, SettingRegulationUpRequirement, \
-  SettingRegulationDownBAs, SettingProjectRegulationDownBAs, \
-  SettingRegulationDownRequirement, SettingSpinningReservesBAs, \
-  SettingProjectSpinningReservesBAs, SettingSpinningReservesRequirement, \
-  SettingFrequencyResponseBAs, SettingProjectFrequencyResponseBAs, \
-  SettingFrequencyResponseRequirement, SettingRPSAreas, SettingProjectRPSAreas, \
-  SettingRPSRequirement, SettingCarbonCapAreas, SettingProjectCarbonCapAreas, \
-  SettingTransmissionCarbonCapAreas, SettingCarbonCapRequirement, \
-  SettingPRMAreas, SettingPRMRequirement, SettingProjectPRMAreas, \
-  SettingProjectELCCChars, SettingProjectPRMEnergyOnly, SettingELCCSurface, \
-  SettingLocalCapacityAreas, SettingLocalCapacityRequirement, \
-  SettingProjectLocalCapacityAreas, SettingProjectLocalCapacityChars, \
-  SettingTuning
+from ui.api.resources.scenario_new import ScenarioNewAPI
 from ui.api.resources.scenarios import Scenarios
 from ui.api.resources.view_data import ViewDataTemporalTimepoints, \
   ViewDataGeographyLoadZones, ViewDataProjectLoadZones, \
@@ -67,7 +33,7 @@ from ui.api.resources.view_data import ViewDataTemporalTimepoints, \
   ViewDataCarbonCapReq, ViewDataPRMBAs, ViewDataProjectPRMBAs, ViewDataPRMReq, \
   ViewDataProjectELCCChars, ViewDataELCCSurface, ViewDataEnergyOnly, \
   ViewDataLocalCapacityBAs, ViewDataProjectLocalCapacityBAs, \
-  ViewDataLocalCapacityReq, ViewDataProjectLocalCapacityChars
+  ViewDataLocalCapacityReq, ViewDataProjectLocalCapacityChars, ViewDataTuning
 
 
 # Create API routes
@@ -106,135 +72,10 @@ def add_scenario_detail_resources(api, db_path):
 
     Add the API resources for the Angular 'scenario-detail' component.
     """
-    # Name
-    # TODO: is this used?
+    # Refactored
     api.add_resource(
-        ScenarioDetailName,
-        '/scenarios/<scenario_id>/name',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # All
-    api.add_resource(
-        ScenarioDetailAll,
+        ScenarioDetailAPI,
         '/scenarios/<scenario_id>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Features
-    api.add_resource(
-        ScenarioDetailFeatures,
-        '/scenarios/<scenario_id>/features',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Temporal
-    api.add_resource(
-        ScenarioDetailTemporal,
-        '/scenarios/<scenario_id>/temporal',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Geography load zones
-    api.add_resource(
-        ScenarioDetailGeographyLoadZones,
-        '/scenarios/<scenario_id>/geography-load-zones',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # System load
-    api.add_resource(
-        ScenarioDetailLoad,
-        '/scenarios/<scenario_id>/load',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Project capacity
-    api.add_resource(
-        ScenarioDetailProjectCapacity,
-        '/scenarios/<scenario_id>/project-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Project operating characteristics
-    api.add_resource(
-        ScenarioDetailProjectOpChars,
-        '/scenarios/<scenario_id>/project-opchars',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Fuels
-    api.add_resource(
-        ScenarioDetailFuels,
-        '/scenarios/<scenario_id>/fuels',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Transmission capacity
-    api.add_resource(
-        ScenarioDetailTransmissionCapacity,
-        '/scenarios/<scenario_id>/transmission-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Transmission operating characteristics
-    api.add_resource(
-        ScenarioDetailTransmissionOpChars,
-        '/scenarios/<scenario_id>/transmission-opchars',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Transmission hurdle rates
-    api.add_resource(
-        ScenarioDetailTransmissionHurdleRates,
-        '/scenarios/<scenario_id>/transmission-hurdle-rates',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Transmission simultaneous flow limits
-    api.add_resource(
-        ScenarioDetailTransmissionSimFlow,
-        '/scenarios/<scenario_id>/transmission-sim-flow',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Reserves
-    api.add_resource(
-        ScenarioDetailLoadFollowingUp,
-        '/scenarios/<scenario_id>/lf-up',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailLoadFollowingDown,
-        '/scenarios/<scenario_id>/lf-down',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailRegulationUp,
-        '/scenarios/<scenario_id>/reg-up',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailRegulationDown,
-        '/scenarios/<scenario_id>/reg-down',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailSpinningReserves,
-        '/scenarios/<scenario_id>/spin',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailFrequencyResponse,
-        '/scenarios/<scenario_id>/freq-resp',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    # Policy and reliability
-    api.add_resource(
-        ScenarioDetailRPS,
-        '/scenarios/<scenario_id>/rps',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailCarbonCap,
-        '/scenarios/<scenario_id>/carbon-cap',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailPRM,
-        '/scenarios/<scenario_id>/prm',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        ScenarioDetailLocalCapacity,
-        '/scenarios/<scenario_id>/local-capacity',
         resource_class_kwargs={'db_path': db_path}
     )
 
@@ -247,282 +88,8 @@ def add_scenario_new_resources(api, db_path):
     Add the API resources for the Angular 'scenario-new' component.
     """
     api.add_resource(
-        SettingTemporal, '/scenario-settings/temporal',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLoadZones,
-        '/scenario-settings/load-zones',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectLoadZones,
-        '/scenario-settings/project-load-zones',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTxLoadZones,
-        '/scenario-settings/tx-load-zones',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingSystemLoad,
-        '/scenario-settings/system-load',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectPorftolio,
-        '/scenario-settings/project-portfolio',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectExistingCapacity,
-        '/scenario-settings/project-existing-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectExistingFixedCost,
-        '/scenario-settings/project-existing-fixed-cost',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectNewCost,
-        '/scenario-settings/project-new-cost',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectNewPotential,
-        '/scenario-settings/project-new-potential',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectAvailability,
-        '/scenario-settings/project-availability',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectOpChar,
-        '/scenario-settings/project-opchar',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingFuels,
-        '/scenario-settings/fuels',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingFuelPrices,
-        '/scenario-settings/fuel-prices',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionPortfolio,
-        '/scenario-settings/transmission-portfolio',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionExistingCapacity,
-        '/scenario-settings/transmission-existing-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionOpChar,
-        '/scenario-settings/transmission-opchar',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionHurdleRates,
-        '/scenario-settings/transmission-hurdle-rates',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionSimFlowLimits,
-        '/scenario-settings/transmission-simflow-limits',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionSimFlowLimitGroups,
-        '/scenario-settings/transmission-simflow-limit-groups',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLFReservesUpBAs,
-        '/scenario-settings/lf-reserves-up-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectLFReservesUpBAs,
-        '/scenario-settings/project-lf-reserves-up-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLFReservesUpRequirement,
-        '/scenario-settings/lf-reserves-up-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLFReservesDownBAs,
-        '/scenario-settings/lf-reserves-down-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectLFReservesDownBAs,
-        '/scenario-settings/project-lf-reserves-down-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLFReservesDownRequirement,
-        '/scenario-settings/lf-reserves-down-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRegulationUpBAs,
-        '/scenario-settings/regulation-up-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectRegulationUpBAs,
-        '/scenario-settings/project-regulation-up-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRegulationUpRequirement,
-        '/scenario-settings/regulation-up-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRegulationDownBAs,
-        '/scenario-settings/regulation-down-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectRegulationDownBAs,
-        '/scenario-settings/project-regulation-down-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRegulationDownRequirement,
-        '/scenario-settings/regulation-down-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingSpinningReservesBAs,
-        '/scenario-settings/spin-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectSpinningReservesBAs,
-        '/scenario-settings/project-spin-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingSpinningReservesRequirement,
-        '/scenario-settings/spin-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingFrequencyResponseBAs,
-        '/scenario-settings/freq-resp-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectFrequencyResponseBAs,
-        '/scenario-settings/project-freq-resp-bas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingFrequencyResponseRequirement,
-        '/scenario-settings/freq-resp-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRPSAreas,
-        '/scenario-settings/rps-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectRPSAreas,
-        '/scenario-settings/project-rps-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingRPSRequirement,
-        '/scenario-settings/rps-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingCarbonCapAreas,
-        '/scenario-settings/carbon-cap-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectCarbonCapAreas,
-        '/scenario-settings/project-carbon-cap-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTransmissionCarbonCapAreas,
-        '/scenario-settings/transmission-carbon-cap-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingCarbonCapRequirement,
-        '/scenario-settings/carbon-cap-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingPRMAreas,
-        '/scenario-settings/prm-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingPRMRequirement,
-        '/scenario-settings/prm-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectPRMAreas,
-        '/scenario-settings/project-prm-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingELCCSurface,
-        '/scenario-settings/elcc-surface',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectELCCChars,
-        '/scenario-settings/project-elcc-chars',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectPRMEnergyOnly,
-        '/scenario-settings/project-energy-only',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLocalCapacityAreas,
-        '/scenario-settings/local-capacity-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectLocalCapacityAreas,
-        '/scenario-settings/project-local-capacity-areas',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingLocalCapacityRequirement,
-        '/scenario-settings/local-capacity-req',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingProjectLocalCapacityChars,
-        '/scenario-settings/project-local-capacity-chars',
-        resource_class_kwargs={'db_path': db_path}
-    )
-    api.add_resource(
-        SettingTuning,
-        '/scenario-settings/tuning',
+        ScenarioNewAPI,
+        '/scenario-new',
         resource_class_kwargs={'db_path': db_path}
     )
 
@@ -809,6 +376,11 @@ def add_view_data_resources(api, db_path):
     api.add_resource(
         ViewDataProjectLocalCapacityChars,
         '/view-data/project-local-capacity-chars',
+        resource_class_kwargs={'db_path': db_path}
+    )
+    api.add_resource(
+        ViewDataTuning,
+        '/view-data/tuning',
         resource_class_kwargs={'db_path': db_path}
     )
 
