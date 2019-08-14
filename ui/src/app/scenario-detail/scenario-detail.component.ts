@@ -4,11 +4,10 @@ import { Location } from '@angular/common';
 
 const io = ( window as any ).require('socket.io-client');
 
-import { ScenarioDetail, ScenarioDetailTableRow } from './scenario-detail';
+import { ScenarioDetailTable, StartingValues} from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
-import { StartingValues } from '../scenario-new/scenario-new.component';
 
 
 @Component({
@@ -19,10 +18,10 @@ import { StartingValues } from '../scenario-new/scenario-new.component';
 
 export class ScenarioDetailComponent implements OnInit {
 
-  // The final table structure we'll iterate over
-  scenarioDetailStructure: ScenarioDetail[];
-
   scenarioName: string;
+
+  // The final table structure we'll iterate over
+  scenarioDetailStructure: ScenarioDetailTable[];
 
   // For editing a scenario
   startingValues: StartingValues;
@@ -49,44 +48,21 @@ export class ScenarioDetailComponent implements OnInit {
     });
 
     // Get the scenario detail data
-    this.getScenarioName(this.scenarioID);
     this.getScenarioDetailAPI(this.scenarioID);
-
-    // We may need this if the user decides to edit the scenario
-    // TODO: only run this on scenario edit?
-    this.getScenarioStartingSettings(this.scenarioID);
-
-  }
-
-  getScenarioName(scenarioID): void {
-
-    this.scenarioDetailService.getScenarioName(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-          this.scenarioName = scenarioDetail;
-        }
-      );
-
   }
 
   getScenarioDetailAPI(scenarioID): void {
-    const settingsTable = new ScenarioDetail();
+    const settingsTable = new ScenarioDetailTable();
 
     this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
       .subscribe(
         scenarioDetail => {
-            this.scenarioDetailStructure = scenarioDetail;
+            this.scenarioName = scenarioDetail.scenarioName;
+            this.scenarioDetailStructure = scenarioDetail.scenarioDetailTables;
+            this.startingValues = scenarioDetail.editScenarioValues;
         }
       );
   }
-
-  getScenarioStartingSettings(scenarioID): void {
-    this.scenarioEditService.getScenarioDetailAll(scenarioID)
-      .subscribe(startingValues => {
-        this.startingValues = startingValues;
-      });
-  }
-
 
   goBack(): void {
     this.location.back();
