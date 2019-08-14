@@ -12,7 +12,7 @@ from ui.api.resources.scenario_detail import ScenarioDetailName, \
   ScenarioDetailLoadFollowingDown, ScenarioDetailRegulationUp, \
   ScenarioDetailRegulationDown, ScenarioDetailSpinningReserves, \
   ScenarioDetailFrequencyResponse, ScenarioDetailRPS, ScenarioDetailCarbonCap, \
-  ScenarioDetailPRM, ScenarioDetailLocalCapacity
+  ScenarioDetailPRM, ScenarioDetailLocalCapacity, ScenarioDetailTuning
 from ui.api.resources.scenario_results import \
   ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements, \
   ScenarioResultsProjectNewBuild, ScenarioResultsProjectDispatch, \
@@ -51,7 +51,7 @@ from ui.api.resources.view_data import ViewDataTemporalTimepoints, \
   ViewDataCarbonCapReq, ViewDataPRMBAs, ViewDataProjectPRMBAs, ViewDataPRMReq, \
   ViewDataProjectELCCChars, ViewDataELCCSurface, ViewDataEnergyOnly, \
   ViewDataLocalCapacityBAs, ViewDataProjectLocalCapacityBAs, \
-  ViewDataLocalCapacityReq, ViewDataProjectLocalCapacityChars
+  ViewDataLocalCapacityReq, ViewDataProjectLocalCapacityChars, ViewDataTuning
 
 
 # Create API routes
@@ -218,6 +218,11 @@ def add_scenario_detail_resources(api, db_path):
     api.add_resource(
         ScenarioDetailLocalCapacity,
         '/scenarios/<scenario_id>/local-capacity',
+        resource_class_kwargs={'db_path': db_path}
+    )
+    api.add_resource(
+        ScenarioDetailTuning,
+        '/scenarios/<scenario_id>/tuning',
         resource_class_kwargs={'db_path': db_path}
     )
 
@@ -617,6 +622,11 @@ def add_view_data_resources(api, db_path):
     api.add_resource(
         ViewDataProjectLocalCapacityChars,
         '/view-data/project-local-capacity-chars',
+        resource_class_kwargs={'db_path': db_path}
+    )
+    api.add_resource(
+        ViewDataTuning,
+        '/view-data/tuning',
         resource_class_kwargs={'db_path': db_path}
     )
 

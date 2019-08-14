@@ -327,7 +327,6 @@ class ScenarioNewLocalCapacity(Resource):
         return setting_options_api
 
 
-# TODO: add tuning
 class SettingTuning(Resource):
     """
 
@@ -337,7 +336,11 @@ class SettingTuning(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self):
-        pass
+        setting_options_api = create_scenario_new_api(
+          db_path=self.db_path,
+          ui_table_name_in_db='tuning'
+        )
+        return setting_options_api
 
 
 def create_scenario_new_api(db_path, ui_table_name_in_db):

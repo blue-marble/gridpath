@@ -140,6 +140,12 @@ export class ScenarioDetailService {
     );
   }
 
+  getScenarioDetailTuning(scenarioID: number): Observable<ScenarioDetail> {
+    return this.http.get<ScenarioDetail>(
+      `${this.scenariosBaseURL}${scenarioID}/tuning`
+    );
+  }
+
   getScenarioName(scenarioID: number): Observable<string> {
     return this.http.get<string>(
       `${this.scenariosBaseURL}${scenarioID}/name`

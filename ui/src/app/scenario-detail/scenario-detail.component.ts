@@ -76,6 +76,7 @@ export class ScenarioDetailComponent implements OnInit {
     this.getScenarioDetailCarbonCap(this.scenarioID);
     this.getScenarioDetailPRM(this.scenarioID);
     this.getScenarioDetailLocalCapacity(this.scenarioID);
+    this.getScenarioDetailTuning(this.scenarioID);
 
     // We may need this if the user decides to edit the scenario
     this.getScenarioStartingSettings(this.scenarioID);
@@ -397,6 +398,21 @@ export class ScenarioDetailComponent implements OnInit {
     const settingsTable = new SettingsTable();
 
     this.scenarioDetailService.getScenarioDetailLocalCapacity(scenarioID)
+      .subscribe(
+        scenarioDetail => {
+          settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;
+          settingsTable.tableCaption = scenarioDetail.scenarioDetailTableCaption;
+          settingsTable.settingRows = scenarioDetail.scenarioDetailTableRows;
+        }
+      );
+
+    this.scenarioDetailStructure.push(settingsTable);
+  }
+
+  getScenarioDetailTuning(scenarioID): void {
+    const settingsTable = new SettingsTable();
+
+    this.scenarioDetailService.getScenarioDetailTuning(scenarioID)
       .subscribe(
         scenarioDetail => {
           settingsTable.tableNameInDB = scenarioDetail.uiTableNameInDB;

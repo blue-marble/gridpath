@@ -169,7 +169,7 @@ export class ScenarioNewComponent implements OnInit {
     local_capacity$req: new FormControl(),
     local_capacity$projects: new FormControl(),
     local_capacity$project_chars: new FormControl(),
-    tuningSetting: new FormControl()
+    tuning$tuning: new FormControl()
     });
 
   constructor(private scenarioNewService: ScenarioNewService,
@@ -539,12 +539,14 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  // TODO: add tuning
   getTableOptionsTuning(): void {
     // Get the settings
     this.scenarioNewService.getTableTuning()
       .subscribe(
         scenarioSetting => {
+          this.tuningSettingsTable = scenarioSetting;
+          // Add the table to the scenario structure
+          this.scenarioNewStructure.push(this.tuningSettingsTable);
         }
       );
   }

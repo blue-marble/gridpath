@@ -424,6 +424,24 @@ class ScenarioDetailLocalCapacity(Resource):
         return scenario_detail_api
 
 
+class ScenarioDetailTuning(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        scenario_detail_api = get_scenario_detail(
+          db_path=self.db_path,
+          scenario_id=scenario_id,
+          ui_table_name_in_db='tuning'
+        )
+
+        return scenario_detail_api
+
+
 def get_scenario_detail(db_path, scenario_id, ui_table_name_in_db):
     """
     :param db_path: the path to the database

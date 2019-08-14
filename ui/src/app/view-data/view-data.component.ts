@@ -75,6 +75,7 @@ export class ViewDataComponent implements OnInit {
   projectLocalCapacityBAsTable: ViewDataTable;
   localCapacityReqTable: ViewDataTable;
   projectLocalCapacityCharsTable: ViewDataTable;
+  tuningTable: ViewDataTable;
 
   constructor(
     private route: ActivatedRoute,
@@ -257,6 +258,9 @@ export class ViewDataComponent implements OnInit {
     }
     if (this.dataToShow === 'local_capacity-project_chars') {
       this.getProjectLocalCapacityChars();
+    }
+    if (this.dataToShow === 'tuning-tuning') {
+      this.getTuning();
     }
 
   }
@@ -705,6 +709,14 @@ export class ViewDataComponent implements OnInit {
       .subscribe(inputTableRows => {
         this.projectLocalCapacityCharsTable = inputTableRows;
         this.allTables.push(this.projectLocalCapacityCharsTable);
+      });
+  }
+
+  getTuning(): void {
+    this.viewDataService.getTuning()
+      .subscribe(inputTableRows => {
+        this.tuningTable = inputTableRows;
+        this.allTables.push(this.tuningTable);
       });
   }
 

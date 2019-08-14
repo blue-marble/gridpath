@@ -1161,6 +1161,26 @@ class ViewDataProjectLocalCapacityChars(Resource):
         )
 
 
+class ViewDataTuning(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self):
+        """
+
+        :return:
+        """
+        return create_data_table_api(
+            db_path=self.db_path,
+            ui_table_name_in_db='tuning',
+            ui_row_name_in_db='tuning'
+        )
+
+
 def create_data_table_api(db_path, ui_table_name_in_db, ui_row_name_in_db):
     """
     :param db_path:

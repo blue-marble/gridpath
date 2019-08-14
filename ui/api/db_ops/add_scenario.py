@@ -324,8 +324,11 @@ def add_or_update_scenario(db_path, msg):
               msg=msg,
               key='local_capacity$req'
             ),
-            # TODO: add tuning
-            'tuning_scenario_id': 0
+            'tuning_scenario_id': get_setting_option_id(
+              db_path=db_path,
+              msg=msg,
+              key='tuning$tuning'
+            )
         }
         update_scenario_multiple_columns(
             io=io, c=c,
@@ -631,7 +634,11 @@ def add_or_update_scenario(db_path, msg):
               msg=msg,
               key='local_capacity$req'
             ),
-            tuning_scenario_id=0
+            tuning_scenario_id=get_setting_option_id(
+              db_path=db_path,
+              msg=msg,
+              key='tuning$tuning'
+            )
         )
 
     scenario_id = c.execute(
