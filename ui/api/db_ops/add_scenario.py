@@ -325,7 +325,7 @@ def add_or_update_scenario(db_path, msg):
               key='local_capacity$req'
             ),
             # TODO: add tuning
-            'tuning_scenario_id': 'no_tuning'
+            'tuning_scenario_id': 0
         }
         update_scenario_multiple_columns(
             io=io, c=c,

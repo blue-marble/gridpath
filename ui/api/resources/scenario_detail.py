@@ -6,6 +6,29 @@ from ui.api.common_functions import connect_to_database
 
 
 # ### API: Scenario Detail ### #
+class ScenarioDetailAll(Resource):
+    """
+    All selections for a scenario.
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        io, c = connect_to_database(db_path=self.db_path)
+        scenario_detail_query = c.execute(
+          "SELECT * "
+          "FROM scenarios_view "
+          "WHERE scenario_id = {}".format(scenario_id)
+        )
+
+        column_names = [s[0] for s in scenario_detail_query.description]
+        column_values = list(list(scenario_detail_query)[0])
+        scenario_detail_api = dict(zip(column_names, column_values))
+
+        return scenario_detail_api
+
+
 class ScenarioDetailName(Resource):
     """
     The name of the a scenario by scenario ID

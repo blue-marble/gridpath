@@ -553,7 +553,7 @@ export class ScenarioNewComponent implements OnInit {
     this.scenarioEditService.startingValuesSubject
       .subscribe((startingValues: StartingValues) => {
         this.startingValues = startingValues;
-        console.log('Setting the scenario name initial value');
+        console.log('Setting the scenario initial value');
         this.newScenarioForm.controls.scenarioName.setValue(
           this.startingValues.scenario_name, {onlySelf: true}
         );
@@ -605,169 +605,169 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.featureLocalCapacity.setValue(
           this.startingValues.feature_local_capacity, {onlySelf: true}
         );
-        this.newScenarioForm.controls.temporalSetting.setValue(
+        this.newScenarioForm.controls.temporal$temporal.setValue(
           this.startingValues.temporal, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyLoadZonesSetting.setValue(
+        this.newScenarioForm.controls.load_zones$load_zones.setValue(
           this.startingValues.geography_load_zones, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyProjectLoadZonesSetting.setValue(
+        this.newScenarioForm.controls.load_zones$project_load_zones.setValue(
           this.startingValues.project_load_zones, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyTxLoadZonesSetting.setValue(
+        this.newScenarioForm.controls.load_zones$transmission_load_zones.setValue(
           this.startingValues.transmission_load_zones, {onlySelf: true}
         );
-        this.newScenarioForm.controls.systemLoadSetting.setValue(
+        this.newScenarioForm.controls.system_load$system_load.setValue(
           this.startingValues.load_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectPortfolioSetting.setValue(
+        this.newScenarioForm.controls.project_capacity$portfolio.setValue(
           this.startingValues.project_portfolio, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectExistingCapacitySetting.setValue(
+        this.newScenarioForm.controls.project_capacity$specified_capacity.setValue(
           this.startingValues.project_existing_capacity, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectExistingFixedCostSetting.setValue(
+        this.newScenarioForm.controls.project_capacity$specified_fixed_cost.setValue(
           this.startingValues.project_existing_fixed_cost, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectNewCostSetting.setValue(
+        this.newScenarioForm.controls.project_capacity$new_cost.setValue(
           this.startingValues.project_new_cost, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectNewPotentialSetting.setValue(
+        this.newScenarioForm.controls.project_capacity$new_potential.setValue(
           this.startingValues.project_new_potential, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectAvailabilitySetting.setValue(
+        this.newScenarioForm.controls.project_capacity$availability.setValue(
           this.startingValues.project_availability, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectOperationalCharsSetting.setValue(
+        this.newScenarioForm.controls.project_opchar$opchar.setValue(
           this.startingValues.project_operating_chars, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectFuelsSetting.setValue(
+        this.newScenarioForm.controls.fuels$fuels.setValue(
           this.startingValues.project_fuels, {onlySelf: true}
         );
-        this.newScenarioForm.controls.fuelPricesSetting.setValue(
+        this.newScenarioForm.controls.fuels$fuel_prices.setValue(
           this.startingValues.fuel_prices, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionPortfolioSetting.setValue(
+        this.newScenarioForm.controls.transmission_capacity$portfolio.setValue(
           this.startingValues.transmission_portfolio, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionExistingCapacitySetting.setValue(
+        this.newScenarioForm.controls.transmission_capacity$specified_capacity.setValue(
           this.startingValues.transmission_existing_capacity, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionOperationalCharsSetting.setValue(
+        this.newScenarioForm.controls.transmission_opchar$opchar.setValue(
           this.startingValues.transmission_operational_chars, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionHurdleRatesSetting.setValue(
+        this.newScenarioForm.controls.transmission_hurdle_rates$hurdle_rates.setValue(
           this.startingValues.transmission_hurdle_rates, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionSimultaneousFlowLimitsSetting.setValue(
+        this.newScenarioForm.controls.transmission_sim_flow_limits$limits.setValue(
           this.startingValues.transmission_simultaneous_flow_limits, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionSimultaneousFlowLimitLineGroupsSetting.setValue(
+        this.newScenarioForm.controls.transmission_sim_flow_limits$groups.setValue(
           this.startingValues.transmission_simultaneous_flow_limit_line_groups, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyLoadFollowingUpBAsSetting.setValue(
+        this.newScenarioForm.controls.load_following_up$bas.setValue(
           this.startingValues.geography_lf_up_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.loadFollowingUpRequirementSetting.setValue(
+        this.newScenarioForm.controls.load_following_up$req.setValue(
           this.startingValues.load_following_reserves_up_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectLoadFollowingUpBAsSetting.setValue(
+        this.newScenarioForm.controls.load_following_up$projects.setValue(
           this.startingValues.project_lf_up_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyLoadFollowingDownBAsSetting.setValue(
+        this.newScenarioForm.controls.load_following_down$bas.setValue(
           this.startingValues.geography_lf_down_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.loadFollowingDownRequirementSetting.setValue(
+        this.newScenarioForm.controls.load_following_down$req.setValue(
           this.startingValues.load_following_reserves_down_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectLoadFollowingDownBAsSetting.setValue(
+        this.newScenarioForm.controls.load_following_down$projects.setValue(
           this.startingValues.project_lf_down_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyRegulationUpBAsSetting.setValue(
+        this.newScenarioForm.controls.regulation_up$bas.setValue(
           this.startingValues.geography_reg_up_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.regulationUpRequirementSetting.setValue(
+        this.newScenarioForm.controls.regulation_up$req.setValue(
           this.startingValues.regulation_up_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectRegulationUpBAsSetting.setValue(
+        this.newScenarioForm.controls.regulation_up$projects.setValue(
           this.startingValues.project_reg_up_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyRegulationDownBAsSetting.setValue(
+        this.newScenarioForm.controls.regulation_down$bas.setValue(
           this.startingValues.geography_reg_down_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.regulationDownRequirementSetting.setValue(
+        this.newScenarioForm.controls.regulation_down$req.setValue(
           this.startingValues.regulation_down_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectRegulationDownBAsSetting.setValue(
+        this.newScenarioForm.controls.regulation_down$projects.setValue(
           this.startingValues.project_reg_down_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographySpinningReservesBAsSetting.setValue(
+        this.newScenarioForm.controls.spinning_reserves$bas.setValue(
           this.startingValues.geography_spin_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.spinningReservesRequirementSetting.setValue(
+        this.newScenarioForm.controls.spinning_reserves$req.setValue(
           this.startingValues.spinning_reserves_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectSpinningReservesBAsSetting.setValue(
+        this.newScenarioForm.controls.spinning_reserves$projects.setValue(
           this.startingValues.project_spin_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyFrequencyResponseBAsSetting.setValue(
+        this.newScenarioForm.controls.frequency_response$bas.setValue(
           this.startingValues.geography_freq_resp_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.frequencyResponseRequirementSetting.setValue(
+        this.newScenarioForm.controls.frequency_response$req.setValue(
           this.startingValues.frequency_response_profile, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectFrequencyResponseBAsSetting.setValue(
+        this.newScenarioForm.controls.frequency_response$projects.setValue(
           this.startingValues.project_freq_resp_bas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyRPSAreasSetting.setValue(
+        this.newScenarioForm.controls.rps$bas.setValue(
           this.startingValues.geography_rps_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.rpsTargetTable.setValue(
+        this.newScenarioForm.controls.rps$req.setValue(
           this.startingValues.rps_target, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectRPSAreasSetting.setValue(
+        this.newScenarioForm.controls.rps$projects.setValue(
           this.startingValues.project_rps_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyCarbonCapAreasSetting.setValue(
+        this.newScenarioForm.controls.carbon_cap$bas.setValue(
           this.startingValues.carbon_cap_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.carbonCapTargetTable.setValue(
+        this.newScenarioForm.controls.carbon_cap$req.setValue(
           this.startingValues.carbon_cap, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectCarbonCapAreasSetting.setValue(
+        this.newScenarioForm.controls.carbon_cap$projects.setValue(
           this.startingValues.project_carbon_cap_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.transmissionCarbonCapAreasSetting.setValue(
+        this.newScenarioForm.controls.carbon_cap$transmission.setValue(
           this.startingValues.transmission_carbon_cap_zones, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyPRMAreasSetting.setValue(
+        this.newScenarioForm.controls.prm$bas.setValue(
           this.startingValues.prm_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.prmRequirementSetting.setValue(
+        this.newScenarioForm.controls.prm$req.setValue(
           this.startingValues.prm_requirement, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectPRMAreasSetting.setValue(
+        this.newScenarioForm.controls.prm$projects.setValue(
           this.startingValues.project_prm_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectELCCCharsSetting.setValue(
+        this.newScenarioForm.controls.prm$project_elcc.setValue(
           this.startingValues.project_elcc_chars, {onlySelf: true}
         );
-        this.newScenarioForm.controls.elccSurfaceSetting.setValue(
+        this.newScenarioForm.controls.prm$elcc.setValue(
           this.startingValues.elcc_surface, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectPRMEnergyOnlySetting.setValue(
+        this.newScenarioForm.controls.prm$energy_only.setValue(
           this.startingValues.project_prm_energy_only, {onlySelf: true}
         );
-        this.newScenarioForm.controls.geographyLocalCapacityAreasSetting.setValue(
+        this.newScenarioForm.controls.local_capacity$bas.setValue(
           this.startingValues.local_capacity_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.localCapacityRequirementSetting.setValue(
+        this.newScenarioForm.controls.local_capacity$req.setValue(
           this.startingValues.local_capacity_requirement, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectLocalCapacityAreasSetting.setValue(
+        this.newScenarioForm.controls.local_capacity$projects.setValue(
           this.startingValues.project_local_capacity_areas, {onlySelf: true}
         );
-        this.newScenarioForm.controls.projectLocalCapacityCharsSetting.setValue(
+        this.newScenarioForm.controls.local_capacity$project_chars.setValue(
           this.startingValues.project_local_capacity_chars, {onlySelf: true}
         );
         console.log('Setting the tuning initial value');

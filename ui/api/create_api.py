@@ -3,7 +3,7 @@
 # RESTful API resources
 from ui.api.resources.home import ServerStatus
 from ui.api.resources.scenario_detail import ScenarioDetailName, \
-  ScenarioDetailFeatures, ScenarioDetailTemporal, \
+  ScenarioDetailAll, ScenarioDetailFeatures, ScenarioDetailTemporal, \
   ScenarioDetailGeographyLoadZones, ScenarioDetailLoad, \
   ScenarioDetailProjectCapacity, ScenarioDetailProjectOpChars, \
   ScenarioDetailFuels, ScenarioDetailTransmissionCapacity, \
@@ -90,8 +90,13 @@ def add_scenario_detail_resources(api, db_path):
 
     Add the API resources for the Angular 'scenario-detail' component.
     """
+    # All
+    api.add_resource(
+        ScenarioDetailAll,
+        '/scenarios/<scenario_id>',
+        resource_class_kwargs={'db_path': db_path}
+    )
     # Name
-    # TODO: is this used?
     api.add_resource(
         ScenarioDetailName,
         '/scenarios/<scenario_id>/name',
