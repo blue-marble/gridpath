@@ -170,9 +170,6 @@ def optional_modules_list():
              "transmission.capacity.capacity",
              "transmission.operations.operations",
              "system.load_balance.aggregate_transmission_power"],
-        "transmission_hurdle_rates":
-             ["transmission.operations.costs",
-              "objective.transmission.aggregate_operational_costs"],
         "lf_reserves_up":
             ["geography.load_following_up_balancing_areas",
              "system.reserves.requirement.lf_reserves_up",
@@ -272,6 +269,9 @@ def cross_feature_modules_list():
     described in the 'cross_modules' dictionary here.
     """
     cross_modules = {
+        ("transmission", "transmission_hurdle_rates"):
+            ["transmission.operations.costs",
+             "objective.transmission.aggregate_operational_costs"],
         ("transmission", "carbon_cap", "track_carbon_imports"):
         ["system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
          "transmission.operations.carbon_emissions",
