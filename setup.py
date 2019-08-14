@@ -38,7 +38,7 @@ setup(name='GridPath',
       entry_points={
           'console_scripts': [
               'run_gridpath = gridpath.run_scenario:main',
-              'run_gridpath_server = ui.api.flask_local_server:main'
+              'run_gridpath_server = ui.server.run_server:main'
           ]
       }
       )

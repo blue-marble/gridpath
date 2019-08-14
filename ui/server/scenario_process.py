@@ -6,7 +6,7 @@ import sys
 import psutil
 from flask_socketio import emit
 
-from ui.api.common_functions import connect_to_database
+from ui.server.common_functions import connect_to_database
 
 
 def launch_scenario_process(

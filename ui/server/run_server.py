@@ -10,13 +10,13 @@ import sys
 from flask_restful import Api
 
 # API
-from ui.api.create_api import add_api_resources
+from ui.server.create_api import add_api_resources
 
 # Database operations functions (Socket IO)
-from ui.api.db_ops.add_scenario import add_or_update_scenario
+from ui.server.db_ops.add_scenario import add_or_update_scenario
 
 # Scenario process functions (Socket IO)
-from ui.api.scenario_process import launch_scenario_process, \
+from ui.server.scenario_process import launch_scenario_process, \
   check_scenario_process_status
 
 

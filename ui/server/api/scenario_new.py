@@ -6,7 +6,7 @@ from flask_restful import Resource
 
 # TODO: need to require setting 'name' column to be unique
 # TODO: figure out how to deal with tables with two (or more) subscenario IDs
-from ui.api.common_functions import connect_to_database
+from ui.server.common_functions import connect_to_database
 
 
 class ScenarioNewAPI(Resource):
