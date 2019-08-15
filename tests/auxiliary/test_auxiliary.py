@@ -3,6 +3,8 @@
 
 from pyomo.environ import AbstractModel
 import unittest
+import pandas as pd
+import numpy as np
 
 import gridpath.auxiliary.auxiliary as auxiliary_module_to_test
 
@@ -84,6 +86,228 @@ class TestAuxiliary(unittest.TestCase):
         self.assertEqual(True, auxiliary_module_to_test.is_number(1))
         self.assertEqual(True, auxiliary_module_to_test.is_number(100.5))
         self.assertEqual(False, auxiliary_module_to_test.is_number("string"))
+
+    def test_check_dtypes(self):
+        """
+
+        :return:
+        """
+        df_columns = ["project", "capacity"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["gas_ct", 10], ["coal_plant", 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": ([], [])
+                },
+            # Test invalid string column
+            2: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 10], ["coal_plant", "string"]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": (
+                    ["Invalid data type for column 'capacity'; expected numeric"],
+                    ["capacity"]
+                )},
+            # Test invalid numeric column
+            3: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[[1, 10], [1, 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": (
+                    ["Invalid data type for column 'project'; expected string"],
+                    ["project"]
+                )},
+            # If at least one string in the column, pandas will convert
+            # all column data to string so there will be no error
+            4: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 10], [1, 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": ([], [])
+                },
+            # Columns with all None are ignored
+            5: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[[None, 10], [None, 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": ([], [])
+                },
+            # Columns with all NaN are ignored
+            6: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[[np.nan, 10], [np.nan, 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": ([], [])
+                },
+            # Columns with some None are not ignored
+            7: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[[10, 10], [None, 20]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": (
+                    ["Invalid data type for column 'project'; expected string"],
+                    ["project"]
+                )},
+            # Test multiple error columns
+            8: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[[10, "string"], [10, "string"]]),
+                "expected_dtypes": {
+                    "project": "string",
+                    "capacity": "numeric"},
+                "result": (
+                    ["Invalid data type for column 'project'; expected string",
+                     "Invalid data type for column 'capacity'; expected numeric"],
+                    ["project", "capacity"]
+                )}
+        }
+
+        for test_case in test_cases.keys():
+            expected_tuple = test_cases[test_case]["result"]
+            actual_tuple = auxiliary_module_to_test.check_dtypes(
+                df=test_cases[test_case]["df"],
+                expected_dtypes=test_cases[test_case]["expected_dtypes"]
+            )
+            self.assertTupleEqual(expected_tuple, actual_tuple)
+
+    def test_check_column_sign_positive(self):
+        """
+
+        :return:
+        """
+        df_columns = ["project", "load_point_mw",
+                      "average_heat_rate_mmbtu_per_mwh"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                columns=df_columns,
+                data=[["gas_ct", 10, 10.5],
+                      ["gas_ct", 20, 9],
+                      ["coal_plant", 100, 10]
+                      ]),
+                "columns": ["load_point_mw", "average_heat_rate_mmbtu_per_mwh"],
+                "result": []
+                },
+            # Sign errors are flagged; Errors are grouped by column. If >1 error
+            # in different columns, a separate error msgs will be created
+            2: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["gas_ct", 10, -10.5],
+                          ["gas_ct", -20, 9],
+                          ["coal_plant", -100, 10]
+                          ]),
+                "columns": ["load_point_mw", "average_heat_rate_mmbtu_per_mwh"],
+                "result": ["Project(s) 'gas_ct, coal_plant': Expected 'load_point_mw' >= 0",
+                           "Project(s) 'gas_ct': Expected 'average_heat_rate_mmbtu_per_mwh' >= 0"]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = auxiliary_module_to_test.check_column_sign_positive(
+                df=test_cases[test_case]["df"],
+                columns=test_cases[test_case]["columns"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_check_prj_columns(self):
+        """
+
+        :return:
+        """
+
+        df_columns = ["project", "min_stable_level", "unit_size_mw",
+                      "startup_cost_per_mw", "shutdown_cost_per_mw"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 0.5, 100, None, None]]),
+                "columns": ["min_stable_level", "unit_size_mw"],
+                "required": True,
+                "category": "Always_on",
+                "result": []
+                },
+            # Make sure missing required inputs are flagged
+            2: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", None, 100, None, None]]),
+                "columns": ["min_stable_level", "unit_size_mw"],
+                "required": True,
+                "category": "Always_on",
+                "result": ["Project(s) 'nuclear'; Always_on should have inputs for 'min_stable_level'"]
+                },
+            # Make sure incompatible inputs are flagged
+            3: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 0.5, 100, 1000, None]]),
+                "columns": ["startup_cost_per_mw", "shutdown_cost_per_mw"],
+                "required": False,
+                "category": "Always_on",
+                "result": ["Project(s) 'nuclear'; Always_on should not have inputs for 'startup_cost_per_mw'"]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = auxiliary_module_to_test.check_prj_columns(
+                df=test_cases[test_case]["df"],
+                columns=test_cases[test_case]["columns"],
+                required=test_cases[test_case]["required"],
+                category=test_cases[test_case]["category"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_check_constant_heat_rate(self):
+        """
+
+        :return:
+        """
+
+        df_columns = ["project", "load_point_mw"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 100]]),
+                "op_type": "Always_on",
+                "result": []
+                },
+            # Make sure varying heat rates (>1 load point) is flagged
+            2: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["nuclear", 100],
+                          ["nuclear", 200],
+                          ["gas_ct", 10]
+                          ]),
+                "op_type": "Always_on",
+                "result": ["Project(s) 'nuclear': Always_on should have only 1 load point"]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = auxiliary_module_to_test.check_constant_heat_rate(
+                df=test_cases[test_case]["df"],
+                op_type=test_cases[test_case]["op_type"]
+            )
+            self.assertListEqual(expected_list, actual_list)
 
 
 if __name__ == "__main__":

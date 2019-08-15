@@ -10,9 +10,10 @@ import pandas as pd
 from pyomo.environ import Set, Var, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init,\
-    write_validation_to_database
+    write_validation_to_database, check_prj_columns, check_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+
 
 def add_module_specific_components(m, d):
     """
@@ -299,36 +300,30 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    for column in expected_na_columns:
-        notna = pd.notna(df[column])
-        if notna.any():
-            bad_projects = df["project"][notna]
-            print_bad_projects = ", ".join(bad_projects)
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "Unexpected inputs",
-                 "Project(s) '{}'; Dispatchable_no_commit should not have inputs for '{}'"
-                 .format(print_bad_projects, column)
-                 )
-            )
+    validation_errors = check_prj_columns(df, expected_na_columns, False,
+                                          "Dispatchable_no_commit")
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Unexpected inputs",
+             error
+             )
+        )
 
     # Check that there is only one load point (constant heat rate)
-    n_load_points = hr_df.groupby(["project"]).size()
-    invalids = (n_load_points > 1)
-    if invalids.any():
-        bad_projects = invalids.index[invalids]
-        print_bad_projects = ", ".join(bad_projects)
+    validation_errors = check_constant_heat_rate(hr_df,
+                                                 "Dispatchable_no_commit")
+    for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
              "Too many load points",
-             "Project(s) '{}': Dispatchable_no_commit should have only 1 load point"
-             .format(print_bad_projects)
+             error
              )
         )
 

@@ -15,7 +15,7 @@ from pyomo.environ import Set, Param, NonNegativeReals
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_operational_modules, headroom_variables, footroom_variables
 from gridpath.auxiliary.auxiliary import check_dtypes, \
-    write_validation_to_database
+    check_column_sign_positive, write_validation_to_database
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -283,46 +283,38 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check valid numeric columns are positive
+    # Check valid numeric columns are non-negative
     numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    for column in valid_numeric_columns:
-        is_negative = (df[column] < 0)
-        if is_negative.any():
-            bad_projects = df["project"][is_negative].values
-            print_bad_projects = ", ".join(bad_projects)
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS",
-                 "inputs_project_operational_chars",
-                 "Invalid numeric sign",
-                 "Project(s) '{}'; Expected '{}' >= 0"
-                 .format(print_bad_projects, column)
-                 )
-            )
+    sign_errors = check_column_sign_positive(df, valid_numeric_columns)
+    for error in sign_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Invalid numeric sign",
+             error
+             )
+        )
 
-    # check 0 < min stable fraction <= 1
+    # Check 0 < min stable fraction <= 1
     if "min_stable_level" not in error_columns:
-        invalids = ((df["min_stable_level"] <= 0) |
-                    (df["min_stable_level"] > 1))
-        if invalids.any():
-            bad_projects = df["project"][invalids].values
-            print_bad_projects = ", ".join(bad_projects)
+        validation_errors = validate_min_stable_level(df)
+        for error in validation_errors:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
                  __name__,
                  "PROJECT_OPERATIONAL_CHARS",
                  "inputs_project_operational_chars",
                  "Invalid min_stable_level",
-                 "Project(s) '{}': expected 0 < min_stable_level <= 1"
-                 .format(print_bad_projects)
+                 error
                  )
             )
 
     # TODO: move into database table (don't hard code)
     # Check that we're not combining incompatible capacity and operational types
-    incompatible_combinations = [
+    invalid_combos = [
         ("new_build_generator", "dispatchable_binary_commit"),
         ("new_build_generator", "dispatchable_continuous_commit"),
         ("new_build_generator", "hydro_curtailable"),
@@ -340,66 +332,143 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         ("existing_gen_binary_economic_retirement",
          "hydro_noncurtailable"),
     ]
-    for combo in incompatible_combinations:
-        bad_combos = ((df["capacity_type"] == combo[0]) &
-                      (df["operational_type"] == combo[1]))
-        if bad_combos.any():
-            bad_projects = df['project'][bad_combos].values
-            print_bad_projects = ", ".join(bad_projects)
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 __name__,
-                 "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
-                 "inputs_project_operational_chars, inputs_project_portfolios",
-                 "Invalid combination of capacity type and operational type",
-                 "Project(s) '{}': '{}' and '{}'"
-                 .format(print_bad_projects, combo[0], combo[1]))
-            )
 
-    # check that capacity type is valid
+    validation_errors = validate_op_cap_combos(df, invalid_combos)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
+             "inputs_project_operational_chars, inputs_project_portfolios",
+             "Invalid combination of capacity type and operational type",
+             error
+             )
+        )
+
+    # Check that capacity type is valid
     # Note: foreign key already ensures this!
     valid_cap_types = c.execute(
         """SELECT capacity_type from mod_capacity_types"""
     ).fetchall()
     valid_cap_types = [v[0] for v in valid_cap_types]
-    invalids = ~df["capacity_type"].isin(valid_cap_types)
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
+    validation_errors = validate_cap_types(df, valid_cap_types)
+    for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
              __name__,
              "PROJECT_PORTFOLIO",
              "inputs_project_portfolios",
              "Invalid capacity type",
-             "Project(s) '{}': Invalid capacity type"
-             .format(print_bad_projects)
+             error
              )
         )
 
-    # check that operational type is valid
+    # Check that operational type is valid
     # Note: foreign key already ensures this!
     valid_op_types = c.execute(
         """SELECT operational_type from mod_operational_types"""
     ).fetchall()
     valid_op_types = [v[0] for v in valid_op_types]
-    invalids = ~df["operational_type"].isin(valid_op_types)
-    if invalids.any():
-        bad_projects = df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
+    validation_errors = validate_op_types(df, valid_op_types)
+    for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
              "Invalid operational type",
-             "Project(s) '{}': Invalid operational type"
-             .format(print_bad_projects)
+             error
              )
         )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
+
+
+def validate_min_stable_level(df):
+    """
+    Check 0 < min stable fraction <= 1
+    :param df:
+    :return:
+    """
+    results = []
+
+    invalids = ((df["min_stable_level"] <= 0) |
+                (df["min_stable_level"] > 1))
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': expected 0 < min_stable_level <= 1"
+            .format(print_bad_projects)
+        )
+
+    return results
+
+
+def validate_op_cap_combos(df, invalid_combos):
+    """
+    Check that there's no mixing of incompatible capacity and operational types
+    :param df:
+    :param invalid_combos:
+    :return:
+    """
+    results = []
+    for combo in invalid_combos:
+        bad_combos = ((df["capacity_type"] == combo[0]) &
+                      (df["operational_type"] == combo[1]))
+        if bad_combos.any():
+            bad_projects = df['project'][bad_combos].values
+            print_bad_projects = ", ".join(bad_projects)
+            results.append(
+                "Project(s) '{}': '{}' and '{}'"
+                .format(print_bad_projects, combo[0], combo[1])
+            )
+
+    return results
+
+
+def validate_cap_types(df, valid_cap_types):
+    """
+    Check that the specified capacity types are one of the valid capacity types
+    :param df:
+    :param valid_cap_types:
+    :return:
+    """
+    results = []
+
+    invalids = ~df["capacity_type"].isin(valid_cap_types)
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Invalid capacity type"
+            .format(print_bad_projects)
+        )
+
+    return results
+
+
+def validate_op_types(df, valid_op_types):
+    """
+    Check that the specified operational types are one of the valid operational
+    types
+    :param df:
+    :param valid_op_types:
+    :return:
+    """
+    results = []
+
+    invalids = ~df["operational_type"].isin(valid_op_types)
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Invalid operational type"
+            .format(print_bad_projects)
+        )
+
+    return results
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):

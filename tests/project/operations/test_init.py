@@ -10,13 +10,12 @@ import os.path
 import sys
 import unittest
 import numpy as np
+import pandas as pd
 
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 from tests.project.operations.common_functions import \
     get_project_operational_timepoints
-from gridpath.project.operations.__init__ import \
-    calculate_heat_rate_slope_intercept
 
 
 TEST_DATA_DIRECTORY = \
@@ -486,7 +485,7 @@ class TestOperationsInit(unittest.TestCase):
             expected_slopes = test_cases[test_case]["slopes"]
             expected_intercepts = test_cases[test_case]["intercepts"]
             actual_slopes, actual_intercepts = \
-                calculate_heat_rate_slope_intercept(
+                MODULE_BEING_TESTED.calculate_heat_rate_slope_intercept(
                     project=test_cases[test_case]["project"],
                     load_points=test_cases[test_case]["load_points"],
                     heat_rates=test_cases[test_case]["heat_rates"]
@@ -494,6 +493,112 @@ class TestOperationsInit(unittest.TestCase):
 
             self.assertDictEqual(expected_slopes, actual_slopes)
             self.assertDictEqual(expected_intercepts, actual_intercepts)
+
+    def test_availability_validations(self):
+        av_df_columns = ["project", "horizon", "availability"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"av_df": pd.DataFrame(
+                columns=av_df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": []
+                },
+            # Negative availabilities are flagged
+            2: {"av_df": pd.DataFrame(
+                columns=av_df_columns,
+                data=[["gas_ct", 201801, -1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, 0]
+                      ]),
+                "error": ["Project(s) 'gas_ct': expected 0 <= availability <= 1"]
+                },
+            # Availabilities > 1 are flagged
+            3: {"av_df": pd.DataFrame(
+                columns=av_df_columns,
+                data=[["gas_ct", 201801, 1],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["Project(s) 'coal_plant': expected 0 <= availability <= 1"]
+                },
+            # Make sure multiple errors are flagged correctly
+            4: {"av_df": pd.DataFrame(
+                columns=av_df_columns,
+                data=[["gas_ct", 201801, 1.5],
+                      ["gas_ct", 201802, 0.9],
+                      ["coal_plant", 201801, -0.5]
+                      ]),
+                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability <= 1"]
+                },
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["error"]
+            actual_list = MODULE_BEING_TESTED.validate_availability(
+                av_df=test_cases[test_case]["av_df"],
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_heat_rate_validations(self):
+        hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",
+                      "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"hr_df": pd.DataFrame(
+                    columns=hr_columns,
+                    data=[["gas_ct", "gas", 1, 10, 10.5],
+                          ["gas_ct", "gas", 1, 20, 9],
+                          ["coal_plant", "coal", 1, 100, 10]
+                          ]),
+                "fuel_vs_hr_error": [],
+                "hr_curves_error": []
+                },
+            # Check fuel vs heat rate curve errors
+            2: {"hr_df": pd.DataFrame(
+                columns=hr_columns,
+                data=[["gas_ct", "gas", None, None, None],
+                      ["coal_plant", None, 1, 100, 10]
+                      ]),
+                "fuel_vs_hr_error": ["Project(s) 'gas_ct': Missing heat_rate_curves_scenario_id",
+                                     "Project(s) 'coal_plant': No fuel specified so no heat rate expected"],
+                "hr_curves_error": []
+                },
+            # Check heat rate curves validations
+            3: {"hr_df": pd.DataFrame(
+                columns=hr_columns,
+                data=[["gas_ct1", "gas", 1, None, None],
+                      ["gas_ct2", "gas", 1, 10, 11],
+                      ["gas_ct2", "gas", 1, 10, 12],
+                      ["gas_ct3", "gas", 1, 10, 11],
+                      ["gas_ct3", "gas", 1, 20, 5],
+                      ["gas_ct4", "gas", 1, 10, 11],
+                      ["gas_ct4", "gas", 1, 20, 10],
+                      ["gas_ct4", "gas", 1, 30, 9]
+                      ]),
+                "fuel_vs_hr_error": [],
+                "hr_curves_error": ["Project(s) 'gas_ct1': Expected at least one load point",
+                                    "Project(s) 'gas_ct2': load points can not be identical",
+                                    "Project(s) 'gas_ct3': Total fuel burn should increase with increasing load",
+                                    "Project(s) 'gas_ct4': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"]
+                },
+
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["fuel_vs_hr_error"]
+            actual_list = MODULE_BEING_TESTED.validate_fuel_vs_heat_rates(
+                hr_df=test_cases[test_case]["hr_df"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+            expected_list = test_cases[test_case]["hr_curves_error"]
+            actual_list = MODULE_BEING_TESTED.validate_heat_rate_curves(
+                hr_df=test_cases[test_case]["hr_df"]
+            )
+            self.assertListEqual(expected_list, actual_list)
 
 
 if __name__ == "__main__":

@@ -335,8 +335,6 @@ def check_dtypes(df, expected_dtypes):
     :return: List of error messages for each column with invalid datatypes.
         Error message specifies the column and the expected data type.
         List of columns with erroneous data types.
-
-    TODO: add example
     """
 
     result = []
@@ -371,3 +369,88 @@ def check_dtypes(df, expected_dtypes):
     #     bad_columns = numeric_columns[np.invert(numeric_bool)]
 
     return result, columns
+
+
+def check_column_sign_positive(df, columns):
+    """
+    Checks whether the selected columns of a DataFrame are non-negative.
+    Helper function for input validation.
+    :param df: DataFrame for which to check signs. Must have a "project"
+        column, and columns param must be a subset of the columns in df
+    :param columns: list with columns that are expected to be non-negative
+    :return: List of error messages for each column with invalid signs.
+        Error message specifies the column.
+    """
+    result = []
+    for column in columns:
+        is_negative = (df[column] < 0)
+        if is_negative.any():
+            bad_projects = df["project"][is_negative].values
+            print_bad_projects = ", ".join(bad_projects)
+            result.append(
+                 "Project(s) '{}': Expected '{}' >= 0"
+                 .format(print_bad_projects, column)
+                 )
+
+    return result
+
+
+def check_prj_columns(df, columns, required, category):
+    """
+    Checks whether the required columns of a DataFrame are not None/NA or
+    whether the incompatible columns are None/NA. If required columns are
+    None/NA, or if incompatible columns are not None/NA, an error message
+    is returned.
+    Helper function for input validation.
+    :param df: DataFrame for which to check columns. Must have a "project"
+        column, and columns param must be a subset of the columns in df
+    :param columns: list of columns to check
+    :param required: Boolean, whether the listed columns are required or
+        incompatible
+    :param category: project category (operational_type, capacity_type, ...)
+        for which we're doing the input validation
+    :return: List of error messages for each column with invalid inputs.
+        Error message specifies the column.
+    """
+    result = []
+    for column in columns:
+        if required:
+            invalids = pd.isna(df[column])
+            error_str = "should have inputs for"
+        else:
+            invalids = pd.notna(df[column])
+            error_str = "should not have inputs for"
+        if invalids.any():
+            bad_projects = df["project"][invalids].values
+            print_bad_projects = ", ".join(bad_projects)
+            result.append(
+                "Project(s) '{}'; {} {} '{}'"
+                .format(print_bad_projects, category, error_str, column)
+                 )
+
+    return result
+
+
+def check_constant_heat_rate(df, op_type):
+    """
+    Check whether the projects in the DataFrame have a constant heat rate
+    based on the number of load points per project in the DAtaFrame
+    :param df: DataFrame for which to check constant heat rate. Must have
+        "project", "load_point_mw" columns
+    :param op_type: Operational type (used in error message)
+    :return:
+    """
+
+    results = []
+
+    n_load_points = df.groupby(["project"]).size()
+    invalids = (n_load_points > 1)
+    if invalids.any():
+        bad_projects = invalids.index[invalids]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': {} should have only 1 load point"
+            .format(print_bad_projects, op_type)
+        )
+
+    return results
