@@ -84,15 +84,15 @@ FOREIGN KEY (status) REFERENCES mod_run_status_types (run_status_id)
 );
 
 -- Validation Results
-DROP TABLE IF EXISTS mod_input_validation
+DROP TABLE IF EXISTS mod_input_validation;
 CREATE TABLE mod_input_validation (
 scenario_id INTEGER,
 gridpath_module VARCHAR(64),
 related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
 issue_type VARCHAR(32),
-issue_description VARCHAR(64)
-FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
+issue_description VARCHAR(64),
+FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
 --------------------
@@ -1336,7 +1336,7 @@ vintage INTEGER,
 tx_lifetime_yrs FLOAT,
 tx_annualized_real_cost_per_mw_yr FLOAT,
 PRIMARY KEY (transmission_new_cost_scenario_id, transmission_line,
-period),
+vintage),
 FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
 subscenarios_transmission_new_cost
 (transmission_new_cost_scenario_id)
@@ -1524,7 +1524,7 @@ regulation_up_ba VARCHAR(32),
 stage_id INTEGER,
 timepoint INTEGER,
 regulation_up_mw FLOAT,
-PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, timepoint)
+PRIMARY KEY (regulation_up_scenario_id, regulation_up_ba, stage_id, timepoint),
 FOREIGN KEY (regulation_up_scenario_id) REFERENCES
 subscenarios_system_regulation_up (regulation_up_scenario_id)
 );
@@ -2627,7 +2627,7 @@ stage_id INTEGER,
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
 new_build_transmission_capacity_mw FLOAT,
-PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
+PRIMARY KEY (scenario_id, transmission_line, period, subproblem_id, stage_id)
 );
 
 -- TODO: add table for costs new build?
