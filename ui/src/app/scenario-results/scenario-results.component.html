@@ -4,7 +4,7 @@
 
   <div class="container-fluid">
     <div class="row flex-row flex-nowrap">
-      <div class="col-md-auto">
+      <div class="col-2 position-fixed" id="sidebar">
         <ng-container *ngFor="let button of allResultsButtons">
           <div>
             <button id="{{button.name}}" class="button-primary"
@@ -13,16 +13,16 @@
         </ng-container>
       </div>
 
-      <div class="col-md-auto">
+      <div class="col-md-auto offset-2">
         <ng-container *ngFor="let table of allTables">
           <table *ngIf="resultsToShow==table.ngIfKey"
                  class="scenario-results-table">
             <caption>{{table.caption}}</caption>
-          <tr>
-               <ng-container *ngFor="let column of table.columns">
-                 <th>{{column}}</th>
-               </ng-container>
-          </tr>
+            <tr>
+                 <ng-container *ngFor="let column of table.columns">
+                   <th>{{column}}</th>
+                 </ng-container>
+            </tr>
 
           <ng-container *ngFor="let row of table.rowsData">
              <tr>

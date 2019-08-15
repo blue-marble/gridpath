@@ -20,3 +20,12 @@
   margin-top: 10px;
   margin-bottom: 1px;
 }
+
+#sidebar {
+  background-color: midnightblue;
+  padding: 10px
+}
+
+#goBackButtonTop {
+  padding: 10px;
+}
