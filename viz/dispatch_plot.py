@@ -450,7 +450,7 @@ def create_plot(df):
         batt_renderer = plot.line(
             x=df[x_col],
             y=df[line_cols].sum(axis=1),
-            line_color=COLORS["Batteries"],
+            line_color=COLORS["Battery"],
             line_width=2,
             line_dash="dotdash",
             name=label
