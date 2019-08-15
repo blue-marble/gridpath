@@ -50,25 +50,23 @@ def parse_arguments(arguments):
     parser.add_argument("--scenario", help="The scenario name.")
     parser.add_argument("--load_zone", help="The name of the load zone.")
     parser.add_argument("--horizon", help="The horizon ID.")
-    parser.add_argument("--save",
+    parser.add_argument("--stage", default=1,
+                        help="The stage ID. Defaults to 1")
+    parser.add_argument("--show",
                         default=False, action="store_true",
-                        help="Save figure to "
+                        help="Show and save figure to "
                              "results/figures directory "
                              "under scenario directory.")
-    parser.add_argument("--save_only",
-                        default=False, action="store_true",
-                        help="Don't show figure, but save to "
-                             "results/figures/dispatch directory "
-                             "under scenario directory."
+    parser.add_argument("--return_json",
+                        default=True, action="store_true",
+                        help="Return plot as a json file"
                         )
     parser.add_argument("--dispatch_plot", default=False, action="store_true",
                         help="Draw a dispatch plot. Requires specifying a "
                              "horizon and load zone.")
-    parser.add_argument("--xmin", help="Minimum value for the x axis.")
-    parser.add_argument("--xmax", help="Maximum value for the x axis.")
-    parser.add_argument("--ymin", help="Minimum value for the y axis.")
-    parser.add_argument("--ymax", help="Maximum value for the y axis.")
-
+    # TODO: okay to default stage to 1 for cases with only one stage? Need to
+    #   make sure this is aligned with SQL tables (default value for column)
+    #   and data validation
     # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
 
@@ -79,28 +77,39 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    # Which dispatch plot are we making
+    # Dispatch plot settings
     SCENARIO_NAME = parsed_args.scenario
-    HORIZON = parsed_args.horizon
     LOAD_ZONE = parsed_args.load_zone
+    HORIZON = parsed_args.horizon
+    STAGE = parsed_args.stage
+    SHOW_PLOT = parsed_args.show
+    RETURN_JSON = parsed_args.return_json
 
     # Connect to database
-    io = connect_to_database(parsed_args)
-    c = io.cursor()
-
-    # Get the scenario ID
-    SCENARIO_ID = c.execute(
-        """SELECT scenario_id
-        FROM scenarios
-        WHERE scenario_name = '{}';""".format(SCENARIO_NAME)
-    ).fetchone()[0]
+    conn = connect_to_database(parsed_args)
+    c = conn.cursor()
 
     # Draw a dispatch plot if requested
     if parsed_args.dispatch_plot:
-        draw_dispatch_plot(
-            c=c,
-            scenario_id=SCENARIO_ID,
-            horizon=HORIZON,
-            load_zone=LOAD_ZONE,
-            arguments=parsed_args
-        )
+        if RETURN_JSON:
+            json_plot = draw_dispatch_plot(
+                c=c,
+                scenario=SCENARIO_NAME,
+                load_zone=LOAD_ZONE,
+                horizon=HORIZON,
+                stage=STAGE,
+                show_plot=SHOW_PLOT,
+                return_json=RETURN_JSON
+            )
+        else:
+            draw_dispatch_plot(
+                c=c,
+                scenario=SCENARIO_NAME,
+                load_zone=LOAD_ZONE,
+                horizon=HORIZON,
+                stage=STAGE,
+                show_plot=SHOW_PLOT,
+                return_json=RETURN_JSON
+            )
+
+    # TODO: integrate with UI and handle optional returning json more elegantly
