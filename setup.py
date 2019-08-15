@@ -3,10 +3,10 @@ from setuptools import find_packages, setup
 extras_doc = ['Sphinx']
 extras_ui = [
     'eventlet',  # Async mode for SocketIO
-     'Flask',  # Local API server for UI
-     'Flask-RESTful',  # Flask extension for building REST APIs
-     'Flask-SocketIO',  # Client-server communication
-     'psutil'  # Process management
+    'Flask',  # Local API server for UI
+    'Flask-RESTful',  # Flask extension for building REST APIs
+    'Flask-SocketIO',  # Client-server communication
+    'psutil'  # Process management
 ]
 extras_all = extras_ui + extras_doc
 
@@ -27,7 +27,7 @@ setup(name='GridPath',
       install_requires=[
           'Pyomo',  # Optimization modeling language
           'pandas', # Data-processing
-          'matplotlib'  # Visualization ibrary
+          'bokeh>=1.3.4'  # Visualization library
       ],
       extras_require={
           'doc': extras_doc,
