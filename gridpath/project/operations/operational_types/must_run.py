@@ -11,7 +11,7 @@ import pandas as pd
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_prj_columns, check_constant_heat_rate
+    write_validation_to_database, check_req_prj_columns, check_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -289,7 +289,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    validation_errors = check_prj_columns(df, expected_na_columns, False,
+    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
                                           "Must_run")
     for error in validation_errors:
         validation_results.append(
