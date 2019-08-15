@@ -18,12 +18,14 @@ def connect_to_database(parsed_arguments):
     :param parsed_arguments:
     :return:
     """
-    conn = sqlite3.connect(
-        os.path.join(
-            str(parsed_arguments.db_location),
-            str(parsed_arguments.db_name)+".db"
-        )
-    )
+    if parsed_arguments.in_memory:
+        database = ":memory:"
+    else:
+        database = os.path.join(
+                str(parsed_arguments.db_location),
+                str(parsed_arguments.db_name)+".db"
+            )
+    conn = sqlite3.connect(database=database)
 
     return conn
 
@@ -44,6 +46,9 @@ def parse_arguments(arguments):
     parser.add_argument("--db_schema", default="db_schema.sql",
                         help="Name of the SQL file containing the database "
                              "schema.")
+    parser.add_argument("--in_memory", default=False, action="store_true",
+                        help="Create in-memory database. The db_name and "
+                             "db_location argument will be inactive.")
 
     # Parse arguments
     parsed_arguments = parser.parse_known_args(args=arguments)[0]
@@ -64,6 +69,7 @@ def create_database_schema(db, parsed_arguments):
 
 
 def main(args=None):
+    print("Creating database...")
     if args is None:
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
