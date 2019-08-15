@@ -579,10 +579,7 @@ def validate_heat_rate_curves(hr_df):
         heat_rates = hr_slice["average_heat_rate_mmbtu_per_mwh"].values
 
         if len(load_points) > 1:
-            fuel_burn = load_points * heat_rates
             incr_loads = np.diff(load_points)
-            incr_fuel_burn = np.diff(fuel_burn)
-            slopes = incr_fuel_burn / incr_loads
 
             if np.any(incr_loads == 0):
                 # note: primary key should already prohibit this
@@ -590,16 +587,22 @@ def validate_heat_rate_curves(hr_df):
                     "Project(s) '{}': load points can not be identical"
                     .format(project)
                 )
-            if np.any(incr_fuel_burn <= 0):
-                results.append(
-                    "Project(s) '{}': Total fuel burn should increase with increasing load"
-                    .format(project)
-                )
-            if np.any(np.diff(slopes) <= 0):
-                results.append(
-                    "Project(s) '{}': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"
-                    .format(project)
-                )
+
+            else:
+                fuel_burn = load_points * heat_rates
+                incr_fuel_burn = np.diff(fuel_burn)
+                slopes = incr_fuel_burn / incr_loads
+
+                if np.any(incr_fuel_burn <= 0):
+                    results.append(
+                        "Project(s) '{}': Total fuel burn should increase with increasing load"
+                        .format(project)
+                    )
+                if np.any(np.diff(slopes) <= 0):
+                    results.append(
+                        "Project(s) '{}': Fuel burn should be convex, i.e. marginal heat rate should increase with increading load"
+                        .format(project)
+                    )
 
     return results
 

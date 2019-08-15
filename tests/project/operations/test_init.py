@@ -557,7 +557,7 @@ class TestOperationsInit(unittest.TestCase):
                 "hr_curves_error": []
                 },
             # Check fuel vs heat rate curve errors
-            3: {"hr_df": pd.DataFrame(
+            2: {"hr_df": pd.DataFrame(
                 columns=hr_columns,
                 data=[["gas_ct", "gas", None, None, None],
                       ["coal_plant", None, 1, 100, 10]
@@ -567,7 +567,7 @@ class TestOperationsInit(unittest.TestCase):
                 "hr_curves_error": []
                 },
             # Check heat rate curves validations
-            4: {"hr_df": pd.DataFrame(
+            3: {"hr_df": pd.DataFrame(
                 columns=hr_columns,
                 data=[["gas_ct1", "gas", 1, None, None],
                       ["gas_ct2", "gas", 1, 10, 11],
