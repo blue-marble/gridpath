@@ -25,9 +25,9 @@ function createMainWindow () {
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
-      width: 1200,
-      height: 800,
-      title: 'GridPath UI Sandbox',
+      width: 1600,
+      height: 1200,
+      title: 'GridPath',
       show: false,
       webPreferences: {nodeIntegration: true, contextIsolation: false}  // to
       // get 'require' to work in
