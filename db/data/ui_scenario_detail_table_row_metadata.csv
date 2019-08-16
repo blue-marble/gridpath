@@ -1,10 +1,10 @@
 ﻿ui_table,ui_table_row,ui_row_caption,ui_row_db_scenarios_view_column,ui_row_db_subscenario_table,﻿ui_row_db_subscenario_table_id_column,﻿ui_row_db_input_table
-﻿features,fuels,Fuels,feature_fuels,,,
+features,fuels,Fuels,feature_fuels,,,
 features,transmission,Transmission,feature_transmission,,,
 features,transmission_hurdle_rates,Transmission Hurdle Rates,feature_transmission_hurdle_rates,,,
 features,transmission_sim_flow,Transmission Simultaneous Flow Limits,feature_simultaneous_flow_limits,,,
 features,load_following_up,Load-Following Reserves Up,feature_load_following_up,,,
-features,load_following_up,Load-Following Reserves Down,feature_load_following_down,,,
+features,load_following_down,Load-Following Reserves Down,feature_load_following_down,,,
 features,regulation_up,Regulation Reserves Up,feature_regulation_up,,,
 features,regulation_down,Regulation Reserves Down,feature_regulation_down,,,
 features,spinning_reserves,Spinning Reserves,feature_spinning_reserves,,,
