@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make results dispatch plot (by load zone, stage, horizon)
+Make results dispatch plot (by load zone, stage, horizon).
 """
 
 # TODO: adjust x-axis for timepoint duration? (assumes 1h now)
@@ -11,16 +11,70 @@ Make results dispatch plot (by load zone, stage, horizon)
 #   includes curtailment etc.)
 # TODO: add example df for testing?
 
-import pandas as pd
-import os
-import json
-
+from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend
 from bokeh.plotting import figure, output_file, show
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
+import pandas as pd
+import os
+import sys
+
+# GridPath modules
+from viz.common_functions import connect_to_database
 
 
+# TODO: add some error-handling for when the user does not specify all
+#  required arguments, as the traceback is rather unhelpful
+#  We should also not allow both scenario and scenario_id to be specified
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = ArgumentParser(add_help=True)
+
+    # Scenario name and location options
+    parser.add_argument("--database",
+                        help="The database file path. Defaults to ../db/io.db "
+                             "if not specified")
+    parser.add_argument("--scenario_id", help="The scenario ID. Required if "
+                                              "no --scenario is specified.")
+    parser.add_argument("--scenario", help="The scenario name. Required if "
+                                           "no --scenario_id is specified.")
+    parser.add_argument("--load_zone", help="The name of the load zone.")
+    parser.add_argument("--horizon", help="The horizon ID.")
+    parser.add_argument("--stage", default=1,
+                        help="The stage ID. Defaults to 1 if not specified.")
+    # TODO: I suggest having an option to not show the plot (default to
+    #  show) and a separate option to save the plot (default to not save)
+    #  Also, I maybe we should have an option to save to an image
+    parser.add_argument("--show",
+                        default=False, action="store_true",
+                        help="Show and save figure to "
+                             "results/figures directory "
+                             "under scenario directory.")
+    parser.add_argument("--return_json",
+                        default=False, action="store_true",
+                        help="Return plot as a json file."
+                        )
+    # TODO: okay to default stage to 1 for cases with only one stage? Need to
+    #   make sure this is aligned with SQL tables (default value for column)
+    #   and data validation
+    # Parse arguments
+    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+
+    return parsed_arguments
+
+
+# TODO: we need to have the ability to take different technologies, e.g. a
+#  user might want to show onshore wind and offshore wind separately,
+#  etc. So we should take the list of technologies for the scenario from  the
+#  database; for the colors we could use a palette and perhaps allow the user
+#  to specify a dictionary of technology and color. It would, of course,
+#  be even better if it could be done interactively.
+#   Relatedly, we should think about how to allow the user to re-order the
+#   stack
 # These are the technologies we are expecting
 # At this stage, if other technologies are specified, the script will break
 TECHNOLOGIES = [
@@ -147,7 +201,8 @@ def fill_out_missing_techs(power_by_tech, expected_techs):
             power_by_tech[tech] = [0] * x_axis_length
 
 
-def get_variable_curtailment_results(c, scenario_id, load_zone, horizon, stage):
+def get_variable_curtailment_results(
+        c, scenario_id, load_zone, horizon, stage):
     """
     Get variable generator curtailment by load_zone, horizon, and stage
     :param c:
@@ -228,7 +283,7 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     :param c:
     :param scenario_id:
     :param load_zone:
-    ;param horizon:
+    :param horizon:
     :param stage:
     :return:
     """
@@ -376,7 +431,9 @@ def create_plot(df):
     #   colors = d3['Category20b'][len(stacked_cols)]
 
     # TODO: include horizon in title? (would need to add function arg)
+    #   Yes, include load zone and horizon in title
     # Set up the figure
+
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
@@ -466,6 +523,8 @@ def create_plot(df):
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
+    # TODO: how do we deal with possible legend overflow (e.g. if there are
+    #  too many technologies)
 
     # Add axis labels
     plot.xaxis.axis_label = "Hour Ending"
@@ -499,40 +558,85 @@ def create_plot(df):
     return plot
 
 
-def draw_dispatch_plot(c, scenario, load_zone, horizon, stage,
-                       show_plot, return_json):
+def draw_dispatch_plot(c, scenario_id, load_zone, horizon, stage):
     """
 
     :param c:
-    :param scenario:
+    :param scenario_id:
     :param load_zone:
     :param horizon:
     :param stage:
-    :param show_plot:
-    :param return_json:
     :return:
     """
-
-    # Get the scenario ID
-    scenario_id = c.execute(
-        """SELECT scenario_id
-        FROM scenarios
-        WHERE scenario_name = '{}';""".format(scenario)
-    ).fetchone()[0]
-
     df = create_data_df(c, scenario_id, load_zone, horizon, stage)
     plot = create_plot(df)
 
+    return plot
+
+
+def main(args=None):
+    """
+
+    :return:
+    """
+    if args is None:
+        args = sys.argv[1:]
+    parsed_args = parse_arguments(arguments=args)
+
+    print(parsed_args)
+
+    db = connect_to_database(parsed_arguments=parsed_args)
+    c = db.cursor()
+
+    if parsed_args.scenario_id is None:
+        scenario = parsed_args.scenario
+        # Get the scenario ID
+        scenario_id = c.execute(
+            """SELECT scenario_id
+            FROM scenarios
+            WHERE scenario_name = '{}';""".format(parsed_args.scenario)
+        ).fetchone()[0]
+    else:
+        scenario_id = parsed_args.scenario_id
+        # Get the scenario name
+        scenario = c.execute(
+            """SELECT scenario_name
+            FROM scenarios
+            WHERE scenario_id = {};""".format(parsed_args.scenario_id)
+        ).fetchone()[0]
+
+    print(scenario_id)
+
+    plot = draw_dispatch_plot(
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=parsed_args.load_zone,
+        horizon=parsed_args.horizon,
+        stage=parsed_args.stage
+    )
+
     # Show plot in HTML browser file if requested
-    if show_plot:
+    # TODO: deal with non-default scenario locations (Ana WIP)
+    if parsed_args.show:
         figures_directory = os.path.join(
-            os.getcwd(), "..", "scenarios", scenario, "results", "figures"
+            os.getcwd(), "..", "scenarios", scenario, "results",
+            "figures"
         )
         if not os.path.exists(figures_directory):
             os.makedirs(figures_directory)
+        # TODO: file name should include load zone and horizon arguments
         output_file(os.path.join(figures_directory, 'dispatch_plot.html'))
         show(plot)
 
     # Return plot in json format if requested
-    if return_json:
-        return json.dumps(json_item(plot))
+    if parsed_args.return_json:
+        return json_item(
+            plot,
+            "dispatchPlot-{}-{}".format(
+                parsed_args.load_zone, parsed_args.horizon
+            )
+        )
+
+
+if __name__ == "__main__":
+    main()
