@@ -1,42 +1,51 @@
 <div class="container-fluid">
-  <button id="goBackButtonTop" class="button-primary"
-        (click)="goBack()">Back</button>
-
-  <div class="container-fluid">
-    <div class="row flex-row flex-nowrap">
-      <div class="col-2 position-fixed" id="sidebar">
-        <ng-container *ngFor="let button of allResultsButtons">
-          <div>
-            <button id="{{button.name}}" class="button-primary"
-                  (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
-          </div>
-        </ng-container>
-      </div>
-
-      <div class="col-md-auto offset-2">
-        <ng-container *ngFor="let table of allTables">
-          <table *ngIf="resultsToShow==table.ngIfKey"
-                 class="scenario-results-table">
-            <caption>{{table.caption}}</caption>
-            <tr>
-                 <ng-container *ngFor="let column of table.columns">
-                   <th>{{column}}</th>
-                 </ng-container>
-            </tr>
-
-          <ng-container *ngFor="let row of table.rowsData">
-             <tr>
-               <ng-container *ngFor="let column of table.columns">
-                 <td>{{row[column]}}</td>
-               </ng-container>
-             </tr>
-          </ng-container>
-          </table>
-        </ng-container>
-      </div>
+  <h4>Results</h4>
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="goBackButtonTop" class="button-primary"
+            (click)="goBack()">Back</button>
     </div>
   </div>
 
-<button id="goBackButtonBottom" class="button-primary"
-      (click)="goBack()">Back</button>
+    <div class="navbar navbar-expand-sm" id="sidebar">
+      <ul class="navbar-nav mr-auto">
+        <ng-container *ngFor="let button of allResultsButtons">
+          <li class="nav-item">
+            <button id="{{button.name}}" class="button-primary"
+                  (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
+          </li>
+        </ng-container>
+      </ul>
+    </div>
+  <div class="row">
+    <div class="col overflow-x-auto">
+      <ng-container *ngFor="let table of allTables">
+        <table *ngIf="resultsToShow==table.ngIfKey"
+               class="scenario-results-table">
+          <caption>{{table.caption}}</caption>
+          <tr>
+               <ng-container *ngFor="let column of table.columns">
+                 <th>{{column}}</th>
+               </ng-container>
+          </tr>
+
+        <ng-container *ngFor="let row of table.rowsData">
+           <tr>
+             <ng-container *ngFor="let column of table.columns">
+               <td>{{row[column]}}</td>
+             </ng-container>
+           </tr>
+        </ng-container>
+        </table>
+      </ng-container>
+    </div>
+  </div>
+
+  <div class="row">
+     <div class="col-md-auto">
+      <button id="goBackButtonBottom" class="button-primary"
+            (click)="goBack()">Back</button>
+     </div>
+  </div>
+
 </div>

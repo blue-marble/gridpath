@@ -23,3 +23,15 @@ h1, h2, h3, h4, h5, h6 {
   background-color: darkblue;
   color: white
 }
+
+.button-primary a:link {
+  color: midnightblue;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button-primary a:link:hover {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+}

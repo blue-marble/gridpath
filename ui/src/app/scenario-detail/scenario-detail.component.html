@@ -1,36 +1,57 @@
 <div class="container-fluid">
-<button id="goBackButtonTop" class="button-primary"
-      (click)="goBack()">Back</button>
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="goBackButtonTop" class="button-primary"
+            (click)="goBack()">Back</button>
+    </div>
+  </div>
 
-<h2>{{scenarioName}}<span> Scenario Details</span></h2>
+  <div class="row" id="scenario-detail-heading">
+    <div class="col-md-auto">
+      <h4>{{scenarioName}}<span>: Scenario Details</span></h4>
+    </div>
+  </div>
 
-<ng-container *ngFor="let tbl of scenarioDetailStructure">
-  <table class="scenario-detail">
-    <caption>{{tbl.scenarioDetailTableCaption}}</caption>
-  <tr>
-  <th>Name</th>
-  <th>Value</th>
-  <th *ngIf="tbl.scenarioDetailTableCaption!=='Features'">View Data</th>
-  </tr>
-    <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
-       <tr>
-         <td>{{sd.rowCaption}}</td>
-         <td>{{sd.rowValue}}</td>
-          <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'"><button
-            (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
-            View Data
-          </button></td>
-       </tr>
-    </ng-container>
-  </table>
-</ng-container>
+  <div class="row">
+    <div class="col-md-auto">
+      <ng-container *ngFor="let tbl of scenarioDetailStructure">
+        <table class="scenario-detail">
+          <caption>{{tbl.scenarioDetailTableCaption}}</caption>
+        <tr>
+        <th>Name</th>
+        <th>Value</th>
+        <th *ngIf="tbl.scenarioDetailTableCaption!=='Features'">View Data</th>
+        </tr>
+          <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
+             <tr>
+               <td>{{sd.rowCaption}}</td>
+               <td>{{sd.rowValue}}</td>
+                <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'"><button
+                  (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
+                  View Data
+                </button></td>
+             </tr>
+          </ng-container>
+        </table>
+      </ng-container>
+    </div>
+  </div>
 
-<button id="editScenarioButton" class="button-primary"
-      (click)="editScenario()">Edit Scenario</button>
+  <div class="row">
+    <div class="column col-md-auto">
+    <button id="editScenarioButton" class="button-primary"
+          (click)="editScenario()">Edit Scenario</button>
+    </div>
 
-<button id="runScenarioButton" class="button-primary"
-      (click)="runScenario(scenarioID)">Run Scenario</button>
-
-<button id="goBackButtonBottom" class="button-primary"
-      (click)="goBack()">Back</button>
+    <div class="col-md-auto">
+    <button id="runScenarioButton" class="button-primary"
+          (click)="runScenario(scenarioID)">Run Scenario</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="goBackButtonBottom" class="button-primary"
+            (click)="goBack()">Back</button>
+    </div>
+  </div>
 </div>

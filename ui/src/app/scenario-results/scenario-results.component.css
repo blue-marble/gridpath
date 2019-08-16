@@ -4,9 +4,9 @@
 }
 
 .scenario-results-table th, td {
-    padding: 5px;
-    text-align: left;
-    font-size: small;
+  padding: 5px;
+  text-align: left;
+  font-size: small;
 }
 
 .scenario-results-table tr:nth-child(odd) {
@@ -22,10 +22,9 @@
 }
 
 #sidebar {
-  background-color: midnightblue;
-  padding: 10px
+  padding-top: 20px
 }
 
 #goBackButtonTop {
-  padding: 10px;
+  padding-top: 10px;
 }

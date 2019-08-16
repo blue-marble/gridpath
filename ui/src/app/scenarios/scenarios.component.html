@@ -1,44 +1,45 @@
 <div class="container-fluid">
-  <h3>My Scenarios</h3>
-  <button ng-click="newScenario" class="button-primary">
-          <a [routerLink]="['/scenario-new']">New scenario</a>
-  </button>
-  <button ng-click="updateScenarios" class="button-primary"
-          (click)="updateScenarios()">Update scenarios list</button>
-  <ul class="scenarios">
-    <li *ngFor="let scenario of scenarios">
-      <a [routerLink]="['/scenario', scenario.id]">
-        {{ scenario.name }}
-      </a>
-    </li>
-  </ul>
-
-
-  <table >
-  <tr>
-  <th>Scenario Name</th>
-  <th>Validation Status</th>
-  <th>Run Status</th>
-  <th>Results</th>
-  </tr>
-    <ng-container *ngFor="let scenario of scenarios">
-       <tr>
-         <td>
-           <button class="button-primary">
-              <a [routerLink]="['/scenario', scenario.id]">{{ scenario.name }}
-              </a>
-            </button>
-         </td>
-         <td>{{scenario.validationStatus}}</td>
-         <td>{{scenario.runStatus}}</td>
-         <td>
-           <button class="button-primary">
-              <a [routerLink]="['/scenario', scenario.id, 'results']">View
-                Results
-              </a>
-            </button>
-         </td>
-       </tr>
-    </ng-container>
-  </table>
+  <h4>My Scenarios</h4>
+  <div class="row">
+    <div class="col-md-auto">
+      <button ng-click="newScenario" class="button-primary">
+              <a [routerLink]="['/scenario-new']">New scenario</a>
+      </button>
+    </div>
+    <div class="col-md-auto">
+      <button ng-click="updateScenarios" class="button-primary"
+              (click)="updateScenarios()">Update scenarios list</button>
+    </div>
+  </div>
+  <div class="row" id="table-row">
+    <div class="col-md-auto">
+      <table class="scenarios-table">
+      <tr>
+      <th>Scenario Name</th>
+      <th>Validation Status</th>
+      <th>Run Status</th>
+      <th>Results</th>
+      </tr>
+        <ng-container *ngFor="let scenario of scenarios">
+           <tr>
+             <td>
+               <button class="button-primary">
+                  <a [routerLink]="['/scenario', scenario.id]">{{ scenario.name }}
+                  </a>
+                </button>
+             </td>
+             <td>{{scenario.validationStatus}}</td>
+             <td>{{scenario.runStatus}}</td>
+             <td>
+               <button class="button-primary">
+                  <a [routerLink]="['/scenario', scenario.id, 'results']">View
+                    Results
+                  </a>
+                </button>
+             </td>
+           </tr>
+        </ng-container>
+      </table>
+    </div>
+  </div>
 </div>

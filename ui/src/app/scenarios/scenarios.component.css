@@ -1,39 +1,30 @@
 /* scenariosComponent's private CSS styles */
-.scenarios {
-  list-style-type: none;
-  background: aliceblue;
-  padding: 0.3em;
-  width: 30em;
-}
-.scenarios li {
-  cursor: pointer;
-  position: relative;
+.scenarios-table th {
   background-color: midnightblue;
-  padding: .3em .5em;
-  border-radius: 4px;
-  margin: 0.5em;
-}
-
-.scenarios li:hover {
-  color: midnightblue;
-  background-color: lightsteelblue;
-}
-
-
-.scenarios a:link {
   color: white;
-  text-decoration: none;
-  display: inline-block;
 }
 
-.button-primary a:link {
-  color: midnightblue;
-  text-decoration: none;
-  display: inline-block;
+.scenarios-table th, td {
+  padding:5px;
+  text-align: left;
+  font-size: medium;
 }
 
-.button-primary a:link:hover {
-  color: white;
-  text-decoration: none;
-  display: inline-block;
+.scenarios-table tr:nth-child(odd) {
+  background-color: #f2f2f2;
 }
+
+.scenarios-table caption {
+  caption-side: top;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 10px;
+  margin-bottom: 1px;
+}
+
+#table-row {
+  padding-top: 20px
+}
+
+
+
