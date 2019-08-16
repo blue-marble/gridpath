@@ -781,7 +781,10 @@ project_lf_reserves_up_ba_scenario_id)
 REFERENCES subscenarios_project_lf_reserves_up_bas
  (lf_reserves_up_ba_scenario_id, project_lf_reserves_up_ba_scenario_id),
 FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
+subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
+FOREIGN KEY (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba)
+REFERENCES inputs_geography_lf_reserves_up_bas
+(lf_reserves_up_ba_scenario_id, lf_reserves_up_ba)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_lf_reserves_down_bas;
@@ -809,7 +812,10 @@ project_lf_reserves_down_ba_scenario_id)
 REFERENCES subscenarios_project_lf_reserves_down_bas
  (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
 FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
+subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba)
+REFERENCES inputs_geography_lf_reserves_down_bas
+(lf_reserves_down_ba_scenario_id, lf_reserves_down_ba)
 );
 
 
@@ -838,7 +844,10 @@ project_regulation_up_ba_scenario_id)
 REFERENCES subscenarios_project_regulation_up_bas
  (regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id),
 FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id)
+subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id),
+FOREIGN KEY (regulation_up_ba_scenario_id, regulation_up_ba)
+REFERENCES inputs_geography_regulation_up_bas
+(regulation_up_ba_scenario_id, regulation_up_ba)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_regulation_down_bas;
@@ -866,7 +875,10 @@ project_regulation_down_ba_scenario_id)
 REFERENCES subscenarios_project_regulation_down_bas
  (regulation_down_ba_scenario_id, project_regulation_down_ba_scenario_id),
 FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id)
+subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id),
+FOREIGN KEY (regulation_down_ba_scenario_id, regulation_down_ba)
+REFERENCES inputs_geography_regulation_down_bas
+(regulation_down_ba_scenario_id, regulation_down_ba)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_frequency_response_bas;
@@ -897,7 +909,10 @@ REFERENCES subscenarios_project_frequency_response_bas
  (frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
 FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
 subscenarios_geography_frequency_response_bas
-(frequency_response_ba_scenario_id)
+(frequency_response_ba_scenario_id),
+FOREIGN KEY (frequency_response_ba_scenario_id, frequency_response_ba)
+REFERENCES inputs_geography_frequency_response_bas
+(frequency_response_ba_scenario_id, frequency_response_ba)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_spinning_reserves_bas;
@@ -925,7 +940,10 @@ project_spinning_reserves_ba_scenario_id)
 REFERENCES subscenarios_project_spinning_reserves_bas
  (spinning_reserves_ba_scenario_id, project_spinning_reserves_ba_scenario_id),
 FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
-subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
+subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
+FOREIGN KEY (spinning_reserves_ba_scenario_id, spinning_reserves_ba)
+REFERENCES inputs_geography_spinning_reserves_bas
+(spinning_reserves_ba_scenario_id, spinning_reserves_ba)
 );
 
 -- Project RPS zones
