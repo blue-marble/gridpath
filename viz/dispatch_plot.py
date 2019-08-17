@@ -24,9 +24,6 @@ import sys
 from viz.common_functions import connect_to_database
 
 
-# TODO: add some error-handling for when the user does not specify all
-#  required arguments, as the traceback is rather unhelpful
-#  We should also not allow both scenario and scenario_id to be specified
 def parse_arguments(arguments):
     """
 
@@ -46,9 +43,6 @@ def parse_arguments(arguments):
     parser.add_argument("--horizon", help="The horizon ID.")
     parser.add_argument("--stage", default=1,
                         help="The stage ID. Defaults to 1 if not specified.")
-    # TODO: I suggest having an option to not show the plot (default to
-    #  show) and a separate option to save the plot (default to not save)
-    #  Also, I maybe we should have an option to save to an image
     parser.add_argument("--show",
                         default=False, action="store_true",
                         help="Show and save figure to "
@@ -67,14 +61,6 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-# TODO: we need to have the ability to take different technologies, e.g. a
-#  user might want to show onshore wind and offshore wind separately,
-#  etc. So we should take the list of technologies for the scenario from  the
-#  database; for the colors we could use a palette and perhaps allow the user
-#  to specify a dictionary of technology and color. It would, of course,
-#  be even better if it could be done interactively.
-#   Relatedly, we should think about how to allow the user to re-order the
-#   stack
 # These are the technologies we are expecting
 # At this stage, if other technologies are specified, the script will break
 TECHNOLOGIES = [
@@ -431,9 +417,7 @@ def create_plot(df):
     #   colors = d3['Category20b'][len(stacked_cols)]
 
     # TODO: include horizon in title? (would need to add function arg)
-    #   Yes, include load zone and horizon in title
     # Set up the figure
-
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
@@ -523,8 +507,6 @@ def create_plot(df):
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
-    # TODO: how do we deal with possible legend overflow (e.g. if there are
-    #  too many technologies)
 
     # Add axis labels
     plot.xaxis.axis_label = "Hour Ending"
@@ -576,14 +558,13 @@ def draw_dispatch_plot(c, scenario_id, load_zone, horizon, stage):
 
 def main(args=None):
     """
+    :return: if requested, return the plot as JSON object
 
-    :return:
+    Parse the arguments and create the dispatch plot
     """
     if args is None:
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
-
-    print(parsed_args)
 
     db = connect_to_database(parsed_arguments=parsed_args)
     c = db.cursor()
@@ -605,8 +586,6 @@ def main(args=None):
             WHERE scenario_id = {};""".format(parsed_args.scenario_id)
         ).fetchone()[0]
 
-    print(scenario_id)
-
     plot = draw_dispatch_plot(
         c=c,
         scenario_id=scenario_id,
@@ -616,7 +595,6 @@ def main(args=None):
     )
 
     # Show plot in HTML browser file if requested
-    # TODO: deal with non-default scenario locations (Ana WIP)
     if parsed_args.show:
         figures_directory = os.path.join(
             os.getcwd(), "..", "scenarios", scenario, "results",
