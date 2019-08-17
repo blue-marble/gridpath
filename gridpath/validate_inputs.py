@@ -10,7 +10,8 @@ import sqlite3
 import sys
 from argparse import ArgumentParser
 
-from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
+    write_validation_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
@@ -32,8 +33,6 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     # TODO: check if we even need database cursor (and subscenarios?)
     #   since presumably we already have our data in the inputs.
     #   need to go through each module's input validation to check this
-
-    # TODO: link db outputs for validation to validation status
 
     # TODO: see if we can do some sort of automatic dtype validation for
     #  each table in the database? Problem is that you don't necessarily want
@@ -60,29 +59,113 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
             #    ... (see Evernote validation list)
             #    create separate function for each validation that you call here
 
-
-    # check that must-run and no_commit have only one segment, i.e. constant
-    # heat rate
-    # This requires checking other tables so is a cross validation!
-
     # check that SU and SD * timepoint duration is larger than Pmin
     # this requires multiple tables so cross validation?
 
     # check that specified load zones are actual load zones that are available
-
-    # Update Validation Status:
-    update_validation_status(conn.cursor(), subscenarios.SCENARIO_ID)
-    conn.commit()
+    # --> isn't that easy to do w foreign key?
 
 
-def reset_input_validation(c, scenario_id):
+def validate_subscenarios_vs_features(subscenarios, optional_features, conn):
+    """
+    Check whether features and subscenarios are self-consistent
+
+    :param subscenarios:
+    :param optional_features:
+    :param conn:
+    :return: valid_features: list of features with valid subscenario_ids
+    """
+
+    validation_results = []
+
+    subscenario_ids_by_feature = optional_features.subscenario_ids_by_feature
+    feature_list = optional_features.determine_feature_list()
+
+    invalid_features = set()
+    for feature, subscenario_ids in subscenario_ids_by_feature.items():
+        for sc_id in subscenario_ids:
+            # If the feature is requested, and the associated subscenarios are
+            # not specified, raise a validation error and track invalid feature
+            if feature in feature_list and \
+                    getattr(subscenarios, sc_id) is None:
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     "N/A",
+                     sc_id,
+                     "scenarios",
+                     "Missing subscenario ID",
+                     "Requested feature '{}' requires an input for '{}'".format(
+                         feature, sc_id
+                     )
+                     )
+                )
+                invalid_features.add(feature)
+            # If the feature is not requested, and the associated subscenarios
+            # are specified, raise a validation error
+            elif feature not in feature_list and \
+                    getattr(subscenarios, sc_id) is not None:
+                validation_results.append(
+                    (subscenarios.SCENARIO_ID,
+                     "N/A",
+                     sc_id,
+                     "scenarios",
+                     "Unnecessary subscenario ID",
+                     "Detected inputs for '{}' while related feature '{}' is not requested".format(
+                         sc_id, feature
+                     )
+                     )
+                )
+
+    # Keep track of the valid features. The second phase of the input validation
+    # will run module-level input validation that checks the actual input data
+    # data related to the valid features (and skips invalid features since
+    # these will by definition result in erroneous inputs).
+    valid_features = list(set(feature_list) - invalid_features)
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+    return valid_features
+
+
+def validate_required_subscenario_ids(subscenarios, conn):
+    """
+    Check whether the required subscenario_ids are specified in the db
+    :param subscenarios:
+    :param conn:
+    :return: boolean, True if all required subscenario_ids are specified
+    """
+    validation_results = []
+    for sc_id in subscenarios.required_subscenario_ids:
+        if getattr(subscenarios, sc_id) is None:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 "N/A",
+                 sc_id,
+                 "scenarios",
+                 "Missing required subscenario ID",
+                 "'{}' is a required input in the 'scenarios' table".format(
+                     sc_id
+                 )
+                 )
+            )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+    # Return True if all required subscenario_ids are valid (list is empty)
+    return not bool(validation_results)
+
+
+def reset_input_validation(conn, scenario_id):
     """
     Reset input validation: delete old input validation outputs and reset the
     input validation status.
-    :param c: database cursor
+    :param conn: database connection
     :param scenario_id: scenario_id
     :return: 
     """
+    c = conn.cursor()
     c.execute(
         """DELETE FROM mod_input_validation
         WHERE scenario_id = {};""".format(str(scenario_id))
@@ -94,14 +177,17 @@ def reset_input_validation(c, scenario_id):
         WHERE scenario_id = {};""".format(str(scenario_id))
     )
 
+    conn.commit()
 
-def update_validation_status(c, scenario_id):
+
+def update_validation_status(conn, scenario_id):
     """
 
-    :param c:
+    :param conn:
     :param scenario_id:
     :return:
     """
+    c = conn.cursor()
     validations = c.execute(
         """SELECT scenario_id 
         FROM mod_input_validation
@@ -119,10 +205,12 @@ def update_validation_status(c, scenario_id):
         WHERE scenario_id = {};""".format(str(status), str(scenario_id))
     )
 
+    conn.commit()
+
 
 def parse_arguments(args):
     """
-    :param arguments: the script arguments specified by the user
+    :param args: the script arguments specified by the user
     :return: the parsed known argument values (<class 'argparse.Namespace'>
     Python object)
 
@@ -180,22 +268,36 @@ def main(args=None):
     )
 
     # Reset input validation status and results
-    reset_input_validation(c, scenario_id)
-    conn.commit()
+    reset_input_validation(conn, scenario_id)
 
     # Get scenario characteristics (features, subscenarios, subproblems)
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 
-    # Determine requested features and use this to determine what modules to
-    # load for Gridpath
-    feature_list = optional_features.determine_feature_list()
-    modules_to_use = determine_modules(features=feature_list)
-    loaded_modules = load_modules(modules_to_use=modules_to_use)
+    # Check whether selected features and subscenario_ids are self-consistent
+    # and return the valid features
+    valid_features = validate_subscenarios_vs_features(
+        subscenarios, optional_features, conn)
 
-    # Read in appropriate inputs from database and validate inputs
-    validate_inputs(subproblems, loaded_modules, subscenarios, conn)
+    # Check whether required "core" subscenario_ids are specified
+    is_valid = validate_required_subscenario_ids(subscenarios, conn)
+
+    # Only do the detailed input validation if all required subscenario_ids
+    # are specified (otherwise will get errors when loading data)
+    if is_valid:
+        # Load modules for features that have valid subscenario_id inputs
+        modules_to_use = determine_modules(features=valid_features)
+        loaded_modules = load_modules(modules_to_use=modules_to_use)
+
+        # Read in inputs from db and validate inputs for loaded modules
+        validate_inputs(subproblems, loaded_modules, subscenarios, conn)
+    else:
+        print("Missing required subscenario ID(s). "
+              "Skipped detailed input validation.")
+
+    # Update validation status:
+    update_validation_status(conn, subscenarios.SCENARIO_ID)
 
 
 if __name__ == "__main__":
