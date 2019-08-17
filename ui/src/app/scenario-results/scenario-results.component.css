@@ -21,8 +21,21 @@
   margin-bottom: 1px;
 }
 
-#sidebar {
-  padding-top: 20px
+#results-navbar {
+  padding-top: 20px;
+}
+
+.navbar-results-button {
+  font-size: small;
+  background:aliceblue;
+  color:midnightblue;
+  cursor:pointer;
+  border-radius: 4px;
+}
+
+.navbar-results-button:hover {
+  background-color: darkblue;
+  color: white
 }
 
 #goBackButtonTop {

@@ -1,3 +1,4 @@
+<script src="https://cdn.pydata.org/bokeh/release/bokeh-1.3.4.min.js"></script>
 <div class="container-fluid">
   <h4>Results</h4>
   <div class="row">
@@ -7,11 +8,11 @@
     </div>
   </div>
 
-    <div class="navbar navbar-expand-sm" id="sidebar">
+    <div class="navbar navbar-expand-sm" id="results-navbar">
       <ul class="navbar-nav mr-auto">
         <ng-container *ngFor="let button of allResultsButtons">
           <li class="nav-item">
-            <button id="{{button.name}}" class="button-primary"
+            <button id="{{button.name}}" class="navbar-results-button"
                   (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
           </li>
         </ng-container>
@@ -19,6 +20,8 @@
     </div>
   <div class="row">
     <div class="col overflow-x-auto">
+      <div id="{{dispatchPlotName}}"
+           *ngIf="resultsToShow=='results-dispatch-plot'">Plot</div>
       <ng-container *ngFor="let table of allTables">
         <table *ngIf="resultsToShow==table.ngIfKey"
                class="scenario-results-table">

@@ -3,6 +3,7 @@
 from flask_restful import Resource
 
 from ui.server.common_functions import connect_to_database
+from viz import dispatch_plot
 
 
 # TODO: create results views to show, which ones?
@@ -286,7 +287,26 @@ class ScenarioResultsSystemPRM(Resource):
         )
 
 
-# TODO: common function?
+class ScenarioResultsDispatchPlot(Resource):
+    """
+
+    """
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone, horizon):
+        """
+
+        :return:
+        """
+        return make_dispatch_plot(
+            db_path=self.db_path,
+            scenario_id=scenario_id,
+            load_zone=load_zone,
+            horizon=horizon
+        )
+
+
 def create_data_table_api(db_path, ngifkey, caption, columns, table,
                           scenario_id):
     """
@@ -335,3 +355,40 @@ def get_table_data(db_path, columns, table, scenario_id):
         rows_data.append(row_dict)
 
     return column_names, rows_data
+
+
+def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
+    """
+
+    :return:
+    """
+    dispatch_plot_api = dict()
+    io, c = connect_to_database(db_path=db_path)
+    load_zone_options = [z[0] for z in c.execute(
+        """SELECT load_zone FROM inputs_geography_load_zones 
+        WHERE load_zone_scenario_id = (
+        SELECT load_zone_scenario_id
+        FROM scenarios
+        WHERE scenario_id = {});""".format(scenario_id)
+    ).fetchall()]
+
+    dispatch_plot_api["loadZoneOptions"] = load_zone_options
+
+    # TODO: are these unique or do we need to separate by period; in fact,
+    #  is separating by period a better user experience regardless
+    horizon_options = [h[0] for h in c.execute(
+        """SELECT horizon FROM inputs_temporal_horizons 
+        WHERE temporal_scenario_id = (
+        SELECT temporal_scenario_id
+        FROM scenarios
+        WHERE scenario_id = {});""".format(scenario_id)
+    ).fetchall()]
+
+    dispatch_plot_api["horizonOptions"] = horizon_options
+
+    dispatch_plot_api["plotJSON"] = dispatch_plot.main(
+      ["--return_json", "--database", db_path, "--scenario_id", scenario_id,
+       "--load_zone", load_zone, "--horizon", horizon]
+    )
+
+    return dispatch_plot_api

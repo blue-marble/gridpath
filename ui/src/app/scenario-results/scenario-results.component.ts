@@ -4,6 +4,10 @@ import { ScenarioResultsService} from './scenario-results.service';
 import { ScenarioResults, ResultsButton } from './scenario-results';
 import { ActivatedRoute } from '@angular/router';
 
+import { PlotAPI } from './scenario-results.service';
+
+const Bokeh = ( window as any ).require('bokehjs');
+
 @Component({
   selector: 'app-scenario-results',
   templateUrl: './scenario-results.component.html',
@@ -34,6 +38,10 @@ export class ScenarioResultsComponent implements OnInit {
   resultsSystemCarbonCap: ScenarioResults;
   resultsSystemPRM: ScenarioResults;
 
+  // Plots
+  dispatchPlotJSON: object;
+  dispatchPlotName: string;
+
   // To get the right route
   scenarioID: number;
   private sub: any;
@@ -46,6 +54,7 @@ export class ScenarioResultsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.log('Initializing with results to show', this.resultsToShow);
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -112,6 +121,13 @@ export class ScenarioResultsComponent implements OnInit {
     if (this.resultsToShow === 'results-system-prm') {
       this.getResultsSystemPRM(this.scenarioID);
     }
+
+    if (this.resultsToShow === 'results-dispatch-plot') {
+      this.dispatchPlotName = 'dispatchPlot-CAISO-203001';
+      console.log('Showing dispatch plot');
+      this.getResultsDispatchPlot(this.scenarioID);
+    }
+
 
   }
 
@@ -231,6 +247,15 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  getResultsDispatchPlot(scenarioID): void {
+    this.scenarioResultsService.getResultsDispatchPlot(scenarioID, 'CAISO', 203001)
+      .subscribe(dispatchPlot => {
+        this.dispatchPlotJSON = dispatchPlot.plotJSON;
+        console.log(this.dispatchPlotJSON);
+        Bokeh.embed.embed_item(this.dispatchPlotJSON);
+      });
+  }
+
   // Make the results buttons with their relevant keys that are passed to
   // the resultsToViewSubject in scenario-results.service.ts
   makeResultsButtons(): void {
@@ -317,6 +342,13 @@ export class ScenarioResultsComponent implements OnInit {
       caption: 'PRM'
     };
     this.allResultsButtons.push(systemPRMButton);
+
+    const dispatchPlotButton = {
+      name: 'showResultsDispatchPlotButton',
+      ngIfKey: 'results-dispatch-plot',
+      caption: 'Dispatch Plot'
+    };
+    this.allResultsButtons.push(dispatchPlotButton);
   }
 
   goBack(): void {

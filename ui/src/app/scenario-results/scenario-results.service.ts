@@ -22,7 +22,7 @@ export class ScenarioResultsService {
   // Change the value of resultsToViewSubject
   changeResultsToView(resultsToShow: string) {
     this.resultsToViewSubject.next(resultsToShow);
-    console.log('Results to show changed to, ', resultsToShow);
+    console.log('Results to show changed to ', resultsToShow);
   }
 
   // API subscriptions
@@ -97,4 +97,19 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-system-prm`
     );
   }
+
+  getResultsDispatchPlot(
+    scenarioID: number, loadZone: string, horizon: number
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}`
+    );
+  }
+}
+
+// TODO: what is the json plot's type?
+export class PlotAPI {
+  loadZoneOptions: [];
+  horizonOptions: [];
+  plotJSON: object;
 }
