@@ -25,7 +25,10 @@
           <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
              <tr>
                <td>{{sd.rowCaption}}</td>
-               <td>{{sd.rowValue}}</td>
+               <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'">{{sd.rowValue}}</td>
+               <td *ngIf="tbl.scenarioDetailTableCaption=='Features'">
+                 <input type="checkbox" [checked]="sd.rowValue" disabled>
+               </td>
                 <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'"><button
                   (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
                   View Data

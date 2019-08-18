@@ -36,7 +36,10 @@ class ScenarioDetailAPI(Resource):
         )
 
         column_names = [s[0] for s in scenario_edit_query.description]
-        column_values = list(list(scenario_edit_query)[0])
+        column_values = [
+            True if v == "yes" else v
+            for v in list(list(scenario_edit_query)[0])
+        ]
         scenario_edit_api = dict(zip(column_names, column_values))
 
         scenario_detail_api["editScenarioValues"] = scenario_edit_api
@@ -87,18 +90,25 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
     scenario_detail_table_api["scenarioDetailTableRows"] = list()
 
     row_metadata = c.execute(
-        """SELECT ui_table_row, ui_row_caption, ui_row_db_scenarios_view_column, 
-        ui_row_db_input_table 
+        """SELECT ui_table_row, ui_row_caption, 
+        ui_row_db_scenarios_view_column, ui_row_db_input_table 
         FROM ui_scenario_detail_table_row_metadata
         WHERE ui_table = '{}'""".format(ui_table_name_in_db)
     ).fetchall()
 
     for row in row_metadata:
         row_value = c.execute(
-            """SELECT {}
-              FROM scenarios_view
-              WHERE scenario_id = {}""".format(row[2], scenario_id)
-        ).fetchone()[0]
+              """SELECT {}
+                FROM scenarios_view
+                WHERE scenario_id = {}""".format(row[2], scenario_id)
+          ).fetchone()[0]
+        # Replace yes/no with booleans in 'Features' table, so that we can
+        # create checkboxes
+        if table_caption[1] == "Features":
+            if row_value == "yes":
+                row_value = True
+            else:
+                row_value = False
 
         scenario_detail_table_api["scenarioDetailTableRows"].append({
             'uiRowNameInDB': row[0],
