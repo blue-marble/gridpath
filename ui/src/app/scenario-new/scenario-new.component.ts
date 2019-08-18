@@ -6,7 +6,7 @@ import {ScenarioNewService} from './scenario-new.service';
 import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
 import {ViewDataService} from '../view-data/view-data.service';
 import {SettingsTable} from './scenario-new';
-import {StartingValues} from "../scenario-detail/scenario-detail";
+import {StartingValues} from '../scenario-detail/scenario-detail';
 
 const io = ( window as any ).require('socket.io-client');
 

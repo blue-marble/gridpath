@@ -25,16 +25,7 @@
            <tr>
              <td>{{sd.featureName}}</td>
              <td>
-               <select formControlName="{{sd.formControlName}}">
-                 <!--[ngValue]="selectionOption" needed for initial
-                  values to work-->
-                  <option
-                    *ngFor="let selectionOption of featureSelectionOption"
-                    [ngValue]="selectionOption"
-                  >
-                    {{selectionOption}}
-                  </option>
-                </select>
+               <input type="checkbox" formControlName="{{sd.formControlName}}">
              </td>
            </tr>
         </ng-container>
