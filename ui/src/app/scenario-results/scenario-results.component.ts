@@ -3,11 +3,8 @@ import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {FormControl, FormGroup} from '@angular/forms';
 
-import { ScenarioResultsService} from './scenario-results.service';
-import { ScenarioResults, ResultsButton } from './scenario-results';
-
-
-import { PlotAPI } from './scenario-results.service';
+import { ScenarioResultsService } from './scenario-results.service';
+import { ScenarioResults, ResultsButton, ResultsForm } from './scenario-results';
 
 const Bokeh = ( window as any ).require('bokehjs');
 
@@ -23,12 +20,8 @@ export class ScenarioResultsComponent implements OnInit {
 
   // All results buttons
   allResultsButtons: ResultsButton[];
-
-  // Drop-down menus
-  dispatchPlotOptionsForm = new FormGroup({
-    loadZone: new FormControl(),
-    horizon: new FormControl()
-  });
+  // All results forms
+  allResultsForms: ResultsForm[];
 
   // All tables
   allTables: ScenarioResults[];
@@ -48,10 +41,13 @@ export class ScenarioResultsComponent implements OnInit {
   resultsSystemPRM: ScenarioResults;
 
   // Plots
-  dispatchPlotLoadZoneOptions: [];
-  dispatchPlotHorizonOptions: [];
+  // Dispatch plot (form with plot options, JSON object, and plot name)
+  dispatchPlotOptionsForm = new FormGroup({
+    loadZone: new FormControl(),
+    horizon: new FormControl()
+  });
   dispatchPlotJSON: object;
-  dispatchPlotName: string;
+  dispatchPlotHTMLName: string;
 
   // To get the right route
   scenarioID: number;
@@ -76,9 +72,9 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Make the results buttons
     this.allResultsButtons = [];
+    this.allResultsForms = [];
     this.makeResultsButtons();
-    // Get the drop-down menus
-    this.getDispatchPlotOptions(this.scenarioID);
+    this.makeResultsForms(this.scenarioID);
 
     // Initiate the array of all tables
     this.allTables = [];
@@ -259,22 +255,16 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  // TODO: need to merge with button generation somehow?
-  getDispatchPlotOptions(scenarioID): void {
-    this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
-      plotOptions => {
-        this.dispatchPlotLoadZoneOptions = plotOptions.loadZoneOptions;
-        this.dispatchPlotHorizonOptions = plotOptions.horizonOptions;
-      }
-    );
-  }
-
   getResultsDispatchPlot(scenarioID): void {
+    // Get the plot options
     const loadZone = this.dispatchPlotOptionsForm.value.loadZone;
     const horizon = this.dispatchPlotOptionsForm.value.horizon;
 
-    this.dispatchPlotName = `dispatchPlot-${loadZone}-${horizon}`;
+    // Change the plot name for the HTML
+    this.dispatchPlotHTMLName = `dispatchPlot-${loadZone}-${horizon}`;
 
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
     this.scenarioResultsService.getResultsDispatchPlot(
       scenarioID, loadZone, horizon
     ).subscribe(dispatchPlotAPI => {
@@ -369,13 +359,28 @@ export class ScenarioResultsComponent implements OnInit {
       caption: 'PRM'
     };
     this.allResultsButtons.push(systemPRMButton);
+  }
 
-    const dispatchPlotButton = {
-      name: 'showResultsDispatchPlotButton',
-      ngIfKey: 'results-dispatch-plot',
-      caption: 'Dispatch Plot'
-    };
-    this.allResultsButtons.push(dispatchPlotButton);
+  makeResultsForms(scenarioID): void {
+    this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
+      plotOptions => {
+        const dispatchPlotFormStructure = {
+          formGroup: this.dispatchPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'loadZone',
+             formControlOptions: plotOptions.loadZoneOptions},
+            {formControlName: 'horizon',
+            formControlOptions: plotOptions.horizonOptions}
+          ],
+          button: {
+            name: 'showResultsDispatchPlotButton',
+            ngIfKey: 'results-dispatch-plot',
+            caption: 'Dispatch Plot'
+          }
+        };
+        this.allResultsForms.push(dispatchPlotFormStructure);
+      }
+    );
   }
 
   goBack(): void {
