@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { ScenarioResultsService} from './scenario-results.service';
-import { ScenarioResults, ResultsButton } from './scenario-results';
 import { ActivatedRoute } from '@angular/router';
+import {FormControl, FormGroup} from '@angular/forms';
+
+import { ScenarioResultsService } from './scenario-results.service';
+import { ScenarioResults, ResultsButton, ResultsForm } from './scenario-results';
+
+const Bokeh = ( window as any ).require('bokehjs');
 
 @Component({
   selector: 'app-scenario-results',
@@ -16,6 +20,8 @@ export class ScenarioResultsComponent implements OnInit {
 
   // All results buttons
   allResultsButtons: ResultsButton[];
+  // All results forms
+  allResultsForms: ResultsForm[];
 
   // All tables
   allTables: ScenarioResults[];
@@ -34,6 +40,15 @@ export class ScenarioResultsComponent implements OnInit {
   resultsSystemCarbonCap: ScenarioResults;
   resultsSystemPRM: ScenarioResults;
 
+  // Plots
+  // Dispatch plot (form with plot options, JSON object, and plot name)
+  dispatchPlotOptionsForm = new FormGroup({
+    loadZone: new FormControl(),
+    horizon: new FormControl()
+  });
+  dispatchPlotJSON: object;
+  dispatchPlotHTMLName: string;
+
   // To get the right route
   scenarioID: number;
   private sub: any;
@@ -46,6 +61,7 @@ export class ScenarioResultsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    console.log('Initializing with results to show', this.resultsToShow);
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -56,7 +72,9 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Make the results buttons
     this.allResultsButtons = [];
+    this.allResultsForms = [];
     this.makeResultsButtons();
+    this.makeResultsForms(this.scenarioID);
 
     // Initiate the array of all tables
     this.allTables = [];
@@ -112,6 +130,12 @@ export class ScenarioResultsComponent implements OnInit {
     if (this.resultsToShow === 'results-system-prm') {
       this.getResultsSystemPRM(this.scenarioID);
     }
+
+    if (this.resultsToShow === 'results-dispatch-plot') {
+      console.log('Showing dispatch plot');
+      this.getResultsDispatchPlot(this.scenarioID);
+    }
+
 
   }
 
@@ -231,6 +255,24 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  getResultsDispatchPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.dispatchPlotOptionsForm.value.loadZone;
+    const horizon = this.dispatchPlotOptionsForm.value.horizon;
+
+    // Change the plot name for the HTML
+    this.dispatchPlotHTMLName = `dispatchPlot-${loadZone}-${horizon}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsDispatchPlot(
+      scenarioID, loadZone, horizon
+    ).subscribe(dispatchPlotAPI => {
+        this.dispatchPlotJSON = dispatchPlotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.dispatchPlotJSON);
+      });
+  }
+
   // Make the results buttons with their relevant keys that are passed to
   // the resultsToViewSubject in scenario-results.service.ts
   makeResultsButtons(): void {
@@ -317,6 +359,28 @@ export class ScenarioResultsComponent implements OnInit {
       caption: 'PRM'
     };
     this.allResultsButtons.push(systemPRMButton);
+  }
+
+  makeResultsForms(scenarioID): void {
+    this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
+      plotOptions => {
+        const dispatchPlotFormStructure = {
+          formGroup: this.dispatchPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'loadZone',
+             formControlOptions: plotOptions.loadZoneOptions},
+            {formControlName: 'horizon',
+            formControlOptions: plotOptions.horizonOptions}
+          ],
+          button: {
+            name: 'showResultsDispatchPlotButton',
+            ngIfKey: 'results-dispatch-plot',
+            caption: 'Dispatch Plot'
+          }
+        };
+        this.allResultsForms.push(dispatchPlotFormStructure);
+      }
+    );
   }
 
   goBack(): void {

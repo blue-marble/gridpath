@@ -6,19 +6,48 @@
             (click)="goBack()">Back</button>
     </div>
   </div>
-
-    <div class="navbar navbar-expand-sm" id="sidebar">
-      <ul class="navbar-nav mr-auto">
-        <ng-container *ngFor="let button of allResultsButtons">
-          <li class="nav-item">
-            <button id="{{button.name}}" class="button-primary"
-                  (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
-          </li>
+<!-- Navigation bar for which results to show -->
+  <div class="navbar navbar-expand-sm" id="results-navbar">
+    <ul class="navbar-nav mr-auto">
+      <ng-container *ngFor="let button of allResultsButtons">
+        <li class="nav-item">
+          <button id="{{button.name}}" class="navbar-results-button"
+                (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
+        </li>
+      </ng-container>
+      <ng-container *ngFor="let form of allResultsForms">
+        <li class="form-group-list-item">
+          <form [formGroup]="form.formGroup"
+                (ngSubmit)="showResults(form.button.ngIfKey)">
+            <button id="{{form.button.name}}" type="submit"
+                    class="navbar-results-button">{{form.button.caption}}
+            </button>
+            <fieldset class="input-group-vertical">
+              <div class="form-group">
+                <ng-container *ngFor="let selectForm of form.selectForms">
+                    <select class="custom-select"
+                      formControlName="{{selectForm.formControlName}}">
+                      <ng-container *ngFor="let opt of selectForm.formControlOptions">
+                        <option>{{opt}}</option>
+                      </ng-container>
+                    </select>
+                </ng-container>
+              </div>
+            </fieldset>
+          </form>
+        </li>
         </ng-container>
-      </ul>
-    </div>
+    </ul>
+  </div>
+
+<!--  Row for the results -->
   <div class="row">
     <div class="col overflow-x-auto">
+      <!--  Plots -->
+      <div id="{{dispatchPlotHTMLName}}"
+           *ngIf="resultsToShow=='results-dispatch-plot'">
+      </div>
+      <!--  Results tables -->
       <ng-container *ngFor="let table of allTables">
         <table *ngIf="resultsToShow==table.ngIfKey"
                class="scenario-results-table">
@@ -41,6 +70,7 @@
     </div>
   </div>
 
+<!-- Go back button at the bottom of the results section -->
   <div class="row">
      <div class="col-md-auto">
       <button id="goBackButtonBottom" class="button-primary"

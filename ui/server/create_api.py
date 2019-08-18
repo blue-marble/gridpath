@@ -9,7 +9,8 @@ from ui.server.api.scenario_results import \
   ScenarioResultsProjectCarbon, ScenarioResultsTransmissionCapacity, \
   ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
   ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
-  ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM
+  ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM, \
+  ScenarioResultsDispatchPlotOptions, ScenarioResultsDispatchPlot
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.view_data import ViewDataTemporalTimepoints, \
@@ -471,5 +472,17 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsSystemPRM,
         '/scenarios/<scenario_id>/results-system-prm',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsDispatchPlotOptions,
+        '/scenarios/<scenario_id>/results-dispatch-plot/options',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsDispatchPlot,
+        '/scenarios/<scenario_id>/results-dispatch-plot/<load_zone>/<horizon>',
         resource_class_kwargs={'db_path': db_path}
     )
