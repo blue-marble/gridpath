@@ -15,6 +15,20 @@
                   (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
           </li>
         </ng-container>
+            <li>
+              <form>
+                <select>
+                  <ng-container *ngFor="let lz of dispatchPlotLoadZoneOptions">
+                    <option>{{lz}}</option>
+                  </ng-container>
+                </select>
+                <select>
+                  <ng-container *ngFor="let h of dispatchPlotHorizonOptions">
+                    <option>{{h}}</option>
+                  </ng-container>
+                </select>
+              </form>
+            </li>
       </ul>
     </div>
   <div class="row">
@@ -52,8 +66,6 @@
 
 </div>
 
-  <button id="updateView" class="button-primary"
-              (click)="updateView()">Update view</button>
 
 
 

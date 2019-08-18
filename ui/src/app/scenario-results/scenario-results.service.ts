@@ -98,6 +98,12 @@ export class ScenarioResultsService {
     );
   }
 
+  getDispatchPlotOptions(scenarioID: number): Observable<DispatchPlotOptions> {
+    return this.http.get<DispatchPlotOptions>(
+      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/options`
+    );
+  }
+
   getResultsDispatchPlot(
     scenarioID: number, loadZone: string, horizon: number
   ): Observable<PlotAPI> {
@@ -109,7 +115,10 @@ export class ScenarioResultsService {
 
 // TODO: what is the json plot's type?
 export class PlotAPI {
+  plotJSON: object;
+}
+
+export class DispatchPlotOptions {
   loadZoneOptions: [];
   horizonOptions: [];
-  plotJSON: object;
 }

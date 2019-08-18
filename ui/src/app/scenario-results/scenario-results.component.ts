@@ -39,6 +39,8 @@ export class ScenarioResultsComponent implements OnInit {
   resultsSystemPRM: ScenarioResults;
 
   // Plots
+  dispatchPlotLoadZoneOptions: [];
+  dispatchPlotHorizonOptions: [];
   dispatchPlotJSON: object;
   dispatchPlotName: string;
 
@@ -66,6 +68,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Make the results buttons
     this.allResultsButtons = [];
     this.makeResultsButtons();
+    this.getDispatchPlotOptions(this.scenarioID);
 
     // Initiate the array of all tables
     this.allTables = [];
@@ -247,11 +250,21 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  // TODO: need to merge with button generation somehow?
+  getDispatchPlotOptions(scenarioID): void {
+    this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
+      plotOptions => {
+        this.dispatchPlotLoadZoneOptions = plotOptions.loadZoneOptions;
+        this.dispatchPlotHorizonOptions = plotOptions.horizonOptions;
+      }
+    );
+  }
+
   getResultsDispatchPlot(scenarioID): void {
-    this.scenarioResultsService.getResultsDispatchPlot(scenarioID, 'CAISO', 203001)
-      .subscribe(dispatchPlot => {
-        this.dispatchPlotJSON = dispatchPlot.plotJSON;
-        console.log(this.dispatchPlotJSON);
+    this.scenarioResultsService.getResultsDispatchPlot(
+      scenarioID, 'CAISO', 203001
+    ).subscribe(dispatchPlotAPI => {
+        this.dispatchPlotJSON = dispatchPlotAPI.plotJSON;
         Bokeh.embed.embed_item(this.dispatchPlotJSON);
       });
   }

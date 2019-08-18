@@ -287,6 +287,25 @@ class ScenarioResultsSystemPRM(Resource):
         )
 
 
+class ScenarioResultsDispatchPlotOptions(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        """
+
+        :return:
+        """
+        return create_options_api(
+          db_path=self.db_path,
+          scenario_id=scenario_id
+        )
+
+
 class ScenarioResultsDispatchPlot(Resource):
     """
 
@@ -357,13 +376,16 @@ def get_table_data(db_path, columns, table, scenario_id):
     return column_names, rows_data
 
 
-def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
+def create_options_api(db_path, scenario_id):
     """
 
+    :param db_path:
     :return:
     """
-    dispatch_plot_api = dict()
     io, c = connect_to_database(db_path=db_path)
+
+    options_api = dict()
+
     load_zone_options = [z[0] for z in c.execute(
         """SELECT load_zone FROM inputs_geography_load_zones 
         WHERE load_zone_scenario_id = (
@@ -372,7 +394,7 @@ def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
         WHERE scenario_id = {});""".format(scenario_id)
     ).fetchall()]
 
-    dispatch_plot_api["loadZoneOptions"] = load_zone_options
+    options_api["loadZoneOptions"] = load_zone_options
 
     # TODO: are these unique or do we need to separate by period; in fact,
     #  is separating by period a better user experience regardless
@@ -384,7 +406,17 @@ def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
         WHERE scenario_id = {});""".format(scenario_id)
     ).fetchall()]
 
-    dispatch_plot_api["horizonOptions"] = horizon_options
+    options_api["horizonOptions"] = horizon_options
+
+    return options_api
+
+
+def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
+    """
+
+    :return:
+    """
+    dispatch_plot_api = dict()
 
     dispatch_plot_api["plotJSON"] = dispatch_plot.main(
       ["--return_json", "--database", db_path, "--scenario_id", scenario_id,
