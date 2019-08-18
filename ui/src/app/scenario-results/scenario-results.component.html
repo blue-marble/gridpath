@@ -16,13 +16,14 @@
           </li>
         </ng-container>
             <li>
-              <form>
-                <select>
+              <form [formGroup]="dispatchPlotOptionsForm"
+                    (ngSubmit)="getResultsDispatchPlot()">
+                <select formControlName="loadZone">
                   <ng-container *ngFor="let lz of dispatchPlotLoadZoneOptions">
                     <option>{{lz}}</option>
                   </ng-container>
                 </select>
-                <select>
+                <select formControlName="horizon">
                   <ng-container *ngFor="let h of dispatchPlotHorizonOptions">
                     <option>{{h}}</option>
                   </ng-container>

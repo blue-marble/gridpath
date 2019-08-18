@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
+import {FormControl, FormGroup} from '@angular/forms';
+
 import { ScenarioResultsService} from './scenario-results.service';
 import { ScenarioResults, ResultsButton } from './scenario-results';
-import { ActivatedRoute } from '@angular/router';
+
 
 import { PlotAPI } from './scenario-results.service';
 
@@ -20,6 +23,12 @@ export class ScenarioResultsComponent implements OnInit {
 
   // All results buttons
   allResultsButtons: ResultsButton[];
+
+  // Drop-down menus
+  dispatchPlotOptionsForm = new FormGroup({
+    loadZone: new FormControl(),
+    horizon: new FormControl()
+  });
 
   // All tables
   allTables: ScenarioResults[];
@@ -68,6 +77,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Make the results buttons
     this.allResultsButtons = [];
     this.makeResultsButtons();
+    // Get the drop-down menus
     this.getDispatchPlotOptions(this.scenarioID);
 
     // Initiate the array of all tables
@@ -126,7 +136,6 @@ export class ScenarioResultsComponent implements OnInit {
     }
 
     if (this.resultsToShow === 'results-dispatch-plot') {
-      this.dispatchPlotName = 'dispatchPlot-CAISO-203001';
       console.log('Showing dispatch plot');
       this.getResultsDispatchPlot(this.scenarioID);
     }
@@ -261,8 +270,13 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   getResultsDispatchPlot(scenarioID): void {
+    const loadZone = this.dispatchPlotOptionsForm.value.loadZone;
+    const horizon = this.dispatchPlotOptionsForm.value.horizon;
+
+    this.dispatchPlotName = `dispatchPlot-${loadZone}-${horizon}`;
+
     this.scenarioResultsService.getResultsDispatchPlot(
-      scenarioID, 'CAISO', 203001
+      scenarioID, loadZone, horizon
     ).subscribe(dispatchPlotAPI => {
         this.dispatchPlotJSON = dispatchPlotAPI.plotJSON;
         Bokeh.embed.embed_item(this.dispatchPlotJSON);
