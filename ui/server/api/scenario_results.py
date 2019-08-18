@@ -394,7 +394,7 @@ def create_options_api(db_path, scenario_id):
         WHERE scenario_id = {});""".format(scenario_id)
     ).fetchall()]
 
-    options_api["loadZoneOptions"] = load_zone_options
+    options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
 
     # TODO: are these unique or do we need to separate by period; in fact,
     #  is separating by period a better user experience regardless
@@ -406,7 +406,7 @@ def create_options_api(db_path, scenario_id):
         WHERE scenario_id = {});""".format(scenario_id)
     ).fetchall()]
 
-    options_api["horizonOptions"] = horizon_options
+    options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
 
     return options_api
 
