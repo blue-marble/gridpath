@@ -113,13 +113,6 @@ app.on('activate', () => {
 // Settings
 
 // Set the GridPath folder setting based on Angular input
-ipcMain.on('onClickGridPathFolderSetting', (event) => {
-  console.log(`GridPath folder settings button clicked`);
-  // Tell renderer to proceed (message is sent to listeners in 'constructor'
-  // method, so that we can run inside the Angular zone for immediate view
-  // update)
-  event.sender.send('onClickGridPathFolderSettingAngular')
-});
 // Get setting from renderer and store it
 ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
 	console.log(`GridPath folder set to ${gpfolder}`);
@@ -135,13 +128,6 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
 });
 
 // Set the GridPath database setting based on Angular input
-ipcMain.on('onClickGridPathDatabaseSetting', (event) => {
-  console.log(`GridPath database settings button clicked`);
-  // Tell renderer to proceed (message is sent to listeners in 'constructor'
-  // method, so that we can run inside the Angular zone for immediate view
-  // update)
-  event.sender.send('onClickGridPathDatabaseSettingAngular')
-});
 // Get setting from renderer, store it, and send it to the server
 ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
 	console.log(`GridPath database set to ${gpDB}`);
@@ -160,13 +146,6 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
 });
 
 // Set the Python binary setting based on Angular input
-ipcMain.on('onClickPythonBinarySetting', (event) => {
-  console.log(`Python binary settings button clicked`);
-  // Tell renderer to proceed (message is sent to listeners in 'constructor'
-  // method, so that we can run inside the Angular zone for immediate view
-  // update)
-  event.sender.send('onClickPythonBinarySettingAngular')
-});
 // Get setting from renderer and store it
 ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 	console.log(`Python binary directory set to ${pythonbinary}`);
