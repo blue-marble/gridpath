@@ -238,27 +238,18 @@ class TestProjectInit(unittest.TestCase):
                            "dispatchable_capacity_commit", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
-                "valid_cap_types": ["new_build_generator"],
-                "valid_op_types": ["dispatchable_capacity_commit"],
                 "min_stable_level_error": [],
                 "combo_error": [],
-                "cap_type_error": [],
-                "op_type_error": []
                 },
-            # Make sure invalid min_stable_level, invalid combo, and invalid
-            # cap/op types are properly flagged
+            # Make sure invalid min_stable_level and invalid combo are flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
                 data=[["gas_ct1", "cap1", "op2", 1.5],
-                      ["gas_ct2", "cap3", "op3", 0]
+                      ["gas_ct2", "cap1", "op3", 0]
                       ]),
                 "invalid_combos": [("cap1", "op2")],
-                "valid_cap_types": ["cap1", "cap2"],
-                "valid_op_types": ["op1", "op2"],
                 "min_stable_level_error": ["Project(s) 'gas_ct1, gas_ct2': expected 0 < min_stable_level <= 1"],
                 "combo_error": ["Project(s) 'gas_ct1': 'cap1' and 'op2'"],
-                "cap_type_error": ["Project(s) 'gas_ct2': Invalid capacity type"],
-                "op_type_error": ["Project(s) 'gas_ct2': Invalid operational type"]
                 }
         }
 
@@ -273,21 +264,6 @@ class TestProjectInit(unittest.TestCase):
             actual_list = MODULE_BEING_TESTED.validate_op_cap_combos(
                 df=test_cases[test_case]["df"],
                 invalid_combos=test_cases[test_case]["invalid_combos"]
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["cap_type_error"]
-            actual_list = MODULE_BEING_TESTED.validate_cap_types(
-                df=test_cases[test_case]["df"],
-                valid_cap_types=test_cases[test_case]["valid_cap_types"]
-
-            )
-            self.assertListEqual(expected_list, actual_list)
-
-            expected_list = test_cases[test_case]["op_type_error"]
-            actual_list = MODULE_BEING_TESTED.validate_op_types(
-                df=test_cases[test_case]["df"],
-                valid_op_types=test_cases[test_case]["valid_op_types"]
             )
             self.assertListEqual(expected_list, actual_list)
 

@@ -395,7 +395,7 @@ def check_column_sign_positive(df, columns):
     return result
 
 
-def check_prj_columns(df, columns, required, category):
+def check_req_prj_columns(df, columns, required, category):
     """
     Checks whether the required columns of a DataFrame are not None/NA or
     whether the incompatible columns are None/NA. If required columns are
@@ -429,6 +429,33 @@ def check_prj_columns(df, columns, required, category):
                  )
 
     return result
+
+
+def check_prj_column(df, column, valids):
+    """
+    Check that the specified column only has entries within the list of valid
+    entries ("valids"). If not, an error message is returned.
+    Helper function for input validation.
+
+    Note: could be expanded to check multiple columns
+    :param df: DataFrame for which to check columns. Must have a "project"
+        column, and a column equal to the column param.
+    :param column: string, column to check
+    :param valids: list of valid entries
+    :return:
+    """
+    results = []
+
+    invalids = ~df[column].isin(valids)
+    if invalids.any():
+        bad_projects = df["project"][invalids].values
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Invalid entry for {}"
+            .format(print_bad_projects, column)
+        )
+
+    return results
 
 
 def check_constant_heat_rate(df, op_type):

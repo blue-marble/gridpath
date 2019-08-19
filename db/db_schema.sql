@@ -748,7 +748,10 @@ FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
  subscenarios_project_load_zones
  (load_zone_scenario_id, project_load_zone_scenario_id),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones (load_zone_scenario_id)
+subscenarios_geography_load_zones (load_zone_scenario_id),
+FOREIGN KEY (load_zone_scenario_id, load_zone) REFERENCES
+ inputs_geography_load_zones
+ (load_zone_scenario_id, load_zone)
 );
 
 -- Project BAs
@@ -974,7 +977,10 @@ FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
  subscenarios_project_rps_zones
  (rps_zone_scenario_id, project_rps_zone_scenario_id),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-subscenarios_geography_rps_zones (rps_zone_scenario_id)
+subscenarios_geography_rps_zones (rps_zone_scenario_id),
+FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
+ inputs_geography_rps_zones
+ (rps_zone_scenario_id, rps_zone)
 );
 
 -- Project carbon cap zones
@@ -1007,8 +1013,12 @@ project_carbon_cap_zone_scenario_id) REFERENCES
  subscenarios_project_carbon_cap_zones
  (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
+subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
+FOREIGN KEY (carbon_cap_zone_scenario_id, carbon_cap_zone) REFERENCES
+ inputs_geography_carbon_cap_zones
+ (carbon_cap_zone_scenario_id, carbon_cap_zone)
 );
+
 
 -- Project PRM zones
 -- Which projects can contribute to PRM requirements
@@ -1039,7 +1049,10 @@ FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
  subscenarios_project_prm_zones
  (prm_zone_scenario_id, project_prm_zone_scenario_id),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
-subscenarios_geography_prm_zones (prm_zone_scenario_id)
+subscenarios_geography_prm_zones (prm_zone_scenario_id),
+FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
+ inputs_geography_prm_zones
+ (prm_zone_scenario_id, prm_zone)
 );
 
 -- Project capacity contribution characteristics (simple ELCC treatment or
@@ -1166,7 +1179,10 @@ project_local_capacity_zone_scenario_id) REFERENCES
  subscenarios_project_local_capacity_zones
  (local_capacity_zone_scenario_id, project_local_capacity_zone_scenario_id),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
-subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
+FOREIGN KEY (local_capacity_zone_scenario_id, local_capacity_zone) REFERENCES
+ inputs_geography_local_capacity_zones
+ (local_capacity_zone_scenario_id, local_capacity_zone)
 );
 
 -- Project capacity contribution characteristics

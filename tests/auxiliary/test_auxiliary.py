@@ -226,7 +226,7 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
-    def test_check_prj_columns(self):
+    def test_check_req_prj_columns(self):
         """
 
         :return:
@@ -266,11 +266,50 @@ class TestAuxiliary(unittest.TestCase):
 
         for test_case in test_cases.keys():
             expected_list = test_cases[test_case]["result"]
-            actual_list = auxiliary_module_to_test.check_prj_columns(
+            actual_list = auxiliary_module_to_test.check_req_prj_columns(
                 df=test_cases[test_case]["df"],
                 columns=test_cases[test_case]["columns"],
                 required=test_cases[test_case]["required"],
                 category=test_cases[test_case]["category"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
+    def test_check_prj_column(self):
+        """
+
+        :return:
+        """
+
+        cols = ["project", "capacity_type"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct", "new_build_generator"]
+                      ]),
+                "column": "capacity_type",
+                "valids": ["new_build_generator"],
+                "result": []
+                },
+            # Make sure invalid column entry is flagged
+            2: {"df": pd.DataFrame(
+                columns=cols,
+                data=[["gas_ct1", "new_build_generator"],
+                      ["gas_ct2", "invalid_cap_type"],
+                      ["storage_plant", "new_build_storage"]
+                      ]),
+                "column": "capacity_type",
+                "valids": ["new_build_generator", "new_build_storage"],
+                "result": ["Project(s) 'gas_ct2': Invalid entry for capacity_type"]
+                }
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = auxiliary_module_to_test.check_prj_column(
+                df=test_cases[test_case]["df"],
+                column=test_cases[test_case]["column"],
+                valids=test_cases[test_case]["valids"]
             )
             self.assertListEqual(expected_list, actual_list)
 

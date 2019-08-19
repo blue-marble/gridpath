@@ -16,7 +16,7 @@ from pyomo.environ import Param, Set, Var, NonNegativeReals, \
     PercentFraction, Constraint, Expression
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_prj_columns
+    write_validation_to_database, check_req_prj_columns
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -539,7 +539,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "min_stable_level",
         "unit_size_mw"
     ]
-    validation_errors = check_prj_columns(df, req_columns, True, "Always_on")
+    validation_errors = check_req_prj_columns(df, req_columns, True, "Always_on")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -561,7 +561,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    validation_errors = check_prj_columns(df, expected_na_columns, False,
+    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
                                           "Always_on")
     for error in validation_errors:
         validation_results.append(
