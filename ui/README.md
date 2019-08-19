@@ -1,27 +1,44 @@
-# UiAngularCli738
+# Welcome
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.3.8.
+Welcome to the GridPath user interface!
 
-## Development server
+# Installation
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+## Python
+See the `README.md` file in the root GridPath directory for Python 
+installation instructions. Python is required for the GridPath UI server and
+ core engine that builds the optimization problems.
 
-## Code scaffolding
+## NodeJS
+To edit the UI code, you will need NodeJS. Install [here](https://nodejs.org/en/).
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## Packages
+To install the required node packages, run the following from this directory.
 
-## Build
+```bash
+npm run install
+``` 
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+# Scripts
+To build the Angular app and open it in Electron, run:
+```bash
+npm run angel
+```
 
-## Running unit tests
+To build the Angular app only
+```bash
+npm build 
+```
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+To open Electron without building the Angular app, run:
+```bash
+npm electron
+```
 
-## Running end-to-end tests
+To compile the project, run:
+```bash
+npm build
+```
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
 
-## Further help
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
