@@ -36,10 +36,18 @@ class ScenarioDetailAPI(Resource):
         )
 
         column_names = [s[0] for s in scenario_edit_query.description]
-        column_values = [
-            True if v == "yes" else v
-            for v in list(list(scenario_edit_query)[0])
-        ]
+        column_values = list(list(scenario_edit_query)[0])
+
+        # TODO: more robust way to do this than to rely on the column name
+        #  starting with feature?
+        # Replace feature columns yes/no's with booleans (for the checkboxes
+        # when editing a scenario)
+        for n in column_names:
+            if n.startswith('feature'):
+                index = column_names.index(n)
+                column_values[index] = \
+                    True if column_values[index] == "yes" else False
+
         scenario_edit_api = dict(zip(column_names, column_values))
 
         scenario_detail_api["editScenarioValues"] = scenario_edit_api

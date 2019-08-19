@@ -25,7 +25,9 @@
            <tr>
              <td>{{sd.featureName}}</td>
              <td>
-               <input type="checkbox" formControlName="{{sd.formControlName}}">
+               <input type="checkbox"
+                      formControlName="{{sd.formControlName}}"
+                      [checked]="startingValues[sd.featureName]">
              </td>
            </tr>
         </ng-container>
