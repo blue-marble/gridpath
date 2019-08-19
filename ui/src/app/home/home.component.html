@@ -1,9 +1,27 @@
 <div class="container-fluid">
-  <p>Server Status:</p>
-  <p [ngClass]="{
+  <div class="row" id="status-heading">
+    <div class="col-md-auto">
+      <h4>Welcome to GridPath</h4>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
+        <th>Name</th>
+        <th>Status</th>
+        </tr>
+        <tr>
+          <td>Server</td>
+          <td [ngClass]="{
               'red' : serverStatus == 'down',
               'green' : serverStatus == 'running'
-           }">{{serverStatus}}</p>
-  <button id="checkServerStatusClick" class="button-primary"
-              (click)="updateServerStatus()">Update server status</button>
+           }">{{serverStatus}}</td>
+          <td><button id="checkServerStatusClick" class="button-secondary"
+              (click)="updateServerStatus()">Update server status</button></td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </div>
