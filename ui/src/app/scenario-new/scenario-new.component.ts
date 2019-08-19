@@ -6,7 +6,7 @@ import {ScenarioNewService} from './scenario-new.service';
 import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
 import {ViewDataService} from '../view-data/view-data.service';
 import {SettingsTable} from './scenario-new';
-import {StartingValues} from "../scenario-detail/scenario-detail";
+import {StartingValues} from '../scenario-detail/scenario-detail';
 
 const io = ( window as any ).require('socket.io-client');
 
@@ -224,11 +224,16 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
+  // TODO: getting the feature state to work for editing an existing
+  //  scenario relies on [checked]="startingValues[sd.featureName], i.e.
+  //  the featureName of a row from the Features table created here must be
+  //  the same as the startingValues keys. This needs to be made more
+  //  robust.
   setStartingFormState(): void {
     this.scenarioEditService.startingValuesSubject
       .subscribe((startingValues: StartingValues) => {
         this.startingValues = startingValues;
-        console.log('Setting the initial values');
+
         this.newScenarioForm.controls.scenarioName.setValue(
           this.startingValues.scenario_name, {onlySelf: true}
         );
@@ -448,7 +453,7 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.tuning$tuning.setValue(
           this.startingValues.tuning, {onlySelf: true}
         );
-          });
+      });
   }
 
   viewData(tableNameInDB, rowNameInDB): void {
@@ -485,6 +490,7 @@ export class ScenarioNewComponent implements OnInit {
   goBack(): void {
     // Change the edit scenario starting values to null when navigating away
     // TODO: set up an event when this happens
+    // TODO: use .reset instead?
     this.scenarioEditService.changeStartingScenario(emptyStartingValues);
     this.location.back();
   }
@@ -508,22 +514,22 @@ export const emptyStartingValues = {
   // tslint:disable:variable-name
   scenario_id: null,
   scenario_name: null,
-  feature_fuels: null,
-  feature_transmission: null,
-  feature_transmission_hurdle_rates: null,
-  feature_simultaneous_flow_limits: null,
-  feature_load_following_up: null,
-  feature_load_following_down: null,
-  feature_regulation_up: null,
-  feature_regulation_down: null,
-  feature_frequency_response: null,
-  feature_spinning_reserves: null,
-  feature_rps: null,
-  feature_carbon_cap: null,
-  feature_track_carbon_imports: null,
-  feature_prm: null,
-  feature_elcc_surface: null,
-  feature_local_capacity: null,
+  feature_fuels: false,
+  feature_transmission: false,
+  feature_transmission_hurdle_rates: false,
+  feature_simultaneous_flow_limits: false,
+  feature_load_following_up: false,
+  feature_load_following_down: false,
+  feature_regulation_up: false,
+  feature_regulation_down: false,
+  feature_frequency_response: false,
+  feature_spinning_reserves: false,
+  feature_rps: false,
+  feature_carbon_cap: false,
+  feature_track_carbon_imports: false,
+  feature_prm: false,
+  feature_elcc_surface: false,
+  feature_local_capacity: false,
   temporal: null,
   geography_load_zones: null,
   geography_lf_up_bas: null,
