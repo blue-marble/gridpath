@@ -166,32 +166,20 @@ function startServer () {
     ['gridPathDatabase', 'gridPathDirectory', 'pythonBinary'],
     (error, data) => {
       if (error) throw error;
-      console.log(data);
 
       const dbPath = data['gridPathDatabase']['value'][0];
       const gpDir = data['gridPathDirectory']['value'][0];
 
-      const pythonPath = path.join(
-        data['pythonBinary']['value'][0],
-        'python'
-      );
-      const scriptPath = path.join(
-        data['gridPathDirectory']['value'][0],
-        'ui', 'server',
-        'run_server.py'
-      );
-
+      // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
         data['pythonBinary']['value'][0],
         'run_gridpath_server'
       );
 
-      console.log(serverEntryPoint);
-
-      const commandToRun = `${pythonPath} ${scriptPath}`;
-
-      if (pythonPath == null || scriptPath == null) {
-        console.log("No Python path and server script path set.")
+      // Start the server (if Python path is set)
+      if (data['pythonBinary']['value'][0] == null) {
+        // TODO: add handling of null here
+        console.log("No Python path set.")
       }
       else {
         // Start Flask server
@@ -271,48 +259,15 @@ function startServer () {
         serverChildProcess.on(
           'SIGINT',
           () => { serverChildProcess.exit() }
-          ); // catch ctrl-c
+        ); // catch ctrl-c
         serverChildProcess.on(
           'SIGTERM',
           () => { serverChildProcess.exit() }
-          ); // catch kill
-
+        ); // catch kill
       }
     }
   );
-
-  // Update the server database and GP directory globals
-  updateServerDatabaseGlobal ();
-  updateServerGPDirectoryGlobal ();
 }
-
-// Connect to server and update the database global
-function updateServerDatabaseGlobal () {
-  console.log("Updating server database global");
-  // Update global variables
-  storage.get(
-    'gridPathDatabase',
-    (error, data) => {
-        if (error) throw error;
-        const socket = connectToServer();
-        socket.emit('set_database_path', data.value[0]);
-    }
-  );
-}
-
-function updateServerGPDirectoryGlobal () {
-  console.log("Updating server GridPath directory global");
-  // Update global variables
-  storage.get(
-    'gridPathDirectory',
-    (error, data) => {
-        if (error) throw error;
-        const socket = connectToServer();
-        socket.emit('set_gridpath_directory', data.value[0]);
-    }
-  );
-}
-
 
 
 function connectToServer () {
