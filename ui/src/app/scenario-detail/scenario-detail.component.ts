@@ -52,8 +52,6 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   getScenarioDetailAPI(scenarioID): void {
-    const settingsTable = new ScenarioDetailTable();
-
     this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
       .subscribe(
         scenarioDetail => {

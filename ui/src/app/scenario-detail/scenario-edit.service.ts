@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
-import {StartingValues} from "./scenario-detail";
+import {StartingValues} from './scenario-detail';
 
 @Injectable({
   providedIn: 'root'
