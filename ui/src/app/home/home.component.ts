@@ -41,7 +41,7 @@ export class HomeComponent implements OnInit {
       );
   }
 
-  updateServerStatus(event): void {
+  updateServerStatus(): void {
     console.log('Updating server status...');
     this.getServerStatus();
   }

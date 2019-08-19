@@ -35,3 +35,31 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: none;
   display: inline-block;
 }
+
+.button-secondary {
+  background:aliceblue;
+  color:midnightblue;
+  font-size: small;
+  font-weight: bold;
+  margin-top: 10px;
+  padding: 5px 10px;
+  cursor:pointer;
+  border-radius: 4px;
+}
+
+.button-secondary:hover {
+  background-color: darkblue;
+  color: white
+}
+
+.button-secondary a:link {
+  color: midnightblue;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button-secondary a:link:hover {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+}
