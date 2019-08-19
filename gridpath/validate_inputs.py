@@ -66,66 +66,84 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     # --> isn't that easy to do w foreign key?
 
 
-def validate_subscenarios_vs_features(subscenarios, optional_features, conn):
+def validate_subscenario_ids(subscenarios, optional_features, conn):
     """
-    Check whether features and subscenarios are self-consistent
+    Check whether subscenarios_ids are consistent with:
+     - core required subscenario_ids
+     - data dependent subscenario_ids (e.g. new build)
+     - optional features
+    data.
 
     :param subscenarios:
     :param optional_features:
     :param conn:
-    :return: valid_features: list of features with valid subscenario_ids
+    :return: Boolean, True is all subscenario IDs are valid.
     """
 
-    validation_results = []
+    valid_core = validate_required_subscenario_ids(subscenarios, conn)
 
-    subscenario_ids_by_feature = optional_features.subscenario_ids_by_feature
+    if valid_core:
+        valid_data_dependent = validate_data_dependent_subscenario_ids(
+            subscenarios, conn)
+    else:
+        valid_data_dependent = False
+
+    valid_feature = validate_feature_subscenario_ids(
+        subscenarios, optional_features, conn)
+
+    return valid_core and valid_data_dependent and valid_feature
+
+
+def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
+    """
+
+    :param subscenarios:
+    :param optional_features:
+    :param conn:
+    :return:
+    """
+
+    subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
     feature_list = optional_features.determine_feature_list()
 
-    invalid_features = set()
+    validation_results = []
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
-        for sc_id in subscenario_ids:
-            # If the feature is requested, and the associated subscenarios are
-            # not specified, raise a validation error and track invalid feature
-            if feature in feature_list and \
-                    getattr(subscenarios, sc_id) is None:
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     "N/A",
-                     sc_id,
-                     "scenarios",
-                     "Missing subscenario ID",
-                     "Requested feature '{}' requires an input for '{}'".format(
-                         feature, sc_id
-                     )
-                     )
-                )
-                invalid_features.add(feature)
-            # If the feature is not requested, and the associated subscenarios
-            # are specified, raise a validation error
-            elif feature not in feature_list and \
-                    getattr(subscenarios, sc_id) is not None:
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     "N/A",
-                     sc_id,
-                     "scenarios",
-                     "Unnecessary subscenario ID",
-                     "Detected inputs for '{}' while related feature '{}' is not requested".format(
-                         sc_id, feature
-                     )
-                     )
-                )
-
-    # Keep track of the valid features. The second phase of the input validation
-    # will run module-level input validation that checks the actual input data
-    # data related to the valid features (and skips invalid features since
-    # these will by definition result in erroneous inputs).
-    valid_features = list(set(feature_list) - invalid_features)
+        if feature not in ["core", "optional", "data_dependent"]:
+            for sc_id in subscenario_ids:
+                # If the feature is requested, and the associated subscenarios
+                # are not specified, raise a validation error
+                if feature in feature_list and \
+                        getattr(subscenarios, sc_id) is None:
+                    validation_results.append(
+                        (subscenarios.SCENARIO_ID,
+                         "N/A",
+                         sc_id,
+                         "scenarios",
+                         "Missing subscenario ID",
+                         "Requested feature '{}' requires an input for '{}'"
+                         .format(feature, sc_id)
+                         )
+                    )
+                # If the feature is not requested, and the associated
+                # subscenarios are specified, raise a validation error
+                elif feature not in feature_list and \
+                        getattr(subscenarios, sc_id) is not None:
+                    validation_results.append(
+                        (subscenarios.SCENARIO_ID,
+                         "N/A",
+                         sc_id,
+                         "scenarios",
+                         "Unnecessary subscenario ID",
+                         "Detected inputs for '{}' while related feature '{}' "
+                         "is not requested".format(sc_id, feature)
+                         )
+                    )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
 
-    return valid_features
+    # Return True if all required subscenario_ids are valid (list is empty)
+    return not bool(validation_results)
 
 
 def validate_required_subscenario_ids(subscenarios, conn):
@@ -135,8 +153,11 @@ def validate_required_subscenario_ids(subscenarios, conn):
     :param conn:
     :return: boolean, True if all required subscenario_ids are specified
     """
+
+    required_subscenario_ids = subscenarios.subscenario_ids_by_feature["core"]
+
     validation_results = []
-    for sc_id in subscenarios.required_subscenario_ids:
+    for sc_id in required_subscenario_ids:
         if getattr(subscenarios, sc_id) is None:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
@@ -147,6 +168,69 @@ def validate_required_subscenario_ids(subscenarios, conn):
                  "'{}' is a required input in the 'scenarios' table".format(
                      sc_id
                  )
+                 )
+            )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+    # Return True if all required subscenario_ids are valid (list is empty)
+    return not bool(validation_results)
+
+
+def validate_data_dependent_subscenario_ids(subscenarios, conn):
+    """
+
+    :param subscenarios:
+    :param conn:
+    :return:
+    """
+
+    assert subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID is not None
+    c = conn.cursor()
+    req_cap_types = set(subscenarios.get_required_capacity_type_modules(c))
+
+    new_build_types = {
+        "new_build_generator,",
+        "new_build_storage",
+        "new_shiftable_load_supply_curve"
+    }
+    existing_build_types = {
+        "existing_gen_no_economic_retirement",
+        "existing_gen_binary_economic_retirement",
+        "existing_gen_linear_economic_retirement"
+    }
+    load_shift_types = {
+        "new_shiftable_load_supply_curve"
+    }
+
+    # Determine required subscenario_ids
+    sc_id_type = []
+    if bool(req_cap_types & new_build_types):
+        sc_id_type.append(("PROJECT_NEW_COST_SCENARIO_ID",
+                           "New Build"))
+    if bool(req_cap_types & existing_build_types):
+        sc_id_type.append(("PROJECT_EXISTING_CAPACITY_SCENARIO_ID",
+                           "Existing"))
+        sc_id_type.append(("PROJECT_EXISTING_FIXED_COST_SCENARIO_ID",
+                           "Existing"))
+    if bool(req_cap_types & load_shift_types):
+        sc_id_type.append(("PROJECT_NEW_POTENTIAL_SCENARIO_ID",
+                           "New Shiftable Load Supply Curve"))
+
+    # Check whether required subscenario_ids are present
+    validation_results = []
+    for sc_id, build_type in sc_id_type:
+        if getattr(subscenarios, sc_id) is None:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 "N/A",
+                 sc_id,
+                 "scenarios",
+                 "Missing data dependent subscenario ID",
+                 "'{}' is a required input in the 'scenarios' table if there "
+                 "are '{}' resources in the portfolio"
+                 .format(sc_id, build_type)
                  )
             )
 
@@ -275,26 +359,21 @@ def main(args=None):
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 
-    # Check whether selected features and subscenario_ids are self-consistent
-    # and return the valid features
-    valid_features = validate_subscenarios_vs_features(
-        subscenarios, optional_features, conn)
-
-    # Check whether required "core" subscenario_ids are specified
-    is_valid = validate_required_subscenario_ids(subscenarios, conn)
+    # Check whether subscenario_ids are valid
+    is_valid = validate_subscenario_ids(subscenarios, optional_features, conn)
 
     # Only do the detailed input validation if all required subscenario_ids
     # are specified (otherwise will get errors when loading data)
     if is_valid:
-        # Load modules for features that have valid subscenario_id inputs
-        modules_to_use = determine_modules(features=valid_features)
+        # Load modules for all requested features
+        feature_list = optional_features.determine_feature_list()
+        modules_to_use = determine_modules(features=feature_list)
         loaded_modules = load_modules(modules_to_use=modules_to_use)
 
         # Read in inputs from db and validate inputs for loaded modules
         validate_inputs(subproblems, loaded_modules, subscenarios, conn)
     else:
-        print("Missing required subscenario ID(s). "
-              "Skipped detailed input validation.")
+        print("Invalid subscenario ID(s). Skipped detailed input validation.")
 
     # Update validation status:
     update_validation_status(conn, subscenarios.SCENARIO_ID)

@@ -119,73 +119,6 @@ class OptionalFeatures(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
-        # TODO: move this to SubScenario class? Or maybe collapse SubScenarios
-        #   and OptionalFeatures into one class
-        self.subscenario_ids_by_feature = {
-            "fuels":
-                ["FUEL_SCENARIO_ID",
-                 "FUEL_PRICE_SCENARIO_ID"],
-            "multi_stage":
-                [],
-            "transmission":
-                ["TRANSMISSION_PORTFOLIO_SCENARIO_ID",
-                 "TRANSMISSION_LOAD_ZONE_SCENARIO_ID",
-                 "TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID",
-                 "TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID"],
-            "transmission_hurdle_rates":
-                ["TRANSMISSION_HURDLE_RATE_SCENARIO_ID"],
-            "simultaneous_flow_limits":
-                ["TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID",
-                 "TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID"],
-            "lf_reserves_up":
-                ["LF_RESERVES_UP_BA_SCENARIO_ID",
-                 "PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID",
-                 "LF_RESERVES_UP_SCENARIO_ID"],
-            "lf_reserves_down":
-                ["LF_RESERVES_DOWN_BA_SCENARIO_ID",
-                 "PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID",
-                 "LF_RESERVES_DOWN_SCENARIO_ID"],
-            "regulation_up":
-                ["REGULATION_UP_BA_SCENARIO_ID",
-                 "PROJECT_REGULATION_UP_BA_SCENARIO_ID",
-                 "REGULATION_UP_SCENARIO_ID"],
-            "regulation_down":
-                ["REGULATION_DOWN_BA_SCENARIO_ID",
-                 "PROJECT_REGULATION_DOWN_BA_SCENARIO_ID",
-                 "REGULATION_DOWN_SCENARIO_ID"],
-            "frequency_response":
-                ["FREQUENCY_RESPONSE_BA_SCENARIO_ID",
-                 "PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID",
-                 "FREQUENCY_RESPONSE_SCENARIO_ID"],
-            "spinning_reserves":
-                ["SPINNING_RESERVES_BA_SCENARIO_ID",
-                 "PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID",
-                 "SPINNING_RESERVES_SCENARIO_ID"],
-            "rps":
-                ["RPS_ZONE_SCENARIO_ID",
-                 "PROJECT_RPS_ZONE_SCENARIO_ID",
-                 "RPS_TARGET_SCENARIO_ID"],
-            "carbon_cap":
-                ["CARBON_CAP_ZONE_SCENARIO_ID",
-                 "PROJECT_CARBON_CAP_ZONE_SCENARIO_ID",
-                 "CARBON_CAP_TARGET_SCENARIO_ID"],
-            "track_carbon_imports":
-                ["TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID"],
-            "prm":
-                ["PRM_ZONE_SCENARIO_ID",
-                 "PROJECT_PRM_ZONE_SCENARIO_ID",
-                 "PRM_ENERGY_ONLY_SCENARIO_ID",
-                 "PRM_REQUIREMENT_SCENARIO_ID"],
-            "elcc_surface":
-                ["PROJECT_ELCC_CHARS_SCENARIO_ID",
-                 "ELCC_SURFACE_SCENARIO_ID"],
-            "local_capacity":
-                ["LOCAL_CAPACITY_ZONE_SCENARIO_ID",
-                 "PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID",
-                 "PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID",
-                 "LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID"]
-        }
-
     def determine_feature_list(self):
         """
         Get list of requested features
@@ -578,41 +511,66 @@ class SubScenarios(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
-        # "Core" subscenario_ids that are required regardless of what optional
-        # features are selected
-        self.required_subscenario_ids = [
-            "SCENARIO_ID",
-            "TEMPORAL_SCENARIO_ID",
-            "PROJECT_PORTFOLIO_SCENARIO_ID",
-            "PROJECT_OPERATIONAL_CHARS_SCENARIO_ID",
-            "PROJECT_EXISTING_CAPACITY_SCENARIO_ID",
-            "PROJECT_EXISTING_FIXED_COST_SCENARIO_ID",
-            "LOAD_ZONE_SCENARIO_ID",
-            "PROJECT_LOAD_ZONE_SCENARIO_ID",
-            "LOAD_SCENARIO_ID",
-            "TUNING_SCENARIO_ID",
-            "PROJECT_NEW_COST_SCENARIO_ID"  # technically not really required?
-        ]
-        # TODO: new_cost_scenario_id is required for new gen or new storage,
-        #  but also for variable profiles since it needs to generate profiles
-        #  for periods in which you can build it. Should we try and figure out
-        #  the need dynamically here by defining a
-        #  get_required_capacity_type_modules function like the one currenlty
-        #  used in capacity_types/__init__? It might make more sense in general
-        #  to keep these functions here in a general scenario_chars class.
-        #  One problem with this approach is that you might not even be able
-        #  to determine things dynamically if e.g. the portolio_scenario_id is
-        #  missing. Would somehehow have to deal with this situation elegantly
-        #  since it happens before the validation(?)
-        #  Could "new_build" be a feature?
+        self.subscenario_ids_by_feature = \
+            self.determine_subscenarios_by_feature(cursor)
 
-        # Optional subscenario_ids (will default/be ignored if not specified)
-        self.optional_subscenario_ids = [
-            "PROJECT_AVAILABILITY_SCENARIO_ID",
-            "PROJECT_NEW_POTENTIAL_SCENARIO_ID"
+    @staticmethod
+    def determine_subscenarios_by_feature(cursor):
+        """
+
+        :param cursor:
+        :return:
+        """
+        feature_sc = cursor.execute(
+            """SELECT feature, subscenario_id
+            FROM mod_feature_subscenarios"""
+        ).fetchall()
+        feature_sc_dict = {}
+        for f, sc in feature_sc:
+            if f in feature_sc_dict:
+                feature_sc_dict[f].append(sc)
+            else:
+                feature_sc_dict[f] = [sc]
+        return feature_sc_dict
+
+    # TODO: refactor this in capacity_types/__init__? (similar functions are
+    #   used in prm_types/operational_types etc.
+    def get_required_capacity_type_modules(self, c):
+        """
+        Get the required capacity type submodules based on the database inputs
+        for the specified scenario_id. Required modules are the unique set of
+        generator capacity types in the scenario's portfolio. Get the list based
+        on the project_operational_chars_scenario_id of the scenario_id.
+
+        This list will be used to know for which capacity type submodules we
+        should validate inputs, get inputs from database , or save results to
+        database. It is also used to figure out which suscenario_ids are required
+        inputs (e.g. cost inputs are required when there are new build resources)
+
+        Note: once we have determined the dynamic components, this information
+        will also be stored in the DynamicComponents class object.
+
+        :param c: database cursor
+        :return: List of the required capacity type submodules
+        """
+
+        project_portfolio_scenario_id = c.execute(
+            """SELECT project_portfolio_scenario_id 
+            FROM scenarios 
+            WHERE scenario_id = {}""".format(self.SCENARIO_ID)
+        ).fetchone()[0]
+
+        required_capacity_type_modules = [
+            p[0] for p in c.execute(
+                """SELECT DISTINCT capacity_type 
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {}""".format(
+                    project_portfolio_scenario_id
+                )
+            ).fetchall()
         ]
-        # TODO: new_potential is actually required for new_build_shiftable_load
-        #    resources
+
+        return required_capacity_type_modules
 
 
 # TODO: perhaps this is not the right place to define this data structure?
