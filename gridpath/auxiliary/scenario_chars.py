@@ -11,10 +11,10 @@ from builtins import object
 class OptionalFeatures(object):
     def __init__(self, cursor, scenario_id):
         """
-        
-        :param cursor: 
+        :param cursor:
         :param scenario_id: 
         """
+
         self.SCENARIO_ID = scenario_id
 
         self.OPTIONAL_FEATURE_FUELS = cursor.execute(
@@ -510,6 +510,67 @@ class SubScenarios(object):
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+
+        self.subscenario_ids_by_feature = \
+            self.determine_subscenarios_by_feature(cursor)
+
+    @staticmethod
+    def determine_subscenarios_by_feature(cursor):
+        """
+
+        :param cursor:
+        :return:
+        """
+        feature_sc = cursor.execute(
+            """SELECT feature, subscenario_id
+            FROM mod_feature_subscenarios"""
+        ).fetchall()
+        feature_sc_dict = {}
+        for f, sc in feature_sc:
+            if f in feature_sc_dict:
+                feature_sc_dict[f].append(sc)
+            else:
+                feature_sc_dict[f] = [sc]
+        return feature_sc_dict
+
+    # TODO: refactor this in capacity_types/__init__? (similar functions are
+    #   used in prm_types/operational_types etc.
+    def get_required_capacity_type_modules(self, c):
+        """
+        Get the required capacity type submodules based on the database inputs
+        for the specified scenario_id. Required modules are the unique set of
+        generator capacity types in the scenario's portfolio. Get the list based
+        on the project_operational_chars_scenario_id of the scenario_id.
+
+        This list will be used to know for which capacity type submodules we
+        should validate inputs, get inputs from database , or save results to
+        database. It is also used to figure out which suscenario_ids are required
+        inputs (e.g. cost inputs are required when there are new build resources)
+
+        Note: once we have determined the dynamic components, this information
+        will also be stored in the DynamicComponents class object.
+
+        :param c: database cursor
+        :return: List of the required capacity type submodules
+        """
+
+        project_portfolio_scenario_id = c.execute(
+            """SELECT project_portfolio_scenario_id 
+            FROM scenarios 
+            WHERE scenario_id = {}""".format(self.SCENARIO_ID)
+        ).fetchone()[0]
+
+        required_capacity_type_modules = [
+            p[0] for p in c.execute(
+                """SELECT DISTINCT capacity_type 
+                FROM inputs_project_portfolios
+                WHERE project_portfolio_scenario_id = {}""".format(
+                    project_portfolio_scenario_id
+                )
+            ).fetchall()
+        ]
+
+        return required_capacity_type_modules
 
 
 # TODO: perhaps this is not the right place to define this data structure?

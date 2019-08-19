@@ -49,6 +49,92 @@ VALUES ('dispatchable_binary_commit'), ('dispatchable_capacity_commit'),
 ('hydro_curtailable'), ('hydro_noncurtailable'), ('must_run'),
 ('storage_generic'), ('variable'), ('variable_no_curtailment'), ('always_on');
 
+-- Features
+DROP TABLE IF EXISTS mod_features;
+CREATE TABLE mod_features (
+feature VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
+-- TODO: add descriptions
+INSERT INTO mod_features (feature)
+VALUES ('core'), ('data_dependent'), ('optional'),
+('fuels'),
+('transmission'), ('transmission_hurdle_rates'), ('simultaneous_flow_limits'),
+('lf_reserves_up'), ('lf_reserves_down'),
+('regulation_up'), ('regulation_down'),
+('frequency_response'), ('spinning_reserves'),
+('rps'), ('carbon_cap'), ('track_carbon_imports'),
+('prm'), ('elcc_surface'), ('local_capacity');
+
+-- Subscenarios by feature
+DROP TABLE IF EXISTS mod_feature_subscenarios;
+CREATE TABLE mod_feature_subscenarios (
+feature VARCHAR(32),
+subscenario_id VARCHAR(32),
+PRIMARY KEY (feature, subscenario_id),
+FOREIGN KEY (feature) REFERENCES mod_features (feature)
+);
+
+INSERT INTO mod_feature_subscenarios (feature, subscenario_id)
+VALUES ('optional', 'PROJECT_AVAILABILITY_SCENARIO_ID'),
+('core', 'TEMPORAL_SCENARIO_ID'),
+('core','PROJECT_PORTFOLIO_SCENARIO_ID'),
+('core', 'PROJECT_OPERATIONAL_CHARS_SCENARIO_ID'),
+('core', 'LOAD_SCENARIO_ID'),
+('core', 'LOAD_ZONE_SCENARIO_ID'),
+('core', 'PROJECT_LOAD_ZONE_SCENARIO_ID'),
+('core', 'TUNING_SCENARIO_ID'),
+('data_dependent', 'PROJECT_EXISTING_CAPACITY_SCENARIO_ID'),
+('data_dependent', 'PROJECT_EXISTING_FIXED_COST_SCENARIO_ID'),
+('data_dependent', 'PROJECT_NEW_COST_SCENARIO_ID'),
+('data_dependent', 'PROJECT_NEW_POTENTIAL_SCENARIO_ID'),
+('fuels', 'FUEL_SCENARIO_ID'),
+('fuels', 'FUEL_PRICE_SCENARIO_ID'),
+('transmission', 'TRANSMISSION_PORTFOLIO_SCENARIO_ID'),
+('transmission', 'TRANSMISSION_LOAD_ZONE_SCENARIO_ID'),
+('transmission', 'TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID'),
+('transmission', 'TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID'),
+('transmission_hurdle_rates', 'TRANSMISSION_HURDLE_RATE_SCENARIO_ID'),
+('simultaneous_flow_limits', 'TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID'),
+('simultaneous_flow_limits', 'TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID'),
+('lf_reserves_up', 'LF_RESERVES_UP_BA_SCENARIO_ID'),
+('lf_reserves_up', 'PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID'),
+('lf_reserves_up', 'LF_RESERVES_UP_SCENARIO_ID'),
+('lf_reserves_down', 'LF_RESERVES_DOWN_BA_SCENARIO_ID'),
+('lf_reserves_down', 'PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID'),
+('lf_reserves_down', 'LF_RESERVES_DOWN_SCENARIO_ID'),
+('regulation_up', 'REGULATION_UP_BA_SCENARIO_ID'),
+('regulation_up', 'PROJECT_REGULATION_UP_BA_SCENARIO_ID'),
+('regulation_up', 'REGULATION_UP_SCENARIO_ID'),
+('regulation_down', 'REGULATION_DOWN_BA_SCENARIO_ID'),
+('regulation_down', 'PROJECT_REGULATION_DOWN_BA_SCENARIO_ID'),
+('regulation_down', 'REGULATION_DOWN_SCENARIO_ID'),
+('frequency_response', 'FREQUENCY_RESPONSE_BA_SCENARIO_ID'),
+('frequency_response', 'PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID'),
+('frequency_response', 'FREQUENCY_RESPONSE_SCENARIO_ID'),
+('spinning_reserves', 'SPINNING_RESERVES_BA_SCENARIO_ID'),
+('spinning_reserves', 'PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID'),
+('spinning_reserves', 'SPINNING_RESERVES_SCENARIO_ID'),
+('rps', 'RPS_ZONE_SCENARIO_ID'),
+('rps', 'PROJECT_RPS_ZONE_SCENARIO_ID'),
+('rps', 'RPS_TARGET_SCENARIO_ID'),
+('carbon_cap', 'CARBON_CAP_ZONE_SCENARIO_ID'),
+('carbon_cap', 'PROJECT_CARBON_CAP_ZONE_SCENARIO_ID'),
+('carbon_cap', 'CARBON_CAP_TARGET_SCENARIO_ID'),
+('track_carbon_imports', 'TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID'),
+('prm', 'PRM_ZONE_SCENARIO_ID'),
+('prm', 'PROJECT_PRM_ZONE_SCENARIO_ID'),
+('prm', 'PRM_ENERGY_ONLY_SCENARIO_ID'),
+('prm', 'PRM_REQUIREMENT_SCENARIO_ID'),
+('elcc_surface', 'PROJECT_ELCC_CHARS_SCENARIO_ID'),
+('elcc_surface', 'ELCC_SURFACE_SCENARIO_ID'),
+('local_capacity', 'LOCAL_CAPACITY_ZONE_SCENARIO_ID'),
+('local_capacity', 'PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID'),
+('local_capacity', 'PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID'),
+('local_capacity', 'LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID');
+
+
 -- Scenario validation status
 DROP TABLE IF EXISTS mod_validation_status_types;
 CREATE TABLE mod_validation_status_types (
