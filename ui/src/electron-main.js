@@ -16,12 +16,40 @@ let mainWindow;
 
 // Keep a global reference to the server process
 let serverChildProcess;
+let tryToStartServer = true;
 
 // // Main window //
 function createMainWindow () {
+    storage.keys(function(error, keys) {
+        if (error) throw error;
 
-    // Start the server
-    startServer();
+        console.log("Stored keys: ", keys);
+
+        const requiredKeys = [
+          'currentGridPathDatabase', 'currentGridPathDirectory',
+          'currentPythonBinary', 'requestedGridPathDatabase',
+          'requestedGridPathDirectory', 'requestedPythonBinary'
+        ];
+
+        requiredKeys.forEach(function(requiredKey, index) {
+          if (keys.includes(requiredKey)) {
+            console.log(`Key ${requiredKey} exists`)
+          } else {
+              storage.set(
+                requiredKey,
+                { 'value': null },
+                (error) => {if (error) throw error;}
+            );
+            // If any required keys are missing, don't start the server
+            tryToStartServer = false
+          }
+        });
+
+        if ( tryToStartServer ) {
+          // Start the server
+          startServer();
+        }
+      });
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -70,35 +98,46 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  if (isWindows) {
-    // Signals don't really work on Windows, so we can't use them to shut
-    // down the server process: see
-    // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
-    // TL;DR: just look at the first comment
-    // Can't kill process with ps.kill, as serverChildProcess.pid seems to
-    // return an incorrect pid here. I don't think this is a closure issue,
-    // as it appears the wrong pid is returned even right after the process
-    // is spawned whereas on Mac the correct one is returned. Commenting out
-    // the ps.kill code since it doesn't work on the wrong PID.
-    // TODO: perhaps IPC process communciation will work?
-    // For now server must be manually shut down by closing its console window
 
-    // ps.kill(serverChildProcess.pid, ( err ) => {
-    //   if (err) {
-    //       throw new Error( err );
-    //   }
-    //   else {
-    //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
-    //   }
-    // });
+  // // Clear all storage; can be useful for debugging, but commenting this
+  // // out by default
+  // storage.clear(function(error) {
+  //   if (error) throw error;
+  //   console.log("Clearing storage")
+  // });
 
-    // This does not kill the process, even if it's not detached.
-    serverChildProcess.kill()
+  // TODO: this could still throw an error if we tried but failed to launch
+  //  the server process; need to check that the server actually started
+  if ( tryToStartServer ) {
+    if (isWindows) {
+      // Signals don't really work on Windows, so we can't use them to shut
+      // down the server process: see
+      // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
+      // TL;DR: just look at the first comment
+      // Can't kill process with ps.kill, as serverChildProcess.pid seems to
+      // return an incorrect pid here. I don't think this is a closure issue,
+      // as it appears the wrong pid is returned even right after the process
+      // is spawned whereas on Mac the correct one is returned. Commenting out
+      // the ps.kill code since it doesn't work on the wrong PID.
+      // TODO: perhaps IPC process communciation will work?
+      // For now server must be manually shut down by closing its console window
+
+      // ps.kill(serverChildProcess.pid, ( err ) => {
+      //   if (err) {
+      //       throw new Error( err );
+      //   }
+      //   else {
+      //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
+      //   }
+      // });
+
+      // This does not kill the process, even if it's not detached.
+      serverChildProcess.kill()
+    }
+    else {
+      serverChildProcess.kill('SIGTERM')
+    }
   }
-  else {
-    serverChildProcess.kill('SIGTERM')
-  }
-
 });
 
 app.on('activate', () => {

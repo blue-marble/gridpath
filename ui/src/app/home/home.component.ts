@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-
+import { Component, OnInit, NgZone } from '@angular/core';
 import { HomeService} from './home.service';
 import { SettingsService } from '../settings/settings.service';
+
+const electron = ( window as any ).require('electron');
 
 import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
 import { emptyStartingValues } from '../scenario-new/scenario-new.component';
@@ -22,7 +23,8 @@ export class HomeComponent implements OnInit {
   constructor(
     private homeService: HomeService,
     private settingsService: SettingsService,
-    private scenarioEditService: ScenarioEditService
+    private scenarioEditService: ScenarioEditService,
+    private zone: NgZone
   ) { }
 
   ngOnInit() {
@@ -34,6 +36,25 @@ export class HomeComponent implements OnInit {
     this.getDirectoryStatus();
     this.getDatabaseStatus();
     this.getPythonStatus();
+
+    // If any of the settings are null, we'll overwrite the status from
+    // the settings service with 'not set'
+    // Ask Electron for the current settings
+    electron.ipcRenderer.send('requestStoredSettings');
+    electron.ipcRenderer.on('sendStoredSettings',
+      (event, data) => {
+        console.log('Got data ', data);
+        if (data.requestedGridPathDirectory.value == null) {
+          this.zone.run(() => this.directoryStatus = 'not set');
+        }
+        if (data.requestedGridPathDatabase.value === null) {
+          this.zone.run(() => this.databaseStatus = 'not set');
+        }
+        if (data.requestedPythonBinary.value === null) {
+          this.zone.run(() => this.pythonStatus = 'not set');
+        }
+      }
+    );
   }
 
   getServerStatus(): void {

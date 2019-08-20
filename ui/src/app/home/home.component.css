@@ -4,6 +4,9 @@
 .green {
   color: green
 }
+.orange {
+  color: orangered;
+}
 
 .status-table th {
   background-color: midnightblue;
