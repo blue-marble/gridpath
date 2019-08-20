@@ -12,10 +12,11 @@ Make results dispatch plot (by load zone, stage, horizon).
 # TODO: add example df for testing?
 
 from argparse import ArgumentParser
-from bokeh.models import ColumnDataSource, Legend
+from bokeh.models import ColumnDataSource, Legend, CustomJS
 from bokeh.plotting import figure, output_file, show
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
+from bokeh import events
 import pandas as pd
 import os
 import sys
@@ -540,6 +541,22 @@ def create_plot(df):
     return plot
 
 
+def show_hide_legend(plot):
+    """
+    :param plot:
+
+    Show/hide the legend on double tap. Something like this can probably be
+    used as a common function to be shared by different plots.
+    """
+    def show_hide_legend_py(legend=plot.legend[0]):
+        legend.visible = not legend.visible
+
+    plot.js_on_event(
+        events.DoubleTap,
+        CustomJS.from_py_func(show_hide_legend_py)
+    )
+
+
 def draw_dispatch_plot(c, scenario_id, load_zone, horizon, stage):
     """
 
@@ -552,6 +569,9 @@ def draw_dispatch_plot(c, scenario_id, load_zone, horizon, stage):
     """
     df = create_data_df(c, scenario_id, load_zone, horizon, stage)
     plot = create_plot(df)
+
+    # Extras
+    show_hide_legend(plot=plot)
 
     return plot
 
