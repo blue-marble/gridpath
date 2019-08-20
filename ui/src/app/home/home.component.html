@@ -21,6 +21,28 @@
           <td><button id="checkServerStatusClick" class="button-secondary"
               (click)="updateServerStatus()">Update server status</button></td>
         </tr>
+        <tr>
+          <td>GridPath Directory</td>
+          <td [ngClass]="{
+              'red' : directoryStatus == 'restart required',
+              'green' : directoryStatus == 'set'
+           }">{{directoryStatus}}</td>
+        </tr>
+        <tr>
+          <td>GridPath Database</td>
+          <td [ngClass]="{
+              'red' : databaseStatus == 'restart required',
+              'green' : databaseStatus == 'set'
+           }">{{databaseStatus}}</td>
+        </tr>
+        <tr>
+          <td>Python Directory</td>
+          <td [ngClass]="{
+              'red' : pythonStatus == 'restart required',
+              'green' : pythonStatus == 'set'
+           }">{{pythonStatus}}</td>
+        </tr>
+
       </table>
     </div>
   </div>

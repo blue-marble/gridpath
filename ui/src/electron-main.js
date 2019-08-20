@@ -199,13 +199,15 @@ function startServer () {
         storage.set(
           'currentPythonBinary',
           { 'value': data['requestedPythonBinary']['value'] },
-          (error) => {if (error) throw error;}
+          (error) => {
+            if (error) throw error;
+          }
         );
       }
       
-      const dbPath = data['currentGridPathDatabase']['value'];
-      const gpDir = data['currentGridPathDirectory']['value'];
-      const pyDir = data['currentPythonBinary']['value'];
+      const dbPath = data['requestedGridPathDatabase']['value'];
+      const gpDir = data['requestedGridPathDirectory']['value'];
+      const pyDir = data['requestedPythonBinary']['value'];
 
       // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
@@ -219,6 +221,7 @@ function startServer () {
       }
       else {
         console.log("Starting server...");
+        console.log("...database is ", dbPath);
         // Start Flask server
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
