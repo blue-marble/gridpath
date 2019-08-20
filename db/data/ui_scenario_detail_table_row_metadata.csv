@@ -1,24 +1,24 @@
 ﻿ui_table,ui_table_row,ui_row_caption,ui_row_db_scenarios_view_column,ui_row_db_subscenario_table,﻿ui_row_db_subscenario_table_id_column,﻿ui_row_db_input_table
 features,fuels,Fuels,feature_fuels,,,
 features,transmission,Transmission,feature_transmission,,,
-features,transmission_hurdle_rates,Transmission Hurdle Rates,feature_transmission_hurdle_rates,,,
-features,transmission_sim_flow,Transmission Simultaneous Flow Limits,feature_simultaneous_flow_limits,,,
-features,load_following_up,Load-Following Reserves Up,feature_load_following_up,,,
-features,load_following_down,Load-Following Reserves Down,feature_load_following_down,,,
-features,regulation_up,Regulation Reserves Up,feature_regulation_up,,,
-features,regulation_down,Regulation Reserves Down,feature_regulation_down,,,
-features,spinning_reserves,Spinning Reserves,feature_spinning_reserves,,,
-features,frequency_response,Frequency Response Reserves,feature_frequency_response,,,
-features,rps,Renewable Portfolio Standard (RPS),feature_rps,,,
+features,transmission_hurdle_rates,Transmission: Hurdle Rates,feature_transmission_hurdle_rates,,,
+features,transmission_sim_flow,Transmission: Simultaneous Flow Limits,feature_simultaneous_flow_limits,,,
+features,load_following_up,Reserves: Load Following Up,feature_load_following_up,,,
+features,load_following_down,Reserves: Load Following Down,feature_load_following_down,,,
+features,regulation_up,Reserves: Regulation Up,feature_regulation_up,,,
+features,regulation_down,Reserves: Regulation Down,feature_regulation_down,,,
+features,spinning_reserves,Reserves: Spinning,feature_spinning_reserves,,,
+features,frequency_response,Reserves: Frequency Response,feature_frequency_response,,,
+features,rps,RPS (Renewables Portfolio Standard),feature_rps,,,
 features,carbon_cap,Carbon Cap,feature_carbon_cap,,,
-features,track_carbon_imports,Track Carbon Imports,feature_track_carbon_imports,,,
-features,prm,Planning Reserve Margin (PRM),feature_prm,,,
-features,elcc_surface,PRM ELCC Surface,feature_elcc_surface,,,
+features,track_carbon_imports,Carbon Cap: Track Carbon Imports,feature_track_carbon_imports,,,
+features,prm,PRM (Planning Reserve Margin),feature_prm,,,
+features,elcc_surface,PRM: ELCC Surface,feature_elcc_surface,,,
 features,local_capacity,Local Capacity Requirement,feature_local_capacity,,,
 temporal,temporal,Temporal Span and Resolution,temporal,subscenarios_temporal,temporal_scenario_id,inputs_temporal_timepoints
 load_zones,load_zones,Load Zones,geography_load_zones,subscenarios_geography_load_zones,load_zone_scenario_id,inputs_geography_load_zones
-load_zones,project_load_zones,Project Load Zones,project_load_zones,subscenarios_project_load_zones,project_load_zone_scenario_id,inputs_project_load_zones
-load_zones,transmission_load_zones,Transmission Load Zones,transmission_load_zones,subscenarios_transmission_load_zones,transmission_load_zone_scenario_id,inputs_transmission_load_zones
+load_zones,project_load_zones,Load Zones: Projects,project_load_zones,subscenarios_project_load_zones,project_load_zone_scenario_id,inputs_project_load_zones
+load_zones,transmission_load_zones,Load Zones: Transmission,transmission_load_zones,subscenarios_transmission_load_zones,transmission_load_zone_scenario_id,inputs_transmission_load_zones
 system_load,system_load,System Load,load_profile,subscenarios_system_load,load_scenario_id,inputs_system_load
 project_capacity,portfolio,Generation and Storage Portfolio,project_portfolio,subscenarios_project_portfolios,project_portfolio_scenario_id,inputs_project_portfolios
 project_capacity,specified_capacity,Specified Generation and Storage Capacity,project_existing_capacity,subscenarios_project_existing_capacity,project_existing_capacity_scenario_id,inputs_project_existing_capacity

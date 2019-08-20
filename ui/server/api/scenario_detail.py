@@ -101,7 +101,7 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
         """SELECT ui_table_row, ui_row_caption, 
         ui_row_db_scenarios_view_column, ui_row_db_input_table 
         FROM ui_scenario_detail_table_row_metadata
-        WHERE ui_table = '{}'""".format(ui_table_name_in_db)
+        WHERE ui_table = '{}';""".format(ui_table_name_in_db)
     ).fetchall()
 
     for row in row_metadata:
@@ -124,5 +124,12 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
             'rowValue': row_value,
             'inputTable':  row[3]
         })
+
+    # Sort the 'Features' table features by caption
+    if table_caption[1] == "Features":
+        sorted_features = \
+            sorted(scenario_detail_table_api["scenarioDetailTableRows"],
+                   key=lambda k: k['rowCaption'])
+        scenario_detail_table_api["scenarioDetailTableRows"] = sorted_features
 
     return scenario_detail_table_api
