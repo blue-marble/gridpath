@@ -1,6 +1,7 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 const electron = ( window as any ).require('electron');
 
+import { SettingsService } from './settings.service';
 import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
 import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 
@@ -12,12 +13,22 @@ import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 
 
 export class SettingsComponent implements OnInit {
-  gridPathFolder: Array<string>;
-  gridPathDB: Array<string>;
-  pythonBinary: Array<string>;
+
+  currentGridPathDirectory: string;
+  currentGridPathDB: string;
+  currentPythonDirectory: string;
+
+  requestedGridPathDirectory: string;
+  requestedGridPathDB: string;
+  requestedPythonDirectory: string;
+
+  directoryStatus: string;
+  databaseStatus: string;
+  pythonStatus: string;
 
   constructor(
     private zone: NgZone,
+    private settingsService: SettingsService,
     private scenarioEditService: ScenarioEditService
   ) { }
 
@@ -25,6 +36,11 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit() {
     console.log('Initializing settings...');
+
+    this.directoryStatus = '';
+    this.databaseStatus = '';
+    this.pythonStatus = '';
+
     // Ask Electron for any current settings
     electron.ipcRenderer.send('requestStoredSettings');
     electron.ipcRenderer.on('sendStoredSettings',
@@ -39,30 +55,15 @@ export class SettingsComponent implements OnInit {
 
   getSettingsFromElectron(data) {
     // In order to get the view to update immediately upon selection,
-    // we need to set gridPathFolder/gridPathDB/pythonBinary inside
-    // the Angular zone (we are outside Angular when using 'electron')
+    // we need to set the variables inside the Angular zone (we are outside
+    // Angular when using 'electron')
     this.zone.run(() => {
-      // Handle situation if no value is set
-      if (data.gridPathDirectory.value === null) {
-        this.gridPathFolder = null;
-      } else {
-        this.gridPathFolder =
-          data.gridPathDirectory.value[0];
-      }
-
-      if (data.gridPathDatabase.value === null) {
-        this.gridPathDB = null;
-      } else {
-        this.gridPathDB =
-          data.gridPathDatabase.value[0];
-      }
-
-      if (data.pythonBinary.value === null) {
-        this.pythonBinary = null;
-      } else {
-        this.pythonBinary =
-          data.pythonBinary.value[0];
-      }
+      this.currentGridPathDirectory = data.currentGridPathDirectory.value;
+      this.currentGridPathDB = data.currentGridPathDatabase.value;
+      this.currentPythonDirectory = data.currentPythonBinary.value;
+      this.requestedGridPathDirectory = data.requestedGridPathDirectory.value;
+      this.requestedGridPathDB = data.requestedGridPathDatabase.value;
+      this.requestedPythonDirectory = data.requestedPythonBinary.value;
     });
   }
 
@@ -77,13 +78,23 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setGridPathFolderSetting', folderPath);
+        electron.ipcRenderer.send('setGridPathFolderSetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.gridPathFolder = folderPath;
+          this.requestedGridPathDirectory = folderPath[0];
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          console.log('Requested: ', this.requestedGridPathDirectory);
+          console.log('Current: ', this.currentGridPathDirectory);
+          if (this.requestedGridPathDirectory !== this.currentGridPathDirectory) {
+            this.directoryStatus = 'restart required';
+            this.changeDirectoryStatus();
+          } else {
+            this.directoryStatus = 'set';
+            this.changeDirectoryStatus();
+          }
         });
       }
-      console.log(`GridPath folder set to ${this.gridPathFolder}`);
     });
   }
 
@@ -98,13 +109,21 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setGridPathDatabaseSetting', dbFilePath);
+        electron.ipcRenderer.send('setGridPathDatabaseSetting', dbFilePath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.gridPathDB = dbFilePath;
+          this.requestedGridPathDB = dbFilePath[0];
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          if (this.requestedGridPathDB !== this.currentGridPathDB) {
+            this.databaseStatus = 'restart required';
+            this.changeDatabaseStatus();
+          } else {
+            this.databaseStatus = 'set';
+            this.changeDatabaseStatus();
+          }
         });
       }
-      console.log(`GridPath database set to ${this.gridPathDB}`);
     });
   }
 
@@ -119,13 +138,33 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setPythonBinarySetting', folderPath);
+        electron.ipcRenderer.send('setPythonBinarySetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.pythonBinary = folderPath;
+          this.requestedPythonDirectory = folderPath[0];
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          if (this.requestedPythonDirectory !== this.currentPythonDirectory) {
+            this.pythonStatus = 'restart required';
+            this.changePythonStatus();
+          } else {
+            this.pythonStatus = 'set';
+            this.changePythonStatus();
+          }
         });
       }
-      console.log(`Python binary set to ${this.pythonBinary}`);
     });
+  }
+
+  changeDirectoryStatus() {
+    this.settingsService.changeDirectoryStatus(this.directoryStatus);
+  }
+
+  changeDatabaseStatus() {
+    this.settingsService.changeDatabaseStatus(this.databaseStatus);
+  }
+
+  changePythonStatus() {
+    this.settingsService.changePythonStatus(this.pythonStatus);
   }
 }

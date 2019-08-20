@@ -16,12 +16,40 @@ let mainWindow;
 
 // Keep a global reference to the server process
 let serverChildProcess;
+let tryToStartServer = true;
 
 // // Main window //
 function createMainWindow () {
+    storage.keys(function(error, keys) {
+        if (error) throw error;
 
-    // Start the server
-    startServer();
+        console.log("Stored keys: ", keys);
+
+        const requiredKeys = [
+          'currentGridPathDatabase', 'currentGridPathDirectory',
+          'currentPythonBinary', 'requestedGridPathDatabase',
+          'requestedGridPathDirectory', 'requestedPythonBinary'
+        ];
+
+        requiredKeys.forEach(function(requiredKey, index) {
+          if (keys.includes(requiredKey)) {
+            console.log(`Key ${requiredKey} exists`)
+          } else {
+              storage.set(
+                requiredKey,
+                { 'value': null },
+                (error) => {if (error) throw error;}
+            );
+            // If any required keys are missing, don't start the server
+            tryToStartServer = false
+          }
+        });
+
+        if ( tryToStartServer ) {
+          // Start the server
+          startServer();
+        }
+      });
 
     // Create the browser window.
     mainWindow = new BrowserWindow({
@@ -70,35 +98,46 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
-  if (isWindows) {
-    // Signals don't really work on Windows, so we can't use them to shut
-    // down the server process: see
-    // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
-    // TL;DR: just look at the first comment
-    // Can't kill process with ps.kill, as serverChildProcess.pid seems to
-    // return an incorrect pid here. I don't think this is a closure issue,
-    // as it appears the wrong pid is returned even right after the process
-    // is spawned whereas on Mac the correct one is returned. Commenting out
-    // the ps.kill code since it doesn't work on the wrong PID.
-    // TODO: perhaps IPC process communciation will work?
-    // For now server must be manually shut down by closing its console window
 
-    // ps.kill(serverChildProcess.pid, ( err ) => {
-    //   if (err) {
-    //       throw new Error( err );
-    //   }
-    //   else {
-    //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
-    //   }
-    // });
+  // // Clear all storage; can be useful for debugging, but commenting this
+  // // out by default
+  // storage.clear(function(error) {
+  //   if (error) throw error;
+  //   console.log("Clearing storage")
+  // });
 
-    // This does not kill the process, even if it's not detached.
-    serverChildProcess.kill()
+  // TODO: this could still throw an error if we tried but failed to launch
+  //  the server process; need to check that the server actually started
+  if ( tryToStartServer ) {
+    if (isWindows) {
+      // Signals don't really work on Windows, so we can't use them to shut
+      // down the server process: see
+      // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
+      // TL;DR: just look at the first comment
+      // Can't kill process with ps.kill, as serverChildProcess.pid seems to
+      // return an incorrect pid here. I don't think this is a closure issue,
+      // as it appears the wrong pid is returned even right after the process
+      // is spawned whereas on Mac the correct one is returned. Commenting out
+      // the ps.kill code since it doesn't work on the wrong PID.
+      // TODO: perhaps IPC process communciation will work?
+      // For now server must be manually shut down by closing its console window
+
+      // ps.kill(serverChildProcess.pid, ( err ) => {
+      //   if (err) {
+      //       throw new Error( err );
+      //   }
+      //   else {
+      //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
+      //   }
+      // });
+
+      // This does not kill the process, even if it's not detached.
+      serverChildProcess.kill()
+    }
+    else {
+      serverChildProcess.kill('SIGTERM')
+    }
   }
-  else {
-    serverChildProcess.kill('SIGTERM')
-  }
-
 });
 
 app.on('activate', () => {
@@ -119,12 +158,12 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
 	// TODO: do we need to keep in storage?
   // Set the GridPath directory path in Electron JSON storage
   storage.set(
-      'gridPathDirectory',
+      'requestedGridPathDirectory',
       { 'value': gpfolder },
       (error) => {if (error) throw error;}
   );
   const socket = connectToServer();
-  socket.emit('set_gridpath_directory', gpfolder[0])
+  socket.emit('set_gridpath_directory', gpfolder)
 });
 
 // Set the GridPath database setting based on Angular input
@@ -135,14 +174,14 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
 	// TODO: do we need to keep in storage?
   // Set the database file path in Electron JSON storage
   storage.set(
-      'gridPathDatabase',
+      'requestedGridPathDatabase',
       { 'value': gpDB },
       (error) => {if (error) throw error;}
   );
 
   // TODO: set this from Electron storage for consistency
   const socket = connectToServer();
-  socket.emit('set_database_path', gpDB[0]);
+  socket.emit('set_database_path', gpDB);
 });
 
 // Set the Python binary setting based on Angular input
@@ -152,7 +191,7 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 	// TODO: do we need to keep in storage?
   // Set the Python binary path in Electron JSON storage
   storage.set(
-      'pythonBinary',
+      'requestedPythonBinary',
       { 'value': pythonbinary },
       (error) => {if (error) throw error;}
   );
@@ -160,40 +199,68 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 
 // Flask server
 function startServer () {
-  console.log("Starting server...");
-
   storage.getMany(
-    ['gridPathDatabase', 'gridPathDirectory', 'pythonBinary'],
+    ['currentGridPathDatabase', 'currentGridPathDirectory', 'currentPythonBinary',
+      'requestedGridPathDatabase', 'requestedGridPathDirectory', 'requestedPythonBinary'],
     (error, data) => {
       if (error) throw error;
-      console.log(data);
 
-      const dbPath = data['gridPathDatabase']['value'][0];
-      const gpDir = data['gridPathDirectory']['value'][0];
+      // When we first start the server, we will set the 'current' settings
+      // the last-requested settings; we will then use the 'current'
+      // settings to start the server and send the appropriate environment
+      // variables. New settings will therefore require a server restart to
+      // take effect. The user will see both the 'current' and 'requested'
+      // settings and will be informed of the need to restart.
+      if (data['currentGridPathDatabase']['value']
+        === data['requestedGridPathDatabase']['value']) {
+        console.log("Current and requested GP databases match.")
+      } else {
+        storage.set(
+          'currentGridPathDatabase',
+          { 'value': data['requestedGridPathDatabase']['value'] },
+          (error) => {if (error) throw error;}
+        );
+      }
+      if (data['currentGridPathDirectory']['value']
+        === data['requestedGridPathDirectory']['value']) {
+        console.log("Current and requested GP directories match.");
+      } else {
+        storage.set(
+          'currentGridPathDirectory',
+          { 'value': data['requestedGridPathDirectory']['value'] },
+          (error) => {if (error) throw error;}
+        );
+      }
+      if (data['currentPythonBinary']['value']
+        === data['requestedPythonBinary']['value']) {
+        console.log("Current and requested Python directories match.")
+      } else {
+        storage.set(
+          'currentPythonBinary',
+          { 'value': data['requestedPythonBinary']['value'] },
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
+      
+      const dbPath = data['requestedGridPathDatabase']['value'];
+      const gpDir = data['requestedGridPathDirectory']['value'];
+      const pyDir = data['requestedPythonBinary']['value'];
 
-      const pythonPath = path.join(
-        data['pythonBinary']['value'][0],
-        'python'
-      );
-      const scriptPath = path.join(
-        data['gridPathDirectory']['value'][0],
-        'ui', 'server',
-        'run_server.py'
-      );
-
+      // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
-        data['pythonBinary']['value'][0],
-        'run_gridpath_server'
+        pyDir, 'run_gridpath_server'
       );
 
-      console.log(serverEntryPoint);
-
-      const commandToRun = `${pythonPath} ${scriptPath}`;
-
-      if (pythonPath == null || scriptPath == null) {
-        console.log("No Python path and server script path set.")
+      // Start the server (if Python path is set)
+      if (pyDir == null) {
+        // TODO: add handling of null here
+        console.log("No Python path set.")
       }
       else {
+        console.log("Starting server...");
+        console.log("...database is ", dbPath);
         // Start Flask server
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
@@ -271,48 +338,15 @@ function startServer () {
         serverChildProcess.on(
           'SIGINT',
           () => { serverChildProcess.exit() }
-          ); // catch ctrl-c
+        ); // catch ctrl-c
         serverChildProcess.on(
           'SIGTERM',
           () => { serverChildProcess.exit() }
-          ); // catch kill
-
+        ); // catch kill
       }
     }
   );
-
-  // Update the server database and GP directory globals
-  updateServerDatabaseGlobal ();
-  updateServerGPDirectoryGlobal ();
 }
-
-// Connect to server and update the database global
-function updateServerDatabaseGlobal () {
-  console.log("Updating server database global");
-  // Update global variables
-  storage.get(
-    'gridPathDatabase',
-    (error, data) => {
-        if (error) throw error;
-        const socket = connectToServer();
-        socket.emit('set_database_path', data.value[0]);
-    }
-  );
-}
-
-function updateServerGPDirectoryGlobal () {
-  console.log("Updating server GridPath directory global");
-  // Update global variables
-  storage.get(
-    'gridPathDirectory',
-    (error, data) => {
-        if (error) throw error;
-        const socket = connectToServer();
-        socket.emit('set_gridpath_directory', data.value[0]);
-    }
-  );
-}
-
 
 
 function connectToServer () {
@@ -326,7 +360,9 @@ function connectToServer () {
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
-      ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
+      ['currentGridPathDirectory', 'requestedGridPathDirectory',
+        'currentGridPathDatabase', 'requestedGridPathDatabase',
+        'currentPythonBinary', 'requestedPythonBinary'],
       (error, data) => {
         if (error) throw error;
         console.log("Sending stored settings to Angular");

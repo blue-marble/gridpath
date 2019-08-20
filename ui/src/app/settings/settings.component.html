@@ -2,23 +2,26 @@
   <h2>Settings</h2>
   <div>
     <input class="u-full-width" size="50" placeholder="GridPath folder"
-      type="text" [(ngModel)]="gridPathFolder">
+      type="text" [(ngModel)]="requestedGridPathDirectory">
     <button id="browseGPFolder" class="button-primary"
               (click)="browseGPFolder()">Browse</button>
   </div>
+  <div><span>Current GridPath folder setting: </span>{{currentGridPathDirectory}}</div>
   <div>
       <input class="u-full-width" size="50" placeholder="GridPath database"
              type="text"
-             [(ngModel)]="gridPathDB">
+             [(ngModel)]="requestedGridPathDB">
       <button id="browseGPDatabase" class="button-primary"
               (click)="browseGPDatabase()">Browse</button>
   </div>
+  <div><span>Current GridPath database setting: </span>{{currentGridPathDB}}</div>
   <div>
       <input class="u-full-width" size="50" placeholder="Python binary"
              type="text"
-             [(ngModel)]="pythonBinary">
+             [(ngModel)]="requestedPythonDirectory">
       <button id="browsePythonBinary" class="button-primary"
               (click)="browsePythonBinary()">Browse</button>
   </div>
+  <div><span>Current Python binary setting: </span>{{currentPythonDirectory}}</div>
 
 </div>

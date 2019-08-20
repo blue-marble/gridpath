@@ -1,6 +1,8 @@
-import { Component, OnInit } from '@angular/core';
-
+import { Component, OnInit, NgZone } from '@angular/core';
 import { HomeService} from './home.service';
+import { SettingsService } from '../settings/settings.service';
+
+const electron = ( window as any ).require('electron');
 
 import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
 import { emptyStartingValues } from '../scenario-new/scenario-new.component';
@@ -14,10 +16,15 @@ import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 export class HomeComponent implements OnInit {
 
   serverStatus: string;
+  directoryStatus: string;
+  databaseStatus: string;
+  pythonStatus: string;
 
   constructor(
     private homeService: HomeService,
-    private scenarioEditService: ScenarioEditService
+    private settingsService: SettingsService,
+    private scenarioEditService: ScenarioEditService,
+    private zone: NgZone
   ) { }
 
   ngOnInit() {
@@ -26,7 +33,28 @@ export class HomeComponent implements OnInit {
 
     // Get the server status
     this.getServerStatus();
-    console.log(this.serverStatus);
+    this.getDirectoryStatus();
+    this.getDatabaseStatus();
+    this.getPythonStatus();
+
+    // If any of the settings are null, we'll overwrite the status from
+    // the settings service with 'not set'
+    // Ask Electron for the current settings
+    electron.ipcRenderer.send('requestStoredSettings');
+    electron.ipcRenderer.on('sendStoredSettings',
+      (event, data) => {
+        console.log('Got data ', data);
+        if (data.requestedGridPathDirectory.value == null) {
+          this.zone.run(() => this.directoryStatus = 'not set');
+        }
+        if (data.requestedGridPathDatabase.value === null) {
+          this.zone.run(() => this.databaseStatus = 'not set');
+        }
+        if (data.requestedPythonBinary.value === null) {
+          this.zone.run(() => this.pythonStatus = 'not set');
+        }
+      }
+    );
   }
 
   getServerStatus(): void {
@@ -44,5 +72,29 @@ export class HomeComponent implements OnInit {
   updateServerStatus(): void {
     console.log('Updating server status...');
     this.getServerStatus();
+  }
+
+  getDirectoryStatus(): void {
+    this.settingsService.directoryStatusSubject
+      .subscribe((settingsStatus: string) => {
+        this.directoryStatus = settingsStatus;
+      }
+    );
+  }
+
+  getDatabaseStatus(): void {
+    this.settingsService.databaseStatusSubject
+      .subscribe((settingsStatus: string) => {
+        this.databaseStatus = settingsStatus;
+      }
+    );
+  }
+
+  getPythonStatus(): void {
+    this.settingsService.pythonStatusSubject
+      .subscribe((settingsStatus: string) => {
+        this.pythonStatus = settingsStatus;
+      }
+    );
   }
 }
