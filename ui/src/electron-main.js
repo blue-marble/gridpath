@@ -119,12 +119,12 @@ ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
 	// TODO: do we need to keep in storage?
   // Set the GridPath directory path in Electron JSON storage
   storage.set(
-      'gridPathDirectory',
+      'requestedGridPathDirectory',
       { 'value': gpfolder },
       (error) => {if (error) throw error;}
   );
   const socket = connectToServer();
-  socket.emit('set_gridpath_directory', gpfolder[0])
+  socket.emit('set_gridpath_directory', gpfolder)
 });
 
 // Set the GridPath database setting based on Angular input
@@ -135,14 +135,14 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
 	// TODO: do we need to keep in storage?
   // Set the database file path in Electron JSON storage
   storage.set(
-      'gridPathDatabase',
+      'requestedGridPathDatabase',
       { 'value': gpDB },
       (error) => {if (error) throw error;}
   );
 
   // TODO: set this from Electron storage for consistency
   const socket = connectToServer();
-  socket.emit('set_database_path', gpDB[0]);
+  socket.emit('set_database_path', gpDB);
 });
 
 // Set the Python binary setting based on Angular input
@@ -152,7 +152,7 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 	// TODO: do we need to keep in storage?
   // Set the Python binary path in Electron JSON storage
   storage.set(
-      'pythonBinary',
+      'requestedPythonBinary',
       { 'value': pythonbinary },
       (error) => {if (error) throw error;}
   );
@@ -160,28 +160,65 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 
 // Flask server
 function startServer () {
-  console.log("Starting server...");
-
   storage.getMany(
-    ['gridPathDatabase', 'gridPathDirectory', 'pythonBinary'],
+    ['currentGridPathDatabase', 'currentGridPathDirectory', 'currentPythonBinary',
+      'requestedGridPathDatabase', 'requestedGridPathDirectory', 'requestedPythonBinary'],
     (error, data) => {
       if (error) throw error;
 
-      const dbPath = data['gridPathDatabase']['value'][0];
-      const gpDir = data['gridPathDirectory']['value'][0];
+      // When we first start the server, we will set the 'current' settings
+      // the last-requested settings; we will then use the 'current'
+      // settings to start the server and send the appropriate environment
+      // variables. New settings will therefore require a server restart to
+      // take effect. The user will see both the 'current' and 'requested'
+      // settings and will be informed of the need to restart.
+      if (data['currentGridPathDatabase']['value']
+        === data['requestedGridPathDatabase']['value']) {
+        console.log("Current and requested GP databases match.")
+      } else {
+        storage.set(
+          'currentGridPathDatabase',
+          { 'value': data['requestedGridPathDatabase']['value'] },
+          (error) => {if (error) throw error;}
+        );
+      }
+      if (data['currentGridPathDirectory']['value']
+        === data['requestedGridPathDirectory']['value']) {
+        console.log("Current and requested GP directories match.");
+      } else {
+        storage.set(
+          'currentGridPathDirectory',
+          { 'value': data['requestedGridPathDirectory']['value'] },
+          (error) => {if (error) throw error;}
+        );
+      }
+      if (data['currentPythonBinary']['value']
+        === data['requestedPythonBinary']['value']) {
+        console.log("Current and requested Python directories match.")
+      } else {
+        storage.set(
+          'currentPythonBinary',
+          { 'value': data['requestedPythonBinary']['value'] },
+          (error) => {if (error) throw error;}
+        );
+      }
+      
+      const dbPath = data['currentGridPathDatabase']['value'];
+      const gpDir = data['currentGridPathDirectory']['value'];
+      const pyDir = data['currentPythonBinary']['value'];
 
       // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
-        data['pythonBinary']['value'][0],
-        'run_gridpath_server'
+        pyDir, 'run_gridpath_server'
       );
 
       // Start the server (if Python path is set)
-      if (data['pythonBinary']['value'][0] == null) {
+      if (pyDir == null) {
         // TODO: add handling of null here
         console.log("No Python path set.")
       }
       else {
+        console.log("Starting server...");
         // Start Flask server
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
@@ -281,7 +318,9 @@ function connectToServer () {
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
-      ['gridPathDirectory', 'gridPathDatabase', 'pythonBinary'],
+      ['currentGridPathDirectory', 'requestedGridPathDirectory',
+        'currentGridPathDatabase', 'requestedGridPathDatabase',
+        'currentPythonBinary', 'requestedPythonBinary'],
       (error, data) => {
         if (error) throw error;
         console.log("Sending stored settings to Angular");

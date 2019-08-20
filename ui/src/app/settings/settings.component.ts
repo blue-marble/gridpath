@@ -12,9 +12,14 @@ import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 
 
 export class SettingsComponent implements OnInit {
-  gridPathFolder: Array<string>;
-  gridPathDB: Array<string>;
-  pythonBinary: Array<string>;
+
+  currentGridPathDirectory: string;
+  currentGridPathDB: string;
+  currentPythonDirectory: string;
+
+  requestedGridPathDirectory: string;
+  requestedGridPathDB: string;
+  requestedPythonDirectory: string;
 
   constructor(
     private zone: NgZone,
@@ -42,26 +47,46 @@ export class SettingsComponent implements OnInit {
     // we need to set gridPathFolder/gridPathDB/pythonBinary inside
     // the Angular zone (we are outside Angular when using 'electron')
     this.zone.run(() => {
-      // Handle situation if no value is set
-      if (data.gridPathDirectory.value === null) {
-        this.gridPathFolder = null;
+      if (data.currentGridPathDirectory.value === null) {
+        this.currentGridPathDirectory = null;
       } else {
-        this.gridPathFolder =
-          data.gridPathDirectory.value[0];
+        this.currentGridPathDirectory =
+          data.currentGridPathDirectory.value;
       }
 
-      if (data.gridPathDatabase.value === null) {
-        this.gridPathDB = null;
+      if (data.currentGridPathDatabase.value === null) {
+        this.currentGridPathDB = null;
       } else {
-        this.gridPathDB =
-          data.gridPathDatabase.value[0];
+        this.currentGridPathDB =
+          data.currentGridPathDatabase.value;
       }
 
-      if (data.pythonBinary.value === null) {
-        this.pythonBinary = null;
+      if (data.currentPythonBinary.value === null) {
+        this.currentPythonDirectory = null;
       } else {
-        this.pythonBinary =
-          data.pythonBinary.value[0];
+        this.currentPythonDirectory =
+          data.currentPythonBinary.value;
+      }
+
+      if (data.requestedGridPathDirectory.value === null) {
+        this.requestedGridPathDirectory = null;
+      } else {
+        this.requestedGridPathDirectory =
+          data.requestedGridPathDirectory.value;
+      }
+
+      if (data.requestedGridPathDatabase.value === null) {
+        this.requestedGridPathDB = null;
+      } else {
+        this.requestedGridPathDB =
+          data.requestedGridPathDatabase.value;
+      }
+
+      if (data.requestedPythonBinary.value === null) {
+        this.requestedPythonDirectory = null;
+      } else {
+        this.requestedPythonDirectory =
+          data.requestedPythonBinary.value;
       }
     });
   }
@@ -80,10 +105,10 @@ export class SettingsComponent implements OnInit {
         electron.ipcRenderer.send('setGridPathFolderSetting', folderPath);
         // Update the Angular component
         this.zone.run( () => {
-          this.gridPathFolder = folderPath;
+          this.requestedGridPathDirectory = folderPath[0];
         });
       }
-      console.log(`GridPath folder set to ${this.gridPathFolder}`);
+      console.log(`GridPath folder set to ${this.requestedGridPathDirectory}`);
     });
   }
 
@@ -98,13 +123,13 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setGridPathDatabaseSetting', dbFilePath);
+        electron.ipcRenderer.send('setGridPathDatabaseSetting', dbFilePath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.gridPathDB = dbFilePath;
+          this.requestedGridPathDB = dbFilePath[0];
         });
       }
-      console.log(`GridPath database set to ${this.gridPathDB}`);
+      console.log(`GridPath database set to ${this.requestedGridPathDB}`);
     });
   }
 
@@ -119,13 +144,13 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setPythonBinarySetting', folderPath);
+        electron.ipcRenderer.send('setPythonBinarySetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.pythonBinary = folderPath;
+          this.requestedPythonDirectory = folderPath[0];
         });
       }
-      console.log(`Python binary set to ${this.pythonBinary}`);
+      console.log(`Python binary set to ${this.requestedPythonDirectory}`);
     });
   }
 }
