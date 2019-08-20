@@ -29,6 +29,7 @@ packaging==19.1
 pandas==0.25.0
 Pillow==6.1.0
 ply==3.11
+pscript==0.7.1
 psutil==5.6.3
 Pygments==2.4.2
 Pyomo==5.6.6
