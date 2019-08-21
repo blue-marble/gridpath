@@ -8,6 +8,7 @@ export class SettingRow {
   uiRowNameInDB: string;
   rowName: string;
   rowFormControlName: string;
+  rowDBViewName: string;
   settingOptions: Setting[];
 }
 

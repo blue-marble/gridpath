@@ -27,31 +27,26 @@ export class ScenarioNewComponent implements OnInit {
   message: string;
   startingValues: StartingValues;
 
-  // For the features
-  // TODO: can we consolidate with structure for settings below?
-  features: Feature[];
-  featureSelectionOption: string[];
-
   // Create the form
   newScenarioForm = new FormGroup({
     scenarioName: new FormControl(),
     scenarioDescription: new FormControl(),
-    featureFuels: new FormControl(),
-    featureTransmission: new FormControl(),
-    featureTransmissionHurdleRates: new FormControl(),
-    featureSimFlowLimits: new FormControl(),
-    featureLFUp: new FormControl(),
-    featureLFDown: new FormControl(),
-    featureRegUp: new FormControl(),
-    featureRegDown: new FormControl(),
-    featureSpin: new FormControl(),
-    featureFreqResp: new FormControl(),
-    featureRPS: new FormControl(),
-    featureCarbonCap: new FormControl(),
-    featureTrackCarbonImports: new FormControl(),
-    featurePRM: new FormControl(),
-    featureELCCSurface: new FormControl(),
-    featureLocalCapacity: new FormControl(),
+    features$fuels: new FormControl(),
+    features$transmission: new FormControl(),
+    features$transmission_hurdle_rates: new FormControl(),
+    features$transmission_sim_flow: new FormControl(),
+    features$load_following_up: new FormControl(),
+    features$load_following_down: new FormControl(),
+    features$regulation_up: new FormControl(),
+    features$regulation_down: new FormControl(),
+    features$spinning_reserves: new FormControl(),
+    features$frequency_response: new FormControl(),
+    features$rps: new FormControl(),
+    features$carbon_cap: new FormControl(),
+    features$track_carbon_imports: new FormControl(),
+    features$prm: new FormControl(),
+    features$elcc_surface: new FormControl(),
+    features$local_capacity: new FormControl(),
     temporal$temporal: new FormControl(),
     load_zones$load_zones: new FormControl(),
     load_zones$project_load_zones: new FormControl(),
@@ -122,96 +117,8 @@ export class ScenarioNewComponent implements OnInit {
     // Set the starting form state (if editing or copying a scenario)
     this.setStartingFormState();
 
-    this.createFeaturesTable();
+    // Make the scenario-new view
     this.getScenarioNewAPI();
-  }
-
-  createFeaturesTable(): void {
-    this.features = [];
-    const featureFuels = new Feature();
-    featureFuels.featureName = 'feature_fuels';
-    featureFuels.formControlName = 'featureFuels';
-    this.features.push(featureFuels);
-
-    const featureTransmission = new Feature();
-    featureTransmission.featureName = 'feature_transmission';
-    featureTransmission.formControlName = 'featureTransmission';
-    this.features.push(featureTransmission);
-
-    const featureTransmissionHurdleRates = new Feature();
-    featureTransmissionHurdleRates.featureName =
-      'feature_transmission_hurdle_rates';
-    featureTransmissionHurdleRates.formControlName =
-      'featureTransmissionHurdleRates';
-    this.features.push(featureTransmissionHurdleRates);
-
-    const featureSimFlowLimits = new Feature();
-    featureSimFlowLimits.featureName = 'feature_simultaneous_flow_limits';
-    featureSimFlowLimits.formControlName = 'featureSimFlowLimits';
-    this.features.push(featureSimFlowLimits);
-
-    const featureLFUp = new Feature();
-    featureLFUp.featureName = 'feature_load_following_up';
-    featureLFUp.formControlName = 'featureLFUp';
-    this.features.push(featureLFUp);
-
-    const featureLFDown = new Feature();
-    featureLFDown.featureName = 'feature_load_following_down';
-    featureLFDown.formControlName = 'featureLFDown';
-    this.features.push(featureLFDown);
-
-    const featureRegDown = new Feature();
-    featureRegDown.featureName = 'feature_regulation_down';
-    featureRegDown.formControlName = 'featureRegDown';
-    this.features.push(featureRegDown);
-
-    const featureRegUp = new Feature();
-    featureRegUp.featureName = 'feature_regulation_up';
-    featureRegUp.formControlName = 'featureRegUp';
-    this.features.push(featureRegUp);
-
-    const featureSpin = new Feature();
-    featureSpin.featureName = 'feature_spinning_reserves';
-    featureSpin.formControlName = 'featureSpin';
-    this.features.push(featureSpin);
-
-    const featureFreqResp = new Feature();
-    featureFreqResp.featureName = 'feature_frequency_response';
-    featureFreqResp.formControlName = 'featureFreqResp';
-    this.features.push(featureFreqResp);
-
-    const featureRPS = new Feature();
-    featureRPS.featureName = 'feature_rps';
-    featureRPS.formControlName = 'featureRPS';
-    this.features.push(featureRPS);
-
-    const featureCarbonCap = new Feature();
-    featureCarbonCap.featureName = 'feature_carbon_cap';
-    featureCarbonCap.formControlName = 'featureCarbonCap';
-    this.features.push(featureCarbonCap);
-
-    const featureTrackCarbonImports = new Feature();
-    featureTrackCarbonImports.featureName = 'feature_track_carbon_imports';
-    featureTrackCarbonImports.formControlName = 'featureTrackCarbonImports';
-    this.features.push(featureTrackCarbonImports);
-
-    const featurePRM = new Feature();
-    featurePRM.featureName = 'feature_prm';
-    featurePRM.formControlName = 'featurePRM';
-    this.features.push(featurePRM);
-
-    const featureELCCSurface = new Feature();
-    featureELCCSurface.featureName = 'feature_elcc_surface';
-    featureELCCSurface.formControlName = 'featureELCCSurface';
-    this.features.push(featureELCCSurface);
-
-    const featureLocalCapacity = new Feature();
-    featureLocalCapacity.featureName = 'feature_local_capacity';
-    featureLocalCapacity.formControlName = 'featureLocalCapacity';
-    this.features.push(featureLocalCapacity);
-
-
-    this.featureSelectionOption = featureSelectionOptions();
   }
 
   getScenarioNewAPI(): void {
@@ -224,11 +131,6 @@ export class ScenarioNewComponent implements OnInit {
       );
   }
 
-  // TODO: getting the feature state to work for editing an existing
-  //  scenario relies on [checked]="startingValues[sd.featureName], i.e.
-  //  the featureName of a row from the Features table created here must be
-  //  the same as the startingValues keys. This needs to be made more
-  //  robust.
   setStartingFormState(): void {
     this.scenarioEditService.startingValuesSubject
       .subscribe((startingValues: StartingValues) => {
@@ -237,52 +139,52 @@ export class ScenarioNewComponent implements OnInit {
         this.newScenarioForm.controls.scenarioName.setValue(
           this.startingValues.scenario_name, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureFuels.setValue(
+        this.newScenarioForm.controls.features$fuels.setValue(
           this.startingValues.feature_fuels, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureTransmission.setValue(
+        this.newScenarioForm.controls.features$transmission.setValue(
           this.startingValues.feature_transmission, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureTransmissionHurdleRates.setValue(
+        this.newScenarioForm.controls.features$transmission_hurdle_rates.setValue(
           this.startingValues.feature_transmission_hurdle_rates, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureSimFlowLimits.setValue(
+        this.newScenarioForm.controls.features$transmission_sim_flow.setValue(
           this.startingValues.feature_simultaneous_flow_limits, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureLFUp.setValue(
+        this.newScenarioForm.controls.features$load_following_up.setValue(
           this.startingValues.feature_load_following_up, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureLFDown.setValue(
+        this.newScenarioForm.controls.features$load_following_down.setValue(
           this.startingValues.feature_load_following_down, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureRegUp.setValue(
+        this.newScenarioForm.controls.features$regulation_up.setValue(
           this.startingValues.feature_regulation_up, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureRegDown.setValue(
+        this.newScenarioForm.controls.features$regulation_down.setValue(
           this.startingValues.feature_regulation_down, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureSpin.setValue(
+        this.newScenarioForm.controls.features$spinning_reserves.setValue(
           this.startingValues.feature_frequency_response, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureFreqResp.setValue(
+        this.newScenarioForm.controls.features$frequency_response.setValue(
           this.startingValues.feature_spinning_reserves, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureRPS.setValue(
+        this.newScenarioForm.controls.features$rps.setValue(
           this.startingValues.feature_rps, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureCarbonCap.setValue(
+        this.newScenarioForm.controls.features$carbon_cap.setValue(
           this.startingValues.feature_carbon_cap, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureTrackCarbonImports.setValue(
+        this.newScenarioForm.controls.features$track_carbon_imports.setValue(
           this.startingValues.feature_track_carbon_imports, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featurePRM.setValue(
+        this.newScenarioForm.controls.features$prm.setValue(
           this.startingValues.feature_prm, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureELCCSurface.setValue(
+        this.newScenarioForm.controls.features$elcc_surface.setValue(
           this.startingValues.feature_elcc_surface, {onlySelf: true}
         );
-        this.newScenarioForm.controls.featureLocalCapacity.setValue(
+        this.newScenarioForm.controls.features$local_capacity.setValue(
           this.startingValues.feature_local_capacity, {onlySelf: true}
         );
         this.newScenarioForm.controls.temporal$temporal.setValue(
@@ -496,18 +398,6 @@ export class ScenarioNewComponent implements OnInit {
   }
 
 }
-
-
-class Feature {
-  featureName: string;
-  formControlName: string;
-}
-
-
-function featureSelectionOptions() {
-    return ['', 'yes', 'no'];
-  }
-
 
 // TODO: need to set on navigation away from this page, not just button clicks
 export const emptyStartingValues = {

@@ -14,37 +14,23 @@
     <input type="text" formControlName="scenarioDescription">
     </label></p>
 
-
-  <table class="scenario-detail">
-    <caption>Features</caption>
-      <tr>
-        <th>Name</th>
-        <th>Value</th>
-      </tr>
-        <ng-container *ngFor="let sd of features">
-           <tr>
-             <td>{{sd.featureName}}</td>
-             <td>
-               <input type="checkbox"
-                      formControlName="{{sd.formControlName}}"
-                      [checked]="startingValues[sd.featureName]">
-             </td>
-           </tr>
-        </ng-container>
-  </table>
-
   <ng-container *ngFor="let tbl of scenarioNewStructure">
     <table class="scenario-detail">
       <caption>{{tbl.tableCaption}}</caption>
           <tr>
             <th>Name</th>
             <th>Value</th>
-            <th>View Data</th>
+            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Data</th>
           </tr>
         <ng-container *ngFor="let tblRow of tbl.settingRows">
            <tr>
              <td>{{tblRow.rowName}}</td>
-             <td>
+             <td *ngIf="tbl.uiTableNameInDB=='features'">
+               <input type="checkbox"
+                      formControlName="{{tblRow.rowFormControlName}}"
+                      [checked]="startingValues[tblRow.rowDBViewName]">
+             </td>
+             <td *ngIf="tbl.uiTableNameInDB!=='features'">
                <select formControlName="{{tblRow.rowFormControlName}}">
                   <option value=""></option>
                   <!--[ngValue]="settingOption.name" needed for initial
@@ -56,7 +42,7 @@
                   </option>
                 </select>
              </td>
-             <td>
+             <td *ngIf="tbl.uiTableNameInDB!=='features'">
                <button
                  (click)="viewData(tbl.uiTableNameInDB, tblRow.uiRowNameInDB)">
                  View Data</button>

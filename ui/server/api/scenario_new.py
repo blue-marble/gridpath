@@ -22,7 +22,6 @@ class ScenarioNewAPI(Resource):
         all_tables = c.execute(
             """SELECT ui_table 
             FROM ui_scenario_detail_table_metadata
-            WHERE ui_table != 'features'
             ORDER BY ui_table_id ASC;"""
         ).fetchall()
 
@@ -61,7 +60,7 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     row_metadata = c.execute(
       """SELECT ui_table_row, 
       ui_row_caption, ui_row_db_subscenario_table_id_column, 
-      ui_row_db_subscenario_table
+      ui_row_db_subscenario_table, ui_row_db_scenarios_view_column
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}';""".format(
         ui_table_name_in_db
@@ -73,24 +72,44 @@ def create_scenario_new_api(c, ui_table_name_in_db):
         row_caption = row[1]
         row_subscenario_id = row[2]
         row_subscenario_table = row[3]
+        # This is only needed for editing scenario and features
+        # TODO: is there another way to link up the checkboxes and their
+        #  starting data; we can change the API for the starting values to
+        #  be based on the ui_table_name_in_db and ui_table_row_name_in_db
+        #  columns
+        row_view_column = row[4]
 
-        setting_options_query = c.execute(
-            """SELECT {}, name FROM {};""".format(
-              row_subscenario_id, row_subscenario_table
-            )
-        ).fetchall()
+        if ui_table_name_in_db == 'features':
+            setting_options_query = []
+        else:
+            setting_options_query = c.execute(
+                """SELECT {}, name FROM {};""".format(
+                  row_subscenario_id, row_subscenario_table
+                )
+            ).fetchall()
 
         settings = []
         for setting in setting_options_query:
-            settings.append(
-                {'id': setting[0], 'name': setting[1]}
-            )
+            if not setting_options_query:
+                pass
+            else:
+                settings.append(
+                    {'id': setting[0], 'name': setting[1]}
+                )
 
         scenario_new_api["settingRows"].append({
           "uiRowNameInDB": ui_row_name_in_db,
           "rowName": row_caption,
           "rowFormControlName": ui_table_name_in_db + "$" + ui_row_name_in_db,
+          "rowDBViewName": row_view_column,
           "settingOptions": settings
         })
+
+    # Sort the 'Features' table features by caption
+    if ui_table_name_in_db == "features":
+        sorted_features = \
+            sorted(scenario_new_api["settingRows"],
+                   key=lambda k: k['rowName'])
+        scenario_new_api["settingRows"] = sorted_features
 
     return scenario_new_api
