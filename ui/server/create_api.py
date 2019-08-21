@@ -71,7 +71,7 @@ def add_scenario_detail_resources(api, db_path):
     :param api:
     :param db_path:
 
-    Add the API api for the Angular 'scenario-detail' component.
+    Add the API for the Angular 'scenario-detail' component.
     """
     # Refactored
     api.add_resource(
@@ -86,7 +86,7 @@ def add_scenario_new_resources(api, db_path):
     :param api:
     :param db_path:
 
-    Add the API api for the Angular 'scenario-new' component.
+    Add the API for the Angular 'scenario-new' component.
     """
     api.add_resource(
         ScenarioNewAPI,
@@ -100,7 +100,7 @@ def add_view_data_resources(api, db_path):
     :param api:
     :param db_path:
 
-    Add the API api for the Angular 'view-data' component.
+    Add the API for the Angular 'view-data' component.
     """
     api.add_resource(
         ViewDataTemporalTimepoints,
@@ -390,7 +390,7 @@ def add_home_resource(api):
     """
     :param api:
 
-    Add api for Angular 'home' component
+    Add API for the Angular 'home' component.
     """
     # Server status
     api.add_resource(ServerStatus, '/server-status')
@@ -401,7 +401,7 @@ def add_scenario_results_resources(api, db_path):
     :param api:
     :param db_path:
 
-    Add the API api for the Angular 'scenario-results' component.
+    Add the API for the Angular 'scenario-results' component.
     """
     api.add_resource(
         ScenarioResultsProjectCapacity,
