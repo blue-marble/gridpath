@@ -11,7 +11,8 @@ import pandas as pd
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns, check_constant_heat_rate
+    write_validation_to_database, check_req_prj_columns, \
+    check_constant_heat_rate, check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -290,7 +291,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "minimum_duration_hours"
     ]
     validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                          "Must_run")
+                                              "Must_run")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -314,6 +315,16 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              error
              )
         )
+
+    # Check that the project does not show up in any of the
+    # inputs_project_reserve_bas tables since must_run can't provide any
+    # reserves
+    validation_results += check_projects_for_reserves(
+        projects=df["project"],
+        operational_type="must_run",
+        subscenarios=subscenarios,
+        conn=conn
+    )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
