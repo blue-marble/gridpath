@@ -140,220 +140,220 @@ export class ScenarioNewComponent implements OnInit {
           this.startingValues.scenario_name, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$fuels.setValue(
-          this.startingValues.feature_fuels, {onlySelf: true}
+          this.startingValues.features$fuels, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$transmission.setValue(
-          this.startingValues.feature_transmission, {onlySelf: true}
+          this.startingValues.features$transmission, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$transmission_hurdle_rates.setValue(
-          this.startingValues.feature_transmission_hurdle_rates, {onlySelf: true}
+          this.startingValues.features$transmission_hurdle_rates, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$transmission_sim_flow.setValue(
-          this.startingValues.feature_simultaneous_flow_limits, {onlySelf: true}
+          this.startingValues.features$transmission_sim_flow, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$load_following_up.setValue(
-          this.startingValues.feature_load_following_up, {onlySelf: true}
+          this.startingValues.features$load_following_up, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$load_following_down.setValue(
-          this.startingValues.feature_load_following_down, {onlySelf: true}
+          this.startingValues.features$load_following_down, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$regulation_up.setValue(
-          this.startingValues.feature_regulation_up, {onlySelf: true}
+          this.startingValues.features$regulation_up, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$regulation_down.setValue(
-          this.startingValues.feature_regulation_down, {onlySelf: true}
+          this.startingValues.features$regulation_down, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$spinning_reserves.setValue(
-          this.startingValues.feature_frequency_response, {onlySelf: true}
+          this.startingValues.features$spinning_reserves, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$frequency_response.setValue(
-          this.startingValues.feature_spinning_reserves, {onlySelf: true}
+          this.startingValues.features$frequency_response, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$rps.setValue(
-          this.startingValues.feature_rps, {onlySelf: true}
+          this.startingValues.features$rps, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$carbon_cap.setValue(
-          this.startingValues.feature_carbon_cap, {onlySelf: true}
+          this.startingValues.features$carbon_cap, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$track_carbon_imports.setValue(
-          this.startingValues.feature_track_carbon_imports, {onlySelf: true}
+          this.startingValues.features$track_carbon_imports, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$prm.setValue(
-          this.startingValues.feature_prm, {onlySelf: true}
+          this.startingValues.features$prm, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$elcc_surface.setValue(
-          this.startingValues.feature_elcc_surface, {onlySelf: true}
+          this.startingValues.features$elcc_surface, {onlySelf: true}
         );
         this.newScenarioForm.controls.features$local_capacity.setValue(
-          this.startingValues.feature_local_capacity, {onlySelf: true}
+          this.startingValues.features$local_capacity, {onlySelf: true}
         );
         this.newScenarioForm.controls.temporal$temporal.setValue(
-          this.startingValues.temporal, {onlySelf: true}
+          this.startingValues.temporal$temporal, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_zones$load_zones.setValue(
-          this.startingValues.geography_load_zones, {onlySelf: true}
+          this.startingValues.load_zones$load_zones, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_zones$project_load_zones.setValue(
-          this.startingValues.project_load_zones, {onlySelf: true}
+          this.startingValues.load_zones$project_load_zones, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_zones$transmission_load_zones.setValue(
-          this.startingValues.transmission_load_zones, {onlySelf: true}
+          this.startingValues.load_zones$transmission_load_zones, {onlySelf: true}
         );
         this.newScenarioForm.controls.system_load$system_load.setValue(
-          this.startingValues.load_profile, {onlySelf: true}
+          this.startingValues.system_load$system_load, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$portfolio.setValue(
-          this.startingValues.project_portfolio, {onlySelf: true}
+          this.startingValues.project_capacity$portfolio, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$specified_capacity.setValue(
-          this.startingValues.project_existing_capacity, {onlySelf: true}
+          this.startingValues.project_capacity$specified_capacity, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$specified_fixed_cost.setValue(
-          this.startingValues.project_existing_fixed_cost, {onlySelf: true}
+          this.startingValues.project_capacity$specified_fixed_cost, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$new_cost.setValue(
-          this.startingValues.project_new_cost, {onlySelf: true}
+          this.startingValues.project_capacity$new_cost, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$new_potential.setValue(
-          this.startingValues.project_new_potential, {onlySelf: true}
+          this.startingValues.project_capacity$new_potential, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_capacity$availability.setValue(
-          this.startingValues.project_availability, {onlySelf: true}
+          this.startingValues.project_capacity$availability, {onlySelf: true}
         );
         this.newScenarioForm.controls.project_opchar$opchar.setValue(
-          this.startingValues.project_operating_chars, {onlySelf: true}
+          this.startingValues.project_opchar$opchar, {onlySelf: true}
         );
         this.newScenarioForm.controls.fuels$fuels.setValue(
-          this.startingValues.project_fuels, {onlySelf: true}
+          this.startingValues.fuels$fuels, {onlySelf: true}
         );
         this.newScenarioForm.controls.fuels$fuel_prices.setValue(
-          this.startingValues.fuel_prices, {onlySelf: true}
+          this.startingValues.fuels$fuel_prices, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_capacity$portfolio.setValue(
-          this.startingValues.transmission_portfolio, {onlySelf: true}
+          this.startingValues.transmission_capacity$portfolio, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_capacity$specified_capacity.setValue(
-          this.startingValues.transmission_existing_capacity, {onlySelf: true}
+          this.startingValues.transmission_capacity$specified_capacity, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_opchar$opchar.setValue(
-          this.startingValues.transmission_operational_chars, {onlySelf: true}
+          this.startingValues.transmission_opchar$opchar, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_hurdle_rates$hurdle_rates.setValue(
-          this.startingValues.transmission_hurdle_rates, {onlySelf: true}
+          this.startingValues.transmission_hurdle_rates$hurdle_rates, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_sim_flow_limits$limits.setValue(
-          this.startingValues.transmission_simultaneous_flow_limits, {onlySelf: true}
+          this.startingValues.transmission_sim_flow_limits$limits, {onlySelf: true}
         );
         this.newScenarioForm.controls.transmission_sim_flow_limits$groups.setValue(
-          this.startingValues.transmission_simultaneous_flow_limit_line_groups, {onlySelf: true}
+          this.startingValues.transmission_sim_flow_limits$groups, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_up$bas.setValue(
-          this.startingValues.geography_lf_up_bas, {onlySelf: true}
+          this.startingValues.load_following_up$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_up$req.setValue(
-          this.startingValues.load_following_reserves_up_profile, {onlySelf: true}
+          this.startingValues.load_following_up$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_up$projects.setValue(
-          this.startingValues.project_lf_up_bas, {onlySelf: true}
+          this.startingValues.load_following_up$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_down$bas.setValue(
-          this.startingValues.geography_lf_down_bas, {onlySelf: true}
+          this.startingValues.load_following_down$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_down$req.setValue(
-          this.startingValues.load_following_reserves_down_profile, {onlySelf: true}
+          this.startingValues.load_following_down$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.load_following_down$projects.setValue(
-          this.startingValues.project_lf_down_bas, {onlySelf: true}
+          this.startingValues.load_following_down$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_up$bas.setValue(
-          this.startingValues.geography_reg_up_bas, {onlySelf: true}
+          this.startingValues.regulation_up$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_up$req.setValue(
-          this.startingValues.regulation_up_profile, {onlySelf: true}
+          this.startingValues.regulation_up$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_up$projects.setValue(
-          this.startingValues.project_reg_up_bas, {onlySelf: true}
+          this.startingValues.regulation_up$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_down$bas.setValue(
-          this.startingValues.geography_reg_down_bas, {onlySelf: true}
+          this.startingValues.regulation_down$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_down$req.setValue(
-          this.startingValues.regulation_down_profile, {onlySelf: true}
+          this.startingValues.regulation_down$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.regulation_down$projects.setValue(
-          this.startingValues.project_reg_down_bas, {onlySelf: true}
+          this.startingValues.regulation_down$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.spinning_reserves$bas.setValue(
-          this.startingValues.geography_spin_bas, {onlySelf: true}
+          this.startingValues.spinning_reserves$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.spinning_reserves$req.setValue(
-          this.startingValues.spinning_reserves_profile, {onlySelf: true}
+          this.startingValues.spinning_reserves$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.spinning_reserves$projects.setValue(
-          this.startingValues.project_spin_bas, {onlySelf: true}
+          this.startingValues.spinning_reserves$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.frequency_response$bas.setValue(
-          this.startingValues.geography_freq_resp_bas, {onlySelf: true}
+          this.startingValues.frequency_response$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.frequency_response$req.setValue(
-          this.startingValues.frequency_response_profile, {onlySelf: true}
+          this.startingValues.frequency_response$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.frequency_response$projects.setValue(
-          this.startingValues.project_freq_resp_bas, {onlySelf: true}
+          this.startingValues.frequency_response$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.rps$bas.setValue(
-          this.startingValues.geography_rps_areas, {onlySelf: true}
+          this.startingValues.rps$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.rps$req.setValue(
-          this.startingValues.rps_target, {onlySelf: true}
+          this.startingValues.rps$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.rps$projects.setValue(
-          this.startingValues.project_rps_areas, {onlySelf: true}
+          this.startingValues.rps$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.carbon_cap$bas.setValue(
-          this.startingValues.carbon_cap_areas, {onlySelf: true}
+          this.startingValues.carbon_cap$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.carbon_cap$req.setValue(
-          this.startingValues.carbon_cap, {onlySelf: true}
+          this.startingValues.carbon_cap$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.carbon_cap$projects.setValue(
-          this.startingValues.project_carbon_cap_areas, {onlySelf: true}
+          this.startingValues.carbon_cap$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.carbon_cap$transmission.setValue(
-          this.startingValues.transmission_carbon_cap_zones, {onlySelf: true}
+          this.startingValues.carbon_cap$transmission, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$bas.setValue(
-          this.startingValues.prm_areas, {onlySelf: true}
+          this.startingValues.prm$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$req.setValue(
-          this.startingValues.prm_requirement, {onlySelf: true}
+          this.startingValues.prm$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$projects.setValue(
-          this.startingValues.project_prm_areas, {onlySelf: true}
+          this.startingValues.prm$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$project_elcc.setValue(
-          this.startingValues.project_elcc_chars, {onlySelf: true}
+          this.startingValues.prm$project_elcc, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$elcc.setValue(
-          this.startingValues.elcc_surface, {onlySelf: true}
+          this.startingValues.prm$elcc, {onlySelf: true}
         );
         this.newScenarioForm.controls.prm$energy_only.setValue(
-          this.startingValues.project_prm_energy_only, {onlySelf: true}
+          this.startingValues.prm$energy_only, {onlySelf: true}
         );
         this.newScenarioForm.controls.local_capacity$bas.setValue(
-          this.startingValues.local_capacity_areas, {onlySelf: true}
+          this.startingValues.local_capacity$bas, {onlySelf: true}
         );
         this.newScenarioForm.controls.local_capacity$req.setValue(
-          this.startingValues.local_capacity_requirement, {onlySelf: true}
+          this.startingValues.local_capacity$req, {onlySelf: true}
         );
         this.newScenarioForm.controls.local_capacity$projects.setValue(
-          this.startingValues.project_local_capacity_areas, {onlySelf: true}
+          this.startingValues.local_capacity$projects, {onlySelf: true}
         );
         this.newScenarioForm.controls.local_capacity$project_chars.setValue(
-          this.startingValues.project_local_capacity_chars, {onlySelf: true}
+          this.startingValues.local_capacity$project_chars, {onlySelf: true}
         );
         this.newScenarioForm.controls.tuning$tuning.setValue(
-          this.startingValues.tuning, {onlySelf: true}
+          this.startingValues.tuning$tuning, {onlySelf: true}
         );
       });
   }
@@ -404,76 +404,76 @@ export const emptyStartingValues = {
   // tslint:disable:variable-name
   scenario_id: null,
   scenario_name: null,
-  feature_fuels: false,
-  feature_transmission: false,
-  feature_transmission_hurdle_rates: false,
-  feature_simultaneous_flow_limits: false,
-  feature_load_following_up: false,
-  feature_load_following_down: false,
-  feature_regulation_up: false,
-  feature_regulation_down: false,
-  feature_frequency_response: false,
-  feature_spinning_reserves: false,
-  feature_rps: false,
-  feature_carbon_cap: false,
-  feature_track_carbon_imports: false,
-  feature_prm: false,
-  feature_elcc_surface: false,
-  feature_local_capacity: false,
-  temporal: null,
-  geography_load_zones: null,
-  geography_lf_up_bas: null,
-  geography_lf_down_bas: null,
-  geography_reg_up_bas: null,
-  geography_reg_down_bas: null,
-  geography_spin_bas: null,
-  geography_freq_resp_bas: null,
-  geography_rps_areas: null,
-  carbon_cap_areas: null,
-  prm_areas: null,
-  local_capacity_areas: null,
-  project_portfolio: null,
-  project_operating_chars: null,
-  project_availability: null,
-  project_fuels: null,
-  fuel_prices: null,
-  project_load_zones: null,
-  project_lf_up_bas: null,
-  project_lf_down_bas: null,
-  project_reg_up_bas: null,
-  project_reg_down_bas: null,
-  project_spin_bas: null,
-  project_freq_resp_bas: null,
-  project_rps_areas: null,
-  project_carbon_cap_areas: null,
-  project_prm_areas: null,
-  project_elcc_chars: null,
-  project_prm_energy_only: null,
-  project_local_capacity_areas: null,
-  project_local_capacity_chars: null,
-  project_existing_capacity: null,
-  project_existing_fixed_cost: null,
-  project_new_cost: null,
-  project_new_potential: null,
-  transmission_portfolio: null,
-  transmission_load_zones: null,
-  transmission_existing_capacity: null,
-  transmission_operational_chars: null,
-  transmission_hurdle_rates: null,
-  transmission_carbon_cap_zones: null,
-  transmission_simultaneous_flow_limits: null,
-  transmission_simultaneous_flow_limit_line_groups: null,
-  load_profile: null,
-  load_following_reserves_up_profile: null,
-  load_following_reserves_down_profile: null,
-  regulation_up_profile: null,
-  regulation_down_profile: null,
-  spinning_reserves_profile: null,
-  frequency_response_profile: null,
-  rps_target: null,
-  carbon_cap: null,
-  prm_requirement: null,
-  elcc_surface: null,
-  local_capacity_requirement: null,
-  tuning: null
+  features$fuels: false,
+  features$transmission: false,
+  features$transmission_hurdle_rates: false,
+  features$transmission_sim_flow: false,
+  features$load_following_up: false,
+  features$load_following_down: false,
+  features$regulation_up: false,
+  features$regulation_down: false,
+  features$spinning_reserves: false,
+  features$frequency_response: false,
+  features$rps: false,
+  features$carbon_cap: false,
+  features$track_carbon_imports: false,
+  features$prm: false,
+  features$elcc_surface: false,
+  features$local_capacity: false,
+  temporal$temporal: null,
+  load_zones$load_zones: null,
+  load_zones$project_load_zones: null,
+  load_zones$transmission_load_zones: null,
+  system_load$system_load: null,
+  project_capacity$portfolio: null,
+  project_capacity$specified_capacity: null,
+  project_capacity$specified_fixed_cost: null,
+  project_capacity$new_cost: null,
+  project_capacity$new_potential: null,
+  project_capacity$availability: null,
+  project_opchar$opchar: null,
+  fuels$fuels: null,
+  fuels$fuel_prices: null,
+  transmission_capacity$portfolio: null,
+  transmission_capacity$specified_capacity: null,
+  transmission_opchar$opchar: null,
+  transmission_hurdle_rates$hurdle_rates: null,
+  transmission_sim_flow_limits$limits: null,
+  transmission_sim_flow_limits$groups: null,
+  load_following_up$bas: null,
+  load_following_up$req: null,
+  load_following_up$projects: null,
+  load_following_down$bas: null,
+  load_following_down$req: null,
+  load_following_down$projects: null,
+  regulation_up$bas: null,
+  regulation_up$req: null,
+  regulation_up$projects: null,
+  regulation_down$bas: null,
+  regulation_down$req: null,
+  regulation_down$projects: null,
+  spinning_reserves$bas: null,
+  spinning_reserves$req: null,
+  spinning_reserves$projects: null,
+  frequency_response$bas: null,
+  frequency_response$req: null,
+  frequency_response$projects: null,
+  rps$bas: null,
+  rps$req: null,
+  rps$projects: null,
+  carbon_cap$bas: null,
+  carbon_cap$req: null,
+  carbon_cap$projects: null,
+  carbon_cap$transmission: null,
+  prm$bas: null,
+  prm$req: null,
+  prm$projects: null,
+  prm$project_elcc: null,
+  prm$elcc: null,
+  prm$energy_only: null,
+  local_capacity$bas: null,
+  local_capacity$req: null,
+  local_capacity$projects: null,
+  local_capacity$project_chars: null,
+  tuning$tuning: null
 };

@@ -28,7 +28,7 @@
              <td *ngIf="tbl.uiTableNameInDB=='features'">
                <input type="checkbox"
                       formControlName="{{tblRow.rowFormControlName}}"
-                      [checked]="startingValues[tblRow.rowDBViewName]">
+                      [checked]="startingValues[tblRow.rowFormControlName]">
              </td>
              <td *ngIf="tbl.uiTableNameInDB!=='features'">
                <select formControlName="{{tblRow.rowFormControlName}}">

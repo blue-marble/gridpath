@@ -28,6 +28,18 @@ class ScenarioDetailAPI(Resource):
 
         scenario_detail_api["scenarioName"] = scenario_name
 
+        # Get the UI table structure and make a dictionary of scenarios_view
+        # columns with their ui_table_name_in_db and ui_table_row_name_in_db
+        # Also keep track of which scenario_view columns the UI is requesting
+        ui_table_row_by_view_column = dict()
+        relevant_scenarios_view_columns = list()
+        for row in c.execute(
+          """SELECT ui_table, ui_table_row, ui_row_db_scenarios_view_column
+          FROM ui_scenario_detail_table_row_metadata;"""
+        ).fetchall():
+            ui_table_row_by_view_column[row[2]] = row[0] + "$" + row[1]
+            relevant_scenarios_view_columns.append(row[2])
+
         # Get the values for scenario-edit
         scenario_edit_query = c.execute(
           "SELECT * "
@@ -48,8 +60,21 @@ class ScenarioDetailAPI(Resource):
                 column_values[index] = \
                     True if column_values[index] == "yes" else False
 
-        scenario_edit_api = dict(zip(column_names, column_values))
+        scenario_edit_api_all = dict(zip(column_names, column_values))
+        scenario_edit_api = dict()
 
+        # We'll need scenario ID and name, which we add separately as they
+        # are not in the ui_scenario_detail_table_row_metadata table
+        for base_column in ["scenario_id", "scenario_name"]:
+            scenario_edit_api[base_column] = scenario_edit_api_all[base_column]
+
+        # Add only columns requested by the UI to the final scenario-edit API
+        for column in relevant_scenarios_view_columns:
+            if column in scenario_edit_api_all.keys():
+                scenario_edit_api[ui_table_row_by_view_column[column]] = \
+                    scenario_edit_api_all[column]
+
+        # Add the edit API to the general scenario-detail API
         scenario_detail_api["editScenarioValues"] = scenario_edit_api
 
         all_tables = c.execute(

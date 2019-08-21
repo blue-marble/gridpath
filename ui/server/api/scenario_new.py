@@ -60,7 +60,7 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     row_metadata = c.execute(
       """SELECT ui_table_row, 
       ui_row_caption, ui_row_db_subscenario_table_id_column, 
-      ui_row_db_subscenario_table, ui_row_db_scenarios_view_column
+      ui_row_db_subscenario_table
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}';""".format(
         ui_table_name_in_db
@@ -72,12 +72,6 @@ def create_scenario_new_api(c, ui_table_name_in_db):
         row_caption = row[1]
         row_subscenario_id = row[2]
         row_subscenario_table = row[3]
-        # This is only needed for editing scenario and features
-        # TODO: is there another way to link up the checkboxes and their
-        #  starting data; we can change the API for the starting values to
-        #  be based on the ui_table_name_in_db and ui_table_row_name_in_db
-        #  columns
-        row_view_column = row[4]
 
         if ui_table_name_in_db == 'features':
             setting_options_query = []
@@ -101,7 +95,6 @@ def create_scenario_new_api(c, ui_table_name_in_db):
           "uiRowNameInDB": ui_row_name_in_db,
           "rowName": row_caption,
           "rowFormControlName": ui_table_name_in_db + "$" + ui_row_name_in_db,
-          "rowDBViewName": row_view_column,
           "settingOptions": settings
         })
 
