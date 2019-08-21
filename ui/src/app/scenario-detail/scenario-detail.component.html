@@ -20,16 +20,17 @@
         <tr>
         <th>Name</th>
         <th>Value</th>
-        <th *ngIf="tbl.scenarioDetailTableCaption!=='Features'">View Data</th>
+        <th *ngIf="tbl.uiTableNameInDB!=='features'">View Data</th>
         </tr>
           <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
              <tr>
                <td>{{sd.rowCaption}}</td>
-               <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'">{{sd.rowValue}}</td>
-               <td *ngIf="tbl.scenarioDetailTableCaption=='Features'">
+               <td
+                 *ngIf="tbl.uiTableNameInDB!=='features'">{{sd.rowValue}}</td>
+               <td *ngIf="tbl.uiTableNameInDB=='features'">
                  <input type="checkbox" [checked]="sd.rowValue" disabled>
                </td>
-                <td *ngIf="tbl.scenarioDetailTableCaption!=='Features'"><button
+                <td *ngIf="tbl.uiTableNameInDB!=='features'"><button
                   (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
                   View Data
                 </button></td>

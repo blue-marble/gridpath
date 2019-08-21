@@ -126,7 +126,7 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
         })
 
     # Sort the 'Features' table features by caption
-    if table_caption[1] == "Features":
+    if ui_table_name_in_db == "features":
         sorted_features = \
             sorted(scenario_detail_table_api["scenarioDetailTableRows"],
                    key=lambda k: k['rowCaption'])

@@ -17,6 +17,7 @@ export class ScenarioDetailTableRow {
   rowValue: string;
 }
 
+// TODO: base this on ui_table_name_in_db and ui_table_row_name_in_db
 export class StartingValues {
   // tslint:disable:variable-name
   scenario_id: number;
