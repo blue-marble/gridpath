@@ -445,9 +445,9 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   makeResultsForms(scenarioID): void {
-    this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
+    this.scenarioResultsService.getOptions(scenarioID).subscribe(
       plotOptions => {
-        const plotFormStructure = {
+        const dispatchPlotFormStructure = {
           formGroup: this.dispatchPlotOptionsForm,
           selectForms: [
             {formControlName: 'dispatchPlotLoadZone',
@@ -461,12 +461,7 @@ export class ScenarioResultsComponent implements OnInit {
             caption: 'System Dispatch'
           }
         };
-        this.allResultsForms.push(plotFormStructure);
-      }
-    );
-
-    this.scenarioResultsService.getCapacityPlotOptions(scenarioID).subscribe(
-      plotOptions => {
+        this.allResultsForms.push(dispatchPlotFormStructure);
 
         const plotCapNewFormStructure = {
           formGroup: this.capacityNewPlotOptionsForm,
