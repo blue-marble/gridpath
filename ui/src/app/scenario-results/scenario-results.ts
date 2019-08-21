@@ -26,3 +26,17 @@ export class FormControlOptions {
   formControlName: string;
   formControlOptions: [];
 }
+
+// TODO: what is the json plot's type?
+export class PlotAPI {
+  plotJSON: object;
+}
+
+export class DispatchPlotOptions {
+  loadZoneOptions: [];
+  horizonOptions: [];
+}
+
+export class CapacityPlotOptions {
+  loadZoneOptions: [];
+}

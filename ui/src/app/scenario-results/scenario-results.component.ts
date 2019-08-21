@@ -43,11 +43,30 @@ export class ScenarioResultsComponent implements OnInit {
   // Plots
   // Dispatch plot (form with plot options, JSON object, and plot name)
   dispatchPlotOptionsForm = new FormGroup({
-    loadZone: new FormControl(),
-    horizon: new FormControl()
+    dispatchPlotLoadZone: new FormControl(),
+    dispatchPlotHorizon: new FormControl()
   });
   dispatchPlotJSON: object;
   dispatchPlotHTMLName: string;
+
+  // Capacity plots (form with plot options, JSON object, and plot name)
+  capacityNewPlotOptionsForm = new FormGroup({
+    capacityNewPlotLoadZone: new FormControl()
+  });
+  capacityNewPlotJSON: object;
+  capacityNewPlotHTMLName: string;
+
+  capacityRetiredPlotOptionsForm = new FormGroup({
+    capacityRetiredPlotLoadZone: new FormControl()
+  });
+  capacityRetiredPlotJSON: object;
+  capacityRetiredPlotHTMLName: string;
+
+  capacityTotalPlotOptionsForm = new FormGroup({
+    capacityTotalPlotLoadZone: new FormControl()
+  });
+  capacityTotalPlotJSON: object;
+  capacityTotalPlotHTMLName: string;
 
   // To get the right route
   scenarioID: number;
@@ -136,7 +155,20 @@ export class ScenarioResultsComponent implements OnInit {
       this.getResultsDispatchPlot(this.scenarioID);
     }
 
+    if (this.resultsToShow === 'results-capacity-new-plot') {
+      console.log('Showing new capacity plot');
+      this.getResultsCapacityNewPlot(this.scenarioID);
+    }
 
+    if (this.resultsToShow === 'results-capacity-retired-plot') {
+      console.log('Showing retired capacity plot');
+      this.getResultsCapacityRetiredPlot(this.scenarioID);
+    }
+
+    if (this.resultsToShow === 'results-capacity-total-plot') {
+      console.log('Showing total capacity plot');
+      this.getResultsCapacityTotalPlot(this.scenarioID);
+    }
   }
 
   // Subscribe to the resultsToShow BehaviorSubject, which tells us which
@@ -257,8 +289,8 @@ export class ScenarioResultsComponent implements OnInit {
 
   getResultsDispatchPlot(scenarioID): void {
     // Get the plot options
-    const loadZone = this.dispatchPlotOptionsForm.value.loadZone;
-    const horizon = this.dispatchPlotOptionsForm.value.horizon;
+    const loadZone = this.dispatchPlotOptionsForm.value.dispatchPlotLoadZone;
+    const horizon = this.dispatchPlotOptionsForm.value.dispatchPlotHorizon;
 
     // Change the plot name for the HTML
     this.dispatchPlotHTMLName = `dispatchPlot-${loadZone}-${horizon}`;
@@ -272,6 +304,57 @@ export class ScenarioResultsComponent implements OnInit {
         Bokeh.embed.embed_item(this.dispatchPlotJSON);
       });
   }
+
+  getResultsCapacityNewPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.capacityNewPlotOptionsForm.value.capacityNewPlotLoadZone;
+
+    // Change the plot name for the HTML
+    this.capacityNewPlotHTMLName = `newCapacityPlot-${loadZone}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsCapacityNewPlot(
+      scenarioID, loadZone
+    ).subscribe(plotAPI => {
+        this.capacityNewPlotJSON = plotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.capacityNewPlotJSON);
+      });
+  }
+
+  getResultsCapacityRetiredPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.capacityRetiredPlotOptionsForm.value.capacityRetiredPlotLoadZone;
+
+    // Change the plot name for the HTML
+    this.capacityRetiredPlotHTMLName = `retiredCapacityPlot-${loadZone}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsCapacityRetiredPlot(
+      scenarioID, loadZone
+    ).subscribe(plotAPI => {
+        this.capacityRetiredPlotJSON = plotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.capacityRetiredPlotJSON);
+      });
+  }
+
+  getResultsCapacityTotalPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.capacityTotalPlotOptionsForm.value.capacityTotalPlotLoadZone;
+
+    // Change the plot name for the HTML
+    this.capacityTotalPlotHTMLName = `allCapacityPlot-${loadZone}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsCapacityTotalPlot(
+      scenarioID, loadZone
+    ).subscribe(plotAPI => {
+        this.capacityTotalPlotJSON = plotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.capacityTotalPlotJSON);
+      });
+}
 
   // Make the results buttons with their relevant keys that are passed to
   // the resultsToViewSubject in scenario-results.service.ts
@@ -364,21 +447,69 @@ export class ScenarioResultsComponent implements OnInit {
   makeResultsForms(scenarioID): void {
     this.scenarioResultsService.getDispatchPlotOptions(scenarioID).subscribe(
       plotOptions => {
-        const dispatchPlotFormStructure = {
+        const plotFormStructure = {
           formGroup: this.dispatchPlotOptionsForm,
           selectForms: [
-            {formControlName: 'loadZone',
+            {formControlName: 'dispatchPlotLoadZone',
              formControlOptions: plotOptions.loadZoneOptions},
-            {formControlName: 'horizon',
+            {formControlName: 'dispatchPlotHorizon',
             formControlOptions: plotOptions.horizonOptions}
           ],
           button: {
             name: 'showResultsDispatchPlotButton',
             ngIfKey: 'results-dispatch-plot',
-            caption: 'Dispatch Plot'
+            caption: 'System Dispatch'
           }
         };
-        this.allResultsForms.push(dispatchPlotFormStructure);
+        this.allResultsForms.push(plotFormStructure);
+      }
+    );
+
+    this.scenarioResultsService.getCapacityPlotOptions(scenarioID).subscribe(
+      plotOptions => {
+
+        const plotCapNewFormStructure = {
+          formGroup: this.capacityNewPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'capacityNewPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions}
+          ],
+          button: {
+            name: 'showResultsCapacityNewPlotButton',
+            ngIfKey: 'results-capacity-new-plot',
+            caption: 'New Capacity'
+          }
+        };
+        this.allResultsForms.push(plotCapNewFormStructure);
+
+        const plotCapRetiredFormStructure = {
+          formGroup: this.capacityRetiredPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'capacityRetiredPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions}
+          ],
+          button: {
+            name: 'showResultsCapacityRetiredPlotButton',
+            ngIfKey: 'results-capacity-retired-plot',
+            caption: 'Retired Capacity'
+          }
+        };
+        this.allResultsForms.push(plotCapRetiredFormStructure);
+
+        const plotCapTotalFormStructure = {
+          formGroup: this.capacityTotalPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'capacityTotalPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions}
+          ],
+          button: {
+            name: 'showResultsCapacityTotalPlotButton',
+            ngIfKey: 'results-capacity-total-plot',
+            caption: 'Total Capacity'
+          }
+        };
+        this.allResultsForms.push(plotCapTotalFormStructure);
+
       }
     );
   }

@@ -10,7 +10,9 @@ from ui.server.api.scenario_results import \
   ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
   ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
   ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM, \
-  ScenarioResultsDispatchPlotOptions, ScenarioResultsDispatchPlot
+  ScenarioResultsDispatchPlotOptions, ScenarioResultsDispatchPlot, \
+  ScenarioResultsCapacityPlotOptions, ScenarioResultsCapacityNewPlot, \
+  ScenarioResultsCapacityRetiredPlot, ScenarioResultsCapacityTotalPlot
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.view_data import ViewDataTemporalTimepoints, \
@@ -484,5 +486,29 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsDispatchPlot,
         '/scenarios/<scenario_id>/results-dispatch-plot/<load_zone>/<horizon>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsCapacityPlotOptions,
+        '/scenarios/<scenario_id>/results-capacity-plot/options',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsCapacityNewPlot,
+        '/scenarios/<scenario_id>/results-capacity-plot/new/<load_zone>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsCapacityRetiredPlot,
+        '/scenarios/<scenario_id>/results-capacity-plot/retired/<load_zone>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsCapacityTotalPlot,
+        '/scenarios/<scenario_id>/results-capacity-plot/total/<load_zone>',
         resource_class_kwargs={'db_path': db_path}
     )

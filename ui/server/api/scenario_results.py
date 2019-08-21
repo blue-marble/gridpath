@@ -3,7 +3,7 @@
 from flask_restful import Resource
 
 from ui.server.common_functions import connect_to_database
-from viz import dispatch_plot
+from viz import dispatch_plot, capacity_plot
 
 
 # TODO: create results views to show, which ones?
@@ -300,10 +300,18 @@ class ScenarioResultsDispatchPlotOptions(Resource):
 
         :return:
         """
-        return create_dispatch_plot_options_api(
-          db_path=self.db_path,
-          scenario_id=scenario_id
-        )
+        io, c = connect_to_database(db_path=self.db_path)
+
+        options_api = dict()
+
+        load_zone_options = get_scenario_load_zones(c=c,
+                                                    scenario_id=scenario_id)
+        options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
+
+        horizon_options = get_scenario_horizons(c=c, scenario_id=scenario_id)
+        options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
+
+        return options_api
 
 
 class ScenarioResultsDispatchPlot(Resource):
@@ -318,12 +326,106 @@ class ScenarioResultsDispatchPlot(Resource):
 
         :return:
         """
-        return make_dispatch_plot(
-            db_path=self.db_path,
-            scenario_id=scenario_id,
-            load_zone=load_zone,
-            horizon=horizon
+        plot_api = dict()
+
+        plot_api["plotJSON"] = dispatch_plot.main(
+          ["--return_json", "--database", self.db_path, "--scenario_id",
+           scenario_id,
+           "--load_zone", load_zone, "--horizon", horizon]
         )
+
+        return plot_api
+
+
+class ScenarioResultsCapacityPlotOptions(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        """
+
+        :return:
+        """
+        io, c = connect_to_database(db_path=self.db_path)
+        options_api = dict()
+        load_zone_options = get_scenario_load_zones(c=c,
+                                                    scenario_id=scenario_id)
+        options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
+
+        return options_api
+
+
+class ScenarioResultsCapacityNewPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        plot_api["plotJSON"] = capacity_plot.main(
+          ["--return_json", "--database", self.db_path, "--scenario_id",
+           scenario_id, "--load_zone", load_zone, "--capacity_type", "new"]
+        )
+
+        return plot_api
+
+
+class ScenarioResultsCapacityRetiredPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        plot_api["plotJSON"] = capacity_plot.main(
+          ["--return_json", "--database", self.db_path, "--scenario_id",
+           scenario_id, "--load_zone", load_zone, "--capacity_type", "retired"]
+        )
+
+        return plot_api
+
+
+class ScenarioResultsCapacityTotalPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        plot_api["plotJSON"] = capacity_plot.main(
+          ["--return_json", "--database", self.db_path, "--scenario_id",
+           scenario_id, "--load_zone", load_zone, "--capacity_type", "all"]
+        )
+
+        return plot_api
 
 
 def create_data_table_api(db_path, ngifkey, caption, columns, table,
@@ -355,6 +457,7 @@ def create_data_table_api(db_path, ngifkey, caption, columns, table,
 def get_table_data(db_path, columns, table, scenario_id):
     """
     :param db_path:
+    :param columns:
     :param table:
     :param scenario_id:
     :return:
@@ -376,41 +479,7 @@ def get_table_data(db_path, columns, table, scenario_id):
     return column_names, rows_data
 
 
-def create_dispatch_plot_options_api(db_path, scenario_id):
-    """
-
-    :param db_path:
-    :param scenario_id:
-    :return:
-    """
-    io, c = connect_to_database(db_path=db_path)
-
-    options_api = dict()
-
-    load_zone_options = get_scenario_load_zones(c=c, scenario_id=scenario_id)
-    options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
-
-    horizon_options = get_scenario_horizons(c=c, scenario_id=scenario_id)
-    options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
-
-    return options_api
-
-
-def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
-    """
-
-    :return:
-    """
-    dispatch_plot_api = dict()
-
-    dispatch_plot_api["plotJSON"] = dispatch_plot.main(
-      ["--return_json", "--database", db_path, "--scenario_id", scenario_id,
-       "--load_zone", load_zone, "--horizon", horizon]
-    )
-
-    return dispatch_plot_api
-
-
+# Functions for getting plot/table options
 def get_scenario_load_zones(c, scenario_id):
     """
 

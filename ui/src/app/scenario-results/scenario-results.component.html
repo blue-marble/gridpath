@@ -47,6 +47,15 @@
       <div id="{{dispatchPlotHTMLName}}"
            *ngIf="resultsToShow=='results-dispatch-plot'">
       </div>
+      <div id="{{capacityNewPlotHTMLName}}"
+           *ngIf="resultsToShow=='results-capacity-new-plot'">
+      </div>
+      <div id="{{capacityRetiredPlotHTMLName}}"
+           *ngIf="resultsToShow=='results-capacity-retired-plot'">
+      </div>
+      <div id="{{capacityTotalPlotHTMLName}}"
+           *ngIf="resultsToShow=='results-capacity-total-plot'">
+      </div>
       <!--  Results tables -->
       <ng-container *ngFor="let table of allTables">
         <table *ngIf="resultsToShow==table.ngIfKey"

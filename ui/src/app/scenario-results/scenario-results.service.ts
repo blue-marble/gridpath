@@ -1,7 +1,8 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { ScenarioResults } from './scenario-results';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {BehaviorSubject, Observable} from 'rxjs';
+import { DispatchPlotOptions, CapacityPlotOptions,
+  PlotAPI, ScenarioResults} from './scenario-results';
 
 @Injectable({
   providedIn: 'root'
@@ -111,14 +112,31 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}`
     );
   }
-}
 
-// TODO: what is the json plot's type?
-export class PlotAPI {
-  plotJSON: object;
-}
+  getCapacityPlotOptions(scenarioID: number): Observable<CapacityPlotOptions> {
+    return this.http.get<CapacityPlotOptions>(
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/options`
+    );
+  }
 
-export class DispatchPlotOptions {
-  loadZoneOptions: [];
-  horizonOptions: [];
+  getResultsCapacityNewPlot(scenarioID: number, loadZone: string
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/new/${loadZone}`
+    );
+  }
+
+  getResultsCapacityRetiredPlot(scenarioID: number, loadZone: string
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/retired/${loadZone}`
+    );
+  }
+
+  getResultsCapacityTotalPlot(scenarioID: number, loadZone: string
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/total/${loadZone}`
+    );
+  }
 }
