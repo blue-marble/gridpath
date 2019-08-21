@@ -300,7 +300,7 @@ class ScenarioResultsDispatchPlotOptions(Resource):
 
         :return:
         """
-        return create_options_api(
+        return create_dispatch_plot_options_api(
           db_path=self.db_path,
           scenario_id=scenario_id
         )
@@ -376,36 +376,21 @@ def get_table_data(db_path, columns, table, scenario_id):
     return column_names, rows_data
 
 
-def create_options_api(db_path, scenario_id):
+def create_dispatch_plot_options_api(db_path, scenario_id):
     """
 
     :param db_path:
+    :param scenario_id:
     :return:
     """
     io, c = connect_to_database(db_path=db_path)
 
     options_api = dict()
 
-    load_zone_options = [z[0] for z in c.execute(
-        """SELECT load_zone FROM inputs_geography_load_zones 
-        WHERE load_zone_scenario_id = (
-        SELECT load_zone_scenario_id
-        FROM scenarios
-        WHERE scenario_id = {});""".format(scenario_id)
-    ).fetchall()]
-
+    load_zone_options = get_scenario_load_zones(c=c, scenario_id=scenario_id)
     options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
 
-    # TODO: are these unique or do we need to separate by period; in fact,
-    #  is separating by period a better user experience regardless
-    horizon_options = [h[0] for h in c.execute(
-        """SELECT horizon FROM inputs_temporal_horizons 
-        WHERE temporal_scenario_id = (
-        SELECT temporal_scenario_id
-        FROM scenarios
-        WHERE scenario_id = {});""".format(scenario_id)
-    ).fetchall()]
-
+    horizon_options = get_scenario_horizons(c=c, scenario_id=scenario_id)
     options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
 
     return options_api
@@ -424,3 +409,41 @@ def make_dispatch_plot(db_path, scenario_id, load_zone, horizon):
     )
 
     return dispatch_plot_api
+
+
+def get_scenario_load_zones(c, scenario_id):
+    """
+
+    :param c:
+    :param scenario_id:
+    :return:
+    """
+    load_zones = [z[0] for z in c.execute(
+      """SELECT load_zone FROM inputs_geography_load_zones 
+      WHERE load_zone_scenario_id = (
+      SELECT load_zone_scenario_id
+      FROM scenarios
+      WHERE scenario_id = {});""".format(scenario_id)
+    ).fetchall()]
+
+    return load_zones
+
+
+# TODO: are these unique or do we need to separate by period; in fact,
+#  is separating by period a better user experience regardless
+def get_scenario_horizons(c, scenario_id):
+    """
+
+    :param c:
+    :param scenario_id:
+    :return:
+    """
+    horizons = [h[0] for h in c.execute(
+      """SELECT horizon FROM inputs_temporal_horizons 
+      WHERE temporal_scenario_id = (
+      SELECT temporal_scenario_id
+      FROM scenarios
+      WHERE scenario_id = {});""".format(scenario_id)
+    ).fetchall()]
+
+    return horizons
