@@ -14,7 +14,7 @@ from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database
+    write_validation_to_database, check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -420,52 +420,14 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     var_projects = set([p[0] for p in var_projects.fetchall()])
 
     # Check that the project does not show up in any of the
-    # inputs_project_reserve_bas tables since variable_no_curtailment
-    # can't provide any reserves
-    reserves = ["frequency_response", "spinning_reserves",
-                "lf_reserves_down", "lf_reserves_up",
-                "regulation_up", "regulation_down"]
-    for reserve in reserves:
-        # Get set of projects with a reserve BA specified
-        table = "inputs_project_" + reserve + "_bas"
-        ba_column = reserve + "_ba"
-        ba_id = reserve + "_ba_scenario_id"
-        project_ba_id = "project_" + reserve + "_ba_scenario_id"
-
-        # If the subscenario_ids are specified, do the input validation
-        if getattr(subscenarios, ba_id.upper()) and \
-                getattr(subscenarios, project_ba_id.upper()):
-            c = conn.cursor()
-            prjs_w_ba = c.execute(
-                """SELECT project
-                FROM {}
-                WHERE {} IS NOT NULL
-                AND {} = {}
-                AND {} = {}
-                """.format(
-                    table,
-                    ba_column,
-                    ba_id, getattr(subscenarios, ba_id.upper()),
-                    project_ba_id, getattr(subscenarios, project_ba_id.upper())
-                )
-            )
-            prjs_w_ba = set([p[0] for p in prjs_w_ba.fetchall()])
-
-            # If there are any variable_no_curtailment projects with a reserve
-            # BA specified, create a validation error
-            bad_projects = prjs_w_ba & var_projects  # intersection of sets
-            if bad_projects:
-                print_bad_projects = ", ".join(bad_projects)
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     __name__,
-                     project_ba_id.upper(),
-                     table,
-                     "Invalid {} BA inputs".format(reserve),
-                     "Project(s) '{}'; Variable_no_curtailment cannot "
-                     "provide {}".format(print_bad_projects, reserve)
-                     )
-                )
+    # inputs_project_reserve_bas tables since variable_no_curtailment can't
+    # provide any reserves
+    validation_results += check_projects_for_reserves(
+        projects=var_projects,
+        operational_type="variable_no_curtailment",
+        subscenarios=subscenarios,
+        conn=conn
+    )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
@@ -481,7 +443,7 @@ def write_module_specific_model_inputs(
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
     :param stage:
-    :param c: database cursor
+    :param conn: database connection
     :return:
     """
     variable_profiles = get_module_specific_inputs_from_database(

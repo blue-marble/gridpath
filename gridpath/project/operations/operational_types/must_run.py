@@ -11,7 +11,8 @@ import pandas as pd
 from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns, check_constant_heat_rate
+    write_validation_to_database, check_req_prj_columns, \
+    check_constant_heat_rate, check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -318,51 +319,12 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since must_run can't provide any
     # reserves
-    reserves = ["frequency_response", "spinning_reserves",
-                "lf_reserves_down", "lf_reserves_up",
-                "regulation_up", "regulation_down"]
-    for reserve in reserves:
-        # Get set of projects with a reserve BA specified and set of must_run
-        table = "inputs_project_" + reserve + "_bas"
-        ba_column = reserve + "_ba"
-        ba_id = reserve + "_ba_scenario_id"
-        project_ba_id = "project_" + reserve + "_ba_scenario_id"
-
-        # If the subscenario_ids are specified, do the input validation
-        if getattr(subscenarios, ba_id.upper()) and \
-                getattr(subscenarios, project_ba_id.upper()):
-            c = conn.cursor()
-            prjs_w_ba = c.execute(
-                """SELECT project
-                FROM {}
-                WHERE {} IS NOT NULL
-                AND {} = {}
-                AND {} = {}
-                """.format(
-                    table,
-                    ba_column,
-                    ba_id, getattr(subscenarios, ba_id.upper()),
-                    project_ba_id, getattr(subscenarios, project_ba_id.upper())
-                )
-            )
-            prjs_w_ba = set([p[0] for p in prjs_w_ba.fetchall()])
-            must_run_projects = set(df["project"])
-
-            # If there are any must_run projects with a reserve BA specified,
-            # create a validation error
-            bad_projects = prjs_w_ba & must_run_projects  # intersection of sets
-            if bad_projects:
-                print_bad_projects = ", ".join(bad_projects)
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     __name__,
-                     project_ba_id.upper(),
-                     table,
-                     "Invalid {} BA inputs".format(reserve),
-                     "Project(s) '{}'; Must_run cannot provide {}".format(
-                         print_bad_projects, reserve)
-                     )
-                )
+    validation_results += check_projects_for_reserves(
+        projects=df["project"],
+        operational_type="must_run",
+        subscenarios=subscenarios,
+        conn=conn
+    )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
