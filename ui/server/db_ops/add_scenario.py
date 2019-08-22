@@ -1,7 +1,7 @@
 from flask_socketio import emit
 
-from db.utilities.create_scenario import create_scenario
-from db.utilities.update_scenario import update_scenario_multiple_columns
+from db.utilities.scenario import create_scenario, \
+  update_scenario_multiple_columns
 from ui.server.common_functions import connect_to_database
 
 

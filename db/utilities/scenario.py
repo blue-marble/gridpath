@@ -2,12 +2,12 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Create scenario
+Create or update scenario.
 """
-from __future__ import print_function
+import warnings
 
 
-def create_scenario(
+def create_scenario_all_args(
         io, c,
         scenario_name,
         of_fuels,
@@ -85,7 +85,9 @@ def create_scenario(
         tuning_scenario_id
 ):
     """
-    The scenario_id column is auto increment, so not inserted directly
+    Insert a scenario by explicitly specifying the value for each column (
+    the columns are arguments to this function). The scenario_id column is
+    auto increment, so is not inserted directly.
     :param io:
     :param c:
     :param scenario_name:
@@ -392,6 +394,107 @@ def create_scenario(
             elcc_surface_scenario_id,
             local_capacity_requirement_scenario_id,
             tuning_scenario_id
+        )
+    )
+
+    io.commit()
+
+
+def create_scenario(io, c, column_values_dict):
+    """
+    Flexible way to insert a scenario that does not require specifying
+    values for all columns. Columns can be skipped entirely or None can be
+    specified as their value (in which case this function will insert a NULL
+    value for that column). The scenario_id column is auto increment, so
+    should not be inserted directly. If the scenario_id is specified,
+    it will be skipped (not inserted) and a warning will be raised.
+
+    :param io: the database path
+    :param c: database cursor object
+    :param column_values_dict: dictionary containing the scenarios table
+        column names to populate as keys and the scenarios table column
+        values as the dictionary values
+    :return: None
+    """
+    column_names_string = str()
+    column_values_string = str()
+
+    # TODO: add a check that the column names are correct and values are
+    #  integers
+    for column_name in column_values_dict.keys():
+        if column_name == 'scenario_id':
+            warnings.warn(
+                "The scenario_id is an AUTOINCREMENT column and should not be "
+                "inserted directly. \n"
+                "The scenario will be assigned a scenario_id automatically. \n"
+                "Remove the 'scenario_id' key from the dictionary to avoid "
+                "seeing this warning again.")
+        if list(column_values_dict.keys()).index(column_name) == 0:
+            column_names_string += column_name
+            column_values_string += \
+                "'" + str(column_values_dict[column_name]) + "'" \
+                if column_values_dict[column_name] is not None \
+                else 'NULL'
+        else:
+            column_names_string += ", " + column_name
+            column_values_string += \
+                ", " + str(column_values_dict[column_name]) \
+                if column_values_dict[column_name] is not None \
+                else ', NULL'
+
+    print("INSERT INTO scenarios ({}) VALUES ({});".format(
+            column_names_string, column_values_string
+        )
+    )
+
+    io.commit()
+
+
+def update_scenario_multiple_columns(
+        io, c,
+        scenario_name,
+        column_values_dict
+):
+    """
+
+    :param io:
+    :param c:
+    :param scenario_name:
+    :param column_values_dict:
+    :return:
+    """
+    for column_name in column_values_dict:
+        update_scenario_single_column(
+            io=io,
+            c=c,
+            scenario_name=scenario_name,
+            column_name=column_name,
+            column_value=column_values_dict[column_name]
+        )
+
+    io.commit()
+
+
+def update_scenario_single_column(
+        io, c,
+        scenario_name,
+        column_name,
+        column_value
+):
+    """
+
+    :param io:
+    :param c:
+    :param scenario_name:
+    :param column_name:
+    :param column_value:
+    :return:
+    """
+    c.execute(
+        """UPDATE scenarios
+        SET {} = {}
+        WHERE scenario_name = '{}';""".format(
+            column_name, column_value, scenario_name
         )
     )
 
