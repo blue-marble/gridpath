@@ -1,8 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
-import { DispatchPlotOptions, CapacityPlotOptions,
-  PlotAPI, ScenarioResults} from './scenario-results';
+import { ResultsOptions, PlotAPI, ScenarioResults} from './scenario-results';
 
 @Injectable({
   providedIn: 'root'
@@ -99,9 +98,9 @@ export class ScenarioResultsService {
     );
   }
 
-  getDispatchPlotOptions(scenarioID: number): Observable<DispatchPlotOptions> {
-    return this.http.get<DispatchPlotOptions>(
-      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/options`
+  getOptions(scenarioID: number): Observable<ResultsOptions> {
+    return this.http.get<ResultsOptions>(
+      `${this.scenariosBaseURL}${scenarioID}/scenario-results-options`
     );
   }
 
@@ -110,12 +109,6 @@ export class ScenarioResultsService {
   ): Observable<PlotAPI> {
     return this.http.get<PlotAPI>(
       `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}`
-    );
-  }
-
-  getCapacityPlotOptions(scenarioID: number): Observable<CapacityPlotOptions> {
-    return this.http.get<CapacityPlotOptions>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/options`
     );
   }
 

@@ -32,11 +32,7 @@ export class PlotAPI {
   plotJSON: object;
 }
 
-export class DispatchPlotOptions {
+export class ResultsOptions {
   loadZoneOptions: [];
   horizonOptions: [];
-}
-
-export class CapacityPlotOptions {
-  loadZoneOptions: [];
 }

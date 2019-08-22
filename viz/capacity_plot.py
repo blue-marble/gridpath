@@ -12,13 +12,12 @@ from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
 from bokeh.palettes import cividis
 
-
 import pandas as pd
 import os
 import sys
 
 # GridPath modules
-from viz.common_functions import connect_to_database
+from viz.common_functions import connect_to_database, show_hide_legend
 
 
 def parse_arguments(arguments):
@@ -225,6 +224,9 @@ def draw_capacity_plot(c, scenario_id, load_zone, capacity_type):
     """
     df = create_data_df(c, scenario_id, load_zone, capacity_type)
     plot = create_plot(df, load_zone, capacity_type)
+
+    # Extras
+    show_hide_legend(plot=plot)
 
     return plot
 
