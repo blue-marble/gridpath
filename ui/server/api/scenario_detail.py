@@ -35,7 +35,8 @@ class ScenarioDetailAPI(Resource):
         relevant_scenarios_view_columns = list()
         for row in c.execute(
           """SELECT ui_table, ui_table_row, ui_row_db_scenarios_view_column
-          FROM ui_scenario_detail_table_row_metadata;"""
+          FROM ui_scenario_detail_table_row_metadata
+          WHERE include = 1;"""
         ).fetchall():
             ui_table_row_by_view_column[row[2]] = row[0] + "$" + row[1]
             relevant_scenarios_view_columns.append(row[2])
@@ -80,6 +81,7 @@ class ScenarioDetailAPI(Resource):
         all_tables = c.execute(
             """SELECT ui_table 
             FROM ui_scenario_detail_table_metadata
+            WHERE include = 1
             ORDER BY ui_table_id ASC;"""
         ).fetchall()
 
@@ -112,7 +114,8 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
     table_caption = c.execute(
         """SELECT ui_table, ui_table_caption 
         FROM ui_scenario_detail_table_metadata
-        WHERE ui_table = '{}';""".format(ui_table_name_in_db)
+        WHERE ui_table = '{}'
+        AND include = 1;""".format(ui_table_name_in_db)
     ).fetchone()
 
     scenario_detail_table_api = dict()
@@ -126,7 +129,8 @@ def get_scenario_detail(cursor, scenario_id, ui_table_name_in_db):
         """SELECT ui_table_row, ui_row_caption, 
         ui_row_db_scenarios_view_column, ui_row_db_input_table 
         FROM ui_scenario_detail_table_row_metadata
-        WHERE ui_table = '{}';""".format(ui_table_name_in_db)
+        WHERE ui_table = '{}'
+        AND include = 1;""".format(ui_table_name_in_db)
     ).fetchall()
 
     for row in row_metadata:

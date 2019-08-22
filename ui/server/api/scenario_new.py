@@ -22,6 +22,7 @@ class ScenarioNewAPI(Resource):
         all_tables = c.execute(
             """SELECT ui_table 
             FROM ui_scenario_detail_table_metadata
+            WHERE include = 1
             ORDER BY ui_table_id ASC;"""
         ).fetchall()
 
@@ -48,7 +49,8 @@ def create_scenario_new_api(c, ui_table_name_in_db):
     table_caption = c.execute(
       """SELECT ui_table_caption 
       FROM ui_scenario_detail_table_metadata
-      WHERE ui_table = '{}';""".format(ui_table_name_in_db)
+      WHERE ui_table = '{}'
+      AND include = 1;""".format(ui_table_name_in_db)
     ).fetchone()
 
     scenario_new_api = {

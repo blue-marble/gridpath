@@ -92,8 +92,8 @@ def load_data(db, omit_data):
             for row in reader:
                 c.execute(
                     """INSERT INTO ui_scenario_detail_table_metadata
-                    (ui_table, ui_table_caption)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                    (ui_table, include, ui_table_caption)
+                    VALUES ('{}', {}, '{}');""".format(row[0], row[1], row[2])
                 )
             db.commit()
 
@@ -105,14 +105,14 @@ def load_data(db, omit_data):
             for row in reader:
                 c.execute(
                     """INSERT INTO ui_scenario_detail_table_row_metadata
-                    (ui_table, ui_table_row, ui_row_caption, 
+                    (ui_table, ui_table_row, include, ui_row_caption,
                     ui_row_db_scenarios_view_column, 
                     ui_row_db_subscenario_table, 
                     ui_row_db_subscenario_table_id_column, 
                     ui_row_db_input_table)
-                    VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}');
+                    VALUES ('{}', '{}', {}, '{}', '{}', '{}', '{}', '{}');
                     """.format(row[0], row[1], row[2], row[3], row[4],
-                               row[5], row[6])
+                               row[5], row[6], row[7])
                 )
             db.commit()
     else:

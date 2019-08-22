@@ -688,7 +688,8 @@ def get_meta_data(c, form_key):
       ui_row_db_subscenario_table_id_column
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}'
-      AND ui_table_row = '{}';""".format(ui_table, ui_table_row)
+      AND ui_table_row = '{}'
+      AND include = 1;""".format(ui_table, ui_table_row)
     ).fetchone()
 
     return subscenario_table, subscenario_id_column

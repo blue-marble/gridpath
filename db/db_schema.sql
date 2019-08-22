@@ -3368,6 +3368,7 @@ LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
 DROP TABLE IF EXISTS ui_scenario_detail_table_metadata;
 CREATE TABLE ui_scenario_detail_table_metadata (
 ui_table_id INTEGER PRIMARY KEY AUTOINCREMENT,
+include INTEGER,
 ui_table VARCHAR(32) UNIQUE,
 ui_table_caption VARCHAR(64)
 );
@@ -3376,6 +3377,7 @@ DROP TABLE IF EXISTS ui_scenario_detail_table_row_metadata;
 CREATE TABLE ui_scenario_detail_table_row_metadata (
 ui_table VARCHAR(32),
 ui_table_row VARCHAR(32),
+include INTEGER,
 ui_row_caption VARCHAR(64),
 ui_row_db_scenarios_view_column VARCHAR(64),
 ui_row_db_subscenario_table VARCHAR(128),

@@ -1,23 +1,23 @@
-﻿ui_table,ui_table_caption
-features,Features
-temporal,Temporal Settings
-load_zones,Load Zone Settings
-system_load,System Load
-project_capacity,Generation and Storage Capacity
-project_opchar,Generation and Storage Operational Characteristics
-fuels,Fuels
-transmission_capacity,Transmission Capacity
-transmission_opchar,Transmission Operational Characteristics
-transmission_hurdle_rates,Transmission Hurdle Rates
-transmission_sim_flow_limits,Transmission Simultaneous Flow Limits
-load_following_up,Load Following Up
-load_following_down,Load Following Down
-regulation_up,Regulation Up
-regulation_down,Regulation Down
-spinning_reserves,Spinning Reserves
-frequency_response,Frequency Response
-rps,Renewables Portfolio Standard (RPS)
-carbon_cap,Carbon Cap
-prm,Planning Reserve Margin (PRM)
-local_capacity,Local Capacity
-tuning,Tuning
+﻿ui_table,include,ui_table_caption
+features,1,Features
+temporal,1,Temporal Settings
+load_zones,1,Load Zone Settings
+system_load,1,System Load
+project_capacity,1,Generation and Storage Capacity
+project_opchar,1,Generation and Storage Operational Characteristics
+fuels,1,Fuels
+transmission_capacity,1,Transmission Capacity
+transmission_opchar,1,Transmission Operational Characteristics
+transmission_hurdle_rates,1,Transmission Hurdle Rates
+transmission_sim_flow_limits,1,Transmission Simultaneous Flow Limits
+load_following_up,1,Load Following Up
+load_following_down,1,Load Following Down
+regulation_up,1,Regulation Up
+regulation_down,1,Regulation Down
+spinning_reserves,1,Spinning Reserves
+frequency_response,1,Frequency Response
+rps,1,Renewables Portfolio Standard (RPS)
+carbon_cap,1,Carbon Cap
+prm,1,Planning Reserve Margin (PRM)
+local_capacity,1,Local Capacity
+tuning,1,Tuning
