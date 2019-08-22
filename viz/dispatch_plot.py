@@ -524,7 +524,7 @@ def create_plot(df):
             tooltips=[
                 ("Hour Ending", "@x"),
                 ("Source", power_source),
-                ("Dispatch", "@%s{int} MW" % power_source)
+                ("Dispatch", "@%s{0,0} MW" % power_source)
             ],
             renderers=[r],
             toggleable=False)

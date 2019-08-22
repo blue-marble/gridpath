@@ -205,7 +205,7 @@ def create_plot(df, load_zone, capacity_type):
             tooltips=[
                 ("Year", "@period"),
                 ("Technology", technology),
-                ("Capacity", "@%s{int} MW" % technology)
+                ("Capacity", "@%s{0,0} MW" % technology)
             ],
             renderers=[r],
             toggleable=False)
