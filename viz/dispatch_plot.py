@@ -12,7 +12,8 @@ Make results dispatch plot (by load zone, stage, horizon).
 # TODO: add example df for testing?
 
 from argparse import ArgumentParser
-from bokeh.models import ColumnDataSource, Legend
+
+from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
 from bokeh.plotting import figure, output_file, show
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
@@ -512,6 +513,9 @@ def create_plot(df):
     plot.xaxis.axis_label = "Hour Ending"
     plot.yaxis.axis_label = "Dispatch (MW)"
 
+    # Format y- axis numbers
+    plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
+
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
         power_source = r.name
@@ -519,7 +523,7 @@ def create_plot(df):
             tooltips=[
                 ("Hour Ending", "@x"),
                 ("Source", power_source),
-                ("Dispatch", "@%s{int} MW" % power_source)
+                ("Dispatch", "@%s{0,0} MW" % power_source)
             ],
             renderers=[r],
             toggleable=False)
@@ -531,7 +535,7 @@ def create_plot(df):
         hover = HoverTool(
             tooltips=[
                 ("Hour Ending", "@x"),
-                (load_type, "@y{int} MW"),
+                (load_type, "@y{0,0} MW"),
             ],
             renderers=[r],
             toggleable=False)
