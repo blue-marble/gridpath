@@ -2,12 +2,26 @@
 
   <h2><span>New Scenario: </span>{{newScenarioForm.value.scenarioName}}</h2>
 
+  <div class="row">
+    <form [formGroup]="fromScenarioForm" (ngSubmit)="getStartingValuesFromScenario()">
+      <button id="populateFromScenarioButton" type="submit">Populate from
+        Scenario
+      </button>
+      <select class="custom-select" formControlName="populateFromScenarioID">
+        <ng-container>
+          <option *ngFor="let scenario of allScenarios" value="{{scenario.id}}"
+          >{{scenario.name}}</option>
+        </ng-container>
+      </select>
+    </form>
+  </div>
+
   <form [formGroup]="newScenarioForm" (ngSubmit)="saveNewScenario()">
 
     <p><label>
     Scenario Name:
     <input type="text" formControlName="scenarioName">
-  </label></p>
+    </label></p>
 
     <p><label>
     Description:
