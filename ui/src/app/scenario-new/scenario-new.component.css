@@ -25,3 +25,16 @@
   margin-top: 10px;
   margin-bottom: 1px;
 }
+
+.custom-select {
+  width: auto;
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue;
+  arrow: show
+}
+
+#populate-from-div {
+  padding-bottom: 20px;
+}
