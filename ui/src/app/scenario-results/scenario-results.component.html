@@ -7,6 +7,7 @@
     </div>
   </div>
 <!-- Navigation bar for which results to show -->
+<!--  Results Buttons (no options)-->
   <div class="navbar navbar-expand-sm" id="results-navbar">
     <ul class="navbar-nav mr-auto">
       <ng-container *ngFor="let button of allResultsButtons">
@@ -15,6 +16,7 @@
                 (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
         </li>
       </ng-container>
+<!--      Results Forms (have options the user must select) -->
       <ng-container *ngFor="let form of allResultsForms">
         <li class="form-group-list-item">
           <form [formGroup]="form.formGroup"
