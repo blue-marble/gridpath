@@ -2,22 +2,22 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make plot of costs
+Make plot of costs by period for a certain zone/stage
 """
 
 from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
-from bokeh.plotting import figure, output_file, show
+from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
 from bokeh.palettes import cividis
 
 import pandas as pd
-import os
 import sys
 
 # GridPath modules
-from viz.common_functions import connect_to_database, show_hide_legend
+from viz.common_functions import connect_to_database, show_hide_legend, \
+    show_plot, get_scenario_and_scenario_id
 
 
 def parse_arguments(arguments):
@@ -35,9 +35,11 @@ def parse_arguments(arguments):
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", help="The name of the load zone.")
+    parser.add_argument("--load_zone",
+                        help="The name of the load zone. Required.")
     parser.add_argument("--stage", default=1,
-                        help="The stage ID. Defaults to 1 if not specified.")
+                        help="The stage ID. Defaults to 1.")
+    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
                         help="Show and save figure to "
@@ -53,9 +55,9 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def create_data_df(c, scenario_id, load_zone, stage):
+def get_costs(c, scenario_id, load_zone, stage):
     """
-    Get costs results and put them into a df
+    Get costs results
     :param c:
     :param scenario_id:
     :param load_zone:
@@ -80,9 +82,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         startup_cost/1000000 as Startups,
         shutdown_cost/1000000 as Shutdowns,
         hurdle_cost/1000000 as Hurdle_Rates
-        
+
         FROM
-        
+
         (SELECT scenario_id, period, sum(annualized_capacity_cost) 
         AS capacity_cost
         FROM  results_project_costs_capacity
@@ -90,9 +92,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         AND stage_id = ?
         AND load_zone = ?
         GROUP BY scenario_id, period) AS cap_costs
-        
+
         LEFT JOIN
-        
+
         (SELECT scenario_id, period, 
         sum(fuel_cost * horizon_weight * number_of_hours_in_timepoint) 
         AS fuel_cost
@@ -102,9 +104,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         AND load_zone = ?
         GROUP BY scenario_id, period) AS fuel_costs
         USING (scenario_id, period)
-        
+
         LEFT JOIN
-        
+
         (SELECT scenario_id, period, 
         sum(variable_om_cost * horizon_weight * number_of_hours_in_timepoint) 
         AS variable_om_cost
@@ -114,9 +116,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         AND load_zone = ?
         GROUP BY scenario_id, period) AS variable_om_costs
         USING (scenario_id, period)
-        
+
         LEFT JOIN
-        
+
         (SELECT scenario_id, period, 
         sum(startup_cost * horizon_weight) AS startup_cost
         FROM results_project_costs_operations_startup
@@ -125,9 +127,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         AND load_zone = ?
         GROUP BY scenario_id, period) AS startup_costs
         USING (scenario_id, period)
-        
+
         LEFT JOIN
-        
+
         (SELECT scenario_id, period, 
         sum(shutdown_cost * horizon_weight) AS shutdown_cost
         FROM results_project_costs_operations_shutdown
@@ -136,9 +138,9 @@ def create_data_df(c, scenario_id, load_zone, stage):
         AND load_zone = ?
         GROUP BY scenario_id, period) AS shutdown_costs
         USING (scenario_id, period)
-        
+
         LEFT JOIN
-        
+
         (SELECT scenario_id, period, 
         sum((hurdle_cost_positive_direction + hurdle_cost_negative_direction) * 
         horizon_weight * number_of_hours_in_timepoint) AS hurdle_cost
@@ -159,6 +161,21 @@ def create_data_df(c, scenario_id, load_zone, stage):
                             scenario_id, stage, load_zone)
                       )
 
+    return costs
+
+
+def create_data_df(c, scenario_id, load_zone, stage):
+    """
+    Get costs results and put into df
+    :param c:
+    :param scenario_id:
+    :param load_zone:
+    :param stage:
+    :return:
+    """
+
+    costs = get_costs(c, scenario_id, load_zone, stage)
+
     df = pd.DataFrame(
         data=costs.fetchall(),
         columns=[n[0] for n in costs.description]
@@ -169,19 +186,6 @@ def create_data_df(c, scenario_id, load_zone, stage):
     df.set_index("period", inplace=True)
     df.index = df.index.map(str)
 
-    return df
-
-
-def create_plot(df, load_zone, stage):
-    """
-
-    :param df:
-    :param load_zone:
-    :param stage:
-    :return:
-    """
-    # TODO: handle empty dataframe (will give bokeh warning)
-
     # For Testing:
     # df = pd.DataFrame(
     #     index=["2018", "2020"],
@@ -190,6 +194,19 @@ def create_plot(df, load_zone, stage):
     #     columns=["Biomass", "Hydro", "Solar", "Wind"]
     # )
     # df.index.name = "period"
+
+    return df
+
+
+def create_plot(df, title, ylimit=None):
+    """
+
+    :param df:
+    :param title: string, plot title
+    :param ylimit: float/int, upper limit of y-axis; optional
+    :return:
+    """
+    # TODO: handle empty dataframe (will give bokeh warning)
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -201,9 +218,6 @@ def create_plot(df, load_zone, stage):
     # Stacked Area Colors
     colors = cividis(len(stacked_cols))
 
-    # Set title
-    title = "Total Cost by Period - {} - stage {}".format(load_zone, stage)
-    
     # Set up the figure
     plot = figure(
         plot_width=800, plot_height=500,
@@ -234,13 +248,13 @@ def create_plot(df, load_zone, stage):
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
+    show_hide_legend(plot=plot)  # Hide legend on double click
 
-    # Add axis labels
+    # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Period"
     plot.yaxis.axis_label = "Cost ($MM)"
-
-    # Format y- axis numbers
     plot.yaxis.formatter = NumeralTickFormatter(format="$0,0")
+    plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
@@ -258,29 +272,11 @@ def create_plot(df, load_zone, stage):
     return plot
 
 
-def draw_cost_plot(c, scenario_id, load_zone, stage):
-    """
-
-    :param c:
-    :param scenario_id:
-    :param load_zone:
-    :param stage:
-    :return:
-    """
-    df = create_data_df(c, scenario_id, load_zone, stage)
-    plot = create_plot(df, load_zone, stage)
-
-    # Extras
-    show_hide_legend(plot=plot)
-
-    return plot
-
-
 def main(args=None):
     """
-    :return: if requested, return the plot as JSON object
+    Parse the arguments, get the data in a df, and create the plot
 
-    Parse the arguments and create the dispatch plot
+    :return: if requested, return the plot as JSON object
     """
     if args is None:
         args = sys.argv[1:]
@@ -289,52 +285,36 @@ def main(args=None):
     db = connect_to_database(parsed_arguments=parsed_args)
     c = db.cursor()
 
-    load_zone = parsed_args.load_zone
-    stage = parsed_args.stage
-    if parsed_args.scenario_id is None:
-        scenario = parsed_args.scenario
-        # Get the scenario ID
-        scenario_id = c.execute(
-            """SELECT scenario_id
-            FROM scenarios
-            WHERE scenario_name = '{}';""".format(parsed_args.scenario)
-        ).fetchone()[0]
-    else:
-        scenario_id = parsed_args.scenario_id
-        # Get the scenario name
-        scenario = c.execute(
-            """SELECT scenario_name
-            FROM scenarios
-            WHERE scenario_id = {};""".format(parsed_args.scenario_id)
-        ).fetchone()[0]
-
-    plot = draw_cost_plot(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        stage=stage
+    scenario, scenario_id = get_scenario_and_scenario_id(
+        parsed_arguments=parsed_args,
+        c=c
     )
 
-    plot_name = "CostPlot-{}-{}".format(load_zone, stage)
+    plot_title = "Total Cost by Period - {} - Stage {}".format(
+        parsed_args.load_zone, parsed_args.stage)
+    plot_name = "CostPlot-{}-{}".format(
+        parsed_args.load_zone, parsed_args.stage)
+
+    df = create_data_df(
+        c=c,
+        scenario_id=scenario_id,
+        load_zone=parsed_args.load_zone,
+        stage=parsed_args.stage
+    )
+
+    plot = create_plot(
+        df=df,
+        title=plot_title,
+        ylimit=parsed_args.ylimit
+    )
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        figures_directory = os.path.join(
-            os.getcwd(), "..", "scenarios", scenario, "results",
-            "figures"
-        )
-        if not os.path.exists(figures_directory):
-            os.makedirs(figures_directory)
-        filename = plot_name + ".html"
-        output_file(os.path.join(figures_directory, filename))
-        show(plot)
+        show_plot(scenario, plot, plot_name)
 
     # Return plot in json format if requested
     if parsed_args.return_json:
-        return json_item(
-            plot,
-            plot_name
-        )
+        return json_item(plot, plot_name)
 
 
 if __name__ == "__main__":
