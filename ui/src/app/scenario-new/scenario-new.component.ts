@@ -129,8 +129,9 @@ export class ScenarioNewComponent implements OnInit {
     // Get the scenarios list for the 'populate from scenario' functionality
     this.getScenarios();
 
-    // Set the starting form state (if editing or copying a scenario)
-    this.setStartingFormStateFromEditScenario();
+    // Set the starting form state (from the ScenarioEditService
+    // StartingValueSubject)
+    this.setStartingFormStateOnInit();
 
     // Make the scenario-new view
     this.getScenarioNewAPI();
@@ -389,11 +390,10 @@ export class ScenarioNewComponent implements OnInit {
 
   // Set the starting values based on the scenario that the user has
   // requested to edit (on navigate from scenario-detail to scenario-new)
-  setStartingFormStateFromEditScenario(): void {
+  setStartingFormStateOnInit(): void {
     this.scenarioEditService.startingValuesSubject
       .subscribe((startingValues: StartingValues) => {
         this.startingValues = startingValues;
-
         this.setStartingValues();
       });
   }
