@@ -6,7 +6,7 @@ Make plot of new build
 """
 
 from argparse import ArgumentParser
-from bokeh.models import ColumnDataSource, Legend
+from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
 from bokeh.plotting import figure, output_file, show
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
@@ -194,6 +194,9 @@ def create_plot(df, load_zone, capacity_type):
     # Add axis labels
     plot.xaxis.axis_label = "Period"
     plot.yaxis.axis_label = "Capacity (MW)"
+
+    # Format y- axis numbers
+    plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
