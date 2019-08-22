@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 import {StartingValues} from './scenario-detail';
@@ -20,11 +20,4 @@ export class ScenarioEditService {
     this.startingValuesSubject.next(startingValues);
     console.log(startingValues);
   }
-
-  getScenarioDetailAll(scenarioID: number): Observable<StartingValues> {
-    return this.http.get<StartingValues>(
-      `${this.scenariosBaseURL}${scenarioID}/all`
-    );
-  }
-
 }
