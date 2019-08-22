@@ -535,7 +535,7 @@ def create_plot(df):
         hover = HoverTool(
             tooltips=[
                 ("Hour Ending", "@x"),
-                (load_type, "@y{int} MW"),
+                (load_type, "@y{0,0} MW"),
             ],
             renderers=[r],
             toggleable=False)
