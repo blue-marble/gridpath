@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make results dispatch plot (by load zone, stage, horizon).
+Make results dispatch plot for a specified zone/stage/horizon
 """
 
 # TODO: adjust x-axis for timepoint duration? (assumes 1h now)
@@ -12,17 +12,17 @@ Make results dispatch plot (by load zone, stage, horizon).
 # TODO: add example df for testing?
 
 from argparse import ArgumentParser
-
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
-from bokeh.plotting import figure, output_file, show
+from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
+
 import pandas as pd
-import os
 import sys
 
 # GridPath modules
-from viz.common_functions import connect_to_database, show_hide_legend
+from viz.common_functions import connect_to_database, show_hide_legend, \
+    show_plot, get_scenario_and_scenario_id
 
 
 def parse_arguments(arguments):
@@ -40,10 +40,12 @@ def parse_arguments(arguments):
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", help="The name of the load zone.")
-    parser.add_argument("--horizon", help="The horizon ID.")
+    parser.add_argument("--load_zone",
+                        help="The name of the load zone. Required.")
+    parser.add_argument("--horizon", help="The horizon ID. Required.")
     parser.add_argument("--stage", default=1,
-                        help="The stage ID. Defaults to 1 if not specified.")
+                        help="The stage ID. Defaults to 1.")
+    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
                         help="Show and save figure to "
@@ -390,13 +392,45 @@ def create_data_df(c, scenario_id, load_zone, horizon, stage):
         }
     )
 
+    # Dataframe for testing without database
+    # df = pd.DataFrame(
+    #     data={
+    #         "unspecified": range(10),
+    #         "Nuclear": range(10),
+    #         "Coal": range(10),
+    #         "CHP": range(10),
+    #         "Geothermal": range(10),
+    #         "Biomass": range(10),
+    #         "Small_Hydro": range(10),
+    #         "Steam": range(10),
+    #         "CCGT": range(10),
+    #         "Hydro": range(10),
+    #         "Imports": range(10),
+    #         "Peaker": range(10),
+    #         "Wind": range(10),
+    #         "Solar_BTM": range(10),
+    #         "Solar": range(10),
+    #         "Pumped_Storage": range(10),
+    #         "Battery": range(10),
+    #         "Curtailment_Variable": range(10),
+    #         "Curtailment_Hydro": range(10),
+    #         "x": range(10),
+    #         "Load": range(10),
+    #         "Exports": range(10),
+    #         "Pumped_Storage_Charging": [-5] * 10,
+    #         "Battery_Charging": [-10] * 10
+    #     }
+    # )
+
     return df
 
 
-def create_plot(df):
+def create_plot(df, title, ylimit=None):
     """
 
     :param df:
+    :param title: string, plot title
+    :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
 
@@ -422,7 +456,7 @@ def create_plot(df):
     plot = figure(
         plot_width=800, plot_height=500,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
-        title="Dispatch Plot",
+        title=title,
         # sizing_mode="scale_both"
     )
 
@@ -437,7 +471,6 @@ def create_plot(df):
     # Note: can easily change vbar_stack to varea_stack by replacing the plot
     # function and removing the width argument. However, hovertools don't work
     # with varea_stack.
-
 
     # Add load line chart to plot
     load_renderer = plot.line(
@@ -508,13 +541,13 @@ def create_plot(df):
     # Note: Doesn't rescale the graph down, simply hides the area
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
+    show_hide_legend(plot=plot)  # Hide legend on double click
 
-    # Add axis labels
+    # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Hour Ending"
     plot.yaxis.axis_label = "Dispatch (MW)"
-
-    # Format y- axis numbers
     plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
+    plot.y_range.end = ylimit  # will be ignored if ylimit is None
 
     # Add HoverTools for stacked bars/areas
     for r in area_renderers:
@@ -544,30 +577,11 @@ def create_plot(df):
     return plot
 
 
-def draw_dispatch_plot(c, scenario_id, load_zone, horizon, stage):
-    """
-
-    :param c:
-    :param scenario_id:
-    :param load_zone:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-    df = create_data_df(c, scenario_id, load_zone, horizon, stage)
-    plot = create_plot(df)
-
-    # Extras
-    show_hide_legend(plot=plot)
-
-    return plot
-
-
 def main(args=None):
     """
-    :return: if requested, return the plot as JSON object
+    Parse the arguments, get the data in a df, and create the plot
 
-    Parse the arguments and create the dispatch plot
+    :return: if requested, return the plot as JSON object
     """
     if args is None:
         args = sys.argv[1:]
@@ -576,24 +590,17 @@ def main(args=None):
     db = connect_to_database(parsed_arguments=parsed_args)
     c = db.cursor()
 
-    if parsed_args.scenario_id is None:
-        scenario = parsed_args.scenario
-        # Get the scenario ID
-        scenario_id = c.execute(
-            """SELECT scenario_id
-            FROM scenarios
-            WHERE scenario_name = '{}';""".format(parsed_args.scenario)
-        ).fetchone()[0]
-    else:
-        scenario_id = parsed_args.scenario_id
-        # Get the scenario name
-        scenario = c.execute(
-            """SELECT scenario_name
-            FROM scenarios
-            WHERE scenario_id = {};""".format(parsed_args.scenario_id)
-        ).fetchone()[0]
+    scenario, scenario_id = get_scenario_and_scenario_id(
+        parsed_arguments=parsed_args,
+        c=c
+    )
 
-    plot = draw_dispatch_plot(
+    plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
+        parsed_args.load_zone, parsed_args.horizon, parsed_args.stage)
+    plot_name = "dispatchPlot-{}-{}".format(
+        parsed_args.load_zone, parsed_args.horizon)
+
+    df = create_data_df(
         c=c,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
@@ -601,26 +608,19 @@ def main(args=None):
         stage=parsed_args.stage
     )
 
+    plot = create_plot(
+        df=df,
+        title=plot_title,
+        ylimit=parsed_args.ylimit
+    )
+
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        figures_directory = os.path.join(
-            os.getcwd(), "..", "scenarios", scenario, "results",
-            "figures"
-        )
-        if not os.path.exists(figures_directory):
-            os.makedirs(figures_directory)
-        # TODO: file name should include load zone and horizon arguments
-        output_file(os.path.join(figures_directory, 'dispatch_plot.html'))
-        show(plot)
+        show_plot(scenario, plot, plot_name)
 
     # Return plot in json format if requested
     if parsed_args.return_json:
-        return json_item(
-            plot,
-            "dispatchPlot-{}-{}".format(
-                parsed_args.load_zone, parsed_args.horizon
-            )
-        )
+        return json_item(plot, plot_name)
 
 
 if __name__ == "__main__":
