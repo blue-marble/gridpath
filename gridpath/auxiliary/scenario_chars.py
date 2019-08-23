@@ -528,9 +528,9 @@ class SubScenarios(object):
         feature_sc_dict = {}
         for f, sc in feature_sc:
             if f in feature_sc_dict:
-                feature_sc_dict[f].append(sc)
+                feature_sc_dict[f].append(sc.upper())
             else:
-                feature_sc_dict[f] = [sc]
+                feature_sc_dict[f] = [sc.upper()]
         return feature_sc_dict
 
     # TODO: refactor this in capacity_types/__init__? (similar functions are
