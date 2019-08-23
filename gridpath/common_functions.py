@@ -32,7 +32,7 @@ def determine_scenario_directory(scenario_location, scenario_name):
 
 def create_directory_if_not_exists(directory):
     """
-    :param directory:
+    :param directory: string; the directory path
 
     Check if a directory exists and create it if not.
     """
