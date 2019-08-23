@@ -83,7 +83,123 @@ def load_data(db, omit_data):
     if not omit_data:
         c = db.cursor()
 
+        # General Model Data
+
+        # mod_months
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_months.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_months
+                    (month, description)
+                    VALUES ({}, '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_capacity_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_capacity_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_capacity_types
+                    (capacity_type, description)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_operational_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_operational_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_operational_types
+                    (operational_type, description)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_horizon_boundary_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_horizon_boundary_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_horizon_boundary_types
+                    (horizon_boundary_type, description)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_run_status_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_run_status_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_run_status_types
+                    (run_status_id, run_status_name)
+                    VALUES ({}, '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_validation_status_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_validation_status_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_validation_status_types
+                    (validation_status_id, validation_status_name)
+                    VALUES ({}, '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_features
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_features.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_features
+                    (feature, description)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_feature_subscenarios
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_feature_subscenarios.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_feature_subscenarios
+                    (feature, subscenario_id)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
         # Data required for the UI
+
+        # ui_scenario_detail_table_metadata
         with open(os.path.join(os.getcwd(), "data",
                                "ui_scenario_detail_table_metadata.csv"),
                   "r") as f:
@@ -97,6 +213,7 @@ def load_data(db, omit_data):
                 )
             db.commit()
 
+        # ui_scenario_detail_table_row_metadata
         with open(os.path.join(os.getcwd(), "data",
                                "ui_scenario_detail_table_row_metadata.csv"),
                   "r") as f:
