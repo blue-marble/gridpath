@@ -12,7 +12,8 @@ from ui.server.api.scenario_results import \
   ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM, \
   ScenarioResultsOptions, ScenarioResultsDispatchPlot, \
   ScenarioResultsCapacityNewPlot, ScenarioResultsCapacityRetiredPlot, \
-  ScenarioResultsCapacityTotalPlot
+  ScenarioResultsCapacityTotalPlot, ScenarioResultsEnergyPlot, \
+  ScenarioResultsCostPlot
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.view_data import ViewDataTemporalTimepoints, \
@@ -506,6 +507,20 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsCapacityTotalPlot,
         '/scenarios/<scenario_id>/results-capacity-plot/total/<load_zone>/'
+        '<ymax>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsEnergyPlot,
+        '/scenarios/<scenario_id>/results-energy-plot/<load_zone>/<stage>/'
+        '<ymax>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsCostPlot,
+        '/scenarios/<scenario_id>/results-cost-plot/<load_zone>/<stage>/'
         '<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
