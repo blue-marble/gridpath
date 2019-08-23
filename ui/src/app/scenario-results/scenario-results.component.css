@@ -21,8 +21,15 @@
   margin-bottom: 1px;
 }
 
-#results-navbar {
+#tables-title {
   padding-top: 20px;
+  color: midnightblue;
+}
+#tables-navbar {
+  padding-bottom: 20px;
+}
+#plots-title {
+  color: midnightblue;
 }
 
 .navbar-results-button {

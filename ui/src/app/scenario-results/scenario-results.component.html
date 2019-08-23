@@ -8,15 +8,21 @@
   </div>
 <!-- Navigation bar for which results to show -->
 <!--  Results Buttons (no options)-->
-  <div class="navbar navbar-expand-sm" id="results-navbar">
-    <ul class="navbar-nav mr-auto">
+  <h6 id="tables-title">Results Tables</h6>
+  <div class="navbar navbar-expand-sm" id="tables-navbar">
+    <ul class="navbar-nav">
       <ng-container *ngFor="let button of allResultsButtons">
         <li class="nav-item">
           <button id="{{button.name}}" class="navbar-results-button"
                 (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
         </li>
       </ng-container>
+    </ul>
+  </div>
 <!--      Results Forms (have options the user must select) -->
+  <h6 id="plots-title">Results Plots</h6>
+  <div class="navbar navbar-expand-sm" id="plots-navbar">
+    <ul class="navbar-nav">
       <ng-container *ngFor="let form of allResultsForms">
         <li class="form-group-list-item">
           <form [formGroup]="form.formGroup"
