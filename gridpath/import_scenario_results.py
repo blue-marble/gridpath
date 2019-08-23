@@ -10,6 +10,7 @@ import sqlite3
 import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.common_functions import determine_scenario_directory
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubScenarios, SubProblems
 
@@ -78,13 +79,15 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario",
-                        help="The name of the scenario (the same as "
-                             "the directory name)")
+                        help="The name of the scenario. Not needed if "
+                             "scenario_id is specified.")
     parser.add_argument("--scenario_id",
-                        help="The scenario_id from the database.")
+                        help="The scenario_id from the database. Not needed "
+                             "if scenario_name is specified.")
     parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory.")
+                        help="The path to the base directory where the "
+                             "scenario directory is located. Defaults to "
+                             "'../scenarios' if not specified.")
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -130,19 +133,10 @@ def main(args=None):
 
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 
-    # If the user has specified a path where to create the scenario directory,
-    # use that; otherwise, default to a directory called 'scenarios' in the
-    # GridPath root directory to find the scenario directory
-    if scenario_location is None:
-        scenarios_main_directory = os.path.join(
-            os.getcwd(), "..", "scenarios")
-    else:
-        scenarios_main_directory = scenario_location
-    if not os.path.exists(scenarios_main_directory):
-        os.makedirs(scenarios_main_directory)
-
-    scenario_directory = os.path.join(
-        scenarios_main_directory, str(scenario_name)
+    # Determine scenario directory
+    scenario_directory = determine_scenario_directory(
+        scenario_location=scenario_location,
+        scenario_name=scenario_name
     )
 
     # Check that the saved scenario_id matches

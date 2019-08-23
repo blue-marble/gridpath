@@ -19,6 +19,7 @@ from pyutilib.services import TempfileManager
 import sys
 import traceback
 
+from gridpath.common_functions import determine_scenario_directory
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -38,12 +39,9 @@ class ScenarioStructure(object):
     over and solve each subproblem.
     """
     def __init__(self, scenario, scenario_location):
-        if scenario_location is None:
-            self.main_scenario_directory = os.path.join(
-                os.getcwd(), "..", "scenarios", scenario)
-        else:
-            self.main_scenario_directory = os.path.join(
-                scenario_location, scenario)
+        self.main_scenario_directory = determine_scenario_directory(
+            scenario_location=scenario_location, scenario_name=scenario
+        )
 
         # Check if the scenario actually exists
         if not os.path.exists(self.main_scenario_directory):
@@ -520,8 +518,6 @@ def solve(instance, parsed_arguments):
     """
     # Get solver
     solver = SolverFactory(parsed_arguments.solver)
-    solver.options["lpmethod"] = 4
-    solver.options["threads"] = 4
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.
