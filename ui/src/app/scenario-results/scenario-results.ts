@@ -36,4 +36,5 @@ export class PlotAPI {
 export class ResultsOptions {
   loadZoneOptions: [];
   horizonOptions: [];
+  stageOptions: [];
 }

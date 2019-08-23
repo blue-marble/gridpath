@@ -3,7 +3,7 @@
 from flask_restful import Resource
 
 from ui.server.common_functions import connect_to_database
-from viz import dispatch_plot, capacity_plot
+from viz import capacity_plot, cost_plot, dispatch_plot, energy_plot
 
 
 # TODO: create results views to show, which ones?
@@ -324,6 +324,19 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
 
+        # TODO: we need to keep track of subproblems, as stages can differ
+        #  by subproblem
+        stage_options = [h[0] for h in c.execute(
+            """SELECT DISTINCT stage_id
+            FROM inputs_temporal_subproblems_stages 
+            WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+
+        options_api["stageOptions"] = ['Select Stage'] + stage_options
+
         return options_api
 
 
@@ -464,6 +477,78 @@ class ScenarioResultsCapacityTotalPlot(Resource):
         else:
             plot_api["plotJSON"] = capacity_plot.main(
                 arguments_list_w_ymax
+            )
+
+        return plot_api
+
+
+class ScenarioResultsEnergyPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone, stage, ymax):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        base_arguments_list = [
+          "--return_json",
+          "--database", self.db_path,
+          "--scenario_id", scenario_id,
+          "--load_zone", load_zone,
+          "--stage", stage
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = energy_plot.main(
+              base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = energy_plot.main(
+              arguments_list_w_ymax
+            )
+
+        return plot_api
+
+
+class ScenarioResultsCostPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone, stage, ymax):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        base_arguments_list = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+            "--load_zone", load_zone,
+            "--stage", stage
+          ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = cost_plot.main(
+              base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = cost_plot.main(
+              arguments_list_w_ymax
             )
 
         return plot_api

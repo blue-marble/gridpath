@@ -72,6 +72,24 @@ export class ScenarioResultsComponent implements OnInit {
   capacityTotalPlotJSON: object;
   capacityTotalPlotHTMLName: string;
 
+  // Energy plot
+  energyPlotOptionsForm = new FormGroup({
+    energyPlotLoadZone: new FormControl(),
+    energyPlotStage: new FormControl(),
+    energyPlotYMax: new FormControl()
+  });
+  energyPlotJSON: object;
+  energyPlotHTMLName: string;
+
+  // Energy plot
+  costPlotOptionsForm = new FormGroup({
+    costPlotLoadZone: new FormControl(),
+    costPlotStage: new FormControl(),
+    costPlotYMax: new FormControl()
+  });
+  costPlotJSON: object;
+  costPlotHTMLName: string;
+
   // To get the right route
   scenarioID: number;
   private sub: any;
@@ -172,6 +190,16 @@ export class ScenarioResultsComponent implements OnInit {
     if (this.resultsToShow === 'results-capacity-total-plot') {
       console.log('Showing total capacity plot');
       this.getResultsCapacityTotalPlot(this.scenarioID);
+    }
+
+    if (this.resultsToShow === 'results-energy-plot') {
+      console.log('Showing energy plot');
+      this.getResultsEnergyPlot(this.scenarioID);
+    }
+
+    if (this.resultsToShow === 'results-cost-plot') {
+      console.log('Showing cost plot');
+      this.getResultsCostPlot(this.scenarioID);
     }
   }
 
@@ -366,7 +394,49 @@ export class ScenarioResultsComponent implements OnInit {
         this.capacityTotalPlotJSON = plotAPI.plotJSON;
         Bokeh.embed.embed_item(this.capacityTotalPlotJSON);
       });
-}
+  }
+
+  getResultsEnergyPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.energyPlotOptionsForm.value.energyPlotLoadZone;
+    const stage = this.energyPlotOptionsForm.value.energyPlotStage;
+    let yMax = this.energyPlotOptionsForm.value.energyPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    // Change the plot name for the HTML
+    // TODO: make name 'energyPlot' in python file and here
+    this.energyPlotHTMLName = `EnergyPlot-${loadZone}-${stage}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsEnergyPlot(
+      scenarioID, loadZone, stage, yMax
+    ).subscribe(energyPlotAPI => {
+        this.energyPlotJSON = energyPlotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.energyPlotJSON);
+      });
+  }
+
+  getResultsCostPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.costPlotOptionsForm.value.costPlotLoadZone;
+    const stage = this.costPlotOptionsForm.value.costPlotStage;
+    let yMax = this.costPlotOptionsForm.value.costPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    // Change the plot name for the HTML
+    // TODO: make name 'costPlot' in python file and here
+    this.costPlotHTMLName = `CostPlot-${loadZone}-${stage}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsCostPlot(
+      scenarioID, loadZone, stage, yMax
+    ).subscribe(costPlotAPI => {
+        this.costPlotJSON = costPlotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.costPlotJSON);
+      });
+  }
 
   // Make the results buttons with their relevant keys that are passed to
   // the resultsToViewSubject in scenario-results.service.ts
@@ -520,6 +590,40 @@ export class ScenarioResultsComponent implements OnInit {
           }
         };
         this.allResultsForms.push(plotCapTotalFormStructure);
+
+        const energyPlotFormStructure = {
+          formGroup: this.energyPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'energyPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions},
+            {formControlName: 'energyPlotStage',
+            formControlOptions: plotOptions.stageOptions}
+          ],
+          yMaxFormControlName: 'energyPlotYMax',
+          button: {
+            name: 'showResultsEnergyPlotButton',
+            ngIfKey: 'results-energy-plot',
+            caption: 'System Energy Mix'
+          }
+        };
+        this.allResultsForms.push(energyPlotFormStructure);
+
+        const costPlotFormStructure = {
+          formGroup: this.costPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'costPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions},
+            {formControlName: 'costPlotStage',
+            formControlOptions: plotOptions.stageOptions}
+          ],
+          yMaxFormControlName: 'costPlotYMax',
+          button: {
+            name: 'showResultsCostPlotButton',
+            ngIfKey: 'results-cost-plot',
+            caption: 'System Cost'
+          }
+        };
+        this.allResultsForms.push(costPlotFormStructure);
 
       }
     );

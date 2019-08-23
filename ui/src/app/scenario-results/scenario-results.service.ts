@@ -132,4 +132,18 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/total/${loadZone}/${ymax}`
     );
   }
+
+  getResultsEnergyPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-energy-plot/${loadZone}/${stage}/${ymax}`
+    );
+  }
+
+  getResultsCostPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-cost-plot/${loadZone}/${stage}/${ymax}`
+    );
+  }
 }
