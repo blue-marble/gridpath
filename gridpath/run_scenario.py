@@ -743,7 +743,7 @@ def parse_arguments(arguments):
     # Scenario name and location options
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
-    parser.add_argument("--scenario_location", default="scenarios",
+    parser.add_argument("--scenario_location",
                         help="Scenario directory path (relative to "
                              "run_scenario.py.")
 
