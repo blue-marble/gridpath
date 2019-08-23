@@ -82,6 +82,9 @@ def parse_arguments(args):
                              "the directory name)")
     parser.add_argument("--scenario_id",
                         help="The scenario_id from the database.")
+    parser.add_argument("--scenario_location",
+                        help="The path to the directory in which to create "
+                             "the scenario directory.")
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -100,6 +103,7 @@ def main(args=None):
     db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
+    scenario_location = parsed_arguments.scenario_location
 
     # Database
     # If no database is specified, assume script is run from the 'gridpath'
@@ -126,10 +130,16 @@ def main(args=None):
 
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
 
-
-    # Directory structure
-    scenarios_main_directory = os.path.join(
-        os.getcwd(), "..", "scenarios")
+    # If the user has specified a path where to create the scenario directory,
+    # use that; otherwise, default to a directory called 'scenarios' in the
+    # GridPath root directory to find the scenario directory
+    if scenario_location is None:
+        scenarios_main_directory = os.path.join(
+            os.getcwd(), "..", "scenarios")
+    else:
+        scenarios_main_directory = scenario_location
+    if not os.path.exists(scenarios_main_directory):
+        os.makedirs(scenarios_main_directory)
 
     scenario_directory = os.path.join(
         scenarios_main_directory, str(scenario_name)
