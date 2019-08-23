@@ -58,3 +58,10 @@
   background: aliceblue;
   color: midnightblue
 }
+
+#yMaxLabel {
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue;
+}

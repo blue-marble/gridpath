@@ -19,6 +19,7 @@ export class ResultsButton {
 export class ResultsForm {
   formGroup: FormGroup;
   selectForms: FormControlOptions[];
+  yMaxFormControlName: string;
   button: ResultsButton;
 }
 

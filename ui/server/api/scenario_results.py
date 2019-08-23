@@ -334,18 +334,29 @@ class ScenarioResultsDispatchPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, scenario_id, load_zone, horizon):
+    def get(self, scenario_id, load_zone, horizon, ymax):
         """
 
         :return:
         """
         plot_api = dict()
 
-        plot_api["plotJSON"] = dispatch_plot.main(
-          ["--return_json", "--database", self.db_path, "--scenario_id",
-           scenario_id,
-           "--load_zone", load_zone, "--horizon", horizon]
-        )
+        base_arguments_list = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+            "--load_zone", load_zone,
+            "--horizon", horizon
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+        if ymax == 'default':
+            plot_api["plotJSON"] = dispatch_plot.main(
+              base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = dispatch_plot.main(
+                arguments_list_w_ymax
+            )
 
         return plot_api
 
@@ -358,17 +369,30 @@ class ScenarioResultsCapacityNewPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, scenario_id, load_zone):
+    def get(self, scenario_id, load_zone, ymax):
         """
 
         :return:
         """
         plot_api = dict()
 
-        plot_api["plotJSON"] = capacity_plot.main(
-          ["--return_json", "--database", self.db_path, "--scenario_id",
-           scenario_id, "--load_zone", load_zone, "--capacity_type", "new"]
-        )
+        base_arguments_list = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+            "--load_zone", load_zone,
+            "--capacity_type", "new"
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = capacity_plot.main(
+                base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = capacity_plot.main(
+                arguments_list_w_ymax
+            )
 
         return plot_api
 
@@ -381,17 +405,30 @@ class ScenarioResultsCapacityRetiredPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, scenario_id, load_zone):
+    def get(self, scenario_id, load_zone, ymax):
         """
 
         :return:
         """
         plot_api = dict()
 
-        plot_api["plotJSON"] = capacity_plot.main(
-          ["--return_json", "--database", self.db_path, "--scenario_id",
-           scenario_id, "--load_zone", load_zone, "--capacity_type", "retired"]
-        )
+        base_arguments_list = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+            "--load_zone", load_zone,
+            "--capacity_type", "retired"
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = capacity_plot.main(
+                base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = capacity_plot.main(
+                arguments_list_w_ymax
+            )
 
         return plot_api
 
@@ -404,17 +441,30 @@ class ScenarioResultsCapacityTotalPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, scenario_id, load_zone):
+    def get(self, scenario_id, load_zone, ymax):
         """
 
         :return:
         """
         plot_api = dict()
 
-        plot_api["plotJSON"] = capacity_plot.main(
-          ["--return_json", "--database", self.db_path, "--scenario_id",
-           scenario_id, "--load_zone", load_zone, "--capacity_type", "all"]
-        )
+        base_arguments_list = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+            "--load_zone", load_zone,
+            "--capacity_type", "all"
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = capacity_plot.main(
+                base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = capacity_plot.main(
+                arguments_list_w_ymax
+            )
 
         return plot_api
 

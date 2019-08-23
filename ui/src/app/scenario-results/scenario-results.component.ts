@@ -44,26 +44,30 @@ export class ScenarioResultsComponent implements OnInit {
   // Dispatch plot (form with plot options, JSON object, and plot name)
   dispatchPlotOptionsForm = new FormGroup({
     dispatchPlotLoadZone: new FormControl(),
-    dispatchPlotHorizon: new FormControl()
+    dispatchPlotHorizon: new FormControl(),
+    dispatchPlotYMax: new FormControl()
   });
   dispatchPlotJSON: object;
   dispatchPlotHTMLName: string;
 
   // Capacity plots (form with plot options, JSON object, and plot name)
   capacityNewPlotOptionsForm = new FormGroup({
-    capacityNewPlotLoadZone: new FormControl()
+    capacityNewPlotLoadZone: new FormControl(),
+    capacityNewPlotYMax: new FormControl()
   });
   capacityNewPlotJSON: object;
   capacityNewPlotHTMLName: string;
 
   capacityRetiredPlotOptionsForm = new FormGroup({
-    capacityRetiredPlotLoadZone: new FormControl()
+    capacityRetiredPlotLoadZone: new FormControl(),
+    capacityRetiredPlotYMax: new FormControl()
   });
   capacityRetiredPlotJSON: object;
   capacityRetiredPlotHTMLName: string;
 
   capacityTotalPlotOptionsForm = new FormGroup({
-    capacityTotalPlotLoadZone: new FormControl()
+    capacityTotalPlotLoadZone: new FormControl(),
+    capacityTotalPlotYMax: new FormControl()
   });
   capacityTotalPlotJSON: object;
   capacityTotalPlotHTMLName: string;
@@ -291,6 +295,8 @@ export class ScenarioResultsComponent implements OnInit {
     // Get the plot options
     const loadZone = this.dispatchPlotOptionsForm.value.dispatchPlotLoadZone;
     const horizon = this.dispatchPlotOptionsForm.value.dispatchPlotHorizon;
+    let yMax = this.dispatchPlotOptionsForm.value.dispatchPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
 
     // Change the plot name for the HTML
     this.dispatchPlotHTMLName = `dispatchPlot-${loadZone}-${horizon}`;
@@ -298,7 +304,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Get the JSON object, convert to plot, and embed (the target of the
     // JSON object will match the HTML name above)
     this.scenarioResultsService.getResultsDispatchPlot(
-      scenarioID, loadZone, horizon
+      scenarioID, loadZone, horizon, yMax
     ).subscribe(dispatchPlotAPI => {
         this.dispatchPlotJSON = dispatchPlotAPI.plotJSON;
         Bokeh.embed.embed_item(this.dispatchPlotJSON);
@@ -311,11 +317,13 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Change the plot name for the HTML
     this.capacityNewPlotHTMLName = `newCapacityPlot-${loadZone}`;
+    let yMax = this.capacityNewPlotOptionsForm.value.capacityNewPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
 
     // Get the JSON object, convert to plot, and embed (the target of the
     // JSON object will match the HTML name above)
     this.scenarioResultsService.getResultsCapacityNewPlot(
-      scenarioID, loadZone
+      scenarioID, loadZone, yMax
     ).subscribe(plotAPI => {
         this.capacityNewPlotJSON = plotAPI.plotJSON;
         Bokeh.embed.embed_item(this.capacityNewPlotJSON);
@@ -325,6 +333,8 @@ export class ScenarioResultsComponent implements OnInit {
   getResultsCapacityRetiredPlot(scenarioID): void {
     // Get the plot options
     const loadZone = this.capacityRetiredPlotOptionsForm.value.capacityRetiredPlotLoadZone;
+    let yMax = this.capacityRetiredPlotOptionsForm.value.capacityRetiredPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
 
     // Change the plot name for the HTML
     this.capacityRetiredPlotHTMLName = `retiredCapacityPlot-${loadZone}`;
@@ -332,7 +342,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Get the JSON object, convert to plot, and embed (the target of the
     // JSON object will match the HTML name above)
     this.scenarioResultsService.getResultsCapacityRetiredPlot(
-      scenarioID, loadZone
+      scenarioID, loadZone, yMax
     ).subscribe(plotAPI => {
         this.capacityRetiredPlotJSON = plotAPI.plotJSON;
         Bokeh.embed.embed_item(this.capacityRetiredPlotJSON);
@@ -342,6 +352,8 @@ export class ScenarioResultsComponent implements OnInit {
   getResultsCapacityTotalPlot(scenarioID): void {
     // Get the plot options
     const loadZone = this.capacityTotalPlotOptionsForm.value.capacityTotalPlotLoadZone;
+    let yMax = this.capacityTotalPlotOptionsForm.value.capacityTotalPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
 
     // Change the plot name for the HTML
     this.capacityTotalPlotHTMLName = `allCapacityPlot-${loadZone}`;
@@ -349,7 +361,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Get the JSON object, convert to plot, and embed (the target of the
     // JSON object will match the HTML name above)
     this.scenarioResultsService.getResultsCapacityTotalPlot(
-      scenarioID, loadZone
+      scenarioID, loadZone, yMax
     ).subscribe(plotAPI => {
         this.capacityTotalPlotJSON = plotAPI.plotJSON;
         Bokeh.embed.embed_item(this.capacityTotalPlotJSON);
@@ -455,6 +467,7 @@ export class ScenarioResultsComponent implements OnInit {
             {formControlName: 'dispatchPlotHorizon',
             formControlOptions: plotOptions.horizonOptions}
           ],
+          yMaxFormControlName: 'dispatchPlotYMax',
           button: {
             name: 'showResultsDispatchPlotButton',
             ngIfKey: 'results-dispatch-plot',
@@ -469,6 +482,7 @@ export class ScenarioResultsComponent implements OnInit {
             {formControlName: 'capacityNewPlotLoadZone',
              formControlOptions: plotOptions.loadZoneOptions}
           ],
+          yMaxFormControlName: 'capacityNewPlotYMax',
           button: {
             name: 'showResultsCapacityNewPlotButton',
             ngIfKey: 'results-capacity-new-plot',
@@ -483,6 +497,7 @@ export class ScenarioResultsComponent implements OnInit {
             {formControlName: 'capacityRetiredPlotLoadZone',
              formControlOptions: plotOptions.loadZoneOptions}
           ],
+          yMaxFormControlName: 'capacityRetiredPlotYMax',
           button: {
             name: 'showResultsCapacityRetiredPlotButton',
             ngIfKey: 'results-capacity-retired-plot',
@@ -497,6 +512,7 @@ export class ScenarioResultsComponent implements OnInit {
             {formControlName: 'capacityTotalPlotLoadZone',
              formControlOptions: plotOptions.loadZoneOptions}
           ],
+          yMaxFormControlName: 'capacityTotalPlotYMax',
           button: {
             name: 'showResultsCapacityTotalPlotButton',
             ngIfKey: 'results-capacity-total-plot',

@@ -105,31 +105,31 @@ export class ScenarioResultsService {
   }
 
   getResultsDispatchPlot(
-    scenarioID: number, loadZone: string, horizon: number
+    scenarioID: number, loadZone: string, horizon: number, ymax: number
   ): Observable<PlotAPI> {
     return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}`
+      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}/${ymax}`
     );
   }
 
-  getResultsCapacityNewPlot(scenarioID: number, loadZone: string
+  getResultsCapacityNewPlot(scenarioID: number, loadZone: string, ymax: number
   ): Observable<PlotAPI> {
     return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/new/${loadZone}`
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/new/${loadZone}/${ymax}`
     );
   }
 
-  getResultsCapacityRetiredPlot(scenarioID: number, loadZone: string
+  getResultsCapacityRetiredPlot(scenarioID: number, loadZone: string, ymax: number
   ): Observable<PlotAPI> {
     return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/retired/${loadZone}`
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/retired/${loadZone}/${ymax}`
     );
   }
 
-  getResultsCapacityTotalPlot(scenarioID: number, loadZone: string
+  getResultsCapacityTotalPlot(scenarioID: number, loadZone: string, ymax: number
   ): Observable<PlotAPI> {
     return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/total/${loadZone}`
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/total/${loadZone}/${ymax}`
     );
   }
 }

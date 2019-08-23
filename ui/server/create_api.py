@@ -485,24 +485,27 @@ def add_scenario_results_resources(api, db_path):
 
     api.add_resource(
         ScenarioResultsDispatchPlot,
-        '/scenarios/<scenario_id>/results-dispatch-plot/<load_zone>/<horizon>',
+        '/scenarios/<scenario_id>/results-dispatch-plot/<load_zone>/<horizon>/'
+        '<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
 
     api.add_resource(
         ScenarioResultsCapacityNewPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/new/<load_zone>',
+        '/scenarios/<scenario_id>/results-capacity-plot/new/<load_zone>/<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
 
     api.add_resource(
         ScenarioResultsCapacityRetiredPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/retired/<load_zone>',
+        '/scenarios/<scenario_id>/results-capacity-plot/retired/<load_zone>/'
+        '<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
 
     api.add_resource(
         ScenarioResultsCapacityTotalPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/total/<load_zone>',
+        '/scenarios/<scenario_id>/results-capacity-plot/total/<load_zone>/'
+        '<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
