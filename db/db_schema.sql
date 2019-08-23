@@ -13,6 +13,13 @@ horizon_boundary_type VARCHAR(16) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Months
+DROP TABLE IF EXISTS mod_months;
+CREATE TABLE mod_months (
+month INTEGER PRIMARY KEY,
+description VARCHAR(16)
+);
+
 -- Implemented capacity types
 DROP TABLE IF EXISTS mod_capacity_types;
 CREATE TABLE mod_capacity_types (
