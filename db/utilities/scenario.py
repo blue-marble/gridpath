@@ -442,7 +442,7 @@ def create_scenario(io, c, column_values_dict):
                 if column_values_dict[column_name] is not None \
                 else ', NULL'
 
-    print("INSERT INTO scenarios ({}) VALUES ({});".format(
+    c.execute("INSERT INTO scenarios ({}) VALUES ({});".format(
             column_names_string, column_values_string
         )
     )
