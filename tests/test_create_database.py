@@ -14,4 +14,4 @@ class TestCreateDatabase(unittest.TestCase):
     """
     Check if the database is created with no errors.
     """
-    create_database.main(["--in_memory_db"])
+    create_database.main(["--in_memory"])
