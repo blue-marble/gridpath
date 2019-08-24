@@ -162,6 +162,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_FUELS",
              "inputs_project_fuels",
@@ -181,6 +183,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_FUEL_PRICES",
              "inputs_project_fuel_prices",
@@ -194,6 +198,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
@@ -207,6 +213,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_FUEL_PRICES",
              "inputs_project_fuel_prices",

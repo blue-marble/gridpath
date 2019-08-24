@@ -1209,6 +1209,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
@@ -1227,6 +1229,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",

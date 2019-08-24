@@ -81,6 +81,8 @@ FOREIGN KEY (status) REFERENCES mod_run_status_types (run_status_id)
 DROP TABLE IF EXISTS mod_input_validation;
 CREATE TABLE mod_input_validation (
 scenario_id INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 gridpath_module VARCHAR(64),
 related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
