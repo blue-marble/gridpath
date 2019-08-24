@@ -9,6 +9,7 @@ import os.path
 import sqlite3
 import sys
 
+from gridpath.common_functions import determine_scenario_directory
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubScenarios
@@ -44,10 +45,15 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario",
-                        help="The name of the scenario (the same as "
-                             "the directory name)")
+                        help="The name of the scenario. Not needed if "
+                             "scenario_id is specified.")
     parser.add_argument("--scenario_id",
-                        help="The scenario_id from the database.")
+                        help="The scenario_id from the database. Not needed "
+                             "if scenario_name is specified.")
+    parser.add_argument("--scenario_location",
+                        help="The path to the directory in which the scenario "
+                             "directory is located. Defaults to "
+                             "'../scenarios' if not specified.")
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -66,6 +72,7 @@ def main(args=None):
     db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
+    scenario_location = parsed_arguments.scenario_location
 
     # Database
     # If no database is specified, assume script is run from the 'gridpath'
@@ -91,12 +98,10 @@ def main(args=None):
         c=c, script="process_results"
     )
 
-    # Directory structure
-    scenarios_main_directory = os.path.join(
-        os.getcwd(), "..", "scenarios")
-
-    scenario_directory = os.path.join(
-        scenarios_main_directory, str(scenario_name)
+    # Determine scenario directory
+    scenario_directory = determine_scenario_directory(
+        scenario_location=scenario_location,
+        scenario_name=scenario_name
     )
 
     # Go through modules

@@ -35,6 +35,10 @@ def parse_arguments(arguments):
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
+    parser.add_argument("--scenario_location",
+                        help="The path to the directory in which to create "
+                             "the scenario directory. Defaults to "
+                             "'../scenarios' if not specified.")
     parser.add_argument("--load_zone",
                         help="The name of the load zone. Required")
     parser.add_argument("--stage", default=1,
@@ -218,6 +222,7 @@ def main(args=None):
     db = connect_to_database(parsed_arguments=parsed_args)
     c = db.cursor()
 
+    scenario_location = parsed_args.scenario_location
     scenario, scenario_id = get_scenario_and_scenario_id(
         parsed_arguments=parsed_args,
         c=c
@@ -243,7 +248,10 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario, plot, plot_name)
+        show_plot(scenario_directory=scenario_location,
+                  scenario=scenario,
+                  plot=plot,
+                  plot_name=plot_name)
 
     # Return plot in json format if requested
     if parsed_args.return_json:

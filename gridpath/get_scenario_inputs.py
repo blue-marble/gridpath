@@ -11,6 +11,8 @@ import sqlite3
 import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from gridpath.common_functions import determine_scenario_directory, \
+    create_directory_if_not_exists
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
@@ -114,9 +116,15 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
     parser.add_argument("--database", help="The database file path.")
     parser.add_argument("--scenario_id",
-                        help="The scenario_id from the database.")
+                        help="The scenario_id from the database. Not needed "
+                             "if scenario_name is specified.")
     parser.add_argument("--scenario",
-                        help="The scenario_name from the database.")
+                        help="The scenario_name from the database. Not "
+                             "needed if scenario_id is specified.")
+    parser.add_argument("--scenario_location",
+                        help="The path to the directory in which to create "
+                             "the scenario directory. Defaults to "
+                             "'../scenarios' if not specified.")
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
@@ -386,6 +394,7 @@ def main(args=None):
     db_path = parsed_arguments.database
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
+    scenario_location = parsed_arguments.scenario_location
 
     # If no database is specified, assume script is run from the 'gridpath'
     # directory and the database is in ../db and named io.db
@@ -412,17 +421,12 @@ def main(args=None):
         script="get_scenario_inputs"
     )
 
-    # Make scenario directories
-    scenarios_main_directory = os.path.join(
-        os.getcwd(), "..", "scenarios")
-    if not os.path.exists(scenarios_main_directory):
-        os.makedirs(scenarios_main_directory)
-
-    scenario_directory = os.path.join(
-        scenarios_main_directory, str(scenario_name)
+    # Determine scenario directory and create it if needed
+    scenario_directory = determine_scenario_directory(
+        scenario_location=scenario_location,
+        scenario_name=scenario_name
     )
-    if not os.path.exists(scenario_directory):
-        os.makedirs(scenario_directory)
+    create_directory_if_not_exists(directory=scenario_directory)
 
     # Get scenario characteristics (features, subscenarios, subproblems)
     # TODO: it seems these fail silently if empty; we may want to implement

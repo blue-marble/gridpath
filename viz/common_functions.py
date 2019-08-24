@@ -12,6 +12,9 @@ from bokeh import events
 from bokeh.models import CustomJS
 from bokeh.plotting import output_file, show
 
+from gridpath.common_functions import determine_scenario_directory, \
+    create_directory_if_not_exists
+
 
 def connect_to_database(parsed_arguments):
     """
@@ -53,21 +56,21 @@ def show_hide_legend(plot):
     )
 
 
-def show_plot(scenario, plot, plot_name):
+def show_plot(scenario_directory, scenario, plot, plot_name):
     """
     Show plot in HTML browser file if requested
 
+    :param scenario_directory:
     :param scenario:
     :param plot:
     :param plot_name:
     :return:
     """
 
-    figures_directory = os.path.join(
-        os.getcwd(), "..", "scenarios", scenario, "results", "figures"
-    )
-    if not os.path.exists(figures_directory):
-        os.makedirs(figures_directory)
+    scenario_directory = determine_scenario_directory(
+        scenario_location=scenario_directory, scenario_name=scenario)
+    figures_directory = os.path.join(scenario_directory, "results", "figures")
+    create_directory_if_not_exists(figures_directory)
 
     filename = plot_name + ".html"
     output_file(os.path.join(figures_directory, filename))

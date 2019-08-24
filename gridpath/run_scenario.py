@@ -19,6 +19,7 @@ from pyutilib.services import TempfileManager
 import sys
 import traceback
 
+from gridpath.common_functions import determine_scenario_directory
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -38,8 +39,9 @@ class ScenarioStructure(object):
     over and solve each subproblem.
     """
     def __init__(self, scenario, scenario_location):
-        self.main_scenario_directory = \
-            os.path.join(os.getcwd(), "..", scenario_location, scenario)
+        self.main_scenario_directory = determine_scenario_directory(
+            scenario_location=scenario_location, scenario_name=scenario
+        )
 
         # Check if the scenario actually exists
         if not os.path.exists(self.main_scenario_directory):
@@ -741,7 +743,7 @@ def parse_arguments(arguments):
     # Scenario name and location options
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
-    parser.add_argument("--scenario_location", default="scenarios",
+    parser.add_argument("--scenario_location",
                         help="Scenario directory path (relative to "
                              "run_scenario.py.")
 

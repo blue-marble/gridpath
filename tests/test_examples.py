@@ -10,6 +10,7 @@ from gridpath import run_scenario
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
 # expects
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
+EXAMPLES_DIRECTORY = os.path.join(os.getcwd(), "..", "examples")
 
 
 class TestExamples(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 866737242.3466034
@@ -38,7 +39,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_new_build_storage",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 102420.06359999996
@@ -55,7 +56,7 @@ class TestExamples(unittest.TestCase):
         actual_objective = \
             run_scenario.main(["--scenario",
                                "test_new_build_storage_cumulative_min_max",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 104184.53965
@@ -70,7 +71,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_no_reserves", "--quiet",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 53381.74655000001
@@ -85,7 +86,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_w_hydro", "--quiet",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 49067.079900000004
@@ -100,7 +101,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "test_w_storage", "--quiet",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 54334.546550000014
@@ -115,7 +116,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2horizons", "--quiet",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 1733474484.6932068
@@ -130,7 +131,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods", "--quiet",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
         expected_objective = 17334744846.932064
@@ -144,7 +145,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods_new_build",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 111439176.928
@@ -159,7 +160,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods_new_build_2zones",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 222878353.856
@@ -178,7 +179,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_2zones_new_build_transmission",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -197,7 +198,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_2zones_singleBA",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -216,7 +217,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_2zones_transmission",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -234,7 +235,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -252,7 +253,7 @@ class TestExamples(unittest.TestCase):
         actual_objective = \
             run_scenario.main(["--scenario",
                                "2periods_new_build_cumulative_min_max",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 6296548240.926001
@@ -267,7 +268,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objectives = \
             run_scenario.main(["--scenario", "single_stage_prod_cost",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
@@ -290,7 +291,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objectives = \
             run_scenario.main(["--scenario", "multi_stage_prod_cost",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
@@ -321,7 +322,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objectives = \
             run_scenario.main(["--scenario", "multi_stage_prod_cost_w_hydro",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
@@ -354,7 +355,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_gen_lin_econ_retirement",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -373,7 +374,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_gen_bin_econ_retirement",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -392,7 +393,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_variable_gen_reserves",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -411,7 +412,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps_variable_reserves",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -431,7 +432,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps_variable_reserves_subhourly_adj",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -449,7 +450,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_ramp_up_constraints",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -468,7 +469,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_ramp_up_and_down_constraints",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -487,7 +488,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps_w_rps_ineligible_storage",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -506,7 +507,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "2periods_new_build_rps_w_rps_eligible_storage",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -524,7 +525,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_new_solar",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -542,7 +543,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_new_solar_carbon_cap",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -561,7 +562,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_new_solar_carbon_cap_2zones_tx",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -580,7 +581,7 @@ class TestExamples(unittest.TestCase):
             run_scenario.main(
                 ["--scenario",
                  "test_new_solar_carbon_cap_2zones_dont_count_tx",
-                 "--scenario_location", "examples",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
@@ -597,7 +598,7 @@ class TestExamples(unittest.TestCase):
         """
         actual_objective = \
             run_scenario.main(["--scenario", "2periods_new_build_simple_prm",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 198677529.596
@@ -614,7 +615,7 @@ class TestExamples(unittest.TestCase):
         actual_objective = \
             run_scenario.main(["--scenario",
                                "2periods_new_build_local_capacity",
-                               "--scenario_location", "examples",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objective = 114863176.928

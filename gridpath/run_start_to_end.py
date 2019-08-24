@@ -36,9 +36,9 @@ def parse_arguments(arguments):
     parser.add_argument("--scenario",
                         help="The name of the scenario (the same as "
                              "the directory name)")
-    parser.add_argument("--scenario_location", default="scenarios",
-                        help="Scenario directory path (relative to "
-                             "run_start_to_end.py.")
+    parser.add_argument("--scenario_location",
+                        help="The path to the directory in which to create "
+                             "the scenario directory.")
     # Output options
     parser.add_argument("--log", default=False, action="store_true",
                         help="Log output to a file in the logs directory as "
@@ -117,7 +117,7 @@ def update_run_status(db_path, scenario, status_id):
 
 def spin_database_lock(db, cursor, sql, timeout, interval):
     for i in range(1, timeout+1):  # give up after timeout seconds
-        print("Attempt {} of {}".format(i, timeout))
+        # print("Attempt {} of {}".format(i, timeout))
         try:
             cursor.execute(sql)
             db.commit()
