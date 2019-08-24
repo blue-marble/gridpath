@@ -1,5 +1,7 @@
 export class ScenarioDetailAPI {
   scenarioName: string;
+  validationStatus: string;
+  runStatus: string;
   editScenarioValues: StartingValues;
   scenarioDetailTables: ScenarioDetailTable[];
 }

@@ -19,6 +19,8 @@ import { ViewDataService } from '../view-data/view-data.service';
 export class ScenarioDetailComponent implements OnInit {
 
   scenarioName: string;
+  validationStatus: string;
+  runStatus: string;
 
   // The final table structure we'll iterate over
   scenarioDetailStructure: ScenarioDetailTable[];
@@ -56,6 +58,8 @@ export class ScenarioDetailComponent implements OnInit {
       .subscribe(
         scenarioDetail => {
             this.scenarioName = scenarioDetail.scenarioName;
+            this.validationStatus = scenarioDetail.validationStatus;
+            this.runStatus = scenarioDetail.runStatus;
             this.scenarioDetailStructure = scenarioDetail.scenarioDetailTables;
             this.startingValues = scenarioDetail.editScenarioValues;
         }
@@ -94,6 +98,23 @@ export class ScenarioDetailComponent implements OnInit {
     this.scenarioEditService.changeStartingScenario(this.startingValues);
     // Switch to the new scenario view
     this.router.navigate(['/scenario-new/']);
+  }
+
+  validateScenario(scenarioID): void {
+    console.log(
+      `Validating scenario ${this.scenarioName}, scenario_id ${scenarioID}`
+    );
+
+    // TODO: refactor server-connection code to be reused
+    const socket = io.connect('http://127.0.0.1:8080/');
+    socket.on('connect', () => {
+        console.log(`Connection established: ${socket.connected}`);
+    });
+
+    socket.emit(
+            'validate_scenario',
+            {scenario: scenarioID}
+        );
   }
 
   viewData(tableNameInDB, rowNameInDB): void {

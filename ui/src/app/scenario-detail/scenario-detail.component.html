@@ -8,7 +8,46 @@
 
   <div class="row" id="scenario-detail-heading">
     <div class="col-md-auto">
-      <h4>{{scenarioName}}<span>: Scenario Details</span></h4>
+      <h4>{{scenarioName}}<span> Scenario Details</span></h4>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-auto">
+      <button class="button-primary" id="validateScenarioButton"
+              (click)="validateScenario(scenarioID)">Validate Scenario</button>
+    </div>
+    <div class="col col-md-auto">
+      <button id="editScenarioButton" class="button-primary"
+            (click)="editScenario()">Edit Scenario</button>
+    </div>
+
+    <div class="col-md-auto">
+      <button id="runScenarioButton" class="button-primary"
+            (click)="runScenario(scenarioID)">Run Scenario</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>Scenario Status</caption>
+        <tr>
+          <th>Name</th>
+          <th>Value</th>
+          <th>Detail</th>
+        </tr>
+        <tr>
+          <td>Validation Status</td>
+          <td>{{validationStatus}}</td>
+          <td>View Errors</td>
+        </tr>
+        <tr>
+          <td>Run Status</td>
+          <td>{{runStatus}}</td>
+          <td></td>
+        </tr>
+      </table>
     </div>
   </div>
 
@@ -41,17 +80,6 @@
     </div>
   </div>
 
-  <div class="row">
-    <div class="column col-md-auto">
-    <button id="editScenarioButton" class="button-primary"
-          (click)="editScenario()">Edit Scenario</button>
-    </div>
-
-    <div class="col-md-auto">
-    <button id="runScenarioButton" class="button-primary"
-          (click)="runScenario(scenarioID)">Run Scenario</button>
-    </div>
-  </div>
   <div class="row">
     <div class="col-md-auto">
       <button id="goBackButtonBottom" class="button-primary"
