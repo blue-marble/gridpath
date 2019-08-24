@@ -96,6 +96,23 @@ export class ScenarioDetailComponent implements OnInit {
     this.router.navigate(['/scenario-new/']);
   }
 
+  validateScenario(scenarioID): void {
+    console.log(
+      `Validating scenario ${this.scenarioName}, scenario_id ${scenarioID}`
+    );
+
+    // TODO: refactor server-connection code to be reused
+    const socket = io.connect('http://127.0.0.1:8080/');
+    socket.on('connect', () => {
+        console.log(`Connection established: ${socket.connected}`);
+    });
+
+    socket.emit(
+            'validate_scenario',
+            {scenario: scenarioID}
+        );
+  }
+
   viewData(tableNameInDB, rowNameInDB): void {
     const dataToView = `${tableNameInDB}-${rowNameInDB}`;
     // Send the table name to the view-data service that view-data component

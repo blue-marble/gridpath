@@ -14,6 +14,7 @@ from ui.server.create_api import add_api_resources
 
 # Database operations functions (Socket IO)
 from ui.server.db_ops.add_scenario import add_or_update_scenario
+from ui.server.validate_scenario import validate_scenario
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -128,6 +129,17 @@ def socket_check_scenario_process_status(client_message):
     check_scenario_process_status(db_path=DATABASE_PATH,
                                   scenario_status=SCENARIO_STATUS,
                                   client_message=client_message)
+
+
+@socketio.on("validate_scenario")
+def socket_validate_scenario(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    validate_scenario(db_path=DATABASE_PATH,
+                      client_message=client_message)
 
 
 def main():
