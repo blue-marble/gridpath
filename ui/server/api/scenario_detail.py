@@ -20,13 +20,15 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api = dict()
 
         # Get the scenario name
-        scenario_name = c.execute(
-          "SELECT scenario_name "
-          "FROM scenarios "
+        [scenario_name, validation_status, run_status] = c.execute(
+          "SELECT scenario_name, validation_status, run_status "
+          "FROM scenarios_view "
           "WHERE scenario_id = {}".format(scenario_id)
-        ).fetchone()[0]
+        ).fetchone()
 
         scenario_detail_api["scenarioName"] = scenario_name
+        scenario_detail_api["validationStatus"] = validation_status
+        scenario_detail_api["runStatus"] = run_status
 
         # Get the UI table structure and make a dictionary of scenarios_view
         # columns with their ui_table_name_in_db and ui_table_row_name_in_db

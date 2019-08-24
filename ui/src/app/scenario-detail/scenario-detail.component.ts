@@ -19,6 +19,8 @@ import { ViewDataService } from '../view-data/view-data.service';
 export class ScenarioDetailComponent implements OnInit {
 
   scenarioName: string;
+  validationStatus: string;
+  runStatus: string;
 
   // The final table structure we'll iterate over
   scenarioDetailStructure: ScenarioDetailTable[];
@@ -56,6 +58,8 @@ export class ScenarioDetailComponent implements OnInit {
       .subscribe(
         scenarioDetail => {
             this.scenarioName = scenarioDetail.scenarioName;
+            this.validationStatus = scenarioDetail.validationStatus;
+            this.runStatus = scenarioDetail.runStatus;
             this.scenarioDetailStructure = scenarioDetail.scenarioDetailTables;
             this.startingValues = scenarioDetail.editScenarioValues;
         }
