@@ -8,16 +8,23 @@ Welcome to the GridPath user interface!
 See the `README.md` file in the root GridPath directory for Python 
 installation instructions. Python is required for the GridPath UI server and
  core engine that builds the optimization problems.
+ 
+## Python packages
+You will also need to install the required Python packages to run GridPath
+and the UI server. To do so, navigate to the GridPath root directory and 
+run:
+```bash
+pip install .[ui]
+```
 
 ## NodeJS
 To edit the UI code, or build and compile the app from source, you will
 need NodeJS. Install [here](https://nodejs.org/en/).
 
-## Packages
+## Node packages
 To install the required node packages, run the following from this directory.
-
 ```bash
-npm run install
+npm install
 ``` 
 
 # Scripts
@@ -28,15 +35,15 @@ npm run angel
 
 To build the Angular app only without opening it in Electron, run:
 ```bash
-npm build 
+npm run build 
 ```
 
 To open Electron without building the Angular app, run:
 ```bash
-npm electron
+npm run electron
 ```
 
 To compile the project for distribution, run:
 ```bash
-npm build
+npm run dist
 ```
