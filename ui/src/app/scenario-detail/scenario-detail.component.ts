@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
 const io = ( window as any ).require('socket.io-client');
 
-import { ScenarioDetailTable, StartingValues} from './scenario-detail';
+import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
+import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -16,17 +17,10 @@ import { ViewDataService } from '../view-data/view-data.service';
   styleUrls: ['./scenario-detail.component.css']
 })
 
-export class ScenarioDetailComponent implements OnInit {
+export class ScenarioDetailComponent implements OnInit, OnDestroy {
 
-  scenarioName: string;
-  validationStatus: string;
-  runStatus: string;
-
-  // The final table structure we'll iterate over
-  scenarioDetailStructure: ScenarioDetailTable[];
-
-  // For editing a scenario
-  startingValues: StartingValues;
+  scenarioDetail: ScenarioDetailAPI;
+  scenarioDetailSubscription: Subscription;
 
   // To get the right route
   scenarioID: number;
@@ -50,20 +44,17 @@ export class ScenarioDetailComponent implements OnInit {
     });
 
     // Get the scenario detail data
-    this.getScenarioDetailAPI(this.scenarioID);
+    this.scenarioDetailSubscription = this.scenarioDetailService
+     .getScenarioDetailAPI(this.scenarioID)
+     .subscribe(
+      scenarioDetail => {
+        this.scenarioDetail = scenarioDetail;
+        }
+     );
   }
 
-  getScenarioDetailAPI(scenarioID): void {
-    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-            this.scenarioName = scenarioDetail.scenarioName;
-            this.validationStatus = scenarioDetail.validationStatus;
-            this.runStatus = scenarioDetail.runStatus;
-            this.scenarioDetailStructure = scenarioDetail.scenarioDetailTables;
-            this.startingValues = scenarioDetail.editScenarioValues;
-        }
-      );
+  ngOnDestroy() {
+    this.scenarioDetailSubscription.unsubscribe();
   }
 
   goBack(): void {
@@ -72,7 +63,7 @@ export class ScenarioDetailComponent implements OnInit {
 
   runScenario(scenarioID): void {
     console.log(
-      `Running scenario ${this.scenarioName}, scenario_id ${scenarioID}`
+      `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${scenarioID}`
     );
 
     // TODO: refactor server-connection code to be reused
@@ -86,6 +77,8 @@ export class ScenarioDetailComponent implements OnInit {
             {scenario: scenarioID}
         );
     // Keep track of process ID for this scenario run
+    // TODO: how should we deal with the situation of a scenario already
+    //  running?
     socket.on('scenario_already_running', (msg) => {
         console.log('in scenario_already_running');
         console.log (msg);
@@ -95,14 +88,14 @@ export class ScenarioDetailComponent implements OnInit {
   editScenario(): void {
     // Send init setting values to the scenario edit service that the
     // scenario-new component uses to set initial setting values
-    this.scenarioEditService.changeStartingScenario(this.startingValues);
+    this.scenarioEditService.changeStartingScenario(this.scenarioDetail.editScenarioValues);
     // Switch to the new scenario view
     this.router.navigate(['/scenario-new/']);
   }
 
   validateScenario(scenarioID): void {
     console.log(
-      `Validating scenario ${this.scenarioName}, scenario_id ${scenarioID}`
+      `Validating scenario ${this.scenarioDetail.scenarioName}, scenario_id ${scenarioID}`
     );
 
     // TODO: refactor server-connection code to be reused

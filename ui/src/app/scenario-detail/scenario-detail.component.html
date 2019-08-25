@@ -8,7 +8,7 @@
 
   <div class="row" id="scenario-detail-heading">
     <div class="col-md-auto">
-      <h4>{{scenarioName}}<span> Scenario Details</span></h4>
+      <h4>{{scenarioDetail.scenarioName}}<span> Scenario Details</span></h4>
     </div>
   </div>
 
@@ -39,15 +39,15 @@
         </tr>
         <tr>
           <td>Validation Status</td>
-          <td>{{validationStatus}}</td>
-          <td><button *ngIf="validationStatus=='invalid'"
+          <td>{{scenarioDetail.validationStatus}}</td>
+          <td><button *ngIf="scenarioDetail.validationStatus=='invalid'"
             (click)="viewValidationErrors()">
             View Errors
           </button></td>
         </tr>
         <tr>
           <td>Run Status</td>
-          <td>{{runStatus}}</td>
+          <td>{{scenarioDetail.runStatus}}</td>
           <td></td>
         </tr>
       </table>
@@ -56,7 +56,7 @@
 
   <div class="row">
     <div class="col-md-auto">
-      <ng-container *ngFor="let tbl of scenarioDetailStructure">
+      <ng-container *ngFor="let tbl of scenarioDetail.scenarioDetailTables">
         <table class="scenario-detail">
           <caption>{{tbl.scenarioDetailTableCaption}}</caption>
         <tr>
