@@ -49,7 +49,7 @@ different solver (see the **Usage** section).
 
 # Usage
 
-## The run_gridpath command
+## The gridpath_run and gridpath_run_e2e commands
 If you install GridPath via the setup script following the instructions above, 
 you can use the command `run_gridpath` to run a scenario from any directory 
 -- as long as your GridPath Python environment is enabled -- as follows:
@@ -58,13 +58,23 @@ run_gridpath --scenario SCENARIO_NAME --scenario_location
 /PATH/TO/SCENARIO 
 ```
 
+If you are using the database, you can use the command `run_gridpath_e2e` to 
+run GridPath end-to-end, i.e. get inputs for the scenario from the database, 
+solve the scenario problem, import the results into the database, and 
+process them.
+
+```bash
+run_gridpath_e2e --scenario SCENARIO_NAME --scenario_location 
+/PATH/TO/SCENARIO 
+```
+
 To see usage and other optional arguments, e.g. how to specify a 
-solver, check the help menu:
+solver, check the help menu, e.g.:
 ```bash
 run_gridpath --help
 ```
 
-## The run_scenario.py script
+## The run_scenario.py and run_start_to_end.py scripts
 You can also run scenarios via the `run_scenario.py` script in the 
 `./gridpath/` directory. The scenario name should be specified with the 
 `--scenario` argument. For example, to run a scenario named 'test' (located 
@@ -76,14 +86,22 @@ python run_scenario.py --scenario test
 
 Scenario directories are assumed to be located in the `./scenarios/` 
 directory by default. For example, the inputs, results, and logs for a 
-scenario named 'test' would be in `./scenarios/test/`.
-
-To run any of the problems in the `./examples/` directory, you also need 
-to specify a scenario location (as the examples are not located in the default 
-`./scenarios/` subdirectory). For example, to run the 'test' scenario in 
-the examples directory, run the following (from the `./gridpath/` directory):
+scenario named 'test' would be in `./scenarios/test/`. You can also run
+scenarios located in directories other than `./scenarios` by specifying the 
+path to that directory with (absolute path or path relative to `./gridpath`). 
+For example, to run the 'test' scenario in the examples directory, run the 
+following (from the `./gridpath/` directory):
 ```bash
-python run_scenario.py --scenario test --scenario_location examples
+python run_scenario.py --scenario test --scenario_location ../examples
+``` 
+
+If you are using the database, you can use the `run_end_to_end.py` script to 
+run GridPath end-to-end, i.e. get inputs for the scenario from the database, 
+solve the scenario problem, import the results into the database, and 
+process them.
+
+```bash
+python run_start_to_end.py --scenario test
 ```
 
 To see usage and other optional arguments, e.g. how to specify a 

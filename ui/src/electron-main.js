@@ -247,7 +247,7 @@ function startServer () {
 
       // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
-        pyDir, 'run_gridpath_server'
+        pyDir, 'gridpath_run_server'
       );
 
       // Start the server (if Python path is set)
