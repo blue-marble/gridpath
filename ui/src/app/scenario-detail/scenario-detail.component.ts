@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
+
 
 const io = ( window as any ).require('socket.io-client');
 
@@ -32,7 +33,8 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     private scenarioDetailService: ScenarioDetailService,
     private scenarioEditService: ScenarioEditService,
     private viewDataService: ViewDataService,
-    private location: Location) {
+    private location: Location,
+    private zone: NgZone) {
   }
 
   ngOnInit(): void {
@@ -108,6 +110,16 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
             'validate_scenario',
             {scenario: scenarioID}
         );
+
+    socket.on('validation_complete', () => {
+      console.log('Validation complete');
+      this.zone.run(
+        () => {
+          // TODO: can we just call the subscription again?
+          this.ngOnInit();
+        }
+      );
+    });
   }
 
   viewData(tableNameInDB, rowNameInDB): void {

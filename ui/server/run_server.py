@@ -2,7 +2,7 @@
 
 import atexit
 from flask import Flask
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 import os
 import signal
 import sys
@@ -140,6 +140,7 @@ def socket_validate_scenario(client_message):
     """
     validate_scenario(db_path=DATABASE_PATH,
                       client_message=client_message)
+    emit("validation_complete")
 
 
 def main():
