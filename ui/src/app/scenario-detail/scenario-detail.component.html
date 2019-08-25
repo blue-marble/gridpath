@@ -40,7 +40,10 @@
         <tr>
           <td>Validation Status</td>
           <td>{{validationStatus}}</td>
-          <td>View Errors</td>
+          <td><button *ngIf="validationStatus=='invalid'"
+            (click)="viewValidationErrors()">
+            View Errors
+          </button></td>
         </tr>
         <tr>
           <td>Run Status</td>

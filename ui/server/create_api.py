@@ -34,10 +34,11 @@ from ui.server.api.view_data import ViewDataTemporalTimepoints, \
   ViewDataProjectFreqRespBAs, ViewDataFreqRespReq, ViewDataRPSBAs, \
   ViewDataProjectRPSBAs, ViewDataRPSReq, ViewDataCarbonCapBAs, \
   ViewDataProjectCarbonCapBAs, ViewDataTransmissionCarbonCapBAs, \
-  ViewDataCarbonCapReq, ViewDataPRMBAs, ViewDataProjectPRMBAs, ViewDataPRMReq, \
-  ViewDataProjectELCCChars, ViewDataELCCSurface, ViewDataEnergyOnly, \
-  ViewDataLocalCapacityBAs, ViewDataProjectLocalCapacityBAs, \
-  ViewDataLocalCapacityReq, ViewDataProjectLocalCapacityChars, ViewDataTuning
+  ViewDataCarbonCapReq, ViewDataPRMBAs, ViewDataProjectPRMBAs, \
+  ViewDataPRMReq, ViewDataProjectELCCChars, ViewDataELCCSurface, \
+  ViewDataEnergyOnly, ViewDataLocalCapacityBAs, \
+  ViewDataProjectLocalCapacityBAs, ViewDataLocalCapacityReq, \
+  ViewDataProjectLocalCapacityChars, ViewDataTuning, ViewDataValidation
 
 
 # Create API routes
@@ -385,6 +386,12 @@ def add_view_data_resources(api, db_path):
     api.add_resource(
         ViewDataTuning,
         '/view-data/tuning/<scenario_id>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ViewDataValidation,
+        '/view-data/validation/<scenario_id>',
         resource_class_kwargs={'db_path': db_path}
     )
 

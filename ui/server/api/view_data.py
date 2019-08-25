@@ -1237,6 +1237,41 @@ class ViewDataTuning(Resource):
         )
 
 
+class ViewDataValidation(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        """
+
+        :return:
+        """
+        io, c = connect_to_database(db_path=self.db_path)
+
+        scenario_name = c.execute(
+          "SELECT scenario_name "
+          "FROM scenarios "
+          "WHERE scenario_id = {};".format(scenario_id)
+        ).fetchone()[0]
+        data_table_api = dict()
+        data_table_api['ngIfKey'] = "validation"
+        data_table_api['caption'] = "{} Validation Errors".format(
+          scenario_name)
+
+        column_names, data_rows = get_table_data(
+          c=c, input_table='mod_input_validation',
+          subscenario_id_column=None, subscenario_id='all',
+        )
+        data_table_api['columns'] = column_names
+        data_table_api['rowsData'] = data_rows
+
+        return data_table_api
+
+
 def create_data_table_api(
   db_path, ui_table_name_in_db, ui_row_name_in_db, scenario_id
 ):

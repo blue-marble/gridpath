@@ -124,7 +124,17 @@ export class ScenarioDetailComponent implements OnInit {
     this.viewDataService.changeDataToView(dataToView);
     console.log('Sending data to view, ', dataToView);
     // Switch to the new scenario view
-    this.router.navigate(['/view-data']);
+    this.router.navigate(['/view-data', this.scenarioID]);
+  }
+
+  viewValidationErrors(): void {
+    const dataToView = 'validation';
+    // Send the table name to the view-data service that view-data component
+    // uses to determine which tables to show
+    this.viewDataService.changeDataToView(dataToView);
+    console.log('Sending data to view, ', dataToView);
+    // Switch to the new scenario view
+    this.router.navigate(['/view-data', this.scenarioID]);
   }
 
 }

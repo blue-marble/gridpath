@@ -356,4 +356,10 @@ export class ViewDataService {
     );
   }
 
+  getValidation(scenarioID: number): Observable<ViewDataTable> {
+    return this.http.get<ViewDataTable>(
+      `${this.viewDataBaseURL}validation/${scenarioID}`
+    );
+  }
+
 }
