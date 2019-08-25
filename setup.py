@@ -39,7 +39,7 @@ setup(name="GridPath",
       entry_points={
           "console_scripts": [
               "gridpath_run = gridpath.run_scenario:main",
-              "gridpath_run_e2e = gridpath.run_start_to_end:main",
+              "gridpath_run_e2e = gridpath.run_end_to_end:main",
               "gridpath_get_inputs = gridpath.get_scenario_inputs:main",
               "gridpath_import_results = "
               "gridpath.import_scenario_results:main",

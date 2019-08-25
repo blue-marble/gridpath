@@ -18,7 +18,7 @@ def launch_scenario_process(
     :param scenario_status:
     :param client_message:
     :return:
-    
+
     Launch a process to run the scenario.
     """
     scenario_id = str(client_message['scenario'])
@@ -61,7 +61,7 @@ def launch_scenario_process(
         p = subprocess.Popen(
             [sys.executable, '-u',
              os.path.join(gridpath_directory, 'gridpath',
-                          'run_start_to_end.py'),
+                          'run_end_to_end.py'),
              '--log', '--scenario', scenario_name])
 
         return p, scenario_id, scenario_name

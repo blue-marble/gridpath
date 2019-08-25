@@ -74,7 +74,7 @@ solver, check the help menu, e.g.:
 run_gridpath --help
 ```
 
-## The run_scenario.py and run_start_to_end.py scripts
+## The run_scenario.py and run_end_to_end.py scripts
 You can also run scenarios via the `run_scenario.py` script in the 
 `./gridpath/` directory. The scenario name should be specified with the 
 `--scenario` argument. For example, to run a scenario named 'test' (located 
@@ -101,7 +101,7 @@ solve the scenario problem, import the results into the database, and
 process them.
 
 ```bash
-python run_start_to_end.py --scenario test
+python run_end_to_end.py --scenario test
 ```
 
 To see usage and other optional arguments, e.g. how to specify a 

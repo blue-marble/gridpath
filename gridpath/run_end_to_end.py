@@ -205,7 +205,7 @@ def sigterm_handler(signal, frame):
     :param frame:
     :return:
     """
-    print("SIGTERM received by run_start_to_end.py. Terminating process.")
+    print("SIGTERM received by run_end_to_end.py. Terminating process.")
     exit_gracefully()
     sys.exit()
 
@@ -217,7 +217,7 @@ def sigint_handler(signal, frame):
     :param frame:
     :return:
     """
-    print("SIGINT received by run_start_to_end.py. Terminating process.")
+    print("SIGINT received by run_end_to_end.py. Terminating process.")
     exit_gracefully()
     sys.exit()
 
