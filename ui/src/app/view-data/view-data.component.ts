@@ -12,6 +12,11 @@ import { ViewDataTable } from './view-data';
 })
 export class ViewDataComponent implements OnInit {
 
+  // To get the right route
+  scenarioID: number;
+  private sub: any;
+
+  // Key for which table to show
   dataToShow: string;
 
   // All tables
@@ -85,6 +90,13 @@ export class ViewDataComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    // The ActivatedRoute service provides a params Observable which we can
+    // subscribe to in order to get the route parameters
+    this.sub = this.route.params.subscribe(params => {
+       this.scenarioID = +params.id;
+       console.log(`Scenario ID in view-data is ${this.scenarioID}`);
+    });
+
     this.allTables = [];
 
     // Get flag for which table/s to show
@@ -273,7 +285,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTemporalTimepoints(): void {
-    this.viewDataService.getTemporalTimepoints()
+    this.viewDataService.getTemporalTimepoints(this.scenarioID)
       .subscribe(inputTableRows => {
         this.timepointsTemporalTable = inputTableRows;
         this.allTables.push(this.timepointsTemporalTable);
@@ -281,7 +293,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getGeographyLoadZones(): void {
-    this.viewDataService.getGeographyLoadZones()
+    this.viewDataService.getGeographyLoadZones(this.scenarioID)
       .subscribe(inputTableRows => {
         this.geographyLoadZonesTable = inputTableRows;
         this.allTables.push(this.geographyLoadZonesTable);
@@ -289,7 +301,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectLoadZones(): void {
-    this.viewDataService.getProjectLoadZones()
+    this.viewDataService.getProjectLoadZones(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectLoadZonesTable = inputTableRows;
         this.allTables.push(this.projectLoadZonesTable);
@@ -297,7 +309,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionLoadZones(): void {
-    this.viewDataService.getTransmissionLoadZones()
+    this.viewDataService.getTransmissionLoadZones(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionLoadZonesTable = inputTableRows;
         this.allTables.push(this.transmissionLoadZonesTable);
@@ -305,7 +317,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getSystemLoad(): void {
-    this.viewDataService.getSystemLoad()
+    this.viewDataService.getSystemLoad(this.scenarioID)
       .subscribe(inputTableRows => {
         this.systemLoadTable = inputTableRows;
         this.allTables.push(this.systemLoadTable);
@@ -313,7 +325,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectPortfolio(): void {
-    this.viewDataService.getProjectPortfolio()
+    this.viewDataService.getProjectPortfolio(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectPortfolioTable = inputTableRows;
         this.allTables.push(this.projectPortfolioTable);
@@ -321,7 +333,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectExistingCapacity(): void {
-    this.viewDataService.getProjectExistingCapacity()
+    this.viewDataService.getProjectExistingCapacity(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectExistingCapacityTable = inputTableRows;
         this.allTables.push(this.projectExistingCapacityTable);
@@ -329,7 +341,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectExistingFixedCost(): void {
-    this.viewDataService.getProjectExistingFixedCost()
+    this.viewDataService.getProjectExistingFixedCost(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectExistingFixedCostTable = inputTableRows;
         this.allTables.push(this.projectExistingFixedCostTable);
@@ -337,7 +349,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectNewPotential(): void {
-    this.viewDataService.getProjectNewPotential()
+    this.viewDataService.getProjectNewPotential(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectNewPotentialTable = inputTableRows;
         this.allTables.push(this.projectNewPotentialTable);
@@ -345,7 +357,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectNewCost(): void {
-    this.viewDataService.getProjectNewCost()
+    this.viewDataService.getProjectNewCost(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectNewCostTable = inputTableRows;
         this.allTables.push(this.projectNewCostTable);
@@ -353,7 +365,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectAvailability(): void {
-    this.viewDataService.getProjectAvailability()
+    this.viewDataService.getProjectAvailability(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectAvailabilityTable = inputTableRows;
         this.allTables.push(this.projectAvailabilityTable);
@@ -361,7 +373,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectOpChar(): void {
-    this.viewDataService.getProjectOpChar()
+    this.viewDataService.getProjectOpChar(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectOpCharTable = inputTableRows;
         this.allTables.push(this.projectOpCharTable);
@@ -369,7 +381,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getFuels(): void {
-    this.viewDataService.getFuels()
+    this.viewDataService.getFuels(this.scenarioID)
       .subscribe(inputTableRows => {
         this.fuelsTable = inputTableRows;
         this.allTables.push(this.fuelsTable);
@@ -377,7 +389,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getFuelPrices(): void {
-    this.viewDataService.getFuelPrices()
+    this.viewDataService.getFuelPrices(this.scenarioID)
       .subscribe(inputTableRows => {
         this.fuelPricesTable = inputTableRows;
         this.allTables.push(this.fuelPricesTable);
@@ -385,7 +397,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionPortfolio(): void {
-    this.viewDataService.getTransmissionPortfolio()
+    this.viewDataService.getTransmissionPortfolio(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionPortfolioTable = inputTableRows;
         this.allTables.push(this.transmissionPortfolioTable);
@@ -393,7 +405,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionExistingCapacity(): void {
-    this.viewDataService.getTransmissionExistingCapacity()
+    this.viewDataService.getTransmissionExistingCapacity(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionExistingCapacityTable = inputTableRows;
         this.allTables.push(this.transmissionExistingCapacityTable);
@@ -401,7 +413,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionOpChar(): void {
-    this.viewDataService.getTransmissionOpChar()
+    this.viewDataService.getTransmissionOpChar(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionOpCharTable = inputTableRows;
         this.allTables.push(this.transmissionOpCharTable);
@@ -409,7 +421,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionHurdleRates(): void {
-    this.viewDataService.getTransmissionHurdleRates()
+    this.viewDataService.getTransmissionHurdleRates(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionHurdleRatesTable = inputTableRows;
         this.allTables.push(this.transmissionHurdleRatesTable);
@@ -417,7 +429,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionSimFlowLimits(): void {
-    this.viewDataService.getTransmissionSimFlowLimits()
+    this.viewDataService.getTransmissionSimFlowLimits(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionSimFlowLimitsTable = inputTableRows;
         this.allTables.push(this.transmissionSimFlowLimitsTable);
@@ -425,7 +437,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionSimFlowLimitsLineGroups(): void {
-    this.viewDataService.getTransmissionSimFlowLimitsLineGroups()
+    this.viewDataService.getTransmissionSimFlowLimitsLineGroups(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionSimFlowLimitLineGroupsTable = inputTableRows;
         this.allTables.push(this.transmissionSimFlowLimitLineGroupsTable);
@@ -433,7 +445,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLFUpBAs(): void {
-    this.viewDataService.getLFUpBAs()
+    this.viewDataService.getLFUpBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.lfUpBAsTable = inputTableRows;
         this.allTables.push(this.lfUpBAsTable);
@@ -441,7 +453,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectLFUpBAs(): void {
-    this.viewDataService.getProjectLFUpBAs()
+    this.viewDataService.getProjectLFUpBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectLFUpBAsTable = inputTableRows;
         this.allTables.push(this.projectLFUpBAsTable);
@@ -449,7 +461,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLFUpReq(): void {
-    this.viewDataService.getLFUpReq()
+    this.viewDataService.getLFUpReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.lfUpReqTable = inputTableRows;
         this.allTables.push(this.lfUpReqTable);
@@ -457,7 +469,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLFDownBAs(): void {
-    this.viewDataService.getLFDownBAs()
+    this.viewDataService.getLFDownBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.lfDownBAsTable = inputTableRows;
         this.allTables.push(this.lfDownBAsTable);
@@ -465,7 +477,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectLFDownBAs(): void {
-    this.viewDataService.getProjectLFDownBAs()
+    this.viewDataService.getProjectLFDownBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectLFDownBAsTable = inputTableRows;
         this.allTables.push(this.projectLFDownBAsTable);
@@ -473,7 +485,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLFDownReq(): void {
-    this.viewDataService.getLFDownReq()
+    this.viewDataService.getLFDownReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.lfDownReqTable = inputTableRows;
         this.allTables.push(this.lfDownReqTable);
@@ -481,7 +493,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRegUpBAs(): void {
-    this.viewDataService.getRegUpBAs()
+    this.viewDataService.getRegUpBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.regUpBAsTable = inputTableRows;
         this.allTables.push(this.regUpBAsTable);
@@ -489,7 +501,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectRegUpBAs(): void {
-    this.viewDataService.getProjectRegUpBAs()
+    this.viewDataService.getProjectRegUpBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectRegUpBAsTable = inputTableRows;
         this.allTables.push(this.projectRegUpBAsTable);
@@ -497,7 +509,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRegUpReq(): void {
-    this.viewDataService.getRegUpReq()
+    this.viewDataService.getRegUpReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.regUpReqTable = inputTableRows;
         this.allTables.push(this.regUpReqTable);
@@ -505,7 +517,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRegDownBAs(): void {
-    this.viewDataService.getRegDownBAs()
+    this.viewDataService.getRegDownBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.regDownBAsTable = inputTableRows;
         this.allTables.push(this.regDownBAsTable);
@@ -513,7 +525,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectRegDownBAs(): void {
-    this.viewDataService.getProjectRegDownBAs()
+    this.viewDataService.getProjectRegDownBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectRegDownBAsTable = inputTableRows;
         this.allTables.push(this.projectRegDownBAsTable);
@@ -521,7 +533,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRegDownReq(): void {
-    this.viewDataService.getRegDownReq()
+    this.viewDataService.getRegDownReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.regDownReqTable = inputTableRows;
         this.allTables.push(this.regDownReqTable);
@@ -529,7 +541,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getSpinBAs(): void {
-    this.viewDataService.getSpinBAs()
+    this.viewDataService.getSpinBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.spinBAsTable = inputTableRows;
         this.allTables.push(this.spinBAsTable);
@@ -537,7 +549,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectSpinBAs(): void {
-    this.viewDataService.getProjectSpinBAs()
+    this.viewDataService.getProjectSpinBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectSpinBAsTable = inputTableRows;
         this.allTables.push(this.projectSpinBAsTable);
@@ -545,7 +557,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getSpinReq(): void {
-    this.viewDataService.getSpinReq()
+    this.viewDataService.getSpinReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.spinReqTable = inputTableRows;
         this.allTables.push(this.spinReqTable);
@@ -553,7 +565,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getFreqRespBAs(): void {
-    this.viewDataService.getFreqRespBAs()
+    this.viewDataService.getFreqRespBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.freqRespBAsTable = inputTableRows;
         this.allTables.push(this.freqRespBAsTable);
@@ -561,7 +573,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectFreqRespBAs(): void {
-    this.viewDataService.getProjectFreqRespBAs()
+    this.viewDataService.getProjectFreqRespBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectFreqRespBAsTable = inputTableRows;
         this.allTables.push(this.projectFreqRespBAsTable);
@@ -569,7 +581,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getFreqRespReq(): void {
-    this.viewDataService.getFreqRespReq()
+    this.viewDataService.getFreqRespReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.freqRespReqTable = inputTableRows;
         this.allTables.push(this.freqRespReqTable);
@@ -577,7 +589,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRPSBAs(): void {
-    this.viewDataService.getRPSBAs()
+    this.viewDataService.getRPSBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.rpsBAsTable = inputTableRows;
         this.allTables.push(this.rpsBAsTable);
@@ -585,7 +597,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectRPSBAs(): void {
-    this.viewDataService.getProjectRPSBAs()
+    this.viewDataService.getProjectRPSBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectRPSBAsTable = inputTableRows;
         this.allTables.push(this.projectRPSBAsTable);
@@ -593,7 +605,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getRPSReq(): void {
-    this.viewDataService.getRPSReq()
+    this.viewDataService.getRPSReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.rpsReqTable = inputTableRows;
         this.allTables.push(this.rpsReqTable);
@@ -601,7 +613,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getCarbonCapBAs(): void {
-    this.viewDataService.getCarbonCapBAs()
+    this.viewDataService.getCarbonCapBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.carbonCapBAsTable = inputTableRows;
         this.allTables.push(this.carbonCapBAsTable);
@@ -609,7 +621,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectCarbonCapBAs(): void {
-    this.viewDataService.getProjectCarbonCapBAs()
+    this.viewDataService.getProjectCarbonCapBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectCarbonCapBAsTable = inputTableRows;
         this.allTables.push(this.projectCarbonCapBAsTable);
@@ -617,7 +629,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTransmissionCarbonCapBAs(): void {
-    this.viewDataService.getTransmissionCarbonCapBAs()
+    this.viewDataService.getTransmissionCarbonCapBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.transmissionCarbonCapBAsTable = inputTableRows;
         this.allTables.push(this.transmissionCarbonCapBAsTable);
@@ -625,7 +637,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getCarbonCapReq(): void {
-    this.viewDataService.getCarbonCapReq()
+    this.viewDataService.getCarbonCapReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.carbonCapReqTable = inputTableRows;
         this.allTables.push(this.carbonCapReqTable);
@@ -633,7 +645,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getPRMBAs(): void {
-    this.viewDataService.getPRMBAs()
+    this.viewDataService.getPRMBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.prmBAsTable = inputTableRows;
         this.allTables.push(this.prmBAsTable);
@@ -641,7 +653,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectPRMBAs(): void {
-    this.viewDataService.getProjectPRMBAs()
+    this.viewDataService.getProjectPRMBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectPRMBAsTable = inputTableRows;
         this.allTables.push(this.projectPRMBAsTable);
@@ -649,7 +661,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getPRMReq(): void {
-    this.viewDataService.getPRMReq()
+    this.viewDataService.getPRMReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.prmReqTable = inputTableRows;
         this.allTables.push(this.prmReqTable);
@@ -657,7 +669,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectELCCChars(): void {
-    this.viewDataService.getProjectELCCChars()
+    this.viewDataService.getProjectELCCChars(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectELCCCharsTable = inputTableRows;
         this.allTables.push(this.projectELCCCharsTable);
@@ -665,7 +677,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getELCCSurface(): void {
-    this.viewDataService.getELCCSurface()
+    this.viewDataService.getELCCSurface(this.scenarioID)
       .subscribe(inputTableRows => {
         this.elccSurfaceTable = inputTableRows;
         this.allTables.push(this.elccSurfaceTable);
@@ -673,7 +685,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getEnergyOnly(): void {
-    this.viewDataService.getEnergyOnly()
+    this.viewDataService.getEnergyOnly(this.scenarioID)
       .subscribe(inputTableRows => {
         this.energyOnlyTable = inputTableRows;
         this.allTables.push(this.energyOnlyTable);
@@ -681,7 +693,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLocalCapacityBAs(): void {
-    this.viewDataService.getLocalCapacityBAs()
+    this.viewDataService.getLocalCapacityBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.localCapacityBAsTable = inputTableRows;
         this.allTables.push(this.localCapacityBAsTable);
@@ -689,7 +701,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectLocalCapacityBAs(): void {
-    this.viewDataService.getProjectLocalCapacityBAs()
+    this.viewDataService.getProjectLocalCapacityBAs(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectLocalCapacityBAsTable = inputTableRows;
         this.allTables.push(this.projectLocalCapacityBAsTable);
@@ -697,7 +709,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getLocalCapacityReq(): void {
-    this.viewDataService.getLocalCapacityReq()
+    this.viewDataService.getLocalCapacityReq(this.scenarioID)
       .subscribe(inputTableRows => {
         this.localCapacityReqTable = inputTableRows;
         this.allTables.push(this.localCapacityReqTable);
@@ -705,7 +717,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getProjectLocalCapacityChars(): void {
-    this.viewDataService.getProjectLocalCapacityChars()
+    this.viewDataService.getProjectLocalCapacityChars(this.scenarioID)
       .subscribe(inputTableRows => {
         this.projectLocalCapacityCharsTable = inputTableRows;
         this.allTables.push(this.projectLocalCapacityCharsTable);
@@ -713,7 +725,7 @@ export class ViewDataComponent implements OnInit {
   }
 
   getTuning(): void {
-    this.viewDataService.getTuning()
+    this.viewDataService.getTuning(this.scenarioID)
       .subscribe(inputTableRows => {
         this.tuningTable = inputTableRows;
         this.allTables.push(this.tuningTable);

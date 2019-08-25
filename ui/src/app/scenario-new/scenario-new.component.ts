@@ -404,8 +404,8 @@ export class ScenarioNewComponent implements OnInit {
     // uses to determine which tables to show
     this.viewDataService.changeDataToView(dataToView);
     console.log('Sending data to view, ', dataToView);
-    // Switch to the new scenario view
-    this.router.navigate(['/view-data']);
+    // Switch to the new scenario view, with 0 as argument (show all data)
+    this.router.navigate(['/view-data', 0]);
   }
 
   saveNewScenario() {

@@ -14,7 +14,7 @@ const appRoutes: Routes = [
   { path: 'scenarios', component: ScenariosComponent },
   { path: 'scenario/:id', component: ScenarioDetailComponent },
   { path: 'scenario/:id/results', component: ScenarioResultsComponent },
-  { path: 'view-data', component: ViewDataComponent },
+  { path: 'view-data/:id', component: ViewDataComponent },
   { path: 'scenario-new', component: ScenarioNewComponent },
   { path: 'settings', component: SettingsComponent },
   { path: '',

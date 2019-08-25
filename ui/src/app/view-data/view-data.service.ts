@@ -20,339 +20,339 @@ export class ViewDataService {
     console.log('Data to view changed to, ', dataToView);
   }
 
-  getTemporalTimepoints(): Observable<ViewDataTable> {
+  getTemporalTimepoints(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}temporal-timepoints`
+      `${this.viewDataBaseURL}temporal-timepoints/${scenarioID}`
     );
   }
 
-  getGeographyLoadZones(): Observable<ViewDataTable> {
+  getGeographyLoadZones(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-load-zones`
+      `${this.viewDataBaseURL}geography-load-zones/${scenarioID}`
     );
   }
 
-  getProjectLoadZones(): Observable<ViewDataTable> {
+  getProjectLoadZones(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-load-zones`
+      `${this.viewDataBaseURL}project-load-zones/${scenarioID}`
     );
   }
 
-  getTransmissionLoadZones(): Observable<ViewDataTable> {
+  getTransmissionLoadZones(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-load-zones`
+      `${this.viewDataBaseURL}transmission-load-zones/${scenarioID}`
     );
   }
 
-  getSystemLoad(): Observable<ViewDataTable> {
+  getSystemLoad(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-load`
+      `${this.viewDataBaseURL}system-load/${scenarioID}`
     );
   }
 
-  getProjectPortfolio(): Observable<ViewDataTable> {
+  getProjectPortfolio(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-portfolio`
+      `${this.viewDataBaseURL}project-portfolio/${scenarioID}`
     );
   }
 
-  getProjectExistingCapacity(): Observable<ViewDataTable> {
+  getProjectExistingCapacity(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-existing-capacity`
+      `${this.viewDataBaseURL}project-existing-capacity/${scenarioID}`
     );
   }
 
-  getProjectExistingFixedCost(): Observable<ViewDataTable> {
+  getProjectExistingFixedCost(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-fixed-cost`
+      `${this.viewDataBaseURL}project-fixed-cost/${scenarioID}`
     );
   }
 
-  getProjectNewPotential(): Observable<ViewDataTable> {
+  getProjectNewPotential(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-new-potential`
+      `${this.viewDataBaseURL}project-new-potential/${scenarioID}`
     );
   }
 
-  getProjectNewCost(): Observable<ViewDataTable> {
+  getProjectNewCost(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-new-cost`
+      `${this.viewDataBaseURL}project-new-cost/${scenarioID}`
     );
   }
 
-  getProjectAvailability(): Observable<ViewDataTable> {
+  getProjectAvailability(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-availability`
+      `${this.viewDataBaseURL}project-availability/${scenarioID}`
     );
   }
 
-  getProjectOpChar(): Observable<ViewDataTable> {
+  getProjectOpChar(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-opchar`
+      `${this.viewDataBaseURL}project-opchar/${scenarioID}`
     );
   }
 
-  getFuels(): Observable<ViewDataTable> {
+  getFuels(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}fuels`
+      `${this.viewDataBaseURL}fuels/${scenarioID}`
     );
   }
 
-  getFuelPrices(): Observable<ViewDataTable> {
+  getFuelPrices(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}fuel-prices`
+      `${this.viewDataBaseURL}fuel-prices/${scenarioID}`
     );
   }
 
-  getTransmissionPortfolio(): Observable<ViewDataTable> {
+  getTransmissionPortfolio(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-portfolio`
+      `${this.viewDataBaseURL}transmission-portfolio/${scenarioID}`
     );
   }
 
-  getTransmissionExistingCapacity(): Observable<ViewDataTable> {
+  getTransmissionExistingCapacity(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-existing-capacity`
+      `${this.viewDataBaseURL}transmission-existing-capacity/${scenarioID}`
     );
   }
 
-  getTransmissionOpChar(): Observable<ViewDataTable> {
+  getTransmissionOpChar(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-opchar`
+      `${this.viewDataBaseURL}transmission-opchar/${scenarioID}`
     );
   }
 
-  getTransmissionHurdleRates(): Observable<ViewDataTable> {
+  getTransmissionHurdleRates(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-hurdle-rates`
+      `${this.viewDataBaseURL}transmission-hurdle-rates/${scenarioID}`
     );
   }
 
-  getTransmissionSimFlowLimits(): Observable<ViewDataTable> {
+  getTransmissionSimFlowLimits(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-sim-flow-limits`
+      `${this.viewDataBaseURL}transmission-sim-flow-limits/${scenarioID}`
     );
   }
 
-  getTransmissionSimFlowLimitsLineGroups(): Observable<ViewDataTable> {
+  getTransmissionSimFlowLimitsLineGroups(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-sim-flow-limit-line-groups`
+      `${this.viewDataBaseURL}transmission-sim-flow-limit-line-groups/${scenarioID}`
     );
   }
 
-  getLFUpBAs(): Observable<ViewDataTable> {
+  getLFUpBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-lf-up-bas`
+      `${this.viewDataBaseURL}geography-lf-up-bas/${scenarioID}`
     );
   }
 
-  getProjectLFUpBAs(): Observable<ViewDataTable> {
+  getProjectLFUpBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-lf-up-bas`
+      `${this.viewDataBaseURL}project-lf-up-bas/${scenarioID}`
     );
   }
 
-  getLFUpReq(): Observable<ViewDataTable> {
+  getLFUpReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-lf-up-req`
+      `${this.viewDataBaseURL}system-lf-up-req/${scenarioID}`
     );
   }
 
-  getLFDownBAs(): Observable<ViewDataTable> {
+  getLFDownBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-lf-down-bas`
+      `${this.viewDataBaseURL}geography-lf-down-bas/${scenarioID}`
     );
   }
 
-  getProjectLFDownBAs(): Observable<ViewDataTable> {
+  getProjectLFDownBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-lf-down-bas`
+      `${this.viewDataBaseURL}project-lf-down-bas/${scenarioID}`
     );
   }
 
-  getLFDownReq(): Observable<ViewDataTable> {
+  getLFDownReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-lf-down-req`
+      `${this.viewDataBaseURL}system-lf-down-req/${scenarioID}`
     );
   }
 
-  getRegUpBAs(): Observable<ViewDataTable> {
+  getRegUpBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-reg-up-bas`
+      `${this.viewDataBaseURL}geography-reg-up-bas/${scenarioID}`
     );
   }
 
-  getProjectRegUpBAs(): Observable<ViewDataTable> {
+  getProjectRegUpBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-reg-up-bas`
+      `${this.viewDataBaseURL}project-reg-up-bas/${scenarioID}`
     );
   }
 
-  getRegUpReq(): Observable<ViewDataTable> {
+  getRegUpReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-reg-up-req`
+      `${this.viewDataBaseURL}system-reg-up-req/${scenarioID}`
     );
   }
 
-  getRegDownBAs(): Observable<ViewDataTable> {
+  getRegDownBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-reg-down-bas`
+      `${this.viewDataBaseURL}geography-reg-down-bas/${scenarioID}`
     );
   }
 
-  getProjectRegDownBAs(): Observable<ViewDataTable> {
+  getProjectRegDownBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-reg-down-bas`
+      `${this.viewDataBaseURL}project-reg-down-bas/${scenarioID}`
     );
   }
 
-  getRegDownReq(): Observable<ViewDataTable> {
+  getRegDownReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-reg-down-req`
+      `${this.viewDataBaseURL}system-reg-down-req/${scenarioID}`
     );
   }
 
-  getSpinBAs(): Observable<ViewDataTable> {
+  getSpinBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-spin-bas`
+      `${this.viewDataBaseURL}geography-spin-bas/${scenarioID}`
     );
   }
 
-  getProjectSpinBAs(): Observable<ViewDataTable> {
+  getProjectSpinBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-spin-bas`
+      `${this.viewDataBaseURL}project-spin-bas/${scenarioID}`
     );
   }
 
-  getSpinReq(): Observable<ViewDataTable> {
+  getSpinReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-spin-req`
+      `${this.viewDataBaseURL}system-spin-req/${scenarioID}`
     );
   }
 
-  getFreqRespBAs(): Observable<ViewDataTable> {
+  getFreqRespBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-freq-resp-bas`
+      `${this.viewDataBaseURL}geography-freq-resp-bas/${scenarioID}`
     );
   }
 
-  getProjectFreqRespBAs(): Observable<ViewDataTable> {
+  getProjectFreqRespBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-freq-resp-bas`
+      `${this.viewDataBaseURL}project-freq-resp-bas/${scenarioID}`
     );
   }
 
-  getFreqRespReq(): Observable<ViewDataTable> {
+  getFreqRespReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-freq-resp-req`
+      `${this.viewDataBaseURL}system-freq-resp-req/${scenarioID}`
     );
   }
 
-  getRPSBAs(): Observable<ViewDataTable> {
+  getRPSBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-rps-bas`
+      `${this.viewDataBaseURL}geography-rps-bas/${scenarioID}`
     );
   }
 
-  getProjectRPSBAs(): Observable<ViewDataTable> {
+  getProjectRPSBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-rps-bas`
+      `${this.viewDataBaseURL}project-rps-bas/${scenarioID}`
     );
   }
 
-  getRPSReq(): Observable<ViewDataTable> {
+  getRPSReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-rps-req`
+      `${this.viewDataBaseURL}system-rps-req/${scenarioID}`
     );
   }
 
-  getCarbonCapBAs(): Observable<ViewDataTable> {
+  getCarbonCapBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-carbon-cap-bas`
+      `${this.viewDataBaseURL}geography-carbon-cap-bas/${scenarioID}`
     );
   }
 
-  getProjectCarbonCapBAs(): Observable<ViewDataTable> {
+  getProjectCarbonCapBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-carbon-cap-bas`
+      `${this.viewDataBaseURL}project-carbon-cap-bas/${scenarioID}`
     );
   }
 
-  getTransmissionCarbonCapBAs(): Observable<ViewDataTable> {
+  getTransmissionCarbonCapBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}transmission-carbon-cap-bas`
+      `${this.viewDataBaseURL}transmission-carbon-cap-bas/${scenarioID}`
     );
   }
 
-  getCarbonCapReq(): Observable<ViewDataTable> {
+  getCarbonCapReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-carbon-cap-req`
+      `${this.viewDataBaseURL}system-carbon-cap-req/${scenarioID}`
     );
   }
 
-  getPRMBAs(): Observable<ViewDataTable> {
+  getPRMBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-prm-bas`
+      `${this.viewDataBaseURL}geography-prm-bas/${scenarioID}`
     );
   }
 
-  getProjectPRMBAs(): Observable<ViewDataTable> {
+  getProjectPRMBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-prm-bas`
+      `${this.viewDataBaseURL}project-prm-bas/${scenarioID}`
     );
   }
 
-  getPRMReq(): Observable<ViewDataTable> {
+  getPRMReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}system-prm-req`
+      `${this.viewDataBaseURL}system-prm-req/${scenarioID}`
     );
   }
 
-  getProjectELCCChars(): Observable<ViewDataTable> {
+  getProjectELCCChars(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-elcc-chars`
+      `${this.viewDataBaseURL}project-elcc-chars/${scenarioID}`
     );
   }
 
-  getELCCSurface(): Observable<ViewDataTable> {
+  getELCCSurface(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-elcc-surface`
+      `${this.viewDataBaseURL}project-elcc-surface/${scenarioID}`
     );
   }
 
-  getEnergyOnly(): Observable<ViewDataTable> {
+  getEnergyOnly(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-energy-only`
+      `${this.viewDataBaseURL}project-energy-only/${scenarioID}`
     );
   }
 
-  getLocalCapacityBAs(): Observable<ViewDataTable> {
+  getLocalCapacityBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}geography-local-capacity-bas`
+      `${this.viewDataBaseURL}geography-local-capacity-bas/${scenarioID}`
     );
   }
 
-  getProjectLocalCapacityBAs(): Observable<ViewDataTable> {
+  getProjectLocalCapacityBAs(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-local-capacity-bas`
+      `${this.viewDataBaseURL}project-local-capacity-bas/${scenarioID}`
     );
   }
 
-  getLocalCapacityReq(): Observable<ViewDataTable> {
+  getLocalCapacityReq(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}local-capacity-req`
+      `${this.viewDataBaseURL}local-capacity-req/${scenarioID}`
     );
   }
 
-  getProjectLocalCapacityChars(): Observable<ViewDataTable> {
+  getProjectLocalCapacityChars(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}project-local-capacity-chars`
+      `${this.viewDataBaseURL}project-local-capacity-chars/${scenarioID}`
     );
   }
 
-  getTuning(): Observable<ViewDataTable> {
+  getTuning(scenarioID: number): Observable<ViewDataTable> {
     return this.http.get<ViewDataTable>(
-      `${this.viewDataBaseURL}tuning`
+      `${this.viewDataBaseURL}tuning/${scenarioID}`
     );
   }
 
