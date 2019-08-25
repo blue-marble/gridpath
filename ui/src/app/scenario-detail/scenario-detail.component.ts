@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, NgZone } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
@@ -18,10 +18,9 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./scenario-detail.component.css']
 })
 
-export class ScenarioDetailComponent implements OnInit, OnDestroy {
+export class ScenarioDetailComponent implements OnInit {
 
   scenarioDetail: ScenarioDetailAPI;
-  scenarioDetailSubscription: Subscription;
 
   // To get the right route
   scenarioID: number;
@@ -46,17 +45,16 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     });
 
     // Get the scenario detail data
-    this.scenarioDetailSubscription = this.scenarioDetailService
-     .getScenarioDetailAPI(this.scenarioID)
-     .subscribe(
-      scenarioDetail => {
-        this.scenarioDetail = scenarioDetail;
-        }
-     );
+    this.getScenarioDetailAPI(this.scenarioID);
   }
 
-  ngOnDestroy() {
-    this.scenarioDetailSubscription.unsubscribe();
+  getScenarioDetailAPI(scenarioID): void {
+    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
+      .subscribe(
+        scenarioDetail => {
+            this.scenarioDetail = scenarioDetail;
+        }
+      );
   }
 
   goBack(): void {
@@ -115,8 +113,7 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
       console.log('Validation complete');
       this.zone.run(
         () => {
-          // TODO: can we just call the subscription again?
-          this.ngOnInit();
+          this.getScenarioDetailAPI(scenarioID);
         }
       );
     });
