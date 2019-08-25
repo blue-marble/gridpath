@@ -14,11 +14,11 @@ import { emptyStartingValues } from '../scenario-new/scenario-new.component';
 
 export class SettingsComponent implements OnInit {
 
-  currentGridPathDirectory: string;
+  currentScenariosDirectory: string;
   currentGridPathDB: string;
   currentPythonDirectory: string;
 
-  requestedGridPathDirectory: string;
+  requestedScenariosDirectory: string;
   requestedGridPathDB: string;
   requestedPythonDirectory: string;
 
@@ -58,19 +58,19 @@ export class SettingsComponent implements OnInit {
     // we need to set the variables inside the Angular zone (we are outside
     // Angular when using 'electron')
     this.zone.run(() => {
-      this.currentGridPathDirectory = data.currentGridPathDirectory.value;
+      this.currentScenariosDirectory = data.currentScenariosDirectory.value;
       this.currentGridPathDB = data.currentGridPathDatabase.value;
       this.currentPythonDirectory = data.currentPythonBinary.value;
-      this.requestedGridPathDirectory = data.requestedGridPathDirectory.value;
+      this.requestedScenariosDirectory = data.requestedScenariosDirectory.value;
       this.requestedGridPathDB = data.requestedGridPathDatabase.value;
       this.requestedPythonDirectory = data.requestedPythonBinary.value;
     });
   }
 
-  browseGPFolder() {
+  browseScenariosDirectory() {
     // Open an Electron dialog to select the folder
     electron.remote.dialog.showOpenDialog(
-      {title: 'Select a the GridPath folder',
+      {title: 'Select a the scenarios folder',
         properties: ['openDirectory']},
       (folderPath) => {
       // Don't do anything if no folder selected
@@ -78,15 +78,15 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setGridPathFolderSetting', folderPath[0]);
+        electron.ipcRenderer.send('setScenariosDirectorySetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.requestedGridPathDirectory = folderPath[0];
+          this.requestedScenariosDirectory = folderPath[0];
           // If the requested directory differs from the current directory, alert
           // the user by setting the setting status to 'restart required'
-          console.log('Requested: ', this.requestedGridPathDirectory);
-          console.log('Current: ', this.currentGridPathDirectory);
-          if (this.requestedGridPathDirectory !== this.currentGridPathDirectory) {
+          console.log('Requested: ', this.requestedScenariosDirectory);
+          console.log('Current: ', this.currentScenariosDirectory);
+          if (this.requestedScenariosDirectory !== this.currentScenariosDirectory) {
             this.directoryStatus = 'restart required';
             this.changeDirectoryStatus();
           } else {

@@ -26,9 +26,12 @@ function createMainWindow () {
         console.log("Stored keys: ", keys);
 
         const requiredKeys = [
-          'currentGridPathDatabase', 'currentGridPathDirectory',
-          'currentPythonBinary', 'requestedGridPathDatabase',
-          'requestedGridPathDirectory', 'requestedPythonBinary'
+          'currentGridPathDatabase',
+          'currentScenariosDirectory',
+          'currentPythonBinary',
+          'requestedGridPathDatabase',
+          'requestedScenariosDirectory',
+          'requestedPythonBinary'
         ];
 
         requiredKeys.forEach(function(requiredKey, index) {
@@ -151,19 +154,17 @@ app.on('activate', () => {
 
 // Settings
 
-// Set the GridPath folder setting based on Angular input
+// Set the scenarios directory setting based on Angular input
 // Get setting from renderer and store it
-ipcMain.on('setGridPathFolderSetting', (event, gpfolder) => {
-	console.log(`GridPath folder set to ${gpfolder}`);
+ipcMain.on('setScenariosDirectorySetting', (event, scenariosDir) => {
+	console.log(`Scenarios folder set to ${scenariosDir}`);
 	// TODO: do we need to keep in storage?
-  // Set the GridPath directory path in Electron JSON storage
+  // Set the scenarios directory path in Electron JSON storage
   storage.set(
-      'requestedGridPathDirectory',
-      { 'value': gpfolder },
+      'requestedScenariosDirectory',
+      { 'value': scenariosDir },
       (error) => {if (error) throw error;}
   );
-  const socket = connectToServer();
-  socket.emit('set_gridpath_directory', gpfolder)
 });
 
 // Set the GridPath database setting based on Angular input
@@ -178,10 +179,6 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
       { 'value': gpDB },
       (error) => {if (error) throw error;}
   );
-
-  // TODO: set this from Electron storage for consistency
-  const socket = connectToServer();
-  socket.emit('set_database_path', gpDB);
 });
 
 // Set the Python binary setting based on Angular input
@@ -200,8 +197,8 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
 // Flask server
 function startServer () {
   storage.getMany(
-    ['currentGridPathDatabase', 'currentGridPathDirectory', 'currentPythonBinary',
-      'requestedGridPathDatabase', 'requestedGridPathDirectory', 'requestedPythonBinary'],
+    ['currentGridPathDatabase', 'currentScenariosDirectory', 'currentPythonBinary',
+      'requestedGridPathDatabase', 'requestedScenariosDirectory', 'requestedPythonBinary'],
     (error, data) => {
       if (error) throw error;
 
@@ -221,13 +218,13 @@ function startServer () {
           (error) => {if (error) throw error;}
         );
       }
-      if (data['currentGridPathDirectory']['value']
-        === data['requestedGridPathDirectory']['value']) {
+      if (data['currentScenariosDirectory']['value']
+        === data['requestedScenariosDirectory']['value']) {
         console.log("Current and requested GP directories match.");
       } else {
         storage.set(
-          'currentGridPathDirectory',
-          { 'value': data['requestedGridPathDirectory']['value'] },
+          'currentScenariosDirectory',
+          { 'value': data['requestedScenariosDirectory']['value'] },
           (error) => {if (error) throw error;}
         );
       }
@@ -243,9 +240,9 @@ function startServer () {
           }
         );
       }
-      
+
       const dbPath = data['requestedGridPathDatabase']['value'];
-      const gpDir = data['requestedGridPathDirectory']['value'];
+      const scenariosDir = data['requestedScenariosDirectory']['value'];
       const pyDir = data['requestedPythonBinary']['value'];
 
       // The server entry point based on the Python directory
@@ -304,7 +301,7 @@ function startServer () {
               shell: true, detached: true, windowsHide: false,
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
-                GRIDPATH_DIRECTORY: gpDir
+                SCENARIOS_DIRECTORY: scenariosDir
               }
             },
             );
@@ -320,7 +317,7 @@ function startServer () {
               stdio: 'inherit',
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
-                GRIDPATH_DIRECTORY: gpDir
+                SCENARIOS_DIRECTORY: scenariosDir
               }
             }
           );
@@ -360,7 +357,7 @@ function connectToServer () {
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
-      ['currentGridPathDirectory', 'requestedGridPathDirectory',
+      ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
         'currentPythonBinary', 'requestedPythonBinary'],
       (error, data) => {

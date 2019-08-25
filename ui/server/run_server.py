@@ -50,10 +50,10 @@ signal.signal(signal.SIGINT, sigint_handler)
 
 
 # Global server variables
-GRIDPATH_DIRECTORY = os.environ['GRIDPATH_DIRECTORY']
+SCENARIOS_DIRECTORY = os.environ['SCENARIOS_DIRECTORY']
 # DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
 DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
-SOLVER = str()
+
 
 # TODO: not sure we'll need this
 SCENARIO_STATUS = dict()
@@ -104,7 +104,7 @@ def socket_launch_scenario_process(client_message):
     # and scenario_name
     p, scenario_id, scenario_name = launch_scenario_process(
       db_path=DATABASE_PATH,
-      gridpath_directory=GRIDPATH_DIRECTORY,
+      gridpath_directory=SCENARIOS_DIRECTORY,
       scenario_status=SCENARIO_STATUS,
       client_message=client_message
     )

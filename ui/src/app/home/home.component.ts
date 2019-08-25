@@ -44,7 +44,7 @@ export class HomeComponent implements OnInit {
     electron.ipcRenderer.on('sendStoredSettings',
       (event, data) => {
         console.log('Got data ', data);
-        if (data.requestedGridPathDirectory.value == null) {
+        if (data.requestedScenariosDirectory.value == null) {
           this.zone.run(() => this.directoryStatus = 'not set');
         }
         if (data.requestedGridPathDatabase.value === null) {

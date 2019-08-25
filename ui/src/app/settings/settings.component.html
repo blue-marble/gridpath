@@ -1,12 +1,12 @@
 <div class="container-fluid">
   <h2>Settings</h2>
   <div>
-    <input class="u-full-width" size="50" placeholder="GridPath folder"
-      type="text" [(ngModel)]="requestedGridPathDirectory">
-    <button id="browseGPFolder" class="button-primary"
-              (click)="browseGPFolder()">Browse</button>
+    <input class="u-full-width" size="50" placeholder="Scenarios folder"
+      type="text" [(ngModel)]="requestedScenariosDirectory">
+    <button id="browseScenariosDirectory" class="button-primary"
+            (click)="browseScenariosDirectory()">Browse</button>
   </div>
-  <div><span>Current GridPath folder setting: </span>{{currentGridPathDirectory}}</div>
+  <div><span>Current scenarios folder setting: </span>{{currentScenariosDirectory}}</div>
   <div>
       <input class="u-full-width" size="50" placeholder="GridPath database"
              type="text"
