@@ -13,7 +13,6 @@ import {StartingValues} from '../scenario-detail/scenario-detail';
 
 const io = ( window as any ).require('socket.io-client');
 
-
 @Component({
   selector: 'app-scenario-new',
   templateUrl: './scenario-new.component.html',
@@ -161,7 +160,9 @@ export class ScenarioNewComponent implements OnInit {
       .subscribe(
         scenarioDetail => {
             this.startingValues = scenarioDetail.editScenarioValues;
-            this.setStartingValues()
+            // Change the scenario name to blank
+            this.startingValues.scenario_name = '';
+            this.setStartingValues();
         }
       );
   }
