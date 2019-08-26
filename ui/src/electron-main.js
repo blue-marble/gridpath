@@ -415,7 +415,10 @@ function startServer () {
               shell: true, detached: true, windowsHide: false,
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
-                SCENARIOS_DIRECTORY: scenariosDir
+                SCENARIOS_DIRECTORY: scenariosDir,
+                CBC_EXECUTABLE: cbcExec,
+                CPLEX_EXECUTABLE: cplexExec,
+                GUROBI_EXECUTABLE: gurobiExec
               }
             },
             );
