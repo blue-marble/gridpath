@@ -54,21 +54,15 @@ def launch_scenario_process(
     # multiprocessing process
     else:
         print("Starting process for scenario_id " + str(scenario_id))
-        # p = multiprocessing.Process(
-        #     target=run_scenario,
-        #     name=scenario_id,
-        #     args=(scenario_name,),
-        # )
-        # p.start()
-        # TODO: this temporarily doesn"t work, unless the scenarios directory
-        #  we"re passing is in the default location
-        os.chdir(os.path.join(scenarios_directory, "..", "gridpath"))
+        # Get the run_gridpath_e2e entry point script from the
+        # sys.executable (remove 'python' and add 'gridpath_run_e2e')
+        run_gridpath_e2e_executable = \
+            sys.executable[:-6] + "gridpath_run_e2e"
         p = subprocess.Popen(
-            [sys.executable, "-u",
-             os.path.join(scenarios_directory,  "..", "gridpath",
-                          "run_end_to_end.py"),
+            [run_gridpath_e2e_executable, "-u",
              "--log",
              "--scenario", scenario_name,
+             "--scenario_location", scenarios_directory,
              "--solver", solver["name"],
              "--solver_executable", solver["executable"]])
 
