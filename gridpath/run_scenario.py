@@ -517,7 +517,14 @@ def solve(instance, parsed_arguments):
     Send the compiled problem instance to the solver and solve.
     """
     # Get solver
-    solver = SolverFactory(parsed_arguments.solver)
+    # If a solver executable is specified, pass it to Pyomo
+    if parsed_arguments.solver_executable is not None:
+        solver = SolverFactory(parsed_arguments.solver,
+                               executable=parsed_arguments.solver_executable)
+    # Otherwise, only pass the solver name; Pyomo will look for the
+    # executable in the PATH
+    else:
+        solver = SolverFactory(parsed_arguments.solver)
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.
@@ -744,19 +751,25 @@ def parse_arguments(arguments):
     parser.add_argument("--scenario",
                         help="Name of the scenario problem to solve.")
     parser.add_argument("--scenario_location",
-                        help="Scenario directory path (relative to "
-                             "run_scenario.py.")
-
+                        help="The path to the directory the scenario directory"
+                             "is located (absolute or relative to the "
+                             "location of this script).")
     # Output options
     parser.add_argument("--log", default=False, action="store_true",
-                        help="Log output to a file in the logs directory as "
-                             "well as the terminal.")
+                        help="Log output to a file in the scenario's 'logs' "
+                             "directory as well as the terminal.")
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print run output.")
-
-    # Solve options
+    # Solver options
     parser.add_argument("--solver", default="cbc",
-                        help="Name of the solver to use. Default is cbc.")
+                        help="Name of the solver to use.")
+    parser.add_argument("--solver_executable",
+                        help="The path to the solver executable to use. This "
+                             "is optional; if you don't specify it, "
+                             "Pyomo will look for the solver executable in "
+                             "your PATH. The solver specified with the "
+                             "--solver option must be the same as the solver "
+                             "for which you are providing an executable.")
     parser.add_argument("--mute_solver_output", default=False,
                         action="store_true",
                         help="Don't print solver output if set to true.")
@@ -768,7 +781,6 @@ def parse_arguments(arguments):
                         help="Save temporary solver files.")
     parser.add_argument("--symbolic", default=False, action="store_true",
                         help="Use symbolic labels in solver files.")
-
     # Flag for test runs (various changes in behavior)
     parser.add_argument("--testing", default=False, action="store_true",
                         help="Flag for test suite runs.")

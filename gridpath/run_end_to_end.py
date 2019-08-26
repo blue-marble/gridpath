@@ -49,6 +49,13 @@ def parse_arguments(arguments):
     # Solve options
     parser.add_argument("--solver", default="cbc",
                         help="Name of the solver to use. Default is cbc.")
+    parser.add_argument("--solver_executable",
+                        help="The path to the solver executable to use. This "
+                             "is optional; if you don't specify it, "
+                             "Pyomo will look for the solver executable in "
+                             "your PATH. The solver specified with the "
+                             "--solver option must be the same as the solver "
+                             "for which you are providing an executable.")
     parser.add_argument("--mute_solver_output", default=True,
                         action="store_false",
                         help="Don't print solver output if set to true.")
