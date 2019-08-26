@@ -1,7 +1,7 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
-
+import {FormControl, FormGroup} from '@angular/forms';
 
 const io = ( window as any ).require('socket.io-client');
 
@@ -25,6 +25,11 @@ export class ScenarioDetailComponent implements OnInit {
   // To get the right route
   scenarioID: number;
   private sub: any;
+
+  // Select a solver for the run
+  solversForm = new FormGroup ({
+    solverFormControl: new FormControl()
+  });
 
   constructor(
     private route: ActivatedRoute,
@@ -66,6 +71,8 @@ export class ScenarioDetailComponent implements OnInit {
       `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${scenarioID}`
     );
 
+    const selectedSolver = this.solversForm.value.solverFormControl;
+    console.log(selectedSolver);
     // TODO: refactor server-connection code to be reused
     const socket = io.connect('http://127.0.0.1:8080/');
     socket.on('connect', () => {

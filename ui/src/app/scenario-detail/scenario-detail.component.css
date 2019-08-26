@@ -29,3 +29,11 @@
 #scenario-detail-heading {
   padding-top: 20px
 }
+
+#solvers {
+  background: aliceblue
+}
+
+#solvers label {
+  background: midnightblue;
+}
