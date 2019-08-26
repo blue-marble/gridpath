@@ -23,20 +23,28 @@ function createMainWindow () {
     storage.keys(function(error, keys) {
         if (error) throw error;
 
-        console.log("Stored keys: ", keys);
-
         const requiredKeys = [
           'currentGridPathDatabase',
           'currentScenariosDirectory',
           'currentPythonBinary',
           'requestedGridPathDatabase',
           'requestedScenariosDirectory',
-          'requestedPythonBinary'
+          'requestedPythonBinary',
         ];
 
-        requiredKeys.forEach(function(requiredKey, index) {
+        // TODO: should a solver be required; currently not (user can
+        //  browse without running scenarios)
+        const optionalKeys = [
+          'currentCbcExecutable',
+          'currentCPLEXExecutable',
+          'currentGurobiExecutable',
+          'requestedCbcExecutable',
+          'requestedCPLEXExecutable',
+          'requestedGurobiExecutable'
+        ];
+
+        requiredKeys.forEach(function(requiredKey) {
           if (keys.includes(requiredKey)) {
-            console.log(`Key ${requiredKey} exists`)
           } else {
               storage.set(
                 requiredKey,
@@ -45,6 +53,17 @@ function createMainWindow () {
             );
             // If any required keys are missing, don't start the server
             tryToStartServer = false
+          }
+        });
+
+        optionalKeys.forEach(function(requiredKey) {
+          if (keys.includes(requiredKey)) {
+          } else {
+              storage.set(
+                requiredKey,
+                { 'value': null },
+                (error) => {if (error) throw error;}
+            );
           }
         });
 
@@ -194,11 +213,65 @@ ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
   );
 });
 
+// Set the Cbc executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setCbcExecutableSetting', (event, msg) => {
+	console.log(`Cbc executable set to ${msg}`);
+
+	// TODO: do we need to keep in storage?
+  // Set the database file path in Electron JSON storage
+  storage.set(
+      'requestedCbcExecutable',
+      { 'value': msg },
+      (error) => {if (error) throw error;}
+  );
+});
+
+// Set the CPLEX executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setCPLEXExecutableSetting', (event, msg) => {
+	console.log(`CPLEX executable set to ${msg}`);
+
+	// TODO: do we need to keep in storage?
+  // Set the database file path in Electron JSON storage
+  storage.set(
+      'requestedCPLEXExecutable',
+      { 'value': msg },
+      (error) => {if (error) throw error;}
+  );
+});
+
+// Set the Gurobi executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setGurobiExecutableSetting', (event, msg) => {
+	console.log(`Gurobi executable set to ${msg}`);
+
+	// TODO: do we need to keep in storage?
+  // Set the database file path in Electron JSON storage
+  storage.set(
+      'requestedGurobiExecutable',
+      { 'value': msg },
+      (error) => {if (error) throw error;}
+  );
+});
+
 // Flask server
 function startServer () {
   storage.getMany(
-    ['currentGridPathDatabase', 'currentScenariosDirectory', 'currentPythonBinary',
-      'requestedGridPathDatabase', 'requestedScenariosDirectory', 'requestedPythonBinary'],
+    [
+      'currentGridPathDatabase',
+      'currentScenariosDirectory',
+      'currentPythonBinary',
+      'currentCbcExecutable',
+      'currentCPLEXExecutable',
+      'currentGurobiExecutable',
+      'requestedGridPathDatabase',
+      'requestedScenariosDirectory',
+      'requestedPythonBinary',
+      'requestedCbcExecutable',
+      'requestedCPLEXExecutable',
+      'requestedGurobiExecutable'
+    ],
     (error, data) => {
       if (error) throw error;
 
@@ -208,6 +281,7 @@ function startServer () {
       // variables. New settings will therefore require a server restart to
       // take effect. The user will see both the 'current' and 'requested'
       // settings and will be informed of the need to restart.
+      // TODO: refactor
       if (data['currentGridPathDatabase']['value']
         === data['requestedGridPathDatabase']['value']) {
         console.log("Current and requested GP databases match.")
@@ -240,10 +314,50 @@ function startServer () {
           }
         );
       }
+      if (data['currentCbcExecutable']['value']
+        === data['requestedCbcExecutable']['value']) {
+        console.log("Current and requested Cbc executables match.")
+      } else {
+        storage.set(
+          'currentCbcExecutable',
+          { 'value': data['requestedCbcExecutable']['value'] },
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
+      if (data['currentCPLEXExecutable']['value']
+        === data['requestedCPLEXExecutable']['value']) {
+        console.log("Current and requested CPLEX executables match.")
+      } else {
+        storage.set(
+          'currentCPLEXExecutable',
+          { 'value': data['requestedCPLEXExecutable']['value'] },
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
+      if (data['currentGurobiExecutable']['value']
+        === data['requestedGurobiExecutable']['value']) {
+        console.log("Current and requested Gurobi executables match.")
+      } else {
+        storage.set(
+          'currentGurobiExecutable',
+          { 'value': data['requestedGurobiExecutable']['value'] },
+          (error) => {
+            if (error) throw error;
+          }
+        );
+      }
+
 
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
       const pyDir = data['requestedPythonBinary']['value'];
+      const cbcExec = data['requestedCbcExecutable']['value'];
+      const cplexExec = data['requestedCPLEXExecutable']['value'];
+      const gurobiExec = data['requestedGurobiExecutable']['value'];
 
       // The server entry point based on the Python directory
       const serverEntryPoint = path.join(
@@ -317,7 +431,10 @@ function startServer () {
               stdio: 'inherit',
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
-                SCENARIOS_DIRECTORY: scenariosDir
+                SCENARIOS_DIRECTORY: scenariosDir,
+                CBC_EXECUTABLE: cbcExec,
+                CPLEX_EXECUTABLE: cplexExec,
+                GUROBI_EXECUTABLE: gurobiExec
               }
             }
           );
@@ -359,11 +476,14 @@ ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
       ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
-        'currentPythonBinary', 'requestedPythonBinary'],
+        'currentPythonBinary', 'requestedPythonBinary',
+        'currentCbcExecutable', 'requestedCbcExecutable',
+        'currentCPLEXExecutable', 'requestedCPLEXExecutable',
+        'currentGurobiExecutable', 'requestedGurobiExecutable'
+
+      ],
       (error, data) => {
         if (error) throw error;
-        console.log("Sending stored settings to Angular");
-        console.log(data);
         event.sender.send('sendStoredSettings', data)
       }
     );

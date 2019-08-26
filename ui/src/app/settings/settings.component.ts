@@ -17,11 +17,18 @@ export class SettingsComponent implements OnInit {
   currentScenariosDirectory: string;
   currentGridPathDB: string;
   currentPythonDirectory: string;
+  currentCbcExecutable: string;
+  currentCPLEXExecutable: string;
+  currentGurobiExecutable: string;
 
   requestedScenariosDirectory: string;
   requestedGridPathDB: string;
   requestedPythonDirectory: string;
+  requestedCbcExecutable: string;
+  requestedCPLEXExecutable: string;
+  requestedGurobiExecutable: string;
 
+  // TODO: add solver status
   directoryStatus: string;
   databaseStatus: string;
   pythonStatus: string;
@@ -61,9 +68,15 @@ export class SettingsComponent implements OnInit {
       this.currentScenariosDirectory = data.currentScenariosDirectory.value;
       this.currentGridPathDB = data.currentGridPathDatabase.value;
       this.currentPythonDirectory = data.currentPythonBinary.value;
+      this.currentCbcExecutable = data.currentCbcExecutable.value;
+      this.currentCPLEXExecutable = data.currentCPLEXExecutable.value;
+      this.currentGurobiExecutable = data.currentGurobiExecutable.value;
       this.requestedScenariosDirectory = data.requestedScenariosDirectory.value;
       this.requestedGridPathDB = data.requestedGridPathDatabase.value;
       this.requestedPythonDirectory = data.requestedPythonBinary.value;
+      this.requestedCbcExecutable = data.requestedCbcExecutable.value;
+      this.requestedCPLEXExecutable = data.requestedCPLEXExecutable.value;
+      this.requestedGurobiExecutable = data.requestedGurobiExecutable.value;
     });
   }
 
@@ -151,6 +164,69 @@ export class SettingsComponent implements OnInit {
             this.pythonStatus = 'set';
             this.changePythonStatus();
           }
+        });
+      }
+    });
+  }
+
+  browseCbcExecutable() {
+    // Open an Electron dialog to select the file
+    electron.remote.dialog.showOpenDialog(
+      {title: 'Select a the Cbc executable',
+        properties: ['openFile']},
+      (filePath) => {
+      // Don't do anything if no file selected
+      if (filePath === undefined) {
+          return;
+      } else {
+        // Send Electron the selected folder
+        electron.ipcRenderer.send('setCbcExecutableSetting', filePath[0]);
+        // Update the Angular component
+        this.zone.run( () => {
+          this.requestedCbcExecutable = filePath[0];
+        // TODO: add status
+        });
+      }
+    });
+  }
+
+  browseCPLEXExecutable() {
+    // Open an Electron dialog to select the file
+    electron.remote.dialog.showOpenDialog(
+      {title: 'Select a the CPLEX executable',
+        properties: ['openFile']},
+      (filePath) => {
+      // Don't do anything if no file selected
+      if (filePath === undefined) {
+          return;
+      } else {
+        // Send Electron the selected folder
+        electron.ipcRenderer.send('setCPLEXExecutableSetting', filePath[0]);
+        // Update the Angular component
+        this.zone.run( () => {
+          this.requestedCPLEXExecutable = filePath[0];
+        // TODO: add status
+        });
+      }
+    });
+  }
+
+  browseGurobiExecutable() {
+    // Open an Electron dialog to select the file
+    electron.remote.dialog.showOpenDialog(
+      {title: 'Select a the Gurobi executable',
+        properties: ['openFile']},
+      (filePath) => {
+      // Don't do anything if no file selected
+      if (filePath === undefined) {
+          return;
+      } else {
+        // Send Electron the selected folder
+        electron.ipcRenderer.send('setGurobiExecutableSetting', filePath[0]);
+        // Update the Angular component
+        this.zone.run( () => {
+          this.requestedGurobiExecutable = filePath[0];
+        // TODO: add status
         });
       }
     });

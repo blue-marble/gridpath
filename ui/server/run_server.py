@@ -53,6 +53,9 @@ signal.signal(signal.SIGINT, sigint_handler)
 SCENARIOS_DIRECTORY = os.environ['SCENARIOS_DIRECTORY']
 # DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
 DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
+CBC_EXECUTABLE = os.environ['CBC_EXECUTABLE']
+CPLEX_EXECUTABLE = os.environ['CPLEX_EXECUTABLE']
+GUROBI_EXECUTABLE = os.environ['GUROBI_EXECUTABLE']
 
 
 # TODO: not sure we'll need this
@@ -104,7 +107,7 @@ def socket_launch_scenario_process(client_message):
     # and scenario_name
     p, scenario_id, scenario_name = launch_scenario_process(
       db_path=DATABASE_PATH,
-      gridpath_directory=SCENARIOS_DIRECTORY,
+      scenarios_directory=SCENARIOS_DIRECTORY,
       scenario_status=SCENARIO_STATUS,
       client_message=client_message
     )
