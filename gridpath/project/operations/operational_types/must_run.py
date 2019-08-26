@@ -12,9 +12,11 @@ from pyomo.environ import Constraint, Set
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
     write_validation_to_database, check_req_prj_columns, \
-    check_constant_heat_rate, check_projects_for_reserves
+    check_constant_heat_rate, get_projects_by_reserve, \
+    check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+
 
 def add_module_specific_components(m, d):
     """
@@ -323,14 +325,28 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since must_run can't provide any
     # reserves
-    validation_results += check_projects_for_reserves(
-        projects=df["project"],
-        operational_type="must_run",
-        subscenarios=subscenarios,
-        subproblem=subproblem,
-        stage=stage,
-        conn=conn
-    )
+    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    for reserve, projects in projects_by_reserve.items():
+        project_ba_id = "project_" + reserve + "_ba_scenario_id"
+        table = "inputs_project_" + reserve + "_bas"
+        validation_errors = check_projects_for_reserves(
+            projects_op_type=df["project"],
+            projects_w_ba=projects,
+            operational_type="must_run",
+            reserve=reserve
+        )
+        for error in validation_errors:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 subproblem,
+                 stage,
+                 __name__,
+                 project_ba_id.upper(),
+                 table,
+                 "Invalid {} BA inputs".format(reserve),
+                 error
+                 )
+            )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)

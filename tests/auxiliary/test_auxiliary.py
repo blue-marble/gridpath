@@ -348,6 +348,47 @@ class TestAuxiliary(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_check_projects_for_reserves(self):
+        """
+
+        :return:
+        """
+
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"projects_op_type": ["project1", "project2"],
+                "projects_w_ba": ["project3", "project4"],
+                "operational_type": "must_run",
+                "reserve": "regulation_up",
+                "result": []
+                },
+            # Make sure invalid projects are flagged
+            2: {"projects_op_type": ["project1", "project2"],
+                "projects_w_ba": ["project2", "project3"],
+                "operational_type": "must_run",
+                "reserve": "regulation_up",
+                "result": ["Project(s) 'project2'; must_run cannot provide regulation_up"]
+                },
+            # Make sure multiple invalid projects are flagged correctly
+            3: {"projects_op_type": ["project1", "project2"],
+                "projects_w_ba": ["project1", "project2", "project3"],
+                "operational_type": "must_run",
+                "reserve": "regulation_up",
+                "result": [
+                    "Project(s) 'project1, project2'; must_run cannot provide regulation_up"]
+                },
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = auxiliary_module_to_test.check_projects_for_reserves(
+                projects_op_type=test_cases[test_case]["projects_op_type"],
+                projects_w_ba=test_cases[test_case]["projects_w_ba"],
+                operational_type=test_cases[test_case]["operational_type"],
+                reserve=test_cases[test_case]["reserve"],
+            )
+            self.assertListEqual(expected_list, actual_list)
+
 
 if __name__ == "__main__":
     unittest.main()

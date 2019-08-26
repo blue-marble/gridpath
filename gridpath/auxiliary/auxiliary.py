@@ -484,33 +484,33 @@ def check_constant_heat_rate(df, op_type):
     return results
 
 
-def check_projects_for_reserves(projects, operational_type, subscenarios,
-                                subproblem, stage, conn):
+def get_projects_by_reserve(subscenarios, conn):
     """
-    Check that a list of projects of a given operational_type does not show up
-    in any of the inputs_project_reserve_bas tables since the operational type
-    can't provide any reserves (e.g. must_run).
-    :param operational_type:
-    :param projects:
-    :param subscenarios:
-    :param subproblem:
-    :param stage:
-    :param conn:
-    :return:
-    """
-    validation_results = []
+    Get a list of projects that can provide reserves for each applicable
+    reserve type. Whether a project can provide a certain reserve type is
+    dependent on whether the project has a reserve zone specified for that
+    reserve type.
 
-    reserves = ["frequency_response", "spinning_reserves",
-                "lf_reserves_down", "lf_reserves_up",
-                "regulation_up", "regulation_down"]
+    :param subscenarios:
+    :param conn:
+    :return: result, dictionary of list of projects by reserve type
+    """
+
+    result = {}
+    reserves = [
+        "frequency_response",
+        "spinning_reserves",
+        "lf_reserves_down", "lf_reserves_up",
+        "regulation_up", "regulation_down"
+    ]
     for reserve in reserves:
-        # Get set of projects with a reserve BA specified and set of must_run
+        # Get set of projects with a reserve BA specified
         table = "inputs_project_" + reserve + "_bas"
         ba_column = reserve + "_ba"
         ba_id = reserve + "_ba_scenario_id"
         project_ba_id = "project_" + reserve + "_ba_scenario_id"
 
-        # If the subscenario_ids are specified, do the input validation
+        # If the subscenario_ids are specified, get the projects
         if getattr(subscenarios, ba_id.upper()) and \
                 getattr(subscenarios, project_ba_id.upper()):
             c = conn.cursor()
@@ -527,25 +527,42 @@ def check_projects_for_reserves(projects, operational_type, subscenarios,
                     project_ba_id, getattr(subscenarios, project_ba_id.upper())
                 )
             )
-            prjs_w_ba = set([p[0] for p in prjs_w_ba.fetchall()])
-            must_run_projects = set(projects)
 
-            # If there are any projects with a reserve BA specified,
-            # create a validation error
-            bad_projects = prjs_w_ba & must_run_projects  # intersection of sets
-            if bad_projects:
-                print_bad_projects = ", ".join(bad_projects)
-                validation_results.append(
-                    (subscenarios.SCENARIO_ID,
-                     subproblem,
-                     stage,
-                     __name__,
-                     project_ba_id.upper(),
-                     table,
-                     "Invalid {} BA inputs".format(reserve),
-                     "Project(s) '{}'; {} cannot provide {}".format(
-                         print_bad_projects, operational_type, reserve)
-                     )
-                )
+            result[reserve] = [p[0] for p in prjs_w_ba.fetchall()]
 
-    return validation_results
+    return result
+
+
+def check_projects_for_reserves(projects_op_type, projects_w_ba,
+                                operational_type, reserve):
+    """
+    Check that a list of projects of a given operational_type does not show up
+    in a a list of projects that can provide a given type of reserve. This is
+    used when checking that a certain operational type (e.g. must_run) is not
+    providing a certain type of reserve (e..g regulation_up) which it shouldn't
+    be able to provide.
+
+    :param projects_op_type: list of projects with specified operational type
+    :param projects_w_ba: list of projects with specified reserve ba
+    :param operational_type: string, specified operational_type (e.g. must_run)
+        that is not able to provide the specified reserve
+    :param reserve: string, specified reserve product (e.g. regulation_up)
+    :return:
+    """
+
+    results = []
+
+    # Convert list of projects to sets and check set intersection
+    projects_op_type = set(projects_op_type)
+    projects_w_ba = set(projects_w_ba)
+    bad_projects = projects_w_ba & projects_op_type
+
+    # If there are any projects of the specified operaitonal type
+    # with a reserve BA specified, create a validation error
+    if bad_projects:
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+             "Project(s) '{}'; {} cannot provide {}".format(
+                 print_bad_projects, operational_type, reserve)
+             )
+    return results

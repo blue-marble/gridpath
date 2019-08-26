@@ -14,7 +14,8 @@ from pyomo.environ import Param, Set, NonNegativeReals, Constraint
 import warnings
 
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_projects_for_reserves
+    write_validation_to_database, get_projects_by_reserve, \
+    check_projects_for_reserves
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -400,7 +401,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # variable_profiles = get_module_specific_inputs_from_database(
     #     subscenarios, subproblem, stage, conn)
 
-    # Get set of variable_no_curtailment projects
+    # Get list of variable_no_curtailment projects
     c = conn.cursor()
     var_projects = c.execute(
         """SELECT project
@@ -417,19 +418,33 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             "variable_no_curtailment"
         )
     )
-    var_projects = set([p[0] for p in var_projects.fetchall()])
+    var_projects = [p[0] for p in var_projects.fetchall()]
 
     # Check that the project does not show up in any of the
     # inputs_project_reserve_bas tables since variable_no_curtailment can't
     # provide any reserves
-    validation_results += check_projects_for_reserves(
-        projects=var_projects,
-        operational_type="variable_no_curtailment",
-        subscenarios=subscenarios,
-        subproblem=subproblem,
-        stage=stage,
-        conn=conn
-    )
+    projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
+    for reserve, projects in projects_by_reserve.items():
+        project_ba_id = "project_" + reserve + "_ba_scenario_id"
+        table = "inputs_project_" + reserve + "_bas"
+        validation_errors = check_projects_for_reserves(
+            projects_op_type=var_projects,
+            projects_w_ba=projects,
+            operational_type="variable_no_curtailment",
+            reserve=reserve
+        )
+        for error in validation_errors:
+            validation_results.append(
+                (subscenarios.SCENARIO_ID,
+                 subproblem,
+                 stage,
+                 __name__,
+                 project_ba_id.upper(),
+                 table,
+                 "Invalid {} BA inputs".format(reserve),
+                 error
+                 )
+            )
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
