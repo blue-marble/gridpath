@@ -2,12 +2,12 @@
 
 import atexit
 from flask import Flask
+from flask_restful import Api
 from flask_socketio import SocketIO, emit
 import os
 import signal
 import sys
-
-from flask_restful import Api
+import time
 
 # API
 from ui.server.create_api import add_api_resources
@@ -126,6 +126,11 @@ def socket_launch_scenario_process(client_message):
     #  delete the global data for the server
     SCENARIO_STATUS[(scenario_id, scenario_name)] = dict()
     SCENARIO_STATUS[(scenario_id, scenario_name)]['process_id'] = p.pid
+
+    # Wait a couple of seconds, then tell the client the process was
+    # launched, so that the client can refresh the run status
+    time.sleep(2)
+    emit("scenario_process_launched")
 
 
 # TODO: implement functionality to check on the process from the UI (

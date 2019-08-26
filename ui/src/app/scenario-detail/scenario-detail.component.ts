@@ -90,6 +90,17 @@ export class ScenarioDetailComponent implements OnInit {
         console.log('Server says scenario is already running.');
         console.log (msg);
     });
+
+    // Check and update the run status (whole API) when the scenario process is
+    // launched
+    socket.on('scenario_process_launched', () => {
+      console.log('Scenario process launched.');
+      this.zone.run(
+        () => {
+          this.getScenarioDetailAPI(this.scenarioID);
+        }
+      );
+    });
   }
 
   editScenario(): void {
