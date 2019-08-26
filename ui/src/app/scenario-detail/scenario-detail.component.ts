@@ -66,13 +66,13 @@ export class ScenarioDetailComponent implements OnInit {
     this.location.back();
   }
 
-  runScenario(scenarioID): void {
+  runScenario(): void {
     console.log(
-      `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${scenarioID}`
+      `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
     );
 
     const selectedSolver = this.solversForm.value.solverFormControl;
-    console.log(selectedSolver);
+
     // TODO: refactor server-connection code to be reused
     const socket = io.connect('http://127.0.0.1:8080/');
     socket.on('connect', () => {
@@ -81,13 +81,13 @@ export class ScenarioDetailComponent implements OnInit {
 
     socket.emit(
             'launch_scenario_process',
-            {scenario: scenarioID}
+            {scenario: this.scenarioID, solver: selectedSolver}
         );
     // Keep track of process ID for this scenario run
     // TODO: how should we deal with the situation of a scenario already
     //  running?
     socket.on('scenario_already_running', (msg) => {
-        console.log('in scenario_already_running');
+        console.log('Server says scenario is already running.');
         console.log (msg);
     });
   }

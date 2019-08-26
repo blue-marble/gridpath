@@ -23,7 +23,7 @@
     </div>
 
     <div class="col-md-auto btn-group" data-toggle="buttons" id="solvers">
-      <form [formGroup]="solversForm" (ngSubmit)="runScenario(scenarioID)">
+      <form [formGroup]="solversForm" (ngSubmit)="runScenario()">
         <label class="btn btn-primary">
           <input type="radio" value="cbc" formControlName="solverFormControl">
        <span> Cbc</span>

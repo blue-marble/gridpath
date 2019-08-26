@@ -56,6 +56,11 @@ DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
 CBC_EXECUTABLE = os.environ['CBC_EXECUTABLE']
 CPLEX_EXECUTABLE = os.environ['CPLEX_EXECUTABLE']
 GUROBI_EXECUTABLE = os.environ['GUROBI_EXECUTABLE']
+SOLVER_EXECUTABLES = {
+  "cbc": {"name": "cbc", "executable": CBC_EXECUTABLE},
+  "cplex": {"name": "cplex", "executable": CPLEX_EXECUTABLE},
+  "gurobi": {"name": "gurobi", "executable": GUROBI_EXECUTABLE}
+}
 
 
 # TODO: not sure we'll need this
@@ -109,7 +114,9 @@ def socket_launch_scenario_process(client_message):
       db_path=DATABASE_PATH,
       scenarios_directory=SCENARIOS_DIRECTORY,
       scenario_status=SCENARIO_STATUS,
-      client_message=client_message
+      scenario_id=client_message["scenario"],
+      solver=SOLVER_EXECUTABLES[client_message["solver"]]
+
     )
     # Needed to ensure child processes are terminated when server exits
     atexit.register(p.terminate)
@@ -131,7 +138,7 @@ def socket_check_scenario_process_status(client_message):
     """
     check_scenario_process_status(db_path=DATABASE_PATH,
                                   scenario_status=SCENARIO_STATUS,
-                                  client_message=client_message)
+                                  scenario_id=client_message["scenario"])
 
 
 @socketio.on("validate_scenario")

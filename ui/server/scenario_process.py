@@ -1,28 +1,31 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
-import os
-import subprocess
-import sys
 
+"""
+Launch a scenario end-to-end run in its own process.
+"""
+
+import os
 import psutil
 from flask_socketio import emit
+import subprocess
+import sys
 
 from ui.server.common_functions import connect_to_database
 
 
 def launch_scenario_process(
-    db_path, gridpath_directory, scenario_status, client_message
+    db_path, scenarios_directory, scenario_status, scenario_id, solver
 ):
     """
     :param db_path:
-    :param gridpath_directory:
+    :param scenarios_directory:
     :param scenario_status:
-    :param client_message:
+    :param scenario_id: integer, the scenario_id from the database
+    :param solver: dictionary with keys "name" and "executable" for the solver
     :return:
 
     Launch a process to run the scenario.
     """
-    scenario_id = str(client_message['scenario'])
-
     # Get the scenario name for this scenario ID
     # TODO: pass both from the client and do a check here that they exist
     io, c = connect_to_database(db_path=db_path)
@@ -36,7 +39,7 @@ def launch_scenario_process(
     process_status = check_scenario_process_status(
         db_path=db_path,
         scenario_status=scenario_status,
-        client_message=client_message
+        scenario_id=scenario_id
     )
     if process_status:
         # TODO: what should happen if the scenario is already running? At a
@@ -44,34 +47,38 @@ def launch_scenario_process(
         #  process and re-start the scenario run.
         print("Scenario already running.")
         emit(
-            'scenario_already_running',
-            'scenario already running'
+            "scenario_already_running",
+            "scenario already running"
         )
     # If the scenario is not found among the running processes, launch a
     # multiprocessing process
     else:
-        print("Starting process for scenario_id " + scenario_id)
+        print("Starting process for scenario_id " + str(scenario_id))
         # p = multiprocessing.Process(
         #     target=run_scenario,
         #     name=scenario_id,
         #     args=(scenario_name,),
         # )
         # p.start()
-        os.chdir(os.path.join(gridpath_directory, 'gridpath'))
+        # TODO: this temporarily doesn"t work, unless the scenarios directory
+        #  we"re passing is in the default location
+        os.chdir(os.path.join(scenarios_directory, "..", "gridpath"))
         p = subprocess.Popen(
-            [sys.executable, '-u',
-             os.path.join(gridpath_directory, 'gridpath',
-                          'run_end_to_end.py'),
-             '--log', '--scenario', scenario_name])
+            [sys.executable, "-u",
+             os.path.join(scenarios_directory,  "..", "gridpath",
+                          "run_end_to_end.py"),
+             "--log",
+             "--scenario", scenario_name,
+             "--solver", solver["name"],
+             "--solver_executable", solver["executable"]])
 
         return p, scenario_id, scenario_name
 
 
-def check_scenario_process_status(db_path, scenario_status, client_message):
+def check_scenario_process_status(db_path, scenario_status, scenario_id):
     """
     Check if there is any running process that contains the given scenario
     """
-    scenario_id = str(client_message['scenario'])
     io, c = connect_to_database(db_path=db_path)
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
@@ -80,10 +87,10 @@ def check_scenario_process_status(db_path, scenario_status, client_message):
     ).fetchone()[0]
 
     if (scenario_id, scenario_name) in scenario_status.keys():
-        pid = scenario_status[(scenario_id, scenario_name)]['process_id']
+        pid = scenario_status[(scenario_id, scenario_name)]["process_id"]
         # Process ID saved in global and process is still running
         if pid in [p.pid for p in psutil.process_iter()] \
-                and psutil.Process(pid).status() == 'running':
+                and psutil.Process(pid).status() == "running":
             return True
         else:
             # Process ID saved in global but process is not running
