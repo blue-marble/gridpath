@@ -395,6 +395,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_AVAILABILITY",
              "inputs_project_availability",
@@ -408,6 +410,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         for error in validation_errors:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
+                 subproblem,
+                 stage,
                  __name__,
                  "PROJECT_AVAILABILITY",
                  "inputs_project_availability",
@@ -430,6 +434,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in dtype_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
@@ -446,6 +452,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in sign_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
@@ -461,6 +469,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
@@ -475,6 +485,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",

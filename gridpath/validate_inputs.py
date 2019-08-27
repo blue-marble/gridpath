@@ -117,6 +117,8 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                     validation_results.append(
                         (subscenarios.SCENARIO_ID,
                          "N/A",
+                         "N/A",
+                         "N/A",
                          sc_id,
                          "scenarios",
                          "Missing subscenario ID",
@@ -130,6 +132,8 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                         getattr(subscenarios, sc_id) is not None:
                     validation_results.append(
                         (subscenarios.SCENARIO_ID,
+                         "N/A",
+                         "N/A",
                          "N/A",
                          sc_id,
                          "scenarios",
@@ -161,6 +165,8 @@ def validate_required_subscenario_ids(subscenarios, conn):
         if getattr(subscenarios, sc_id) is None:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
+                 "N/A",
+                 "N/A",
                  "N/A",
                  sc_id,
                  "scenarios",
@@ -224,6 +230,8 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
         if getattr(subscenarios, sc_id) is None:
             validation_results.append(
                 (subscenarios.SCENARIO_ID,
+                 "N/A",
+                 "N/A",
                  "N/A",
                  sc_id,
                  "scenarios",

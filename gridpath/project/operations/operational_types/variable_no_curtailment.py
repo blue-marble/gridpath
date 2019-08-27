@@ -426,6 +426,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         projects=var_projects,
         operational_type="variable_no_curtailment",
         subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
         conn=conn
     )
 

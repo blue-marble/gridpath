@@ -295,6 +295,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
@@ -308,6 +310,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
@@ -323,6 +327,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         projects=df["project"],
         operational_type="must_run",
         subscenarios=subscenarios,
+        subproblem=subproblem,
+        stage=stage,
         conn=conn
     )
 

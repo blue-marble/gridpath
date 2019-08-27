@@ -316,8 +316,9 @@ def write_validation_to_database(validation_results, conn):
     c = conn.cursor()
     for row in validation_results:
         query = """INSERT into mod_input_validation
-                (scenario_id, gridpath_module, related_subscenario, 
-                related_database_table, issue_type, issue_description)
+                (scenario_id, subproblem_id, stage_id, 
+                gridpath_module, related_subscenario, related_database_table, 
+                issue_type, issue_description)
                 VALUES ({});""".format(','.join(['?' for item in row]))
 
         c.execute(query, row)
@@ -483,7 +484,8 @@ def check_constant_heat_rate(df, op_type):
     return results
 
 
-def check_projects_for_reserves(projects, operational_type, subscenarios, conn):
+def check_projects_for_reserves(projects, operational_type, subscenarios,
+                                subproblem, stage, conn):
     """
     Check that a list of projects of a given operational_type does not show up
     in any of the inputs_project_reserve_bas tables since the operational type
@@ -491,6 +493,8 @@ def check_projects_for_reserves(projects, operational_type, subscenarios, conn):
     :param operational_type:
     :param projects:
     :param subscenarios:
+    :param subproblem:
+    :param stage:
     :param conn:
     :return:
     """
@@ -533,6 +537,8 @@ def check_projects_for_reserves(projects, operational_type, subscenarios, conn):
                 print_bad_projects = ", ".join(bad_projects)
                 validation_results.append(
                     (subscenarios.SCENARIO_ID,
+                     subproblem,
+                     stage,
                      __name__,
                      project_ba_id.upper(),
                      table,
