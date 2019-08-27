@@ -3,7 +3,8 @@
 from flask_restful import Resource
 
 from ui.server.common_functions import connect_to_database
-from viz import capacity_plot, cost_plot, dispatch_plot, energy_plot
+from viz import capacity_plot, capacity_factor_plot, cost_plot, \
+  dispatch_plot, energy_plot
 
 
 # TODO: create results views to show, which ones?
@@ -548,6 +549,42 @@ class ScenarioResultsCostPlot(Resource):
             )
         else:
             plot_api["plotJSON"] = cost_plot.main(
+              arguments_list_w_ymax
+            )
+
+        return plot_api
+
+
+class ScenarioResultsCapacityFactorPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, load_zone, stage, ymax):
+        """
+
+        :return:
+        """
+        plot_api = dict()
+
+        base_arguments_list = [
+          "--return_json",
+          "--database", self.db_path,
+          "--scenario_id", scenario_id,
+          "--load_zone", load_zone,
+          "--stage", stage
+        ]
+        arguments_list_w_ymax = base_arguments_list + ["--ylimit", ymax]
+
+        if ymax == 'default':
+            plot_api["plotJSON"] = capacity_factor_plot.main(
+              base_arguments_list
+            )
+        else:
+            plot_api["plotJSON"] = capacity_factor_plot.main(
               arguments_list_w_ymax
             )
 

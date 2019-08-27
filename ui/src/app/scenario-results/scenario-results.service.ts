@@ -146,4 +146,11 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-cost-plot/${loadZone}/${stage}/${ymax}`
     );
   }
+
+  getResultsCapacityFactorPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results-capacity-factor-plot/${loadZone}/${stage}/${ymax}`
+    );
+  }
 }

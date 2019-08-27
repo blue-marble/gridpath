@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import {FormControl, FormGroup} from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResults, ResultsButton, ResultsForm } from './scenario-results';
@@ -81,7 +81,7 @@ export class ScenarioResultsComponent implements OnInit {
   energyPlotJSON: object;
   energyPlotHTMLName: string;
 
-  // Energy plot
+  // Cost plot
   costPlotOptionsForm = new FormGroup({
     costPlotLoadZone: new FormControl(),
     costPlotStage: new FormControl(),
@@ -89,6 +89,15 @@ export class ScenarioResultsComponent implements OnInit {
   });
   costPlotJSON: object;
   costPlotHTMLName: string;
+
+  // Capacity factor plot
+  capacityFactorPlotOptionsForm = new FormGroup({
+    capacityFactorPlotLoadZone: new FormControl(),
+    capacityFactorPlotStage: new FormControl(),
+    capacityFactorPlotYMax: new FormControl()
+  });
+  capacityFactorPlotJSON: object;
+  capacityFactorPlotHTMLName: string;
 
   // To get the right route
   scenarioID: number;
@@ -200,6 +209,11 @@ export class ScenarioResultsComponent implements OnInit {
     if (this.resultsToShow === 'results-cost-plot') {
       console.log('Showing cost plot');
       this.getResultsCostPlot(this.scenarioID);
+    }
+
+    if (this.resultsToShow === 'results-capacity-factor-plot') {
+      console.log('Showing capacity factor plot');
+      this.getResultsCapacityFactorPlot(this.scenarioID);
     }
   }
 
@@ -425,7 +439,7 @@ export class ScenarioResultsComponent implements OnInit {
     if (yMax === null) { yMax = 'default'; }
 
     // Change the plot name for the HTML
-    // TODO: make name 'costPlot' in python file and here
+    // TODO: make name 'costPlot' in python file and here?
     this.costPlotHTMLName = `CostPlot-${loadZone}-${stage}`;
 
     // Get the JSON object, convert to plot, and embed (the target of the
@@ -435,6 +449,27 @@ export class ScenarioResultsComponent implements OnInit {
     ).subscribe(costPlotAPI => {
         this.costPlotJSON = costPlotAPI.plotJSON;
         Bokeh.embed.embed_item(this.costPlotJSON);
+      });
+  }
+
+  getResultsCapacityFactorPlot(scenarioID): void {
+    // Get the plot options
+    const loadZone = this.capacityFactorPlotOptionsForm.value.capacityFactorPlotLoadZone;
+    const stage = this.capacityFactorPlotOptionsForm.value.capacityFactorPlotStage;
+    let yMax = this.capacityFactorPlotOptionsForm.value.capacityFactorPlotYMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    // Change the plot name for the HTML
+    // TODO: make name 'capFactorPlot' in python file and here?
+    this.capacityFactorPlotHTMLName = `CapFactorPlot-${loadZone}-${stage}`;
+
+    // Get the JSON object, convert to plot, and embed (the target of the
+    // JSON object will match the HTML name above)
+    this.scenarioResultsService.getResultsCapacityFactorPlot(
+      scenarioID, loadZone, stage, yMax
+    ).subscribe(capacityFactorPlotAPI => {
+        this.capacityFactorPlotJSON = capacityFactorPlotAPI.plotJSON;
+        Bokeh.embed.embed_item(this.capacityFactorPlotJSON);
       });
   }
 
@@ -624,6 +659,23 @@ export class ScenarioResultsComponent implements OnInit {
           }
         };
         this.allResultsForms.push(costPlotFormStructure);
+
+        const capacityFactorPlotFormStructure = {
+          formGroup: this.capacityFactorPlotOptionsForm,
+          selectForms: [
+            {formControlName: 'capacityFactorPlotLoadZone',
+             formControlOptions: plotOptions.loadZoneOptions},
+            {formControlName: 'capacityFactorPlotStage',
+            formControlOptions: plotOptions.stageOptions}
+          ],
+          yMaxFormControlName: 'capacityFactorPlotYMax',
+          button: {
+            name: 'showResultsCapacityFactorPlotButton',
+            ngIfKey: 'results-capacity-factor-plot',
+            caption: 'Capacity Factors'
+          }
+        };
+        this.allResultsForms.push(capacityFactorPlotFormStructure);
 
       }
     );
