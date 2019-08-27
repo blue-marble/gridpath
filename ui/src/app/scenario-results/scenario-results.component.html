@@ -71,8 +71,11 @@
       <div id="{{energyPlotHTMLName}}"
            *ngIf="resultsToShow=='results-energy-plot'">
       </div>
-            <div id="{{costPlotHTMLName}}"
+      <div id="{{costPlotHTMLName}}"
            *ngIf="resultsToShow=='results-cost-plot'">
+      </div>
+      <div id="{{capacityFactorPlotHTMLName}}"
+           *ngIf="resultsToShow=='results-capacity-factor-plot'">
       </div>
       <!--  Results tables -->
       <ng-container *ngFor="let table of allTables">
