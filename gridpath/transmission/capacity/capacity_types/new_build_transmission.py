@@ -204,7 +204,7 @@ def write_module_specific_model_inputs(
 
     with open(os.path.join(inputs_directory,
                            "new_build_transmission_vintage_costs.tab"),
-              "w") as existing_tx_capacity_tab_file:
+              "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,
                             delimiter="\t")
 
@@ -232,7 +232,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage):
 
     # Export transmission capacity
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "transmission_new_capacity.csv"), "w") as f:
+                           "transmission_new_capacity.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["transmission_line", "period",
                          "load_zone_from", "load_zone_to",

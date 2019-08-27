@@ -135,7 +135,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-              "fuel_burn.csv"), "w") as f:
+              "fuel_burn.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",

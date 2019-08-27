@@ -128,7 +128,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_simultaneous_flow_limits.csv"),
-              "w") as \
+              "w", newline="") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["simultaneous_flow_limit", "timepoint", "period",
@@ -236,7 +236,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(inputs_directory,
                            "transmission_simultaneous_flow_limits.tab"),
-              "w") as \
+              "w", newline="") as \
             sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t")
 
@@ -251,7 +251,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     # transmission_simultaneous_flow_limit_lines.tab
     with open(os.path.join(inputs_directory,
                            "transmission_simultaneous_flow_limit_lines.tab"),
-              "w") as \
+              "w", newline="") as \
             sim_flow_limit_lines_file:
         writer = csv.writer(sim_flow_limit_lines_file,
                             delimiter="\t")

@@ -253,7 +253,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             # Add resulting row to new_rows list
             new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)

@@ -74,7 +74,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # First power
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_all.csv"), "w") as f:
+                           "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",

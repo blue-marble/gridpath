@@ -661,7 +661,7 @@ def save_objective_function_value(scenario_directory, subproblem, stage,
     with open(os.path.join(
             scenario_directory, subproblem, stage, "results",
             "objective_function_value.txt"),
-            "w") as objective_file:
+            "w", newline="") as objective_file:
         objective_file.write(
             "Objective function: " + str(objective_function_value)
         )
@@ -722,7 +722,7 @@ def summarize_results(scenario_directory, subproblem, stage, loaded_modules,
 
     # TODO: how to handle results from previous runs
     # Overwrite prior results
-    with open(summary_results_file, "w") as outfile:
+    with open(summary_results_file, "w", newline="") as outfile:
         outfile.write("##### SUMMARY RESULTS FOR SCENARIO *{}* #####\n".format(
             parsed_arguments.scenario)
         )

@@ -377,7 +377,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(
             inputs_directory,
             "new_shiftable_load_supply_curve_potential.tab"
-    ), "w") as potentials_tab_file:
+    ), "w", newline="") as potentials_tab_file:
         writer = csv.writer(potentials_tab_file, delimiter="\t")
 
         writer.writerow([
@@ -395,7 +395,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(
             inputs_directory,
             "new_shiftable_load_supply_curve.tab"
-    ), "w") as supply_curve_tab_file:
+    ), "w", newline="") as supply_curve_tab_file:
         writer = csv.writer(supply_curve_tab_file, delimiter="\t")
 
         writer.writerow([

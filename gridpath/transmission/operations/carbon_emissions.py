@@ -151,7 +151,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "carbon_emission_imports_by_tx_line.csv"), "w") \
+                           "carbon_emission_imports_by_tx_line.csv"), "w", newline="") \
             as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
         writer.writerow(["tx_line", "period", "horizon", "timepoint",
@@ -261,7 +261,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 new_rows.append(row)
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
-              "w") as tx_file_out:
+              "w", newline="") as tx_file_out:
         writer = csv.writer(tx_file_out, delimiter="\t")
         writer.writerows(new_rows)
 

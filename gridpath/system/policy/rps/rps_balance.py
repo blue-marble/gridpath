@@ -51,7 +51,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "rps.csv"), "w") as rps_results_file:
+                           "rps.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["rps_zone", "period",
                          "discount_factor", "number_years_represented",

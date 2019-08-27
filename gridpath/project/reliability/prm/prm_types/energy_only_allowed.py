@@ -304,7 +304,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
     with open(os.path.join(
             scenario_directory, subproblem, stage, "results",
             "project_prm_energy_only_and_deliverable_capacity.csv"
-    ), "w") as f:
+    ), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "project", "period", "prm_zone",
@@ -323,7 +323,7 @@ def export_module_specific_results(m, d, scenario_directory, subproblem, stage,)
 
     # Total capacity for all projects in group
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "deliverability_group_capacity_and_costs.csv"), "w") as f:
+                           "deliverability_group_capacity_and_costs.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow([
             "deliverability_group", "period",
@@ -442,7 +442,7 @@ def write_module_specific_model_inputs(
     if group_threshold_costs:
         with open(os.path.join(
                 inputs_directory,
-                "deliverability_group_params.tab"), "w") as \
+                "deliverability_group_params.tab"), "w", newline="") as \
                 elcc_eligibility_thresholds_file:
             writer = csv.writer(elcc_eligibility_thresholds_file,
                                 delimiter="\t")

@@ -126,7 +126,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "load_mw.tab"), "w") as \
+                           "load_mw.tab"), "w", newline="") as \
             load_tab_file:
         writer = csv.writer(load_tab_file, delimiter="\t")
 

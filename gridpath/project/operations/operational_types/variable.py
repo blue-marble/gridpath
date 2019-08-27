@@ -421,7 +421,7 @@ def export_module_specific_results(mod, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_variable.csv"), "w") as f:
+                           "dispatch_variable.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -575,7 +575,7 @@ def write_module_specific_model_inputs(
     # then add profiles data
     else:
         with open(os.path.join(inputs_directory,
-                               "variable_generator_profiles.tab"), "w") as \
+                               "variable_generator_profiles.tab"), "w", newline="") as \
                 variable_profiles_tab_file:
             writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
 

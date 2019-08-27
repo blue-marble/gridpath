@@ -483,7 +483,7 @@ def export_module_specific_results(mod, d,
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_hydro_curtailable.csv"),
-              "w") as f:
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",
@@ -629,7 +629,7 @@ def write_module_specific_model_inputs(
     else:
         with open(os.path.join(inputs_directory,
                                "hydro_conventional_horizon_params.tab"),
-                  "w") as \
+                  "w", newline="") as \
                 hydro_chars_tab_file:
             writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
 

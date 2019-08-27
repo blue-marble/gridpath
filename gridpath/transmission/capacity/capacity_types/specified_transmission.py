@@ -121,7 +121,7 @@ def write_module_specific_model_inputs(
 
     with open(os.path.join(inputs_directory,
                            "specified_transmission_line_capacities.tab"),
-              "w") as existing_tx_capacity_tab_file:
+              "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,
                             delimiter="\t")
 

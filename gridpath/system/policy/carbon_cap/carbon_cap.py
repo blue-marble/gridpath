@@ -111,7 +111,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "carbon_cap.tab"), "w") as \
+                           "carbon_cap.tab"), "w", newline="") as \
             carbon_cap_file:
         writer = csv.writer(carbon_cap_file, delimiter="\t")
 

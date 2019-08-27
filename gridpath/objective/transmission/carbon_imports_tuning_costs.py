@@ -149,14 +149,14 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             new_rows.append(param_value)
 
         with open(os.path.join(inputs_directory, "tuning_params.tab"),
-                  "w") as \
+                  "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
             writer.writerows(new_rows)
 
     else:
         with open(os.path.join(inputs_directory, "tuning_params.tab"),
-                  "w") as \
+                  "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
             writer.writerows(["import_carbon_tuning_cost"])

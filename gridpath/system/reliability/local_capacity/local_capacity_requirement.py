@@ -111,7 +111,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "local_capacity_requirement.tab"), "w") as \
+                           "local_capacity_requirement.tab"), "w", newline="") as \
             local_capacity_requirement_tab_file:
         writer = csv.writer(local_capacity_requirement_tab_file,
                             delimiter="\t")

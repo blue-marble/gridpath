@@ -168,7 +168,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory,
                            "transmission_hurdle_rates.tab"),
-              "w") as \
+              "w", newline="") as \
             sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t")
 
@@ -197,7 +197,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-              "costs_transmission_hurdle.csv"), "w") as f:
+              "costs_transmission_hurdle.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["tx_line", "period", "horizon", "timepoint", "horizon_weight",

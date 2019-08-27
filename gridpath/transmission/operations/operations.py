@@ -93,7 +93,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "transmission_operations.csv"), "w") as \
+                           "transmission_operations.csv"), "w", newline="") as \
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",

@@ -107,7 +107,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     # spinning_reserves_requirement.tab
     with open(os.path.join(inputs_directory,
-                           "spinning_reserves_requirement.tab"), "w") as \
+                           "spinning_reserves_requirement.tab"), "w", newline="") as \
             spinning_reserves_tab_file:
         writer = csv.writer(spinning_reserves_tab_file, delimiter="\t")
 

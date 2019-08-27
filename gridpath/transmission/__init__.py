@@ -145,7 +145,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
-              "w") as \
+              "w", newline="") as \
             transmission_lines_tab_file:
         writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
 

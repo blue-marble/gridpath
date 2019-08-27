@@ -153,7 +153,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     periods = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "periods.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "periods.tab"), "w", newline="") as \
             periods_tab_file:
         writer = csv.writer(periods_tab_file, delimiter="\t")
 

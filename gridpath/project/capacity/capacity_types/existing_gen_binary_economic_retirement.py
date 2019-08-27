@@ -277,7 +277,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "capacity_existing_gen_binary_economic_retirement"
-                           ".csv"), "w") as f:
+                           ".csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "retire_mw"])
@@ -433,7 +433,7 @@ def write_module_specific_model_inputs(
     # write header first, then add input data
     else:
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "w") \
+                               "existing_generation_period_params.tab"), "w", newline="") \
                 as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")

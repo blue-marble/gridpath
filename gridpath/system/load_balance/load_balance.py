@@ -115,7 +115,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "load_balance.csv"), "w") as results_file:
+                           "load_balance.csv"), "w", newline="") as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["zone", "period", "horizon", "timepoint",
                          "discount_factor", "number_years_represented",

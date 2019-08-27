@@ -118,7 +118,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "prm_project_elcc_surface_contribution.csv"),
-              "w") as \
+              "w", newline="") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["project", "period", "prm_zone", "facet",
@@ -252,13 +252,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)
 
     with open(os.path.join(inputs_directory,
-                           "project_elcc_surface_coefficients.tab"), "w") as \
+                           "project_elcc_surface_coefficients.tab"), "w", newline="") as \
             coefficients_file:
         writer = csv.writer(coefficients_file, delimiter="\t")
 

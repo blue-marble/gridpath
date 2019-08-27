@@ -111,7 +111,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "rps_targets.tab"), "w") as \
+                           "rps_targets.tab"), "w", newline="") as \
             rps_targets_tab_file:
         writer = csv.writer(rps_targets_tab_file,
                             delimiter="\t")
