@@ -1100,7 +1100,7 @@ def export_module_specific_results(mod, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_binary_commit.csv"), "w") as f:
+                           "dispatch_binary_commit.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",

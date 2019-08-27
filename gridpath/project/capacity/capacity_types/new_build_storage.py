@@ -552,7 +552,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_new_build_storage.csv"), "w") as f:
+                           "capacity_new_build_storage.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_mw", "new_build_mwh"])
@@ -729,7 +729,7 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "new_build_storage_vintage_costs.tab"), "w") as \
+                           "new_build_storage_vintage_costs.tab"), "w", newline="") as \
             new_storage_costs_tab_file:
         writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
 

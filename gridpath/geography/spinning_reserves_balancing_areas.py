@@ -88,7 +88,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "spinning_reserves_balancing_areas.tab"), "w") as \
+                           "spinning_reserves_balancing_areas.tab"), "w", newline="") as \
             spinning_reserve_bas_tab_file:
         writer = csv.writer(spinning_reserve_bas_tab_file, delimiter="\t")
 

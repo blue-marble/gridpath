@@ -234,7 +234,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Total capacity for all projects
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_all.csv"), "w") as f:
+                           "capacity_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "capacity_mw", "capacity_mwh"])

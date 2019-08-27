@@ -155,7 +155,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "rps_by_project.csv"), "w") as rps_results_file:
+                           "rps_by_project.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["project", "load_zone", "rps_zone",
                          "timepoint", "period", "horizon", "horizon_weight",
@@ -183,7 +183,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 
     # Export list of RPS projects and their zones for later use
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "rps_project_zones.csv"), "w") as \
+                           "rps_project_zones.csv"), "w", newline="") as \
             rps_project_zones_file:
         writer = csv.writer(rps_project_zones_file)
         writer.writerow(["project", "rps_zone"])
@@ -271,7 +271,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 row.append(".")
                 new_rows.append(row)
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
         writer = csv.writer(projects_file_out, delimiter="\t")
         writer.writerows(new_rows)

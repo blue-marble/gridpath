@@ -59,7 +59,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "prm_elcc_simple.csv"), "w") as \
+                           "prm_elcc_simple.csv"), "w", newline="") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])

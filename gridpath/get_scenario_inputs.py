@@ -139,7 +139,7 @@ def write_subproblems_csv(scenario_directory, subproblems):
 
     if not os.path.exists(scenario_directory):
         os.makedirs(scenario_directory)
-    with open(os.path.join(scenario_directory, "subproblems.csv"), "w") as \
+    with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
             subproblems_csv_file:
         writer = csv.writer(subproblems_csv_file, delimiter=",")
 
@@ -156,7 +156,7 @@ def write_features_csv(scenario_directory, feature_list):
     GridPath modules to include
     :return:
     """
-    with open(os.path.join(scenario_directory, "features.csv"), "w") as \
+    with open(os.path.join(scenario_directory, "features.csv"), "w", newline="") as \
             features_csv_file:
         writer = csv.writer(features_csv_file, delimiter=",")
 
@@ -174,7 +174,7 @@ def save_scenario_id(scenario_directory, scenario_id):
     :param scenario_id:
     :return:
     """
-    with open(os.path.join(scenario_directory, "scenario_id.txt"), "w") as \
+    with open(os.path.join(scenario_directory, "scenario_id.txt"), "w", newline="") as \
             scenario_id_file:
         scenario_id_file.write(str(scenario_id))
 
@@ -193,7 +193,7 @@ def write_scenario_description(
     :return:
     """
     with open(os.path.join(scenario_directory, "scenario_description.csv"),
-              "w") as \
+              "w", newline="") as \
             scenario_description_file:
         writer = csv.writer(scenario_description_file, delimiter=",")
 

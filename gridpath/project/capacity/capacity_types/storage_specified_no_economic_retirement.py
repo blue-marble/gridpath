@@ -228,7 +228,7 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "storage_specified_capacities.tab"), "w") as \
+                           "storage_specified_capacities.tab"), "w", newline="") as \
             storage_specified_capacities_tab_file:
         writer = csv.writer(storage_specified_capacities_tab_file,
                             delimiter="\t")

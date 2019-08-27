@@ -280,7 +280,7 @@ def write_module_specific_model_inputs(
     # write header first, then add input data
     else:
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "w") \
+                               "existing_generation_period_params.tab"), "w", newline="") \
                 as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")

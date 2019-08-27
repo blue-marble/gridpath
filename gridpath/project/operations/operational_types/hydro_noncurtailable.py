@@ -634,7 +634,7 @@ def write_module_specific_model_inputs(
     else:
         with open(os.path.join(inputs_directory,
                                "hydro_conventional_horizon_params.tab"),
-                  "w") as \
+                  "w", newline="") as \
                 hydro_chars_tab_file:
             writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
 

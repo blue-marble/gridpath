@@ -62,7 +62,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "imports_exports.csv"), "w") as imp_exp_file:
+                           "imports_exports.csv"), "w", newline="") as imp_exp_file:
         writer = csv.writer(imp_exp_file)
         writer.writerow(
             ["load_zone", "timepoint", "period", "horizon", "horizon_weight",

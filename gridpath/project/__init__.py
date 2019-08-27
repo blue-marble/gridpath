@@ -467,9 +467,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     #   columns and tab file column names are the same everywhere
     #   projects.fillna(".", inplace=True)
     #   filename = os.path.join(inputs_directory, "projects.tab")
-    #   projects.to_csv(filename, sep="\t", mode="w")
+    #   projects.to_csv(filename, sep="\t", mode="w", newline="")
 
-    with open(os.path.join(inputs_directory, "projects.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_tab_file:
         writer = csv.writer(projects_tab_file, delimiter="\t")
 

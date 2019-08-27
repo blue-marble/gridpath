@@ -106,7 +106,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "prm_elcc_surface.csv"), "w") as \
+                           "prm_elcc_surface.csv"), "w", newline="") as \
             results_file:
         writer = csv.writer(results_file)
         writer.writerow(["prm_zone", "period", "elcc_mw"])
@@ -182,7 +182,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(
             inputs_directory, "prm_zone_surface_facets_and_intercept.tab"
-    ), "w") as intercepts_file:
+    ), "w", newline="") as intercepts_file:
         writer = csv.writer(intercepts_file, delimiter="\t")
 
         # Writer header

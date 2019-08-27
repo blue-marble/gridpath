@@ -66,7 +66,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_capacity_all_projects.csv"), "w") as f:
+                           "costs_capacity_all_projects.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "technology", "load_zone",

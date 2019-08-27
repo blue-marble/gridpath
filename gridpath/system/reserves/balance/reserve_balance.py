@@ -66,7 +66,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           filename), "w") \
+                           filename), "w", newline="") \
             as results_file:
         writer = csv.writer(results_file)
         writer.writerow(["ba", "period", "horizon", "timepoint",

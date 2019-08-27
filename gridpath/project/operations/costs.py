@@ -196,7 +196,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_variable_om.csv"), "w") as f:
+                           "costs_operations_variable_om.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -217,7 +217,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_fuel.csv"), "w") as f:
+                           "costs_operations_fuel.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -238,7 +238,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_startup.csv"), "w") as f:
+                           "costs_operations_startup.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",
@@ -259,7 +259,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_shutdown.csv"), "w") as f:
+                           "costs_operations_shutdown.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "horizon_weight",

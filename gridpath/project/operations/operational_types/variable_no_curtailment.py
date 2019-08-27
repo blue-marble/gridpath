@@ -480,7 +480,7 @@ def write_module_specific_model_inputs(
     # then add profiles data
     else:
         with open(os.path.join(inputs_directory,
-                               "variable_generator_profiles.tab"), "w") as \
+                               "variable_generator_profiles.tab"), "w", newline="") as \
                 variable_profiles_tab_file:
             writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
 

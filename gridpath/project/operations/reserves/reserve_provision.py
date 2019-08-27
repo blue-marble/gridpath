@@ -335,7 +335,7 @@ def generic_export_module_specific_results(
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "reserves_provision_" + module_name + ".csv"),
-              "w") as f:
+              "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
                          "horizon_weight", "number_of_hours_in_timepoint",

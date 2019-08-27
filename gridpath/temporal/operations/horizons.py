@@ -259,7 +259,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     horizons = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "horizons.tab"), "w") as \
+    with open(os.path.join(inputs_directory, "horizons.tab"), "w", newline="") as \
             horizons_tab_file:
         writer = csv.writer(horizons_tab_file, delimiter="\t")
 

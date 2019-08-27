@@ -648,7 +648,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     if availabilities:
         with open(os.path.join(inputs_directory, "project_availability.tab"),
-                  "w") as \
+                  "w", newline="") as \
                 availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t")
 
@@ -658,7 +658,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 writer.writerow(row)
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
-              "w") as \
+              "w", newline="") as \
             heat_rate_tab_file:
         writer = csv.writer(heat_rate_tab_file, delimiter="\t")
 
