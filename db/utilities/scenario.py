@@ -490,6 +490,16 @@ def update_scenario_single_column(
     :param column_value:
     :return:
     """
+    # Add quotes if the column value is a string for the update statement
+    # string below
+    if isinstance(column_value, str):
+        column_value = "'" + str(column_value) + "'"
+
+    # If no value specified, update to NULL
+    if column_value is None:
+        column_value = 'NULL'
+
+    # Update the column value for the scenario
     c.execute(
         """UPDATE scenarios
         SET {} = {}
