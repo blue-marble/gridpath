@@ -64,7 +64,8 @@ def create_scenario_new_api(c, ui_table_name_in_db):
       ui_row_caption, ui_row_db_subscenario_table_id_column, 
       ui_row_db_subscenario_table
       FROM ui_scenario_detail_table_row_metadata
-      WHERE ui_table = '{}';""".format(
+      WHERE ui_table = '{}'
+      AND include = 1;""".format(
         ui_table_name_in_db
       )
     ).fetchall()
