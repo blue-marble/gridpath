@@ -1,3 +1,8 @@
+export class ScenarioNewAPI {
+  allRowIdentifiers: string[];
+  SettingsTables: SettingsTable[];
+}
+
 export class SettingsTable {
   uiTableNameInDB: string;
   tableCaption: string;

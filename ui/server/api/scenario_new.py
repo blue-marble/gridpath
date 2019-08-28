@@ -26,15 +26,21 @@ class ScenarioNewAPI(Resource):
             ORDER BY ui_table_id ASC;"""
         ).fetchall()
 
-        scenario_new_api = list()
+        scenario_new_api = {
+          "allRowIdentifiers": None,
+          "SettingsTables": []
+        }
 
         for ui_table in all_tables:
-            scenario_new_api.append(
-                create_scenario_new_api(
-                    c=c,
-                    ui_table_name_in_db=ui_table[0]
+            row_identifiers, settings_tables = create_scenario_new_api(
+                    c=c, ui_table_name_in_db=ui_table[0]
                 )
-            )
+            if scenario_new_api["allRowIdentifiers"] is None:
+                scenario_new_api["allRowIdentifiers"] = row_identifiers
+            else:
+                for row_id in row_identifiers:
+                    scenario_new_api["allRowIdentifiers"].append(row_id)
+            scenario_new_api["SettingsTables"].append(settings_tables)
 
         return scenario_new_api
 
@@ -53,7 +59,7 @@ def create_scenario_new_api(c, ui_table_name_in_db):
       AND include = 1;""".format(ui_table_name_in_db)
     ).fetchone()
 
-    scenario_new_api = {
+    settings_table_api = {
       "uiTableNameInDB": ui_table_name_in_db,
       "tableCaption": table_caption[0],
       "settingRows": []
@@ -70,11 +76,18 @@ def create_scenario_new_api(c, ui_table_name_in_db):
       )
     ).fetchall()
 
+    # Keep track of the the row identifiers in a list; we will use the final
+    # list in scenario-new instead of hard-coding the identifiers
+    all_row_identifiers = []
+
     for row in row_metadata:
         ui_row_name_in_db = row[0]
         row_caption = row[1]
         row_subscenario_id = row[2]
         row_subscenario_table = row[3]
+
+        row_identifier = ui_table_name_in_db + "$" + ui_row_name_in_db
+        all_row_identifiers.append(row_identifier)
 
         if ui_table_name_in_db == 'features':
             setting_options_query = []
@@ -94,18 +107,18 @@ def create_scenario_new_api(c, ui_table_name_in_db):
                     {'id': setting[0], 'name': setting[1]}
                 )
 
-        scenario_new_api["settingRows"].append({
+        settings_table_api["settingRows"].append({
           "uiRowNameInDB": ui_row_name_in_db,
           "rowName": row_caption,
-          "rowFormControlName": ui_table_name_in_db + "$" + ui_row_name_in_db,
+          "rowFormControlName": row_identifier,
           "settingOptions": settings
         })
 
     # Sort the 'Features' table features by caption
     if ui_table_name_in_db == "features":
         sorted_features = \
-            sorted(scenario_new_api["settingRows"],
+            sorted(settings_table_api["settingRows"],
                    key=lambda k: k['rowName'])
-        scenario_new_api["settingRows"] = sorted_features
+        settings_table_api["settingRows"] = sorted_features
 
-    return scenario_new_api
+    return all_row_identifiers, settings_table_api
