@@ -28,9 +28,6 @@ export class HomeComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    // TODO: this should happen on navigating away from scenario-new
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
-
     // Get the server status
     this.getServerStatus();
     this.getDirectoryStatus();

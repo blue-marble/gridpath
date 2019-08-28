@@ -29,10 +29,6 @@ export class ScenariosComponent implements OnInit {
   }
 
   ngOnInit() {
-
-    // TODO: this should happen on navigating away from scenario-new
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
-
     console.log('Initializing scenarios...');
     this.getScenarios();
   }

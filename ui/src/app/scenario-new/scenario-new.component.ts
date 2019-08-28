@@ -1,5 +1,5 @@
 import {Component, NgZone, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Router, ActivatedRoute} from '@angular/router';
 import {Location} from '@angular/common';
 import {FormControl, FormGroup} from '@angular/forms';
 import {ScenarioNewService} from './scenario-new.service';
@@ -21,6 +21,10 @@ const io = ( window as any ).require('socket.io-client');
 
 
 export class ScenarioNewComponent implements OnInit {
+
+  // To get the right route for the starting values
+  scenarioID: number;
+  private sub: any;
 
   // The final structure we'll iterate over
   scenarioNewAPI: ScenarioNewAPI;
@@ -120,20 +124,29 @@ export class ScenarioNewComponent implements OnInit {
               private scenarioEditService: ScenarioEditService,
               private viewDataService: ViewDataService,
               private router: Router,
+              private route: ActivatedRoute,
               private zone: NgZone,
               private location: Location) {
   }
 
   ngOnInit() {
+
+    // The ActivatedRoute service provides a params Observable which we can
+    // subscribe to in order to get the route parameters
+    this.sub = this.route.params.subscribe(params => {
+       this.scenarioID = +params.id;
+       console.log(`Scenario ID is ${this.scenarioID}`);
+    });
+
     // Get the scenarios list for the 'populate from scenario' functionality
     this.getScenarios();
 
-    // Set the starting form state (from the ScenarioEditService
-    // StartingValueSubject)
-    this.setStartingFormStateOnInit();
-
     // Make the scenario-new view
     this.getScenarioNewAPI();
+
+    // Set the starting form state (from the ScenarioEditService
+    // StartingValueSubject)
+    this.setStartingValues();
   }
 
   getScenarioNewAPI(): void {
@@ -149,25 +162,30 @@ export class ScenarioNewComponent implements OnInit {
   // Get all scenarios
   getScenarios(): void {
       this.scenariosService.getScenarios()
-        .subscribe(scenarios => { this.allScenarios = scenarios; } );
-    }
+        .subscribe(scenarios => { this.allScenarios = scenarios; console.log(this.allScenarios)} );
+  }
+
   // Set the starting values directly based on a user-selected scenario name
   getStartingValuesFromScenario(): void {
     // Get from form
     const scenarioID = this.fromScenarioForm.value.populateFromScenarioID;
-    console.log(scenarioID);
-    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
+    this.router.navigate(['/scenario-new', scenarioID]);
+  }
+
+  setStartingValues(): void {
+    if (this.scenarioID === 0) {
+      this.startingValues = emptyStartingValues;
+    } else {
+          this.scenarioDetailService.getScenarioDetailAPI(this.scenarioID)
       .subscribe(
         scenarioDetail => {
             this.startingValues = scenarioDetail.editScenarioValues;
             // Change the scenario name to blank
             this.startingValues.scenario_name = '';
-            this.setStartingValues();
         }
       );
-  }
+    }
 
-  setStartingValues(): void {
     this.newScenarioForm.controls.scenarioName.setValue(
         this.startingValues.scenario_name, {onlySelf: true}
       );
@@ -181,15 +199,15 @@ export class ScenarioNewComponent implements OnInit {
     }
   }
 
-  // Set the starting values based on the scenario that the user has
-  // requested to edit (on navigate from scenario-detail to scenario-new)
-  setStartingFormStateOnInit(): void {
-    this.scenarioEditService.startingValuesSubject
-      .subscribe((startingValues: StartingValues) => {
-        this.startingValues = startingValues;
-        this.setStartingValues();
-      });
-  }
+  // // Set the starting values based on the scenario that the user has
+  // // requested to edit (on navigate from scenario-detail to scenario-new)
+  // setStartingFormStateOnInit(): void {
+  //   this.scenarioEditService.startingValuesSubject
+  //     .subscribe((startingValues: StartingValues) => {
+  //       this.startingValues = startingValues;
+  //       this.setStartingValues();
+  //     });
+  // }
 
   viewData(tableNameInDB, rowNameInDB): void {
     const dataToView = `${tableNameInDB}-${rowNameInDB}`;
@@ -216,17 +234,9 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
     });
-
-    // Change the edit scenario starting values to null when navigating away
-    // TODO: set up an event when this happens
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
   }
 
   goBack(): void {
-    // Change the edit scenario starting values to null when navigating away
-    // TODO: set up an event when this happens
-    // TODO: use .reset instead?
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
     this.location.back();
   }
 

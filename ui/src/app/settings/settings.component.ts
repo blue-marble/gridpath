@@ -55,9 +55,6 @@ export class SettingsComponent implements OnInit {
         this.getSettingsFromElectron(data);
       }
     );
-
-    // TODO: this should happen on navigating away from scenario-new
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
   }
 
   getSettingsFromElectron(data) {
