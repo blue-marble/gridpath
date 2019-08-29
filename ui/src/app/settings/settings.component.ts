@@ -2,8 +2,7 @@ import { Component, OnInit, NgZone } from '@angular/core';
 const electron = ( window as any ).require('electron');
 
 import { SettingsService } from './settings.service';
-import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
-import { emptyStartingValues } from '../scenario-new/scenario-new.component';
+
 
 @Component({
   selector: 'app-settings',
@@ -35,8 +34,7 @@ export class SettingsComponent implements OnInit {
 
   constructor(
     private zone: NgZone,
-    private settingsService: SettingsService,
-    private scenarioEditService: ScenarioEditService
+    private settingsService: SettingsService
   ) { }
 
 

@@ -6,7 +6,6 @@ import {ScenarioNewService} from './scenario-new.service';
 import {Scenario} from '../scenarios/scenarios.component';
 import {ScenariosService} from '../scenarios/scenarios.service';
 import {ScenarioDetailService} from '../scenario-detail/scenario-detail.service';
-import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
 import {ViewDataService} from '../view-data/view-data.service';
 import {ScenarioNewAPI} from './scenario-new';
 import {StartingValues} from '../scenario-detail/scenario-detail';
@@ -121,7 +120,6 @@ export class ScenarioNewComponent implements OnInit {
   constructor(private scenarioNewService: ScenarioNewService,
               private scenariosService: ScenariosService,
               private scenarioDetailService: ScenarioDetailService,
-              private scenarioEditService: ScenarioEditService,
               private viewDataService: ViewDataService,
               private router: Router,
               private route: ActivatedRoute,

@@ -4,9 +4,6 @@ import { SettingsService } from '../settings/settings.service';
 
 const electron = ( window as any ).require('electron');
 
-import { ScenarioEditService } from '../scenario-detail/scenario-edit.service';
-import { emptyStartingValues } from '../scenario-new/scenario-new.component';
-
 
 @Component({
   selector: 'app-home',
@@ -23,7 +20,6 @@ export class HomeComponent implements OnInit {
   constructor(
     private homeService: HomeService,
     private settingsService: SettingsService,
-    private scenarioEditService: ScenarioEditService,
     private zone: NgZone
   ) { }
 
