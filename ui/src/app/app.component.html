@@ -5,7 +5,7 @@
       <li class="nav-item" routerLinkActive="active-item"><a class="nav-link" routerLink="home">Home</a></li>
       <li class="nav-item" routerLinkActive="active-item"><a class="nav-link" routerLink="scenarios">Scenarios</a></li>
       <li class="nav-item" routerLinkActive="active-item"><a
-        class="nav-link" routerLink="scenario-new/0"
+        class="nav-link" [routerLink]="['scenario-new', 0]"
         [state]="{hideScenarioName: false, inactiveScenarioName: false}"
       >New
         Scenario</a></li>

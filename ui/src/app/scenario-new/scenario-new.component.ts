@@ -38,7 +38,6 @@ export class ScenarioNewComponent implements OnInit {
   inactiveScenarioName: boolean;
 
   // If editing scenario, we'll give starting values for settings
-  message: string;
   startingValues: StartingValues;
 
   // We can also start with an empty view and then feed it the values of a
@@ -189,7 +188,7 @@ export class ScenarioNewComponent implements OnInit {
   // Get all scenarios
   getScenarios(): void {
       this.scenariosService.getScenarios()
-        .subscribe(scenarios => { this.allScenarios = scenarios; console.log(this.allScenarios)} );
+        .subscribe(scenarios => { this.allScenarios = scenarios; } );
   }
 
   // Set the starting values directly based on a user-selected scenario name
@@ -211,7 +210,6 @@ export class ScenarioNewComponent implements OnInit {
     // otherwise, get the starting values based on the scenario ID
     if (this.scenarioID === 0) {
       this.startingValues = emptyStartingValues;
-      console.log('Starting values: ', this.startingValues);
       // Set the values; the scenario name first, then the rest of the rows
       // based on their identifiers
       this.newScenarioForm.controls.scenarioName.setValue(
@@ -225,25 +223,22 @@ export class ScenarioNewComponent implements OnInit {
         );
       }
     } else {
-      console.log('caught scenario id ', this.scenarioID);
       this.scenarioDetailService.getScenarioDetailAPI(this.scenarioID)
         .subscribe(
           scenarioDetail => {
             this.startingValues = scenarioDetail.editScenarioValues;
-            console.log('Starting values: ', this.startingValues);
             // Set the values; the scenario name first, then the rest of the rows
             // based on their identifiers
-            // If requeste, 'hide' the scenario name
+            let startingScenarioName = this.startingValues.scenario_name;
+            // If requested, "hide"'" the scenario name
             if (this.hideScenarioName) {
-              this.newScenarioForm.controls.scenarioName.setValue(
-                '', {onlySelf: true}
-              );
-            } else {
-              this.newScenarioForm.controls.scenarioName.setValue(
-                this.startingValues.scenario_name, {onlySelf: true}
-              );
+              startingScenarioName = '';
             }
+            this.newScenarioForm.controls.scenarioName.setValue(
+                startingScenarioName, {onlySelf: true}
+              );
 
+            // Set the values for the rest of the rows
             const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
             for (const row of allRowsIdentifiers) {
               this.newScenarioForm.controls[row].setValue(

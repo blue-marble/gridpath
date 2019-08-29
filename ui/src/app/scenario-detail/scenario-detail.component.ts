@@ -1,5 +1,5 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import {Router, ActivatedRoute, NavigationExtras} from '@angular/router';
+import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormControl, FormGroup } from '@angular/forms';
 
