@@ -169,33 +169,50 @@ export class ScenarioNewComponent implements OnInit {
   getStartingValuesFromScenario(): void {
     // Get from form
     const scenarioID = this.fromScenarioForm.value.populateFromScenarioID;
-    this.router.navigate(['/scenario-new', scenarioID]);
+    console.log(scenarioID);
+    this.router.navigate(['/scenario-new', scenarioID]).then(r => this.ngOnInit());
   }
 
   setStartingValues(): void {
+    console.log(this.scenarioID);
+    // Get starting values: empty if we're in scenario-new/0 route;
+    // otherwise, get the starting values based on the scenario ID
     if (this.scenarioID === 0) {
       this.startingValues = emptyStartingValues;
+      console.log('Starting values: ', this.startingValues);
+      // Set the values; the scenario name first, then the rest of the rows
+      // based on their identifiers
+      this.newScenarioForm.controls.scenarioName.setValue(
+          this.startingValues.scenario_name, {onlySelf: true}
+        );
+
+      const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
+      for (const row of allRowsIdentifiers) {
+        this.newScenarioForm.controls[row].setValue(
+          this.startingValues[row], {onlySelf: true}
+        );
+      }
     } else {
-          this.scenarioDetailService.getScenarioDetailAPI(this.scenarioID)
-      .subscribe(
-        scenarioDetail => {
+      console.log('caught scenario id ', this.scenarioID);
+      this.scenarioDetailService.getScenarioDetailAPI(this.scenarioID)
+        .subscribe(
+          scenarioDetail => {
             this.startingValues = scenarioDetail.editScenarioValues;
-            // Change the scenario name to blank
-            this.startingValues.scenario_name = '';
-        }
-      );
-    }
+            console.log('Starting values: ', this.startingValues);
+            // Set the values; the scenario name first, then the rest of the rows
+            // based on their identifiers
+            this.newScenarioForm.controls.scenarioName.setValue(
+                this.startingValues.scenario_name, {onlySelf: true}
+              );
 
-    this.newScenarioForm.controls.scenarioName.setValue(
-        this.startingValues.scenario_name, {onlySelf: true}
-      );
-
-    const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
-
-    for (const row of allRowsIdentifiers) {
-      this.newScenarioForm.controls[row].setValue(
-        this.startingValues[row], {onlySelf: true}
-      );
+            const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
+            for (const row of allRowsIdentifiers) {
+              this.newScenarioForm.controls[row].setValue(
+                this.startingValues[row], {onlySelf: true}
+              );
+            }
+          }
+        );
     }
   }
 
