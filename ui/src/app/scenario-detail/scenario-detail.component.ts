@@ -1,15 +1,13 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
-import {FormControl, FormGroup} from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 
 const io = ( window as any ).require('socket.io-client');
 
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
-import { ScenarioEditService } from './scenario-edit.service';
 import { ViewDataService } from '../view-data/view-data.service';
-import { Subscription } from 'rxjs';
 
 
 @Component({
@@ -35,7 +33,6 @@ export class ScenarioDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private scenarioDetailService: ScenarioDetailService,
-    private scenarioEditService: ScenarioEditService,
     private viewDataService: ViewDataService,
     private location: Location,
     private zone: NgZone) {
@@ -104,11 +101,11 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   editScenario(): void {
-    // Send init setting values to the scenario edit service that the
-    // scenario-new component uses to set initial setting values
-    this.scenarioEditService.changeStartingScenario(this.scenarioDetail.editScenarioValues);
-    // Switch to the new scenario view
-    this.router.navigate(['/scenario-new/']);
+    // Switch to the new scenario view, disable scenario name field
+    const navigationExtras: NavigationExtras = {
+      state: {hideScenarioName: false, inactiveScenarioName: true}
+    };
+    this.router.navigate(['/scenario-new', this.scenarioID], navigationExtras);
   }
 
   validateScenario(scenarioID): void {

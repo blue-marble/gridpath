@@ -1,12 +1,11 @@
 import {Component, NgZone, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Router, ActivatedRoute, NavigationExtras} from '@angular/router';
 import {Location} from '@angular/common';
 import {FormControl, FormGroup} from '@angular/forms';
 import {ScenarioNewService} from './scenario-new.service';
 import {Scenario} from '../scenarios/scenarios.component';
 import {ScenariosService} from '../scenarios/scenarios.service';
 import {ScenarioDetailService} from '../scenario-detail/scenario-detail.service';
-import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
 import {ViewDataService} from '../view-data/view-data.service';
 import {ScenarioNewAPI} from './scenario-new';
 import {StartingValues} from '../scenario-detail/scenario-detail';
@@ -22,11 +21,23 @@ const io = ( window as any ).require('socket.io-client');
 
 export class ScenarioNewComponent implements OnInit {
 
+  // To get the right route for the starting values
+  scenarioID: number;
+  private sub: any;
+
+  // The page heading; we'll vary this depending on whether we are creating a
+  // new scenario or editing an existing scenario
+  heading: string;
+
   // The final structure we'll iterate over
   scenarioNewAPI: ScenarioNewAPI;
 
+  // Some options depending on whether we're editing a scenario,
+  // populating from an existing scenario, etc.
+  hideScenarioName: boolean;
+  inactiveScenarioName: boolean;
+
   // If editing scenario, we'll give starting values for settings
-  message: string;
   startingValues: StartingValues;
 
   // We can also start with an empty view and then feed it the values of a
@@ -117,31 +128,62 @@ export class ScenarioNewComponent implements OnInit {
   constructor(private scenarioNewService: ScenarioNewService,
               private scenariosService: ScenariosService,
               private scenarioDetailService: ScenarioDetailService,
-              private scenarioEditService: ScenarioEditService,
               private viewDataService: ViewDataService,
               private router: Router,
+              private route: ActivatedRoute,
               private zone: NgZone,
               private location: Location) {
+
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation.extras.state as {
+      hideScenarioName: boolean,
+      inactiveScenarioName: boolean
+    };
   }
 
   ngOnInit() {
+    // Need to get the navigation extras from history (as the state is only
+    // available during navigation); we'll use these to change the behavior
+    // of the scenario name field
+    this.hideScenarioName = history.state.hideScenarioName;
+    this.inactiveScenarioName = history.state.inactiveScenarioName;
+
+    // Make empty scenario API and empty values to avoid (non-breaking)
+    // 'undefined' error in browser console
+    this.scenarioNewAPI = {} as ScenarioNewAPI;
+    this.startingValues = {} as StartingValues;
+
+    // Disable the scenarioName form control if the navigation extras
+    // requested it
+    if (this.inactiveScenarioName) {
+      this.newScenarioForm.controls.scenarioName.disable();
+      this.heading = 'Edit Scenario';
+    } else {
+      this.heading = 'New Scenario';
+    }
+
+    // The ActivatedRoute service provides a params Observable which we can
+    // subscribe to in order to get the route parameters
+    this.sub = this.route.params.subscribe(params => {
+       this.scenarioID = +params.id;
+       console.log(`Scenario ID is ${this.scenarioID}`);
+    });
+
     // Get the scenarios list for the 'populate from scenario' functionality
     this.getScenarios();
 
-    // Set the starting form state (from the ScenarioEditService
-    // StartingValueSubject)
-    this.setStartingFormStateOnInit();
-
     // Make the scenario-new view
-    this.getScenarioNewAPI();
+    this.makeScenarioNewView();
+
   }
 
-  getScenarioNewAPI(): void {
-    // Get the settings
+  makeScenarioNewView(): void {
+    // Get the API and apply the starting values
     this.scenarioNewService.getScenarioNewAPI()
       .subscribe(
         scenarioNewAPI => {
           this.scenarioNewAPI = scenarioNewAPI;
+          this.setStartingValues(this.scenarioNewAPI.allRowIdentifiers);
         }
       );
   }
@@ -150,45 +192,73 @@ export class ScenarioNewComponent implements OnInit {
   getScenarios(): void {
       this.scenariosService.getScenarios()
         .subscribe(scenarios => { this.allScenarios = scenarios; } );
-    }
+  }
+
   // Set the starting values directly based on a user-selected scenario name
   getStartingValuesFromScenario(): void {
-    // Get from form
+    // Get scenario ID to use from form
     const scenarioID = this.fromScenarioForm.value.populateFromScenarioID;
-    console.log(scenarioID);
-    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
-      .subscribe(
-        scenarioDetail => {
-            this.startingValues = scenarioDetail.editScenarioValues;
-            // Change the scenario name to blank
-            this.startingValues.scenario_name = '';
-            this.setStartingValues();
+
+    // When populating from a scenario, we'll hide the scenario name (i.e.
+    // make it blank) to avoid accidental overwriting
+    const navigationExtras: NavigationExtras = {
+      state: {hideScenarioName: true, inactiveScenarioName: false}
+    };
+    this.router.navigate(['/scenario-new', scenarioID], navigationExtras)
+      .then(r => this.ngOnInit());
+  }
+
+  setStartingValues(allRowsIdentifiers): void {
+    // Get starting values: empty if we're in scenario-new/0 route;
+    // otherwise, get the starting values based on the scenario ID
+    if (this.scenarioID === 0) {
+      const emptyStartingValues = {} as StartingValues;
+      emptyStartingValues.scenario_name = null;
+
+      for (const row of allRowsIdentifiers) {
+        if (row.startsWith('features')) {
+          emptyStartingValues[row] = false;
+        } else {
+          emptyStartingValues[row] = null;
         }
-      );
-  }
+      }
 
-  setStartingValues(): void {
-    this.newScenarioForm.controls.scenarioName.setValue(
-        this.startingValues.scenario_name, {onlySelf: true}
-      );
+      this.startingValues = emptyStartingValues;
+      // Set the values; the scenario name first, then the rest of the rows
+      // based on their identifiers
+      this.newScenarioForm.controls.scenarioName.setValue(
+          this.startingValues.scenario_name, {onlySelf: true}
+        );
+      for (const row of allRowsIdentifiers) {
+        this.newScenarioForm.controls[row].setValue(
+          this.startingValues[row], {onlySelf: true}
+        );
+      }
+    } else {
+      this.scenarioDetailService.getScenarioDetailAPI(this.scenarioID)
+        .subscribe(
+          scenarioDetail => {
+            this.startingValues = scenarioDetail.editScenarioValues;
+            // Set the values; the scenario name first, then the rest of the rows
+            // based on their identifiers
+            let startingScenarioName = this.startingValues.scenario_name;
+            // If requested, "hide"'" the scenario name
+            if (this.hideScenarioName) {
+              startingScenarioName = '';
+            }
+            this.newScenarioForm.controls.scenarioName.setValue(
+                startingScenarioName, {onlySelf: true}
+              );
 
-    const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
-
-    for (const row of allRowsIdentifiers) {
-      this.newScenarioForm.controls[row].setValue(
-        this.startingValues[row], {onlySelf: true}
-      );
+            // Set the values for the rest of the rows
+            for (const row of allRowsIdentifiers) {
+              this.newScenarioForm.controls[row].setValue(
+                this.startingValues[row], {onlySelf: true}
+              );
+            }
+          }
+        );
     }
-  }
-
-  // Set the starting values based on the scenario that the user has
-  // requested to edit (on navigate from scenario-detail to scenario-new)
-  setStartingFormStateOnInit(): void {
-    this.scenarioEditService.startingValuesSubject
-      .subscribe((startingValues: StartingValues) => {
-        this.startingValues = startingValues;
-        this.setStartingValues();
-      });
   }
 
   viewData(tableNameInDB, rowNameInDB): void {
@@ -216,97 +286,10 @@ export class ScenarioNewComponent implements OnInit {
         }
       );
     });
-
-    // Change the edit scenario starting values to null when navigating away
-    // TODO: set up an event when this happens
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
   }
 
   goBack(): void {
-    // Change the edit scenario starting values to null when navigating away
-    // TODO: set up an event when this happens
-    // TODO: use .reset instead?
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
     this.location.back();
   }
 
 }
-
-// TODO: need to set on navigation away from this page, not just button clicks
-export const emptyStartingValues = {
-  // tslint:disable:variable-name
-  scenario_id: null,
-  scenario_name: null,
-  features$fuels: false,
-  features$transmission: false,
-  features$transmission_hurdle_rates: false,
-  features$transmission_sim_flow: false,
-  features$load_following_up: false,
-  features$load_following_down: false,
-  features$regulation_up: false,
-  features$regulation_down: false,
-  features$spinning_reserves: false,
-  features$frequency_response: false,
-  features$rps: false,
-  features$carbon_cap: false,
-  features$track_carbon_imports: false,
-  features$prm: false,
-  features$elcc_surface: false,
-  features$local_capacity: false,
-  temporal$temporal: null,
-  load_zones$load_zones: null,
-  load_zones$project_load_zones: null,
-  load_zones$transmission_load_zones: null,
-  system_load$system_load: null,
-  project_capacity$portfolio: null,
-  project_capacity$specified_capacity: null,
-  project_capacity$specified_fixed_cost: null,
-  project_capacity$new_cost: null,
-  project_capacity$new_potential: null,
-  project_capacity$availability: null,
-  project_opchar$opchar: null,
-  fuels$fuels: null,
-  fuels$fuel_prices: null,
-  transmission_capacity$portfolio: null,
-  transmission_capacity$specified_capacity: null,
-  transmission_opchar$opchar: null,
-  transmission_hurdle_rates$hurdle_rates: null,
-  transmission_sim_flow_limits$limits: null,
-  transmission_sim_flow_limits$groups: null,
-  load_following_up$bas: null,
-  load_following_up$req: null,
-  load_following_up$projects: null,
-  load_following_down$bas: null,
-  load_following_down$req: null,
-  load_following_down$projects: null,
-  regulation_up$bas: null,
-  regulation_up$req: null,
-  regulation_up$projects: null,
-  regulation_down$bas: null,
-  regulation_down$req: null,
-  regulation_down$projects: null,
-  spinning_reserves$bas: null,
-  spinning_reserves$req: null,
-  spinning_reserves$projects: null,
-  frequency_response$bas: null,
-  frequency_response$req: null,
-  frequency_response$projects: null,
-  rps$bas: null,
-  rps$req: null,
-  rps$projects: null,
-  carbon_cap$bas: null,
-  carbon_cap$req: null,
-  carbon_cap$projects: null,
-  carbon_cap$transmission: null,
-  prm$bas: null,
-  prm$req: null,
-  prm$projects: null,
-  prm$project_elcc: null,
-  prm$elcc: null,
-  prm$energy_only: null,
-  local_capacity$bas: null,
-  local_capacity$req: null,
-  local_capacity$projects: null,
-  local_capacity$project_chars: null,
-  tuning$tuning: null
-};

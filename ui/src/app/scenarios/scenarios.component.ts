@@ -1,8 +1,6 @@
 import {Component, OnInit} from '@angular/core';
 import {ScenariosService} from './scenarios.service';
 
-import {ScenarioEditService} from '../scenario-detail/scenario-edit.service';
-import {emptyStartingValues} from '../scenario-new/scenario-new.component';
 
 export class Scenario {
   id: number;
@@ -23,16 +21,11 @@ export class ScenariosComponent implements OnInit {
 
   constructor(
     private scenariosService: ScenariosService,
-    private scenarioEditService: ScenarioEditService
   ) {
     console.log('Constructing scenarios...');
   }
 
   ngOnInit() {
-
-    // TODO: this should happen on navigating away from scenario-new
-    this.scenarioEditService.changeStartingScenario(emptyStartingValues);
-
     console.log('Initializing scenarios...');
     this.getScenarios();
   }
