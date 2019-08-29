@@ -3,7 +3,10 @@
   <div class="row">
     <div class="col-md-auto">
       <button ng-click="newScenario" class="button-primary">
-              <a [routerLink]="['/scenario-new']">New scenario</a>
+        <a [routerLink]="['/scenario-new', 0]"
+           [state]="{hideScenarioName: false, inactiveScenarioName:false}">
+          New scenario
+        </a>
       </button>
     </div>
     <div class="col-md-auto">
