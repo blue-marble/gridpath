@@ -1,5 +1,5 @@
 import {Component, NgZone, OnInit} from '@angular/core';
-import {Router, ActivatedRoute} from '@angular/router';
+import {Router, ActivatedRoute, NavigationExtras} from '@angular/router';
 import {Location} from '@angular/common';
 import {FormControl, FormGroup} from '@angular/forms';
 import {ScenarioNewService} from './scenario-new.service';
@@ -27,6 +27,11 @@ export class ScenarioNewComponent implements OnInit {
 
   // The final structure we'll iterate over
   scenarioNewAPI: ScenarioNewAPI;
+
+  // Some options depending on whether we're editing a scenario,
+  // populating from an existing scenario, etc.
+  hideScenarioName: boolean;
+  inactiveScenarioName: boolean;
 
   // If editing scenario, we'll give starting values for settings
   message: string;
@@ -125,9 +130,25 @@ export class ScenarioNewComponent implements OnInit {
               private route: ActivatedRoute,
               private zone: NgZone,
               private location: Location) {
+
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation.extras.state as {
+      hideScenarioName: boolean,
+      inactiveScenarioName: boolean
+    };
   }
 
   ngOnInit() {
+    // Need to get the navigation extras from history (as the state is only
+    // available during navigation)
+    this.hideScenarioName = history.state.hideScenarioName;
+    this.inactiveScenarioName = history.state.inactiveScenarioName;
+
+    // Disable the scenarioName form control if the navigation extras
+    // requested it
+    if (this.inactiveScenarioName) {
+      this.newScenarioForm.controls.scenarioName.disable();
+    }
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -168,11 +189,17 @@ export class ScenarioNewComponent implements OnInit {
     // Get from form
     const scenarioID = this.fromScenarioForm.value.populateFromScenarioID;
     console.log(scenarioID);
-    this.router.navigate(['/scenario-new', scenarioID]).then(r => this.ngOnInit());
+
+    // When populating from a scenario, we'll hide the scenario name to
+    // avoid accidental overwriting
+    const navigationExtras: NavigationExtras = {
+      state: {hideScenarioName: true, inactiveScenarioName: false}
+    };
+    this.router.navigate(['/scenario-new', scenarioID], navigationExtras)
+      .then(r => this.ngOnInit());
   }
 
   setStartingValues(): void {
-    console.log(this.scenarioID);
     // Get starting values: empty if we're in scenario-new/0 route;
     // otherwise, get the starting values based on the scenario ID
     if (this.scenarioID === 0) {
@@ -199,9 +226,16 @@ export class ScenarioNewComponent implements OnInit {
             console.log('Starting values: ', this.startingValues);
             // Set the values; the scenario name first, then the rest of the rows
             // based on their identifiers
-            this.newScenarioForm.controls.scenarioName.setValue(
+            // If requeste, 'hide' the scenario name
+            if (this.hideScenarioName) {
+              this.newScenarioForm.controls.scenarioName.setValue(
+                '', {onlySelf: true}
+              );
+            } else {
+              this.newScenarioForm.controls.scenarioName.setValue(
                 this.startingValues.scenario_name, {onlySelf: true}
               );
+            }
 
             const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
             for (const row of allRowsIdentifiers) {

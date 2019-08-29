@@ -1,5 +1,5 @@
 import { Component, OnInit, NgZone } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import {Router, ActivatedRoute, NavigationExtras} from '@angular/router';
 import { Location } from '@angular/common';
 import { FormControl, FormGroup } from '@angular/forms';
 
@@ -101,8 +101,11 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   editScenario(): void {
-    // Switch to the new scenario view
-    this.router.navigate(['/scenario-new', this.scenarioID]);
+    // Switch to the new scenario view, disable scenario name field
+    const navigationExtras: NavigationExtras = {
+      state: {hideScenarioName: false, inactiveScenarioName: true}
+    };
+    this.router.navigate(['/scenario-new', this.scenarioID], navigationExtras);
   }
 
   validateScenario(scenarioID): void {
