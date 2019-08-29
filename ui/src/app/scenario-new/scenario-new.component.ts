@@ -148,6 +148,11 @@ export class ScenarioNewComponent implements OnInit {
     this.hideScenarioName = history.state.hideScenarioName;
     this.inactiveScenarioName = history.state.inactiveScenarioName;
 
+    // Make empty scenario API and empty values to avoid (non-breaking)
+    // 'undefined' error in browser console
+    this.scenarioNewAPI = {} as ScenarioNewAPI;
+    this.startingValues = {} as StartingValues;
+
     // Disable the scenarioName form control if the navigation extras
     // requested it
     if (this.inactiveScenarioName) {
@@ -168,19 +173,17 @@ export class ScenarioNewComponent implements OnInit {
     this.getScenarios();
 
     // Make the scenario-new view
-    this.getScenarioNewAPI();
+    this.makeScenarioNewView();
 
-    // Set the starting form state (from the ScenarioEditService
-    // StartingValueSubject)
-    this.setStartingValues();
   }
 
-  getScenarioNewAPI(): void {
-    // Get the settings
+  makeScenarioNewView(): void {
+    // Get the API and apply the starting values
     this.scenarioNewService.getScenarioNewAPI()
       .subscribe(
         scenarioNewAPI => {
           this.scenarioNewAPI = scenarioNewAPI;
+          this.setStartingValues(this.scenarioNewAPI.allRowIdentifiers);
         }
       );
   }
@@ -205,18 +208,27 @@ export class ScenarioNewComponent implements OnInit {
       .then(r => this.ngOnInit());
   }
 
-  setStartingValues(): void {
+  setStartingValues(allRowsIdentifiers): void {
     // Get starting values: empty if we're in scenario-new/0 route;
     // otherwise, get the starting values based on the scenario ID
     if (this.scenarioID === 0) {
+      const emptyStartingValues = {} as StartingValues;
+      emptyStartingValues.scenario_name = null;
+
+      for (const row of allRowsIdentifiers) {
+        if (row.startsWith('features')) {
+          emptyStartingValues[row] = false;
+        } else {
+          emptyStartingValues[row] = null;
+        }
+      }
+
       this.startingValues = emptyStartingValues;
       // Set the values; the scenario name first, then the rest of the rows
       // based on their identifiers
       this.newScenarioForm.controls.scenarioName.setValue(
           this.startingValues.scenario_name, {onlySelf: true}
         );
-
-      const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
       for (const row of allRowsIdentifiers) {
         this.newScenarioForm.controls[row].setValue(
           this.startingValues[row], {onlySelf: true}
@@ -239,7 +251,6 @@ export class ScenarioNewComponent implements OnInit {
               );
 
             // Set the values for the rest of the rows
-            const allRowsIdentifiers = this.scenarioNewAPI.allRowIdentifiers;
             for (const row of allRowsIdentifiers) {
               this.newScenarioForm.controls[row].setValue(
                 this.startingValues[row], {onlySelf: true}
@@ -249,16 +260,6 @@ export class ScenarioNewComponent implements OnInit {
         );
     }
   }
-
-  // // Set the starting values based on the scenario that the user has
-  // // requested to edit (on navigate from scenario-detail to scenario-new)
-  // setStartingFormStateOnInit(): void {
-  //   this.scenarioEditService.startingValuesSubject
-  //     .subscribe((startingValues: StartingValues) => {
-  //       this.startingValues = startingValues;
-  //       this.setStartingValues();
-  //     });
-  // }
 
   viewData(tableNameInDB, rowNameInDB): void {
     const dataToView = `${tableNameInDB}-${rowNameInDB}`;
@@ -292,82 +293,3 @@ export class ScenarioNewComponent implements OnInit {
   }
 
 }
-
-// TODO: need to set on navigation away from this page, not just button clicks
-export const emptyStartingValues = {
-  // tslint:disable:variable-name
-  scenario_id: null,
-  scenario_name: null,
-  features$fuels: false,
-  features$transmission: false,
-  features$transmission_hurdle_rates: false,
-  features$transmission_sim_flow: false,
-  features$load_following_up: false,
-  features$load_following_down: false,
-  features$regulation_up: false,
-  features$regulation_down: false,
-  features$spinning_reserves: false,
-  features$frequency_response: false,
-  features$rps: false,
-  features$carbon_cap: false,
-  features$track_carbon_imports: false,
-  features$prm: false,
-  features$elcc_surface: false,
-  features$local_capacity: false,
-  temporal$temporal: null,
-  load_zones$load_zones: null,
-  load_zones$project_load_zones: null,
-  load_zones$transmission_load_zones: null,
-  system_load$system_load: null,
-  project_capacity$portfolio: null,
-  project_capacity$specified_capacity: null,
-  project_capacity$specified_fixed_cost: null,
-  project_capacity$new_cost: null,
-  project_capacity$new_potential: null,
-  project_capacity$availability: null,
-  project_opchar$opchar: null,
-  fuels$fuels: null,
-  fuels$fuel_prices: null,
-  transmission_capacity$portfolio: null,
-  transmission_capacity$specified_capacity: null,
-  transmission_opchar$opchar: null,
-  transmission_hurdle_rates$hurdle_rates: null,
-  transmission_sim_flow_limits$limits: null,
-  transmission_sim_flow_limits$groups: null,
-  load_following_up$bas: null,
-  load_following_up$req: null,
-  load_following_up$projects: null,
-  load_following_down$bas: null,
-  load_following_down$req: null,
-  load_following_down$projects: null,
-  regulation_up$bas: null,
-  regulation_up$req: null,
-  regulation_up$projects: null,
-  regulation_down$bas: null,
-  regulation_down$req: null,
-  regulation_down$projects: null,
-  spinning_reserves$bas: null,
-  spinning_reserves$req: null,
-  spinning_reserves$projects: null,
-  frequency_response$bas: null,
-  frequency_response$req: null,
-  frequency_response$projects: null,
-  rps$bas: null,
-  rps$req: null,
-  rps$projects: null,
-  carbon_cap$bas: null,
-  carbon_cap$req: null,
-  carbon_cap$projects: null,
-  carbon_cap$transmission: null,
-  prm$bas: null,
-  prm$req: null,
-  prm$projects: null,
-  prm$project_elcc: null,
-  prm$elcc: null,
-  prm$energy_only: null,
-  local_capacity$bas: null,
-  local_capacity$req: null,
-  local_capacity$projects: null,
-  local_capacity$project_chars: null,
-  tuning$tuning: null
-};
