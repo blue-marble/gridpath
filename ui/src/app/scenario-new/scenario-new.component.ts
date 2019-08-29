@@ -25,6 +25,10 @@ export class ScenarioNewComponent implements OnInit {
   scenarioID: number;
   private sub: any;
 
+  // The page heading; we'll vary this depending on whether we are creating a
+  // new scenario or editing an existing scenario
+  heading: string;
+
   // The final structure we'll iterate over
   scenarioNewAPI: ScenarioNewAPI;
 
@@ -140,7 +144,8 @@ export class ScenarioNewComponent implements OnInit {
 
   ngOnInit() {
     // Need to get the navigation extras from history (as the state is only
-    // available during navigation)
+    // available during navigation); we'll use these to change the behavior
+    // of the scenario name field
     this.hideScenarioName = history.state.hideScenarioName;
     this.inactiveScenarioName = history.state.inactiveScenarioName;
 
@@ -148,6 +153,9 @@ export class ScenarioNewComponent implements OnInit {
     // requested it
     if (this.inactiveScenarioName) {
       this.newScenarioForm.controls.scenarioName.disable();
+      this.heading = 'Edit Scenario';
+    } else {
+      this.heading = 'New Scenario';
     }
 
     // The ActivatedRoute service provides a params Observable which we can
@@ -186,12 +194,11 @@ export class ScenarioNewComponent implements OnInit {
 
   // Set the starting values directly based on a user-selected scenario name
   getStartingValuesFromScenario(): void {
-    // Get from form
+    // Get scenario ID to use from form
     const scenarioID = this.fromScenarioForm.value.populateFromScenarioID;
-    console.log(scenarioID);
 
-    // When populating from a scenario, we'll hide the scenario name to
-    // avoid accidental overwriting
+    // When populating from a scenario, we'll hide the scenario name (i.e.
+    // make it blank) to avoid accidental overwriting
     const navigationExtras: NavigationExtras = {
       state: {hideScenarioName: true, inactiveScenarioName: false}
     };
