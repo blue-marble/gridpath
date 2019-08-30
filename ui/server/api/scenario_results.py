@@ -604,13 +604,46 @@ class ScenarioResultsTable(Resource):
 
         :return:
         """
-        print(table)
-        return create_data_table_api_refactored(
-          db_path=self.db_path,
-          columns='*',
-          table=table,
-          scenario_id=scenario_id
-        )
+        if table == "null":
+            return None
+        else:
+            return create_data_table_api_refactored(
+              db_path=self.db_path,
+              columns='*',
+              table=table,
+              scenario_id=scenario_id
+            )
+
+
+class ScenarioResultsIncludedTables(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self):
+        """
+
+        :return:
+        """
+        io, c = connect_to_database(db_path=self.db_path)
+        tables_query = c.execute(
+            """SELECT results_table, caption
+            FROM ui_scenario_results_table_metadata
+            WHERE include = 1;"""
+        ).fetchall()
+
+        included_tables_api = []
+        for table in tables_query:
+            table_api = {
+              "ngIfKey": table[0].replace("_", "-"),
+              "caption": table[1]
+            }
+            included_tables_api.append(table_api)
+
+        return included_tables_api
 
 
 def create_data_table_api(db_path, ngifkey, caption, columns, table,

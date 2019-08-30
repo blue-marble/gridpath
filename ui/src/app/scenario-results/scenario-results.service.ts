@@ -159,4 +159,10 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results/${table}`
     );
   }
+
+  getResultsIncludedTables(): Observable<{ngIfKey: string; caption: string}[]> {
+    return this.http.get<{ngIfKey: string; caption: string}[]>(
+      `${this.scenariosBaseURL}results/tables`
+    );
+  }
 }

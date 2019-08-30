@@ -4,17 +4,11 @@
 from ui.server.api.home import ServerStatus
 from ui.server.api.scenario_detail import ScenarioDetailAPI
 from ui.server.api.scenario_results import \
-  ScenarioResultsProjectCapacity, ScenarioResultsProjectRetirements, \
-  ScenarioResultsProjectNewBuild, ScenarioResultsProjectDispatch, \
-  ScenarioResultsProjectCarbon, ScenarioResultsTransmissionCapacity, \
-  ScenarioResultsTransmissionFlows, ScenarioResultsImportsExports, \
-  ScenarioResultsSystemLoadBalance, ScenarioResultsSystemRPS, \
-  ScenarioResultsSystemCarbonCap, ScenarioResultsSystemPRM, \
   ScenarioResultsOptions, ScenarioResultsDispatchPlot, \
   ScenarioResultsCapacityNewPlot, ScenarioResultsCapacityRetiredPlot, \
   ScenarioResultsCapacityTotalPlot, ScenarioResultsEnergyPlot, \
   ScenarioResultsCostPlot, ScenarioResultsCapacityFactorPlot, \
-  ScenarioResultsTable
+  ScenarioResultsTable, ScenarioResultsIncludedTables
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.view_data import ViewDataTemporalTimepoints, \
@@ -414,77 +408,6 @@ def add_scenario_results_resources(api, db_path):
 
     Add the API for the Angular 'scenario-results' component.
     """
-    api.add_resource(
-        ScenarioResultsProjectCapacity,
-        '/scenarios/<scenario_id>/results-project-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsProjectRetirements,
-        '/scenarios/<scenario_id>/results-project-retirements',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsProjectNewBuild,
-        '/scenarios/<scenario_id>/results-project-new-build',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsProjectDispatch,
-        '/scenarios/<scenario_id>/results-project-dispatch',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsProjectCarbon,
-        '/scenarios/<scenario_id>/results-project-carbon',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsTransmissionCapacity,
-        '/scenarios/<scenario_id>/results-transmission-capacity',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsTransmissionFlows,
-        '/scenarios/<scenario_id>/results-transmission-flows',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsImportsExports,
-        '/scenarios/<scenario_id>/results-imports-exports',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsSystemLoadBalance,
-        '/scenarios/<scenario_id>/results-system-load-balance',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsSystemRPS,
-        '/scenarios/<scenario_id>/results-system-rps',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsSystemCarbonCap,
-        '/scenarios/<scenario_id>/results-system-carbon-cap',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsSystemPRM,
-        '/scenarios/<scenario_id>/results-system-prm',
-        resource_class_kwargs={'db_path': db_path}
-    )
 
     api.add_resource(
         ScenarioResultsOptions,
@@ -537,6 +460,12 @@ def add_scenario_results_resources(api, db_path):
         ScenarioResultsCapacityFactorPlot,
         '/scenarios/<scenario_id>/results-capacity-factor-plot/<load_zone>/'
         '<stage>/<ymax>',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsIncludedTables,
+        '/scenarios/results/tables',
         resource_class_kwargs={'db_path': db_path}
     )
 

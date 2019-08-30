@@ -19,14 +19,12 @@ export class ScenarioResultsComponent implements OnInit {
   resultsToShow: string;
 
   // All results buttons
-  allResultsButtons: ResultsButton[];
+  allResultsButtons: {ngIfKey: string, caption: string}[];
   // All results forms
   allResultsForms: ResultsForm[];
 
-  // All tables
-  allTables: ScenarioResults[];
-
   // Results tables
+  includedTables: {name: string; caption: string}[];
   resultsTable: ScenarioResults;
 
   // Plots
@@ -112,9 +110,11 @@ export class ScenarioResultsComponent implements OnInit {
     // Make the results buttons
     this.allResultsButtons = [];
     this.allResultsForms = [];
+    this.makeResultsTableButtons();
     this.makeResultsForms(this.scenarioID);
 
-    // Initiate the array of all tables
+    // Results tables
+    this.includedTables = [];
     this.resultsTable = {} as ScenarioResults;
 
     // Get the key for which table to show
@@ -122,6 +122,7 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Get data
     this.getResultsTable(this.scenarioID, this.resultsToShow);
+
   }
 
   // Subscribe to the resultsToShow BehaviorSubject, which tells us which
@@ -286,6 +287,13 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsTable(scenarioID, table)
       .subscribe(inputTableRows => {
         this.resultsTable = inputTableRows;
+      });
+  }
+
+  makeResultsTableButtons(): void {
+    this.scenarioResultsService.getResultsIncludedTables()
+      .subscribe(includedTables => {
+        this.allResultsButtons = includedTables;
       });
   }
 

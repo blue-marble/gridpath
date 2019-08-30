@@ -11,11 +11,12 @@
   <h6 id="tables-title">Results Tables</h6>
   <div class="navbar navbar-expand-sm" id="tables-navbar">
     <ul class="navbar-nav">
-      <li class="nav-item">
-          <button id="results-project-capacity-all" class="navbar-results-button"
-                  (click)="showResults('results-project-capacity-all')">Refactored
-          </button>
+      <ng-container *ngFor="let button of allResultsButtons">
+        <li class="nav-item">
+          <button [id]="button.ngIfKey" class="navbar-results-button"
+                (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
         </li>
+      </ng-container>
     </ul>
   </div>
 <!--      Results Forms (have options the user must select) -->
