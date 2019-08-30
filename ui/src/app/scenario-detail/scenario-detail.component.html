@@ -56,7 +56,9 @@
         <tr>
           <td>Validation Status</td>
           <td>{{scenarioDetail.validationStatus}}</td>
-          <td><button *ngIf="scenarioDetail.validationStatus=='invalid'"
+          <td><button
+            class='button-secondary'
+            *ngIf="scenarioDetail.validationStatus=='invalid'"
             (click)="viewValidationErrors()">
             View Errors
           </button></td>
@@ -88,7 +90,8 @@
                <td *ngIf="tbl.uiTableNameInDB=='features'">
                  <input type="checkbox" [checked]="sd.rowValue" disabled>
                </td>
-                <td *ngIf="tbl.uiTableNameInDB!=='features'"><button
+                <td *ngIf="tbl.uiTableNameInDB!=='features'">
+                  <button class="button-secondary"
                   (click)="viewData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
                   View Data
                 </button></td>
