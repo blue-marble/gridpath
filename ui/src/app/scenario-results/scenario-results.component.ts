@@ -115,16 +115,13 @@ export class ScenarioResultsComponent implements OnInit {
     this.makeResultsForms(this.scenarioID);
 
     // Initiate the array of all tables
-    this.allTables = [];
+    this.resultsTable = {} as ScenarioResults;
 
     // Get the key for which table to show
     this.getResultsToShow();
 
     // Get data
-    if (this.resultsToShow === 'results-project-capacity-all') {
-      console.log('Showing refactored project capacity');
-      this.getResultsTable(this.scenarioID, 'results-project-capacity-all');
-    }
+    this.getResultsTable(this.scenarioID, this.resultsToShow);
   }
 
   // Subscribe to the resultsToShow BehaviorSubject, which tells us which
@@ -289,7 +286,6 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsTable(scenarioID, table)
       .subscribe(inputTableRows => {
         this.resultsTable = inputTableRows;
-        this.allTables.push(this.resultsTable);
       });
   }
 

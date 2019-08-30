@@ -11,12 +11,6 @@
   <h6 id="tables-title">Results Tables</h6>
   <div class="navbar navbar-expand-sm" id="tables-navbar">
     <ul class="navbar-nav">
-      <ng-container *ngFor="let button of allResultsButtons">
-        <li class="nav-item">
-          <button id="{{button.name}}" class="navbar-results-button"
-                (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
-        </li>
-      </ng-container>
       <li class="nav-item">
           <button id="results-project-capacity-all" class="navbar-results-button"
                   (click)="showResults('results-project-capacity-all')">Refactored
@@ -83,25 +77,21 @@
            *ngIf="resultsToShow=='results-capacity-factor-plot'">
       </div>
       <!--  Results tables -->
-      <ng-container *ngFor="let table of allTables">
-        <table *ngIf="resultsToShow==table.ngIfKey"
-               class="scenario-results-table">
-          <caption>{{table.caption}}</caption>
-          <tr>
-               <ng-container *ngFor="let column of table.columns">
-                 <th>{{column}}</th>
-               </ng-container>
-          </tr>
-
-        <ng-container *ngFor="let row of table.rowsData">
+      <table class="scenario-results-table">
+        <caption>{{resultsTable.caption}}</caption>
+        <tr>
+             <ng-container *ngFor="let column of resultsTable.columns">
+               <th>{{column}}</th>
+             </ng-container>
+        </tr>
+        <ng-container *ngFor="let row of resultsTable.rowsData">
            <tr>
-             <ng-container *ngFor="let column of table.columns">
+             <ng-container *ngFor="let column of resultsTable.columns">
                <td>{{row[column]}}</td>
              </ng-container>
            </tr>
         </ng-container>
-        </table>
-      </ng-container>
+      </table>
     </div>
   </div>
 
