@@ -153,4 +153,10 @@ export class ScenarioResultsService {
       `${this.scenariosBaseURL}${scenarioID}/results-capacity-factor-plot/${loadZone}/${stage}/${ymax}`
     );
   }
+
+  getResultsTable(scenarioID: number, table: string): Observable<ScenarioResults> {
+    return this.http.get<ScenarioResults>(
+      `${this.scenariosBaseURL}${scenarioID}/results/${table}`
+    );
+  }
 }

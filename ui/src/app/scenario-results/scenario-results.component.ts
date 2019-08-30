@@ -27,18 +27,7 @@ export class ScenarioResultsComponent implements OnInit {
   allTables: ScenarioResults[];
 
   // Results tables
-  resultsProjectCapacity: ScenarioResults;
-  resultsProjectRetirements: ScenarioResults;
-  resultsProjectNewBuild: ScenarioResults;
-  resultsProjectDispatch: ScenarioResults;
-  resultsProjectCarbon: ScenarioResults;
-  resultsTransmissionCapacity: ScenarioResults;
-  resultsTransmissionFlows: ScenarioResults;
-  resultsImportsExports: ScenarioResults;
-  resultsSystemLoadBalance: ScenarioResults;
-  resultsSystemRPS: ScenarioResults;
-  resultsSystemCarbonCap: ScenarioResults;
-  resultsSystemPRM: ScenarioResults;
+  resultsTable: ScenarioResults;
 
   // Plots
   // Dispatch plot (form with plot options, JSON object, and plot name)
@@ -123,7 +112,6 @@ export class ScenarioResultsComponent implements OnInit {
     // Make the results buttons
     this.allResultsButtons = [];
     this.allResultsForms = [];
-    this.makeResultsButtons();
     this.makeResultsForms(this.scenarioID);
 
     // Initiate the array of all tables
@@ -133,87 +121,9 @@ export class ScenarioResultsComponent implements OnInit {
     this.getResultsToShow();
 
     // Get data
-    if (this.resultsToShow === 'results-project-capacity') {
-      this.getResultsProjectCapacity(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-project-retirements') {
-      this.getResultsProjectRetirements(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-project-new-build') {
-      this.getResultsProjectNewBuild(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-project-dispatch') {
-      this.getResultsProjectDispatch(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-project-carbon') {
-      this.getResultsProjectCarbon(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-transmission-capacity') {
-      this.getResultsTransmissionCapacity(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-transmission-flows') {
-      this.getResultsTransmissionFlows(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-imports-exports') {
-      this.getResultsImportsExports(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-system-load-balance') {
-      this.getResultsSystemLoadBalance(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-system-rps') {
-      this.getResultsSystemRPS(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-system-carbon-cap') {
-      this.getResultsSystemCarbonCap(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-system-prm') {
-      this.getResultsSystemPRM(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-dispatch-plot') {
-      console.log('Showing dispatch plot');
-      this.getResultsDispatchPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-capacity-new-plot') {
-      console.log('Showing new capacity plot');
-      this.getResultsCapacityNewPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-capacity-retired-plot') {
-      console.log('Showing retired capacity plot');
-      this.getResultsCapacityRetiredPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-capacity-total-plot') {
-      console.log('Showing total capacity plot');
-      this.getResultsCapacityTotalPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-energy-plot') {
-      console.log('Showing energy plot');
-      this.getResultsEnergyPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-cost-plot') {
-      console.log('Showing cost plot');
-      this.getResultsCostPlot(this.scenarioID);
-    }
-
-    if (this.resultsToShow === 'results-capacity-factor-plot') {
-      console.log('Showing capacity factor plot');
-      this.getResultsCapacityFactorPlot(this.scenarioID);
+    if (this.resultsToShow === 'results-project-capacity-all') {
+      console.log('Showing refactored project capacity');
+      this.getResultsTable(this.scenarioID, 'results-project-capacity-all');
     }
   }
 
@@ -233,104 +143,6 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.changeResultsToView(resultsToShow);
     // Refresh the view
     this.ngOnInit();
-  }
-
-
-  // Fetch results table subscriptions and add to the allTables arrays
-  getResultsProjectCapacity(scenarioID): void {
-    this.scenarioResultsService.getResultsProjectCapacity(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsProjectCapacity = inputTableRows;
-        this.allTables.push(this.resultsProjectCapacity);
-      });
-  }
-
-  getResultsProjectRetirements(scenarioID): void {
-    this.scenarioResultsService.getResultsProjectRetirements(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsProjectRetirements = inputTableRows;
-        this.allTables.push(this.resultsProjectRetirements);
-      });
-  }
-
-  getResultsProjectNewBuild(scenarioID): void {
-    this.scenarioResultsService.getResultsProjectNewBuild(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsProjectNewBuild = inputTableRows;
-        this.allTables.push(this.resultsProjectNewBuild);
-      });
-  }
-
-  getResultsProjectDispatch(scenarioID): void {
-    this.scenarioResultsService.getResultsProjectDispatch(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsProjectDispatch = inputTableRows;
-        this.allTables.push(this.resultsProjectDispatch);
-      });
-  }
-
-  getResultsProjectCarbon(scenarioID): void {
-    this.scenarioResultsService.getResultsProjectCarbon(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsProjectCarbon = inputTableRows;
-        this.allTables.push(this.resultsProjectCarbon);
-      });
-  }
-
-  getResultsTransmissionCapacity(scenarioID): void {
-    this.scenarioResultsService.getResultsTransmissionCapacity(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsTransmissionCapacity = inputTableRows;
-        this.allTables.push(this.resultsTransmissionCapacity);
-      });
-  }
-
-  getResultsTransmissionFlows(scenarioID): void {
-    this.scenarioResultsService.getResultsTransmissionFlows(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsTransmissionFlows = inputTableRows;
-        this.allTables.push(this.resultsTransmissionFlows);
-      });
-  }
-
-  getResultsImportsExports(scenarioID): void {
-    this.scenarioResultsService.getResultsImportsExports(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsImportsExports = inputTableRows;
-        this.allTables.push(this.resultsImportsExports);
-      });
-  }
-
-  getResultsSystemLoadBalance(scenarioID): void {
-    this.scenarioResultsService.getResultsSystemLoadBalance(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsSystemLoadBalance = inputTableRows;
-        this.allTables.push(this.resultsSystemLoadBalance);
-      });
-  }
-
-  getResultsSystemRPS(scenarioID): void {
-    this.scenarioResultsService.getResultsSystemRPS(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsSystemRPS = inputTableRows;
-        this.allTables.push(this.resultsSystemRPS);
-      });
-  }
-
-  getResultsSystemCarbonCap(scenarioID): void {
-    this.scenarioResultsService.getResultsSystemCarbonCap(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsSystemCarbonCap = inputTableRows;
-        this.allTables.push(this.resultsSystemCarbonCap);
-      });
-  }
-
-  getResultsSystemPRM(scenarioID): void {
-    this.scenarioResultsService.getResultsSystemPRM(scenarioID)
-      .subscribe(inputTableRows => {
-        this.resultsSystemPRM = inputTableRows;
-        this.allTables.push(this.resultsSystemPRM);
-      });
   }
 
   getResultsDispatchPlot(scenarioID): void {
@@ -473,92 +285,12 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  // Make the results buttons with their relevant keys that are passed to
-  // the resultsToViewSubject in scenario-results.service.ts
-  makeResultsButtons(): void {
-    const projectCapacityButton = {
-      name: 'showResultsProjectCapacityButton',
-      ngIfKey: 'results-project-capacity',
-      caption: 'Project Capacity'
-    };
-    this.allResultsButtons.push(projectCapacityButton);
-
-    const projectRetirementsButton = {
-      name: 'showResultsProjectRetirementsButton',
-      ngIfKey: 'results-project-retirements',
-      caption: 'Project Retirements'
-    };
-    this.allResultsButtons.push(projectRetirementsButton);
-
-    const projectNewBuildButton = {
-      name: 'showResultsProjectNewBuildButton',
-      ngIfKey: 'results-project-new-build',
-      caption: 'Project New Build'
-    };
-    this.allResultsButtons.push(projectNewBuildButton);
-
-    const projectDispatchButton = {
-      name: 'showResultsProjectDispatchButton',
-      ngIfKey: 'results-project-dispatch',
-      caption: 'Project Dispatch'
-    };
-    this.allResultsButtons.push(projectDispatchButton);
-
-    const projectCarbonButton = {
-      name: 'showResultsProjectCarbonButton',
-      ngIfKey: 'results-project-carbon',
-      caption: 'Project Carbon'
-    };
-    this.allResultsButtons.push(projectCarbonButton);
-
-    const transmissionCapacityButton = {
-      name: 'showResultsTransmissionCapacityButton',
-      ngIfKey: 'results-transmission-capacity',
-      caption: 'Transmission Capacity'
-    };
-    this.allResultsButtons.push(transmissionCapacityButton);
-
-    const transmissionFlowsButton = {
-      name: 'showResultsTransmissionFlowsButton',
-      ngIfKey: 'results-transmission-flows',
-      caption: 'Transmission Flows'
-    };
-    this.allResultsButtons.push(transmissionFlowsButton);
-
-    const importsExportsButton = {
-      name: 'showResultsImportsExportsButton',
-      ngIfKey: 'results-imports-exports',
-      caption: 'Imports/Exports'
-    };
-    this.allResultsButtons.push(importsExportsButton);
-
-    const systemLoadBalanceButton = {
-      name: 'showResultsSystemLoadBalanceButton',
-      ngIfKey: 'results-system-load-balance',
-      caption: 'Load Balance'
-    };
-    this.allResultsButtons.push(systemLoadBalanceButton);
-
-    const systemRPSButton = {
-      name: 'showResultsSystemRPSButton',
-      ngIfKey: 'results-system-rps',
-      caption: 'RPS'
-    };
-    this.allResultsButtons.push(systemRPSButton);
-
-    const systemCarbonCapButton = {
-      name: 'showResultsSystemCarbonCapButton',
-      ngIfKey: 'results-system-carbon-cap',
-      caption: 'Carbon Cap'
-    };
-    this.allResultsButtons.push(systemCarbonCapButton);
-
-    const systemPRMButton = {
-      name: 'showResultsSystemPRMButton',
-      ngIfKey: 'results-system-prm',
-      caption: 'PRM'
-    };
-    this.allResultsButtons.push(systemPRMButton);
+  getResultsTable(scenarioID, table): void {
+    this.scenarioResultsService.getResultsTable(scenarioID, table)
+      .subscribe(inputTableRows => {
+        this.resultsTable = inputTableRows;
+        this.allTables.push(this.resultsTable);
+      });
   }
 
   makeResultsForms(scenarioID): void {

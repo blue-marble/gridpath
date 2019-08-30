@@ -591,6 +591,28 @@ class ScenarioResultsCapacityFactorPlot(Resource):
         return plot_api
 
 
+class ScenarioResultsTable(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id, table):
+        """
+
+        :return:
+        """
+        print(table)
+        return create_data_table_api_refactored(
+          db_path=self.db_path,
+          columns='*',
+          table=table,
+          scenario_id=scenario_id
+        )
+
+
 def create_data_table_api(db_path, ngifkey, caption, columns, table,
                           scenario_id):
     """
@@ -609,6 +631,37 @@ def create_data_table_api(db_path, ngifkey, caption, columns, table,
       db_path=db_path,
       columns=columns,
       table=table,
+      scenario_id=scenario_id
+    )
+    data_table_api['columns'] = column_names
+    data_table_api['rowsData'] = data_rows
+
+    return data_table_api
+
+
+def create_data_table_api_refactored(
+      db_path, columns, table, scenario_id):
+    """
+    :param db_path:
+    :param columns:
+    :param table:
+    :param scenario_id:
+    :return:
+    """
+    io, c = connect_to_database(db_path=db_path)
+
+    data_table_api = dict()
+    data_table_api['ngIfKey'] = table
+
+    data_table_api['caption'] = c.execute(
+        """SELECT caption FROM ui_scenario_results_table_metadata
+        WHERE results_table = '{}';""".format(table.replace("-", "_"))
+    ).fetchone()[0]
+
+    column_names, data_rows = get_table_data(
+      db_path=db_path,
+      columns=columns,
+      table=table.replace("-", "_"),
       scenario_id=scenario_id
     )
     data_table_api['columns'] = column_names
