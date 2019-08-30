@@ -8,7 +8,7 @@ from ui.server.api.scenario_results import \
   ScenarioResultsCapacityNewPlot, ScenarioResultsCapacityRetiredPlot, \
   ScenarioResultsCapacityTotalPlot, ScenarioResultsEnergyPlot, \
   ScenarioResultsCostPlot, ScenarioResultsCapacityFactorPlot, \
-  ScenarioResultsTable, ScenarioResultsIncludedTables
+  ScenarioResultsTable, ScenarioResultsIncludedTables, ScenarioResultsPlot
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
 from ui.server.api.view_data import ViewDataTemporalTimepoints, \
@@ -412,6 +412,13 @@ def add_scenario_results_resources(api, db_path):
     api.add_resource(
         ScenarioResultsOptions,
         '/scenarios/<scenario_id>/scenario-results-options',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    api.add_resource(
+        ScenarioResultsPlot,
+        '/scenarios/<scenario_id>/results/<plot>/<load_zone>/<period>/'
+        '<horizon>/<timepoint>/<ymax>',
         resource_class_kwargs={'db_path': db_path}
     )
 

@@ -1,11 +1,11 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 from flask_restful import Resource
+import importlib
 
 from ui.server.common_functions import connect_to_database
 from viz import capacity_plot, capacity_factor_plot, cost_plot, \
   dispatch_plot, energy_plot
-
 
 class ScenarioResultsOptions(Resource):
     """
@@ -58,6 +58,68 @@ class ScenarioResultsOptions(Resource):
         options_api["stageOptions"] = ['Select Stage'] + stage_options
 
         return options_api
+
+
+class ScenarioResultsPlot(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, plot, scenario_id, load_zone, period, horizon, timepoint,
+            ymax):
+        """
+
+        :return:
+        """
+
+        plot_module = importlib.import_module("viz." + plot.replace("-", "_"))
+        plot_api = dict()
+
+        base_arguments = [
+            "--return_json",
+            "--database", self.db_path,
+            "--scenario_id", scenario_id,
+        ]
+
+        filter_arguments = []
+        if load_zone == 'default':
+            pass
+        else:
+            filter_arguments.append("--load_zone")
+            filter_arguments.append(load_zone)
+
+        if period == 'default':
+            pass
+        else:
+            filter_arguments.append("--period")
+            filter_arguments.append(period)
+
+        if horizon == 'default':
+            pass
+        else:
+            filter_arguments.append("--horizon")
+            filter_arguments.append(horizon)
+
+        if timepoint == 'default':
+            pass
+        else:
+            filter_arguments.append("--timepoint")
+            filter_arguments.append(timepoint)
+
+        print(base_arguments + filter_arguments)
+        if ymax == 'default':
+            plot_api["plotJSON"] = plot_module.main(
+                base_arguments + filter_arguments
+            )
+        else:
+            plot_api["plotJSON"] = plot_module.main(
+                base_arguments + filter_arguments + ["--ylimit", ymax]
+            )
+
+        return plot_api
 
 
 class ScenarioResultsDispatchPlot(Resource):

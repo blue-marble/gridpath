@@ -3307,3 +3307,15 @@ results_table VARCHAR(64),
 include INTEGER,
 caption VARCHAR(64)
 );
+
+DROP TABLE IF EXISTS ui_scenario_results_plot_metadata;
+CREATE TABLE ui_scenario_results_plot_metadata (
+results_plot VARCHAR(64) PRIMARY KEY,
+include INTEGER,
+caption VARCHAR(64),
+load_zone_option INTEGER,
+period_option INTEGER,
+horizon_option INTEGER,
+timepoint_option INTEGER,
+project_option INTEGER
+);
