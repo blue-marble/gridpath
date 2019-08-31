@@ -13,10 +13,7 @@ import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.compo
 import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 import { HomeComponent } from './home/home.component';
 import { ViewDataComponent } from './view-data/view-data.component';
-import {
-  ScenarioResultsComponent,
-  SubFormComponent
-} from './scenario-results/scenario-results.component';
+import { ScenarioResultsComponent } from './scenario-results/scenario-results.component';
 
 
 @NgModule({
@@ -28,8 +25,7 @@ import {
     ScenarioNewComponent,
     HomeComponent,
     ViewDataComponent,
-    ScenarioResultsComponent,
-    SubFormComponent
+    ScenarioResultsComponent
   ],
   imports: [
     BrowserModule,

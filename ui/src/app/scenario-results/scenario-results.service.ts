@@ -57,56 +57,6 @@ export class ScenarioResultsService {
     );
   }
 
-  getResultsDispatchPlot(
-    scenarioID: number, loadZone: string, horizon: number, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-dispatch-plot/${loadZone}/${horizon}/${ymax}`
-    );
-  }
-
-  getResultsCapacityNewPlot(scenarioID: number, loadZone: string, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/new/${loadZone}/${ymax}`
-    );
-  }
-
-  getResultsCapacityRetiredPlot(scenarioID: number, loadZone: string, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/retired/${loadZone}/${ymax}`
-    );
-  }
-
-  getResultsCapacityTotalPlot(scenarioID: number, loadZone: string, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-plot/total/${loadZone}/${ymax}`
-    );
-  }
-
-  getResultsEnergyPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-energy-plot/${loadZone}/${stage}/${ymax}`
-    );
-  }
-
-  getResultsCostPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-cost-plot/${loadZone}/${stage}/${ymax}`
-    );
-  }
-
-  getResultsCapacityFactorPlot(scenarioID: number, loadZone: string, stage: number, ymax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
-      `${this.scenariosBaseURL}${scenarioID}/results-capacity-factor-plot/${loadZone}/${stage}/${ymax}`
-    );
-  }
-
   getResultsTable(scenarioID: number, table: string): Observable<ScenarioResults> {
     return this.http.get<ScenarioResults>(
       `${this.scenariosBaseURL}${scenarioID}/results/${table}`

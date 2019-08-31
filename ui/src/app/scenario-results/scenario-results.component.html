@@ -6,20 +6,20 @@
         <form [formGroup]="formGroup"
         (ngSubmit)="testFormGroups(formGroup)">
           <button type="submit">Submit</button>
-          <select formControlName=lz *ngIf="formGroup.value['lz'] !==
+          <select formControlName="lz" *ngIf="formGroup.value['lz'] !==
            'default'">
 <!--            These should come from separate object-->
             <option>hi</option>
             <option>hoy</option>
           </select>
-          <select formControlName=hor *ngIf="formGroup.value['hor'] !==
+          <select formControlName="hor" *ngIf="formGroup.value['hor'] !==
            'default'">
 <!--            These should come from separate object-->
             <option>1</option>
             <option>2</option>
           </select>
 
-          <select formControlName=tmp *ngIf="formGroup.value['tmp'] !==
+          <select formControlName="tmp" *ngIf="formGroup.value['tmp'] !==
            'default'">
 <!--            These should come from separate object-->
             <option>101</option>
