@@ -1,12 +1,37 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { FormControl, FormGroup } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormBuilder,
+  ControlContainer,
+  Form
+} from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
-import { ScenarioResults, ResultsButton, ResultsForm } from './scenario-results';
+import {
+  ScenarioResults,
+  ResultsForm,
+  PlotAPI
+} from './scenario-results';
 
 const Bokeh = ( window as any ).require('bokehjs');
+
+
+@Component({
+  selector: 'app-sub-form',
+  template: `
+    <ng-container [formGroup]="controlContainer.control">
+      <input type=text formControlName=foo>
+      <input type=text formControlName=bar>
+    </ng-container>
+  `,
+})
+export class SubFormComponent {
+  constructor(public controlContainer: ControlContainer) {
+  }
+}
 
 @Component({
   selector: 'app-scenario-results',
@@ -14,6 +39,8 @@ const Bokeh = ( window as any ).require('bokehjs');
   styleUrls: ['./scenario-results.component.css']
 })
 export class ScenarioResultsComponent implements OnInit {
+
+  formGroups: FormGroup[];
 
   // Key for which results table to show
   resultsToShow: string;
@@ -26,6 +53,9 @@ export class ScenarioResultsComponent implements OnInit {
   // Results tables
   includedTables: {name: string; caption: string}[];
   resultsTable: ScenarioResults;
+
+  // Results plots
+  resultsPlot: PlotAPI;
 
   // Plots
   // Dispatch plot (form with plot options, JSON object, and plot name)
@@ -94,11 +124,15 @@ export class ScenarioResultsComponent implements OnInit {
     private route: ActivatedRoute,
     private scenarioResultsService: ScenarioResultsService,
     private location: Location,
+    private fb: FormBuilder
 
   ) { }
 
   ngOnInit() {
     console.log('Initializing with results to show', this.resultsToShow);
+
+    this.formGroups = [];
+    this.createFormGroups();
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -111,7 +145,7 @@ export class ScenarioResultsComponent implements OnInit {
     this.allResultsButtons = [];
     this.allResultsForms = [];
     this.makeResultsTableButtons();
-    this.makeResultsForms(this.scenarioID);
+    // this.makeResultsPlotForms(this.scenarioID);
 
     // Results tables
     this.includedTables = [];
@@ -122,6 +156,10 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Get data
     this.getResultsTable(this.scenarioID, this.resultsToShow);
+    // this.getResultsPlot(
+    //   this.scenarioID, this.resultsPlot, this.loadZoneOption,
+    //   this.periodOption, this.horizonOption, this.timepointOption,
+    //   this.yMaxOption);
 
   }
 
@@ -297,124 +335,38 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  makeResultsForms(scenarioID): void {
-    this.scenarioResultsService.getOptions(scenarioID).subscribe(
-      plotOptions => {
+  getResultsPlot(scenarioID, plot, loadZone, period, horizon, timepoint, ymax): void {
+    this.scenarioResultsService.getResultsPlot(scenarioID, plot, loadZone, period, horizon, timepoint, ymax)
+      .subscribe(resultsPlot => {
+        this.resultsPlot = resultsPlot;
+        Bokeh.embed.embed_item(this.resultsPlot);
+      });
+  }
+  makeResultsPlotForms(scenarioID): void {
+    this.scenarioResultsService.getResultsIncludedPlots(scenarioID).subscribe(
+      resultsForms => {
         const dispatchPlotFormStructure = {
           formGroup: this.dispatchPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'dispatchPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions},
-            {formControlName: 'dispatchPlotHorizon',
-            formControlOptions: plotOptions.horizonOptions}
-          ],
-          yMaxFormControlName: 'dispatchPlotYMax',
-          button: {
-            name: 'showResultsDispatchPlotButton',
-            ngIfKey: 'results-dispatch-plot',
-            caption: 'System Dispatch'
-          }
+          selectForms: resultsForms['dispatchPlotOptionsForm']['resultsForms'],
+          yMaxFormControlName: resultsForms['dispatchPlotOptionsForm']['dispatchPlotYMax'],
+          button: resultsForms['dispatchPlotOptionsForm']['button']
         };
         this.allResultsForms.push(dispatchPlotFormStructure);
-
-        const plotCapNewFormStructure = {
-          formGroup: this.capacityNewPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'capacityNewPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions}
-          ],
-          yMaxFormControlName: 'capacityNewPlotYMax',
-          button: {
-            name: 'showResultsCapacityNewPlotButton',
-            ngIfKey: 'results-capacity-new-plot',
-            caption: 'New Capacity'
-          }
-        };
-        this.allResultsForms.push(plotCapNewFormStructure);
-
-        const plotCapRetiredFormStructure = {
-          formGroup: this.capacityRetiredPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'capacityRetiredPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions}
-          ],
-          yMaxFormControlName: 'capacityRetiredPlotYMax',
-          button: {
-            name: 'showResultsCapacityRetiredPlotButton',
-            ngIfKey: 'results-capacity-retired-plot',
-            caption: 'Retired Capacity'
-          }
-        };
-        this.allResultsForms.push(plotCapRetiredFormStructure);
-
-        const plotCapTotalFormStructure = {
-          formGroup: this.capacityTotalPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'capacityTotalPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions}
-          ],
-          yMaxFormControlName: 'capacityTotalPlotYMax',
-          button: {
-            name: 'showResultsCapacityTotalPlotButton',
-            ngIfKey: 'results-capacity-total-plot',
-            caption: 'Total Capacity'
-          }
-        };
-        this.allResultsForms.push(plotCapTotalFormStructure);
-
-        const energyPlotFormStructure = {
-          formGroup: this.energyPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'energyPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions},
-            {formControlName: 'energyPlotStage',
-            formControlOptions: plotOptions.stageOptions}
-          ],
-          yMaxFormControlName: 'energyPlotYMax',
-          button: {
-            name: 'showResultsEnergyPlotButton',
-            ngIfKey: 'results-energy-plot',
-            caption: 'System Energy Mix'
-          }
-        };
-        this.allResultsForms.push(energyPlotFormStructure);
-
-        const costPlotFormStructure = {
-          formGroup: this.costPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'costPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions},
-            {formControlName: 'costPlotStage',
-            formControlOptions: plotOptions.stageOptions}
-          ],
-          yMaxFormControlName: 'costPlotYMax',
-          button: {
-            name: 'showResultsCostPlotButton',
-            ngIfKey: 'results-cost-plot',
-            caption: 'System Cost'
-          }
-        };
-        this.allResultsForms.push(costPlotFormStructure);
-
-        const capacityFactorPlotFormStructure = {
-          formGroup: this.capacityFactorPlotOptionsForm,
-          selectForms: [
-            {formControlName: 'capacityFactorPlotLoadZone',
-             formControlOptions: plotOptions.loadZoneOptions},
-            {formControlName: 'capacityFactorPlotStage',
-            formControlOptions: plotOptions.stageOptions}
-          ],
-          yMaxFormControlName: 'capacityFactorPlotYMax',
-          button: {
-            name: 'showResultsCapacityFactorPlotButton',
-            ngIfKey: 'results-capacity-factor-plot',
-            caption: 'Capacity Factors'
-          }
-        };
-        this.allResultsForms.push(capacityFactorPlotFormStructure);
-
       }
     );
+  }
+
+  createFormGroups(): void {
+    for (const blah of [1, 2]) {
+      const form = this.fb.group({
+        group: this.fb.group({
+          foo: 'oof',
+          bar: 'bar',
+        }),
+        baz: 'baz',
+      });
+      this.formGroups.push(form);
+    }
   }
 
   goBack(): void {

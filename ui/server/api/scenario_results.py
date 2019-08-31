@@ -7,6 +7,7 @@ from ui.server.common_functions import connect_to_database
 from viz import capacity_plot, capacity_factor_plot, cost_plot, \
   dispatch_plot, energy_plot
 
+
 class ScenarioResultsOptions(Resource):
     """
 
@@ -120,6 +121,68 @@ class ScenarioResultsPlot(Resource):
             )
 
         return plot_api
+
+
+class ScenarioResultsIncludedPlots(Resource):
+    """
+
+    """
+
+    def __init__(self, **kwargs):
+        self.db_path = kwargs["db_path"]
+
+    def get(self, scenario_id):
+        """
+
+        :return:
+        """
+        io, c = connect_to_database(db_path=self.db_path)
+        plots_query = c.execute(
+          """SELECT results_plot, caption, load_zone_form_control, 
+          period_form_control, horizon_form_control, timepoint_form_control, 
+          project_form_control
+          FROM ui_scenario_results_plot_metadata
+          WHERE include = 1;"""
+        ).fetchall()
+
+        load_zone_options = [z[0] for z in c.execute(
+          """SELECT load_zone FROM inputs_geography_load_zones 
+          WHERE load_zone_scenario_id = (
+          SELECT load_zone_scenario_id
+          FROM scenarios
+          WHERE scenario_id = {});""".format(scenario_id)
+        ).fetchall()]
+
+        horizon_options = [h[0] for h in c.execute(
+          """SELECT horizon FROM inputs_temporal_horizons 
+          WHERE temporal_scenario_id = (
+          SELECT temporal_scenario_id
+          FROM scenarios
+          WHERE scenario_id = {});""".format(scenario_id)
+        ).fetchall()]
+
+        # TODO: add formGroup, Ymax and button
+        included_plots_api = []
+        for plot in plots_query:
+            plot_api = {
+                "dispatchPlotOptionsForm": {
+                    "selectForms": [
+                      {"formControlName": plot[2],
+                       "formControlOptions": ['Select Zone'] + load_zone_options},
+                      {"formControlName": plot[4],
+                       "formControlOptions": ['Select Horizon'] + horizon_options}
+                    ],
+                    "yMaxFormControlName": "dispatchPlotYMax",
+                    "button": {
+                        "name": "dispatchPlotButton",
+                        "ngIfKey": plot[0].replace("_", "-"),
+                        "caption": plot[1]
+                    }
+                }
+            }
+            included_plots_api.append(plot_api)
+
+        return included_plots_api
 
 
 class ScenarioResultsDispatchPlot(Resource):

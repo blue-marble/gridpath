@@ -1,4 +1,17 @@
 <div class="container-fluid">
+
+
+  <div class="row">
+    <ng-container *ngFor="let formGroup of formGroups">
+        <form [formGroup]="formGroup">
+          <app-sub-form formGroupName=group></app-sub-form>
+          <input type=text formControlName=baz>
+        </form>
+    </ng-container>
+  </div>
+
+
+
   <h4>Results</h4>
   <div class="row">
     <div class="col-md-auto">
@@ -19,64 +32,64 @@
       </ng-container>
     </ul>
   </div>
-<!--      Results Forms (have options the user must select) -->
-  <h6 id="plots-title">Results Plots</h6>
-  <div class="navbar navbar-expand-sm" id="plots-navbar">
-    <ul class="navbar-nav">
-      <ng-container *ngFor="let form of allResultsForms">
-        <li class="form-group-list-item">
-          <form [formGroup]="form.formGroup"
-                (ngSubmit)="showResults(form.button.ngIfKey)">
-            <button id="{{form.button.name}}" type="submit"
-                    class="navbar-results-button">{{form.button.caption}}
-            </button>
-            <fieldset class="input-group-vertical">
-              <div class="form-group">
-                <ng-container *ngFor="let selectForm of form.selectForms">
-                    <select class="custom-select"
-                      formControlName="{{selectForm.formControlName}}">
-                      <ng-container *ngFor="let opt of selectForm.formControlOptions">
-                        <option>{{opt}}</option>
-                      </ng-container>
-                    </select>
-                </ng-container>
-              </div>
-            </fieldset>
-            <p><label id="yMaxLabel">
-            Ymax (MW):
-            <input type="text" formControlName="{{form.yMaxFormControlName}}">
-            </label></p>
-          </form>
-        </li>
-        </ng-container>
-    </ul>
-  </div>
+<!--&lt;!&ndash;      Results Forms (have options the user must select) &ndash;&gt;-->
+<!--  <h6 id="plots-title">Results Plots</h6>-->
+<!--  <div class="navbar navbar-expand-sm" id="plots-navbar">-->
+<!--    <ul class="navbar-nav">-->
+<!--      <ng-container *ngFor="let form of allResultsForms">-->
+<!--        <li class="form-group-list-item">-->
+<!--          <form [formGroup]="form.formGroup"-->
+<!--                (ngSubmit)="showResults(form.button.ngIfKey)">-->
+<!--            <button id="{{form.button.name}}" type="submit"-->
+<!--                    class="navbar-results-button">{{form.button.caption}}-->
+<!--            </button>-->
+<!--            <fieldset class="input-group-vertical">-->
+<!--              <div class="form-group">-->
+<!--                <ng-container *ngFor="let selectForm of form.selectForms">-->
+<!--                    <select class="custom-select"-->
+<!--                      formControlName="{{selectForm.formControlName}}">-->
+<!--                      <ng-container *ngFor="let opt of selectForm.formControlOptions">-->
+<!--                        <option>{{opt}}</option>-->
+<!--                      </ng-container>-->
+<!--                    </select>-->
+<!--                </ng-container>-->
+<!--              </div>-->
+<!--            </fieldset>-->
+<!--            <p><label id="yMaxLabel">-->
+<!--            Ymax (MW):-->
+<!--            <input type="text" formControlName="{{form.yMaxFormControlName}}">-->
+<!--            </label></p>-->
+<!--          </form>-->
+<!--        </li>-->
+<!--        </ng-container>-->
+<!--    </ul>-->
+<!--  </div>-->
 
 <!--  Row for the results -->
   <div class="row">
     <div class="col overflow-x-auto">
-      <!--  Plots -->
-      <div id="{{dispatchPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-dispatch-plot'">
-      </div>
-      <div id="{{capacityNewPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-new-plot'">
-      </div>
-      <div id="{{capacityRetiredPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-retired-plot'">
-      </div>
-      <div id="{{capacityTotalPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-total-plot'">
-      </div>
-      <div id="{{energyPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-energy-plot'">
-      </div>
-      <div id="{{costPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-cost-plot'">
-      </div>
-      <div id="{{capacityFactorPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-factor-plot'">
-      </div>
+<!--      &lt;!&ndash;  Plots &ndash;&gt;-->
+<!--      <div id="{{dispatchPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-dispatch-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{capacityNewPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-capacity-new-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{capacityRetiredPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-capacity-retired-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{capacityTotalPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-capacity-total-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{energyPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-energy-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{costPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-cost-plot'">-->
+<!--      </div>-->
+<!--      <div id="{{capacityFactorPlotHTMLName}}"-->
+<!--           *ngIf="resultsToShow=='results-capacity-factor-plot'">-->
+<!--      </div>-->
       <!--  Results tables -->
       <table class="scenario-results-table">
         <caption>{{resultsTable.caption}}</caption>

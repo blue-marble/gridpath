@@ -1,7 +1,12 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
-import { ResultsOptions, PlotAPI, ScenarioResults} from './scenario-results';
+import {
+  ResultsOptions,
+  PlotAPI,
+  ScenarioResults,
+  ResultsForm
+} from './scenario-results';
 
 @Injectable({
   providedIn: 'root'
@@ -29,6 +34,26 @@ export class ScenarioResultsService {
   getOptions(scenarioID: number): Observable<ResultsOptions> {
     return this.http.get<ResultsOptions>(
       `${this.scenariosBaseURL}${scenarioID}/scenario-results-options`
+    );
+  }
+
+  getResultsPlot(
+    scenarioID: number,
+    plot: string,
+    loadZone: string,
+    period: number,
+    horizon: number,
+    timepoint: number,
+    ymax: number
+  ): Observable<PlotAPI> {
+    return this.http.get<PlotAPI>(
+      `${this.scenariosBaseURL}${scenarioID}/results/${plot}/${loadZone}/${period}/${horizon}/${timepoint}/${ymax}`
+    );
+  }
+
+  getResultsIncludedPlots(scenarioID): Observable<[]> {
+    return this.http.get<[]>(
+      `${this.scenariosBaseURL}${scenarioID}/results/plots`
     );
   }
 
