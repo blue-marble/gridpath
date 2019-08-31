@@ -3313,9 +3313,10 @@ CREATE TABLE ui_scenario_results_plot_metadata (
 results_plot VARCHAR(64) PRIMARY KEY,
 include INTEGER,
 caption VARCHAR(64),
-load_zone_form_control VARCHAR(64),
-period_form_control VARCHAR(64),
-horizon_form_control VARCHAR(64),
-timepoint_form_control VARCHAR(64),
-project_form_control VARCHAR(64)
+load_zone_form_control INTEGER,
+period_form_control INTEGER,
+horizon_form_control INTEGER,
+timepoint_form_control INTEGER,
+stage_form_control INTEGER,
+project_form_control INTEGER
 );

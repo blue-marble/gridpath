@@ -5,7 +5,7 @@ import {
   ResultsOptions,
   PlotAPI,
   ScenarioResults,
-  ResultsForm
+  ResultsForm, IncludedPlotAPI
 } from './scenario-results';
 
 @Injectable({
@@ -51,7 +51,7 @@ export class ScenarioResultsService {
     );
   }
 
-  getResultsIncludedPlots(scenarioID): Observable<[]> {
+  getResultsIncludedPlots(scenarioID): Observable<IncludedPlotAPI[]> {
     return this.http.get<[]>(
       `${this.scenariosBaseURL}${scenarioID}/results/plots`
     );

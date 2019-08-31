@@ -38,3 +38,14 @@ export class ResultsOptions {
   horizonOptions: [];
   stageOptions: [];
 }
+
+export class IncludedPlotAPI {
+  'plotType': string;
+  'caption': string;
+  'loadZone': [] | string;
+  'period': [] | string;
+  'horizon': [] | string;
+  'timepoint': [] | string;
+  'stage': [] | string;
+  'project': [] | string;
+}

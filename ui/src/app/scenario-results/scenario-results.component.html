@@ -5,21 +5,24 @@
     <ng-container *ngFor="let formGroup of formGroups">
         <form [formGroup]="formGroup"
         (ngSubmit)="testFormGroups(formGroup)">
-          <button type="submit">Submit</button>
-          <select formControlName="lz" *ngIf="formGroup.value['lz'] !==
+          <button type="submit">{{formGroup.value['caption']}}</button>
+          <select formControlName="loadZone"
+                  *ngIf="formGroup.value['loadZone'] !==
            'default'">
 <!--            These should come from separate object-->
             <option>hi</option>
             <option>hoy</option>
           </select>
-          <select formControlName="hor" *ngIf="formGroup.value['hor'] !==
+          <select formControlName="horizon" *ngIf="formGroup.value['horizon']
+           !==
            'default'">
 <!--            These should come from separate object-->
             <option>1</option>
             <option>2</option>
           </select>
 
-          <select formControlName="tmp" *ngIf="formGroup.value['tmp'] !==
+          <select formControlName="timepoint"
+                  *ngIf="formGroup.value['timepoint'] !==
            'default'">
 <!--            These should come from separate object-->
             <option>101</option>

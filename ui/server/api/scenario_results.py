@@ -140,45 +140,28 @@ class ScenarioResultsIncludedPlots(Resource):
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control, 
           period_form_control, horizon_form_control, timepoint_form_control, 
-          project_form_control
+          stage_form_control, project_form_control
           FROM ui_scenario_results_plot_metadata
           WHERE include = 1;"""
         ).fetchall()
 
-        load_zone_options = [z[0] for z in c.execute(
-          """SELECT load_zone FROM inputs_geography_load_zones 
-          WHERE load_zone_scenario_id = (
-          SELECT load_zone_scenario_id
-          FROM scenarios
-          WHERE scenario_id = {});""".format(scenario_id)
-        ).fetchall()]
-
-        horizon_options = [h[0] for h in c.execute(
-          """SELECT horizon FROM inputs_temporal_horizons 
-          WHERE temporal_scenario_id = (
-          SELECT temporal_scenario_id
-          FROM scenarios
-          WHERE scenario_id = {});""".format(scenario_id)
-        ).fetchall()]
-
         # TODO: add formGroup, Ymax and button
         included_plots_api = []
         for plot in plots_query:
+            (results_plot, caption, load_zone_form_control,
+                period_form_control, horizon_form_control,
+                timepoint_form_control, stage_form_control,
+                project_form_control) \
+              = plot
             plot_api = {
-                "dispatchPlotOptionsForm": {
-                    "selectForms": [
-                      {"formControlName": plot[2],
-                       "formControlOptions": ['Select Zone'] + load_zone_options},
-                      {"formControlName": plot[4],
-                       "formControlOptions": ['Select Horizon'] + horizon_options}
-                    ],
-                    "yMaxFormControlName": "dispatchPlotYMax",
-                    "button": {
-                        "name": "dispatchPlotButton",
-                        "ngIfKey": plot[0].replace("_", "-"),
-                        "caption": plot[1]
-                    }
-                }
+                "plotType": results_plot,
+                "caption": caption,
+                "loadZone": [] if load_zone_form_control else "default",
+                "period": [] if period_form_control else "default",
+                "horizon": [] if horizon_form_control else "default",
+                "timepoint": [] if timepoint_form_control else "default",
+                "stage": [] if stage_form_control else "default",
+                "project": [] if project_form_control else "default"
             }
             included_plots_api.append(plot_api)
 

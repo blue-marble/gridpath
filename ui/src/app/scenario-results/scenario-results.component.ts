@@ -143,15 +143,36 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   makeResultsPlotForms(scenarioID): void {
-    for (const blah of ['dispatch', 'capacity']) {
-      const form = this.formBuilder.group({
-        lz: [],
-        hor: [],
-        tmp: 'default',
-        type: blah,
+    this.scenarioResultsService.getResultsIncludedPlots(scenarioID)
+      .subscribe(includedPlots => {
+        for (const plot of includedPlots) {
+          const form = this.formBuilder.group({
+            plotType: plot.plotType,
+            caption: plot.caption,
+            loadZone: plot.loadZone,
+            period: plot.period,
+            horizon: plot.horizon,
+            timepoint: plot.timepoint,
+            stage: plot.stage,
+            project: plot.project,
+            yMax: ''
+          });
+          this.formGroups.push(form);
+        }
       });
-      this.formGroups.push(form);
-    }
+    // for (const blah of ['dispatch', 'capacity']) {
+    //   const form = this.formBuilder.group({
+    //     plotType: blah,
+    //     caption: '',
+    //     loadZone: [],
+    //     period: [],
+    //     horizon: [],
+    //     timepoint: 'default',
+    //     stage: [],
+    //     yMax: ''
+    //   });
+    //   this.formGroups.push(form);
+    // }
   }
 
   testFormGroups(formGroup): void {
