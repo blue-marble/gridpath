@@ -23,13 +23,20 @@ const Bokeh = ( window as any ).require('bokehjs');
   selector: 'app-sub-form',
   template: `
     <ng-container [formGroup]="controlContainer.control">
-      <input type=text formControlName=foo>
-      <input type=text formControlName=bar>
+        <select formControlName=foo>
+            <ng-container><option *ngFor="let i of fooCategories"></option>
+            </ng-container></select>
+      <select formControlName=bar>
+          <ng-container>
+          <option *ngFor="let i of ['LALA', 'BALA']"></option>
+      </ng-container></select>
     </ng-container>
   `,
 })
 export class SubFormComponent {
+  fooCategories: any;
   constructor(public controlContainer: ControlContainer) {
+    this.fooCategories = ['CAISO', 'MAISO']
   }
 }
 
@@ -124,7 +131,7 @@ export class ScenarioResultsComponent implements OnInit {
     private route: ActivatedRoute,
     private scenarioResultsService: ScenarioResultsService,
     private location: Location,
-    private fb: FormBuilder
+    private formBuilder: FormBuilder
 
   ) { }
 
@@ -132,7 +139,7 @@ export class ScenarioResultsComponent implements OnInit {
     console.log('Initializing with results to show', this.resultsToShow);
 
     this.formGroups = [];
-    this.createFormGroups();
+    this.createFormGroups(this.scenarioID);
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -356,18 +363,22 @@ export class ScenarioResultsComponent implements OnInit {
     );
   }
 
-  createFormGroups(): void {
-    for (const blah of [1, 2]) {
-      const form = this.fb.group({
-        group: this.fb.group({
-          foo: 'oof',
-          bar: 'bar',
-        }),
-        baz: 'baz',
+  createFormGroups(scenarioID): void {
+    for (const blah of ['dispatch', 'capacity']) {
+      const form = this.formBuilder.group({
+        lz: [],
+        hor: [],
+        tmp: 'default',
+        type: blah,
       });
       this.formGroups.push(form);
     }
   }
+
+  testFormGroups(formGroup): void {
+    console.log(formGroup.value);
+  }
+
 
   goBack(): void {
     this.location.back();

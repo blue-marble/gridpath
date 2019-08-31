@@ -3,9 +3,28 @@
 
   <div class="row">
     <ng-container *ngFor="let formGroup of formGroups">
-        <form [formGroup]="formGroup">
-          <app-sub-form formGroupName=group></app-sub-form>
-          <input type=text formControlName=baz>
+        <form [formGroup]="formGroup"
+        (ngSubmit)="testFormGroups(formGroup)">
+          <button type="submit">Submit</button>
+          <select formControlName=lz *ngIf="formGroup.value['lz'] !==
+           'default'">
+<!--            These should come from separate object-->
+            <option>hi</option>
+            <option>hoy</option>
+          </select>
+          <select formControlName=hor *ngIf="formGroup.value['hor'] !==
+           'default'">
+<!--            These should come from separate object-->
+            <option>1</option>
+            <option>2</option>
+          </select>
+
+          <select formControlName=tmp *ngIf="formGroup.value['tmp'] !==
+           'default'">
+<!--            These should come from separate object-->
+            <option>101</option>
+            <option>102</option>
+          </select>
         </form>
     </ng-container>
   </div>
