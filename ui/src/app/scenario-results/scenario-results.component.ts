@@ -97,9 +97,16 @@ export class ScenarioResultsComponent implements OnInit {
 
   // When a results button is pressed, change the value of resultsToShow to
   // that of the respective results table and refresh the view
+
+  makeResultsTableButtons(): void {
+    this.scenarioResultsService.getResultsIncludedTables()
+      .subscribe(includedTables => {
+        this.allResultsButtons = includedTables;
+      });
+  }
+
   showTable(tableToShow): void {
-    // // Send value for show project capacity table
-    // this.scenarioResultsService.changeResultsToView(resultsToShow);
+    // Set the values needed for ngOnInit
     this.tableToShow = tableToShow;
     this.resultsToShow = tableToShow;
 
@@ -114,58 +121,7 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  makeResultsTableButtons(): void {
-    this.scenarioResultsService.getResultsIncludedTables()
-      .subscribe(includedTables => {
-        this.allResultsButtons = includedTables;
-      });
-  }
-
-  getResultsPlot(scenarioID, formGroup): void {
-    console.log(formGroup.value);
-
-    const plotType = formGroup.value.plotType;
-    const loadZone = formGroup.value.loadZone;
-    const period = formGroup.value.period;
-    const horizon = formGroup.value.horizon;
-    const timepoint = formGroup.value.timepoint;
-    const stage = formGroup.value.stage;
-    const project = formGroup.value.project;
-    let yMax = formGroup.value.yMax;
-    if (yMax === null) { yMax = 'default'; }
-
-    this.scenarioResultsService.getResultsPlot(
-      scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
-    ).subscribe(resultsPlot => {
-        this.resultsPlot = resultsPlot.plotJSON;
-        Bokeh.embed.embed_item(this.resultsPlot);
-      });
-  }
-
-  setFormGroupValue(formGroup): void {
-    // We need to set the currentFormValue and plotHTMLTarget before
-    // calling ngOnInit
-    this.currentFormValue = formGroup;
-
-    const plotType = formGroup.value.plotType;
-    const loadZone = formGroup.value.loadZone;
-    const period = formGroup.value.period;
-    const horizon = formGroup.value.horizon;
-    const timepoint = formGroup.value.timepoint;
-    const stage = formGroup.value.stage;
-    const project = formGroup.value.project;
-    let yMax = formGroup.value.yMax;
-    if (yMax === null) { yMax = 'default'; }
-
-    this.scenarioResultsService.getResultsPlot(
-      this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
-    ).subscribe(resultsPlot => {
-        this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
-        this.resultsToShow = resultsPlot.plotJSON['target_id'];
-      });
-    this.ngOnInit();
-  }
-
+  // Plots
   getFormOptions(scenarioID): void {
     this.scenarioResultsService.getOptions(scenarioID).subscribe(options => {
       this.formOptions = options;
@@ -190,6 +146,56 @@ export class ScenarioResultsComponent implements OnInit {
           this.allFormGroups.push(form);
         }
       });
+  }
+
+  showPlot(formGroup): void {
+    // We need to set the currentFormValue and plotHTMLTarget before
+    // calling ngOnInit
+    this.currentFormValue = formGroup;
+
+    const plotType = formGroup.value.plotType;
+    const loadZone = formGroup.value.loadZone;
+    const period = formGroup.value.period;
+    const horizon = formGroup.value.horizon;
+    const timepoint = formGroup.value.timepoint;
+    const stage = formGroup.value.stage;
+    const project = formGroup.value.project;
+    let yMax = formGroup.value.yMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    this.scenarioResultsService.getResultsPlot(
+      this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+    ).subscribe(resultsPlot => {
+        this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
+        this.resultsToShow = resultsPlot.plotJSON['target_id'];
+        this.ngOnInit();
+      });
+  }
+
+  getResultsPlot(scenarioID, formGroup): void {
+    console.log(formGroup.value);
+
+    const plotType = formGroup.value.plotType;
+    const loadZone = formGroup.value.loadZone;
+    const period = formGroup.value.period;
+    const horizon = formGroup.value.horizon;
+    const timepoint = formGroup.value.timepoint;
+    const stage = formGroup.value.stage;
+    const project = formGroup.value.project;
+    let yMax = formGroup.value.yMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    this.scenarioResultsService.getResultsPlot(
+      scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+    ).subscribe(resultsPlot => {
+        this.resultsPlot = resultsPlot.plotJSON;
+        Bokeh.embed.embed_item(this.resultsPlot);
+      });
+  }
+
+  clearPlots(): void {
+    this.resultsToShow = null;
+    this.ngOnInit();
   }
 
   goBack(): void {
