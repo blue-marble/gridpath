@@ -262,13 +262,11 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   viewData(tableNameInDB, rowNameInDB): void {
-    const dataToView = `${tableNameInDB}-${rowNameInDB}`;
-    // Send the table name to the view-data service that view-data component
-    // uses to determine which tables to show
-    this.viewDataService.changeDataToView(dataToView);
-    console.log('Sending data to view, ', dataToView);
+    const navigationExtras: NavigationExtras = {
+      state: {table: tableNameInDB, row: rowNameInDB}
+    };
     // Switch to the new scenario view, with 0 as argument (show all data)
-    this.router.navigate(['/view-data', 0]);
+    this.router.navigate(['/view-data', 0], navigationExtras);
   }
 
   saveNewScenario() {

@@ -135,21 +135,19 @@ export class ScenarioDetailComponent implements OnInit {
   }
 
   viewData(tableNameInDB, rowNameInDB): void {
-    const dataToView = `${tableNameInDB}-${rowNameInDB}`;
-    // Send the table name to the view-data service that view-data component
-    // uses to determine which tables to show
-    this.viewDataService.changeDataToView(dataToView);
-    console.log('Sending data to view, ', dataToView);
+    const navigationExtras: NavigationExtras = {
+      state: {table: tableNameInDB, row: rowNameInDB}
+    };
     // Switch to the new scenario view
-    this.router.navigate(['/view-data', this.scenarioID]);
+    this.router.navigate(['/view-data', this.scenarioID], navigationExtras);
   }
 
   viewValidationErrors(): void {
-    const dataToView = 'validation';
-    // Send the table name to the view-data service that view-data component
-    // uses to determine which tables to show
-    this.viewDataService.changeDataToView(dataToView);
-    console.log('Sending data to view, ', dataToView);
+    // const dataToView = 'validation';
+    // // Send the table name to the view-data service that view-data component
+    // // uses to determine which tables to show
+    // this.viewDataService.changeDataToView(dataToView);
+    // console.log('Sending data to view, ', dataToView);
     // Switch to the new scenario view
     this.router.navigate(['/view-data', this.scenarioID]);
   }
