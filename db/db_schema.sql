@@ -3272,9 +3272,12 @@ LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
 ;
 
 
+-------------------------------------------------------------------------------
+------------------------------ User Interface ---------------------------------
+-------------------------------------------------------------------------------
 
--- UI
-
+-- Tables for scenario-detail and scenario-new
+-- TODO: is the ui_table_id needed?
 DROP TABLE IF EXISTS ui_scenario_detail_table_metadata;
 CREATE TABLE ui_scenario_detail_table_metadata (
 ui_table_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3295,4 +3298,26 @@ ui_row_db_subscenario_table_id_column VARCHAR(128),
 ui_row_db_input_table VARCHAR(128),
 PRIMARY KEY (ui_table, ui_table_row),
 FOREIGN KEY (ui_table) REFERENCES ui_scenario_detail_table_metadata (ui_table)
+);
+
+-- Tables for scenario-results
+DROP TABLE IF EXISTS ui_scenario_results_table_metadata;
+CREATE TABLE ui_scenario_results_table_metadata (
+results_table VARCHAR(64),
+include INTEGER,
+caption VARCHAR(64)
+);
+
+DROP TABLE IF EXISTS ui_scenario_results_plot_metadata;
+CREATE TABLE ui_scenario_results_plot_metadata (
+results_plot VARCHAR(64) PRIMARY KEY,
+include INTEGER,
+caption VARCHAR(64),
+load_zone_form_control INTEGER,
+rps_zone_form_control INTEGER,
+carbon_cap_zone_form_control INTEGER,
+period_form_control INTEGER,
+horizon_form_control INTEGER,
+stage_form_control INTEGER,
+project_form_control INTEGER
 );

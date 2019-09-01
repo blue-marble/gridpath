@@ -1,0 +1,9 @@
+﻿results_plot,include,caption,load_zone_form_control,rps_zone_form_control,carbon_cap_zone_form_control,period_form_control,horizon_form_control,stage_form_control,project_form_control
+capacity_factor_plot,1,Capacity Factors,1,0,0,0,0,1,0
+capacity_plot,1,New Capacity,1,0,0,0,0,0,0
+carbon_plot,1,Carbon Emissions,0,0,1,0,0,1,0
+cost_plot,1,System Costs,1,0,0,0,0,1,0
+curtailment_heatmap_plot,1,Curtailment,1,0,0,1,0,1,0
+dispatch_plot,1,System Dispatch,1,0,0,0,1,1,0
+energy_plot,1,Energy Mix,1,0,0,0,0,1,0
+rps_plot,1,RPS,0,1,0,0,0,1,0

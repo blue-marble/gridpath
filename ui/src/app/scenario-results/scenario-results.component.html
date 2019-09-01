@@ -1,4 +1,5 @@
 <div class="container-fluid">
+
   <h4>Results</h4>
   <div class="row">
     <div class="col-md-auto">
@@ -11,10 +12,10 @@
   <h6 id="tables-title">Results Tables</h6>
   <div class="navbar navbar-expand-sm" id="tables-navbar">
     <ul class="navbar-nav">
-      <ng-container *ngFor="let button of allResultsButtons">
+      <ng-container *ngFor="let button of allTableButtons">
         <li class="nav-item">
-          <button id="{{button.name}}" class="navbar-results-button"
-                (click)="showResults(button.ngIfKey)">{{button.caption}}</button>
+          <button [id]="button.table" class="navbar-results-button"
+                  (click)="showTable(button.table)">{{button.caption}}</button>
         </li>
       </ng-container>
     </ul>
@@ -23,28 +24,73 @@
   <h6 id="plots-title">Results Plots</h6>
   <div class="navbar navbar-expand-sm" id="plots-navbar">
     <ul class="navbar-nav">
-      <ng-container *ngFor="let form of allResultsForms">
+      <li>
+        <button class="navbar-results-button"
+                (click)="clearPlots()">Clear Plots</button>
+      </li>
+      <ng-container *ngFor="let formGroup of allPlotFormGroups">
         <li class="form-group-list-item">
-          <form [formGroup]="form.formGroup"
-                (ngSubmit)="showResults(form.button.ngIfKey)">
-            <button id="{{form.button.name}}" type="submit"
-                    class="navbar-results-button">{{form.button.caption}}
+          <form [formGroup]="formGroup"
+                (ngSubmit)="showPlot(formGroup)">
+            <button type="submit" class="navbar-results-button">
+              {{formGroup.value['caption']}}
             </button>
             <fieldset class="input-group-vertical">
               <div class="form-group">
-                <ng-container *ngFor="let selectForm of form.selectForms">
-                    <select class="custom-select"
-                      formControlName="{{selectForm.formControlName}}">
-                      <ng-container *ngFor="let opt of selectForm.formControlOptions">
-                        <option>{{opt}}</option>
-                      </ng-container>
-                    </select>
-                </ng-container>
+                <select class="custom-select" formControlName="loadZone"
+                        *ngIf="formGroup.value['loadZone'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.loadZoneOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="rpsZone"
+                        *ngIf="formGroup.value['rpsZone'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.rpsZoneOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="carbonCapZone"
+                        *ngIf="formGroup.value['carbonCapZone'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.carbonCapZoneOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="period"
+                        *ngIf="formGroup.value['period'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.periodOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="horizon"
+                        *ngIf="formGroup.value['horizon']!=='default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.horizonOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="stage"
+                        *ngIf="formGroup.value['stage'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.stageOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="project"
+                        *ngIf="formGroup.value['project'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.projectOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
               </div>
             </fieldset>
             <p><label id="yMaxLabel">
             Ymax (MW):
-            <input type="text" formControlName="{{form.yMaxFormControlName}}">
+            <input type="text" formControlName="yMax">
             </label></p>
           </form>
         </li>
@@ -56,47 +102,24 @@
   <div class="row">
     <div class="col overflow-x-auto">
       <!--  Plots -->
-      <div id="{{dispatchPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-dispatch-plot'">
-      </div>
-      <div id="{{capacityNewPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-new-plot'">
-      </div>
-      <div id="{{capacityRetiredPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-retired-plot'">
-      </div>
-      <div id="{{capacityTotalPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-total-plot'">
-      </div>
-      <div id="{{energyPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-energy-plot'">
-      </div>
-      <div id="{{costPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-cost-plot'">
-      </div>
-      <div id="{{capacityFactorPlotHTMLName}}"
-           *ngIf="resultsToShow=='results-capacity-factor-plot'">
-      </div>
+      <div [id]="plotHTMLTarget" *ngIf="resultsToShow==plotHTMLTarget"></div>
       <!--  Results tables -->
-      <ng-container *ngFor="let table of allTables">
-        <table *ngIf="resultsToShow==table.ngIfKey"
-               class="scenario-results-table">
-          <caption>{{table.caption}}</caption>
-          <tr>
-               <ng-container *ngFor="let column of table.columns">
-                 <th>{{column}}</th>
-               </ng-container>
-          </tr>
-
-        <ng-container *ngFor="let row of table.rowsData">
+      <table class="scenario-results-table"
+             *ngIf="resultsToShow==resultsTable.table">
+        <caption>{{resultsTable.caption}}</caption>
+        <tr>
+             <ng-container *ngFor="let column of resultsTable.columns">
+               <th>{{column}}</th>
+             </ng-container>
+        </tr>
+        <ng-container *ngFor="let row of resultsTable.rowsData">
            <tr>
-             <ng-container *ngFor="let column of table.columns">
+             <ng-container *ngFor="let column of resultsTable.columns">
                <td>{{row[column]}}</td>
              </ng-container>
            </tr>
         </ng-container>
-        </table>
-      </ng-container>
+      </table>
     </div>
   </div>
 
