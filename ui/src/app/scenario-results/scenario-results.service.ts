@@ -1,34 +1,23 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {Observable} from 'rxjs';
 import {
   ResultsOptions,
-  PlotAPI,
+  ScenarioResultsPlot,
   ScenarioResultsTable,
-  ResultsForm, IncludedPlotAPI
-} from './scenario-results-table';
+  IncludedPlotFormBuilderAPI
+} from './scenario-results';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ScenarioResultsService {
-
-  // We will subscribe to this in scenario-results.component.ts and will
-  // use its value to know which table to show and which results to fetch
-  resultsToViewSubject = new BehaviorSubject(null);
-
   // Base URL
   private scenariosBaseURL = 'http://127.0.0.1:8080/scenarios/';
 
   constructor(
     private http: HttpClient
   ) { }
-
-  // Change the value of resultsToViewSubject
-  changeResultsToView(resultsToShow: string) {
-    this.resultsToViewSubject.next(resultsToShow);
-    console.log('Results to show changed to ', resultsToShow);
-  }
 
   // API Subscriptions
   getOptions(scenarioID: number): Observable<ResultsOptions> {
@@ -47,13 +36,13 @@ export class ScenarioResultsService {
     stage: number,
     project: string,
     yMax: number
-  ): Observable<PlotAPI> {
-    return this.http.get<PlotAPI>(
+  ): Observable<ScenarioResultsPlot> {
+    return this.http.get<ScenarioResultsPlot>(
       `${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${period}/${horizon}/${timepoint}/${stage}/${project}/${yMax}`
     );
   }
 
-  getResultsIncludedPlots(scenarioID): Observable<IncludedPlotAPI[]> {
+  getResultsIncludedPlots(scenarioID): Observable<IncludedPlotFormBuilderAPI[]> {
     return this.http.get<[]>(
       `${this.scenariosBaseURL}${scenarioID}/results/plots`
     );
@@ -65,8 +54,8 @@ export class ScenarioResultsService {
     );
   }
 
-  getResultsIncludedTables(): Observable<{ngIfKey: string; caption: string}[]> {
-    return this.http.get<{ngIfKey: string; caption: string}[]>(
+  getResultsIncludedTables(): Observable<{table: string; caption: string}[]> {
+    return this.http.get<{table: string; caption: string}[]>(
       `${this.scenariosBaseURL}results/tables`
     );
   }

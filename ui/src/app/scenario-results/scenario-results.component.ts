@@ -4,10 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormBuilder } from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
-import {
-  ScenarioResultsTable,
-  ResultsOptions
-} from './scenario-results-table';
+import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
 
 const Bokeh = ( window as any ).require('bokehjs');
 
@@ -29,7 +26,7 @@ export class ScenarioResultsComponent implements OnInit {
   tableToShow: string;
 
   // All results buttons (for the tables)
-  allResultsButtons: {ngIfKey: string, caption: string}[];
+  allResultsButtons: {table: string, caption: string}[];
 
   // Results tables; includedTables is used to know which buttons to show
   includedTables: {name: string; caption: string}[];
@@ -85,18 +82,6 @@ export class ScenarioResultsComponent implements OnInit {
 
 
   }
-
-  // // Subscribe to the resultsToShow BehaviorSubject, which tells us which
-  // // results table the user is requesting
-  // getResultsToShow(): void {
-  //   this.scenarioResultsService.resultsToViewSubject
-  //     .subscribe((resultsToShow: string) => {
-  //       this.tableToShow = resultsToShow;
-  //     });
-  // }
-
-  // When a results button is pressed, change the value of resultsToShow to
-  // that of the respective results table and refresh the view
 
   makeResultsTableButtons(): void {
     this.scenarioResultsService.getResultsIncludedTables()
@@ -166,8 +151,8 @@ export class ScenarioResultsComponent implements OnInit {
     this.scenarioResultsService.getResultsPlot(
       this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
     ).subscribe(resultsPlot => {
-        this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
-        this.resultsToShow = resultsPlot.plotJSON['target_id'];
+        this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
+        this.resultsToShow = resultsPlot.plotJSON.target_id;
         this.ngOnInit();
       });
   }
@@ -200,9 +185,6 @@ export class ScenarioResultsComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
-    // The the resultsToView to '', so that we start with no tables visible
-    // when we visit the results page again
-    this.scenarioResultsService.changeResultsToView('');
   }
 
 }

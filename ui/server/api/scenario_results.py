@@ -507,7 +507,7 @@ class ScenarioResultsIncludedTables(Resource):
         included_tables_api = []
         for table in tables_query:
             table_api = {
-              "ngIfKey": table[0].replace("_", "-"),
+              "table": table[0].replace("_", "-"),
               "caption": table[1]
             }
             included_tables_api.append(table_api)

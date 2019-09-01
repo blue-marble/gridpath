@@ -14,8 +14,8 @@
     <ul class="navbar-nav">
       <ng-container *ngFor="let button of allResultsButtons">
         <li class="nav-item">
-          <button [id]="button.ngIfKey" class="navbar-results-button"
-                (click)="showTable(button.ngIfKey)">{{button.caption}}</button>
+          <button [id]="button.table" class="navbar-results-button"
+                  (click)="showTable(button.table)">{{button.caption}}</button>
         </li>
       </ng-container>
     </ul>
