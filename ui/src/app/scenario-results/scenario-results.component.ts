@@ -33,6 +33,8 @@ export class ScenarioResultsComponent implements OnInit {
 
   // Results plots; includedPlots is used to know which forms to show
   includedPlots: {};
+  // TODO: add type
+  formOptions: {};
   resultsPlot: PlotAPI;
 
   // To get the right route
@@ -50,8 +52,7 @@ export class ScenarioResultsComponent implements OnInit {
   ngOnInit() {
     console.log('Initializing with results to show', this.resultsToShow);
 
-    this.formGroups = [];
-    this.makeResultsPlotForms(this.scenarioID);
+
 
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
@@ -62,8 +63,13 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Make the results buttons
     this.allResultsButtons = [];
-    this.allResultsForms = [];
     this.makeResultsTableButtons();
+
+    // Make the forms
+    this.getFormOptions(this.scenarioID);
+    this.formGroups = [];
+    this.makeResultsPlotForms(this.scenarioID);
+
     // this.makeResultsPlotForms(this.scenarioID);
 
     // Results tables
@@ -142,6 +148,12 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  getFormOptions(scenarioID): void {
+    this.scenarioResultsService.getOptions(scenarioID).subscribe(options => {
+      this.formOptions = options;
+    });
+  }
+
   makeResultsPlotForms(scenarioID): void {
     this.scenarioResultsService.getResultsIncludedPlots(scenarioID)
       .subscribe(includedPlots => {
@@ -160,19 +172,6 @@ export class ScenarioResultsComponent implements OnInit {
           this.formGroups.push(form);
         }
       });
-    // for (const blah of ['dispatch', 'capacity']) {
-    //   const form = this.formBuilder.group({
-    //     plotType: blah,
-    //     caption: '',
-    //     loadZone: [],
-    //     period: [],
-    //     horizon: [],
-    //     timepoint: 'default',
-    //     stage: [],
-    //     yMax: ''
-    //   });
-    //   this.formGroups.push(form);
-    // }
   }
 
   testFormGroups(formGroup): void {

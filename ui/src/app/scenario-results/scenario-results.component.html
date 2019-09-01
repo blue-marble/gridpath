@@ -44,8 +44,12 @@
                  !==
                  'default'">
       <!--            These should come from separate object-->
-                  <option>1</option>
-                  <option>2</option>
+                  <ng-container *ngFor="let opt of
+                  formOptions['horizonOptions']">
+                    <option>
+                      {{opt}}
+                    </option>
+                  </ng-container>
                 </select>
 
                 <select formControlName="timepoint"
