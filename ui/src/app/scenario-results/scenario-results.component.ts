@@ -17,30 +17,33 @@ const Bokeh = ( window as any ).require('bokehjs');
 
 export class ScenarioResultsComponent implements OnInit {
 
-  // Which results to show
+  // Which results to show; we use an *ngIf in the table <table> and plot
+  // <div> definitions to determine whether to show the respective result
   resultsToShow: string;
 
-  allFormGroups: FormGroup[];
-
-  // Key for which results table to show
+  // //// Tables //// //
+  // All table results buttons
+  allTableButtons: {table: string, caption: string}[];
+  // The results table structure (to create the HTML for the table)
+  resultsTable: ScenarioResultsTable;
+  // Which results table to show (by running getResultsTable in ngOnInit
+  // with tableToShow as argument)
   tableToShow: string;
 
-  // All results buttons (for the tables)
-  allResultsButtons: {table: string, caption: string}[];
-
-  // Results tables; includedTables is used to know which buttons to show
-  includedTables: {name: string; caption: string}[];
-  resultsTable: ScenarioResultsTable;
-
-  // Results plots; includedPlots is used to know which forms to show
-  currentFormValue: {};
-
-  // TODO: add type
+  // //// Plots //// //
+  // All plot forms
+  allPlotFormGroups: FormGroup[];
+  // The possible options for the forms
   formOptions: ResultsOptions;
+  // The value of the submitted plot form
+  plotFormValue: {};
+  // The target_id of the plot we'll show; we'll get this from the JSON
+  // object and set it before embedding the plot
   plotHTMLTarget: string;
+  // The JSON plot object
   resultsPlot: any;
 
-  // To get the right route
+  // To get the right route for which scenario to use
   scenarioID: number;
   private sub: any;
 
@@ -60,38 +63,34 @@ export class ScenarioResultsComponent implements OnInit {
        console.log(`Scenario ID is ${this.scenarioID}`);
     });
 
+    // //// Tables //// //
     // Make the results buttons
-    this.allResultsButtons = [];
+    this.allTableButtons = [];
     this.makeResultsTableButtons();
-
-    // Make the forms
-    this.getFormOptions(this.scenarioID);
-    this.allFormGroups = [];
-    this.makeResultsPlotForms(this.scenarioID);
-
-    // Results tables
-    this.includedTables = [];
+    // Initialize the resultsTable
     this.resultsTable = {} as ScenarioResultsTable;
-
-    // // Get the key for which table to show
-    // this.getResultsToShow();
-
     // Get data
     this.getResultsTable(this.scenarioID, this.tableToShow);
-    this.getResultsPlot(this.scenarioID, this.currentFormValue);
 
-
+    // //// Plots //// //
+    // Make the plot forms
+    this.getFormOptions(this.scenarioID);
+    this.allPlotFormGroups = [];
+    this.makeResultsPlotForms(this.scenarioID);
+    // Get and embed the plot
+    this.getResultsPlot(this.scenarioID, this.plotFormValue);
   }
 
+  // //// Tables //// //
   makeResultsTableButtons(): void {
     this.scenarioResultsService.getResultsIncludedTables()
       .subscribe(includedTables => {
-        this.allResultsButtons = includedTables;
+        this.allTableButtons = includedTables;
       });
   }
 
   showTable(tableToShow): void {
-    // Set the values needed for ngOnInit
+    // Set the values needed to display the table after ngOnInit
     this.tableToShow = tableToShow;
     this.resultsToShow = tableToShow;
 
@@ -106,11 +105,12 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  // Plots
+  // //// Plots //// //
   getFormOptions(scenarioID): void {
-    this.scenarioResultsService.getOptions(scenarioID).subscribe(options => {
-      this.formOptions = options;
-    });
+    this.scenarioResultsService.getOptions(scenarioID)
+      .subscribe(options => {
+        this.formOptions = options;
+      });
   }
 
   makeResultsPlotForms(scenarioID): void {
@@ -128,15 +128,15 @@ export class ScenarioResultsComponent implements OnInit {
             project: plot.project,
             yMax: null
           });
-          this.allFormGroups.push(form);
+          this.allPlotFormGroups.push(form);
         }
       });
   }
 
   showPlot(formGroup): void {
-    // We need to set the currentFormValue and plotHTMLTarget before
-    // calling ngOnInit
-    this.currentFormValue = formGroup;
+    // We need to set the plotFormValue and plotHTMLTarget before
+    // calling ngOnInit to be able to embed the plot
+    this.plotFormValue = formGroup;
 
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
@@ -158,8 +158,6 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   getResultsPlot(scenarioID, formGroup): void {
-    console.log(formGroup.value);
-
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
     const period = formGroup.value.period;
@@ -182,6 +180,7 @@ export class ScenarioResultsComponent implements OnInit {
     this.resultsToShow = null;
     this.ngOnInit();
   }
+
 
   goBack(): void {
     this.location.back();

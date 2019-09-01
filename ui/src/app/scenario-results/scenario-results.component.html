@@ -12,7 +12,7 @@
   <h6 id="tables-title">Results Tables</h6>
   <div class="navbar navbar-expand-sm" id="tables-navbar">
     <ul class="navbar-nav">
-      <ng-container *ngFor="let button of allResultsButtons">
+      <ng-container *ngFor="let button of allTableButtons">
         <li class="nav-item">
           <button [id]="button.table" class="navbar-results-button"
                   (click)="showTable(button.table)">{{button.caption}}</button>
@@ -28,7 +28,7 @@
         <button class="navbar-results-button"
                 (click)="clearPlots()">Clear Plots</button>
       </li>
-      <ng-container *ngFor="let formGroup of allFormGroups">
+      <ng-container *ngFor="let formGroup of allPlotFormGroups">
         <li class="form-group-list-item">
           <form [formGroup]="formGroup"
                 (ngSubmit)="showPlot(formGroup)">
