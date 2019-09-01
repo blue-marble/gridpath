@@ -42,9 +42,9 @@ export class ScenarioResultsService {
     );
   }
 
-  getResultsIncludedPlots(scenarioID): Observable<IncludedPlotFormBuilderAPI[]> {
+  getResultsIncludedPlots(): Observable<IncludedPlotFormBuilderAPI[]> {
     return this.http.get<[]>(
-      `${this.scenariosBaseURL}${scenarioID}/results/plots`
+      `${this.scenariosBaseURL}results/plots`
     );
   }
 

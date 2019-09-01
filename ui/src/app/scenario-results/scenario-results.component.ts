@@ -76,7 +76,7 @@ export class ScenarioResultsComponent implements OnInit {
     // Make the plot forms
     this.getFormOptions(this.scenarioID);
     this.allPlotFormGroups = [];
-    this.makeResultsPlotForms(this.scenarioID);
+    this.makeResultsPlotForms();
     // Get and embed the plot
     this.getResultsPlot(this.scenarioID, this.plotFormValue);
   }
@@ -113,8 +113,8 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  makeResultsPlotForms(scenarioID): void {
-    this.scenarioResultsService.getResultsIncludedPlots(scenarioID)
+  makeResultsPlotForms(): void {
+    this.scenarioResultsService.getResultsIncludedPlots()
       .subscribe(includedPlots => {
         for (const plot of includedPlots) {
           const form = this.formBuilder.group({

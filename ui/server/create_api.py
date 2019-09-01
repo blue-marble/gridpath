@@ -4,11 +4,8 @@
 from ui.server.api.home import ServerStatus
 from ui.server.api.scenario_detail import ScenarioDetailAPI
 from ui.server.api.scenario_results import \
-  ScenarioResultsOptions, ScenarioResultsDispatchPlot, \
-  ScenarioResultsCapacityNewPlot, ScenarioResultsCapacityRetiredPlot, \
-  ScenarioResultsCapacityTotalPlot, ScenarioResultsEnergyPlot, \
-  ScenarioResultsCostPlot, ScenarioResultsCapacityFactorPlot, \
-  ScenarioResultsTable, ScenarioResultsIncludedTables, ScenarioResultsPlot, \
+  ScenarioResultsOptions, ScenarioResultsTable, \
+  ScenarioResultsIncludedTables, ScenarioResultsPlot, \
   ScenarioResultsIncludedPlots
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
@@ -425,55 +422,7 @@ def add_scenario_results_resources(api, db_path):
 
     api.add_resource(
         ScenarioResultsIncludedPlots,
-        '/scenarios/<scenario_id>/results/plots',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsDispatchPlot,
-        '/scenarios/<scenario_id>/results-dispatch-plot/<load_zone>/<horizon>/'
-        '<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsCapacityNewPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/new/<load_zone>/<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsCapacityRetiredPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/retired/<load_zone>/'
-        '<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsCapacityTotalPlot,
-        '/scenarios/<scenario_id>/results-capacity-plot/total/<load_zone>/'
-        '<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsEnergyPlot,
-        '/scenarios/<scenario_id>/results-energy-plot/<load_zone>/<stage>/'
-        '<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsCostPlot,
-        '/scenarios/<scenario_id>/results-cost-plot/<load_zone>/<stage>/'
-        '<ymax>',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
-    api.add_resource(
-        ScenarioResultsCapacityFactorPlot,
-        '/scenarios/<scenario_id>/results-capacity-factor-plot/<load_zone>/'
-        '<stage>/<ymax>',
+        '/scenarios/results/plots',
         resource_class_kwargs={'db_path': db_path}
     )
 
