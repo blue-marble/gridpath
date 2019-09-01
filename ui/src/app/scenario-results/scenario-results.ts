@@ -14,9 +14,10 @@ export class ScenarioResultsPlot {
 
 export class ResultsOptions {
   loadZoneOptions: [];
+  rpsZoneOptions: [];
+  carbonCapZoneOptions: [];
   periodOptions: [];
   horizonOptions: [];
-  timepointOptions: [];
   stageOptions: [];
   projectOptions: [];
 }
@@ -25,9 +26,10 @@ export class IncludedPlotFormBuilderAPI {
   'plotType': string;
   'caption': string;
   'loadZone': [] | string;
+  'carbonCapZone': [] | string;
+  'rpsZone': [] | string;
   'period': [] | string;
   'horizon': [] | string;
-  'timepoint': [] | string;
   'stage': [] | string;
   'project': [] | string;
 }

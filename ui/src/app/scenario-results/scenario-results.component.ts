@@ -121,9 +121,10 @@ export class ScenarioResultsComponent implements OnInit {
             plotType: plot.plotType,
             caption: plot.caption,
             loadZone: plot.loadZone,
+            rpsZone: plot.rpsZone,
+            carbonCapZone: plot.carbonCapZone,
             period: plot.period,
             horizon: plot.horizon,
-            timepoint: plot.timepoint,
             stage: plot.stage,
             project: plot.project,
             yMax: null
@@ -140,16 +141,18 @@ export class ScenarioResultsComponent implements OnInit {
 
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
+    const carbonCapZone = formGroup.value.carbonCapZone;
+    const rpsZone = formGroup.value.rpsZone;
     const period = formGroup.value.period;
     const horizon = formGroup.value.horizon;
-    const timepoint = formGroup.value.timepoint;
     const stage = formGroup.value.stage;
     const project = formGroup.value.project;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
     this.scenarioResultsService.getResultsPlot(
-      this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+      this.scenarioID, plotType, loadZone, rpsZone, carbonCapZone,
+      period, horizon, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
@@ -160,16 +163,18 @@ export class ScenarioResultsComponent implements OnInit {
   getResultsPlot(scenarioID, formGroup): void {
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
+    const carbonCapZone = formGroup.value.carbonCapZone;
+    const rpsZone = formGroup.value.rpsZone;
     const period = formGroup.value.period;
     const horizon = formGroup.value.horizon;
-    const timepoint = formGroup.value.timepoint;
     const stage = formGroup.value.stage;
     const project = formGroup.value.project;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
     this.scenarioResultsService.getResultsPlot(
-      scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+      scenarioID, plotType, loadZone, rpsZone, carbonCapZone,
+      period, horizon, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot.plotJSON;
         Bokeh.embed.embed_item(this.resultsPlot);

@@ -44,6 +44,20 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
+                <select class="custom-select" formControlName="rpsZone"
+                        *ngIf="formGroup.value['rpsZone'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.rpsZoneOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
+                <select class="custom-select" formControlName="carbonCapZone"
+                        *ngIf="formGroup.value['carbonCapZone'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.carbonCapZoneOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
                 <select class="custom-select" formControlName="period"
                         *ngIf="formGroup.value['period'] !== 'default'">
                   <ng-container
@@ -55,13 +69,6 @@
                         *ngIf="formGroup.value['horizon']!=='default'">
                   <ng-container
                     *ngFor="let opt of formOptions.horizonOptions">
-                    <option>{{opt}}</option>
-                  </ng-container>
-                </select>
-                <select class="custom-select" formControlName="timepoint"
-                        *ngIf="formGroup.value['timepoint'] !== 'default'">
-                  <ng-container
-                    *ngFor="let opt of formOptions.timepointOptions">
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>

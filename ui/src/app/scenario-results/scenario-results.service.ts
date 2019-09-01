@@ -30,15 +30,15 @@ export class ScenarioResultsService {
     scenarioID: number,
     plotType: string,
     loadZone: string,
+    rpsZone: string,
+    carbonCapZone: string,
     period: number,
     horizon: number,
-    timepoint: number,
     stage: number,
     project: string,
     yMax: number
   ): Observable<ScenarioResultsPlot> {
-    return this.http.get<ScenarioResultsPlot>(
-      `${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${period}/${horizon}/${timepoint}/${stage}/${project}/${yMax}`
+    return this.http.get<ScenarioResultsPlot>(`${this.scenariosBaseURL}${scenarioID}/results/${plotType}/${loadZone}/${rpsZone}/${carbonCapZone}/${period}/${horizon}/${stage}/${project}/${yMax}`
     );
   }
 

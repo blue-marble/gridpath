@@ -34,6 +34,25 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
 
+        rps_zone_options = [z[0] for z in c.execute(
+            """SELECT rps_zone FROM inputs_geography_rps_zones 
+            WHERE rps_zone_scenario_id = (
+            SELECT rps_zone_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+        options_api["rpsZoneOptions"] = ['Select RPS Area'] + rps_zone_options
+
+        carbon_cap_zone_options = [z[0] for z in c.execute(
+            """SELECT rps_zone FROM inputs_geography_rps_zones 
+            WHERE rps_zone_scenario_id = (
+            SELECT rps_zone_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+        options_api["carbonCapZoneOptions"] = \
+          ['Select Carbon Cap Area'] + carbon_cap_zone_options
+
         period_options = [p[0] for p in c.execute(
             """SELECT period FROM inputs_temporal_periods 
             WHERE temporal_scenario_id = (
@@ -53,16 +72,6 @@ class ScenarioResultsOptions(Resource):
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
         options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
-
-        timepoint_options = [h[0] for h in c.execute(
-            """SELECT timepoint FROM inputs_temporal_timepoints 
-            WHERE temporal_scenario_id = (
-            SELECT temporal_scenario_id
-            FROM scenarios
-            WHERE scenario_id = {});""".format(scenario_id)
-          ).fetchall()]
-        options_api["timepointOptions"] = \
-            ['Select Timepoint'] + timepoint_options
 
         # TODO: we need to keep track of subproblems, as stages can differ
         #  by subproblem
@@ -98,8 +107,8 @@ class ScenarioResultsPlot(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, plot, scenario_id, load_zone, period, horizon, timepoint,
-            stage, project, ymax):
+    def get(self, plot, scenario_id, load_zone, rps_zone, carbon_cap_zone,
+            period, horizon, stage, project, ymax):
         """
 
         :return:
@@ -121,6 +130,18 @@ class ScenarioResultsPlot(Resource):
             filter_arguments.append("--load_zone")
             filter_arguments.append(load_zone)
 
+        if rps_zone == 'default':
+            pass
+        else:
+            filter_arguments.append("--rps_zone")
+            filter_arguments.append(rps_zone)
+
+        if rps_zone == 'default':
+            pass
+        else:
+            filter_arguments.append("--carbon_cap_zone")
+            filter_arguments.append(carbon_cap_zone)
+
         if period == 'default':
             pass
         else:
@@ -132,12 +153,6 @@ class ScenarioResultsPlot(Resource):
         else:
             filter_arguments.append("--horizon")
             filter_arguments.append(horizon)
-
-        if timepoint == 'default':
-            pass
-        else:
-            filter_arguments.append("--timepoint")
-            filter_arguments.append(timepoint)
 
         if stage == 'default':
             pass
@@ -179,7 +194,8 @@ class ScenarioResultsIncludedPlots(Resource):
         io, c = connect_to_database(db_path=self.db_path)
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control, 
-          period_form_control, horizon_form_control, timepoint_form_control, 
+          rps_zone_form_control, carbon_cap_zone_form_control,
+          period_form_control, horizon_form_control,
           stage_form_control, project_form_control
           FROM ui_scenario_results_plot_metadata
           WHERE include = 1;"""
@@ -189,17 +205,19 @@ class ScenarioResultsIncludedPlots(Resource):
         included_plots_api = []
         for plot in plots_query:
             (results_plot, caption, load_zone_form_control,
+                rps_zone_form_control, carbon_cap_zone_form_control,
                 period_form_control, horizon_form_control,
-                timepoint_form_control, stage_form_control,
-                project_form_control) \
-              = plot
+                stage_form_control, project_form_control) \
+                = plot
             plot_api = {
                 "plotType": results_plot,
                 "caption": caption,
                 "loadZone": [] if load_zone_form_control else "default",
+                "rpsZone": [] if rps_zone_form_control else "default",
+                "carbonCapZone": [] if carbon_cap_zone_form_control
+                else "default",
                 "period": [] if period_form_control else "default",
                 "horizon": [] if horizon_form_control else "default",
-                "timepoint": [] if timepoint_form_control else "default",
                 "stage": [] if stage_form_control else "default",
                 "project": [] if project_form_control else "default"
             }
