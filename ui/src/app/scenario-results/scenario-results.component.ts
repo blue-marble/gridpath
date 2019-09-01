@@ -5,9 +5,9 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
 import {
-  ScenarioResults,
+  ScenarioResultsTable,
   ResultsOptions
-} from './scenario-results';
+} from './scenario-results-table';
 
 const Bokeh = ( window as any ).require('bokehjs');
 
@@ -33,7 +33,7 @@ export class ScenarioResultsComponent implements OnInit {
 
   // Results tables; includedTables is used to know which buttons to show
   includedTables: {name: string; caption: string}[];
-  resultsTable: ScenarioResults;
+  resultsTable: ScenarioResultsTable;
 
   // Results plots; includedPlots is used to know which forms to show
   currentFormValue: {};
@@ -74,7 +74,7 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Results tables
     this.includedTables = [];
-    this.resultsTable = {} as ScenarioResults;
+    this.resultsTable = {} as ScenarioResultsTable;
 
     // // Get the key for which table to show
     // this.getResultsToShow();

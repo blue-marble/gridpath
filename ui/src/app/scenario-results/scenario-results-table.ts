@@ -3,8 +3,8 @@
 // TODO: consolidate with ViewDataTable (view-data.ts)?
 import {FormGroup} from '@angular/forms';
 
-export class ScenarioResults {
-  ngIfKey: string;
+export class ScenarioResultsTable {
+  table: string;
   caption: string;
   columns: [];
   rowsData: [];

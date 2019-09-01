@@ -94,7 +94,7 @@
       <div [id]="plotHTMLTarget" *ngIf="resultsToShow==plotHTMLTarget"></div>
       <!--  Results tables -->
       <table class="scenario-results-table"
-             *ngIf="resultsToShow==resultsTable.ngIfKey">
+             *ngIf="resultsToShow==resultsTable.table">
         <caption>{{resultsTable.caption}}</caption>
         <tr>
              <ng-container *ngFor="let column of resultsTable.columns">

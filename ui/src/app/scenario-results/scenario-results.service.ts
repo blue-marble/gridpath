@@ -4,9 +4,9 @@ import {BehaviorSubject, Observable} from 'rxjs';
 import {
   ResultsOptions,
   PlotAPI,
-  ScenarioResults,
+  ScenarioResultsTable,
   ResultsForm, IncludedPlotAPI
-} from './scenario-results';
+} from './scenario-results-table';
 
 @Injectable({
   providedIn: 'root'
@@ -59,8 +59,8 @@ export class ScenarioResultsService {
     );
   }
 
-  getResultsTable(scenarioID: number, table: string): Observable<ScenarioResults> {
-    return this.http.get<ScenarioResults>(
+  getResultsTable(scenarioID: number, table: string): Observable<ScenarioResultsTable> {
+    return this.http.get<ScenarioResultsTable>(
       `${this.scenariosBaseURL}${scenarioID}/results/${table}`
     );
   }

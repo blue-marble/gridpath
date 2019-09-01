@@ -527,7 +527,7 @@ def create_data_table_api(
     io, c = connect_to_database(db_path=db_path)
 
     data_table_api = dict()
-    data_table_api['ngIfKey'] = table
+    data_table_api['table'] = table
 
     data_table_api['caption'] = c.execute(
         """SELECT caption FROM ui_scenario_results_table_metadata
