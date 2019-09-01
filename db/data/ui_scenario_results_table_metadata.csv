@@ -1,0 +1,53 @@
+﻿results_table,include,caption
+﻿results_project_capacity_all,1,Project Capacity All
+results_project_capacity_binary_economic_retirement,1,Project Retirements: Binary Economic
+results_project_capacity_linear_economic_retirement,1,Project Retirements: Linear Economic
+results_project_capacity_new_build_generator,1,Generator New Capacity
+results_project_capacity_new_build_storage,1,Generator New Storage Capacity
+results_project_carbon_emissions,1,Project Carbon Emissions
+results_project_costs_capacity,1,Project Capacity Costs
+results_project_costs_operations_fuel,1,Project Fuel Costs
+results_project_costs_operations_shutdown,1,Project Shutdown Costs
+results_project_costs_operations_startup,1,Project Startup Costs
+results_project_costs_operations_variable_om,1,Project Variable O&M Costs
+results_project_curtailment_hydro,1,Hydro Project Curtailment
+results_project_curtailment_variable,1,Variable Project Curtailment
+results_project_dispatch_all,1,Project Dispatch
+results_project_dispatch_binary_commit,1,Binary Commit Project Dispatch
+results_project_dispatch_by_technology,1,Dispatch by Technology
+results_project_dispatch_capacity_commit,1,Capacity Commit Project Dispatch
+results_project_dispatch_continuous_commit,1,Continuous Commit Project Dispatch
+results_project_dispatch_hydro_curtailable,1,Curtailable Hydro Project Dispatch
+results_project_dispatch_variable,1,Variable Project Dispatch
+results_project_elcc_simple,1,Project Simple ELCC
+results_project_elcc_surface,1,Project ELCC Surface
+results_project_frequency_response,1,Project Frequency Response
+results_project_fuel_burn,1,Project Fuel Burn
+results_project_lf_reserves_down,1,Project Load-Following Reserves Down
+results_project_lf_reserves_up,1,Project Load-Following Reserves Up
+results_project_local_capacity,1,Project Local Capacity Contribution
+results_project_prm_deliverability,1,Project PRM Deliverability
+results_project_prm_deliverability_group_capacity_and_costs,1,Project PRM Deliverability Group Capacity and Costs
+results_project_regulation_down,1,Project Regulation Down
+results_project_regulation_up,1,Project Regulation Up
+results_project_rps,1,Project RPS Contributions
+results_project_spinning_reserves,1,Project Spinning Reserves
+results_system_carbon_emissions,1,System Carbon Emissions
+results_system_frequency_response_balance,1,System Frequency Response Balance
+results_system_frequency_response_partial_balance,1,System Frequency Response (Partial) Balance
+results_system_lf_reserves_down_balance,1,System Load-Following Reserves Down Balance
+results_system_lf_reserves_up_balance,1,System Load-Following Reserves Up  Balance
+results_system_load_balance,1,System Load Balance
+results_system_local_capacity,1,System Local Capacity Balance
+results_system_prm,1,System PRM Balance
+results_system_regulation_down_balance,1,System Regulation Down Balance
+results_system_regulation_up_balance,1,System Regulation Up Balance
+results_system_rps,1,System RPS
+results_system_spinning_reserves_balance,1,System Spining Reserves Balance
+results_transmission_capacity,1,Transmission Capacity
+results_transmission_capacity_new_build,1,Transmission New Build Capacity
+results_transmission_carbon_emissions,1,Transmission Carbon Emissions
+results_transmission_costs_capacity,1,Transmission Capacity Costs
+results_transmission_hurdle_costs,1,Transmission Hurdle Costs
+results_transmission_imports_exports,1,Imports/Exports
+results_transmission_operations,1,Transmission Operations
