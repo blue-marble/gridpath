@@ -177,6 +177,8 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   setFormGroupValue(formGroup): void {
+    // We need to set the currentFormValue and plotHTMLTarget before
+    // calling ngOnInit
     this.currentFormValue = formGroup;
 
     const plotType = formGroup.value.plotType;
