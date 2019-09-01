@@ -232,6 +232,26 @@ def load_data(db, omit_data):
                                row[5], row[6], row[7])
                 )
             db.commit()
+
+        # ui_scenario_results_plot_metadata
+        with open(os.path.join(os.getcwd(), "data",
+                               "ui_scenario_results_plot_metadata.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO ui_scenario_results_plot_metadata
+                    (results_plot, include, caption, load_zone_form_control,
+                    rps_zone_form_control, carbon_cap_zone_form_control,
+                    period_form_control, horizon_form_control, 
+                    stage_form_control, project_form_control)
+                    VALUES ('{}', {}, '{}', {}, {}, {}, {}, {}, {}, {});
+                    """.format(row[0], row[1], row[2], row[3], row[4],
+                               row[5], row[6], row[7], row[8], row[9])
+                )
+            db.commit()
+
     else:
         pass
 
