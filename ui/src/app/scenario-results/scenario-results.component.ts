@@ -40,7 +40,8 @@ export class ScenarioResultsComponent implements OnInit {
   includedPlots: {};
   // TODO: add type
   formOptions: ResultsOptions;
-  resultsPlot: PlotAPI;
+  plotHTMLTarget: string;
+  resultsPlot: any;
 
   // To get the right route
   scenarioID: number;
@@ -90,6 +91,9 @@ export class ScenarioResultsComponent implements OnInit {
     //   this.scenarioID, this.resultsPlot, this.loadZoneOption,
     //   this.periodOption, this.horizonOption, this.timepointOption,
     //   this.yMaxOption);
+
+    console.log(this.plotHTMLTarget);
+    console.log(this.resultsPlot);
 
   }
 
@@ -145,12 +149,27 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
-  getResultsPlot(scenarioID, plot, loadZone, period, horizon, timepoint, ymax): void {
-    this.scenarioResultsService.getResultsPlot(scenarioID, plot, loadZone, period, horizon, timepoint, ymax)
-      .subscribe(resultsPlot => {
+  getResultsPlot(scenarioID, formGroup): void {
+    const plotType = formGroup.value.plotType;
+    const loadZone = formGroup.value.loadZone;
+    const period = formGroup.value.period;
+    const horizon = formGroup.value.horizon;
+    const timepoint = formGroup.value.timepoint;
+    const stage = formGroup.value.stage;
+    const project = formGroup.value.project;
+    let yMax = formGroup.value.yMax;
+    if (yMax === null) { yMax = 'default'; }
+    console.log('yMax: ', yMax);
+    this.scenarioResultsService.getResultsPlot(
+      scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+    ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot;
+        this.plotHTMLTarget = this.resultsPlot['plotJSON']['target_id'];
+        console.log(this.resultsPlot);
         Bokeh.embed.embed_item(this.resultsPlot);
       });
+
+    this.ngOnInit();
   }
 
   getFormOptions(scenarioID): void {
@@ -172,7 +191,7 @@ export class ScenarioResultsComponent implements OnInit {
             timepoint: plot.timepoint,
             stage: plot.stage,
             project: plot.project,
-            yMax: ''
+            yMax: null
           });
           this.formGroups.push(form);
         }

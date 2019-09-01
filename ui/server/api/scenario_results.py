@@ -99,7 +99,7 @@ class ScenarioResultsPlot(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self, plot, scenario_id, load_zone, period, horizon, timepoint,
-            ymax):
+            stage, project, ymax):
         """
 
         :return:
@@ -138,6 +138,19 @@ class ScenarioResultsPlot(Resource):
         else:
             filter_arguments.append("--timepoint")
             filter_arguments.append(timepoint)
+
+        if stage == 'default':
+            pass
+        else:
+            filter_arguments.append("--stage")
+            filter_arguments.append(stage)
+
+        if project == 'default':
+            pass
+        else:
+            filter_arguments.append("--project")
+            filter_arguments.append(project)
+
 
         print(base_arguments + filter_arguments)
         if ymax == 'default':
