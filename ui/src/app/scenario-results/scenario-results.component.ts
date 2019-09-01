@@ -20,6 +20,9 @@ const Bokeh = ( window as any ).require('bokehjs');
 
 export class ScenarioResultsComponent implements OnInit {
 
+  // Which results to show
+  resultsToShow: string;
+
   allFormGroups: FormGroup[];
 
   // Key for which results table to show
@@ -98,6 +101,8 @@ export class ScenarioResultsComponent implements OnInit {
     // // Send value for show project capacity table
     // this.scenarioResultsService.changeResultsToView(resultsToShow);
     this.tableToShow = tableToShow;
+    this.resultsToShow = tableToShow;
+
     // Refresh the view
     this.ngOnInit();
   }
@@ -156,6 +161,7 @@ export class ScenarioResultsComponent implements OnInit {
       this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
+        this.resultsToShow = resultsPlot.plotJSON['target_id'];
       });
     this.ngOnInit();
   }
