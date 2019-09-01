@@ -23,7 +23,7 @@ export class ScenarioResultsComponent implements OnInit {
   allFormGroups: FormGroup[];
 
   // Key for which results table to show
-  resultsToShow: string;
+  tableToShow: string;
 
   // All results buttons (for the tables)
   allResultsButtons: {ngIfKey: string, caption: string}[];
@@ -53,10 +53,6 @@ export class ScenarioResultsComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    console.log('Initializing with results to show', this.resultsToShow);
-
-
-
     // The ActivatedRoute service provides a params Observable which we can
     // subscribe to in order to get the route parameters
     this.sub = this.route.params.subscribe(params => {
@@ -77,30 +73,31 @@ export class ScenarioResultsComponent implements OnInit {
     this.includedTables = [];
     this.resultsTable = {} as ScenarioResults;
 
-    // Get the key for which table to show
-    this.getResultsToShow();
+    // // Get the key for which table to show
+    // this.getResultsToShow();
 
     // Get data
-    this.getResultsTable(this.scenarioID, this.resultsToShow);
+    this.getResultsTable(this.scenarioID, this.tableToShow);
     this.getResultsPlot(this.scenarioID, this.currentFormValue);
 
 
   }
 
-  // Subscribe to the resultsToShow BehaviorSubject, which tells us which
-  // results table the user is requesting
-  getResultsToShow(): void {
-    this.scenarioResultsService.resultsToViewSubject
-      .subscribe((resultsToShow: string) => {
-        this.resultsToShow = resultsToShow;
-      });
-  }
+  // // Subscribe to the resultsToShow BehaviorSubject, which tells us which
+  // // results table the user is requesting
+  // getResultsToShow(): void {
+  //   this.scenarioResultsService.resultsToViewSubject
+  //     .subscribe((resultsToShow: string) => {
+  //       this.tableToShow = resultsToShow;
+  //     });
+  // }
 
   // When a results button is pressed, change the value of resultsToShow to
   // that of the respective results table and refresh the view
-  showResults(resultsToShow): void {
-    // Send value for show project capacity table
-    this.scenarioResultsService.changeResultsToView(resultsToShow);
+  showTable(tableToShow): void {
+    // // Send value for show project capacity table
+    // this.scenarioResultsService.changeResultsToView(resultsToShow);
+    this.tableToShow = tableToShow;
     // Refresh the view
     this.ngOnInit();
   }
