@@ -5,6 +5,7 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
+import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 
 const Bokeh = ( window as any ).require('bokehjs');
 
@@ -16,6 +17,9 @@ const Bokeh = ( window as any ).require('bokehjs');
 })
 
 export class ScenarioResultsComponent implements OnInit {
+
+  // Scenario Name
+  scenarioName: string;
 
   // Which results to show; we use an *ngIf in the table <table> and plot
   // <div> definitions to determine whether to show the respective result
@@ -50,6 +54,7 @@ export class ScenarioResultsComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private scenarioResultsService: ScenarioResultsService,
+    private scenarioDetailService: ScenarioDetailService,
     private location: Location,
     private formBuilder: FormBuilder
 
@@ -62,6 +67,8 @@ export class ScenarioResultsComponent implements OnInit {
        this.scenarioID = +params.id;
        console.log(`Scenario ID is ${this.scenarioID}`);
     });
+
+    this.getScenarioName(this.scenarioID);
 
     // //// Tables //// //
     // Make the results buttons
@@ -184,6 +191,13 @@ export class ScenarioResultsComponent implements OnInit {
   clearPlots(): void {
     this.resultsToShow = null;
     this.ngOnInit();
+  }
+
+  getScenarioName(scenarioID): void {
+    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
+      .subscribe(scenarioDetailAPI => {
+        this.scenarioName = scenarioDetailAPI.scenarioName;
+      });
   }
 
 

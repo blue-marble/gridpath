@@ -3,6 +3,7 @@
   <button id="goBackButtonTop" class="button-primary"
         (click)="goBack()">Back</button>
 
+  <h5 id="heading">{{scenarioName}} Input Data</h5>
 
   <ng-container *ngFor="let inputDataTable of allTables">
   <table class="view-data-table" *ngIf="dataToShow==inputDataTable.ngIfKey">

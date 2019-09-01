@@ -4,6 +4,7 @@ import { Location } from '@angular/common';
 
 import { ViewDataService } from './view-data.service';
 import { ViewDataTable } from './view-data';
+import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 
 @Component({
   selector: 'app-view-data',
@@ -15,6 +16,9 @@ export class ViewDataComponent implements OnInit {
   // To get the right route
   scenarioID: number;
   private sub: any;
+
+  // The scenario name
+  scenarioName: string;
 
   // Key for which table to show
   dataToShow: string;
@@ -87,7 +91,8 @@ export class ViewDataComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private location: Location,
-    private viewDataService: ViewDataService
+    private viewDataService: ViewDataService,
+    private scenarioDetailService: ScenarioDetailService
   ) { }
 
   ngOnInit() {
@@ -97,6 +102,9 @@ export class ViewDataComponent implements OnInit {
        this.scenarioID = +params.id;
        console.log(`Scenario ID in view-data is ${this.scenarioID}`);
     });
+
+    // Get the scenario name
+    this.getScenarioName(this.scenarioID);
 
     this.allTables = [];
 
@@ -741,6 +749,13 @@ export class ViewDataComponent implements OnInit {
       .subscribe(inputTableRows => {
         this.validationTable = inputTableRows;
         this.allTables.push(this.validationTable);
+      });
+  }
+
+  getScenarioName(scenarioID): void {
+    this.scenarioDetailService.getScenarioDetailAPI(scenarioID)
+      .subscribe(scenarioDetailAPI => {
+        this.scenarioName = scenarioDetailAPI.scenarioName;
       });
   }
 
