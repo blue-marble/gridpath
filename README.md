@@ -34,7 +34,7 @@ GridPath's optional features can be installed individually as follows.
 
 For editing or building documentation from source, run:
 ```bash
-pip install -e .[documentation]
+pip install -e .[doc]
 ```
 
 For using the GridPath user interface, run:
@@ -130,4 +130,4 @@ python get_scenario_inputs.py --help
 ```
 # Documentation
 
-TBD
+Coming soon...
