@@ -24,7 +24,7 @@
   <h6 id="plots-title">Results Plots</h6>
   <div class="navbar navbar-expand-sm" id="plots-navbar">
     <ul class="navbar-nav">
-      <ng-container *ngFor="let formGroup of formGroups">
+      <ng-container *ngFor="let formGroup of allFormGroups">
         <li class="form-group-list-item">
           <form [formGroup]="formGroup"
                 (ngSubmit)="setFormGroupValue(formGroup)">

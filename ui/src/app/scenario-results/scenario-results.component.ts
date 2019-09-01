@@ -6,8 +6,6 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 import { ScenarioResultsService } from './scenario-results.service';
 import {
   ScenarioResults,
-  ResultsForm,
-  PlotAPI,
   ResultsOptions
 } from './scenario-results';
 
@@ -22,15 +20,13 @@ const Bokeh = ( window as any ).require('bokehjs');
 
 export class ScenarioResultsComponent implements OnInit {
 
-  formGroups: FormGroup[];
+  allFormGroups: FormGroup[];
 
   // Key for which results table to show
   resultsToShow: string;
 
   // All results buttons (for the tables)
   allResultsButtons: {ngIfKey: string, caption: string}[];
-  // All results forms (for the plots)
-  allResultsForms: ResultsForm[];
 
   // Results tables; includedTables is used to know which buttons to show
   includedTables: {name: string; caption: string}[];
@@ -74,10 +70,8 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Make the forms
     this.getFormOptions(this.scenarioID);
-    this.formGroups = [];
+    this.allFormGroups = [];
     this.makeResultsPlotForms(this.scenarioID);
-
-    // this.makeResultsPlotForms(this.scenarioID);
 
     // Results tables
     this.includedTables = [];
@@ -88,16 +82,8 @@ export class ScenarioResultsComponent implements OnInit {
 
     // Get data
     this.getResultsTable(this.scenarioID, this.resultsToShow);
-    // this.getResultsPlot(
-    //   this.scenarioID, this.resultsPlot, this.loadZoneOption,
-    //   this.periodOption, this.horizonOption, this.timepointOption,
-    //   this.yMaxOption);
-
-    console.log(this.currentFormValue);
-    // this.plotHTMLTarget = 'newCapacityPlot-CAISO';
     this.getResultsPlot(this.scenarioID, this.currentFormValue);
-    console.log(this.plotHTMLTarget);
-    console.log(this.resultsPlot);
+
 
   }
 
@@ -118,26 +104,6 @@ export class ScenarioResultsComponent implements OnInit {
     // Refresh the view
     this.ngOnInit();
   }
-
-  // getResultsDispatchPlot(scenarioID): void {
-  //   // Get the plot options
-  //   const loadZone = this.dispatchPlotOptionsForm.value.dispatchPlotLoadZone;
-  //   const horizon = this.dispatchPlotOptionsForm.value.dispatchPlotHorizon;
-  //   let yMax = this.dispatchPlotOptionsForm.value.dispatchPlotYMax;
-  //   if (yMax === null) { yMax = 'default'; }
-  //
-  //   // Change the plot name for the HTML
-  //   this.dispatchPlotHTMLName = `dispatchPlot-${loadZone}-${horizon}`;
-  //
-  //   // Get the JSON object, convert to plot, and embed (the target of the
-  //   // JSON object will match the HTML name above)
-  //   this.scenarioResultsService.getResultsDispatchPlot(
-  //     scenarioID, loadZone, horizon, yMax
-  //   ).subscribe(dispatchPlotAPI => {
-  //       this.dispatchPlotJSON = dispatchPlotAPI.plotJSON;
-  //       Bokeh.embed.embed_item(this.dispatchPlotJSON);
-  //     });
-  // }
 
   getResultsTable(scenarioID, table): void {
     this.scenarioResultsService.getResultsTable(scenarioID, table)
@@ -170,8 +136,6 @@ export class ScenarioResultsComponent implements OnInit {
       scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot.plotJSON;
-        // this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
-        console.log(this.plotHTMLTarget);
         Bokeh.embed.embed_item(this.resultsPlot);
       });
   }
@@ -220,15 +184,10 @@ export class ScenarioResultsComponent implements OnInit {
             project: plot.project,
             yMax: null
           });
-          this.formGroups.push(form);
+          this.allFormGroups.push(form);
         }
       });
   }
-
-  testFormGroups(formGroup): void {
-    console.log(formGroup.value);
-  }
-
 
   goBack(): void {
     this.location.back();
