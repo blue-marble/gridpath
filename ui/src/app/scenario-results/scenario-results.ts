@@ -35,8 +35,11 @@ export class PlotAPI {
 
 export class ResultsOptions {
   loadZoneOptions: [];
+  periodOptions: [];
   horizonOptions: [];
+  timepointOptions: [];
   stageOptions: [];
+  projectOptions: [];
 }
 
 export class IncludedPlotAPI {

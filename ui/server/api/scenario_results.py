@@ -34,6 +34,15 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["loadZoneOptions"] = ['Select Zone'] + load_zone_options
 
+        period_options = [p[0] for p in c.execute(
+            """SELECT period FROM inputs_temporal_periods 
+            WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+        options_api["periodOptions"] = ['Select Period'] + period_options
+
         # TODO: are these unique or do we need to separate by period; in fact,
         #  is separating by period a better user experience regardless
         horizon_options = [h[0] for h in c.execute(
@@ -44,6 +53,16 @@ class ScenarioResultsOptions(Resource):
             WHERE scenario_id = {});""".format(scenario_id)
           ).fetchall()]
         options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
+
+        timepoint_options = [h[0] for h in c.execute(
+            """SELECT timepoint FROM inputs_temporal_timepoints 
+            WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+        options_api["timepointOptions"] = \
+            ['Select Timepoint'] + timepoint_options
 
         # TODO: we need to keep track of subproblems, as stages can differ
         #  by subproblem
@@ -57,6 +76,16 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
 
         options_api["stageOptions"] = ['Select Stage'] + stage_options
+
+        project_options = [h[0] for h in c.execute(
+            """SELECT project FROM inputs_project_portfolios 
+            WHERE project_portfolio_scenario_id = (
+            SELECT project_portfolio_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+        options_api["projectOptions"] = \
+            ['Select Generator'] + project_options
 
         return options_api
 

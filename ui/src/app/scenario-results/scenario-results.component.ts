@@ -4,7 +4,12 @@ import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormBuilder } from '@angular/forms';
 
 import { ScenarioResultsService } from './scenario-results.service';
-import { ScenarioResults, ResultsForm, PlotAPI } from './scenario-results';
+import {
+  ScenarioResults,
+  ResultsForm,
+  PlotAPI,
+  ResultsOptions
+} from './scenario-results';
 
 const Bokeh = ( window as any ).require('bokehjs');
 
@@ -34,7 +39,7 @@ export class ScenarioResultsComponent implements OnInit {
   // Results plots; includedPlots is used to know which forms to show
   includedPlots: {};
   // TODO: add type
-  formOptions: {};
+  formOptions: ResultsOptions;
   resultsPlot: PlotAPI;
 
   // To get the right route
