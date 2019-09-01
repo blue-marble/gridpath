@@ -37,7 +37,8 @@ export class ScenarioResultsComponent implements OnInit {
   resultsTable: ScenarioResults;
 
   // Results plots; includedPlots is used to know which forms to show
-  includedPlots: {};
+  currentFormValue: {};
+
   // TODO: add type
   formOptions: ResultsOptions;
   plotHTMLTarget: string;
@@ -92,6 +93,9 @@ export class ScenarioResultsComponent implements OnInit {
     //   this.periodOption, this.horizonOption, this.timepointOption,
     //   this.yMaxOption);
 
+    console.log(this.currentFormValue);
+    // this.plotHTMLTarget = 'newCapacityPlot-CAISO';
+    this.getResultsPlot(this.scenarioID, this.currentFormValue);
     console.log(this.plotHTMLTarget);
     console.log(this.resultsPlot);
 
@@ -150,6 +154,8 @@ export class ScenarioResultsComponent implements OnInit {
   }
 
   getResultsPlot(scenarioID, formGroup): void {
+    console.log(formGroup.value);
+
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
     const period = formGroup.value.period;
@@ -159,16 +165,35 @@ export class ScenarioResultsComponent implements OnInit {
     const project = formGroup.value.project;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
-    console.log('yMax: ', yMax);
+
     this.scenarioResultsService.getResultsPlot(
       scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
     ).subscribe(resultsPlot => {
-        this.resultsPlot = resultsPlot;
-        this.plotHTMLTarget = this.resultsPlot['plotJSON']['target_id'];
-        console.log(this.resultsPlot);
+        this.resultsPlot = resultsPlot.plotJSON;
+        // this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
+        console.log(this.plotHTMLTarget);
         Bokeh.embed.embed_item(this.resultsPlot);
       });
+  }
 
+  setFormGroupValue(formGroup): void {
+    this.currentFormValue = formGroup;
+
+    const plotType = formGroup.value.plotType;
+    const loadZone = formGroup.value.loadZone;
+    const period = formGroup.value.period;
+    const horizon = formGroup.value.horizon;
+    const timepoint = formGroup.value.timepoint;
+    const stage = formGroup.value.stage;
+    const project = formGroup.value.project;
+    let yMax = formGroup.value.yMax;
+    if (yMax === null) { yMax = 'default'; }
+
+    this.scenarioResultsService.getResultsPlot(
+      this.scenarioID, plotType, loadZone, period, horizon, timepoint, stage, project, yMax
+    ).subscribe(resultsPlot => {
+        this.plotHTMLTarget = resultsPlot.plotJSON['target_id'];
+      });
     this.ngOnInit();
   }
 

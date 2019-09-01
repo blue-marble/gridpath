@@ -27,7 +27,7 @@
       <ng-container *ngFor="let formGroup of formGroups">
         <li class="form-group-list-item">
           <form [formGroup]="formGroup"
-                (ngSubmit)="getResultsPlot(scenarioID, formGroup)">
+                (ngSubmit)="setFormGroupValue(formGroup)">
             <button type="submit" class="navbar-results-button">
               {{formGroup.value['caption']}}
             </button>
