@@ -19,10 +19,4 @@ export class ScenarioInputsService {
     );
   }
 
-  getValidation(scenarioID: number): Observable<ScenarioInputsTable> {
-    return this.http.get<ScenarioInputsTable>(
-      `${this.viewDataBaseURL}validation/${scenarioID}`
-    );
-  }
-
 }

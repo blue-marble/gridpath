@@ -14,6 +14,7 @@ import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 import { HomeComponent } from './home/home.component';
 import { ScenarioInputsComponent } from './scenario-inputs/scenario-inputs.component';
 import { ScenarioResultsComponent } from './scenario-results/scenario-results.component';
+import { ViewDataComponent } from './view-data/view-data.component';
 
 
 @NgModule({
@@ -25,7 +26,8 @@ import { ScenarioResultsComponent } from './scenario-results/scenario-results.co
     ScenarioNewComponent,
     HomeComponent,
     ScenarioInputsComponent,
-    ScenarioResultsComponent
+    ScenarioResultsComponent,
+    ViewDataComponent
   ],
   imports: [
     BrowserModule,

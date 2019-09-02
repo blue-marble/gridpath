@@ -9,7 +9,8 @@ from ui.server.api.scenario_results import \
   ScenarioResultsIncludedPlots
 from ui.server.api.scenario_new import ScenarioNewAPI
 from ui.server.api.scenarios import Scenarios
-from ui.server.api.scenario_inputs import ScenarioInputs, ViewDataValidation
+from ui.server.api.scenario_inputs import ScenarioInputs
+from ui.server.api.view_data import ViewDataAPI
 
 
 # Create API routes
@@ -26,6 +27,7 @@ def add_api_resources(api, db_path):
     add_scenario_new_resources(api=api, db_path=db_path)
     add_scenario_inputs_resources(api=api, db_path=db_path)
     add_home_resource(api=api)
+    add_view_data_resources(api=api, db_path=db_path)
 
 
 def add_scenarios_resources(api, db_path):
@@ -83,12 +85,6 @@ def add_scenario_inputs_resources(api, db_path):
         resource_class_kwargs={'db_path': db_path}
     )
 
-    api.add_resource(
-        ViewDataValidation,
-        '/scenarios/<scenario_id>/validation/status',
-        resource_class_kwargs={'db_path': db_path}
-    )
-
 
 def add_home_resource(api):
     """
@@ -137,4 +133,18 @@ def add_scenario_results_resources(api, db_path):
         ScenarioResultsTable,
         '/scenarios/<scenario_id>/results/<table>',
         resource_class_kwargs={'db_path': db_path}
+    )
+
+
+def add_view_data_resources(api, db_path):
+    """
+
+    :param api:
+    :param db_path:
+    :return:
+    """
+    api.add_resource(
+      ViewDataAPI,
+      '/scenarios/<scenario_id>/<table>',
+      resource_class_kwargs={'db_path': db_path}
     )

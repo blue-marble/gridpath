@@ -145,9 +145,9 @@ export class ScenarioDetailComponent implements OnInit {
 
   viewValidationErrors(): void {
     const navigationExtras: NavigationExtras = {
-      state: {table: 'validation', row: 'status'}
+      state: {table: 'mod_input_validation'}
     };
-    this.router.navigate(['/scenario-inputs', this.scenarioID],
+    this.router.navigate(['/view-data', this.scenarioID],
       navigationExtras);
   }
 
