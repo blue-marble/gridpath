@@ -6,7 +6,7 @@ import {ScenarioNewService} from './scenario-new.service';
 import {Scenario} from '../scenarios/scenarios.component';
 import {ScenariosService} from '../scenarios/scenarios.service';
 import {ScenarioDetailService} from '../scenario-detail/scenario-detail.service';
-import {ViewDataService} from '../view-data/view-data.service';
+import {ScenarioInputsService} from '../scenario-inputs/scenario-inputs.service';
 import {ScenarioNewAPI} from './scenario-new';
 import {StartingValues} from '../scenario-detail/scenario-detail';
 
@@ -128,7 +128,7 @@ export class ScenarioNewComponent implements OnInit {
   constructor(private scenarioNewService: ScenarioNewService,
               private scenariosService: ScenariosService,
               private scenarioDetailService: ScenarioDetailService,
-              private viewDataService: ViewDataService,
+              private viewDataService: ScenarioInputsService,
               private router: Router,
               private route: ActivatedRoute,
               private zone: NgZone,
@@ -266,7 +266,7 @@ export class ScenarioNewComponent implements OnInit {
       state: {table: tableNameInDB, row: rowNameInDB}
     };
     // Switch to the new scenario view, with 0 as argument (show all data)
-    this.router.navigate(['/view-data', 0], navigationExtras);
+    this.router.navigate(['/scenario-inputs', 0], navigationExtras);
   }
 
   saveNewScenario() {

@@ -12,7 +12,7 @@ import { SettingsComponent } from './settings/settings.component';
 import { ScenarioDetailComponent } from './scenario-detail/scenario-detail.component';
 import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 import { HomeComponent } from './home/home.component';
-import { ViewDataComponent } from './view-data/view-data.component';
+import { ScenarioInputsComponent } from './scenario-inputs/scenario-inputs.component';
 import { ScenarioResultsComponent } from './scenario-results/scenario-results.component';
 
 
@@ -24,7 +24,7 @@ import { ScenarioResultsComponent } from './scenario-results/scenario-results.co
     ScenarioDetailComponent,
     ScenarioNewComponent,
     HomeComponent,
-    ViewDataComponent,
+    ScenarioInputsComponent,
     ScenarioResultsComponent
   ],
   imports: [

@@ -2,16 +2,16 @@ import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
-import { ViewDataService } from './view-data.service';
-import { ViewDataTable } from './view-data';
+import { ScenarioInputsService } from './scenario-inputs.service';
+import { ScenarioInputsTable } from './scenario-inputs';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 
 @Component({
   selector: 'app-view-data',
-  templateUrl: './view-data.component.html',
-  styleUrls: ['./view-data.component.css']
+  templateUrl: './scenario-inputs.component.html',
+  styleUrls: ['./scenario-inputs.component.css']
 })
-export class ViewDataComponent implements OnInit {
+export class ScenarioInputsComponent implements OnInit {
 
   // To get the right route
   scenarioID: number;
@@ -25,15 +25,15 @@ export class ViewDataComponent implements OnInit {
   scenarioName: string;
 
   // Object we'll populate with the data for the table to show
-  tableToShow: ViewDataTable;
+  tableToShow: ScenarioInputsTable;
 
-  validationTable: ViewDataTable;
+  validationTable: ScenarioInputsTable;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private location: Location,
-    private viewDataService: ViewDataService,
+    private viewDataService: ScenarioInputsService,
     private scenarioDetailService: ScenarioDetailService
   ) { }
 
@@ -55,8 +55,8 @@ export class ViewDataComponent implements OnInit {
     this.getScenarioName(this.scenarioID);
 
     // Get the data
-    this.tableToShow = {} as ViewDataTable;
-    this.getViewDataAPI(this.scenarioID, this.table, this.row);
+    this.tableToShow = {} as ScenarioInputsTable;
+    this.getScenarioInputs(this.scenarioID, this.table, this.row);
 
 
     // TODO: fix validation
@@ -66,8 +66,8 @@ export class ViewDataComponent implements OnInit {
 
   }
 
-  getViewDataAPI(scenarioID, table, row): void {
-    this.viewDataService.getViewDataAPI(scenarioID, table, row)
+  getScenarioInputs(scenarioID, table, row): void {
+    this.viewDataService.getScenarioInputs(scenarioID, table, row)
       .subscribe(inputTableRows => {
         this.tableToShow = inputTableRows;
       });

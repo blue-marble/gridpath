@@ -10,7 +10,7 @@ from ui.server.common_functions import connect_to_database
 #  without having to resort to JOINS
 
 
-class ViewDataAPI(Resource):
+class ScenarioInputs(Resource):
     """
 
     """
@@ -23,7 +23,7 @@ class ViewDataAPI(Resource):
 
         :return:
         """
-        return create_data_table_api(
+        return create_input_data_table_api(
             db_path=self.db_path,
             ui_table_name_in_db=table,
             ui_row_name_in_db=row,
@@ -66,8 +66,8 @@ class ViewDataValidation(Resource):
         return data_table_api
 
 
-def create_data_table_api(
-  db_path, ui_table_name_in_db, ui_row_name_in_db, scenario_id
+def create_input_data_table_api(
+    db_path, ui_table_name_in_db, ui_row_name_in_db, scenario_id
 ):
     """
     :param db_path:
@@ -84,7 +84,6 @@ def create_data_table_api(
 
     # Make the data table API
     data_table_api = dict()
-    data_table_api['ngIfKey'] = ui_table_name_in_db + '-' + ui_row_name_in_db
 
     row_metadata = c.execute(
       """SELECT ui_row_caption, ui_row_db_input_table, 

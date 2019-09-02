@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ViewDataComponent } from './view-data.component';
+import { ScenarioInputsComponent } from './scenario-inputs.component';
 
 describe('ViewDataComponent', () => {
-  let component: ViewDataComponent;
-  let fixture: ComponentFixture<ViewDataComponent>;
+  let component: ScenarioInputsComponent;
+  let fixture: ComponentFixture<ScenarioInputsComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ViewDataComponent ]
+      declarations: [ ScenarioInputsComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ViewDataComponent);
+    fixture = TestBed.createComponent(ScenarioInputsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

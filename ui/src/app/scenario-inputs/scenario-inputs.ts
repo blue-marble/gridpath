@@ -1,7 +1,6 @@
 /* tslint:disable:variable-name */
 
-export class ViewDataTable {
-  ngIfKey: string;
+export class ScenarioInputsTable {
   caption: string;
   columns: [];
   rowsData: [];

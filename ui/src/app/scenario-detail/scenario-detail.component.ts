@@ -7,7 +7,7 @@ const io = ( window as any ).require('socket.io-client');
 
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
-import { ViewDataService } from '../view-data/view-data.service';
+import { ScenarioInputsService } from '../scenario-inputs/scenario-inputs.service';
 
 
 @Component({
@@ -33,7 +33,7 @@ export class ScenarioDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private scenarioDetailService: ScenarioDetailService,
-    private viewDataService: ViewDataService,
+    private viewDataService: ScenarioInputsService,
     private location: Location,
     private zone: NgZone) {
   }
@@ -134,22 +134,21 @@ export class ScenarioDetailComponent implements OnInit {
     });
   }
 
-  viewData(tableNameInDB, rowNameInDB): void {
+  viewInputData(tableNameInDB, rowNameInDB): void {
     const navigationExtras: NavigationExtras = {
       state: {table: tableNameInDB, row: rowNameInDB}
     };
     // Switch to the new scenario view
-    this.router.navigate(['/view-data', this.scenarioID], navigationExtras);
+    this.router.navigate(['/scenario-inputs', this.scenarioID],
+      navigationExtras);
   }
 
   viewValidationErrors(): void {
-    // const dataToView = 'validation';
-    // // Send the table name to the view-data service that view-data component
-    // // uses to determine which tables to show
-    // this.viewDataService.changeDataToView(dataToView);
-    // console.log('Sending data to view, ', dataToView);
-    // Switch to the new scenario view
-    this.router.navigate(['/view-data', this.scenarioID]);
+    const navigationExtras: NavigationExtras = {
+      state: {table: 'validation', row: 'status'}
+    };
+    this.router.navigate(['/scenario-inputs', this.scenarioID],
+      navigationExtras);
   }
 
 }
