@@ -261,7 +261,15 @@ export class ScenarioNewComponent implements OnInit {
     }
   }
 
-  viewData(tableNameInDB, rowNameInDB): void {
+  viewDescriptions(tableNameInDB, rowNameInDB): void {
+    const navigationExtras: NavigationExtras = {
+      state: {type: 'subscenario', table: tableNameInDB, row: rowNameInDB}
+    };
+    // Switch to the new scenario view, with 0 as argument (show all data)
+    this.router.navigate(['/scenario-inputs', 0], navigationExtras);
+  }
+
+  viewInputs(tableNameInDB, rowNameInDB): void {
     const navigationExtras: NavigationExtras = {
       state: {type: 'input', table: tableNameInDB, row: rowNameInDB}
     };
