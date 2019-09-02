@@ -4,7 +4,6 @@ import { Location } from '@angular/common';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
 import { ViewDataService } from './view-data.service';
 import { ViewDataTable } from './view-data';
-import {ScenarioInputsTable} from "../scenario-inputs/scenario-inputs";
 
 @Component({
   selector: 'app-view-data',

@@ -13,7 +13,8 @@ export class ScenarioInputsService {
 
   constructor(private http: HttpClient) { }
 
-  getScenarioInputs(scenarioID: number, table: string, row: string): Observable<ScenarioInputsTable> {
+  getScenarioInputs(scenarioID: number, table: string, row: string
+  ): Observable<ScenarioInputsTable> {
     return this.http.get<ScenarioInputsTable>(
       `${this.viewDataBaseURL}${scenarioID}/inputs/${table}/${row}`
     );
