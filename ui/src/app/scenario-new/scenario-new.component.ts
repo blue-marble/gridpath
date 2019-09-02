@@ -263,7 +263,7 @@ export class ScenarioNewComponent implements OnInit {
 
   viewData(tableNameInDB, rowNameInDB): void {
     const navigationExtras: NavigationExtras = {
-      state: {table: tableNameInDB, row: rowNameInDB}
+      state: {type: 'input', table: tableNameInDB, row: rowNameInDB}
     };
     // Switch to the new scenario view, with 0 as argument (show all data)
     this.router.navigate(['/scenario-inputs', 0], navigationExtras);

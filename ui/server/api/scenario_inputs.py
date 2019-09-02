@@ -18,13 +18,14 @@ class ScenarioInputs(Resource):
     def __init__(self, **kwargs):
         self.db_path = kwargs["db_path"]
 
-    def get(self, scenario_id, table, row):
+    def get(self, scenario_id, table_type, table, row):
         """
 
         :return:
         """
         return create_input_data_table_api(
             db_path=self.db_path,
+            table_type=table_type,
             ui_table_name_in_db=table,
             ui_row_name_in_db=row,
             scenario_id=scenario_id
@@ -32,10 +33,11 @@ class ScenarioInputs(Resource):
 
 
 def create_input_data_table_api(
-    db_path, ui_table_name_in_db, ui_row_name_in_db, scenario_id
+    db_path, table_type, ui_table_name_in_db, ui_row_name_in_db, scenario_id
 ):
     """
     :param db_path:
+    :param table_type:
     :param ui_table_name_in_db:
     :param ui_row_name_in_db:
     :param scenario_id:
@@ -51,11 +53,11 @@ def create_input_data_table_api(
     data_table_api = dict()
 
     row_metadata = c.execute(
-      """SELECT ui_row_caption, ui_row_db_input_table, 
+      """SELECT ui_row_caption, ui_row_db_{}_table, 
       ui_row_db_subscenario_table_id_column
       FROM ui_scenario_detail_table_row_metadata
       WHERE ui_table = '{}' AND ui_table_row = '{}'""".format(
-        ui_table_name_in_db, ui_row_name_in_db
+        table_type, ui_table_name_in_db, ui_row_name_in_db
       )
     ).fetchone()
 

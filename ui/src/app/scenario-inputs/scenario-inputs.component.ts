@@ -18,6 +18,7 @@ export class ScenarioInputsComponent implements OnInit {
   private sub: any;
 
   // Navigation extras (will tell us which database table to show)
+  type: string;
   table: string;
   row: string;
 
@@ -45,6 +46,7 @@ export class ScenarioInputsComponent implements OnInit {
     // Need to get the navigation extras from history (as the state is only
     // available during navigation); we'll use these to change the behavior
     // of the scenario name field
+    this.type = history.state.type;
     this.table = history.state.table;
     this.row = history.state.row;
 
@@ -53,12 +55,12 @@ export class ScenarioInputsComponent implements OnInit {
 
     // Get the data
     this.tableToShow = {} as ScenarioInputsTable;
-    this.getScenarioInputs(this.scenarioID, this.table, this.row);
+    this.getScenarioInputs(this.scenarioID, this.type, this.table, this.row);
 
   }
 
-  getScenarioInputs(scenarioID, table, row): void {
-    this.scenarioInputsService.getScenarioInputs(scenarioID, table, row)
+  getScenarioInputs(scenarioID, type, table, row): void {
+    this.scenarioInputsService.getScenarioInputs(scenarioID, type, table, row)
       .subscribe(inputTableRows => {
         this.tableToShow = inputTableRows;
       });

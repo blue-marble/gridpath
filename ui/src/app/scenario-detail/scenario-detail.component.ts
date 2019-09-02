@@ -136,7 +136,7 @@ export class ScenarioDetailComponent implements OnInit {
 
   viewInputData(tableNameInDB, rowNameInDB): void {
     const navigationExtras: NavigationExtras = {
-      state: {table: tableNameInDB, row: rowNameInDB}
+      state: {type: 'input', table: tableNameInDB, row: rowNameInDB}
     };
     // Switch to the new scenario view
     this.router.navigate(['/scenario-inputs', this.scenarioID],

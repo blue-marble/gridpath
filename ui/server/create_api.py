@@ -81,7 +81,7 @@ def add_scenario_inputs_resources(api, db_path):
     """
     api.add_resource(
         ScenarioInputs,
-        '/scenarios/<scenario_id>/inputs/<table>/<row>',
+        '/scenarios/<scenario_id>/<table_type>/<table>/<row>',
         resource_class_kwargs={'db_path': db_path}
     )
 
