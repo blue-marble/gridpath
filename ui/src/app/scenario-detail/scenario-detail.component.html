@@ -80,7 +80,8 @@
         <tr>
         <th>Name</th>
         <th>Value</th>
-        <th *ngIf="tbl.uiTableNameInDB!=='features'">View Data</th>
+        <th *ngIf="tbl.uiTableNameInDB!=='features'">View Description</th>
+        <th *ngIf="tbl.uiTableNameInDB!=='features'">View Inputs</th>
         </tr>
           <ng-container *ngFor="let sd of tbl.scenarioDetailTableRows">
              <tr>
@@ -90,11 +91,19 @@
                <td *ngIf="tbl.uiTableNameInDB=='features'">
                  <input type="checkbox" [checked]="sd.rowValue" disabled>
                </td>
+               <td *ngIf="tbl.uiTableNameInDB!=='features'">
+                  <button class="button-secondary"
+                  (click)="viewDescription(tbl.uiTableNameInDB,
+                  sd.uiRowNameInDB)">
+                  View Description
+                  </button>
+                </td>
                 <td *ngIf="tbl.uiTableNameInDB!=='features'">
                   <button class="button-secondary"
-                  (click)="viewInputData(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
-                  View Data
-                </button></td>
+                  (click)="viewInputs(tbl.uiTableNameInDB, sd.uiRowNameInDB)">
+                  View Inputs
+                  </button>
+                </td>
              </tr>
           </ng-container>
         </table>

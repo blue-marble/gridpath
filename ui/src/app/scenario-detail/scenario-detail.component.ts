@@ -134,9 +134,18 @@ export class ScenarioDetailComponent implements OnInit {
     });
   }
 
-  viewInputData(tableNameInDB, rowNameInDB): void {
+  viewDescription(tableNameInDB, rowNameInDB): void {
     const navigationExtras: NavigationExtras = {
-      state: {table: tableNameInDB, row: rowNameInDB}
+      state: {type: 'subscenario', table: tableNameInDB, row: rowNameInDB}
+    };
+    // Switch to the new scenario view
+    this.router.navigate(['/scenario-inputs', this.scenarioID],
+      navigationExtras);
+  }
+
+  viewInputs(tableNameInDB, rowNameInDB): void {
+    const navigationExtras: NavigationExtras = {
+      state: {type: 'input', table: tableNameInDB, row: rowNameInDB}
     };
     // Switch to the new scenario view
     this.router.navigate(['/scenario-inputs', this.scenarioID],

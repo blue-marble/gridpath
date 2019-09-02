@@ -36,7 +36,8 @@
           <tr>
             <th>Name</th>
             <th>Value</th>
-            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Data</th>
+            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Descriptions</th>
+            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Inputs</th>
           </tr>
         <ng-container *ngFor="let tblRow of tbl.settingRows">
            <tr>
@@ -60,8 +61,16 @@
              </td>
              <td *ngIf="tbl.uiTableNameInDB!=='features'">
                <button class="button-secondary"
-                 (click)="viewData(tbl.uiTableNameInDB, tblRow.uiRowNameInDB)">
-                 View Data</button>
+                 (click)="viewDescriptions(tbl.uiTableNameInDB,
+                 tblRow.uiRowNameInDB)">
+                 View Descriptions
+               </button>
+             </td>
+             <td *ngIf="tbl.uiTableNameInDB!=='features'">
+               <button class="button-secondary"
+                 (click)="viewInputs(tbl.uiTableNameInDB, tblRow.uiRowNameInDB)">
+                 View Inputs
+               </button>
              </td>
           </tr>
         </ng-container>
