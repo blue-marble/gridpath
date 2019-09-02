@@ -34,7 +34,8 @@
              <td>{{scenario.validationStatus}}</td>
              <td>{{scenario.runStatus}}</td>
              <td>
-               <button class="button-primary">
+               <button class="button-primary"
+                       *ngIf="scenario.runStatus=='complete'">
                   <a [routerLink]="['/scenario', scenario.id, 'results']">View
                     Results
                   </a>

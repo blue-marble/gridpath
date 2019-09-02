@@ -46,6 +46,7 @@ export class ScenarioDetailComponent implements OnInit {
        console.log(`Scenario ID is ${this.scenarioID}`);
     });
 
+    this.scenarioDetail = {} as ScenarioDetailAPI;
     // Get the scenario detail data
     this.getScenarioDetailAPI(this.scenarioID);
   }
@@ -158,6 +159,10 @@ export class ScenarioDetailComponent implements OnInit {
     };
     this.router.navigate(['/view-data', this.scenarioID],
       navigationExtras);
+  }
+
+  viewResults(): void {
+    this.router.navigate(['/scenario', this.scenarioID, 'results']);
   }
 
 }

@@ -56,17 +56,25 @@
         <tr>
           <td>Validation Status</td>
           <td>{{scenarioDetail.validationStatus}}</td>
-          <td><button
-            class='button-secondary'
+          <td>
+            <button class='button-secondary'
             *ngIf="scenarioDetail.validationStatus=='invalid'"
             (click)="viewValidationErrors()">
             View Errors
-          </button></td>
+            </button>
+          </td>
         </tr>
         <tr>
           <td>Run Status</td>
           <td>{{scenarioDetail.runStatus}}</td>
-          <td></td>
+          <td>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='complete'"
+              (click)="viewResults()">
+              View Results
+            </button>
+          </td>
         </tr>
       </table>
     </div>
