@@ -1,0 +1,28 @@
+<div class="container-fluid">
+
+  <button id="goBackButtonTop" class="button-primary"
+        (click)="goBack()">Back</button>
+
+  <h5 id="heading">{{scenarioName}} Input Data</h5>
+
+  <table class="view-data-table">
+    <caption>{{tableToShow.caption}}</caption>
+  <tr>
+       <ng-container *ngFor="let column of tableToShow.columns">
+         <th>{{column}}</th>
+       </ng-container>
+  </tr>
+
+  <ng-container *ngFor="let row of tableToShow.rowsData">
+     <tr>
+       <ng-container *ngFor="let column of tableToShow.columns">
+         <td>{{row[column]}}</td>
+       </ng-container>
+     </tr>
+  </ng-container>
+  </table>
+
+  <button id="goBackButtonBottom" class="button-primary"
+        (click)="goBack()">Back</button>
+
+</div>

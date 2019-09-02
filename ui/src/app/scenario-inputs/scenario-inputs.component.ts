@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
+
+import { ScenarioInputsService } from './scenario-inputs.service';
+import { ScenarioInputsTable } from './scenario-inputs';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
-import { ViewDataService } from './view-data.service';
-import { ViewDataTable } from './view-data';
 
 @Component({
   selector: 'app-view-data',
-  templateUrl: './view-data.component.html',
-  styleUrls: ['./view-data.component.css']
+  templateUrl: './scenario-inputs.component.html',
+  styleUrls: ['./scenario-inputs.component.css']
 })
-export class ViewDataComponent implements OnInit {
+export class ScenarioInputsComponent implements OnInit {
 
   // To get the right route
   scenarioID: number;
@@ -18,18 +19,18 @@ export class ViewDataComponent implements OnInit {
 
   // Navigation extras (will tell us which database table to show)
   table: string;
+  row: string;
 
   // The scenario name
   scenarioName: string;
 
   // Object we'll populate with the data for the table to show
-  // TODO: add type
-  tableToShow: ViewDataTable;
+  tableToShow: ScenarioInputsTable;
 
   constructor(
     private route: ActivatedRoute,
     private location: Location,
-    private viewDataService: ViewDataService,
+    private scenarioInputsService: ScenarioInputsService,
     private scenarioDetailService: ScenarioDetailService
   ) { }
 
@@ -45,17 +46,19 @@ export class ViewDataComponent implements OnInit {
     // available during navigation); we'll use these to change the behavior
     // of the scenario name field
     this.table = history.state.table;
+    this.row = history.state.row;
 
     // Get the scenario name
     this.getScenarioName(this.scenarioID);
 
     // Get the data
-    this.tableToShow = {} as ViewDataTable;
-    this.getData(this.scenarioID, this.table);
+    this.tableToShow = {} as ScenarioInputsTable;
+    this.getScenarioInputs(this.scenarioID, this.table, this.row);
+
   }
 
-  getData(scenarioID, table): void {
-    this.viewDataService.getTable(scenarioID, table)
+  getScenarioInputs(scenarioID, table, row): void {
+    this.scenarioInputsService.getScenarioInputs(scenarioID, table, row)
       .subscribe(inputTableRows => {
         this.tableToShow = inputTableRows;
       });
