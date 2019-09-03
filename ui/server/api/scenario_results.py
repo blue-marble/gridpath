@@ -4,8 +4,6 @@ from flask_restful import Resource
 import importlib
 
 from ui.server.common_functions import connect_to_database
-from viz import capacity_plot, capacity_factor_plot, cost_plot, \
-  dispatch_plot, energy_plot
 
 
 class ScenarioResultsOptions(Resource):
@@ -136,7 +134,7 @@ class ScenarioResultsPlot(Resource):
             filter_arguments.append("--rps_zone")
             filter_arguments.append(rps_zone)
 
-        if rps_zone == 'default':
+        if carbon_cap_zone == 'default':
             pass
         else:
             filter_arguments.append("--carbon_cap_zone")
