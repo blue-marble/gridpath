@@ -23,14 +23,31 @@
           <ng-container *ngFor="let tblRow of tbl.settingRows">
             <tr>
               <td>{{tblRow.rowName}}</td>
-              <td>{{baseScenarioValues[tblRow.rowFormControlName]}}</td>
+              <td *ngIf="tbl.uiTableNameInDB!=='features'">
+                {{baseScenarioValues[tblRow.rowFormControlName]}}
+              </td>
+              <td *ngIf="tbl.uiTableNameInDB=='features'">
+                 <input type="checkbox" [checked]="baseScenarioValues[tblRow.rowFormControlName]" disabled>
+              </td>
               <ng-container *ngFor="let scenarioToCompareValues of
               scenariosToCompareValues">
-                <td [ngClass]="{'red':
-                scenarioToCompareValues[tblRow.rowFormControlName] !==
-                baseScenarioValues[tblRow.rowFormControlName]
-                }">
-                {{scenarioToCompareValues[tblRow.rowFormControlName]}}</td>
+                <td *ngIf="tbl.uiTableNameInDB!=='features'"
+                    [ngClass]="{'red':
+                    scenarioToCompareValues[tblRow.rowFormControlName] !==
+                    baseScenarioValues[tblRow.rowFormControlName]
+                    }">
+                  {{scenarioToCompareValues[tblRow.rowFormControlName]}}
+                </td>
+                <td *ngIf="tbl.uiTableNameInDB=='features'"
+                    [ngClass]="{'background-red':
+                    scenarioToCompareValues[tblRow.rowFormControlName] !==
+                    baseScenarioValues[tblRow.rowFormControlName]
+                    }">
+                  <input type="checkbox"
+                         [checked]="scenarioToCompareValues[tblRow.rowFormControlName]"
+                         disabled>
+
+                </td>
               </ng-container>
             </tr>
 

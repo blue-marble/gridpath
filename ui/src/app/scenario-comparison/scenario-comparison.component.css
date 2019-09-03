@@ -33,5 +33,9 @@
 }
 
 .red {
-  color: red
+  color: salmon
+}
+
+.background-red {
+  background: salmon;
 }
