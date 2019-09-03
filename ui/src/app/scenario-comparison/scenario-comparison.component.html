@@ -14,7 +14,6 @@
           <caption>{{tbl.tableCaption}}</caption>
           <tr>
             <th>Setting/Scenario</th>
-<!--            ADD SCENARIO NAMES HERE-->
             <th>{{baseScenarioValues.scenario_name}}</th>
             <ng-container
               *ngFor="let scenarioToCompareValues of scenariosToCompareValues">
@@ -24,11 +23,14 @@
           <ng-container *ngFor="let tblRow of tbl.settingRows">
             <tr>
               <td>{{tblRow.rowName}}</td>
-<!--              ADD SCENARIO VALUES BY KEY HERE-->
               <td>{{baseScenarioValues[tblRow.rowFormControlName]}}</td>
               <ng-container *ngFor="let scenarioToCompareValues of
               scenariosToCompareValues">
-                <td>{{scenarioToCompareValues[tblRow.rowFormControlName]}}</td>
+                <td [ngClass]="{'red':
+                scenarioToCompareValues[tblRow.rowFormControlName] !==
+                baseScenarioValues[tblRow.rowFormControlName]
+                }">
+                {{scenarioToCompareValues[tblRow.rowFormControlName]}}</td>
               </ng-container>
             </tr>
 
