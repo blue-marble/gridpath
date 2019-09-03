@@ -34,6 +34,13 @@ operational_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented reserve types
+DROP TABLE IF EXISTS mod_reserve_types;
+CREATE TABLE mod_reserve_types (
+reserve_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Invalid combinations of capacity type and operational type
 DROP TABLE IF EXISTS mod_capacity_and_operational_type_invalid_combos;
 CREATE TABLE mod_capacity_and_operational_type_invalid_combos (

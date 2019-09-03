@@ -497,12 +497,11 @@ def get_projects_by_reserve(subscenarios, conn):
     """
 
     result = {}
-    reserves = [
-        "frequency_response",
-        "spinning_reserves",
-        "lf_reserves_down", "lf_reserves_up",
-        "regulation_up", "regulation_down"
-    ]
+    c = conn.cursor()
+    reserves = [r[0] for r in c.execute(
+        """SELECT reserve_type FROM mod_reserve_types"""
+    ).fetchall()]
+
     for reserve in reserves:
         # Get set of projects with a reserve BA specified
         table = "inputs_project_" + reserve + "_bas"
