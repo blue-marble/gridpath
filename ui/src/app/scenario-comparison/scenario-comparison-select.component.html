@@ -30,9 +30,9 @@
   <button>submit</button>
 </form>
 
-    <form [formGroup]="baseScenarioForm" (ngSubmit)="compareScenarioInputs()">
+    <form [formGroup]="scenariosToCompareForm" (ngSubmit)="compareScenarioInputs()">
   <label formArrayName="scenarios" *ngFor="let scenario of
-  baseScenarioForm.controls.scenarios.controls; let i = index">
+  scenariosToCompareForm.controls.scenarios.controls; let i = index">
     <input type="checkbox" [formControlName]="i">
     {{scenarios[i].name}}
   </label>

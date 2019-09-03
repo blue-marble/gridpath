@@ -23,7 +23,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     { id: 400, name: 'order 4' }
   ];
 
-  baseScenarioForm: FormGroup;
+  scenariosToCompareForm: FormGroup;
   scenarios: {id: number, name: string}[];
 
   constructor(
@@ -43,7 +43,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
       orders: new FormArray([])
     });
 
-    this.baseScenarioForm = this.formBuilder.group({
+    this.scenariosToCompareForm = this.formBuilder.group({
       scenarios: new FormArray([])
     });
 
@@ -70,7 +70,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
         this.scenarios.map((o, i) => {
           const control = new FormControl(i === 0); // if first item set to true, else false
-          (this.baseScenarioForm.controls.scenarios as FormArray).push(control);
+          (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
         });
     });
   }
@@ -85,7 +85,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   private addScenarioCheckboxes() {
     this.scenarios.map((o, i) => {
       const control = new FormControl(i === 0); // if first item set to true, else false
-      (this.baseScenarioForm.controls.scenarios as FormArray).push(control);
+      (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
     });
   }
 
@@ -97,7 +97,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   compareScenarioInputs(): void {
-    const selectedScenarioIDs = this.baseScenarioForm.value.scenarios
+    const selectedScenarioIDs = this.scenariosToCompareForm.value.scenarios
       .map((v, i) => v ? this.scenarios[i].id : null)
       .filter(v => v !== null);
     console.log(selectedScenarioIDs);
