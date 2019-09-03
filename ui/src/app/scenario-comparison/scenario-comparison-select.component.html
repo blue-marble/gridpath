@@ -6,13 +6,14 @@
     </div>
   </div>
 
+  <h5 id="scenario-detail-heading">Scenario Selection</h5>
   <form [formGroup]="scenariosToCompareForm"
           (ngSubmit)="compareScenarioInputs()">
-    <table>
+    <table class="scenario-detail">
     <tr>
       <th>Scenario</th>
       <th>Choose Base Scenario</th>
-      <th>Choose Scenarios to Compare</th>
+      <th>Select Scenarios to Compare</th>
     </tr>
       <ng-container
         *ngFor="let scenario of scenarios; let i=index">
