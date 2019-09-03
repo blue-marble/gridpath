@@ -34,6 +34,24 @@ operational_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Invalid combinations of capacity type and operational type
+DROP TABLE IF EXISTS mod_capacity_and_operational_type_invalid_combos;
+CREATE TABLE mod_capacity_and_operational_type_invalid_combos (
+capacity_type VARCHAR (32),
+operational_type VARCHAR (32),
+PRIMARY KEY (capacity_type, operational_type),
+FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types (capacity_type),
+FOREIGN KEY (operational_type) REFERENCES mod_operational_types
+(operational_type)
+);
+
+CREATE TABLE mod_feature_subscenarios (
+feature VARCHAR(32),
+subscenario_id VARCHAR(32),
+PRIMARY KEY (feature, subscenario_id),
+FOREIGN KEY (feature) REFERENCES mod_features (feature)
+);
+
 -- Features
 DROP TABLE IF EXISTS mod_features;
 CREATE TABLE mod_features (
