@@ -102,13 +102,13 @@ def create_data_df(c, scenario_id, carbon_cap_zone):
     )
 
     # For Testing:
-    df = pd.DataFrame(
-        data=[[2018, 50, 40, 5, 45, 0],
-              [2020, 20, 15, 5, 20, 100]],
-        columns=["period", "carbon_cap_mmt", "in_zone_project_emissions_mmt",
-                 "import_emissions_mmt_degen", "total_emissions_mmt_degen",
-                 "carbon_cap_marginal_cost_per_mmt"]
-    )
+    # df = pd.DataFrame(
+    #     data=[[2018, 50, 40, 5, 45, 0],
+    #           [2020, 20, 15, 5, 20, 100]],
+    #     columns=["period", "carbon_cap_mmt", "in_zone_project_emissions_mmt",
+    #              "import_emissions_mmt_degen", "total_emissions_mmt_degen",
+    #              "carbon_cap_marginal_cost_per_mmt"]
+    # )
 
     # Change period type from int to string (required for categorical bar chart)
     df["period"] = df["period"].map(str)
