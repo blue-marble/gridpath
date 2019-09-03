@@ -24,12 +24,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   ];
 
   baseScenarioForm: FormGroup;
-  scenarios = [
-    { id: 100, name: 'scenario 1' },
-    { id: 200, name: 'scenario 2' },
-    { id: 300, name: 'scenario 3' },
-    { id: 400, name: 'scenario 4' }
-  ];
+  scenarios: {id: number, name: string}[];
 
   constructor(
     private location: Location,
@@ -53,7 +48,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     });
 
     this.addCheckboxes();
-    this.addScenarioCheckboxes();
+    this.scenarios = [];
+    this.getScenarios();
   }
 
   ngOnInit() {
@@ -67,16 +63,16 @@ export class ScenarioComparisonSelectComponent implements OnInit {
       .subscribe(scenarios => {
 
         for (const scenario of scenarios) {
-          this.allScenarios.push(
+          this.scenarios.push(
             {id: scenario.id, name: scenario.name}
           );
         }
 
-        this.allScenarios.map((o, i) => {
-      const control = new FormControl(i === 0); // if first item set to true, else false
-      (this.baseScenarioForm.controls.scenariosListRadio as FormArray).push(control);
+        this.scenarios.map((o, i) => {
+          const control = new FormControl(i === 0); // if first item set to true, else false
+          (this.baseScenarioForm.controls.scenarios as FormArray).push(control);
+        });
     });
-      });
   }
 
   private addCheckboxes() {
@@ -87,7 +83,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   private addScenarioCheckboxes() {
-    this.orders.map((o, i) => {
+    this.scenarios.map((o, i) => {
       const control = new FormControl(i === 0); // if first item set to true, else false
       (this.baseScenarioForm.controls.scenarios as FormArray).push(control);
     });
@@ -101,8 +97,11 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   compareScenarioInputs(): void {
-
-    this.router.navigate(['/scenario-comparison']);
+    const selectedScenarioIDs = this.baseScenarioForm.value.scenarios
+      .map((v, i) => v ? this.scenarios[i].id : null)
+      .filter(v => v !== null);
+    console.log(selectedScenarioIDs);
+    // this.router.navigate(['/scenario-comparison']);
   }
 
   compareScenarioResults(): void {
