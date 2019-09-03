@@ -3,6 +3,11 @@
   background-color: midnightblue;
 }
 
+ul {
+  border: 1px;
+  outline: 5px white;
+}
+
 .nav-link {
   color: white;
 }

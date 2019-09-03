@@ -8,7 +8,9 @@ import { ScenarioResultsComponent } from './scenario-results/scenario-results.co
 import { ScenarioInputsComponent } from './scenario-inputs/scenario-inputs.component';
 import { ScenarioNewComponent } from './scenario-new/scenario-new.component';
 import { SettingsComponent } from './settings/settings.component';
-import {ViewDataComponent} from './view-data/view-data.component';
+import { ViewDataComponent } from './view-data/view-data.component';
+import { ScenarioComparisonSelectComponent } from './scenario-comparison/scenario-comparison-select.component';
+import { ScenarioComparisonComponent } from './scenario-comparison/scenario-comparison.component';
 
 const appRoutes: Routes = [
   { path: 'home', component: HomeComponent },
@@ -16,6 +18,8 @@ const appRoutes: Routes = [
   { path: 'scenario/:id', component: ScenarioDetailComponent },
   { path: 'scenario/:id/results', component: ScenarioResultsComponent },
   { path: 'scenario-inputs/:id', component: ScenarioInputsComponent },
+  { path: 'scenario-comparison', component: ScenarioComparisonComponent },
+  { path: 'scenario-comparison/select', component: ScenarioComparisonSelectComponent },
   { path: 'view-data/:id', component: ViewDataComponent },
   { path: 'scenario-new/:id', component: ScenarioNewComponent },
   { path: 'settings', component: SettingsComponent },

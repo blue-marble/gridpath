@@ -15,6 +15,8 @@ import { HomeComponent } from './home/home.component';
 import { ScenarioInputsComponent } from './scenario-inputs/scenario-inputs.component';
 import { ScenarioResultsComponent } from './scenario-results/scenario-results.component';
 import { ViewDataComponent } from './view-data/view-data.component';
+import { ScenarioComparisonSelectComponent } from './scenario-comparison/scenario-comparison-select.component';
+import { ScenarioComparisonComponent } from './scenario-comparison/scenario-comparison.component';
 
 
 @NgModule({
@@ -27,7 +29,9 @@ import { ViewDataComponent } from './view-data/view-data.component';
     HomeComponent,
     ScenarioInputsComponent,
     ScenarioResultsComponent,
-    ViewDataComponent
+    ViewDataComponent,
+    ScenarioComparisonSelectComponent,
+    ScenarioComparisonComponent
   ],
   imports: [
     BrowserModule,
