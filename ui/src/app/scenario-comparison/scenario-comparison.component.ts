@@ -4,7 +4,7 @@ import { ScenarioDetailService } from '../scenario-detail/scenario-detail.servic
 import { SettingsTable } from '../scenario-new/scenario-new';
 import { ScenarioNewService } from '../scenario-new/scenario-new.service';
 import { StartingValues } from '../scenario-detail/scenario-detail';
-import {Router} from "@angular/router";
+import { NavigationExtras, Router } from '@angular/router';
 
 @Component({
   selector: 'app-scenario-comparison',
@@ -79,6 +79,22 @@ export class ScenarioComparisonComponent implements OnInit {
           }
         );
     }
+  }
+
+  viewDescriptions(tableNameInDB, rowNameInDB): void {
+    const navigationExtras: NavigationExtras = {
+      state: {type: 'subscenario', table: tableNameInDB, row: rowNameInDB}
+    };
+    // Switch to the new scenario view, with 0 as argument (show all data)
+    this.router.navigate(['/scenario-inputs', 0], navigationExtras);
+  }
+
+  viewInputs(tableNameInDB, rowNameInDB): void {
+    const navigationExtras: NavigationExtras = {
+      state: {type: 'input', table: tableNameInDB, row: rowNameInDB}
+    };
+    // Switch to the new scenario view, with 0 as argument (show all data)
+    this.router.navigate(['/scenario-inputs', 0], navigationExtras);
   }
 
 

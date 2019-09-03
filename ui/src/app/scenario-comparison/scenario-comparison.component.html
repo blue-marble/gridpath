@@ -19,6 +19,8 @@
               *ngFor="let scenarioToCompareValues of scenariosToCompareValues">
               <th>{{scenarioToCompareValues.scenario_name}}</th>
             </ng-container>
+            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Descriptions</th>
+            <th *ngIf="tbl.uiTableNameInDB!=='features'">View Inputs</th>
           </tr>
           <ng-container *ngFor="let tblRow of tbl.settingRows">
             <tr>
@@ -46,21 +48,25 @@
                   <input type="checkbox"
                          [checked]="scenarioToCompareValues[tblRow.rowFormControlName]"
                          disabled>
-
                 </td>
               </ng-container>
+                <td *ngIf="tbl.uiTableNameInDB!=='features'">
+                  <button class="button-secondary"
+                   (click)="viewDescriptions(tbl.uiTableNameInDB,
+                   tblRow.uiRowNameInDB)">
+                   View Descriptions
+                  </button>
+                </td>
+                <td *ngIf="tbl.uiTableNameInDB!=='features'">
+                  <button class="button-secondary"
+                   (click)="viewInputs(tbl.uiTableNameInDB, tblRow.uiRowNameInDB)">
+                   View Inputs
+                  </button>
+                </td>
             </tr>
-
           </ng-container>
         </table>
       </ng-container>
     </div>
   </div>
-
-
-
-
-
-
-
 </div>
