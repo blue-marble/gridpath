@@ -13,17 +13,16 @@ import { Scenario } from '../scenarios/scenarios.component';
 })
 export class ScenarioComparisonSelectComponent implements OnInit {
 
-  allScenarios: {id: number, name: string}[];
+  // allScenarios: {id: number, name: string}[];
+  //
+  // form: FormGroup;
+  // orders = [
+  //   { id: 100, name: 'order 1' },
+  //   { id: 200, name: 'order 2' },
+  //   { id: 300, name: 'order 3' },
+  //   { id: 400, name: 'order 4' }
+  // ];
 
-  form: FormGroup;
-  orders = [
-    { id: 100, name: 'order 1' },
-    { id: 200, name: 'order 2' },
-    { id: 300, name: 'order 3' },
-    { id: 400, name: 'order 4' }
-  ];
-
-  baseScenarioForm: FormGroup;
   scenariosToCompareForm: FormGroup;
   scenarios: {id: number, name: string}[];
 
@@ -39,10 +38,10 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     // });
     //
     // this.getScenarios();
-
-    this.form = this.formBuilder.group({
-      orders: new FormArray([])
-    });
+    //
+    // this.form = this.formBuilder.group({
+    //   orders: new FormArray([])
+    // });
 
     // this.baseScenarioForm = this.formBuilder.group({
     //   scenarios: new FormArray([])
@@ -93,13 +92,13 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   //     (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
   //   });
   // }
-
-  submit() {
-    const selectedOrderIds = this.form.value.orders
-      .map((v, i) => v ? this.orders[i].id : null)
-      .filter(v => v !== null);
-    console.log(selectedOrderIds);
-  }
+  //
+  // submit() {
+  //   const selectedOrderIds = this.form.value.orders
+  //     .map((v, i) => v ? this.orders[i].id : null)
+  //     .filter(v => v !== null);
+  //   console.log(selectedOrderIds);
+  // }
 
   compareScenarioInputs(): void {
     const selectedScenarioIDs = this.scenariosToCompareForm.value.scenarios
