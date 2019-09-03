@@ -6,30 +6,6 @@
     </div>
   </div>
 
-<!--  <div class="row">-->
-<!--    <div class="col-md-auto">-->
-<!--      <form formGroup="{{baseScenarioForm}}"-->
-<!--            (ngSubmit)="compareScenarioInputs()">-->
-<!--        <label formArrayName="scenariosListRadio"-->
-<!--               *ngFor="let scenario-->
-<!--               of baseScenarioForm.controls.scenariosListRadio.controls; let-->
-<!--                i = index">-->
-<!--          <input type="checkbox" [formControlName]="i">-->
-<!--          {{scenariosListRadio[i].name}}-->
-<!--        </label>-->
-<!--      </form>-->
-<!--    </div>-->
-<!--  </div>-->
-
-<!--  <form [formGroup]="form" (ngSubmit)="submit()">-->
-<!--  <label formArrayName="orders" *ngFor="let order of form.controls.orders.controls; let i = index">-->
-<!--    <input type="checkbox" [formControlName]="i">-->
-<!--    {{orders[i].name}}-->
-<!--  </label>-->
-
-<!--  <button>submit</button>-->
-<!--</form>-->
-
   <form [formGroup]="scenariosToCompareForm"
         (ngSubmit)="compareScenarioInputs()">
 
@@ -38,9 +14,10 @@
     <input type="checkbox" [formControlName]="i">
     {{scenarios[i].name}}
   </label>
-          <label formArrayName="baseScenario" *ngFor="let scenario of
-  scenariosToCompareForm.controls.baseScenario.controls; let n = index">
-    <input type="radio" [formControlName]="n" [value]="scenarios[n].id">
+          <label *ngFor="let scenario of
+  scenariosToCompareForm.controls.scenarios.controls; let n = index">
+    <input type="radio" formControlName="baseScenario"
+           [value]="scenarios[n].id">
     {{scenarios[n].name}}
   </label>
   <button>Compare Scenario Inputs</button>

@@ -49,7 +49,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     // });
     this.scenariosToCompareForm = this.formBuilder.group({
       scenarios: new FormArray([]),
-      baseScenario: new FormArray([])
+      baseScenario: new FormControl()
     });
 
     // this.addCheckboxes();
@@ -76,11 +76,6 @@ export class ScenarioComparisonSelectComponent implements OnInit {
         this.scenarios.map((o, i) => {
           const controlCompare = new FormControl();
           (this.scenariosToCompareForm.controls.scenarios as FormArray).push(controlCompare);
-        });
-
-        this.scenarios.map((o, i) => {
-          const controlBase = new FormControl();
-          (this.scenariosToCompareForm.controls.baseScenario as FormArray).push(controlBase);
         });
     });
   }
@@ -110,9 +105,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     const selectedScenarioIDs = this.scenariosToCompareForm.value.scenarios
       .map((v, i) => v ? this.scenarios[i].id : null)
       .filter(v => v !== null);
-    const baseScenarioID = this.scenariosToCompareForm.value.baseScenario
-      .map((v, i) => v ? this.scenarios[i].id : null)
-      .filter(v => v !== null);
+    const baseScenarioID = this.scenariosToCompareForm.value.baseScenario;
     console.log(selectedScenarioIDs);
     console.log('Base ', baseScenarioID);
     // this.router.navigate(['/scenario-comparison']);
