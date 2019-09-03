@@ -23,6 +23,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     { id: 400, name: 'order 4' }
   ];
 
+  baseScenarioForm: FormGroup;
   scenariosToCompareForm: FormGroup;
   scenarios: {id: number, name: string}[];
 
@@ -43,11 +44,15 @@ export class ScenarioComparisonSelectComponent implements OnInit {
       orders: new FormArray([])
     });
 
+    // this.baseScenarioForm = this.formBuilder.group({
+    //   scenarios: new FormArray([])
+    // });
     this.scenariosToCompareForm = this.formBuilder.group({
-      scenarios: new FormArray([])
+      scenarios: new FormArray([]),
+      baseScenario: new FormArray([])
     });
 
-    this.addCheckboxes();
+    // this.addCheckboxes();
     this.scenarios = [];
     this.getScenarios();
   }
@@ -69,25 +74,30 @@ export class ScenarioComparisonSelectComponent implements OnInit {
         }
 
         this.scenarios.map((o, i) => {
-          const control = new FormControl(i === 0); // if first item set to true, else false
-          (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
+          const controlCompare = new FormControl();
+          (this.scenariosToCompareForm.controls.scenarios as FormArray).push(controlCompare);
+        });
+
+        this.scenarios.map((o, i) => {
+          const controlBase = new FormControl();
+          (this.scenariosToCompareForm.controls.baseScenario as FormArray).push(controlBase);
         });
     });
   }
 
-  private addCheckboxes() {
-    this.orders.map((o, i) => {
-      const control = new FormControl(i === 0); // if first item set to true, else false
-      (this.form.controls.orders as FormArray).push(control);
-    });
-  }
-
-  private addScenarioCheckboxes() {
-    this.scenarios.map((o, i) => {
-      const control = new FormControl(i === 0); // if first item set to true, else false
-      (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
-    });
-  }
+  // private addCheckboxes() {
+  //   this.orders.map((o, i) => {
+  //     const control = new FormControl(i === 0); // if first item set to true, else false
+  //     (this.form.controls.orders as FormArray).push(control);
+  //   });
+  // }
+  //
+  // private addScenarioCheckboxes() {
+  //   this.scenarios.map((o, i) => {
+  //     const control = new FormControl(i === 0); // if first item set to true, else false
+  //     (this.scenariosToCompareForm.controls.scenarios as FormArray).push(control);
+  //   });
+  // }
 
   submit() {
     const selectedOrderIds = this.form.value.orders
@@ -100,7 +110,11 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     const selectedScenarioIDs = this.scenariosToCompareForm.value.scenarios
       .map((v, i) => v ? this.scenarios[i].id : null)
       .filter(v => v !== null);
+    const baseScenarioID = this.scenariosToCompareForm.value.baseScenario
+      .map((v, i) => v ? this.scenarios[i].id : null)
+      .filter(v => v !== null);
     console.log(selectedScenarioIDs);
+    console.log('Base ', baseScenarioID);
     // this.router.navigate(['/scenario-comparison']);
   }
 

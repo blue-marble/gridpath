@@ -21,22 +21,28 @@
 <!--    </div>-->
 <!--  </div>-->
 
-  <form [formGroup]="form" (ngSubmit)="submit()">
-  <label formArrayName="orders" *ngFor="let order of form.controls.orders.controls; let i = index">
-    <input type="checkbox" [formControlName]="i">
-    {{orders[i].name}}
-  </label>
+<!--  <form [formGroup]="form" (ngSubmit)="submit()">-->
+<!--  <label formArrayName="orders" *ngFor="let order of form.controls.orders.controls; let i = index">-->
+<!--    <input type="checkbox" [formControlName]="i">-->
+<!--    {{orders[i].name}}-->
+<!--  </label>-->
 
-  <button>submit</button>
-</form>
+<!--  <button>submit</button>-->
+<!--</form>-->
 
-    <form [formGroup]="scenariosToCompareForm" (ngSubmit)="compareScenarioInputs()">
+  <form [formGroup]="scenariosToCompareForm"
+        (ngSubmit)="compareScenarioInputs()">
+
   <label formArrayName="scenarios" *ngFor="let scenario of
   scenariosToCompareForm.controls.scenarios.controls; let i = index">
     <input type="checkbox" [formControlName]="i">
     {{scenarios[i].name}}
   </label>
-
+          <label formArrayName="baseScenario" *ngFor="let scenario of
+  scenariosToCompareForm.controls.baseScenario.controls; let n = index">
+    <input type="radio" [formControlName]="n" [value]="scenarios[n].id">
+    {{scenarios[n].name}}
+  </label>
   <button>Compare Scenario Inputs</button>
 </form>
 
