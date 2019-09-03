@@ -56,9 +56,6 @@ def parse_arguments(arguments):
                         help="The desired modeling period to plot. Required.")
     parser.add_argument("--stage", default=1,
                         help="The stage ID. Defaults to 1.")
-    parser.add_argument("--curtailment_type", default="variable",
-                        help="The type of curtailment ('hydro' or 'variable')"
-                        "Defaults to 'variable'.")
     parser.add_argument("--show",
                         default=False, action="store_true",
                         help="Show and save figure to "
@@ -74,7 +71,7 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_curtailment(c, scenario_id, load_zone, period, stage, curtailment_type):
+def get_curtailment(c, scenario_id, load_zone, period, stage):
     """
     Get curtailment results by month-hour
     :param c:
@@ -82,83 +79,47 @@ def get_curtailment(c, scenario_id, load_zone, period, stage, curtailment_type):
     :param load_zone:
     :param period:
     :param stage:
-    :param curtailment_type:
     :return:
     """
 
     # Curtailment by period and timepoint
-    if curtailment_type == "variable":
-        sql = """SELECT month, hour_on_horizon, 
-            SUM(scheduled_curtailment_mwh) AS scheduled_curtailment_mwh
-            FROM (
-                SELECT scenario_id, horizon, period, timepoint, 
-                (scheduled_curtailment_mw * horizon_weight * 
-                number_of_hours_in_timepoint) as scheduled_curtailment_mwh, 
-                month, SUM(number_of_hours_in_timepoint) OVER (
-                PARTITION BY horizon ORDER BY timepoint) AS hour_on_horizon
-                FROM results_project_curtailment_variable
-        
-                INNER JOIN
-        
-                (SELECT scenario_id, temporal_scenario_id 
-                FROM scenarios)
-                USING (scenario_id)
-        
-                INNER JOIN
-        
-                (SELECT temporal_scenario_id, period, horizon, month 
-                FROM inputs_temporal_horizons)
-                USING (temporal_scenario_id, period, horizon)
-        
-                WHERE scenario_id = ?
-                AND load_zone = ?
-                AND period = ?
-                AND stage_id = ?
-            )
-            GROUP BY month, hour_on_horizon
-            ORDER BY month, hour_on_horizon
-            ;"""
-    elif curtailment_type == "hydro":
-        sql = """SELECT month, hour_on_horizon, 
-            SUM(scheduled_curtailment_mwh) AS scheduled_curtailment_mwh
-            FROM (
-                SELECT scenario_id, horizon, period, timepoint, 
-                (scheduled_curtailment_mw * horizon_weight * 
-                number_of_hours_in_timepoint) as scheduled_curtailment_mwh, 
-                month, SUM(number_of_hours_in_timepoint) OVER (
-                PARTITION BY horizon ORDER BY timepoint) AS hour_on_horizon
-                FROM results_project_curtailment_hydro
+    sql = """SELECT month, hour_on_horizon, 
+        SUM(scheduled_curtailment_mwh) AS scheduled_curtailment_mwh
+        FROM (
+            SELECT scenario_id, horizon, period, timepoint, 
+            (scheduled_curtailment_mw * horizon_weight * 
+            number_of_hours_in_timepoint) as scheduled_curtailment_mwh, 
+            month, SUM(number_of_hours_in_timepoint) OVER (
+            PARTITION BY horizon ORDER BY timepoint) AS hour_on_horizon
+            FROM results_project_curtailment_variable
     
-                INNER JOIN
+            INNER JOIN
     
-                (SELECT scenario_id, temporal_scenario_id 
-                FROM scenarios)
-                USING (scenario_id)
+            (SELECT scenario_id, temporal_scenario_id 
+            FROM scenarios)
+            USING (scenario_id)
     
-                INNER JOIN
+            INNER JOIN
     
-                (SELECT temporal_scenario_id, period, horizon, month 
-                FROM inputs_temporal_horizons)
-                USING (temporal_scenario_id, period, horizon)
+            (SELECT temporal_scenario_id, period, horizon, month 
+            FROM inputs_temporal_horizons)
+            USING (temporal_scenario_id, period, horizon)
     
-                WHERE scenario_id = ?
-                AND load_zone = ?
-                AND period = ?
-                AND stage_id = ?
-            )
-            GROUP BY month, hour_on_horizon
-            ORDER BY month, hour_on_horizon
-            ;"""
-    else:
-        raise ValueError("Invalid curtailment_type provided. Valid options are:"
-                         " 'variable', or 'hydro'. Default is 'variable'")
+            WHERE scenario_id = ?
+            AND load_zone = ?
+            AND period = ?
+            AND stage_id = ?
+        )
+        GROUP BY month, hour_on_horizon
+        ORDER BY month, hour_on_horizon
+        ;"""
 
     curtailment = c.execute(sql, (scenario_id, load_zone, period, stage))
 
     return curtailment
 
 
-def create_data_df(c, scenario_id, load_zone, period, stage, curtailment_type):
+def create_data_df(c, scenario_id, load_zone, period, stage):
     """
     Get curtailment results into df
     :param c:
@@ -166,13 +127,11 @@ def create_data_df(c, scenario_id, load_zone, period, stage, curtailment_type):
     :param load_zone:
     :param period:
     :param stage:
-    :param curtailment_type:
     :return:
     """
 
     # Get curtailment from db
-    curtailment = get_curtailment(c, scenario_id, load_zone, period, stage,
-                                  curtailment_type)
+    curtailment = get_curtailment(c, scenario_id, load_zone, period, stage)
 
     # Convert SQL query results into DataFrame
     df = pd.DataFrame(
@@ -306,21 +265,18 @@ def main(args=None):
         c=c
     )
 
-    plot_title = "{} Curtailment by Month-Hour - {} - {} - {}".format(
-        parsed_args.curtailment_type.capitalize(), parsed_args.load_zone,
-        parsed_args.period, parsed_args.stage
+    plot_title = "VER Curtailment by Month-Hour - {} - {} - {}".format(
+        parsed_args.load_zone, parsed_args.period, parsed_args.stage
     )
-    plot_name = "{}CurtailmentPlot-{}-{}-{}".format(
-        parsed_args.curtailment_type.capitalize(), parsed_args.load_zone,
-        parsed_args.period, parsed_args.stage)
+    plot_name = "VariableCurtailmentPlot-{}-{}-{}".format(
+        parsed_args.load_zone, parsed_args.period, parsed_args.stage)
 
     df = create_data_df(
         c=c,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
         period=parsed_args.period,
-        stage=parsed_args.stage,
-        curtailment_type=parsed_args.curtailment_type
+        stage=parsed_args.stage
     )
 
     plot = create_plot(

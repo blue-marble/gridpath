@@ -41,9 +41,6 @@ def parse_arguments(arguments):
                              "'../scenarios' if not specified.")
     parser.add_argument("--load_zone",
                         help="The name of the load zone. Required.")
-    parser.add_argument("--capacity_type", default="new",
-                        help="The type of capacity to plot. 'new', 'all', "
-                             "'retired'. Defaults to 'new'")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
@@ -60,9 +57,9 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_capacity(c, scenario_id, load_zone, capacity_type):
+def get_capacity(c, scenario_id, load_zone):
     """
-    Get capacity results. Can be new build, existing, or retired capacity
+    Get capacity results.
     :param c:
     :param scenario_id:
     :param load_zone:
@@ -73,60 +70,27 @@ def get_capacity(c, scenario_id, load_zone, capacity_type):
     # TODO: add existing only? (all - new)
     # TODO: double check that "all" is net of retirements
 
-    # Capacity by period and technology
-    if capacity_type == "new":
-        sql = """SELECT period, technology, sum(new_build_mw) as capacity_mw
-            FROM results_project_capacity_new_build_generator
-            WHERE scenario_id = ?
-            AND load_zone = ?
-            GROUP BY period, technology
-            UNION
-            SELECT period, technology, sum(new_build_mw) as mw
-            FROM results_project_capacity_new_build_generator
-            WHERE scenario_id = ?
-            AND load_zone = ?
-            GROUP BY period, technology;"""
-        capacity = c.execute(sql, (scenario_id, load_zone,
-                                   scenario_id, load_zone))
-    elif capacity_type == "all":
-        sql = """SELECT period, technology, sum(capacity_mw) as capacity_mw
-            FROM results_project_capacity_all
-            WHERE scenario_id = ?
-            AND load_zone = ?
-            GROUP BY period, technology;"""
-        capacity = c.execute(sql, (scenario_id, load_zone))
-    elif capacity_type == "retired":
-        sql = """SELECT period, technology, sum(retired_mw) as capacity_mw
-            FROM (SELECT scenario_id, load_zone, project, period, technology, 
-                  retired_mw 
-                  FROM results_project_capacity_linear_economic_retirement
-                  UNION 
-                  SELECT scenario_id, load_zone, project, period, technology, 
-                  retired_mw 
-                  FROM results_project_capacity_binary_economic_retirement
-                 ) as tbl
-            WHERE scenario_id = ?
-            AND load_zone = ?
-            GROUP BY period, technology;"""
-        capacity = c.execute(sql, (scenario_id, load_zone))
-    else:
-        raise ValueError("Invalid capacity_type provided. Valid options are: "
-                         "'new', 'all', or 'retired'. Default is 'new'")
+    # Total capacity by period and technology
+    sql = """SELECT period, technology, sum(capacity_mw) as capacity_mw
+        FROM results_project_capacity_all
+        WHERE scenario_id = ?
+        AND load_zone = ?
+        GROUP BY period, technology;"""
+    capacity = c.execute(sql, (scenario_id, load_zone))
 
     return capacity
 
 
-def create_data_df(c, scenario_id, load_zone, capacity_type):
+def create_data_df(c, scenario_id, load_zone):
     """
     Get capacity results and pivot into data df
     :param c:
     :param scenario_id:
     :param load_zone:
-    :param capacity_type:
     :return:
     """
 
-    capacity = get_capacity(c, scenario_id, load_zone, capacity_type)
+    capacity = get_capacity(c, scenario_id, load_zone)
 
     df = pd.DataFrame(
         data=capacity.fetchall(),
@@ -248,18 +212,14 @@ def main(args=None):
         c=c
     )
 
-    plot_title = "{} Capacity by Period - {}".format(
-        parsed_args.capacity_type.capitalize(), parsed_args.load_zone
-    )
+    plot_title = "Total Capacity by Period - {}".format(parsed_args.load_zone)
     # TODO: add capacity type to title?
-    plot_name = "{}CapacityPlot-{}".format(
-        parsed_args.capacity_type, parsed_args.load_zone)
+    plot_name = "TotalCapacityPlot-{}".format(parsed_args.load_zone)
 
     df = create_data_df(
         c=c,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
-        capacity_type=parsed_args.capacity_type
     )
 
     plot = create_plot(
