@@ -1,6 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router} from '@angular/router';
+import {FormControl, FormGroup, FormBuilder, FormArray} from '@angular/forms';
+
+import { ScenariosService } from '../scenarios/scenarios.service';
+import { Scenario } from '../scenarios/scenarios.component';
 
 @Component({
   selector: 'app-scenario-comparison-select',
@@ -9,12 +13,91 @@ import { Router} from '@angular/router';
 })
 export class ScenarioComparisonSelectComponent implements OnInit {
 
+  allScenarios: {id: number, name: string}[];
+
+  form: FormGroup;
+  orders = [
+    { id: 100, name: 'order 1' },
+    { id: 200, name: 'order 2' },
+    { id: 300, name: 'order 3' },
+    { id: 400, name: 'order 4' }
+  ];
+
+  baseScenarioForm: FormGroup;
+  scenarios = [
+    { id: 100, name: 'scenario 1' },
+    { id: 200, name: 'scenario 2' },
+    { id: 300, name: 'scenario 3' },
+    { id: 400, name: 'scenario 4' }
+  ];
+
   constructor(
     private location: Location,
-    private router: Router
-  ) { }
+    private router: Router,
+    private formBuilder: FormBuilder,
+    private scenariosService: ScenariosService
+  ) {
+
+    // this.baseScenarioForm = this.formBuilder.group({
+    //   scenariosListRadio: new FormArray([])
+    // });
+    //
+    // this.getScenarios();
+
+    this.form = this.formBuilder.group({
+      orders: new FormArray([])
+    });
+
+    this.baseScenarioForm = this.formBuilder.group({
+      scenarios: new FormArray([])
+    });
+
+    this.addCheckboxes();
+    this.addScenarioCheckboxes();
+  }
 
   ngOnInit() {
+
+    // this.allScenarios = [];
+
+  }
+
+  getScenarios(): void {
+    this.scenariosService.getScenarios()
+      .subscribe(scenarios => {
+
+        for (const scenario of scenarios) {
+          this.allScenarios.push(
+            {id: scenario.id, name: scenario.name}
+          );
+        }
+
+        this.allScenarios.map((o, i) => {
+      const control = new FormControl(i === 0); // if first item set to true, else false
+      (this.baseScenarioForm.controls.scenariosListRadio as FormArray).push(control);
+    });
+      });
+  }
+
+  private addCheckboxes() {
+    this.orders.map((o, i) => {
+      const control = new FormControl(i === 0); // if first item set to true, else false
+      (this.form.controls.orders as FormArray).push(control);
+    });
+  }
+
+  private addScenarioCheckboxes() {
+    this.orders.map((o, i) => {
+      const control = new FormControl(i === 0); // if first item set to true, else false
+      (this.baseScenarioForm.controls.scenarios as FormArray).push(control);
+    });
+  }
+
+  submit() {
+    const selectedOrderIds = this.form.value.orders
+      .map((v, i) => v ? this.orders[i].id : null)
+      .filter(v => v !== null);
+    console.log(selectedOrderIds);
   }
 
   compareScenarioInputs(): void {
