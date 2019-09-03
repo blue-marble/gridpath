@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router} from '@angular/router';
+import {NavigationExtras, Router} from '@angular/router';
 import {FormControl, FormGroup, FormBuilder, FormArray} from '@angular/forms';
 
 import { ScenariosService } from '../scenarios/scenarios.service';
@@ -105,10 +105,19 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     const selectedScenarioIDs = this.scenariosToCompareForm.value.scenarios
       .map((v, i) => v ? this.scenarios[i].id : null)
       .filter(v => v !== null);
-    const baseScenarioID = this.scenariosToCompareForm.value.baseScenario;
+    const baseScenarioIDToCompare = this.scenariosToCompareForm.value.baseScenario;
     console.log(selectedScenarioIDs);
-    console.log('Base ', baseScenarioID);
-    // this.router.navigate(['/scenario-comparison']);
+    console.log('Base ', baseScenarioIDToCompare);
+
+    // Switch to the scenario-comparison view with the given base scenario
+    // and list of scenarios to compare
+    const navigationExtras: NavigationExtras = {
+      state: {
+        baseScenarioID: baseScenarioIDToCompare,
+        scenariosIDsToCompare: selectedScenarioIDs
+      }
+    };
+    this.router.navigate(['/scenario-comparison'], navigationExtras);
   }
 
   compareScenarioResults(): void {

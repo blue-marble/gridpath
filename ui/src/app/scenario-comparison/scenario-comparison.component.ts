@@ -4,6 +4,7 @@ import { ScenarioDetailService } from '../scenario-detail/scenario-detail.servic
 import { SettingsTable } from '../scenario-new/scenario-new';
 import { ScenarioNewService } from '../scenario-new/scenario-new.service';
 import { StartingValues } from '../scenario-detail/scenario-detail';
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-scenario-comparison',
@@ -20,15 +21,24 @@ export class ScenarioComparisonComponent implements OnInit {
 
   constructor(
     private location: Location,
+    private router: Router,
     private scenarioNewService: ScenarioNewService,
     private scenarioDetailService: ScenarioDetailService
-  ) { }
+  ) {
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation.extras.state as {
+      baseScenarioID: number,
+      scenariosIDsToCompare: boolean
+    };
+  }
 
   ngOnInit() {
 
-    // Get these from form
-    this.baseScenarioID = 1;
-    this.scenariosIDsToCompare = [2, 3, 4];
+    // Need to get the navigation extras from history (as the state is only
+    // available during navigation); we'll use these to change the behavior
+    // of the scenario name field
+    this.baseScenarioID = history.state.baseScenarioID;
+    this.scenariosIDsToCompare = history.state.scenariosIDsToCompare;
 
     this.settingTables = [];
     this.getSettingTables();
