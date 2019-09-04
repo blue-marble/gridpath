@@ -92,7 +92,7 @@ class ScenarioStructure(object):
                             os.path.join(
                                 pass_through_directory,
                                 "fixed_commitment.tab"
-                            ), "w"
+                            ), "w", newline=""
                     ) as fixed_commitment_file:
                         fixed_commitment_writer = \
                             writer(fixed_commitment_file, delimiter="\t")
@@ -689,7 +689,7 @@ def save_duals(scenario_directory, subproblem, stage, instance, loaded_modules):
         constraint_object = getattr(instance, c)
         with open(os.path.join(
             scenario_directory, subproblem, stage, "results", str(c) + ".csv"),
-            "w"
+            "w", newline=""
         ) as duals_results_file:
             duals_writer = writer(duals_results_file)
             duals_writer.writerow(instance.constraint_indices[c])
