@@ -74,7 +74,7 @@ def get_capacity(c, scenario_id, load_zone):
         GROUP BY period, technology
         UNION
         SELECT period, technology, sum(new_build_mw) as mw
-        FROM results_project_capacity_new_build_generator
+        FROM results_project_capacity_new_build_storage
         WHERE scenario_id = ?
         AND load_zone = ?
         GROUP BY period, technology;"""
