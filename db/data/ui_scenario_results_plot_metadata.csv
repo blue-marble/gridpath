@@ -1,5 +1,5 @@
 ﻿results_plot,include,caption,load_zone_form_control,rps_zone_form_control,carbon_cap_zone_form_control,period_form_control,horizon_form_control,stage_form_control,project_form_control
-﻿capacity_factor_plot,1,Capacity Factors,1,0,0,0,0,1,0
+capacity_factor_plot,1,Capacity Factors,1,0,0,0,0,1,0
 capacity_new_plot,1,New Capacity,1,0,0,0,0,0,0
 capacity_retired_plot,1,Retired Capacity,1,0,0,0,0,0,0
 capacity_total_plot,1,Total Capacity,1,0,0,0,0,0,0
