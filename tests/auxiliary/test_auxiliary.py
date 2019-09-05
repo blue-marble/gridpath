@@ -96,23 +96,34 @@ class TestAuxiliary(unittest.TestCase):
 
         # Setup
         conn = sqlite3.connect(":memory:")
-        c = conn.cursor()
-
-        c.execute(
+        conn.execute(
             """CREATE TABLE table1 (
             col1 INTEGER, col2 FLOAT, col3 DOUBLE, col4 TEXT, col5 VARCHAR(32)
             );"""
         )
-
-        c.execute(
+        conn.execute(
             """CREATE TABLE table2 (
-            col1 INTEGER, col6 VARCHAR(64), col7 VARCHAR(128)
+            col1 TEXT, col6 VARCHAR(64), col7 VARCHAR(128)
             );"""
         )
+        conn.commit()
+
+        # Test dict gets created properly for one table
+        expected_dict = {
+            "col1": "numeric",
+            "col2": "numeric",
+            "col3": "numeric",
+            "col4": "string",
+            "col5": "string"
+        }
+        actual_dict = auxiliary_module_to_test.get_expected_dtypes(
+            conn, ["table1"]
+        )
+        self.assertDictEqual(expected_dict, actual_dict)
 
         # Test dict gets created properly for multiple tables
         expected_dict = {
-            "col1": "numeric",
+            "col1": "string",
             "col2": "numeric",
             "col3": "numeric",
             "col4": "string",
@@ -124,6 +135,9 @@ class TestAuxiliary(unittest.TestCase):
             conn, ["table1", "table2"]
         )
         self.assertDictEqual(expected_dict, actual_dict)
+
+        # Tear down: close connection
+        conn.close()
 
     def test_check_dtypes(self):
         """
