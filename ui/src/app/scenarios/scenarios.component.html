@@ -31,8 +31,15 @@
                   </a>
                 </button>
              </td>
-             <td>{{scenario.validationStatus}}</td>
-             <td>{{scenario.runStatus}}</td>
+             <td [ngClass]="{
+              'green' : scenario.validationStatus == 'valid',
+              'red' : scenario.validationStatus == 'invalid'
+           }">{{scenario.validationStatus}}</td>
+             <td [ngClass]="{
+              'orange' : scenario.runStatus == 'running',
+              'green' : scenario.runStatus == 'complete',
+              'red' : scenario.runStatus == 'run_error'
+           }">{{scenario.runStatus}}</td>
              <td>
                <button class="button-primary"
                        *ngIf="scenario.runStatus=='complete'">

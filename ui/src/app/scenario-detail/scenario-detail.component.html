@@ -55,7 +55,10 @@
         </tr>
         <tr>
           <td>Validation Status</td>
-          <td>{{scenarioDetail.validationStatus}}</td>
+          <td [ngClass]="{
+              'green' : scenarioDetail.validationStatus == 'valid',
+              'red' : scenarioDetail.validationStatus == 'invalid'
+           }">{{scenarioDetail.validationStatus}}</td>
           <td>
             <button class='button-secondary'
             *ngIf="scenarioDetail.validationStatus=='invalid'"
@@ -66,7 +69,11 @@
         </tr>
         <tr>
           <td>Run Status</td>
-          <td>{{scenarioDetail.runStatus}}</td>
+          <td [ngClass]="{
+              'orange' : scenarioDetail.runStatus == 'running',
+              'green' : scenarioDetail.runStatus == 'complete',
+              'red' : scenarioDetail.runStatus == 'run_error'
+           }">{{scenarioDetail.runStatus}}</td>
           <td>
             <button
               class='button-secondary'
