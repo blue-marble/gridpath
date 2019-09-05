@@ -7,7 +7,7 @@
         <tr>
           <th>Current</th>
           <th>Last Requested</th>
-          <th>Status</th>
+          <th>Request Status</th>
         </tr>
         <tr>
           <td>{{currentScenariosDirectory}}</td>
@@ -20,6 +20,10 @@
                     (click)="browseScenariosDirectory()">Browse
             </button>
           </td>
+          <td [ngClass]="{
+              'orange' : directoryStatus == 'restart required',
+              'green' : directoryStatus == 'set'
+           }">{{directoryStatus}}</td>
         </tr>
       </table>
     </div>
@@ -32,7 +36,7 @@
         <tr>
           <th>Current</th>
           <th>Requested</th>
-          <th>Status</th>
+          <th>Request Status</th>
         </tr>
         <tr>
           <td>{{currentGridPathDB}}</td>
@@ -44,6 +48,10 @@
             <button id="browseGPDatabase" class="button-primary"
                     (click)="browseGPDatabase()">Browse</button>
           </td>
+          <td [ngClass]="{
+              'orange' : databaseStatus == 'restart required',
+              'green' : databaseStatus == 'set'
+           }">{{databaseStatus}}</td>
         </tr>
       </table>
     </div>
@@ -56,7 +64,7 @@
         <tr>
           <th>Current</th>
           <th>Requested</th>
-          <th>Status</th>
+          <th>Request Status</th>
         </tr>
         <tr>
           <td>{{requestedPythonDirectory}}</td>
@@ -68,6 +76,10 @@
             <button id="browsePythonBinary" class="button-primary"
                     (click)="browsePythonBinary()">Browse</button>
           </td>
+          <td  [ngClass]="{
+              'orange' : pythonStatus == 'restart required',
+              'green' : pythonStatus == 'set'
+           }">{{pythonStatus}}</td>
         </tr>
       </table>
     </div>
@@ -81,7 +93,7 @@
           <th>Solver</th>
           <th>Current Executable</th>
           <th>Last Requested Executable</th>
-          <th>Status</th>
+          <th>Request Status</th>
         </tr>
         <tr>
           <td>Cbc</td>
