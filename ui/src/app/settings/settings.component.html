@@ -1,53 +1,128 @@
 <div class="container-fluid">
-  <h2>Settings</h2>
-  <div>
-    <input class="u-full-width" size="50" placeholder="Scenarios folder"
-      type="text" [(ngModel)]="requestedScenariosDirectory">
-    <button id="browseScenariosDirectory" class="button-primary"
-            (click)="browseScenariosDirectory()">Browse</button>
+  <h4>Settings</h4>
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>Scenarios Directory</caption>
+        <tr>
+          <th>Current</th>
+          <th>Last Requested</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>{{currentScenariosDirectory}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="Scenarios directory"
+                   type="text"
+                   [(ngModel)]="requestedScenariosDirectory">
+            <button id="browseScenariosDirectory" class="button-primary"
+                    (click)="browseScenariosDirectory()">Browse
+            </button>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
-  <div><span>Current scenarios folder setting: </span>{{currentScenariosDirectory}}</div>
-  <div>
-    <input class="u-full-width" size="50" placeholder="GridPath database"
-           type="text"
-           [(ngModel)]="requestedGridPathDB">
-    <button id="browseGPDatabase" class="button-primary"
-            (click)="browseGPDatabase()">Browse</button>
-  </div>
-  <div><span>Current GridPath database setting: </span>{{currentGridPathDB}}</div>
-  <div>
-    <input class="u-full-width" size="50" placeholder="Python binary"
-           type="text"
-           [(ngModel)]="requestedPythonDirectory">
-    <button id="browsePythonBinary" class="button-primary"
-            (click)="browsePythonBinary()">Browse</button>
-  </div>
-  <div><span>Current Python binary setting: </span>{{currentPythonDirectory}}</div>
-  <div>
-    <input class="u-full-width" size="50" placeholder="Cbc solver executable"
-           type="text"
-           [(ngModel)]="requestedCbcExecutable">
-    <button id="browseCbcExecutable" class="button-primary"
-            (click)="browseCbcExecutable()">Browse</button>
-  </div>
-  <div><span>Current Cbc executable setting: </span>{{currentCbcExecutable}}</div>
 
-  <div>
-    <input class="u-full-width" size="50" placeholder="CPLEX solver executable"
-           type="text"
-           [(ngModel)]="requestedCPLEXExecutable">
-    <button id="browseCPLEXExecutable" class="button-primary"
-            (click)="browseCPLEXExecutable()">Browse</button>
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>GridPath Database</caption>
+        <tr>
+          <th>Current</th>
+          <th>Requested</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>{{currentGridPathDB}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="GridPath database file"
+                   type="text"
+                   [(ngModel)]="requestedGridPathDB">
+            <button id="browseGPDatabase" class="button-primary"
+                    (click)="browseGPDatabase()">Browse</button>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
-  <div><span>Current CPLEX executable setting: </span>{{currentCPLEXExecutable}}</div>
 
-  <div>
-    <input class="u-full-width" size="50" placeholder="Gurobi solver executable"
-           type="text"
-           [(ngModel)]="requestedGurobiExecutable">
-    <button id="browseGurobiExecutable" class="button-primary"
-            (click)="browseGurobiExecutable()">Browse</button>
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>GridPath Python Environment Directory</caption>
+        <tr>
+          <th>Current</th>
+          <th>Requested</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>{{requestedPythonDirectory}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="GridPath Python environment directory"
+                   type="text"
+                   [(ngModel)]="requestedPythonDirectory">
+            <button id="browsePythonBinary" class="button-primary"
+                    (click)="browsePythonBinary()">Browse</button>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
-  <div><span>Current Gurobi executable setting: </span>{{currentGurobiExecutable}}</div>
 
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>Solvers</caption>
+        <tr>
+          <th>Solver</th>
+          <th>Current Executable</th>
+          <th>Last Requested Executable</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>Cbc</td>
+          <td>{{currentCbcExecutable}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="Cbc solver executable" type="text"
+                   [(ngModel)]="requestedCbcExecutable">
+            <button id="browseCbcExecutable" class="button-primary"
+                    (click)="browseCbcExecutable()">Browse
+            </button>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CPLEX</td>
+          <td>{{currentCPLEXExecutable}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="CPLEX solver executable" type="text"
+                   [(ngModel)]="requestedCPLEXExecutable">
+            <button id="browseCPLEXExecutable" class="button-primary"
+            (click)="browseCPLEXExecutable()">Browse
+            </button>
+          </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>Gurobi</td>
+          <td>{{currentGurobiExecutable}}</td>
+          <td>
+            <input class="u-full-width" size="50"
+                   placeholder="Gurobi solver executable" type="text"
+                   [(ngModel)]="requestedGurobiExecutable">
+            <button id="browseGurobiExecutable" class="button-primary"
+                    (click)="browseGurobiExecutable()">Browse
+            </button>
+          </td>
+          <td></td>
+        </tr>
+      </table>
+    </div>
+  </div>
 </div>
