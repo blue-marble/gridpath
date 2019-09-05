@@ -14,7 +14,7 @@ from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     required_operational_modules, headroom_variables, footroom_variables
-from gridpath.auxiliary.auxiliary import check_dtypes, \
+from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
     check_column_sign_positive, write_validation_to_database, check_prj_column
 
 
@@ -247,29 +247,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check data types:
-    expected_dtypes = {
-        "project": "string",
-        "capacity_type": "string",
-        "operational_type": "string",
-        "technology": "string",
-        "load_zone": "string",
-        "fuel": "string",
-        "variable_cost_per_mwh": "numeric",
-        "min_stable_level": "numeric",
-        "unit_size_mw": "numeric",
-        "startup_cost_per_mw": "numeric",
-        "shutdown_cost_per_mw": "numeric",
-        "startup_fuel_mmbtu_per_mw": "numeric",
-        "startup_plus_ramp_up_rate": "numeric",
-        "shutdown_plus_ramp_down_rate": "numeric",
-        "ramp_up_when_on_rate": "numeric",
-        "ramp_down_when_on_rate": "numeric",
-        "min_up_time_hours": "numeric",
-        "min_down_time_hours": "numeric",
-        "charging_efficiency": "numeric",
-        "discharging_efficiency": "numeric",
-        "minimum_duration_hours": "numeric"
-    }
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_portfolios", "inputs_project_load_zones",
+               "inputs_project_operational_chars"]
+    )
 
     dtype_errors, error_columns = check_dtypes(df, expected_dtypes)
     for error in dtype_errors:
@@ -286,7 +267,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check valid numeric columns are non-negative
-    numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
+    numeric_columns = [c for c in df.columns if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
     sign_errors = check_column_sign_positive(df, valid_numeric_columns)
     for error in sign_errors:

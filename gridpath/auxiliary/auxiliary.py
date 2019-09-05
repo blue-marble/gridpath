@@ -326,6 +326,47 @@ def write_validation_to_database(validation_results, conn):
     conn.commit()
 
 
+def get_expected_dtypes(conn, tables):
+    """
+    Goes through each listed table and creates a dictionary that maps each
+    column name to an expected datatype. If the tables have duplicate column
+    names, the last table will define the expected datatype (generally datatypes
+    are the same for columns in different tables with the same name so this
+    shouldn't be an issue).
+    :param conn: database connection
+    :param tables: list of database tables for which to collect datatypes
+    :return:
+    """
+
+    # TODO: add all SQLITE types and check if there's no built-in type/sub-type
+    #   dictionary somewhere
+    # Map SQLITE types to either numeric or string
+    type_dict = {
+        "INTEGER": "numeric",
+        "DOUBLE": "numeric",
+        "FLOAT": "numeric",
+        "TEXT": "string",
+        "VARCHAR(32)": "string",
+        "VARCHAR(64)": "string",
+        "VARCHAR(128)": "string",
+    }
+
+    expected_dtypes = {}
+    for table in tables:
+        # Get the expected datatypes from the table info (pragma)
+        table_info = conn.execute("""PRAGMA table_info({})""".format(table))
+        df = pd.DataFrame(
+            data=table_info.fetchall(),
+            columns=[s[0] for s in table_info.description]
+        )
+
+        df["type_category"] = df["type"].map(type_dict)
+        dtypes_dict = dict(zip(df.name, df.type_category))
+        expected_dtypes.update(dtypes_dict)
+
+    return expected_dtypes
+
+
 def check_dtypes(df, expected_dtypes):
     """
     Checks whether the inputs for a DataFrame are in the expected datatype.
@@ -555,7 +596,7 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
     # Convert list of projects to sets and check set intersection
     projects_op_type = set(projects_op_type)
     projects_w_ba = set(projects_w_ba)
-    bad_projects = projects_w_ba & projects_op_type
+    bad_projects = sorted(list(projects_w_ba & projects_op_type))
 
     # If there are any projects of the specified operaitonal type
     # with a reserve BA specified, create a validation error
