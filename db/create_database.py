@@ -127,6 +127,39 @@ def load_data(db, omit_data):
                 )
             db.commit()
 
+        # reserve_types
+        with open(os.path.join(os.getcwd(), "data",
+                               "mod_reserve_types.csv"),
+                  "r") as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO mod_reserve_types
+                    (reserve_type, description)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
+        # mod_capacity_and_operational_type_invalid_combos
+        with open(
+                os.path.join(
+                    os.getcwd(), "data",
+                    "mod_capacity_and_operational_type_invalid_combos.csv"
+                ),
+                "r"
+        ) as f:
+            reader = csv.reader(f, delimiter=",")
+            next(reader)
+            for row in reader:
+                c.execute(
+                    """INSERT INTO 
+                    mod_capacity_and_operational_type_invalid_combos
+                    (capacity_type, operational_type)
+                    VALUES ('{}', '{}');""".format(row[0], row[1])
+                )
+            db.commit()
+
         # mod_horizon_boundary_types
         with open(os.path.join(os.getcwd(), "data",
                                "mod_horizon_boundary_types.csv"),

@@ -318,27 +318,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  )
             )
 
-    # TODO: move into database table (don't hard code)
     # Check that we're not combining incompatible capacity and operational types
-    invalid_combos = [
-        ("new_build_generator", "dispatchable_binary_commit"),
-        ("new_build_generator", "dispatchable_continuous_commit"),
-        ("new_build_generator", "hydro_curtailable"),
-        ("new_build_generator", "hydro_noncurtailable"),
-        ("existing_gen_linear_economic_retirement",
-         "dispatchable_binary_commit"),
-        ("existing_gen_linear_economic_retirement",
-         "dispatchable_continuous_commit"),
-        ("existing_gen_linear_economic_retirement",
-         "hydro_curtailable"),
-        ("existing_gen_linear_economic_retirement",
-         "hydro_noncurtailable"),
-        ("existing_gen_binary_economic_retirement",
-         "hydro_curtailable"),
-        ("existing_gen_binary_economic_retirement",
-         "hydro_noncurtailable"),
-    ]
-
+    invalid_combos = c.execute(
+        """SELECT capacity_type, operational_type 
+        FROM mod_capacity_and_operational_type_invalid_combos"""
+    ).fetchall()
     validation_errors = validate_op_cap_combos(df, invalid_combos)
     for error in validation_errors:
         validation_results.append(
