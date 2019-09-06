@@ -21,7 +21,7 @@ import sys
 
 # GridPath modules
 from viz.common_functions import connect_to_database, show_hide_legend, \
-    show_plot, get_scenario_and_scenario_id
+    adjust_legend_size, show_plot, get_scenario_and_scenario_id
 
 
 def parse_arguments(arguments):
@@ -131,8 +131,6 @@ def create_data_df(c, scenario_id, carbon_cap_zone, subproblem, stage):
     df["fraction_of_import_emissions"] = df["import_emissions_mmt_degen"] \
         / df["total_emissions_mmt_degen"]
 
-    print(df)
-
     return df
 
 
@@ -206,6 +204,7 @@ def create_plot(df, title, ylimit=None):
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
     show_hide_legend(plot=plot)  # Hide legend on double click
+    adjust_legend_size(plot)
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Period"

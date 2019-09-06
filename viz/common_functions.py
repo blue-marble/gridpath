@@ -56,6 +56,40 @@ def show_hide_legend(plot):
     )
 
 
+def adjust_legend_size(plot, max_font_size=12, max_legend_width_share=0.4):
+    """
+    Get the number of legend items and the longest character length of the
+    legend items and adjust the legend size accordingly so that everything
+    fits within a predetermined size.
+    :param plot: Bokeh plot object
+    :param max_font_size:
+    :param max_legend_width_share:
+    :return:
+    """
+
+    n_items = len(plot.legend[0].items)
+    n_chars = max(len(item.label['value']) for item in plot.legend[0].items)
+
+    pixels_per_font_size_v = 3  # trial and error
+    pixels_per_font_size_h = 0.5  # trial and error
+
+    max_font_size_v = plot.plot_height / pixels_per_font_size_v / n_items
+    max_font_size_h = plot.plot_width * max_legend_width_share \
+                      / pixels_per_font_size_h / n_chars
+    max_font_size = int(round(min(
+        max_font_size_v,
+        max_font_size_h,
+        max_font_size)
+    ))
+
+    # Resize labels and glyphs to fit legend
+    plot.legend.glyph_height = max_font_size
+    plot.legend.label_height = max_font_size
+    plot.legend.label_text_line_height = max_font_size
+    plot.legend.label_text_font_size = str(max_font_size) + "pt"
+    plot.legend.spacing = int(round(0.2 * max_font_size))
+
+
 def show_plot(scenario_directory, scenario, plot, plot_name):
     """
     Show plot in HTML browser file if requested

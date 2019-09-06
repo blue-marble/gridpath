@@ -22,7 +22,7 @@ import sys
 
 # GridPath modules
 from viz.common_functions import connect_to_database, show_hide_legend, \
-    show_plot, get_scenario_and_scenario_id
+    adjust_legend_size, show_plot, get_scenario_and_scenario_id
 
 
 def parse_arguments(arguments):
@@ -455,10 +455,9 @@ def create_plot(df, title, ylimit=None):
     #   from bokeh.palettes import d3
     #   colors = d3['Category20b'][len(stacked_cols)]
 
-    # TODO: include horizon in title? (would need to add function arg)
     # Set up the figure
     plot = figure(
-        plot_width=800, plot_height=500,
+        plot_width=800, plot_height=700,
         tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
         title=title,
         # sizing_mode="scale_both"
@@ -546,6 +545,7 @@ def create_plot(df, title, ylimit=None):
     # Note2: There's currently no way to auto-size legend based on graph size(?)
     # except for maybe changing font size automatically?
     show_hide_legend(plot=plot)  # Hide legend on double click
+    adjust_legend_size(plot)
 
     # Format Axes (labels, number formatting, range, etc.)
     plot.xaxis.axis_label = "Hour Ending"
@@ -629,7 +629,6 @@ def main(args=None):
     # Return plot in json format if requested
     if parsed_args.return_json:
         return json_item(plot, plot_name)
-
 
 if __name__ == "__main__":
     main()
