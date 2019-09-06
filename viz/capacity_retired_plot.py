@@ -2,8 +2,16 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make plot of capacity by period and technology for a certain zone/stage
+Create plot of retired capacity by period and technology for a given
+zone/subproblem/stage.
+
+Note: Generally capacity expansion problems will have only one subproblem/stage
+If not specified, the plotting module assumes the subproblem/stage is equal to
+1, which is the default if there's only one subproblem/stage.
 """
+
+# TODO: should we calculate cumulative retirement instead?
+
 
 from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
@@ -41,6 +49,10 @@ def parse_arguments(arguments):
                              "'../scenarios' if not specified.")
     parser.add_argument("--load_zone",
                         help="The name of the load zone. Required.")
+    parser.add_argument("--subproblem", default=1,
+                        help="The subproblem ID. Defaults to 1.")
+    parser.add_argument("--stage", default=1,
+                        help="The stage ID. Defaults to 1.")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
@@ -57,43 +69,48 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_capacity(c, scenario_id, load_zone):
+def get_capacity(c, scenario_id, load_zone, subproblem, stage):
     """
     Get capacity results.
     :param c:
     :param scenario_id:
     :param load_zone:
-    :param capacity_type:
+    :param subproblem:
+    :param stage:
     :return:
     """
-    # Retired apacity by period and technology
+    # Retired capacity by period and technology
     sql = """SELECT period, technology, sum(retired_mw) as capacity_mw
-        FROM (SELECT scenario_id, load_zone, project, period, technology, 
-              retired_mw 
+        FROM (SELECT scenario_id, load_zone, subproblem_id, stage_id,
+              project, period, technology, retired_mw 
               FROM results_project_capacity_linear_economic_retirement
               UNION 
-              SELECT scenario_id, load_zone, project, period, technology, 
-              retired_mw 
+              SELECT scenario_id, load_zone, subproblem_id, stage_id, 
+              project, period, technology, retired_mw 
               FROM results_project_capacity_binary_economic_retirement
              ) as tbl
         WHERE scenario_id = ?
         AND load_zone = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
         GROUP BY period, technology;"""
-    capacity = c.execute(sql, (scenario_id, load_zone))
+    capacity = c.execute(sql, (scenario_id, load_zone, subproblem, stage))
 
     return capacity
 
 
-def create_data_df(c, scenario_id, load_zone):
+def create_data_df(c, scenario_id, load_zone, subproblem, stage):
     """
     Get capacity results and pivot into data df
     :param c:
     :param scenario_id:
     :param load_zone:
+    :param subproblem:
+    :param stage:
     :return:
     """
 
-    capacity = get_capacity(c, scenario_id, load_zone)
+    capacity = get_capacity(c, scenario_id, load_zone, subproblem, stage)
 
     df = pd.DataFrame(
         data=capacity.fetchall(),
@@ -215,14 +232,25 @@ def main(args=None):
         c=c
     )
 
-    plot_title = "Retired Capacity by Period - {}".format(parsed_args.load_zone)
-    # TODO: add capacity type to title?
-    plot_name = "RetiredCapacityPlot-{}".format(parsed_args.load_zone)
+    plot_title = "Retired Capacity by Period - {} - Subproblem {} - Stage {}"\
+        .format(
+            parsed_args.load_zone,
+            parsed_args.subproblem,
+            parsed_args.stage
+        )
+    plot_name = "RetiredCapacityPlot-{}-{}-{}"\
+        .format(
+            parsed_args.load_zone,
+            parsed_args.subproblem,
+            parsed_args.stage
+        )
 
     df = create_data_df(
         c=c,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
+        subproblem=parsed_args.subproblem,
+        stage=parsed_args.stage
     )
 
     plot = create_plot(
