@@ -18,7 +18,7 @@ def connect_to_database(db_path, relative_path="..", timeout=5):
 
     # If no database is specified, the database is in the 'db' directory and
     # named io.db, so give relative path to this location. The default is
-    # '..' (e.g. script is in 'gridpath' or 'viz' directory)
+    # '..' (e.g. it works if the script is in 'gridpath' or 'viz' directory)
     if db_path is None:
         db_path = os.path.join(os.getcwd(), relative_path, "db", "io.db")
 
