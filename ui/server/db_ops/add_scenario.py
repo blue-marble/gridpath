@@ -9,7 +9,7 @@ from flask_socketio import emit
 
 from db.utilities.scenario import create_scenario, \
   update_scenario_multiple_columns
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 def add_or_update_scenario(db_path, msg):

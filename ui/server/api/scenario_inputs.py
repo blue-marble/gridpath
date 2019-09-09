@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 # TODO: add the subscenario names (not just IDs) to the inputs tables --

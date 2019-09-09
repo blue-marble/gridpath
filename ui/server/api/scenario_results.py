@@ -3,7 +3,7 @@
 from flask_restful import Resource
 import importlib
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 class ScenarioResultsOptions(Resource):

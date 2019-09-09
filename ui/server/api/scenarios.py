@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 # ### API: Scenarios List ### #

@@ -10,7 +10,7 @@ from flask_socketio import emit
 import subprocess
 import sys
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 def launch_scenario_process(
