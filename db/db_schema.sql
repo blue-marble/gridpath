@@ -52,6 +52,7 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 (operational_type)
 );
 
+DROP TABLE IF EXISTS mod_feature_subscenarios;
 CREATE TABLE mod_feature_subscenarios (
 feature VARCHAR(32),
 subscenario_id VARCHAR(32),
