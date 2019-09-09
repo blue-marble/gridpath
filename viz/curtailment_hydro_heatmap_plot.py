@@ -56,6 +56,7 @@ def parse_arguments(arguments):
                         help="The desired modeling period to plot. Required.")
     parser.add_argument("--stage", default=1,
                         help="The stage ID. Defaults to 1.")
+    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
                         help="Show and save figure to "
@@ -162,11 +163,12 @@ def create_data_df(c, scenario_id, load_zone, period, stage):
     return df
 
 
-def create_plot(df, title):
+def create_plot(df, title, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param ylimit: float/int, upper limit of heatmap colorbar; optional
     :return:
     """
 
@@ -186,10 +188,12 @@ def create_plot(df, title):
     #           "#ddb7b1", "#cc7878", "#933b41", "#550b1d"]
     colors = list(reversed(Reds[9]))
 
+    high = ylimit if ylimit is not None else df.scheduled_curtailment_mwh.max()
     mapper = LinearColorMapper(
         palette=colors,
         low=df.scheduled_curtailment_mwh.min(),
-        high=df.scheduled_curtailment_mwh.max())
+        high=high
+    )
 
     # Set up the figure
     plot = figure(
@@ -281,7 +285,8 @@ def main(args=None):
 
     plot = create_plot(
         df=df,
-        title=plot_title
+        title=plot_title,
+        ylimit=parsed_args.ylimit
     )
 
     # Show plot in HTML browser file if requested
