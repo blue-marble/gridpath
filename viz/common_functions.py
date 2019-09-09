@@ -16,31 +16,6 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists
 
 
-def connect_to_database(parsed_arguments):
-    """
-    Connect to the database
-
-    :param parsed_arguments:
-    :return:
-    """
-    if parsed_arguments.database is None:
-        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
-    else:
-        db_path = parsed_arguments.database
-
-    if not os.path.isfile(db_path):
-        raise OSError(
-            "The database file {} was not found. Did you mean to "
-            "specify a different database file?".format(
-                os.path.abspath(db_path)
-            )
-        )
-
-    conn = sqlite3.connect(db_path)
-
-    return conn
-
-
 def show_hide_legend(plot):
     """
     Show/hide the legend on double tap.
