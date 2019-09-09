@@ -335,21 +335,25 @@ def get_expected_dtypes(conn, tables):
     shouldn't be an issue).
     :param conn: database connection
     :param tables: list of database tables for which to collect datatypes
-    :return:
+    :return: dictionary with table columns and expected datatype category
+        ('numeric' or 'string')
     """
 
-    # TODO: add all SQLITE types and check if there's no built-in type/sub-type
-    #   dictionary somewhere
     # Map SQLITE types to either numeric or string
-    type_dict = {
-        "INTEGER": "numeric",
-        "DOUBLE": "numeric",
-        "FLOAT": "numeric",
-        "TEXT": "string",
-        "VARCHAR(32)": "string",
-        "VARCHAR(64)": "string",
-        "VARCHAR(128)": "string",
-    }
+    # Based on '3.1 Determination of column affinity':
+    # https://www.sqlite.org/datatype3.html
+    numeric_types = ["BOOLEAN", "DATE", "DATETIME", "DECIMAL", "DOUB", "FLOA",
+                     "INT", "NUMERIC", "REAL", "TIME"]
+    string_types = ["BLOB", "CHAR", "CLOB", "STRING", "TEXT"]
+
+    def get_type_category(detailed_type):
+        if any(numeric_type in detailed_type for numeric_type in numeric_types):
+            return "numeric"
+        elif any(string_type in detailed_type for string_type in string_types):
+            return "string"
+        else:
+            raise ValueError("Encountered unknown SQLite type: type {}"
+                             .format(detailed_type))
 
     expected_dtypes = {}
     for table in tables:
@@ -360,7 +364,7 @@ def get_expected_dtypes(conn, tables):
             columns=[s[0] for s in table_info.description]
         )
 
-        df["type_category"] = df["type"].map(type_dict)
+        df["type_category"] = df["type"].map(get_type_category)
         dtypes_dict = dict(zip(df.name, df.type_category))
         expected_dtypes.update(dtypes_dict)
 
