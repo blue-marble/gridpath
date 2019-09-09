@@ -313,12 +313,15 @@ def write_validation_to_database(validation_results, conn):
     :param conn: database connection
     :return:
     """
+    # add timestamp (ISO8601 strings, so truncate to ms)
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    validation_results = [row + (timestamp,) for row in validation_results]
     c = conn.cursor()
     for row in validation_results:
         query = """INSERT into mod_input_validation
                 (scenario_id, subproblem_id, stage_id, 
                 gridpath_module, related_subscenario, related_database_table, 
-                issue_type, issue_description)
+                issue_type, issue_description, timestamp)
                 VALUES ({});""".format(','.join(['?' for item in row]))
 
         c.execute(query, row)
