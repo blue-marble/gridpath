@@ -7,9 +7,9 @@ from builtins import str
 from argparse import ArgumentParser
 import csv
 import os.path
-import sqlite3
 import sys
 
+from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists
@@ -396,21 +396,7 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
 
-    # If no database is specified, assume script is run from the 'gridpath'
-    # directory and the database is in ../db and named io.db
-    if db_path is None:
-        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
-
-    if not os.path.isfile(db_path):
-        raise OSError(
-            "The database file {} was not found. Did you mean to "
-            "specify a different database file?".format(
-                os.path.abspath(db_path)
-            )
-        )
-
-    conn = sqlite3.connect(db_path)
-    c = conn.cursor()
+    conn, c = connect_to_database(db_path=db_path)
 
     print("Getting inputs... (connected to database {})".format(db_path))
 

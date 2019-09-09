@@ -3,10 +3,6 @@
 
 import os.path
 
-# If the user has specified a path where to create the scenario directory,
-# use that; otherwise, default to a directory called 'scenarios' in the
-# GridPath root directory to find the scenario directory
-
 
 def determine_scenario_directory(scenario_location, scenario_name):
     """
@@ -15,7 +11,9 @@ def determine_scenario_directory(scenario_location, scenario_name):
     :return: the scenario directory (string)
 
     Determine the scenario directory given a base directory and the scenario
-    name.
+    name. If no base directory is specified, use a directory named
+    'scenarios' in the root directory (one level down from the current
+    working directory).
     """
     if scenario_location is None:
         main_directory = os.path.join(
@@ -38,4 +36,3 @@ def create_directory_if_not_exists(directory):
     """
     if not os.path.exists(directory):
         os.makedirs(directory)
-

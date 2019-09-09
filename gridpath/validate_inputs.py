@@ -4,12 +4,12 @@
 from __future__ import print_function
 
 from builtins import str
-import csv
 import os.path
 import sqlite3
 import sys
 from argparse import ArgumentParser
 
+from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
     write_validation_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -335,6 +335,7 @@ def main(args=None):
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
+    conn, c = connect_to_database(db_path=db_path)
     # Database
     # If no database is specified, assume script is run from the 'gridpath'
     # directory and the database is in ../db and named io.db
