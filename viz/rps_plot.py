@@ -2,10 +2,11 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make plot of rps by period specified zone.
+Create plot of rps by period for a given zone/subproblem/stage.
 
-Assumes that RPS target is not run for scenarios with multiple
-subproblems/stages.
+Note: Generally capacity expansion problems will have only one subproblem/stage
+If not specified, the plotting module assumes the subproblem/stage is equal to
+1, which is the default if there's only one subproblem/stage.
 """
 
 # TODO: maybe create a generic rescale function that checks dataframe and
@@ -48,6 +49,10 @@ def parse_arguments(arguments):
                              "'../scenarios' if not specified.")
     parser.add_argument("--rps_zone",
                         help="The name of the RPS zone. Required")
+    parser.add_argument("--subproblem", default=1,
+                        help="The subproblem ID. Defaults to 1.")
+    parser.add_argument("--stage", default=1,
+                        help="The stage ID. Defaults to 1.")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
@@ -64,12 +69,14 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_data(c, scenario_id, rps_zone):
+def get_data(c, scenario_id, rps_zone, subproblem, stage):
     """
     Get the necessary plotting data
     :param c:
     :param scenario_id:
     :param rps_zone:
+    :param subproblem:
+    :param stage:
     :return:
     """
 
@@ -85,21 +92,25 @@ def get_data(c, scenario_id, rps_zone):
         FROM results_system_rps
         WHERE scenario_id = ?
         AND rps_zone = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
         ;"""
 
-    return c.execute(sql, (scenario_id, rps_zone))
+    return c.execute(sql, (scenario_id, rps_zone, subproblem, stage))
 
 
-def create_data_df(c, scenario_id, rps_zone):
+def create_data_df(c, scenario_id, rps_zone, subproblem, stage):
     """
     Get data and convert to pandas DataFrame
     :param c:
     :param scenario_id:
     :param rps_zone:
+    :param subproblem:
+    :param stage:
     :return:
     """
 
-    data = get_data(c, scenario_id, rps_zone)
+    data = get_data(c, scenario_id, rps_zone, subproblem, stage)
 
     df = pd.DataFrame(
         data=data.fetchall(),
@@ -252,15 +263,17 @@ def main(args=None):
         c=c
     )
 
-    plot_title = "RPS Result by Period - {}".format(
-        parsed_args.rps_zone)
-    plot_name = "RPSPlot-{}".format(
-        parsed_args.rps_zone)
+    plot_title = "RPS Result by Period - {} - Subproblem {} - Stage {}".format(
+        parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
+    plot_name = "RPSPlot-{}-{}-{}".format(
+        parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
 
     df = create_data_df(
         c=c,
         scenario_id=scenario_id,
         rps_zone=parsed_args.rps_zone,
+        subproblem=parsed_args.subproblem,
+        stage=parsed_args.stage
     )
 
     plot = create_plot(
