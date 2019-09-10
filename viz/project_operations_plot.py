@@ -21,8 +21,9 @@ import pandas as pd
 import sys
 
 # GridPath modules
-from viz.common_functions import connect_to_database, show_hide_legend, \
-    show_plot, get_scenario_and_scenario_id
+from db.common_functions import connect_to_database
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_scenario_and_scenario_id
 
 
 def parse_arguments(arguments):
@@ -384,8 +385,8 @@ def main(args=None):
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    db = connect_to_database(parsed_arguments=parsed_args)
-    c = db.cursor()
+    conn = connect_to_database(db_path=parsed_args.database)
+    c = conn.cursor()
 
     scenario_location = parsed_args.scenario_location
     scenario, scenario_id = get_scenario_and_scenario_id(

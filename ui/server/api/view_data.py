@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 class ViewDataAPI(Resource):
@@ -19,7 +19,8 @@ class ViewDataAPI(Resource):
         :return:
         """
         print(scenario_id, table)
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         table_data_query = c.execute(
           """SELECT * FROM {} WHERE scenario_id = {}""".format(

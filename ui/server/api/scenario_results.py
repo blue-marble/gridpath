@@ -3,7 +3,7 @@
 from flask_restful import Resource
 import importlib
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 class ScenarioResultsOptions(Resource):
@@ -19,7 +19,8 @@ class ScenarioResultsOptions(Resource):
 
         :return:
         """
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         options_api = dict()
 
@@ -189,7 +190,9 @@ class ScenarioResultsIncludedPlots(Resource):
 
         :return:
         """
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
+
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control, 
           rps_zone_form_control, carbon_cap_zone_form_control,
@@ -261,7 +264,9 @@ class ScenarioResultsIncludedTables(Resource):
 
         :return:
         """
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
+
         tables_query = c.execute(
             """SELECT results_table, caption
             FROM ui_scenario_results_table_metadata
@@ -288,7 +293,8 @@ def create_data_table_api(
     :param scenario_id:
     :return:
     """
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     data_table_api = dict()
     data_table_api['table'] = table
@@ -318,7 +324,8 @@ def get_table_data(db_path, columns, table, scenario_id):
     :param scenario_id:
     :return:
     """
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     table_data_query = c.execute(
       """SELECT {} FROM {} 

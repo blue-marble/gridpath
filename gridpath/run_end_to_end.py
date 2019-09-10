@@ -6,7 +6,6 @@ Get inputs, run scenario, and import results.
 """
 
 from argparse import ArgumentParser
-import os.path
 import signal
 import sys
 import sqlite3
@@ -14,6 +13,7 @@ import time
 import traceback
 
 # GridPath modules
+from db.common_functions import connect_to_database
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 
@@ -89,20 +89,7 @@ def update_run_status(db_path, scenario, status_id):
     """
 
     # Database
-    # If no database is specified, assume script is run from the 'gridpath'
-    # directory and the database is in ../db and named io.db
-    if db_path is None:
-        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
-
-    if not os.path.isfile(db_path):
-        raise OSError(
-            "The database file {} was not found. Did you mean to "
-            "specify a different database file?".format(
-                os.path.abspath(db_path)
-            )
-        )
-
-    conn = sqlite3.connect(db_path)
+    conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
     # TODO: what's the best place for setting this

@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 # TODO: add the subscenario names (not just IDs) to the inputs tables --
@@ -47,7 +47,8 @@ def create_input_data_table_api(
     scenario_id = int(scenario_id)
 
     # Connect to database
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     # Make the data table API
     data_table_api = dict()

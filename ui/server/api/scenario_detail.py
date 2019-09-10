@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-from ui.server.common_functions import connect_to_database
+from db.common_functions import connect_to_database
 
 
 # ### API: Scenario Detail ### #
@@ -15,7 +15,8 @@ class ScenarioDetailAPI(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self, scenario_id):
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         scenario_detail_api = dict()
 
