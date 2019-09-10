@@ -114,7 +114,7 @@ related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
 issue_type VARCHAR(32),
 issue_description VARCHAR(64),
-timestamp TEXT  -- ISO8601 String
+timestamp TEXT,  -- ISO8601 String
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
 
