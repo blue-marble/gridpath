@@ -18,7 +18,9 @@ class ScenarioNewAPI(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self):
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
+
         all_tables = c.execute(
             """SELECT ui_table 
             FROM ui_scenario_detail_table_metadata

@@ -335,7 +335,8 @@ def main(args=None):
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
-    conn, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
     # Database
     # If no database is specified, assume script is run from the 'gridpath'
     # directory and the database is in ../db and named io.db

@@ -14,7 +14,8 @@ class Scenarios(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self):
-        io, c = connect_to_database(self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         scenarios_query = c.execute(
             """SELECT scenario_id, scenario_name, validation_status, run_status

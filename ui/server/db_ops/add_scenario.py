@@ -21,7 +21,8 @@ def add_or_update_scenario(db_path, msg):
     Create or update a scenario. If the scenario name already exists,
     we will update the scenario; otherwise, a new scenario is created.
     """
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     # Check if this is a new scenario or if we're updating an existing scenario
     # TODO: implement UI warnings if scenario exists
@@ -69,7 +70,8 @@ def make_column_values_dict(db_path, msg):
     message sent by the client to be used to create a new scenario or update
     an existing one.
     """
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
     column_values_dict = dict()
     column_values_dict["scenario_name"] = msg["scenarioName"]
 

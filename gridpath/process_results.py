@@ -72,7 +72,8 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
 
-    conn, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     print("Processing results... (connected to database {})".format(db_path))
 

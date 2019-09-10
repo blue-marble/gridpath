@@ -260,7 +260,8 @@ def main(args=None):
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    db, c = connect_to_database(db_path=parsed_args.database)
+    conn = connect_to_database(db_path=parsed_args.database)
+    c = conn.cursor()
 
     scenario_location = parsed_args.scenario_location
     scenario, scenario_id = get_scenario_and_scenario_id(

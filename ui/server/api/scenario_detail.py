@@ -15,7 +15,8 @@ class ScenarioDetailAPI(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self, scenario_id):
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         scenario_detail_api = dict()
 

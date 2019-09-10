@@ -19,7 +19,8 @@ class ViewDataAPI(Resource):
         :return:
         """
         print(scenario_id, table)
-        io, c = connect_to_database(db_path=self.db_path)
+        conn = connect_to_database(db_path=self.db_path)
+        c = conn.cursor()
 
         table_data_query = c.execute(
           """SELECT * FROM {} WHERE scenario_id = {}""".format(

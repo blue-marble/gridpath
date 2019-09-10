@@ -89,7 +89,8 @@ def update_run_status(db_path, scenario, status_id):
     """
 
     # Database
-    conn, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
     # TODO: what's the best place for setting this
     # Allow concurrent reading and writing

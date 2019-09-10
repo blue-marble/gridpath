@@ -28,7 +28,9 @@ def launch_scenario_process(
     """
     # Get the scenario name for this scenario ID
     # TODO: pass both from the client and do a check here that they exist
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
             scenario_id
@@ -81,7 +83,8 @@ def check_scenario_process_status(db_path, scenario_status, scenario_id):
     """
     Check if there is any running process that contains the given scenario
     """
-    io, c = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
     scenario_name = c.execute(
         "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
             scenario_id

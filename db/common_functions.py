@@ -13,10 +13,9 @@ def connect_to_database(db_path, relative_path="..", timeout=5,
     :param timeout: number of seconds the connection should wait for the
         database lock to go away before raising an exception (the default is 5)
     :param detect_types: type detection parameter, defaults to 0
-    :return: the connection and cursor objects
+    :return: the connection object
 
-    Connect to a database, create cursor, and return the connection and
-    cursor objects.
+    Connect to a database and return the connection object.
     """
 
     # If no database is specified, the database is in the 'db' directory and
@@ -34,6 +33,5 @@ def connect_to_database(db_path, relative_path="..", timeout=5,
         )
 
     conn = sqlite3.connect(db_path, timeout=timeout, detect_types=detect_types)
-    cursor = conn.cursor()
 
-    return conn, cursor
+    return conn
