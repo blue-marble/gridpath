@@ -337,22 +337,6 @@ def main(args=None):
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
-    # Database
-    # If no database is specified, assume script is run from the 'gridpath'
-    # directory and the database is in ../db and named io.db
-    if db_path is None:
-        db_path = os.path.join(os.getcwd(), "..", "db", "io.db")
-
-    if not os.path.isfile(db_path):
-        raise OSError(
-            "The database file {} was not found. Did you mean to "
-            "specify a different database file?".format(
-                os.path.abspath(db_path)
-            )
-        )
-
-    conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
-    c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg,
