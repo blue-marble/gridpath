@@ -254,7 +254,11 @@ def optional_modules_list():
              "system.reliability.local_capacity.local_capacity_balance",
              "objective.system.local_capacity"
              ".aggregate_local_capacity_shortage_penalties",
-             ]
+             ],
+        "tuning": [
+            "project.operations.tuning_costs",
+            "objective.project.aggregate_operational_tuning_costs"
+            ]
     }
     return optional_modules
 
@@ -273,15 +277,18 @@ def cross_feature_modules_list():
             ["transmission.operations.costs",
              "objective.transmission.aggregate_operational_costs"],
         ("transmission", "carbon_cap", "track_carbon_imports"):
-        ["system.policy.carbon_cap.aggregate_transmission_carbon_emissions",
-         "transmission.operations.carbon_emissions",
-         "objective.transmission.carbon_imports_tuning_costs"],
+            ["system.policy.carbon_cap"
+             ".aggregate_transmission_carbon_emissions",
+             "transmission.operations.carbon_emissions"],
+        ("transmission", "carbon_cap", "track_carbon_imports", "tuning"):
+            ["objective.transmission.carbon_imports_tuning_costs"],
         ("transmission", "simultaneous_flow_limits"):
             ["transmission.operations.simultaneous_flow_limits"],
         ("prm", "elcc_surface"):
             ["project.reliability.prm.elcc_surface",
-             "system.reliability.prm.elcc_surface",
-             "objective.system.prm.dynamic_elcc_tuning_penalties"]
+             "system.reliability.prm.elcc_surface"],
+        ("prm", "elcc_surface", "tuning"):
+            ["objective.system.prm.dynamic_elcc_tuning_penalties"]
     }
     return cross_modules
 

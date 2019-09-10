@@ -119,6 +119,12 @@ class OptionalFeatures(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.OPTIONAL_FEATURE_TUNING = cursor.execute(
+            """SELECT of_tuning
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
     def determine_feature_list(self):
         """
         Get list of requested features
@@ -160,6 +166,8 @@ class OptionalFeatures(object):
             feature_list.append("elcc_surface")
         if self.OPTIONAL_FEATURE_LOCAL_CAPACITY:
             feature_list.append("local_capacity")
+        if self.OPTIONAL_FEATURE_TUNING:
+            feature_list.append("tuning")
 
         return feature_list
 
