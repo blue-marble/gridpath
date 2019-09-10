@@ -26,11 +26,12 @@ def database_file_exists(db_path):
         return False
 
 
-def get_database_name(parsed_arguments):
+def get_database_file_path(parsed_arguments):
     """
-    Create and connect to the database
-    :param parsed_arguments:
-    :return:
+    :param parsed_arguments: the parsed script arguments
+    :return: the path to the database
+
+    Get the database file path from the script arguments.
     """
     if parsed_arguments.in_memory:
         database = ":memory:"
@@ -321,7 +322,7 @@ def main(args=None):
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    db_path = get_database_name(parsed_arguments=parsed_args)
+    db_path = get_database_file_path(parsed_arguments=parsed_args)
 
     if database_file_exists(db_path=db_path):
         print(
