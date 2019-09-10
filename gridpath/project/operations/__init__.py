@@ -17,7 +17,8 @@ import os.path
 from pyomo.environ import Set, Param, PositiveReals, PercentFraction, Reals
 
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
-    check_column_sign_positive, write_validation_to_database
+    get_expected_dtypes, check_column_sign_positive, \
+    write_validation_to_database
 
 
 # TODO: should we take this out of __init__.py
@@ -386,11 +387,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # Check data types availability:
-    expected_dtypes = {
-        "project": "string",
-        "horizon": "numeric",
-        "availability": "numeric",
-    }
+    expected_dtypes = get_expected_dtypes(conn, ["inputs_project_availability"])
     dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
@@ -425,11 +422,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     sub_hr_df = hr_df[hr_curve_mask][
         ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
     ]
-    expected_dtypes = {
-        "project": "string",
-        "load_point_mw": "numeric",
-        "average_heat_rate_mmbtu_per_mwh": "numeric",
-    }
+
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_portfolios", "inputs_project_operational_chars",
+               "inputs_project_heat_rate_curves"]
+    )
     dtype_errors, error_columns = check_dtypes(sub_hr_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
@@ -445,10 +442,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check valid numeric columns in heat rates are non-negative
-    numeric_columns = [k for k, v in expected_dtypes.items() if v == "numeric"]
+    numeric_columns = [c for c in sub_hr_df.columns
+                       if expected_dtypes[c] == "numeric"]
     valid_numeric_columns = set(numeric_columns) - set(error_columns)
-    sign_errors = check_column_sign_positive(sub_hr_df,
-                                                   valid_numeric_columns)
+    sign_errors = check_column_sign_positive(sub_hr_df, valid_numeric_columns)
     for error in sign_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,

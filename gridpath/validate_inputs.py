@@ -349,7 +349,7 @@ def main(args=None):
             )
         )
 
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES)
     c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(

@@ -2,6 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from pyomo.environ import AbstractModel
+import sqlite3
 import unittest
 import pandas as pd
 import numpy as np
@@ -86,6 +87,57 @@ class TestAuxiliary(unittest.TestCase):
         self.assertEqual(True, auxiliary_module_to_test.is_number(1))
         self.assertEqual(True, auxiliary_module_to_test.is_number(100.5))
         self.assertEqual(False, auxiliary_module_to_test.is_number("string"))
+
+    def test_get_expected_dtypes(self):
+        """
+
+        :return:
+        """
+
+        # Setup
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            """CREATE TABLE table1 (
+            col1 INTEGER, col2 FLOAT, col3 DOUBLE, col4 TEXT, col5 VARCHAR(32)
+            );"""
+        )
+        conn.execute(
+            """CREATE TABLE table2 (
+            col1 TEXT, col6 VARCHAR(64), col7 VARCHAR(128)
+            );"""
+        )
+        conn.commit()
+
+        # Test dict gets created properly for one table
+        expected_dict = {
+            "col1": "numeric",
+            "col2": "numeric",
+            "col3": "numeric",
+            "col4": "string",
+            "col5": "string"
+        }
+        actual_dict = auxiliary_module_to_test.get_expected_dtypes(
+            conn, ["table1"]
+        )
+        self.assertDictEqual(expected_dict, actual_dict)
+
+        # Test dict gets created properly for multiple tables
+        expected_dict = {
+            "col1": "string",
+            "col2": "numeric",
+            "col3": "numeric",
+            "col4": "string",
+            "col5": "string",
+            "col6": "string",
+            "col7": "string"
+        }
+        actual_dict = auxiliary_module_to_test.get_expected_dtypes(
+            conn, ["table1", "table2"]
+        )
+        self.assertDictEqual(expected_dict, actual_dict)
+
+        # Tear down: close connection
+        conn.close()
 
     def test_check_dtypes(self):
         """

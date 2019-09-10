@@ -9,7 +9,7 @@ import csv
 import os.path
 import pandas as pd
 from pyomo.environ import Param, Set, NonNegativeReals
-from gridpath.auxiliary.auxiliary import check_dtypes, \
+from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
     write_validation_to_database
 
 
@@ -153,11 +153,11 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in projects.description]
     )
 
-    # Check data types fuels:
-    expected_dtypes = {
-        "fuel": "string",
-        "co2_intensity_tons_per_mmbtu": "numeric"
-    }
+    # Check data types
+    expected_dtypes = get_expected_dtypes(
+        conn, ["inputs_project_fuels", "inputs_project_fuel_prices"]
+    )
+
     dtype_errors, error_columns = check_dtypes(fuels_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
@@ -172,13 +172,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # Check data types fuel prices:
-    expected_dtypes = {
-        "fuel": "string",
-        "period": "numeric",
-        "month": "numeric",
-        "fuel_price_per_mmbtu": "numeric"
-    }
     dtype_errors, error_columns = check_dtypes(fuel_prices_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
