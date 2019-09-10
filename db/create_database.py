@@ -13,11 +13,25 @@ import sqlite3
 import sys
 
 
-def connect_to_database(parsed_arguments):
+def database_file_exists(db_path):
     """
-    Connect to the database
-    :param parsed_arguments:
-    :return:
+    :param db_path:
+    :return: boolean
+
+    Check if the database file exists.
+    """
+    if os.path.isfile(db_path):
+        return True
+    else:
+        return False
+
+
+def get_database_file_path(parsed_arguments):
+    """
+    :param parsed_arguments: the parsed script arguments
+    :return: the path to the database
+
+    Get the database file path from the script arguments.
     """
     if parsed_arguments.in_memory:
         database = ":memory:"
@@ -26,9 +40,8 @@ def connect_to_database(parsed_arguments):
                 str(parsed_arguments.db_location),
                 str(parsed_arguments.db_name)+".db"
             )
-    conn = sqlite3.connect(database=database)
 
-    return conn
+    return database
 
 
 def parse_arguments(arguments):
@@ -308,9 +321,19 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
-    db = connect_to_database(parsed_arguments=parsed_args)
-    create_database_schema(db=db, parsed_arguments=parsed_args)
-    load_data(db=db, omit_data=parsed_args.omit_data)
+
+    db_path = get_database_file_path(parsed_arguments=parsed_args)
+
+    if database_file_exists(db_path=db_path):
+        print(
+            "WARNING: The database file {} already exists. Please delete it "
+            "before re-creating the database.".format(os.path.abspath(db_path))
+        )
+        sys.exit()
+    else:
+        db = sqlite3.connect(database=db_path)
+        create_database_schema(db=db, parsed_arguments=parsed_args)
+        load_data(db=db, omit_data=parsed_args.omit_data)
 
 
 if __name__ == "__main__":
