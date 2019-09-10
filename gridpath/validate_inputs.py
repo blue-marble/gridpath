@@ -335,7 +335,8 @@ def main(args=None):
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
 
-    conn = connect_to_database(db_path=db_path)
+    conn = connect_to_database(db_path=db_path,
+                               detect_types=sqlite3.PARSE_DECLTYPES)
     c = conn.cursor()
 
     scenario_id, scenario_name = get_scenario_id_and_name(
