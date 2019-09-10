@@ -318,7 +318,7 @@ def write_validation_to_database(validation_results, conn):
     validation_results = [row + (timestamp,) for row in validation_results]
     c = conn.cursor()
     for row in validation_results:
-        query = """INSERT into mod_input_validation
+        query = """INSERT INTO status_validation
                 (scenario_id, subproblem_id, stage_id, 
                 gridpath_module, related_subscenario, related_database_table, 
                 issue_type, issue_description, timestamp)

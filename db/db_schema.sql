@@ -76,36 +76,28 @@ PRIMARY KEY (feature, subscenario_id),
 FOREIGN KEY (feature) REFERENCES mod_features (feature)
 );
 
--- Scenario validation status
+-- Scenario validation status types
 DROP TABLE IF EXISTS mod_validation_status_types;
 CREATE TABLE mod_validation_status_types (
 validation_status_id INTEGER PRIMARY KEY,
 validation_status_name VARCHAR(32) UNIQUE
 );
 
--- Run status
+-- Run status types
 DROP TABLE IF EXISTS mod_run_status_types;
 CREATE TABLE mod_run_status_types (
 run_status_id INTEGER PRIMARY KEY,
 run_status_name VARCHAR(32) UNIQUE
 );
 
--- TODO: figure out foreign keys for subproblems/stages when structure in place
--- TODO: what happens if user deletes scenario in scenarios table
-DROP TABLE IF EXISTS mod_run_status;
-CREATE TABLE mod_run_status (
-scenario_id INTEGER,
-scenario_name VARCHAR(64),
-subproblem_id INTEGER,
-stage_id INTEGER,
-status VARCHAR(32),
-FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id),
-FOREIGN KEY (status) REFERENCES mod_run_status_types (run_status_id)
-);
+
+--------------------
+-- -- STATUS -- --
+--------------------
 
 -- Validation Results
-DROP TABLE IF EXISTS mod_input_validation;
-CREATE TABLE mod_input_validation (
+DROP TABLE IF EXISTS status_validation;
+CREATE TABLE status_validation (
 scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -117,6 +109,11 @@ issue_description VARCHAR(64),
 timestamp TEXT,  -- ISO8601 String
 FOREIGN KEY (scenario_id) REFERENCES scenarios (scenario_id)
 );
+
+
+-------------------------------------------------------------------------------
+---- SUBSCENARIOS AND INPUTS -----
+-------------------------------------------------------------------------------
 
 --------------------
 -- -- TEMPORAL -- --
