@@ -5,7 +5,6 @@ const storage = require('electron-json-storage');
 const process = require('process');
 const path = require('path');
 const { spawn } = require('child_process');
-const io = require('socket.io-client');
 
 // Are we on Windows
 const isWindows = process.platform === "win32";
@@ -465,14 +464,6 @@ function startServer () {
   );
 }
 
-
-function connectToServer () {
-  const socket = io.connect('http://localhost:8080/');
-  socket.on('connect', function() {
-      console.log(`Connection established: ${socket.connected}`);
-  });
-  return socket
-}
 
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {

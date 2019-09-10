@@ -9,8 +9,8 @@ import {ScenarioDetailService} from '../scenario-detail/scenario-detail.service'
 import {ScenarioInputsService} from '../scenario-inputs/scenario-inputs.service';
 import {ScenarioNewAPI} from './scenario-new';
 import {StartingValues} from '../scenario-detail/scenario-detail';
+import {socketConnect} from '../app.component';
 
-const io = ( window as any ).require('socket.io-client');
 
 @Component({
   selector: 'app-scenario-new',
@@ -278,10 +278,8 @@ export class ScenarioNewComponent implements OnInit {
   }
 
   saveNewScenario() {
-    const socket = io.connect('http://127.0.0.1:8080/');
-    socket.on('connect', () => {
-        console.log(`Connection established: ${socket.connected}`);
-    });
+    const socket = socketConnect();
+
     socket.emit('add_new_scenario', this.newScenarioForm.value);
 
     socket.on('return_new_scenario_id', (newScenarioID) => {

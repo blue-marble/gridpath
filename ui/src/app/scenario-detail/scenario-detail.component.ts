@@ -3,11 +3,11 @@ import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
 import { FormControl, FormGroup } from '@angular/forms';
 
-const io = ( window as any ).require('socket.io-client');
-
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioInputsService } from '../scenario-inputs/scenario-inputs.service';
+
+import {socketConnect} from '../app.component';
 
 
 @Component({
@@ -71,11 +71,7 @@ export class ScenarioDetailComponent implements OnInit {
 
     const selectedSolver = this.solversForm.value.solverFormControl;
 
-    // TODO: refactor server-connection code to be reused
-    const socket = io.connect('http://127.0.0.1:8080/');
-    socket.on('connect', () => {
-        console.log(`Connection established: ${socket.connected}`);
-    });
+    const socket = socketConnect();
 
     socket.emit(
             'launch_scenario_process',
@@ -114,11 +110,7 @@ export class ScenarioDetailComponent implements OnInit {
       `Validating scenario ${this.scenarioDetail.scenarioName}, scenario_id ${scenarioID}`
     );
 
-    // TODO: refactor server-connection code to be reused
-    const socket = io.connect('http://127.0.0.1:8080/');
-    socket.on('connect', () => {
-        console.log(`Connection established: ${socket.connected}`);
-    });
+    const socket = socketConnect();
 
     socket.emit(
             'validate_scenario',
