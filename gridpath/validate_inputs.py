@@ -259,7 +259,7 @@ def reset_input_validation(conn, scenario_id):
     """
     c = conn.cursor()
     c.execute(
-        """DELETE FROM mod_input_validation
+        """DELETE FROM status_validation
         WHERE scenario_id = {};""".format(str(scenario_id))
     )
 
@@ -282,7 +282,7 @@ def update_validation_status(conn, scenario_id):
     c = conn.cursor()
     validations = c.execute(
         """SELECT scenario_id 
-        FROM mod_input_validation
+        FROM status_validation
         WHERE scenario_id = {}""".format(str(scenario_id))
     ).fetchall()
 
