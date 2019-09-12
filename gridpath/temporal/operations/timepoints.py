@@ -41,6 +41,9 @@ def add_model_components(m, d):
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
     m.number_of_hours_in_timepoint = \
         Param(m.TIMEPOINTS, within=NonNegativeReals)
+    # TODO: what checks do we need on the sum of all timepoint weights (x
+    #  number of hours in timepoint?)
+    m.timepoint_weight = Param(m.TIMEPOINTS, within=NonNegativeReals)
     m.previous_stage_timepoint_map = \
         Param(m.TIMEPOINTS, within=NonNegativeIntegers)
 

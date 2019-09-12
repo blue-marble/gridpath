@@ -75,135 +75,155 @@ class TestHorizons(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
+        # TODO: add test data with more horizon types
+
         # Load test data
-        horizons_df = \
+        horizon_type_horizons_df = \
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "horizons.tab"),
                 sep="\t"
             )
-        timepoints_df = \
+
+        timepoints_on_horizon_type_horizon_df = \
             pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
-                sep="\t", usecols=['TIMEPOINTS', 'horizon']
+                os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                             "horizon_timepoints.tab"),
+                sep="\t"
             )
 
+
         # Check data are as expected
-        # HORIZONS set
-        expected_hrzn = horizons_df['HORIZONS'].tolist()
-        actual_hrzn = [tmp for tmp in instance.HORIZONS]
-        self.assertListEqual(expected_hrzn, actual_hrzn,
+        # HORIZON_TYPE_HORIZONS set
+        expected_horizon_type_horizons = [
+            tuple(x) for x in horizon_type_horizons_df[
+                ['horizon_type', 'horizon']
+            ].values
+        ]
+        actual_horizon_type_horizons = [
+            (_type, horizon)
+            for (_type, horizon) in instance.HORIZON_TYPE_HORIZONS
+        ]
+        self.assertListEqual(expected_horizon_type_horizons, actual_horizon_type_horizons,
                              msg="HORIZONS set data does not load correctly."
                              )
 
         # Params: boundary
         expected_boundary_param = \
-            horizons_df.set_index('HORIZONS').to_dict()['boundary']
+            horizon_type_horizons_df.set_index(
+                ['horizon_type', 'horizon']
+            ).to_dict()['boundary']
         actual_boundary_param = \
-            {h: instance.boundary[h]
-             for h in instance.HORIZONS
+            {(t, h): instance.boundary[t, h]
+             for (t, h) in instance.HORIZON_TYPE_HORIZONS
              }
         self.assertDictEqual(expected_boundary_param, actual_boundary_param,
                              msg="Data for param 'boundary' "
                                  "not loaded correctly")
 
-        # Params: horizon_weight
-        expected_hweight_param = \
-            horizons_df.set_index('HORIZONS').to_dict()['horizon_weight']
-        actual_hweight_param = \
-            {h: instance.horizon_weight[h]
-             for h in instance.HORIZONS
-             }
-        self.assertDictEqual(expected_hweight_param, actual_hweight_param,
-                             msg="Data for param 'horizon_weight'"
-                                 " not loaded correctly")
+        # HORIZON_TYPES set
+        expected_horizon_types = \
+            list(horizon_type_horizons_df.horizon_type.unique())
+        actual_horizon_types = list(instance.HORIZON_TYPES)
+        self.assertListEqual(expected_horizon_types, actual_horizon_types)
 
-        # Params: horizon
-        expected_horizon_param = \
-            timepoints_df.set_index('TIMEPOINTS').to_dict()['horizon']
-        actual_horizon_param = \
-            {tmp: instance.horizon[tmp]
-             for tmp in instance.TIMEPOINTS
-             }
+        # HORIZONS_BY_HORIZON_TYPE set
+        expected_horizon_by_horizon_type = \
+            {horizon_type: horizons["horizon"].tolist()
+             for horizon_type, horizons
+             in horizon_type_horizons_df.groupby("horizon_type")}
+        actual_horizon_by_horizon_type = {
+            horizon_type: [
+                horizon for horizon
+                in list(instance.HORIZONS_BY_HORIZON_TYPE[horizon_type])
+            ] for horizon_type in instance.HORIZONS_BY_HORIZON_TYPE.keys()
+        }
+        self.assertDictEqual(expected_horizon_by_horizon_type,
+                             actual_horizon_by_horizon_type)
 
-        self.assertDictEqual(
-            expected_horizon_param, actual_horizon_param,
-            msg="Data for param 'horizon' not loaded correctly"
-        )
+        # Set TIMEPOINTS_ON_HORIZON_TYPE_HORIZON
+        expected_tmps_on_horizon_type_horizon = {
+            (horizon_type, horizon): timepoints["timepoint"].tolist()
+            for ((horizon_type, horizon), timepoints)
+            in timepoints_on_horizon_type_horizon_df.groupby(
+                ["horizon_type", "horizon"]
+            )
+        }
 
-        # Set TIMEPOINTS_ON_HORIZON
-        expected_tmps_on_horizon = dict()
-        for tmp in expected_horizon_param:
-            if expected_horizon_param[tmp] \
-                    not in expected_tmps_on_horizon.keys():
-                expected_tmps_on_horizon[expected_horizon_param[tmp]] = [tmp]
-            else:
-                expected_tmps_on_horizon[expected_horizon_param[tmp]].append(
-                    tmp
-                )
-
-        actual_tmps_on_horizon = {
-            h: [tmp for tmp in instance.TIMEPOINTS_ON_HORIZON[h]]
-            for h in list(instance.TIMEPOINTS_ON_HORIZON.keys())
+        actual_tmps_on_horizon_type_horizon = {
+            (t, h): [tmp for tmp in
+                     instance.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON[t, h]]
+            for (t, h) in list(instance.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON.keys())
             }
-        self.assertDictEqual(expected_tmps_on_horizon, actual_tmps_on_horizon,
-                             msg="HORIZONS_ON_TIMEPOINT data do not match "
-                                 "expected."
+
+        self.assertDictEqual(expected_tmps_on_horizon_type_horizon,
+                             actual_tmps_on_horizon_type_horizon,
+                             msg="TIMEPOINTS_ON_HORIZON_TYPE_HORIZON data do "
+                                 "not match expected."
                              )
 
-        # Param: first_horizon_timepoint
-        expected_first_horizon_timepoint = {
-            h: expected_tmps_on_horizon[h][0] for h in expected_hrzn
+        # Param: first_horizon_type_horizon_timepoint
+        expected_first_horizon_type_horizon_timepoint = {
+            (t, h): expected_tmps_on_horizon_type_horizon[t, h][0]
+            for (t, h) in expected_horizon_type_horizons
         }
-        actual_first_horizon_timepoint = {
-            h: instance.first_horizon_timepoint[h] for h in instance.HORIZONS
+        actual_first_horizon_type_horizon_timepoint = {
+            (t, h): instance.first_horizon_type_horizon_timepoint[t, h]
+            for (t, h) in instance.HORIZON_TYPE_HORIZONS
         }
-        self.assertDictEqual(expected_first_horizon_timepoint,
-                             actual_first_horizon_timepoint,
-                             msg="Data for param first_horizon_timepoint do "
+        self.assertDictEqual(expected_first_horizon_type_horizon_timepoint,
+                             actual_first_horizon_type_horizon_timepoint,
+                             msg="Data for param "
+                                 "first_horizon_type_horizon_timepoint do "
                                  "not match expected.")
 
-        # Param: last_horizon_timepoint
-        expected_last_horizon_timepoint = {
-            h: expected_tmps_on_horizon[h][-1] for h in expected_hrzn
+        # Param: last_horizon_type_horizon_timepoint
+        expected_last_horizon_type_horizon_timepoint = {
+            (t, h): expected_tmps_on_horizon_type_horizon[t, h][-1]
+            for (t, h) in expected_horizon_type_horizons
         }
-        actual_last_horizon_timepoint = {
-            h: instance.last_horizon_timepoint[h] for h in instance.HORIZONS
+        actual_last_horizon_type_horizon_timepoint = {
+            (t, h): instance.last_horizon_type_horizon_timepoint[t, h]
+            for (t, h) in instance.HORIZON_TYPE_HORIZONS
         }
-        self.assertDictEqual(expected_last_horizon_timepoint,
-                             actual_last_horizon_timepoint,
-                             msg="Data for param last_horizon_timepoint do "
+        self.assertDictEqual(expected_last_horizon_type_horizon_timepoint,
+                             actual_last_horizon_type_horizon_timepoint,
+                             msg="Data for param "
+                                 "last_horizon_type_horizon_timepoint do "
                                  "not match expected.")
 
         # Param: previous_timepoint
         # Testing for both horizons that 'circular' and 'linear'
-        timepoints_list = timepoints_df['TIMEPOINTS'].tolist()
+        # TODO: should we have the actual previous timepoints in a data file
+        #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()
-        for tmp in timepoints_list:
-            if tmp == \
-                    expected_first_horizon_timepoint[
-                        expected_horizon_param[tmp]
-                    ]:
-                if expected_boundary_param[expected_horizon_param[tmp]] == \
+        prev_tmp = None
+        for (horizon_type, horizon, tmp) \
+            in [tuple(row) for row in
+                timepoints_on_horizon_type_horizon_df.values]:
+            if tmp == expected_first_horizon_type_horizon_timepoint[
+                    horizon_type, horizon]:
+                if expected_boundary_param[horizon_type, horizon] == \
                         'circular':
-                    expected_prev_tmp[tmp] = \
-                        expected_last_horizon_timepoint[
-                            expected_horizon_param[tmp]
-                        ]
-                elif expected_boundary_param[expected_horizon_param[tmp]] == \
+                    expected_prev_tmp[horizon_type, tmp] = \
+                        expected_last_horizon_type_horizon_timepoint[
+                            horizon_type, horizon]
+                elif expected_boundary_param[horizon_type, horizon] == \
                         'linear':
-                    expected_prev_tmp[tmp] = None
+                    expected_prev_tmp[horizon_type, tmp] = None
                 else:
-                    raise(IOError, "Test data specifies horizon boundary "
-                                   "different from allowed values of "
-                                   "'circular' and 'linear'")
+                    raise(ValueError,
+                          "Test data specifies horizon boundary different "
+                          "from allowed values of 'circular' and 'linear'")
             else:
-                expected_prev_tmp[tmp] = \
-                    timepoints_list[timepoints_list.index(tmp)-1]
+                expected_prev_tmp[horizon_type, tmp] = prev_tmp
+            prev_tmp = tmp
 
         actual_prev_tmp = {
-            tmp: instance.previous_timepoint[tmp]
+            (horizon_type, tmp): instance.previous_timepoint[horizon_type, tmp]
+            for horizon_type in instance.HORIZON_TYPES
             for tmp in instance.TIMEPOINTS
         }
+
         self.assertDictEqual(expected_prev_tmp,
                              actual_prev_tmp,
                              msg="Data for param previous_timepoint do "

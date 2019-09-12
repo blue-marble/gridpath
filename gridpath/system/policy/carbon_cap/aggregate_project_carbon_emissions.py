@@ -36,7 +36,7 @@ def add_model_components(m, d):
         """
         return sum(mod.Carbon_Emissions_Tons[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
+                   * mod.timepoint_weight[tmp]
                    for (g, tmp) in
                    mod.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS
                    if g in mod.CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE[z]

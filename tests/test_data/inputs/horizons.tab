@@ -1,5 +1,5 @@
-HORIZONS	boundary	horizon_weight
-202001	circular	1
-202002	linear	1
-203001	circular	1
-203002	linear	1
+horizon_type	horizon	boundary
+day	202001	circular
+day	202002	linear
+day	203001	circular
+day	203002	linear

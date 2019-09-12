@@ -1029,7 +1029,7 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
                 mod.period[tmp],
                 mod.horizon[tmp],
                 tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
+                mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],

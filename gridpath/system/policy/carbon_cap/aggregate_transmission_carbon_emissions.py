@@ -38,7 +38,7 @@ def add_model_components(m, d):
         """
         return sum(mod.Import_Carbon_Emissions_Tons[tx, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
+                   * mod.timepoint_weight[tmp]
                    for (tx, tmp) in
                    mod.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS
                    if tx in
@@ -70,7 +70,7 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
     """
     return sum(calculate_carbon_emissions_imports(mod, tx, tmp)
                * mod.number_of_hours_in_timepoint[tmp]
-               * mod.horizon_weight[mod.horizon[tmp]]
+               * mod.timepoint_weight[tmp]
                for (tx, tmp) in
                mod.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS
                if tx in

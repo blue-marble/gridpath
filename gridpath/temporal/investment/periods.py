@@ -102,6 +102,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      param=m.period
                      )
 
+    print(data_portal.data())
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
