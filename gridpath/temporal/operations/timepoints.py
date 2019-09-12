@@ -57,9 +57,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
                      param=(m.number_of_hours_in_timepoint,
+                            m.timepoint_weight,
                             m.previous_stage_timepoint_map,
                             m.month),
                      select=("TIMEPOINTS", "number_of_hours_in_timepoint",
+                             "timepoint_weight",
                              "previous_stage_timepoint_map", "month")
                      )
 

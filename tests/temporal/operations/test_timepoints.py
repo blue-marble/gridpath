@@ -19,7 +19,7 @@ NAME_OF_MODULE_BEING_TESTED = "temporal.operations.timepoints"
 
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
-                                        package='gridpath')
+                                        package="gridpath")
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
@@ -63,7 +63,9 @@ class TestTimepoints(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
-                usecols=['TIMEPOINTS', 'number_of_hours_in_timepoint', 'month']
+                usecols=["TIMEPOINTS", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "previous_stage_timepoint_map",
+                         "month"]
             )
 
         m, data = \
@@ -74,15 +76,15 @@ class TestTimepoints(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        expected_tmp = timepoints_df['TIMEPOINTS'].tolist()
+        expected_tmp = timepoints_df["TIMEPOINTS"].tolist()
         actual_tmp = [tmp for tmp in instance.TIMEPOINTS]
         self.assertListEqual(expected_tmp, actual_tmp,
                              msg="TIMEPOINTS set data does not load correctly."
                              )
 
         expected_num_hrs_param = \
-            timepoints_df.set_index('TIMEPOINTS').to_dict()[
-                'number_of_hours_in_timepoint'
+            timepoints_df.set_index("TIMEPOINTS").to_dict()[
+                "number_of_hours_in_timepoint"
             ]
         actual_num_hrs_param = \
             {tmp: instance.number_of_hours_in_timepoint[tmp]
@@ -90,13 +92,35 @@ class TestTimepoints(unittest.TestCase):
              }
         self.assertDictEqual(expected_num_hrs_param, actual_num_hrs_param,
                              msg="Data for param "
-                                 "'number_of_hours_in_timepoint'"
+                                 "number_of_hours_in_timepoint"
                                  " not loaded correctly")
+
+
+        # Params: timepoint_weight
+        expected_timepoint_weight = \
+            timepoints_df.set_index("TIMEPOINTS").to_dict()["timepoint_weight"]
+        actual_timepoint_weight = \
+            {tmp: instance.timepoint_weight[tmp]
+             for tmp in instance.TIMEPOINTS
+             }
+        self.assertDictEqual(expected_timepoint_weight, actual_timepoint_weight,
+                             msg="Data for param timepoint_weight not loaded "
+                                 "correctly")
+
 
         # Set: MONTHS
         self.assertListEqual([m for m in instance.MONTHS],
-                             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+                              [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
+        # Params: month
+        expected_month = \
+            timepoints_df.set_index("TIMEPOINTS").to_dict()["month"]
+        actual_month = \
+            {tmp: instance.month[tmp]
+             for tmp in instance.TIMEPOINTS
+             }
+        self.assertDictEqual(expected_month, actual_month,
+                             msg="Data for param month not loaded correctly")
         # Param: month
         expected_month_param = \
             timepoints_df.set_index('TIMEPOINTS').to_dict()[
