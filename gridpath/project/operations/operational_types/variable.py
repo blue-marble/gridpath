@@ -92,7 +92,7 @@ def add_module_specific_components(m, d):
                 / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
                 for c in getattr(d, headroom_variables)[g]) \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.cap_factor[g, tmp]
     m.Variable_Max_Power_Constraint = \
         Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -221,7 +221,7 @@ def online_capacity_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.availability_derate[g, mod.horizon[tmp]]
+        * mod.availability_derate[g, tmp]
 
 
 # RPS
@@ -327,13 +327,12 @@ def power_delta_rule(mod, g, tmp):
     else:
         return \
             (mod.Capacity_MW[g, mod.period[tmp]]
-             * mod.availability_derate[g, mod.horizon[tmp]]
+             * mod.availability_derate[g, tmp]
              * mod.cap_factor[g, tmp]) - \
             (mod.Capacity_MW[
                  g, mod.period[mod.previous_timepoint[tmp]]
-             ] * mod.availability_derate[
-                g, mod.horizon[mod.previous_timepoint[tmp]]
-            ] * mod.cap_factor[g, mod.previous_timepoint[tmp]]
+             ] * mod.availability_derate[mod.previous_timepoint[tmp]]
+             * mod.cap_factor[g, mod.previous_timepoint[tmp]]
             )
 
 
