@@ -96,7 +96,7 @@ def add_model_components(m, d):
     # Availability derate (e.g. for maintenance/planned outages)
     # This can be optionally loaded from external data, but defaults to 1
     m.availability_derate = Param(
-        m.PROJECTS, m.HORIZONS, within=PercentFraction, default=1
+        m.PROJECTS, m.TIMEPOINTS, within=PercentFraction, default=1
     )
 
 
@@ -311,26 +311,28 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
         availabilities = c1.execute(
-            """SELECT project, horizon, availability
+            """SELECT project, timepoint, availability
             FROM inputs_project_availability
             WHERE 1=0"""
         )
     else:
         availabilities = c1.execute(
-            """SELECT project, horizon, availability
+            """SELECT project, timepoint, availability
             FROM inputs_project_availability
             INNER JOIN inputs_project_portfolios
             USING (project)
             INNER JOIN
-            (SELECT horizon
-            FROM inputs_temporal_horizons
+            (SELECT timepoint
+            FROM inputs_temporal_timepoints
             WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}) as relevant_horizons
-            USING (horizon)
+            AND subproblem_id = {}
+            AND stage = {}) as relevant_timepoints
+            USING (timepoint)
             WHERE project_portfolio_scenario_id = {}
             AND project_availability_scenario_id = {};""".format(
                 subscenarios.TEMPORAL_SCENARIO_ID,
                 subproblem,
+                stage,
                 subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
                 subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             )
@@ -649,7 +651,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                 availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t")
 
-            writer.writerow(["project", "horizon", "availability_derate"])
+            writer.writerow(["project", "timepoint", "availability_derate"])
 
             for row in availabilities:
                 writer.writerow(row)

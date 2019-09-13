@@ -176,7 +176,7 @@ def add_module_specific_components(m, d):
         """
         return mod.Commit_Capacity_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]]
+            * mod.availability_derate[g, tmp]
     m.Commit_Capacity_Constraint = \
         Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -681,7 +681,7 @@ def add_module_specific_components(m, d):
         # down in the relevant timepoints
         else:
             return mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.availability_derate[g, mod.horizon[tmp]] \
+                * mod.availability_derate[g, tmp] \
                 - mod.Commit_Capacity_MW[g, tmp] \
                 >= capacity_turned_off_min_down_time_or_less_hours_ago
 

@@ -164,14 +164,14 @@ def add_module_specific_components(m, d):
     # Expressions
     def pmax_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]]
+            * mod.availability_derate[g, tmp]
     m.DispBinCommit_Pmax_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=pmax_rule)
 
     def pmin_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.disp_binary_commit_min_stable_level_fraction[g]
     m.DispBinCommit_Pmin_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -204,7 +204,7 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.dispbincommit_ramp_up_when_on_rate[g] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * 60  # convert min to hours
@@ -231,7 +231,7 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.dispbincommit_ramp_down_when_on_rate[g] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * 60  # convert min to hours
@@ -242,7 +242,7 @@ def add_module_specific_components(m, d):
     # Note: make sure to limit this to Pmax, otherwise max power rules break
     def startup_ramp_rate_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * min(mod.dispbincommit_startup_plus_ramp_up_rate[g]
                   * mod.number_of_hours_in_timepoint[tmp]
                   * 60, 1)
@@ -253,7 +253,7 @@ def add_module_specific_components(m, d):
     # Note: make sure to limit this to Pmax, otherwise max power rules break
     def shutdown_ramp_rate_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * min(mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
                   * mod.number_of_hours_in_timepoint[tmp]
                   * 60, 1)
@@ -804,7 +804,7 @@ def add_module_specific_components(m, d):
             mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
             * mod.Provide_Power_DispBinaryCommit_MW[g, tmp] \
             + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.Commit_Binary[g, tmp]
     m.Fuel_Burn_DispBinCommit_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,

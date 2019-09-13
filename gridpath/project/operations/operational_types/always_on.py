@@ -139,7 +139,7 @@ def add_module_specific_components(m, d):
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
             - mod.AlwaysOn_Downwards_Reserves_MW[g, tmp] \
             >= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * mod.always_on_min_stable_level_fraction[g]
     m.AlwaysOn_Min_Power_Constraint = Constraint(
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -157,7 +157,7 @@ def add_module_specific_components(m, d):
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
             + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.availability_derate[g, mod.horizon[tmp]]
+            * mod.availability_derate[g, tmp]
     m.AlwaysOn_Max_Power_Constraint = Constraint(
         m.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=max_power_rule
@@ -202,7 +202,7 @@ def add_module_specific_components(m, d):
                 * mod.number_of_hours_in_timepoint[
                        mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.availability_derate[g, mod.horizon[tmp]]
+                * mod.availability_derate[g, tmp]
 
     m.Always_On_Ramp_Up_Constraint = \
         Constraint(
@@ -248,7 +248,7 @@ def add_module_specific_components(m, d):
                 * mod.number_of_hours_in_timepoint[
                        mod.previous_timepoint[tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.availability_derate[g, mod.horizon[tmp]]
+                * mod.availability_derate[g, tmp]
 
     m.Always_On_Ramp_Down_Constraint = \
         Constraint(
@@ -278,7 +278,7 @@ def add_module_specific_components(m, d):
             mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
             * mod.Provide_Power_AlwaysOn_MW[g, tmp] \
             + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
-            * mod.availability_derate[g, mod.horizon[tmp]] \
+            * mod.availability_derate[g, tmp] \
             * (mod.Capacity_MW[g, mod.period[tmp]]
                / mod.always_on_unit_size_mw[g])
     m.Fuel_Burn_AlwaysOn_Constraint = Constraint(
@@ -309,7 +309,7 @@ def online_capacity_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.availability_derate[g, mod.horizon[tmp]]
+        * mod.availability_derate[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
