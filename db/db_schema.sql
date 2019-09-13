@@ -733,9 +733,10 @@ DROP TABLE IF EXISTS inputs_project_availability;
 CREATE TABLE inputs_project_availability (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-horizon INTEGER,
+stage_id INTEGER,
+timepoint INTEGER,
 availability FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, horizon),
+PRIMARY KEY (project_availability_scenario_id, project, stage_id, timepoint),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
 subscenarios_project_availability (project_availability_scenario_id)
 );

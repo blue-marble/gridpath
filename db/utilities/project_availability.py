@@ -15,15 +15,13 @@ def update_project_availability(
         project_avail
 ):
     """
-    
     :param io: 
     :param c: 
     :param project_availability_scenario_id: 
     :param scenario_name: 
     :param scenario_description: 
-    :param project_avail: two-level dictionary with availability by project 
-    and horizon
-    :return: 
+    :param project_avail: three-level dictionary with availability by
+        project, stage, and timepoint
     """
     print("project availability")
 
@@ -39,14 +37,15 @@ def update_project_availability(
     io.commit()
 
     for prj in list(project_avail.keys()):
-        for h in list(project_avail[prj].keys()):
-            c.execute(
-                """INSERT INTO inputs_project_availability
-                (project_availability_scenario_id, project, horizon, 
-                availability)
-                VALUES ({}, '{}', {}, {});""".format(
-                    project_availability_scenario_id, prj, h,
-                    project_avail[prj][h]
+        for stage in list(project_avail[prj].keys()):
+            for tmp in list(project_avail[prj][stage].keys()):
+                c.execute(
+                    """INSERT INTO inputs_project_availability
+                    (project_availability_scenario_id, project, stage_id, 
+                    timepoint, availability)
+                    VALUES ({}, '{}', {}, {}, {});""".format(
+                        project_availability_scenario_id, prj, stage, tmp,
+                        project_avail[prj][tmp]
+                    )
                 )
-            )
     io.commit()
