@@ -63,7 +63,7 @@ class TestTimepoints(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
-                usecols=['TIMEPOINTS', 'number_of_hours_in_timepoint']
+                usecols=['TIMEPOINTS', 'number_of_hours_in_timepoint', 'month']
             )
 
         m, data = \
@@ -92,6 +92,25 @@ class TestTimepoints(unittest.TestCase):
                              msg="Data for param "
                                  "'number_of_hours_in_timepoint'"
                                  " not loaded correctly")
+
+        # Set: MONTHS
+        self.assertListEqual([m for m in instance.MONTHS],
+                             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        # Param: month
+        expected_month_param = \
+            timepoints_df.set_index('TIMEPOINTS').to_dict()[
+                'month'
+            ]
+        actual_month_param = \
+            {tmp: instance.month[tmp]
+             for tmp in instance.TIMEPOINTS
+             }
+        self.assertDictEqual(expected_month_param, actual_month_param,
+                             msg="Data for param 'month' not loaded correctly")
+
+        # TODO: we're missing a test for the loading of the
+        #  previous_stage_timepoint_map param
 
 
 if __name__ == "__main__":

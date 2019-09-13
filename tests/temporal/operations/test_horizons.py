@@ -117,14 +117,6 @@ class TestHorizons(unittest.TestCase):
                              msg="Data for param 'horizon_weight'"
                                  " not loaded correctly")
 
-        # Params: month
-        expected_month_param = \
-            horizons_df.set_index('HORIZONS').to_dict()['month']
-        actual_month_param = \
-            {h: instance.month[h] for h in instance.HORIZONS}
-        self.assertDictEqual(expected_month_param, actual_month_param,
-                             msg="Data for param 'month' not loaded correctly")
-
         # Params: horizon
         expected_horizon_param = \
             timepoints_df.set_index('TIMEPOINTS').to_dict()['horizon']
@@ -137,10 +129,6 @@ class TestHorizons(unittest.TestCase):
             expected_horizon_param, actual_horizon_param,
             msg="Data for param 'horizon' not loaded correctly"
         )
-
-        # Set: MONTHS
-        self.assertListEqual([m for m in instance.MONTHS],
-                             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
         # Set TIMEPOINTS_ON_HORIZON
         expected_tmps_on_horizon = dict()
