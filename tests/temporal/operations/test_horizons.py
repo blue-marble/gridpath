@@ -91,7 +91,6 @@ class TestHorizons(unittest.TestCase):
                 sep="\t"
             )
 
-
         # Check data are as expected
         # HORIZON_TYPE_HORIZONS set
         expected_horizon_type_horizons = [
@@ -160,6 +159,22 @@ class TestHorizons(unittest.TestCase):
                              msg="TIMEPOINTS_ON_HORIZON_TYPE_HORIZON data do "
                                  "not match expected."
                              )
+
+        # Param: horizon
+        expected_horizon_by_tmp_type = {
+            (tmp, horizon_type): horizon for tmp, horizon_type, horizon
+            in zip(
+                timepoints_on_horizon_type_horizon_df.timepoint,
+                timepoints_on_horizon_type_horizon_df.horizon_type,
+                timepoints_on_horizon_type_horizon_df.horizon
+            )
+        }
+        actual_horizon_by_tmp_type = {
+            (tmp, _type): instance.horizon[tmp, _type]
+            for tmp in instance.TIMEPOINTS for _type in instance.HORIZON_TYPES
+        }
+        self.assertDictEqual(expected_horizon_by_tmp_type,
+                             actual_horizon_by_tmp_type)
 
         # Param: first_horizon_type_horizon_timepoint
         expected_first_horizon_type_horizon_timepoint = {

@@ -1,9 +1,9 @@
-project	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
-Hydro	202001	3	1	6
-Hydro	202002	3	1	6
-Hydro	203001	3	1	6
-Hydro	203002	3	1	6
-Hydro_NonCurtailable	202001	3	1	6
-Hydro_NonCurtailable	202002	3	1	6
-Hydro_NonCurtailable	203001	3	1	6
-Hydro_NonCurtailable	203002	3	1	6
+project	horizon_type	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
+Hydro	day	202001	3	1	6
+Hydro	day	202002	3	1	6
+Hydro	day	203001	3	1	6
+Hydro	day	203002	3	1	6
+Hydro_NonCurtailable	day	202001	3	1	6
+Hydro_NonCurtailable	day	202002	3	1	6
+Hydro_NonCurtailable	day	203001	3	1	6
+Hydro_NonCurtailable	day	203002	3	1	6

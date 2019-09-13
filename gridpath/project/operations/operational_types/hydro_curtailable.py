@@ -33,21 +33,20 @@ def add_module_specific_components(m, d):
     m.HYDRO_CURTAILABLE_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=
-        generator_subset_init("operational_type",
-                              "hydro_curtailable")
+        generator_subset_init("operational_type", "hydro_curtailable")
     )
 
-    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = \
-        Set(dimen=2)
+    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS = \
+        Set(dimen=3)
 
     m.hydro_curtailable_average_power_mwa = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
+        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS,
               within=NonNegativeReals)
     m.hydro_curtailable_min_power_mw = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
+        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS,
               within=NonNegativeReals)
     m.hydro_curtailable_max_power_mw = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
+        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS,
               within=NonNegativeReals)
 
     m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS = \
@@ -88,26 +87,29 @@ def add_module_specific_components(m, d):
         rule=downwards_reserve_rule)
 
     # Operational constraints
-    def hydro_energy_budget_rule(mod, g, h):
+    def hydro_energy_budget_rule(mod, g, ht, h):
         """
 
         :param mod:
         :param g:
+        :param ht:
         :param h:
         :return:
         """
         return sum((mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
                     mod.Hydro_Curtailable_Curtail_MW[g, tmp])
                    * mod.number_of_hours_in_timepoint[tmp]
-                   for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
+                   for tmp in mod.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON[ht, h]) \
             == \
-            sum(mod.hydro_curtailable_average_power_mwa[g, h]
+            sum(mod.hydro_curtailable_average_power_mwa[g, ht, h]
                 * mod.number_of_hours_in_timepoint[tmp]
-                for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
+                for tmp in mod.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON[ht, h])
 
     m.Curtailable_Hydro_Energy_Budget_Constraint = \
-        Constraint(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
-                   rule=hydro_energy_budget_rule)
+        Constraint(
+            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS,
+            rule=hydro_energy_budget_rule
+        )
 
     def max_power_rule(mod, g, tmp):
         """
@@ -119,7 +121,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
+            <= mod.hydro_curtailable_max_power_mw[g, mod.horizon_type[g],
+                                                  mod.horizon[tmp, mod.horizon_type[g]]]
     m.Hydro_Curtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -136,7 +139,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]]
+            >= mod.hydro_curtailable_min_power_mw[g, mod.horizon_type[g],
+                                                  mod.horizon[tmp, mod.horizon_type[g]]]
     m.Hydro_Curtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -158,30 +162,34 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_type_horizon_timepoint[
+            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]] \
+                and mod.boundary[mod.horizon_type[g],
+                                 mod.horizon[tmp, mod.horizon_type[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp up the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_up_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
-             >= 1:
+                * mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[mod.horizon_type[g], tmp]] \
+                >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]
                    - mod.Hydro_Curtailable_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]) \
                 <= \
                 mod.hydro_curtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp]] \
-                * mod.Capacity_MW[g, mod.period[tmp]] \
+                    mod.previous_timepoint[mod.horizon_type[g], tmp]] \
+                * mod.Capacity_MW[g, mod.period[mod.horizon_type[g], tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Up_Constraint = \
         Constraint(
@@ -204,29 +212,32 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_type_horizon_timepoint[
+            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]] \
+                and mod.boundary[
+            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp down the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_down_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
-             >= 1:
+            * mod.number_of_hours_in_timepoint[mod.previous_timepoint[mod.horizon_type[g], tmp]] \
+            >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]
                    + mod.Hydro_Curtailable_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[mod.horizon_type[g], tmp]]) \
                 >= \
                 - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp]] \
+                    mod.previous_timepoint[mod.horizon_type[g], tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Down_Constraint = \
@@ -347,17 +358,20 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_type_horizon_timepoint[
+        mod.horizon[tmp, mod.horizon_type]] \
+            and mod.boundary[mod.horizon_type[g],
+                             mod.horizon[tmp, mod.horizon_type[g]]] \
+            == "linear":
         pass
     else:
         return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
                 mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
                (mod.Hydro_Curtailable_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[mod.horizon_type[g], tmp]
                 ]
                 + mod.Hydro_Curtailable_Curtail_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[mod.horizon_type[g], tmp]
                 ])
 
 
@@ -399,25 +413,27 @@ def load_module_specific_data(m, data_portal,
         os.path.join(scenario_directory, subproblem, stage, "inputs",
                      "hydro_conventional_horizon_params.tab"),
         sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_mwa",
+        usecols=["project", "horizon_type", "horizon",
+                 "hydro_average_power_mwa",
                  "hydro_min_power_mw", "hydro_max_power_mw"]
     )
     for row in zip(prj_hor_opchar_df["project"],
+                   prj_hor_opchar_df["horizon_type"],
                    prj_hor_opchar_df["horizon"],
                    prj_hor_opchar_df["hydro_average_power_mwa"],
                    prj_hor_opchar_df["hydro_min_power_mw"],
                    prj_hor_opchar_df["hydro_max_power_mw"]):
         if row[0] in projects:
-            project_horizons.append((row[0], row[1]))
-            mwa[(row[0], row[1])] = float(row[2])
-            min_mw[(row[0], row[1])] = float(row[3])
-            max_mw[(row[0], row[1])] = float(row[4])
+            project_horizons.append((row[0], row[1], int(row[2])))
+            mwa[(row[0], row[1], row[2])] = float(row[3])
+            min_mw[(row[0], row[1], row[2])] = float(row[4])
+            max_mw[(row[0], row[1], row[2])] = float(row[5])
         else:
             pass
 
     # Load data
     data_portal.data()[
-        "HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS"
+        "HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS"
     ] = {
         None: project_horizons
     }

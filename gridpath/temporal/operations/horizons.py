@@ -101,6 +101,8 @@ def add_model_components(m, d):
     m.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON = \
         Set(m.HORIZON_TYPE_HORIZONS, within=PositiveIntegers, ordered=True)
 
+    m.horizon = Param(m.TIMEPOINTS, m.HORIZON_TYPES)
+
     # Determine the first and last timepoint of the horizon
     # TODO: is there are a better way to do this than relying on min and max?
     # NOTE: it's an ordered set, so getting the first and last element seems
@@ -130,6 +132,23 @@ def add_model_components(m, d):
     m.next_timepoint = \
         Param(m.HORIZON_TYPES, m.TIMEPOINTS,
               initialize=next_timepoint_init)
+
+
+def timepoint_horizon_init(mod, tmp, horizon_type):
+    """
+    :param mod:
+    :param tmp:
+    :param horizon_type:
+    :return:
+
+    """
+    tmp_horizon_dict = {}
+    for horizon in mod.HORIZONS_BY_HORIZON_TYPE[horizon_type]:
+        for tmp in mod.TIMEPOINTS_ON_HORIZON_TYPE_HORIZON[horizon_type,
+                                                          horizon]:
+            tmp_horizon_dict[tmp, horizon_type] = horizon
+
+    return tmp_horizon_dict
 
 
 def previous_timepoint_init(mod, horizon_type, tmp):
@@ -245,26 +264,22 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
               ) as f:
         reader = csv.reader(f, delimiter="\t")
         next(reader)
-        horizon_tmp_dict = dict()
+        tmps_on_horizon_type_horizon = dict()
+        horizon_by_tmp = dict()
         for row in reader:
-            if (row[0], int(row[1])) not in horizon_tmp_dict.keys():
-                horizon_tmp_dict[row[0], int(row[1])] = [int(row[2])]
+            if (row[0], int(row[1])) not in tmps_on_horizon_type_horizon.keys():
+                tmps_on_horizon_type_horizon[row[0], int(row[1])] = [int(row[2])]
             else:
-                horizon_tmp_dict[row[0], int(row[1])].append(int(row[2]))
+                tmps_on_horizon_type_horizon[row[0], int(row[1])].append(int(row[2]))
+
+            horizon_by_tmp[int(row[2]), row[0]] = int(row[1])
 
 
     data_portal.data()[
         "TIMEPOINTS_ON_HORIZON_TYPE_HORIZON"
-    ] = horizon_tmp_dict
+    ] = tmps_on_horizon_type_horizon
 
-
-
-    # data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-    #                                        "inputs", "timepoints.tab"),
-    #                  select=("TIMEPOINTS","horizon"),
-    #                  index=m.TIMEPOINTS,
-    #                  param=m.horizon
-    #                  )
+    data_portal.data()["horizon"] = horizon_by_tmp
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
