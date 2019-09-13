@@ -331,9 +331,9 @@ def power_delta_rule(mod, g, tmp):
              * mod.cap_factor[g, tmp]) - \
             (mod.Capacity_MW[
                  g, mod.period[mod.previous_timepoint[tmp]]
-             ] * mod.availability_derate[mod.previous_timepoint[tmp]]
+             ] * mod.availability_derate[g, mod.previous_timepoint[tmp]]
              * mod.cap_factor[g, mod.previous_timepoint[tmp]]
-            )
+             )
 
 
 def load_module_specific_data(mod, data_portal,
