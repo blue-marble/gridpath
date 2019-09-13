@@ -92,7 +92,7 @@ def add_model_components(m, d):
         """
         return mod.Total_Fuel_Burn_MMBtu[g, tmp] * \
             mod.fuel_price_per_mmbtu[
-                mod.fuel[g], mod.period[tmp], mod.month[mod.horizon[tmp]]]
+                mod.fuel[g], mod.period[tmp], mod.month[tmp]]
 
     m.Fuel_Cost = Expression(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
                              rule=fuel_cost_rule)

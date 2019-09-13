@@ -77,11 +77,6 @@ def add_model_components(m, d):
     #  number of *hours*
     m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
-    # TODO: are months used anywhere or can we remove them for now?
-    # Make a months set to use as index for some params
-    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
-    m.month = Param(m.HORIZONS, within=m.MONTHS)
-
     # Assign horizons to timepoints
     m.horizon = Param(m.TIMEPOINTS, within=m.HORIZONS)
 
@@ -193,10 +188,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "horizons.tab"),
-                     select=("HORIZONS", "boundary", "horizon_weight",
-                             "month"),
+                     select=("HORIZONS", "boundary", "horizon_weight"),
                      index=m.HORIZONS,
-                     param=(m.boundary, m.horizon_weight, m.month)
+                     param=(m.boundary, m.horizon_weight)
                      )
 
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
@@ -217,7 +211,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     horizons = c.execute(
-        """SELECT horizon, boundary, horizon_weight, month
+        """SELECT horizon, boundary, horizon_weight
            FROM inputs_temporal_horizons
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {};""".format(
@@ -264,7 +258,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["HORIZONS", "boundary", "horizon_weight", "month"])
+        writer.writerow(["HORIZONS", "boundary", "horizon_weight"])
 
         for row in horizons:
             writer.writerow(row)

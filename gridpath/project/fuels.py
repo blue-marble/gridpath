@@ -125,16 +125,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     periods_months = c2.execute(
         """SELECT DISTINCT period, month
         FROM inputs_temporal_timepoints
-        LEFT OUTER JOIN
-        (SELECT horizon, month
-        FROM inputs_temporal_horizons
-        WHERE temporal_scenario_id = {}
-        AND subproblem_id = {})
-        USING (horizon)
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
         AND stage_id = {};""".format(
-            subscenarios.TEMPORAL_SCENARIO_ID, subproblem,
             subscenarios.TEMPORAL_SCENARIO_ID, subproblem, stage
         )
     ).fetchall()

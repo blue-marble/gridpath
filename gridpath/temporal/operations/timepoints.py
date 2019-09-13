@@ -9,7 +9,8 @@ temporal unit over which operational variables are defined.
 import csv
 import os.path
 
-from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers
+from pyomo.environ import Param, Set, NonNegativeReals, NonNegativeIntegers,\
+    PositiveIntegers
 
 
 def add_model_components(m, d):
@@ -43,15 +44,20 @@ def add_model_components(m, d):
     m.previous_stage_timepoint_map = \
         Param(m.TIMEPOINTS, within=NonNegativeIntegers)
 
+    # Make a months set to use as index for some params
+    m.MONTHS = Set(within=PositiveIntegers, initialize=list(range(1, 12 + 1)))
+    m.month = Param(m.TIMEPOINTS, within=m.MONTHS)
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
                      param=(m.number_of_hours_in_timepoint,
-                            m.previous_stage_timepoint_map),
+                            m.previous_stage_timepoint_map,
+                            m.month),
                      select=("TIMEPOINTS", "number_of_hours_in_timepoint",
-                             "previous_stage_timepoint_map")
+                             "previous_stage_timepoint_map", "month")
                      )
 
 
@@ -66,7 +72,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     timepoints = c.execute(
         """SELECT timepoint, period, horizon, 
-           number_of_hours_in_timepoint, previous_stage_timepoint_map
+           number_of_hours_in_timepoint, previous_stage_timepoint_map, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {}
@@ -115,7 +121,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(["TIMEPOINTS", "period", "horizon",
                          "number_of_hours_in_timepoint",
-                         "previous_stage_timepoint_map"])
+                         "previous_stage_timepoint_map", "month"])
 
         # Write timepoints
         for row in timepoints:
