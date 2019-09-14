@@ -1,5 +1,5 @@
-HORIZONS	boundary	horizon_weight	month
-202001	circular	1.0	5
-202002	linear	1.0	9
-203001	circular	1.0	4
-203002	linear	1.0	7
+HORIZONS	boundary	horizon_weight
+202001	circular	1
+202002	linear	1
+203001	circular	1
+203002	linear	1

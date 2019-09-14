@@ -173,7 +173,6 @@ horizon INTEGER,
 period INTEGER,
 boundary VARCHAR(16),
 horizon_weight FLOAT,
-month INTEGER,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
@@ -203,6 +202,7 @@ period INTEGER, -- could also derive this from horizons
 number_of_hours_in_timepoint INTEGER,
 previous_stage_timepoint_map INTEGER,
 spinup_or_lookahead INTEGER,
+month INTEGER,
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
@@ -212,7 +212,9 @@ inputs_temporal_horizons (temporal_scenario_id, subproblem_id, horizon, period),
 -- Make sure subproblem/stage exist in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id) REFERENCES
 inputs_temporal_subproblems_stages (temporal_scenario_id, subproblem_id,
-stage_id)
+stage_id),
+-- Month must be 1-12
+FOREIGN KEY (month) REFERENCES mod_months (month)
 );
 
 
