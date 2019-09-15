@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import pandas as pd
@@ -219,30 +220,79 @@ class TestHorizons(unittest.TestCase):
                     balancing_type, horizon]:
                 if expected_boundary_param[balancing_type, horizon] == \
                         'circular':
-                    expected_prev_tmp[balancing_type, tmp] = \
+                    expected_prev_tmp[tmp, balancing_type] = \
                         expected_last_horizon_timepoint[
                             balancing_type, horizon]
                 elif expected_boundary_param[balancing_type, horizon] == \
                         'linear':
-                    expected_prev_tmp[balancing_type, tmp] = None
+                    expected_prev_tmp[tmp, balancing_type] = None
                 else:
                     raise(ValueError,
                           "Test data specifies horizon boundary different "
                           "from allowed values of 'circular' and 'linear'")
             else:
-                expected_prev_tmp[balancing_type, tmp] = prev_tmp
+                expected_prev_tmp[tmp, balancing_type] = prev_tmp
             prev_tmp = tmp
 
         actual_prev_tmp = {
-            (balancing_type, tmp): instance.previous_timepoint[balancing_type, tmp]
-            for balancing_type in instance.BALANCING_TYPES
+            (tmp, balancing_type): instance.previous_timepoint[tmp, balancing_type]
             for tmp in instance.TIMEPOINTS
+            for balancing_type in instance.BALANCING_TYPES
         }
 
         self.assertDictEqual(expected_prev_tmp,
                              actual_prev_tmp,
                              msg="Data for param previous_timepoint do "
                                  "not match expected.")
+
+        # Param: next_timepoint
+        # Testing for both horizons that 'circular' and 'linear'
+        expected_next_tmp = dict()
+        prev_tmp = None
+        for (balancing_type, horizon, tmp) \
+            in [tuple(row) for row in
+                timepoints_on_balancing_type_horizon_df.values]:
+            if prev_tmp is None:
+                if expected_boundary_param[balancing_type, horizon] == \
+                        'circular':
+                    expected_next_tmp[expected_last_horizon_timepoint[
+                        balancing_type, horizon], balancing_type
+                    ] = \
+                        expected_first_horizon_timepoint[
+                            balancing_type, horizon]
+                elif expected_boundary_param[balancing_type, horizon] == \
+                        'linear':
+                    expected_next_tmp[expected_last_horizon_timepoint[
+                        balancing_type, horizon], balancing_type] = None
+                else:
+                    raise(ValueError,
+                          "Test data specifies horizon boundary different "
+                          "from allowed values of 'circular' and 'linear'")
+            else:
+                expected_next_tmp[prev_tmp, balancing_type] = tmp
+            # If we have reached the last horizon timepoint, set the
+            # previous timepoint to None (to enter the boundary logic above)
+            if tmp == expected_last_horizon_timepoint[
+                        balancing_type, horizon]:
+                prev_tmp = None
+            else:
+                prev_tmp = tmp
+
+        expected_next_tmp_ordered = OrderedDict(sorted(
+            expected_next_tmp.items()))
+
+        actual_next_tmp = {
+            (tmp, balancing_type): instance.next_timepoint[tmp, balancing_type]
+            for tmp in instance.TIMEPOINTS
+            for balancing_type in instance.BALANCING_TYPES
+        }
+        actual_next_tmp_ordered = OrderedDict(sorted(
+            actual_next_tmp.items()))
+
+        self.assertDictEqual(expected_next_tmp_ordered,
+                             actual_next_tmp_ordered,
+                             msg="Data for param next_timepoint do not match "
+                                 "expected.")
 
 
 if __name__ == "__main__":

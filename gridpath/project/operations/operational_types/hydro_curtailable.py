@@ -172,7 +172,7 @@ def add_module_specific_components(m, d):
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[mod.balancing_type[g], tmp]] \
+                    mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
                 >= 1:
             return Constraint.Skip
         else:
@@ -180,15 +180,16 @@ def add_module_specific_components(m, d):
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    - mod.Hydro_Curtailable_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[
+                            g]]]) \
                 <= \
                 mod.hydro_curtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[mod.balancing_type[g], tmp]] \
+                    mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
                 * mod.Capacity_MW[g, mod.period[mod.balancing_type[g], tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Up_Constraint = \
@@ -221,7 +222,7 @@ def add_module_specific_components(m, d):
         # If you can ramp down the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_down_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[mod.previous_timepoint[mod.balancing_type[g], tmp]] \
+            * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
             >= 1:
             return Constraint.Skip
         else:
@@ -229,15 +230,15 @@ def add_module_specific_components(m, d):
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    + mod.Hydro_Curtailable_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[mod.balancing_type[g], tmp]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
                 >= \
                 - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[mod.balancing_type[g], tmp]] \
+                    mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Down_Constraint = \
@@ -368,10 +369,10 @@ def power_delta_rule(mod, g, tmp):
         return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
                 mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
                (mod.Hydro_Curtailable_Provide_Power_MW[
-                    g, mod.previous_timepoint[mod.balancing_type[g], tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
                 ]
                 + mod.Hydro_Curtailable_Curtail_MW[
-                    g, mod.previous_timepoint[mod.balancing_type[g], tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
                 ])
 
 

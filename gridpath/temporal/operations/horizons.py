@@ -8,7 +8,6 @@ operational decisions are linked together and which are independent). Some
 operational constraints are enforced at the horizon level.
 """
 
-from builtins import range
 import csv
 import os.path
 
@@ -113,22 +112,22 @@ def add_model_components(m, d):
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.previous_timepoint = Param(
-        m.BALANCING_TYPES, m.TIMEPOINTS, initialize=previous_timepoint_init
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=previous_timepoint_init
     )
 
     # Determine the next timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.next_timepoint = Param(
-        m.BALANCING_TYPES, m.TIMEPOINTS, initialize=next_timepoint_init
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=next_timepoint_init
     )
 
 
-def previous_timepoint_init(mod, balancing_type, tmp):
+def previous_timepoint_init(mod, tmp, balancing_type):
     """
     :param mod:
-    :param balancing_type:
     :param tmp:
+    :param balancing_type:
     :return:
 
     Determine the previous timepoint for each timepoint. If the timepoint is
@@ -141,16 +140,15 @@ def previous_timepoint_init(mod, balancing_type, tmp):
     """
     prev_tmp_dict = {}
     for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
-        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[balancing_type,
-                                                          horizon]:
-            if tmp == mod.first_horizon_timepoint[
-                    balancing_type, horizon]:
+        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                balancing_type, horizon]:
+            if tmp == mod.first_horizon_timepoint[balancing_type, horizon]:
                 if mod.boundary[balancing_type, horizon] == "circular":
-                    prev_tmp_dict[balancing_type, int(tmp)] = \
+                    prev_tmp_dict[tmp, balancing_type] = \
                         mod.last_horizon_timepoint[
                             balancing_type, horizon]
                 elif mod.boundary[balancing_type, horizon] == "linear":
-                    prev_tmp_dict[balancing_type, int(tmp)] = None
+                    prev_tmp_dict[tmp, balancing_type] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for "
@@ -163,7 +161,7 @@ def previous_timepoint_init(mod, balancing_type, tmp):
                         "'linear'"
                     )
             else:
-                prev_tmp_dict[balancing_type, int(tmp)] = \
+                prev_tmp_dict[tmp, balancing_type] = \
                     list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
                              balancing_type, horizon])[
                         list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
@@ -174,11 +172,11 @@ def previous_timepoint_init(mod, balancing_type, tmp):
     return prev_tmp_dict
 
 
-def next_timepoint_init(mod, balancing_type, tmp):
+def next_timepoint_init(mod, tmp, balancing_type):
     """
     :param mod:
-    :param balancing_type:
     :param tmp:
+    :param balancing_type:
     :return:
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,
@@ -189,16 +187,16 @@ def next_timepoint_init(mod, balancing_type, tmp):
     """
     next_tmp_dict = {}
     for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
-        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[balancing_type,
-                                                          horizon]:
+        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                balancing_type, horizon]:
             if tmp == mod.last_horizon_timepoint[
                     balancing_type, horizon]:
                 if mod.boundary[balancing_type, horizon] == "circular":
-                    next_tmp_dict[balancing_type, int(tmp)] = \
+                    next_tmp_dict[tmp, balancing_type] = \
                         mod.first_horizon_timepoint[
                             balancing_type, horizon]
                 elif mod.boundary[balancing_type, horizon] == "linear":
-                    next_tmp_dict[balancing_type, int(tmp)] = None
+                    next_tmp_dict[tmp, balancing_type] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for "
@@ -211,7 +209,7 @@ def next_timepoint_init(mod, balancing_type, tmp):
                         "'linear'"
                     )
             else:
-                next_tmp_dict[balancing_type, int(tmp)] = \
+                next_tmp_dict[tmp, balancing_type] = \
                     list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
                              balancing_type, horizon])[
                         list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
