@@ -179,11 +179,11 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_type_horizon_timepoint[
-            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]
+        if tmp == mod.first_balancing_type_horizon_timepoint[
+            mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
                 and mod.boundary[
-            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]
+            mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
                 == "linear":
             return Constraint.Skip
@@ -192,7 +192,7 @@ def add_module_specific_components(m, d):
         # bind, so skip
         elif (mod.always_on_ramp_up_rate[g] * 60
               * mod.number_of_hours_in_timepoint[mod.previous_timepoint[
-                    mod.horizon_type[g], tmp]]
+                    mod.balancing_type[g], tmp]]
               >= (1 - mod.always_on_min_stable_level_fraction[g])
               ):
             return Constraint.Skip
@@ -200,13 +200,13 @@ def add_module_specific_components(m, d):
             return mod.Provide_Power_AlwaysOn_MW[g, tmp] \
                 + mod.AlwaysOn_Upwards_Reserves_MW[g, tmp] \
                 - (mod.Provide_Power_AlwaysOn_MW[
-                       g, mod.previous_timepoint[mod.horizon_type[g], tmp]]
+                       g, mod.previous_timepoint[mod.balancing_type[g], tmp]]
                    - mod.AlwaysOn_Downwards_Reserves_MW[
-                       g, mod.previous_timepoint[mod.horizon_type[g], tmp]]) \
+                       g, mod.previous_timepoint[mod.balancing_type[g], tmp]]) \
                 <= \
                 mod.always_on_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                       mod.previous_timepoint[mod.horizon_type[g], tmp]] \
+                       mod.previous_timepoint[mod.balancing_type[g], tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
 
@@ -231,11 +231,11 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_type_horizon_timepoint[
-            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]
+        if tmp == mod.first_balancing_type_horizon_timepoint[
+            mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
-                and mod.boundary[mod.horizon_type[g],
-                                 mod.horizon[tmp, mod.horizon_type[g]]] \
+                and mod.boundary[mod.balancing_type[g],
+                                 mod.horizon[tmp, mod.balancing_type[g]]] \
                 == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
@@ -243,7 +243,7 @@ def add_module_specific_components(m, d):
         # bind, so skip
         elif (mod.always_on_ramp_down_rate[g] * 60
               * mod.number_of_hours_in_timepoint[mod.previous_timepoint[
-                    mod.horizon_type[g], tmp]]
+                    mod.balancing_type[g], tmp]]
               >= (1 - mod.always_on_min_stable_level_fraction[g])
               ):
             return Constraint.Skip
@@ -257,7 +257,7 @@ def add_module_specific_components(m, d):
                 >= \
                 - mod.always_on_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                       mod.previous_timepoint[mod.horizon_type[g], tmp]] \
+                       mod.previous_timepoint[mod.balancing_type[g], tmp]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
 
@@ -408,17 +408,17 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_type_horizon_timepoint[
-            mod.horizon_type[g], mod.horizon[tmp, mod.horizon_type[g]]
+    if tmp == mod.first_balancing_type_horizon_timepoint[
+            mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
-            and mod.boundary[mod.horizon_type[g],
-                             mod.horizon[tmp, mod.horizon_type[g]]] \
+            and mod.boundary[mod.balancing_type[g],
+                             mod.horizon[tmp, mod.balancing_type[g]]] \
             == "linear":
         pass
     else:
         return mod.Provide_Power_AlwaysOn_MW[g, tmp] - \
                mod.Provide_Power_AlwaysOn_MW[
-                   g, mod.previous_timepoint[mod.horizon_type[g], tmp]
+                   g, mod.previous_timepoint[mod.balancing_type[g], tmp]
                ]
 
 

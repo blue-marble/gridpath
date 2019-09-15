@@ -116,7 +116,7 @@ def add_model_components(m, d):
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
-    m.horizon_type = Param(m.PROJECTS)
+    m.balancing_type = Param(m.PROJECTS)
 
     # Variable O&M cost
     # TODO: all projects have this for now; is that what makes the most sense?
@@ -145,10 +145,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
                              "operational_type", "variable_om_cost_per_mwh",
-                             "horizon_type"),
+                             "balancing_type"),
                      param=(m.load_zone, m.capacity_type,
                             m.operational_type, m.variable_om_cost_per_mwh,
-                            m.horizon_type)
+                            m.balancing_type)
                      )
 
     # Technology column is optional (default param value is 'unspecified')

@@ -89,7 +89,7 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_projects = [p for p in instance.HYDRO_CURTAILABLE_PROJECTS]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS
+        # Sets: HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_BALANCING_TYPE_HORIZONS
         expected_operational_horizons = sorted(
             [("Hydro", "day", 202001), ("Hydro", "day", 202002),
              ("Hydro", "day", 203001), ("Hydro", "day", 203002)]
@@ -97,7 +97,7 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_operational_horizons = sorted(
             [p for p in 
              instance
-                .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS
+                .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_BALANCING_TYPE_HORIZONS
              ]
             )
         self.assertListEqual(expected_operational_horizons,
@@ -114,12 +114,12 @@ class TestHydroCurtailable(unittest.TestCase):
         )
         actual_average_power = OrderedDict(
             sorted(
-                {(prj, horizon_type, horizon):
+                {(prj, balancing_type, horizon):
                     instance.hydro_curtailable_average_power_mwa[prj,
-                                                                 horizon_type, horizon]
-                 for (prj, horizon_type, horizon) in
+                                                                 balancing_type, horizon]
+                 for (prj, balancing_type, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS
+                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_BALANCING_TYPE_HORIZONS
                  }.items()
             )
         )
@@ -136,11 +136,11 @@ class TestHydroCurtailable(unittest.TestCase):
         )
         actual_min_power = OrderedDict(
             sorted(
-                {(prj, horizon_type, horizon):
-                    instance.hydro_curtailable_min_power_mw[prj, horizon_type, horizon]
-                 for (prj, horizon_type, horizon) in
+                {(prj, balancing_type, horizon):
+                    instance.hydro_curtailable_min_power_mw[prj, balancing_type, horizon]
+                 for (prj, balancing_type, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS
+                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_BALANCING_TYPE_HORIZONS
                  }.items()
             )
         )
@@ -157,11 +157,11 @@ class TestHydroCurtailable(unittest.TestCase):
         )
         actual_max_power = OrderedDict(
             sorted(
-                {(prj, horizon_type, horizon):
-                    instance.hydro_curtailable_max_power_mw[prj, horizon_type, horizon]
-                 for (prj, horizon_type, horizon) in
+                {(prj, balancing_type, horizon):
+                    instance.hydro_curtailable_max_power_mw[prj, balancing_type, horizon]
+                 for (prj, balancing_type, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZON_TYPE_HORIZONS
+                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_BALANCING_TYPE_HORIZONS
                  }.items()
             )
         )

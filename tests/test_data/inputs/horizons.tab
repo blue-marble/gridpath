@@ -1,4 +1,4 @@
-horizon_type	horizon	boundary
+balancing_type	horizon	boundary
 day	202001	circular
 day	202002	linear
 day	203001	circular

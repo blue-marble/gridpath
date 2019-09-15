@@ -107,7 +107,6 @@ class TestTimepoints(unittest.TestCase):
                              msg="Data for param timepoint_weight not loaded "
                                  "correctly")
 
-
         # Set: MONTHS
         self.assertListEqual([m for m in instance.MONTHS],
                               [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])

@@ -1,4 +1,4 @@
-project	horizon_type	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
+project	balancing_type	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
 Hydro	day	202001	3	1	6
 Hydro	day	202002	3	1	6
 Hydro	day	203001	3	1	6
