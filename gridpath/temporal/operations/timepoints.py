@@ -31,6 +31,13 @@ def add_model_components(m, d):
     will have 4 hours per timepoint. This parameter is used by other modules
     to track energy (e.g. storage state of charge).
 
+    The *timepoint_weight* parameter accounts for the number of other similar
+    'timepoints' that are not explicitly included in the optimization, but that
+    the included timepoint represents in the objective function. For example,
+    we could include one day from the month to represent the entire month,
+    in which case the *timepoint_weight*\ :sub:`t`\ for each timepoint
+    on that day will be the number of the days in :math:`h`'s respective month.
+
     Timepoints do not need to have the same *number_of_hours_in_timepoint*
     value, i.e. one of them can represent a 5-minute segment and another a
     24-hour segment.

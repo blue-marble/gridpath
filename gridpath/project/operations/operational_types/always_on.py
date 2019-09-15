@@ -179,7 +179,7 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_balancing_type_horizon_timepoint[
+        if tmp == mod.first_horizon_timepoint[
             mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
                 and mod.boundary[
@@ -231,7 +231,7 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_balancing_type_horizon_timepoint[
+        if tmp == mod.first_horizon_timepoint[
             mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
                 and mod.boundary[mod.balancing_type[g],
@@ -408,7 +408,7 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_balancing_type_horizon_timepoint[
+    if tmp == mod.first_horizon_timepoint[
             mod.balancing_type[g], mod.horizon[tmp, mod.balancing_type[g]]
         ] \
             and mod.boundary[mod.balancing_type[g],
