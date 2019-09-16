@@ -227,12 +227,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         tmps_on_horizon = dict()
         horizon_by_tmp = dict()
         for row in reader:
-            if int(row[1]) not in tmps_on_horizon.keys():
-                tmps_on_horizon[int(row[1])] = [int(row[2])]
+            if int(row[0]) not in tmps_on_horizon.keys():
+                tmps_on_horizon[int(row[0])] = [int(row[2])]
             else:
-                tmps_on_horizon[int(row[1])].append(int(row[2]))
+                tmps_on_horizon[int(row[0])].append(int(row[2]))
 
-            horizon_by_tmp[int(row[2]), row[0]] = int(row[1])
+            horizon_by_tmp[int(row[2]), row[1]] = int(row[0])
 
     data_portal.data()[
         "TIMEPOINTS_ON_HORIZON"
