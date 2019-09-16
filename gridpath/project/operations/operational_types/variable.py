@@ -321,8 +321,10 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+            == "linear":
         pass
     else:
         return \
@@ -330,9 +332,15 @@ def power_delta_rule(mod, g, tmp):
              * mod.availability_derate[g, tmp]
              * mod.cap_factor[g, tmp]) - \
             (mod.Capacity_MW[
-                 g, mod.period[mod.previous_timepoint[tmp, mod.balancing_type[g]]]
-             ] * mod.availability_derate[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
-             * mod.cap_factor[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+                 g, mod.period[
+                     mod.previous_timepoint[tmp, mod.balancing_type[g]]
+                 ]
+             ] * mod.availability_derate[
+                g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
+            ]
+             * mod.cap_factor[
+                 g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
+             ]
              )
 
 

@@ -162,7 +162,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] \
             + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_noncurtailable_max_power_mw[g, mod.horizon[tmp, mod.balancing_type[g]]]
+            <= mod.hydro_noncurtailable_max_power_mw[
+                   g, mod.horizon[tmp, mod.balancing_type[g]]]
     m.Hydro_Noncurtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -179,7 +180,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]\
             - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_noncurtailable_min_power_mw[g, mod.horizon[tmp, mod.balancing_type[g]]]
+            >= mod.hydro_noncurtailable_min_power_mw[
+                   g, mod.horizon[tmp, mod.balancing_type[g]]]
     m.Hydro_Noncurtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -201,14 +203,17 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp up the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
-             >= 1:
+            * mod.number_of_hours_in_timepoint[
+            mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
+                >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]
@@ -216,7 +221,8 @@ def add_module_specific_components(m, d):
                 - (mod.Hydro_Noncurtailable_Provide_Power_MW[
                         g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+                   ) \
                 <= \
                 mod.hydro_noncurtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -244,14 +250,17 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp down the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
-             >= 1:
+            * mod.number_of_hours_in_timepoint[
+            mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
+                >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]
@@ -259,7 +268,8 @@ def add_module_specific_components(m, d):
                 - (mod.Hydro_Noncurtailable_Provide_Power_MW[
                         g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+                   ) \
                 >= \
                 - mod.hydro_noncurtailable_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
@@ -388,8 +398,10 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+            == "linear":
         pass
     else:
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] - \

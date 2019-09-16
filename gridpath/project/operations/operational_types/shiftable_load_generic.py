@@ -187,8 +187,8 @@ def power_delta_rule(mod, l, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp,
-                                                      mod.balancing_type[l]]] \
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type[l]]] \
             and mod.boundary[mod.horizon[tmp, mod.balancing_type[l]]] == \
             "linear":
         pass

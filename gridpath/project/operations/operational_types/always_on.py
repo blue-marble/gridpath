@@ -239,8 +239,8 @@ def add_module_specific_components(m, d):
                 == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp down the full operable range between timepoints, constraint won't
-        # bind, so skip
+        # ramp down the full operable range between timepoints, constraint
+        # won't bind, so skip
         elif (mod.always_on_ramp_down_rate[g] * 60
               * mod.number_of_hours_in_timepoint[
                   mod.previous_timepoint[tmp, mod.balancing_type[g]]]
@@ -253,7 +253,8 @@ def add_module_specific_components(m, d):
                 - (mod.Provide_Power_AlwaysOn_MW[
                        g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                    + mod.AlwaysOn_Upwards_Reserves_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
+                       g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+                   ) \
                 >= \
                 - mod.always_on_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[

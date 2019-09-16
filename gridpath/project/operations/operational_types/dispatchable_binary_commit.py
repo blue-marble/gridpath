@@ -294,12 +294,15 @@ def add_module_specific_components(m, d):
 
         # TODO: if we can link horizons, input commit from previous horizon's
         #  last timepoint rather than skipping the constraint
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
            return mod.Commit_Binary[g, tmp] \
-                  - mod.Commit_Binary[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
+                  - mod.Commit_Binary[
+                      g, mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
                   == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
 
     m.DispBinCommit_Binary_Logic_Constraint = Constraint(
@@ -366,8 +369,10 @@ def add_module_specific_components(m, d):
         # timepoint in the horizon, there is no previous timepoint, so we'll
         # skip tightening the constraint for startup ramp rate limits by setting
         # startup_ramp equal to Pmax.
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             startup_ramp = mod.DispBinCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
@@ -431,11 +436,14 @@ def add_module_specific_components(m, d):
         # last timepoint in the horizon, there is no next timepoint, so we'll
         # assume that the value equals zero. This equivalent to "skipping" the
         # tightening of the constraint.
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.last_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             stop_next_tmp = 0
         else:
-            stop_next_tmp = mod.Stop_Binary[g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
+            stop_next_tmp = mod.Stop_Binary[
+                g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is shutting down, ensuring
@@ -513,18 +521,23 @@ def add_module_specific_components(m, d):
         # last timepoint in the horizon, there is no next timepoint, so we'll
         # assume that the value equals zero. This equivalent to "skipping" the
         # tightening of the constraint.
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.last_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             stop_next_tmp = 0
         else:
-            stop_next_tmp = mod.Stop_Binary[g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
+            stop_next_tmp = mod.Stop_Binary[
+                g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
         # *startup_ramp* equals the ramp rate limit during the previous
         # timepoint. If the horizon boundary is linear and we're at the first
         # timepoint in the horizon, there is no previous timepoint, so we'll
         # skip tightening the constraint for startup ramp rate limits by setting
         # startup_ramp equal to Pmax.
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+                == "linear":
             startup_ramp = mod.DispBinCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
@@ -724,7 +737,8 @@ def add_module_specific_components(m, d):
         # ramp up the full operable range between timepoints, constraint
         # won't bind, so skip
         elif (mod.dispbincommit_ramp_up_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type[g]]]
               >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
@@ -768,7 +782,8 @@ def add_module_specific_components(m, d):
         # ramp down the full operable range between timepoints, constraint
         # won't bind, so skip
         elif (mod.dispbincommit_ramp_down_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type[g]]]
               >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
@@ -939,7 +954,8 @@ def startup_shutdown_rule(mod, g, tmp):
         return None
     else:
         return (mod.Commit_Binary[g, tmp]
-                - mod.Commit_Binary[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
+                - mod.Commit_Binary[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
             * mod.DispBinCommit_Pmax_MW[g, tmp]
 
 
