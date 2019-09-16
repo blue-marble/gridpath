@@ -176,11 +176,11 @@ DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
-balancing_type VARCHAR(64),
-horizon INTEGER,
+horizon VARCHAR(32),
+balancing_type VARCHAR(32),
 period INTEGER,
 boundary VARCHAR(16),
-PRIMARY KEY (temporal_scenario_id, subproblem_id, balancing_type, horizon),
+PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure boundary type is correct
@@ -191,10 +191,7 @@ FOREIGN KEY (temporal_scenario_id, period) REFERENCES
 inputs_temporal_periods (temporal_scenario_id, period),
 -- Make sure subproblem_id exists in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id) REFERENCES
-inputs_temporal_subproblems (temporal_scenario_id, subproblem_id),
--- Add unique constraint so you can use as foreign key in timepoints table
-CONSTRAINT horizons_periods_unique UNIQUE (temporal_scenario_id, subproblem_id,
-balancing_type, horizon, period)
+inputs_temporal_subproblems (temporal_scenario_id, subproblem_id)
 );
 
 -- Timepoints
@@ -230,10 +227,10 @@ temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
-balancing_type VARCHAR(64),
-horizon INTEGER,
+horizon VARCHAR(32),
+balancing_type VARCHAR(32),
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint,
-             balancing_type, horizon),
+             horizon),
 FOREIGN KEY (temporal_scenario_id)
     REFERENCES subscenarios_temporal (temporal_scenario_id),
 -- Make sure these are the same timepoints as in the main timepoints table
@@ -241,9 +238,9 @@ FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint)
     REFERENCES inputs_temporal_timepoints (temporal_scenario_id,
                                            subproblem_id, stage_id, timepoint),
 -- Make sure horizons exist in this temporal_scenario_id and subproblem_id
-FOREIGN KEY (temporal_scenario_id, subproblem_id, balancing_type, horizon)
+FOREIGN KEY (temporal_scenario_id, subproblem_id, horizon)
     REFERENCES inputs_temporal_horizons (temporal_scenario_id, subproblem_id,
-                                         balancing_type, horizon),
+                                         horizon),
 -- Make sure subproblem/stage exist in this temporal_scenario_id
 FOREIGN KEY (temporal_scenario_id, subproblem_id, stage_id)
     REFERENCES inputs_temporal_subproblems_stages (temporal_scenario_id,
