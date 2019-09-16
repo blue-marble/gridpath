@@ -27,6 +27,7 @@ def add_module_specific_components(m, d):
     *hydro_curtailable_ramp_down_rate* \ :sub:`chg`\ -- the project's downward
     ramp rate limit, defined as a fraction of its capacity per minute \n
     :param m:
+    :param d:
     :return:
     """
     # Sets and params
@@ -504,7 +505,7 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.horizon[tmp, mod.balancing_type[p]],
                 tmp,
                 mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],

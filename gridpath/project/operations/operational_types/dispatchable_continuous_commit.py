@@ -299,12 +299,12 @@ def add_module_specific_components(m, d):
 
         # TODO: if we can link horizons, input commit from previous horizon's
         #  last timepoint rather than skipping the constraint
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             return Constraint.Skip
         else:
            return mod.Commit_Continuous[g, tmp] \
-                  - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]] \
+                  - mod.Commit_Continuous[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]] \
                   == mod.Start_Continuous[g, tmp] - mod.Stop_Continuous[g, tmp]
 
     m.DispContCommit_Binary_Logic_Constraint = Constraint(
@@ -371,13 +371,13 @@ def add_module_specific_components(m, d):
         # timepoint in the horizon, there is no previous timepoint, so we'll
         # skip tightening the constraint for startup ramp rate limits by setting
         # startup_ramp equal to Pmax.
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             startup_ramp = mod.DispContCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
                 DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is turning on, ensuring
@@ -436,11 +436,11 @@ def add_module_specific_components(m, d):
         # last timepoint in the horizon, there is no next timepoint, so we'll
         # assume that the value equals zero. This equivalent to "skipping" the
         # tightening of the constraint.
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             stop_next_tmp = 0
         else:
-            stop_next_tmp = mod.Stop_Continuous[g, mod.next_timepoint[tmp]]
+            stop_next_tmp = mod.Stop_Continuous[g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is shutting down, ensuring
@@ -518,23 +518,23 @@ def add_module_specific_components(m, d):
         # last timepoint in the horizon, there is no next timepoint, so we'll
         # assume that the value equals zero. This equivalent to "skipping" the
         # tightening of the constraint.
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             stop_next_tmp = 0
         else:
-            stop_next_tmp = mod.Stop_Continuous[g, mod.next_timepoint[tmp]]
+            stop_next_tmp = mod.Stop_Continuous[g, mod.next_timepoint[tmp, mod.balancing_type[g]]]
         # *startup_ramp* equals the ramp rate limit during the previous
         # timepoint. If the horizon boundary is linear and we're at the first
         # timepoint in the horizon, there is no previous timepoint, so we'll
         # skip tightening the constraint for startup ramp rate limits by setting
         # startup_ramp equal to Pmax.
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             startup_ramp = mod.DispContCommit_Pmax_MW[g, tmp]
         else:
             startup_ramp = mod. \
                 DispContCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
         # Constraint is further tightened if the unit is turning on or shutting
@@ -611,7 +611,7 @@ def add_module_specific_components(m, d):
         """
 
         relevant_tmps = determine_relevant_timepoints(
-            mod, tmp, mod.dispcontcommit_min_up_time_hours[g]
+            mod, g, tmp, mod.dispcontcommit_min_up_time_hours[g]
         )
 
         number_of_starts_min_up_time_or_less_hours_ago = \
@@ -623,15 +623,15 @@ def add_module_specific_components(m, d):
         # timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        if (mod.boundary[mod.horizon[tmp]] == "linear"
+        if (mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear"
                 and
                 relevant_tmps[-1]
-                == mod.first_horizon_timepoint[mod.horizon[tmp]]
+                == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]]
                 and
                 sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
                 < mod.dispcontcommit_min_up_time_hours[g]
                 and
-                tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
+                tmp != mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]]):
             return Constraint.Skip
         # Otherwise, if there was a start min_up_time or less ago, the unit has
         # to remain committed.
@@ -669,7 +669,7 @@ def add_module_specific_components(m, d):
         """
 
         relevant_tmps = determine_relevant_timepoints(
-            mod, tmp, mod.dispcontcommit_min_down_time_hours[g]
+            mod, g, tmp, mod.dispcontcommit_min_down_time_hours[g]
         )
 
         number_of_stops_min_down_time_or_less_hours_ago = \
@@ -681,15 +681,15 @@ def add_module_specific_components(m, d):
         # next timepoint's constraint will already cover these same timepoints.
         # Don't skip if this timepoint is the last timepoint of the horizon
         # (since there will be no next timepoint).
-        if (mod.boundary[mod.horizon[tmp]] == "linear"
+        if (mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear"
                 and
                 relevant_tmps[-1]
-                == mod.first_horizon_timepoint[mod.horizon[tmp]]
+                == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]]
                 and
                 sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
                 < mod.dispcontcommit_min_down_time_hours[g]
                 and
-                tmp != mod.last_horizon_timepoint[mod.horizon[tmp]]):
+                tmp != mod.last_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]]):
             return Constraint.Skip
         # Otherwise, if there was a shutdown min_down_time or less ago, the unit
         # has to remain shut down.
@@ -716,14 +716,14 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # ramp up the full operable range between timepoints, constraint
         # won't bind, so skip
         elif (mod.dispcontcommit_ramp_up_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]]
               >= (1 - mod.disp_cont_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
@@ -732,12 +732,12 @@ def add_module_specific_components(m, d):
                  + mod.DispContCommit_Upwards_Reserves_MW[g, tmp]) \
                 - \
                 (mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[
-                     g, mod.previous_timepoint[tmp]]
+                     g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                  - mod.DispContCommit_Downwards_Reserves_MW[
-                     g, mod.previous_timepoint[tmp]]) \
+                     g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
                 <= \
                 mod.DispContCommit_Ramp_Up_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
 
     m.Ramp_Up_Constraint_DispContinuousCommit = Constraint(
         m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -758,27 +758,27 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # ramp down the full operable range between timepoints, constraint
         # won't bind, so skip
         elif (mod.dispcontcommit_ramp_down_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp, mod.balancing_type[g]]]
               >= (1 - mod.disp_cont_commit_min_stable_level_fraction[g])):
             return Constraint.Skip
         else:
             return \
                 (mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[
-                     g, mod.previous_timepoint[tmp]]
+                     g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
                  + mod.DispContCommit_Upwards_Reserves_MW[
-                     g, mod.previous_timepoint[tmp]]) \
+                     g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
                 - \
                 (mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[g, tmp]
                  - mod.DispContCommit_Downwards_Reserves_MW[g, tmp]) \
                 <= mod.DispContCommit_Ramp_Down_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
 
     m.Ramp_Down_Constraint_DispContinuousCommit = Constraint(
         m.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -930,12 +930,12 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
         return None
     else:
         return (mod.Commit_Continuous[g, tmp]
-                - mod.Commit_Continuous[g, mod.previous_timepoint[tmp]]) \
+                - mod.Commit_Continuous[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]) \
             * mod.DispContCommit_Pmax_MW[g, tmp]
 
 
@@ -948,13 +948,13 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
         pass
     else:
         return mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[g, tmp] - \
             mod.Provide_Power_Above_Pmin_DispContinuousCommit_MW[
-                g, mod.previous_timepoint[tmp]]
+                g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
 
 
 def fix_commitment(mod, g, tmp):
@@ -1120,7 +1120,7 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.horizon[tmp, mod.balancing_type[g]],
                 tmp,
                 mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],

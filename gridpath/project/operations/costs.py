@@ -137,8 +137,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
@@ -169,8 +169,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
