@@ -153,7 +153,6 @@ class TestPeriods(unittest.TestCase):
         self.assertEqual(expected_first_period, actual_first_period)
 
         # Set: NOT_FIRST_PERIODS
-        print(instance.NOT_FIRST_PERIODS.values)
         expected_not_first_periods = expected_periods[1:]
         actual_not_first_periods = [p for p in instance.NOT_FIRST_PERIODS]
         self.assertListEqual(
