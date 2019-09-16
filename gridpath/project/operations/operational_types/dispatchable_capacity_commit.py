@@ -1068,7 +1068,7 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp, mod.balancing_type[g]],
+                mod.horizon[tmp, mod.balancing_type[p]],
                 tmp,
                 mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],

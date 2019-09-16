@@ -117,7 +117,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "load_balance.csv"), "w", newline="") as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["zone", "period", "horizon", "timepoint",
+        writer.writerow(["zone", "period", "timepoint",
                          "discount_factor", "number_years_represented",
                          "timepoint_weight", "number_of_hours_in_timepiont",
                          "load_mw", "overgeneration_mw", "unserved_energy_mw"]
@@ -127,7 +127,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 writer.writerow([
                     z,
                     m.period[tmp],
-                    m.horizon[tmp],
                     tmp,
                     m.discount_factor[m.period[tmp]],
                     m.number_years_represented[m.period[tmp]],
@@ -180,7 +179,6 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         period INTEGER,
         subproblem_id INTEGER,
         stage_id INTEGER,
-        horizon INTEGER,
         timepoint INTEGER,
         discount_factor FLOAT,
         number_years_represented FLOAT,
@@ -203,28 +201,26 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         for row in reader:
             ba = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            discount_factor = row[4]
-            number_years = row[5]
-            timepoint_weight = row[6]
-            number_of_hours_in_timepoint = row[7]
-            load = row[8]
-            overgen = row[9]
-            unserved_energy = row[10]
+            timepoint = row[2]
+            discount_factor = row[3]
+            number_years = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load = row[7]
+            overgen = row[8]
+            unserved_energy = row[9]
             c.execute(
                 """INSERT INTO 
                 temp_results_system_load_balance"""
                 + str(scenario_id) + """
                 (scenario_id, load_zone, period, subproblem_id, stage_id,
-                horizon, timepoint, discount_factor, number_years_represented,
+                timepoint, discount_factor, number_years_represented,
                 timepoint_weight, number_of_hours_in_timepoint,
                 load_mw, overgeneration_mw, unserved_energy_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, 
-                {}, {}, {});
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
                 """.format(
                     scenario_id, ba, period, subproblem, stage,
-                    horizon, timepoint, discount_factor, number_years,
+                    timepoint, discount_factor, number_years,
                     timepoint_weight, number_of_hours_in_timepoint,
                     load, overgen, unserved_energy
                 )
@@ -234,12 +230,12 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_system_load_balance
-        (scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
+        (scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
         load_mw, overgeneration_mw, unserved_energy_mw)
         SELECT
-        scenario_id, load_zone, period, subproblem_id, stage_id, horizon, 
+        scenario_id, load_zone, period, subproblem_id, stage_id, 
         timepoint, discount_factor, number_years_represented,
         timepoint_weight, number_of_hours_in_timepoint,
         load_mw, overgeneration_mw, unserved_energy_mw

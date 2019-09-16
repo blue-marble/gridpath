@@ -69,7 +69,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                            filename), "w", newline="") \
             as results_file:
         writer = csv.writer(results_file)
-        writer.writerow(["ba", "period", "horizon", "timepoint",
+        writer.writerow(["ba", "period", "timepoint",
                          "discount_factor", "number_years_represented",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          column_name]
@@ -78,7 +78,6 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
             writer.writerow([
                 ba,
                 m.period[tmp],
-                m.horizon[tmp],
                 tmp,
                 m.discount_factor[m.period[tmp]],
                 m.number_years_represented[m.period[tmp]],
@@ -136,8 +135,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         """ + reserve_type + """_ba VARCHAR(32),
         period INTEGER,
         subproblem_id INTEGER,
-        stage_id INTEGER,
-        horizon INTEGER,
+        stage_id INTEGER
         timepoint INTEGER,
         discount_factor FLOAT,
         number_years_represented FLOAT,
@@ -160,26 +158,25 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         for row in reader:
             ba = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            discount_factor = row[4]
-            number_years_represented = row[5]
-            timepoint_weight = row[6]
-            number_of_hours_in_timepoint = row[7]
-            violation = row[8]
+            timepoint = row[2]
+            discount_factor = row[3]
+            number_years_represented = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            violation = row[7]
             c.execute(
                 """INSERT INTO 
                 temp_results_system_""" + reserve_type + """_balance"""
                 + str(scenario_id) + """
                 (scenario_id, """ + reserve_type + """_ba, period,
-                subproblem_id, stage_id, horizon, timepoint, 
+                subproblem_id, stage_id, timepoint, 
                 discount_factor, number_years_represented, timepoint_weight, 
                 number_of_hours_in_timepoint,
                 violation_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
                 """.format(
                     scenario_id, ba, period,
-                    subproblem, stage, horizon, timepoint,
+                    subproblem, stage, timepoint,
                     discount_factor, number_years_represented, timepoint_weight,
                     number_of_hours_in_timepoint,
                     violation
@@ -191,12 +188,12 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
     c.execute(
         """INSERT INTO results_system_""" + reserve_type + """_balance
         (scenario_id, """ + reserve_type + """_ba, period, 
-        subproblem_id, stage_id, horizon, timepoint,
+        subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw)
         SELECT
         scenario_id, """ + reserve_type + """_ba, period, 
-        subproblem_id, stage_id, horizon, timepoint,
+        subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw
         FROM temp_results_system_""" + reserve_type + """_balance"""

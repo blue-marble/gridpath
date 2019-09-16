@@ -154,7 +154,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "carbon_emission_imports_by_tx_line.csv"), "w", newline="") \
             as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
-        writer.writerow(["tx_line", "period", "horizon", "timepoint",
+        writer.writerow(["tx_line", "period", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "carbon_emission_imports_tons",
                          "carbon_emission_imports_tons_degen"])
@@ -163,7 +163,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 tx,
                 m.period[tmp],
-                m.horizon[tmp],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
@@ -303,7 +302,6 @@ def import_results_into_database(
          period INTEGER,
          subproblem_id INTEGER,
          stage_id INTEGER,
-         horizon INTEGER,
          timepoint INTEGER,
          timepoint_weight FLOAT,
          number_of_hours_in_timepoint FLOAT,
@@ -324,26 +322,25 @@ def import_results_into_database(
         for row in reader:
             tx_line = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            carbon_emission_imports_tons = row[6]
-            carbon_emission_imports_tons_degen = row[7]
+            timepoint = row[2]
+            timepoint_weight = row[3]
+            number_of_hours_in_timepoint = row[4]
+            carbon_emission_imports_tons = row[5]
+            carbon_emission_imports_tons_degen = row[6]
 
             c.execute(
                 """INSERT INTO 
                 temp_results_transmission_carbon_emissions"""
                 + str(scenario_id) + """
                  (scenario_id, tx_line, period, subproblem_id, stage_id, 
-                 horizon, timepoint, timepoint_weight, 
+                 timepoint, timepoint_weight, 
                  number_of_hours_in_timepoint, 
                  carbon_emission_imports_tons, 
                  carbon_emission_imports_tons_degen)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
+                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {});
                  """.format(
                     scenario_id, tx_line, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
+                    timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     carbon_emission_imports_tons,
                     carbon_emission_imports_tons_degen
@@ -355,11 +352,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_transmission_carbon_emissions
         (scenario_id, tx_line, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
         SELECT
         scenario_id, tx_line, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen
         FROM temp_results_transmission_carbon_emissions"""
         + str(scenario_id) +

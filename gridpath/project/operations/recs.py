@@ -171,7 +171,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.rps_zone[p],
                 tmp,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type[p]],
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.technology[p],

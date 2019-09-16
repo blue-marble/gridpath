@@ -147,7 +147,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],

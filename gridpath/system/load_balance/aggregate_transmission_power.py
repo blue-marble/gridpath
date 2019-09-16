@@ -65,7 +65,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "imports_exports.csv"), "w", newline="") as imp_exp_file:
         writer = csv.writer(imp_exp_file)
         writer.writerow(
-            ["load_zone", "timepoint", "period", "horizon", "timepoint_weight",
+            ["load_zone", "timepoint", "period", "timepoint_weight",
              "number_of_hours_in_timepoint",
              "imports_mw", "exports_mw", "net_imports_mw"]
         )
@@ -75,7 +75,6 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     z,
                     tmp,
                     m.period[tmp],
-                    m.horizon[tmp],
                     m.timepoint_weight[tmp],
                     m.number_of_hours_in_timepoint[tmp],
                     value(m.Transmission_to_Zone_MW[z, tmp]),
@@ -119,7 +118,6 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             period INTEGER,
             subproblem_id INTEGER,
             stage_id INTEGER,
-            horizon INTEGER,
             timepoint INTEGER,
             timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
@@ -142,23 +140,22 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             load_zone = row[0]
             timepoint = row[1]
             period = row[2]
-            horizon = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            imports_mw = row[6]
-            exports_mw = row[7]
-            net_imports_mw = row[8]
+            timepoint_weight = row[3]
+            number_of_hours_in_timepoint = row[4]
+            imports_mw = row[5]
+            exports_mw = row[6]
+            net_imports_mw = row[7]
             c.execute(
                 """INSERT INTO temp_results_transmission_imports_exports"""
                 + str(scenario_id) + """
                     (scenario_id, load_zone, period, subproblem_id, stage_id, 
-                    horizon, timepoint, timepoint_weight, 
+                    timepoint, timepoint_weight, 
                     number_of_hours_in_timepoint, 
                     imports_mw, exports_mw, net_imports_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
+                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
                     """.format(
                     scenario_id, load_zone, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
+                    timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     imports_mw, exports_mw, net_imports_mw
                 )
@@ -169,11 +166,11 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     c.execute(
         """INSERT INTO results_transmission_imports_exports
         (scenario_id, load_zone, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        timepoint, timepoint_weight, number_of_hours_in_timepoint,
         imports_mw, exports_mw, net_imports_mw)
         SELECT
         scenario_id, load_zone, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        timepoint, timepoint_weight, number_of_hours_in_timepoint,
         imports_mw, exports_mw, net_imports_mw
         FROM temp_results_transmission_imports_exports"""
         + str(scenario_id) +

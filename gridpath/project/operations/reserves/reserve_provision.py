@@ -345,7 +345,7 @@ def generic_export_module_specific_results(
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],

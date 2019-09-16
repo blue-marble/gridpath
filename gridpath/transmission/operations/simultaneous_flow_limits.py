@@ -132,14 +132,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["simultaneous_flow_limit", "timepoint", "period",
-                         "horizon", "timepoint_weight",
-                         "simultaneous_flow_mw"])
+                         "timepoint_weight", "simultaneous_flow_mw"])
         for (g, tmp) in m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS:
             writer.writerow([
                 g,
                 tmp,
                 m.period[tmp],
-                m.horizon[tmp],
                 m.timepoint_weight[tmp],
                 value(m.Simultaneous_Flow_MW[g, tmp])
             ])
