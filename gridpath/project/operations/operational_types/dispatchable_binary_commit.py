@@ -1131,7 +1131,7 @@ def export_module_specific_results(mod, d,
                            "dispatch_binary_commit.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "committed_mw", "committed_units",
                          "started_units", "stopped_units"
@@ -1199,7 +1199,7 @@ def import_module_specific_results_to_database(
             stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -1225,7 +1225,7 @@ def import_module_specific_results_to_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[7]
             technology = row[6]
@@ -1238,7 +1238,7 @@ def import_module_specific_results_to_database(
                 """INSERT INTO temp_results_project_dispatch_binary_commit"""
                 + str(scenario_id) + """ 
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    horizon, timepoint, horizon_weight, 
+                    horizon, timepoint, timepoint_weight, 
                     number_of_hours_in_timepoint,
                     load_zone, technology, 
                     power_mw, committed_mw, committed_units, 
@@ -1246,7 +1246,7 @@ def import_module_specific_results_to_database(
                     VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', 
                     {}, {}, {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology,
                     power_mw, committed_mw, committed_units,
@@ -1259,12 +1259,12 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_binary_commit
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units
         FROM temp_results_project_dispatch_binary_commit"""

@@ -14,7 +14,7 @@ def temporal(
         scenario_description,
         periods, horizons, hours, number_of_hours_in_timepoint, month_dict,
         boundary, discount_factors_and_years_represented,
-        horizon_weights
+        timepoint_weights
 ):
     """
 
@@ -33,7 +33,7 @@ def temporal(
     :param month_dict: {tmp: month} dictionary
     :param boundary:
     :param discount_factors_and_years_represented:
-    :param horizon_weights:
+    :param timepoint_weights:
     :return:
     """
 
@@ -72,17 +72,19 @@ def temporal(
     # Timepoint_id = period * 10^4 + horizon * 10^2 + hour
     # Horizon_id = period * 10^2 + horizon
     # TODO: timepoint ID calculation needs to be more flexible
+    # TODO: CHANGE UTILITY TO NEW HORIOZON TREATMENT
     for period in periods:
         for horizon in horizons:
             for hour in hours:
                 c.execute(
                     """INSERT INTO inputs_temporal_timepoints
                     (temporal_scenario_id, subproblem_id, stage_id, timepoint,
-                    period, horizon, number_of_hours_in_timepoint, month)
+                    period, timepoint_weight, number_of_hours_in_timepoint, 
+                    month)
                     VALUES ({}, {}, {},  {}, {}, {}, {});""".format(
                         temporal_scenario_id, subproblem_id, stage_id,
                         (period * 10**4 + horizon * 10**2 + hour),
-                        period, period * 10**2 + horizon,
+                        timepoint_weights,
                         number_of_hours_in_timepoint,
                         month_dict[period * 10**4 + horizon * 10**2 + hour]
                     )
@@ -110,13 +112,10 @@ def temporal(
             c.execute(
                 """INSERT INTO inputs_temporal_horizons
                 (temporal_scenario_id, subproblem_id, horizon, period, 
-                boundary,
-                horizon_weight)
-                VALUES ({}, {}, {}, {}, '{}', {}, {});""".format(
+                boundary)
+                VALUES ({}, {}, {}, {}, '{}', {});""".format(
                     temporal_scenario_id, subproblem_id, horizon_id, period,
-                    boundary,
-                    horizon_weights[horizon]["weight"]
-
+                    boundary
                 )
             )
     io.commit()

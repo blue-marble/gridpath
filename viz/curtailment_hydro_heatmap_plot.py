@@ -88,7 +88,7 @@ def get_curtailment(c, scenario_id, load_zone, period, stage):
         SUM(scheduled_curtailment_mwh) AS scheduled_curtailment_mwh
         FROM (
             SELECT scenario_id, horizon, period, timepoint, 
-            (scheduled_curtailment_mw * horizon_weight * 
+            (scheduled_curtailment_mw * timepoint_weight * 
             number_of_hours_in_timepoint) as scheduled_curtailment_mwh, 
             month, SUM(number_of_hours_in_timepoint) OVER (
             PARTITION BY horizon ORDER BY timepoint) AS hour_on_horizon

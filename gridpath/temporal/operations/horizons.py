@@ -251,7 +251,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     horizons = c.execute(
-        """SELECT horizon, boundary, horizon_weight
+        """SELECT horizon, boundary, timepoint_weight
            FROM inputs_temporal_horizons
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {};""".format(
@@ -298,7 +298,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["HORIZONS", "boundary", "horizon_weight"])
+        writer.writerow(["HORIZONS", "boundary", "timepoint_weight"])
 
         for row in horizons:
             writer.writerow(row)

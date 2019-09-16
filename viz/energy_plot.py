@@ -76,7 +76,7 @@ def get_energy(c, scenario_id, load_zone, stage):
     # Spinup/lookahead timepoints are ignored by adding the resp. column tag
     # through inner joins and adding a conditional to ignore those timepoints
     sql = """SELECT period, technology, 
-        sum(power_mw * horizon_weight * number_of_hours_in_timepoint)/1000000
+        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)/1000000
         as energy_twh
         FROM results_project_dispatch_by_technology
         INNER JOIN

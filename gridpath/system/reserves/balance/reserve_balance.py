@@ -71,7 +71,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
         writer = csv.writer(results_file)
         writer.writerow(["ba", "period", "horizon", "timepoint",
                          "discount_factor", "number_years_represented",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          column_name]
                         )
         for (ba, tmp) in getattr(m, reserve_zone_timepoint_set):
@@ -82,7 +82,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                 tmp,
                 m.discount_factor[m.period[tmp]],
                 m.number_years_represented[m.period[tmp]],
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 getattr(m, reserve_violation_variable)[ba, tmp].value]
             )
@@ -141,7 +141,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         timepoint INTEGER,
         discount_factor FLOAT,
         number_years_represented FLOAT,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         violation_mw FLOAT,
         PRIMARY KEY (scenario_id, """ + reserve_type + """_ba,
@@ -164,7 +164,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
             timepoint = row[3]
             discount_factor = row[4]
             number_years_represented = row[5]
-            horizon_weight = row[6]
+            timepoint_weight = row[6]
             number_of_hours_in_timepoint = row[7]
             violation = row[8]
             c.execute(
@@ -173,14 +173,14 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
                 + str(scenario_id) + """
                 (scenario_id, """ + reserve_type + """_ba, period,
                 subproblem_id, stage_id, horizon, timepoint, 
-                discount_factor, number_years_represented, horizon_weight, 
+                discount_factor, number_years_represented, timepoint_weight, 
                 number_of_hours_in_timepoint,
                 violation_mw)
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {}, {});
                 """.format(
                     scenario_id, ba, period,
                     subproblem, stage, horizon, timepoint,
-                    discount_factor, number_years_represented, horizon_weight,
+                    discount_factor, number_years_represented, timepoint_weight,
                     number_of_hours_in_timepoint,
                     violation
                 )
@@ -192,12 +192,12 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         """INSERT INTO results_system_""" + reserve_type + """_balance
         (scenario_id, """ + reserve_type + """_ba, period, 
         subproblem_id, stage_id, horizon, timepoint,
-        discount_factor, number_years_represented, horizon_weight, 
+        discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw)
         SELECT
         scenario_id, """ + reserve_type + """_ba, period, 
         subproblem_id, stage_id, horizon, timepoint,
-        discount_factor, number_years_represented, horizon_weight, 
+        discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw
         FROM temp_results_system_""" + reserve_type + """_balance"""
         + str(scenario_id) +
@@ -252,7 +252,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
     c.execute(
         """UPDATE results_system_""" + reserve_type + """_balance
         SET marginal_price_per_mw = 
-        dual / (discount_factor * number_years_represented * horizon_weight 
+        dual / (discount_factor * number_years_represented * timepoint_weight 
         * number_of_hours_in_timepoint)
         WHERE scenario_id = {}
         AND subproblem_id = {}

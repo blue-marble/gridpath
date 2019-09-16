@@ -515,7 +515,7 @@ def export_module_specific_results(mod, d,
                            "dispatch_storage_generic.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "starting_energy_mwh",
                          "charge_mw", "discharge_mw"])

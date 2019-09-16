@@ -82,9 +82,9 @@ def get_cap_factors(c, scenario_id, load_zone, stage):
         period_mwh/(period_weight*capacity_mw) AS cap_factor
         FROM
         (SELECT scenario_id, project, period, technology,
-        sum(power_mw * horizon_weight * number_of_hours_in_timepoint) 
+        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint) 
         AS period_mwh,
-        sum(horizon_weight * number_of_hours_in_timepoint) 
+        sum(timepoint_weight * number_of_hours_in_timepoint) 
         AS period_weight
         FROM results_project_dispatch_all
         

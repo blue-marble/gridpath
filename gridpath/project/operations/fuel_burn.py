@@ -138,7 +138,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
               "fuel_burn.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "horizon_weight",
+            ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology", "fuel",
              "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
              "total_fuel_burn_mmbtu"]
@@ -149,7 +149,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.horizon[tmp],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -202,7 +202,7 @@ def import_results_into_database(
          stage_id INTEGER,
          horizon INTEGER,
          timepoint INTEGER,
-         horizon_weight FLOAT,
+         timepoint_weight FLOAT,
          number_of_hours_in_timepoint FLOAT,
          load_zone VARCHAR(32),
          technology VARCHAR(32),
@@ -225,7 +225,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -237,13 +237,13 @@ def import_results_into_database(
                 temp_results_project_fuel_burn"""
                 + str(scenario_id) + """
                  (scenario_id, project, period, subproblem_id, stage_id, 
-                 horizon, timepoint, horizon_weight,
+                 horizon, timepoint, timepoint_weight,
                  number_of_hours_in_timepoint,
                  load_zone, technology, fuel, fuel_burn_mmbtu)
                  VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}',
                  {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, fuel, fuel_burn_tons
                 )
@@ -254,11 +254,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_fuel_burn
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel, fuel_burn_mmbtu)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel, fuel_burn_mmbtu
         FROM temp_results_project_fuel_burn"""
         + str(scenario_id)

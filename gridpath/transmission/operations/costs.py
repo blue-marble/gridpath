@@ -200,7 +200,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
               "costs_transmission_hurdle.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["tx_line", "period", "horizon", "timepoint", "horizon_weight",
+            ["tx_line", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone_from", "load_zone_to",
              "hurdle_cost_positive_direction",
              "hurdle_cost_negative_direction"]
@@ -211,7 +211,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.horizon[tmp],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone_from[tx],
                 m.load_zone_to[tx],
@@ -258,7 +258,7 @@ def import_results_into_database(
         stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         load_zone_from VARCHAR(32),
         load_zone_to VARCHAR(32),
@@ -282,7 +282,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             lz_from = row[6]
             lz_to = row[7]
@@ -292,14 +292,14 @@ def import_results_into_database(
                 """INSERT INTO temp_results_transmission_hurdle_costs"""
                 + str(scenario_id) + """
                 (scenario_id, transmission_line, period, subproblem_id, stage_id,
-                horizon, timepoint, horizon_weight,
+                horizon, timepoint, timepoint_weight,
                 number_of_hours_in_timepoint,
                 load_zone_from, load_zone_to, 
                 hurdle_cost_positive_direction, hurdle_cost_negative_direction)
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
                 '{}', '{}', {}, {});""".format(
                     scenario_id, tx_line, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     lz_from, lz_to,
                     hurdle_cost_positve_direction,
@@ -312,12 +312,12 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_transmission_hurdle_costs
         (scenario_id, transmission_line, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction)
         SELECT
         scenario_id, transmission_line, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, hurdle_cost_positive_direction,
         hurdle_cost_negative_direction
         FROM temp_results_transmission_hurdle_costs"""

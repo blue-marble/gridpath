@@ -77,7 +77,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "load_zone", "technology", "power_mw"])
         for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -85,7 +85,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.horizon[tmp],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -125,7 +125,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     operational_results_df["weighted_power_mwh"] = \
         operational_results_df["power_mw"] * \
-        operational_results_df["horizon_weight"]
+        operational_results_df["timepoint_weight"]
 
     # Aggregate total power results by load_zone, technology, and period
     operational_results_agg_df = pd.DataFrame(
@@ -212,7 +212,7 @@ def import_results_into_database(
         stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         load_zone VARCHAR(32),
         technology VARCHAR(32),
@@ -233,7 +233,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -242,13 +242,13 @@ def import_results_into_database(
                 """INSERT INTO temp_results_project_dispatch_all"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, subproblem_id, stage_id, 
-                horizon, timepoint, horizon_weight,
+                horizon, timepoint, timepoint_weight,
                 number_of_hours_in_timepoint,
                 load_zone, technology, power_mw)
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', 
                 {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw
                 )
@@ -259,11 +259,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_dispatch_all
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw
         FROM temp_results_project_dispatch_all""" + str(scenario_id) + """
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
@@ -301,11 +301,11 @@ def process_results(db, c, subscenarios):
     c.execute(
         """INSERT INTO results_project_dispatch_by_technology
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, sum(power_mw) AS power_mw
         FROM results_project_dispatch_all
         WHERE scenario_id = {}

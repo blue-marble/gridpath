@@ -101,7 +101,7 @@ def get_costs(c, scenario_id, load_zone, stage):
         LEFT JOIN
 
         (SELECT scenario_id, period, 
-        sum(fuel_cost * horizon_weight * number_of_hours_in_timepoint) 
+        sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
         AS fuel_cost
         FROM results_project_costs_operations_fuel
         WHERE scenario_id = ?
@@ -113,7 +113,7 @@ def get_costs(c, scenario_id, load_zone, stage):
         LEFT JOIN
 
         (SELECT scenario_id, period, 
-        sum(variable_om_cost * horizon_weight * number_of_hours_in_timepoint) 
+        sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
         AS variable_om_cost
         FROM results_project_costs_operations_variable_om
         WHERE scenario_id = ?
@@ -125,7 +125,7 @@ def get_costs(c, scenario_id, load_zone, stage):
         LEFT JOIN
 
         (SELECT scenario_id, period, 
-        sum(startup_cost * horizon_weight) AS startup_cost
+        sum(startup_cost * timepoint_weight) AS startup_cost
         FROM results_project_costs_operations_startup
         WHERE scenario_id = ?
         AND stage_id = ?
@@ -136,7 +136,7 @@ def get_costs(c, scenario_id, load_zone, stage):
         LEFT JOIN
 
         (SELECT scenario_id, period, 
-        sum(shutdown_cost * horizon_weight) AS shutdown_cost
+        sum(shutdown_cost * timepoint_weight) AS shutdown_cost
         FROM results_project_costs_operations_shutdown
         WHERE scenario_id = ?
         AND stage_id = ?
@@ -148,7 +148,7 @@ def get_costs(c, scenario_id, load_zone, stage):
 
         (SELECT scenario_id, period, 
         sum((hurdle_cost_positive_direction + hurdle_cost_negative_direction) * 
-        horizon_weight * number_of_hours_in_timepoint) AS hurdle_cost
+        timepoint_weight * number_of_hours_in_timepoint) AS hurdle_cost
         FROM
         results_transmission_hurdle_costs
         WHERE scenario_id = ?

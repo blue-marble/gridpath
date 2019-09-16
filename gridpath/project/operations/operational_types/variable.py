@@ -431,7 +431,7 @@ def export_module_specific_results(mod, d,
                            "dispatch_variable.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw",
                          "subhourly_curtailment_mw",
@@ -636,7 +636,7 @@ def import_module_specific_results_to_database(
         stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         load_zone VARCHAR(32),
         technology VARCHAR(32),
@@ -661,7 +661,7 @@ def import_module_specific_results_to_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[7]
             technology = row[6]
@@ -674,7 +674,7 @@ def import_module_specific_results_to_database(
                 """INSERT INTO temp_results_project_dispatch_variable"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, subproblem_id, stage_id,
-                horizon, timepoint, horizon_weight,
+                horizon, timepoint, timepoint_weight,
                 number_of_hours_in_timepoint,
                 load_zone, technology, power_mw, 
                 scheduled_curtailment_mw, subhourly_curtailment_mw,
@@ -682,7 +682,7 @@ def import_module_specific_results_to_database(
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
                 '{}', '{}', {}, {}, {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw,
                     scheduled_curtailment_mw, subhourly_curtailment_mw,
@@ -695,13 +695,13 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_variable
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw, 
         scheduled_curtailment_mw, subhourly_curtailment_mw,
         subhourly_energy_delivered_mw, total_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw,
         scheduled_curtailment_mw, subhourly_curtailment_mw,
         subhourly_energy_delivered_mw, total_curtailment_mw
@@ -745,11 +745,11 @@ def process_module_specific_results(db, c, subscenarios):
     c.execute(
         """INSERT INTO results_project_curtailment_variable
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, scheduled_curtailment_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, 
         sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
         FROM results_project_dispatch_variable
