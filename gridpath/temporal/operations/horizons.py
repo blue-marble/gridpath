@@ -19,7 +19,7 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
-    The module adds the * BALANCING_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
+    The module adds the * HORIZON_LENGTH_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
     sets to the model formulation.
 
     Balancing types are strings, e.g. year, month, week, day.
@@ -28,7 +28,7 @@ def add_model_components(m, d):
     HORIZONS_BY_BALANCING_TYPE indexed set is ordered (i.e. the horizons
     within a balancing type are ordered).
 
-    We will designate the *BALANCING_TYPES* set with :math:`B` and
+    We will designate the *HORIZON_LENGTH_TYPES* set with :math:`B` and
     balancing t ype index with :math:`b`.
 
     The *HORIZONS_BY_BALANCING_TYPE* set is designated with :math:`H_b` and
@@ -49,41 +49,41 @@ def add_model_components(m, d):
 
     """
     m.HORIZONS = Set(ordered=True)
-    m.balancing_type = Param(m.HORIZONS)
+    m.horizon_length_type = Param(m.HORIZONS)
     m.boundary = Param(m.HORIZONS, within=['circular', 'linear'])
 
-    def balancing_types_init(mod):
+    def horizon_length_types_init(mod):
         """
         :param mod:
         :return:
         """
-        balancing_types = list()
+        horizon_length_types = list()
         for h in mod.HORIZONS:
-            if mod.balancing_type[h] in balancing_types:
+            if mod.horizon_length_type[h] in horizon_length_types:
                 pass
             else:
-                balancing_types.append(mod.balancing_type[h])
+                horizon_length_types.append(mod.horizon_length_type[h])
 
-        return balancing_types
+        return horizon_length_types
 
-    m.BALANCING_TYPES = Set(initialize=balancing_types_init)
+    m.HORIZON_LENGTH_TYPES = Set(initialize=horizon_length_types_init)
 
-    def horizons_by_balancing_type_init(mod, bt):
+    def horizons_by_horizon_length_type_init(mod, bt):
         """
         :param mod:
         :param bt:
         :return:
         """
-        horizons_of_balancing_type = []
+        horizons_of_horizon_length_type = []
         for horizon in mod.HORIZONS:
-            if mod.balancing_type[horizon] == bt:
-                horizons_of_balancing_type.append(horizon)
+            if mod.horizon_length_type[horizon] == bt:
+                horizons_of_horizon_length_type.append(horizon)
 
-        return horizons_of_balancing_type
+        return horizons_of_horizon_length_type
 
     m.HORIZONS_BY_BALANCING_TYPE = Set(
-        m.BALANCING_TYPES, within=PositiveIntegers,
-        initialize=horizons_by_balancing_type_init
+        m.HORIZON_LENGTH_TYPES, within=PositiveIntegers,
+        initialize=horizons_by_horizon_length_type_init
     )
 
     m.TIMEPOINTS_ON_HORIZON = Set(
@@ -92,7 +92,7 @@ def add_model_components(m, d):
 
     # TODO: can create here instead of upstream in data (i.e. we can get teh
     #  balancing type index from the horizon of the timepoint)
-    m.horizon = Param(m.TIMEPOINTS, m.BALANCING_TYPES)
+    m.horizon = Param(m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES)
 
     # Determine the first and last timepoint of the horizon
     # NOTE: it's an ordered set, so getting the first and last element seems
@@ -113,22 +113,22 @@ def add_model_components(m, d):
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.previous_timepoint = Param(
-        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=previous_timepoint_init
+        m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES, initialize=previous_timepoint_init
     )
 
     # Determine the next timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.next_timepoint = Param(
-        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=next_timepoint_init
+        m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES, initialize=next_timepoint_init
     )
 
 
-def previous_timepoint_init(mod, tmp, balancing_type):
+def previous_timepoint_init(mod, tmp, horizon_length_type):
     """
     :param mod:
     :param tmp:
-    :param balancing_type:
+    :param horizon_length_type:
     :return:
 
     Determine the previous timepoint for each timepoint. If the timepoint is
@@ -140,15 +140,15 @@ def previous_timepoint_init(mod, tmp, balancing_type):
     one with an index of tmp-1.
     """
     prev_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[horizon_length_type]:
         for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
             if tmp == mod.first_horizon_timepoint[horizon]:
                 if mod.boundary[horizon] == "circular":
-                    prev_tmp_dict[tmp, balancing_type] = \
+                    prev_tmp_dict[tmp, horizon_length_type] = \
                         mod.last_horizon_timepoint[
                             horizon]
                 elif mod.boundary[horizon] == "linear":
-                    prev_tmp_dict[tmp, balancing_type] = None
+                    prev_tmp_dict[tmp, horizon_length_type] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for horizon '{}'".
@@ -160,7 +160,7 @@ def previous_timepoint_init(mod, tmp, balancing_type):
                         "'linear'"
                     )
             else:
-                prev_tmp_dict[tmp, balancing_type] = \
+                prev_tmp_dict[tmp, horizon_length_type] = \
                     list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
                         list(mod.TIMEPOINTS_ON_HORIZON[horizon])
                         .index(tmp) - 1
@@ -169,11 +169,11 @@ def previous_timepoint_init(mod, tmp, balancing_type):
     return prev_tmp_dict
 
 
-def next_timepoint_init(mod, tmp, balancing_type):
+def next_timepoint_init(mod, tmp, horizon_length_type):
     """
     :param mod:
     :param tmp:
-    :param balancing_type:
+    :param horizon_length_type:
     :return:
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,
@@ -183,14 +183,14 @@ def next_timepoint_init(mod, tmp, balancing_type):
     other cases, the next timepoint is the one with an index of tmp+1.
     """
     next_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[horizon_length_type]:
         for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
             if tmp == mod.last_horizon_timepoint[horizon]:
                 if mod.boundary[horizon] == "circular":
-                    next_tmp_dict[tmp, balancing_type] = \
+                    next_tmp_dict[tmp, horizon_length_type] = \
                         mod.first_horizon_timepoint[horizon]
                 elif mod.boundary[horizon] == "linear":
-                    next_tmp_dict[tmp, balancing_type] = None
+                    next_tmp_dict[tmp, horizon_length_type] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for horizon '{}'".
@@ -200,7 +200,7 @@ def next_timepoint_init(mod, tmp, balancing_type):
                         "'linear'"
                     )
             else:
-                next_tmp_dict[tmp, balancing_type] = \
+                next_tmp_dict[tmp, horizon_length_type] = \
                     list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
                         list(mod.TIMEPOINTS_ON_HORIZON[horizon])
                         .index(tmp) + 1
@@ -214,9 +214,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "horizons.tab"),
-                     select=("horizon", "balancing_type", "boundary"),
+                     select=("horizon", "horizon_length_type", "boundary"),
                      index=m.HORIZONS,
-                     param=(m.balancing_type, m.boundary)
+                     param=(m.horizon_length_type, m.boundary)
                      )
 
     with open(os.path.join(scenario_directory, subproblem, stage,

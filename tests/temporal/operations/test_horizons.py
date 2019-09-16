@@ -79,7 +79,7 @@ class TestHorizons(unittest.TestCase):
         # TODO: add test data with more horizon types
 
         # Load test data
-        balancing_type_horizons_df = \
+        horizon_length_type_horizons_df = \
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "horizons.tab"),
                 sep="\t"
@@ -94,27 +94,27 @@ class TestHorizons(unittest.TestCase):
 
         # Check data are as expected
         # HORIZONS set
-        expected_horizons = [h for h in balancing_type_horizons_df.horizon]
+        expected_horizons = [h for h in horizon_length_type_horizons_df.horizon]
         actual_horizons = [h for h in instance.HORIZONS]
         self.assertListEqual(expected_horizons, actual_horizons,
                              msg="HORIZONS set data does not load correctly.")
 
-        # Params: balancing_type
-        expected_balancing_type = \
-            balancing_type_horizons_df.set_index(
+        # Params: horizon_length_type
+        expected_horizon_length_type = \
+            horizon_length_type_horizons_df.set_index(
                 ['horizon']
-            ).to_dict()['balancing_type']
-        actual_balancing_type_param = \
-            {h: instance.balancing_type[h]
+            ).to_dict()['horizon_length_type']
+        actual_horizon_length_type_param = \
+            {h: instance.horizon_length_type[h]
              for h in instance.HORIZONS}
-        self.assertDictEqual(expected_balancing_type,
-                             actual_balancing_type_param,
+        self.assertDictEqual(expected_horizon_length_type,
+                             actual_horizon_length_type_param,
                              msg="Data for param 'boundary' not loaded "
                                  "correctly")
 
         # Params: boundary
         expected_boundary_param = \
-            balancing_type_horizons_df.set_index(
+            horizon_length_type_horizons_df.set_index(
                ['horizon']
             ).to_dict()['boundary']
         actual_boundary_param = \
@@ -125,25 +125,25 @@ class TestHorizons(unittest.TestCase):
                              msg="Data for param 'boundary' not loaded "
                                  "correctly")
 
-        # BALANCING_TYPES set
-        expected_balancing_types = \
-            list(balancing_type_horizons_df.balancing_type.unique())
-        actual_balancing_types = list(instance.BALANCING_TYPES)
-        self.assertListEqual(expected_balancing_types, actual_balancing_types)
+        # HORIZON_LENGTH_TYPES set
+        expected_horizon_length_types = \
+            list(horizon_length_type_horizons_df.horizon_length_type.unique())
+        actual_horizon_length_types = list(instance.HORIZON_LENGTH_TYPES)
+        self.assertListEqual(expected_horizon_length_types, actual_horizon_length_types)
 
         # HORIZONS_BY_BALANCING_TYPE set
-        expected_horizon_by_balancing_type = \
-            {balancing_type: horizons["horizon"].tolist()
-             for balancing_type, horizons
-             in balancing_type_horizons_df.groupby("balancing_type")}
-        actual_horizon_by_balancing_type = {
-            balancing_type: [
+        expected_horizon_by_horizon_length_type = \
+            {horizon_length_type: horizons["horizon"].tolist()
+             for horizon_length_type, horizons
+             in horizon_length_type_horizons_df.groupby("horizon_length_type")}
+        actual_horizon_by_horizon_length_type = {
+            horizon_length_type: [
                 horizon for horizon
-                in list(instance.HORIZONS_BY_BALANCING_TYPE[balancing_type])
-            ] for balancing_type in instance.HORIZONS_BY_BALANCING_TYPE.keys()
+                in list(instance.HORIZONS_BY_BALANCING_TYPE[horizon_length_type])
+            ] for horizon_length_type in instance.HORIZONS_BY_BALANCING_TYPE.keys()
         }
-        self.assertDictEqual(expected_horizon_by_balancing_type,
-                             actual_horizon_by_balancing_type)
+        self.assertDictEqual(expected_horizon_by_horizon_length_type,
+                             actual_horizon_by_horizon_length_type)
 
         # Set TIMEPOINTS_ON_HORIZON
         expected_tmps_on_horizon = {
@@ -165,16 +165,16 @@ class TestHorizons(unittest.TestCase):
 
         # Param: horizon
         expected_horizon_by_tmp_type = {
-            (tmp, balancing_type): horizon for tmp, balancing_type, horizon
+            (tmp, horizon_length_type): horizon for tmp, horizon_length_type, horizon
             in zip(
                 timepoints_on_horizon_df.timepoint,
-                timepoints_on_horizon_df.balancing_type,
+                timepoints_on_horizon_df.horizon_length_type,
                 timepoints_on_horizon_df.horizon
             )
         }
         actual_horizon_by_tmp_type = {
             (tmp, _type): instance.horizon[tmp, _type]
-            for tmp in instance.TIMEPOINTS for _type in instance.BALANCING_TYPES
+            for tmp in instance.TIMEPOINTS for _type in instance.HORIZON_LENGTH_TYPES
         }
         self.assertDictEqual(expected_horizon_by_tmp_type,
                              actual_horizon_by_tmp_type)
@@ -211,33 +211,33 @@ class TestHorizons(unittest.TestCase):
         #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()
         prev_tmp = None
-        for (balancing_type, horizon, tmp) \
+        for (horizon_length_type, horizon, tmp) \
             in [tuple(row) for row in
                 timepoints_on_horizon_df.values]:
             if tmp == expected_first_horizon_timepoint[horizon]:
                 if expected_boundary_param[horizon] == \
                         'circular':
-                    expected_prev_tmp[tmp, balancing_type] \
+                    expected_prev_tmp[tmp, horizon_length_type] \
                         = \
                         expected_last_horizon_timepoint[horizon]
                 elif expected_boundary_param[horizon] == \
                         'linear':
-                    expected_prev_tmp[tmp, expected_balancing_type[horizon]] \
+                    expected_prev_tmp[tmp, expected_horizon_length_type[horizon]] \
                         = None
                 else:
                     raise(ValueError,
                           "Test data specifies horizon boundary different "
                           "from allowed values of 'circular' and 'linear'")
             else:
-                expected_prev_tmp[tmp, expected_balancing_type[horizon]] \
+                expected_prev_tmp[tmp, expected_horizon_length_type[horizon]] \
                     = prev_tmp
             prev_tmp = tmp
 
         actual_prev_tmp = {
-            (tmp, balancing_type):
-                instance.previous_timepoint[tmp, balancing_type]
+            (tmp, horizon_length_type):
+                instance.previous_timepoint[tmp, horizon_length_type]
             for tmp in instance.TIMEPOINTS
-            for balancing_type in instance.BALANCING_TYPES
+            for horizon_length_type in instance.HORIZON_LENGTH_TYPES
         }
 
         self.assertDictEqual(expected_prev_tmp,
@@ -249,7 +249,7 @@ class TestHorizons(unittest.TestCase):
         # Testing for both horizons that 'circular' and 'linear'
         expected_next_tmp = dict()
         prev_tmp = None
-        for (balancing_type, horizon, tmp) \
+        for (horizon_length_type, horizon, tmp) \
             in [tuple(row) for row in
                 timepoints_on_horizon_df.values]:
             if prev_tmp is None:
@@ -257,21 +257,21 @@ class TestHorizons(unittest.TestCase):
                         'circular':
                     expected_next_tmp[
                         expected_last_horizon_timepoint[horizon],
-                        balancing_type
+                        horizon_length_type
                     ] = \
                         expected_first_horizon_timepoint[horizon]
                 elif expected_boundary_param[horizon] == \
                         'linear':
                     expected_next_tmp[
                         expected_last_horizon_timepoint[horizon],
-                        balancing_type
+                        horizon_length_type
                     ] = None
                 else:
                     raise(ValueError,
                           "Test data specifies horizon boundary different "
                           "from allowed values of 'circular' and 'linear'")
             else:
-                expected_next_tmp[prev_tmp, balancing_type] = tmp
+                expected_next_tmp[prev_tmp, horizon_length_type] = tmp
             # If we have reached the last horizon timepoint, set the
             # previous timepoint to None (to enter the boundary logic above)
             if tmp == expected_last_horizon_timepoint[horizon]:
@@ -283,9 +283,9 @@ class TestHorizons(unittest.TestCase):
             expected_next_tmp.items()))
 
         actual_next_tmp = {
-            (tmp, balancing_type): instance.next_timepoint[tmp, balancing_type]
+            (tmp, horizon_length_type): instance.next_timepoint[tmp, horizon_length_type]
             for tmp in instance.TIMEPOINTS
-            for balancing_type in instance.BALANCING_TYPES
+            for horizon_length_type in instance.HORIZON_LENGTH_TYPES
         }
         actual_next_tmp_ordered = OrderedDict(sorted(
             actual_next_tmp.items()))

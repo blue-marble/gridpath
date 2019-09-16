@@ -1,4 +1,4 @@
-balancing_type	horizon	timepoint
+horizon_length_type	horizon	timepoint
 day	202001	20200101
 day	202001	20200102
 day	202001	20200103
