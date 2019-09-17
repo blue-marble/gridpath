@@ -300,11 +300,11 @@ def process_results(db, c, subscenarios):
     # Aggregate dispatch by technology
     c.execute(
         """INSERT INTO results_project_dispatch_by_technology
-        (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
-        scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, sum(power_mw) AS power_mw
         FROM results_project_dispatch_all
