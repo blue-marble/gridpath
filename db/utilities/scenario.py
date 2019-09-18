@@ -509,3 +509,39 @@ def update_scenario_single_column(
     )
 
     io.commit()
+
+
+def delete_scenario(conn, scenario_id):
+    """
+    :param conn: the database connection object
+    :param scenario_id: the scenario_id to delete
+
+    Delete a scenario fully, i.e. delete from all results tables, status
+    tables, and the scenarios table.
+    """
+    c = conn.cursor()
+    all_tables = c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table';"
+    ).fetchall()
+
+    results_tables = [
+        tbl[0] for tbl in all_tables if tbl[0].startswith("results")
+    ]
+    status_tables = [
+        tbl[0] for tbl in all_tables if tbl[0].startswith("status")
+    ]
+
+    # Delete from all results and status tables
+    for tbl in results_tables + status_tables:
+        c.execute(
+            """DELETE FROM {} WHERE scenario_id = {};""".format(
+                tbl, scenario_id
+            )
+        )
+    conn.commit()
+
+    # Delete from scenarios table
+    c.execute(
+        "DELETE FROM scenarios WHERE scenario_id = {}".format(scenario_id)
+    )
+    conn.commit()

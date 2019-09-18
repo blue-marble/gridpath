@@ -15,7 +15,7 @@ from gridpath.common_functions import determine_scenario_directory, \
     create_directory_if_not_exists
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
-    SubProblems
+    SubProblems, SolverOptions
 
 
 def write_model_inputs(scenario_directory, subproblems, loaded_modules,
@@ -380,6 +380,25 @@ def write_scenario_description(
                          subscenarios.TUNING_SCENARIO_ID])
 
 
+def write_solver_options(scenario_directory, solver_options):
+    """
+    :param scenario_directory:
+    :param solver_options:
+
+    If a solver_options_id is specified, writer the solver options to the
+    scenario directory.
+    """
+    if solver_options.SOLVER is None and solver_options.SOLVER_OPTIONS is None:
+        pass
+    else:
+        with open(os.path.join(scenario_directory, "solver_options.csv"),
+                  "w", newline="") as solver_options_file:
+            writer = csv.writer(solver_options_file, delimiter=",")
+            writer.writerow(["solver", solver_options.SOLVER])
+            for opt in solver_options.SOLVER_OPTIONS.keys():
+                writer.writerow([opt, solver_options.SOLVER_OPTIONS[opt]])
+
+
 def main(args=None):
     """
 
@@ -421,6 +440,7 @@ def main(args=None):
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+    solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
 
     # Determine requested features and use this to determine what modules to
     # load for Gridpath
@@ -452,6 +472,12 @@ def main(args=None):
         scenario_directory=scenario_directory,
         scenario_id=scenario_id, scenario_name=scenario_name,
         optional_features=optional_features, subscenarios=subscenarios
+    )
+
+    # Write the solver options file if needed
+    write_solver_options(
+        scenario_directory=scenario_directory,
+        solver_options=solver_options
     )
 
 
