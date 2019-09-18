@@ -1856,6 +1856,7 @@ prm_requirement_scenario_id INTEGER,
 local_capacity_requirement_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 tuning_scenario_id INTEGER,
+solver_options_id INTEGER,
 FOREIGN KEY (validation_status_id) REFERENCES
     mod_validation_status_types (validation_status_id),
 FOREIGN KEY (run_status_id) REFERENCES mod_run_status_types (run_status_id),
@@ -2011,7 +2012,9 @@ FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
 FOREIGN KEY (tuning_scenario_id) REFERENCES
-    subscenarios_tuning (tuning_scenario_id)
+    subscenarios_tuning (tuning_scenario_id),
+FOREIGN KEY (solver_options_id)
+    REFERENCES options_solver_descriptions (solver_options_id)
 );
 
 --------------------------
@@ -3351,4 +3354,28 @@ period_form_control INTEGER,
 horizon_form_control INTEGER,
 stage_form_control INTEGER,
 project_form_control INTEGER
+);
+
+
+---------------
+--- OPTIONS ---
+---------------
+
+DROP TABLE IF EXISTS options_solver_descriptions;
+CREATE TABLE options_solver_descriptions (
+    solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    solver VARCHAR(32),
+    description VARCHAR(128),
+    UNIQUE (solver_options_id, solver)
+);
+
+DROP TABLE IF EXISTS options_solver_values;
+CREATE TABLE options_solver_values (
+    solver_options_id INTEGER,
+    solver VARCHAR(32),
+    solver_option_name VARCHAR(32),
+    solver_option_value FLOAT,
+    PRIMARY KEY (solver_options_id, solver, solver_option_name),
+    FOREIGN KEY (solver_options_id, solver)
+        REFERENCES options_solver_descriptions (solver_options_id, solver)
 );
