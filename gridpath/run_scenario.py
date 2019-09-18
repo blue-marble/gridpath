@@ -10,7 +10,7 @@ from __future__ import print_function
 from builtins import str
 from builtins import object
 import argparse
-from csv import writer
+from csv import reader, writer
 import os.path
 import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
@@ -516,15 +516,56 @@ def solve(instance, parsed_arguments):
 
     Send the compiled problem instance to the solver and solve.
     """
+    # Start with solver name specified on command line
+    solver_name = parsed_arguments.solver
+
+    # Get any user-requested solver options
+    solver_options = dict()
+    solver_options_file = os.path.join(
+        parsed_arguments.scenario_location, parsed_arguments.scenario,
+        "solver_options.csv"
+    )
+    if os.path.exists(solver_options_file):
+        with open(solver_options_file) as f:
+            _reader = reader(f, delimiter=",")
+            for row in _reader:
+                solver_options[row[0]] = row[1]
+
+        # Check the the solver specified is the same as that given from the
+        # command line (if any)
+        if parsed_arguments.solver is not None:
+            if parsed_arguments.solver == solver_options["solver"]:
+                pass
+            else:
+                raise UserWarning(
+                    "ERROR! Solver specified on command line ({}) and solver "
+                    "in solver_options.csv ({}) do not match.".format(
+                        parsed_arguments.solver, solver_options["solver"]
+                    ))
+
+        # If we make it here, set the solver name from the
+        # solver_options.csv file
+        solver_name = solver_options["solver"]
+    else:
+        if parsed_arguments.solver is None:
+            solver_name = "cbc"
+
     # Get solver
     # If a solver executable is specified, pass it to Pyomo
     if parsed_arguments.solver_executable is not None:
-        solver = SolverFactory(parsed_arguments.solver,
+        solver = SolverFactory(solver_name,
                                executable=parsed_arguments.solver_executable)
     # Otherwise, only pass the solver name; Pyomo will look for the
     # executable in the PATH
     else:
-        solver = SolverFactory(parsed_arguments.solver)
+        solver = SolverFactory(solver_name)
+
+    # Apply the solver options (if any)
+    for opt in solver_options.keys():
+        if opt == "solver":
+            pass  # this is just the solver name, not actually an 'option'
+        else:
+            solver.options[opt] = solver_options[opt]
 
     # Solve
     # Note: Pyomo moves the results to the instance object by default.
@@ -761,8 +802,11 @@ def parse_arguments(arguments):
     parser.add_argument("--quiet", default=False, action="store_true",
                         help="Don't print run output.")
     # Solver options
-    parser.add_argument("--solver", default="cbc",
-                        help="Name of the solver to use.")
+    parser.add_argument("--solver", help="Name of the solver to use. "
+                                         "GridPath will use Cbc if solver is "
+                                         "not specified here and a "
+                                         "'solver_options.csv' file does not "
+                                         "exist in the scenario directory.")
     parser.add_argument("--solver_executable",
                         help="The path to the solver executable to use. This "
                              "is optional; if you don't specify it, "

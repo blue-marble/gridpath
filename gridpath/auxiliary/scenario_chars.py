@@ -621,3 +621,38 @@ class SubProblems(object):
         #   (note stages also require you to save subproblem.csv files)
         #    subproblem.csv file might not be best way to specify that there are
         #    subproblems
+
+
+class SolverOptions(object):
+    def __init__(self, cursor, scenario_id):
+        """
+        :param cursor:
+        :param scenario_id:
+        """
+
+        self.SCENARIO_ID = scenario_id
+        self.SOLVER_OPTIONS_ID = cursor.execute(
+            "SELECT solver_options_id "
+            "FROM scenarios "
+            "WHERE scenario_id = {}".format(scenario_id)
+        ).fetchone()[0]
+
+        self.SOLVER = \
+            None if self.SOLVER_OPTIONS_ID is None \
+            else cursor.execute(
+                """SELECT solver 
+                FROM options_solver_descriptions 
+                WHERE solver_options_id = {}""".format(self.SOLVER_OPTIONS_ID)
+            ).fetchone()[0]
+
+        self.SOLVER_OPTIONS = \
+            None if self.SOLVER_OPTIONS_ID is None \
+            else {
+                row[0]: row[1]
+                for row in cursor.execute(
+                    """SELECT solver_option_name, solver_option_value
+                       FROM options_solver_values
+                       WHERE solver_options_id = {};""".format(
+                        self.SOLVER_OPTIONS_ID)
+                ).fetchall()
+            }
