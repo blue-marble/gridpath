@@ -9,37 +9,42 @@ from __future__ import print_function
 
 def temporal(
         io, c,
-        temporal_scenario_id, subproblem_id, stage_id, stage_name,
+        temporal_scenario_id,
         scenario_name,
         scenario_description,
-        periods, horizons, hours, number_of_hours_in_timepoint, month_dict,
-        boundary, discount_factors_and_years_represented,
-        timepoint_weights
+        periods,
+        subproblems,
+        subproblem_stages,
+        subproblem_stage_timepoints,
+        subproblem_horizons,
+        subproblem_stage_timepoint_horizons
 ):
     """
 
     :param io:
     :param c:
     :param temporal_scenario_id:
-    :param subproblem_id:
-    :param stage_id:
-    :param stage_name:
     :param scenario_name:
     :param scenario_description:
     :param periods:
-    :param horizons:
-    :param hours:
-    :param number_of_hours_in_timepoint:
-    :param month_dict: {tmp: month} dictionary
-    :param boundary:
-    :param discount_factors_and_years_represented:
-    :param timepoint_weights:
-    :return:
+    :param subproblems: list of subproblems
+    :param subproblem_stages: dictionary with subproblems as keys and a list of
+        tuples containing (stage_id, stage_name) as values
+    :param subproblem_stage_timepoints: dictionary with subproblems as first
+        key, stage_id as second key, timepoint as third key, and the various
+        timepoint params as a dictionary value for each timepoint (with the
+        name of the param as key and its value as value)
+    :param subproblem_horizons: dictionary with subproblems as the first
+        key, horizons as the second key, and a dictionary containing the
+        horizon params (horizon_length_type, period, and boundary) as the
+        value for each horizon
+    :param subproblem_stage_timepoint_horizons: dictionary with subproblem IDs
+        as the first key, stage IDs as the second key, the timepoint as the
+        third key, and list of tuple with the (horizon,
+        horizon_length_types) that the timepoint belongs to
     """
 
-    print("timepoints")
-
-    # Subscenarios
+    # Create subscenario
     c.execute(
         """INSERT INTO subscenarios_temporal
         (temporal_scenario_id, name, description)
@@ -49,75 +54,113 @@ def temporal(
     )
     io.commit()
 
-    # Subproblems
-    c.execute(
-        """INSERT INTO inputs_temporal_subproblems
-        (temporal_scenario_id, subproblem_id)
-        VALUES ({}, {});""".format(
-            temporal_scenario_id, subproblem_id
-        )
-    )
-    io.commit()
-
-    # Stages
-    c.execute(
-        """INSERT INTO inputs_temporal_subproblems_stages
-        (temporal_scenario_id, subproblem_id, stage_id, stage_name)
-        VALUES ({}, {}, {}, '{}')""".format(
-            temporal_scenario_id, subproblem_id, stage_id, stage_name
-        )
-    )
-
-    # Timepoints
-    # Timepoint_id = period * 10^4 + horizon * 10^2 + hour
-    # Horizon_id = period * 10^2 + horizon
-    # TODO: timepoint ID calculation needs to be more flexible
-    # TODO: CHANGE UTILITY TO NEW HORIOZON TREATMENT
-    for period in periods:
-        for horizon in horizons:
-            for hour in hours:
-                c.execute(
-                    """INSERT INTO inputs_temporal_timepoints
-                    (temporal_scenario_id, subproblem_id, stage_id, timepoint,
-                    period, timepoint_weight, number_of_hours_in_timepoint, 
-                    month)
-                    VALUES ({}, {}, {},  {}, {}, {}, {});""".format(
-                        temporal_scenario_id, subproblem_id, stage_id,
-                        (period * 10**4 + horizon * 10**2 + hour),
-                        timepoint_weights,
-                        number_of_hours_in_timepoint,
-                        month_dict[period * 10**4 + horizon * 10**2 + hour]
-                    )
-                )
-    io.commit()
-
     print("periods")
-    for period in periods:
+    for period in periods.keys():
         c.execute(
             """INSERT INTO inputs_temporal_periods
             (temporal_scenario_id, period, discount_factor,
             number_years_represented)
             VALUES ({}, {}, {}, {});""".format(
                 temporal_scenario_id, period,
-                discount_factors_and_years_represented[period]["df"],
-                discount_factors_and_years_represented[period]["y"]
+                periods[period]["discount_factor"],
+                periods[period]["number_years_represented"]
             )
         )
     io.commit()
 
-    print("horizons")
-    for period in periods:
-        for horizon in horizons:
-            horizon_id = period * 100 + horizon
+    print("subproblems")
+    # Subproblems
+    for subproblem_id in subproblems:
+        c.execute(
+            """INSERT INTO inputs_temporal_subproblems
+            (temporal_scenario_id, subproblem_id)
+            VALUES ({}, {});""".format(
+                temporal_scenario_id, subproblem_id
+            )
+        )
+    io.commit()
+
+    print("stages")
+    # Stages
+    for subproblem_id in subproblem_stages.keys():
+        for stage in subproblem_stages[subproblem_id]:
             c.execute(
-                """INSERT INTO inputs_temporal_horizons
-                (temporal_scenario_id, subproblem_id, horizon, period, 
-                boundary)
-                VALUES ({}, {}, {}, {}, '{}', {});""".format(
-                    temporal_scenario_id, subproblem_id, horizon_id, period,
-                    boundary
+                """INSERT INTO inputs_temporal_subproblems_stages
+                (temporal_scenario_id, subproblem_id, stage_id, stage_name)
+                VALUES ({}, {}, {}, '{}')""".format(
+                    temporal_scenario_id, subproblem_id, stage[0], stage[1]
                 )
             )
+    io.commit()
+
+    # Timepoints
+    print("timepoints")
+    for subproblem_id in subproblem_stage_timepoints.keys():
+        for stage_id in subproblem_stage_timepoints[subproblem_id].keys():
+            for timepoint in \
+                    subproblem_stage_timepoints[subproblem_id][stage_id].keys():
+                timepoint_dict = \
+                    subproblem_stage_timepoints[subproblem_id][stage_id][timepoint]
+                period = timepoint_dict["period"]
+                number_of_hours_in_timepoint = \
+                    timepoint_dict["number_of_hours_in_timepoint"]
+                timepoint_weight = timepoint_dict["timepoint_weight"]
+                previous_stage_timepoint_map = \
+                    timepoint_dict["previous_stage_timepoint_map"]
+                spinup_or_lookahead = timepoint_dict["spinup_or_lookahead"]
+                month = timepoint_dict["month"]
+                c.execute(
+                    """INSERT INTO inputs_temporal_timepoints
+                    (temporal_scenario_id, subproblem_id, stage_id, timepoint,
+                    period, number_of_hours_in_timepoint, timepoint_weight, 
+                    previous_stage_timepoint_map, 
+                    spinup_or_lookahead, month)
+                    VALUES ({}, {}, {},  {}, {}, {}, {}, {}, {}, {});"""
+                    .format(
+                        temporal_scenario_id, subproblem_id, stage_id,
+                        timepoint, period, number_of_hours_in_timepoint,
+                        timepoint_weight, previous_stage_timepoint_map,
+                        spinup_or_lookahead, month
+                    )
+                )
+    io.commit()
+
+    print("horizons")
+    for subproblem_id in subproblem_horizons.keys():
+        for horizon in subproblem_horizons[subproblem_id]:
+            horizon_length_type = subproblem_horizons[subproblem_id][horizon][
+                "horizon_length_type"]
+            period = subproblem_horizons[subproblem_id][horizon]["period"]
+            boundary = subproblem_horizons[subproblem_id][horizon]["boundary"]
+            c.execute(
+                """INSERT INTO inputs_temporal_horizons
+                (temporal_scenario_id, subproblem_id, horizon, 
+                horizon_length_type, period, boundary)
+                VALUES ({}, {}, {}, '{}', {}, '{}');""".format(
+                    temporal_scenario_id, subproblem_id, horizon,
+                    horizon_length_type, period, boundary
+                )
+            )
+    io.commit()
+
+    print("timepoint horizons")
+    for subproblem_id in subproblem_stage_timepoint_horizons.keys():
+        for stage_id in subproblem_stage_timepoint_horizons[
+                subproblem_id].keys():
+            for timepoint in subproblem_stage_timepoint_horizons[
+                    subproblem_id][stage_id].keys():
+                for horizon_info in subproblem_stage_timepoint_horizons[
+                            subproblem_id][stage_id][timepoint]:
+                    horizon = horizon_info[0]
+                    horizon_length_type = horizon_info[1]
+                    c.execute("""INSERT INTO 
+                    inputs_temporal_timepoint_horizons
+                    (temporal_scenario_id, subproblem_id, stage_id, 
+                    timepoint, horizon, horizon_length_type)
+                    VALUES ({}, {}, {}, {}, {}, '{}')""".format(
+                        temporal_scenario_id, subproblem_id, stage_id,
+                        timepoint, horizon, horizon_length_type
+                    ))
     io.commit()
 
 
