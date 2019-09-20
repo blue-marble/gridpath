@@ -45,7 +45,7 @@ def update_project_availability(
                     timepoint, availability)
                     VALUES ({}, '{}', {}, {}, {});""".format(
                         project_availability_scenario_id, prj, stage, tmp,
-                        project_avail[prj][tmp]
+                        project_avail[prj][stage][tmp]
                     )
                 )
     io.commit()
