@@ -7,7 +7,6 @@ Make load zones
 from __future__ import print_function
 
 
-
 def geography_load_zones(
         io, c,
         load_zone_scenario_id,
@@ -367,7 +366,7 @@ def geography_prm_zones(
     )
     io.commit()
 
-    # RPS zones
+    # PRM zones
     for zone in zones:
         c.execute(
             """INSERT INTO inputs_geography_prm_zones
@@ -378,6 +377,40 @@ def geography_prm_zones(
         )
     io.commit()
 
+
+def geography_local_capacity_zones(
+        io, c,
+        local_capacity_zone_scenario_id,
+        scenario_name,
+        scenario_description,
+        zones
+):
+    """
+    PRM zones
+    :return:
+    """
+    print("local capacity zones")
+
+    # Subscenarios
+    c.execute(
+        """INSERT INTO subscenarios_geography_local_capacity_zones
+           (local_capacity_zone_scenario_id, name, description)
+           VALUES ({}, '{}', '{}');""".format(
+            local_capacity_zone_scenario_id, scenario_name, scenario_description
+        )
+    )
+    io.commit()
+
+    # Local capacity zones
+    for zone in zones:
+        c.execute(
+            """INSERT INTO inputs_geography_local_capacity_zones
+            (local_capacity_zone_scenario_id, local_capacity_zone)
+            VALUES ({}, '{}');""".format(
+                local_capacity_zone_scenario_id, zone
+            )
+        )
+    io.commit()
 
 if __name__ == "__main__":
     pass

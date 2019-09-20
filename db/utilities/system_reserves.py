@@ -53,7 +53,8 @@ def insert_system_reserves(
                     ;""".format(
                         reserve_type, reserve_type, reserve_type, reserve_type,
                         reserve_scenario_id,
-                        ba, stage, tmp, ba_stage_timepoint_reserve_req[ba][tmp]
+                        ba, stage, tmp, ba_stage_timepoint_reserve_req[ba][
+                            stage][tmp]
                     )
                 )
 

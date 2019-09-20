@@ -82,7 +82,8 @@ def create_scenario_all_args(
         prm_requirement_scenario_id,
         local_capacity_requirement_scenario_id,
         elcc_surface_scenario_id,
-        tuning_scenario_id
+        tuning_scenario_id,
+        solver_options_id
 ):
     """
     Insert a scenario by explicitly specifying the value for each column (
@@ -164,6 +165,7 @@ def create_scenario_all_args(
     :param elcc_surface_scenario_id:
     :param local_capacity_requirement_scenario_id:
     :param tuning_scenario_id:
+    :param solver_options_id:
     :return:
     """
 
@@ -243,9 +245,11 @@ def create_scenario_all_args(
         prm_requirement_scenario_id,
         elcc_surface_scenario_id,
         local_capacity_requirement_scenario_id,
-        tuning_scenario_id
+        tuning_scenario_id,
+        solver_options_id
         ) VALUES (
         '{}',
+        {},
         {},
         {},
         {},
@@ -393,7 +397,8 @@ def create_scenario_all_args(
             prm_requirement_scenario_id,
             elcc_surface_scenario_id,
             local_capacity_requirement_scenario_id,
-            tuning_scenario_id
+            tuning_scenario_id,
+            solver_options_id
         )
     )
 
