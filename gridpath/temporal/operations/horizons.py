@@ -249,9 +249,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    horizons = c.execute(
-        """SELECT horizon, boundary, timepoint_weight
+    c1 = conn.cursor()
+    horizons = c1.execute(
+        """SELECT horizon, horizon_length_type, boundary
            FROM inputs_temporal_horizons
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {};""".format(
@@ -260,7 +260,20 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return horizons
+    c2 = conn.cursor()
+    timepoint_horizons = c2.execute(
+        """SELECT horizon, horizon_length_type, timepoint
+        FROM inputs_temporal_horizon_timepoints
+        WHERE temporal_scenario_id = {}
+       AND subproblem_id = {}
+       AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    )
+
+    return horizons, timepoint_horizons
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -290,15 +303,26 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    horizons = get_inputs_from_database(
+    horizons, timepoint_horizons = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "horizons.tab"), "w", newline="") as \
-            horizons_tab_file:
-        writer = csv.writer(horizons_tab_file, delimiter="\t")
+    with open(os.path.join(inputs_directory, "horizons.tab"),
+              "w", newline="") as horizons_tab_file:
+        hwriter = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["HORIZONS", "boundary", "timepoint_weight"])
+        hwriter.writerow(["horizon", "horizon_length_type", "boundary"])
 
         for row in horizons:
-            writer.writerow(row)
+            hwriter.writerow(row)
+
+    with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
+              newline="") as timepoint_horizons_tab_file:
+        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t")
+
+        # Write header
+        thwriter.writerow(["horizon", "horizon_length_type", "timepoint"])
+
+        for row in timepoint_horizons:
+            thwriter.writerow(row)
+

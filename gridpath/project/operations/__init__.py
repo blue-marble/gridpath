@@ -95,6 +95,7 @@ def add_model_components(m, d):
 
     # Availability derate (e.g. for maintenance/planned outages)
     # This can be optionally loaded from external data, but defaults to 1
+    # TODO: move this to the capacity package?
     m.availability_derate = Param(
         m.PROJECTS, m.TIMEPOINTS, within=PercentFraction, default=1
     )
@@ -326,7 +327,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
             FROM inputs_temporal_timepoints
             WHERE temporal_scenario_id = {}
             AND subproblem_id = {}
-            AND stage = {}) as relevant_timepoints
+            AND stage_id = {}) as relevant_timepoints
             USING (timepoint)
             WHERE project_portfolio_scenario_id = {}
             AND project_availability_scenario_id = {};""".format(

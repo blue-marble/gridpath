@@ -175,7 +175,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     projects = c.execute(
-        """SELECT project, capacity_type, operational_type, technology,
+        """SELECT project, capacity_type, operational_type, 
+        balancing_type, technology,
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
@@ -195,7 +196,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         AND project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, operational_type, technology,
+        (SELECT project, operational_type, balancing_type, technology,
         fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
@@ -443,7 +444,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "operational_type", "technology",
+            ["project", "capacity_type", "operational_type",
+             "balancing_type", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",
              "startup_cost_per_mw", "shutdown_cost_per_mw",

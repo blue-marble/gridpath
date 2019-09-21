@@ -135,7 +135,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         """ + reserve_type + """_ba VARCHAR(32),
         period INTEGER,
         subproblem_id INTEGER,
-        stage_id INTEGER
+        stage_id INTEGER,
         timepoint INTEGER,
         discount_factor FLOAT,
         number_years_represented FLOAT,
@@ -144,7 +144,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         violation_mw FLOAT,
         PRIMARY KEY (scenario_id, """ + reserve_type + """_ba,
         subproblem_id, stage_id, timepoint)
-            );"""
+        );"""
     )
     db.commit()
 

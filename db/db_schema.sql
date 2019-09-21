@@ -167,11 +167,6 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 -- Horizons
 -- How timepoints are organized for operational-decision purposes
 
--- DROP TABLE IF EXISTS inputs_temporal_balancing_types;
--- CREATE TABLE inputs_temporal_balancing_types (
--- balancing_type VARCHAR(64) PRIMARY KEY
--- );
-
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
@@ -221,8 +216,8 @@ FOREIGN KEY (temporal_scenario_id, period)
 FOREIGN KEY (month) REFERENCES mod_months (month)
 );
 
-DROP TABLE IF EXISTS inputs_temporal_timepoint_horizons;
-CREATE TABLE inputs_temporal_timepoint_horizons (
+DROP TABLE IF EXISTS inputs_temporal_horizon_timepoints;
+CREATE TABLE inputs_temporal_horizon_timepoints (
 temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
@@ -628,6 +623,7 @@ project_operational_chars_scenario_id INTEGER,
 project VARCHAR(64),
 technology VARCHAR(32),
 operational_type VARCHAR(32),
+balancing_type VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id VARCHAR(64),  -- determined heat rate curve
@@ -742,6 +738,7 @@ project VARCHAR(64),
 hydro_operational_chars_scenario_id INTEGER,
 balancing_type VARCHAR(64),
 horizon INTEGER,
+period INTEGER,
 average_power_mwa FLOAT,
 min_power_mw FLOAT,
 max_power_mw FLOAT,

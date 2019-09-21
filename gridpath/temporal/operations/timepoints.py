@@ -63,13 +63,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
-                     param=(m.number_of_hours_in_timepoint,
-                            m.timepoint_weight,
+                     param=(m.timepoint_weight,
+                            m.number_of_hours_in_timepoint,
                             m.previous_stage_timepoint_map,
                             m.month),
-                     select=("TIMEPOINTS", "number_of_hours_in_timepoint",
+                     select=("TIMEPOINTS",
                              "timepoint_weight",
-                             "previous_stage_timepoint_map", "month")
+                             "number_of_hours_in_timepoint",
+                             "previous_stage_timepoint_map",
+                             "month")
                      )
 
 
@@ -83,7 +85,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     timepoints = c.execute(
-        """SELECT timepoint, period, horizon, 
+        """SELECT timepoint, period, timepoint_weight,
            number_of_hours_in_timepoint, previous_stage_timepoint_map, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
@@ -126,12 +128,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "timepoints.tab"), "w", newline="") as \
-            timepoints_tab_file:
+    with open(os.path.join(inputs_directory, "timepoints.tab"),
+              "w", newline="") as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["TIMEPOINTS", "period", "horizon",
+        writer.writerow(["TIMEPOINTS", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "previous_stage_timepoint_map", "month"])
 

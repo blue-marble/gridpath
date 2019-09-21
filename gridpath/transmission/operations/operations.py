@@ -177,8 +177,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             c.execute(
                 """INSERT INTO temp_results_transmission_operations"""
                 + str(scenario_id) + """
-                (scenario_id, transmission_line, period, subproblem_id, stage_id,
-                horizon, timepoint, timepoint_weight, 
+                (scenario_id, transmission_line, period, subproblem_id, 
+                stage_id, timepoint, timepoint_weight, 
                 number_of_hours_in_timepoint,
                 load_zone_from, load_zone_to, transmission_flow_mw)
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, '{}', '{}', 

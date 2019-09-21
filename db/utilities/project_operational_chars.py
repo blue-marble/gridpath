@@ -202,8 +202,8 @@ def update_project_hydro_opchar(
     :param proj_horizon_chars:
         Nested dictionary: top-level key is the project name, second key is
         the balancing type, third key is the horizon, fourth-level keys are
-        'mwa' (the energy budget (MWa)), min_mw (minimum MW) and max_mw
-        (maximum MW), with a value for each
+        'period' (the period of the horizon), 'mwa' (the energy budget (MWa)),
+        min_mw (minimum MW) and max_mw (maximum MW), with a value for each
     :return:
     """
     print("project hydro operating characteristics")
@@ -229,10 +229,11 @@ def update_project_hydro_opchar(
                     c.execute(
                         """INSERT INTO inputs_project_hydro_operational_chars
                         (project, hydro_operational_chars_scenario_id, 
-                        balancing_type, horizon, 
+                        balancing_type, horizon, period, 
                         average_power_mwa, min_power_mw, max_power_mw)
-                        VALUES ('{}', {}, '{}', {}, {}, {}, {});""".format(
+                        VALUES ('{}', {}, '{}', {}, {}, {}, {}, {});""".format(
                             p, scenario, bt, h,
+                            proj_horizon_chars[p][scenario][bt][h]["period"],
                             proj_horizon_chars[p][scenario][bt][h]["mwa"],
                             proj_horizon_chars[p][scenario][bt][h]["min_mw"],
                             proj_horizon_chars[p][scenario][bt][h]["max_mw"]

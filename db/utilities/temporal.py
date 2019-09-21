@@ -143,7 +143,7 @@ def temporal(
             )
     io.commit()
 
-    print("timepoint horizons")
+    print("horizon timepoints")
     for subproblem_id in subproblem_stage_timepoint_horizons.keys():
         for stage_id in subproblem_stage_timepoint_horizons[
                 subproblem_id].keys():
@@ -154,7 +154,7 @@ def temporal(
                     horizon = horizon_info[0]
                     horizon_length_type = horizon_info[1]
                     c.execute("""INSERT INTO 
-                    inputs_temporal_timepoint_horizons
+                    inputs_temporal_horizon_timepoints
                     (temporal_scenario_id, subproblem_id, stage_id, 
                     timepoint, horizon, horizon_length_type)
                     VALUES ({}, {}, {}, {}, {}, '{}')""".format(
