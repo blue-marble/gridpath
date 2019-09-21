@@ -206,7 +206,7 @@ class TestHorizons(unittest.TestCase):
                                  "not match expected.")
 
         # Param: previous_timepoint
-        # Testing for both horizons that 'circular' and 'linear'
+        # Testing for both horizons that are 'circular' and 'linear'
         # TODO: should we have the actual previous timepoints in a data file
         #  somewhere as opposed to figuring it out here
         expected_prev_tmp = dict()

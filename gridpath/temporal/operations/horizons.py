@@ -29,7 +29,7 @@ def add_model_components(m, d):
     within a balancing type are ordered).
 
     We will designate the *HORIZON_LENGTH_TYPES* set with :math:`B` and
-    balancing t ype index with :math:`b`.
+    balancing type index with :math:`b`.
 
     The *HORIZONS_BY_BALANCING_TYPE* set is designated with :math:`H_b` and
     the horizons index will be :math:`h_b`.
@@ -90,7 +90,7 @@ def add_model_components(m, d):
         m.HORIZONS, within=PositiveIntegers, ordered=True
     )
 
-    # TODO: can create here instead of upstream in data (i.e. we can get teh
+    # TODO: can create here instead of upstream in data (i.e. we can get the
     #  balancing type index from the horizon of the timepoint)
     m.horizon = Param(m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES)
 
