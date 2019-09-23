@@ -19,7 +19,7 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
-    The module adds the * HORIZON_LENGTH_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
+    The module adds the * BALANCING_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
     sets to the model formulation.
 
     Balancing types are strings, e.g. year, month, week, day.
@@ -28,7 +28,7 @@ def add_model_components(m, d):
     HORIZONS_BY_BALANCING_TYPE indexed set is ordered (i.e. the horizons
     within a balancing type are ordered).
 
-    We will designate the *HORIZON_LENGTH_TYPES* set with :math:`B` and
+    We will designate the *BALANCING_TYPES* set with :math:`B` and
     balancing type index with :math:`b`.
 
     The *HORIZONS_BY_BALANCING_TYPE* set is designated with :math:`H_b` and
@@ -66,7 +66,7 @@ def add_model_components(m, d):
 
         return balancing_type_horizons
 
-    m.HORIZON_LENGTH_TYPES = Set(initialize=balancing_type_horizons_init)
+    m.BALANCING_TYPES = Set(initialize=balancing_type_horizons_init)
 
     def horizons_by_balancing_type_horizon_init(mod, bt):
         """
@@ -82,7 +82,7 @@ def add_model_components(m, d):
         return horizons_of_balancing_type_horizon
 
     m.HORIZONS_BY_BALANCING_TYPE = Set(
-        m.HORIZON_LENGTH_TYPES, within=PositiveIntegers,
+        m.BALANCING_TYPES, within=PositiveIntegers,
         initialize=horizons_by_balancing_type_horizon_init
     )
 
@@ -92,7 +92,7 @@ def add_model_components(m, d):
 
     # TODO: can create here instead of upstream in data (i.e. we can get the
     #  balancing type index from the horizon of the timepoint)
-    m.horizon = Param(m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES)
+    m.horizon = Param(m.TIMEPOINTS, m.BALANCING_TYPES)
 
     # Determine the first and last timepoint of the horizon
     # NOTE: it's an ordered set, so getting the first and last element seems
@@ -113,14 +113,14 @@ def add_model_components(m, d):
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.previous_timepoint = Param(
-        m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES, initialize=previous_timepoint_init
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=previous_timepoint_init
     )
 
     # Determine the next timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
     m.next_timepoint = Param(
-        m.TIMEPOINTS, m.HORIZON_LENGTH_TYPES, initialize=next_timepoint_init
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=next_timepoint_init
     )
 
 

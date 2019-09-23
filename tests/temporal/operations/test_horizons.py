@@ -125,10 +125,10 @@ class TestHorizons(unittest.TestCase):
                              msg="Data for param 'boundary' not loaded "
                                  "correctly")
 
-        # HORIZON_LENGTH_TYPES set
+        # BALANCING_TYPES set
         expected_balancing_type_horizons = \
             list(balancing_type_horizon_horizons_df.balancing_type_horizon.unique())
-        actual_balancing_type_horizons = list(instance.HORIZON_LENGTH_TYPES)
+        actual_balancing_type_horizons = list(instance.BALANCING_TYPES)
         self.assertListEqual(expected_balancing_type_horizons, actual_balancing_type_horizons)
 
         # HORIZONS_BY_BALANCING_TYPE set
@@ -174,7 +174,7 @@ class TestHorizons(unittest.TestCase):
         }
         actual_horizon_by_tmp_type = {
             (tmp, _type): instance.horizon[tmp, _type]
-            for tmp in instance.TIMEPOINTS for _type in instance.HORIZON_LENGTH_TYPES
+            for tmp in instance.TIMEPOINTS for _type in instance.BALANCING_TYPES
         }
         self.assertDictEqual(expected_horizon_by_tmp_type,
                              actual_horizon_by_tmp_type)
@@ -237,7 +237,7 @@ class TestHorizons(unittest.TestCase):
             (tmp, balancing_type_horizon):
                 instance.previous_timepoint[tmp, balancing_type_horizon]
             for tmp in instance.TIMEPOINTS
-            for balancing_type_horizon in instance.HORIZON_LENGTH_TYPES
+            for balancing_type_horizon in instance.BALANCING_TYPES
         }
 
         self.assertDictEqual(expected_prev_tmp,
@@ -285,7 +285,7 @@ class TestHorizons(unittest.TestCase):
         actual_next_tmp = {
             (tmp, balancing_type_horizon): instance.next_timepoint[tmp, balancing_type_horizon]
             for tmp in instance.TIMEPOINTS
-            for balancing_type_horizon in instance.HORIZON_LENGTH_TYPES
+            for balancing_type_horizon in instance.BALANCING_TYPES
         }
         actual_next_tmp_ordered = OrderedDict(sorted(
             actual_next_tmp.items()))
