@@ -140,31 +140,32 @@ def previous_timepoint_init(mod, tmp, balancing_type_horizon):
     one with an index of tmp-1.
     """
     prev_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type_horizon]:
-        for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
-            if tmp == mod.first_horizon_timepoint[horizon]:
-                if mod.boundary[horizon] == "circular":
-                    prev_tmp_dict[tmp, balancing_type_horizon] = \
-                        mod.last_horizon_timepoint[
-                            horizon]
-                elif mod.boundary[horizon] == "linear":
-                    prev_tmp_dict[tmp, balancing_type_horizon] = None
+    for balancing_type in mod.BALANCING_TYPES:
+        for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+            for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
+                if tmp == mod.first_horizon_timepoint[horizon]:
+                    if mod.boundary[horizon] == "circular":
+                        prev_tmp_dict[tmp, balancing_type] = \
+                            mod.last_horizon_timepoint[
+                                horizon]
+                    elif mod.boundary[horizon] == "linear":
+                        prev_tmp_dict[tmp, balancing_type] = None
+                    else:
+                        raise ValueError(
+                            "Invalid boundary value '{}' for horizon '{}'".
+                            format(
+                                mod.boundary[horizon],
+                                horizon)
+                            + "\n" +
+                            "Horizon boundary must be either 'circular' or "
+                            "'linear'"
+                        )
                 else:
-                    raise ValueError(
-                        "Invalid boundary value '{}' for horizon '{}'".
-                        format(
-                            mod.boundary[horizon],
-                            horizon)
-                        + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
-                    )
-            else:
-                prev_tmp_dict[tmp, balancing_type_horizon] = \
-                    list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
-                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])
-                        .index(tmp) - 1
-                        ]
+                    prev_tmp_dict[tmp, balancing_type] = \
+                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
+                            list(mod.TIMEPOINTS_ON_HORIZON[horizon])
+                            .index(tmp) - 1
+                            ]
 
     return prev_tmp_dict
 
@@ -183,28 +184,29 @@ def next_timepoint_init(mod, tmp, balancing_type_horizon):
     other cases, the next timepoint is the one with an index of tmp+1.
     """
     next_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type_horizon]:
-        for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
-            if tmp == mod.last_horizon_timepoint[horizon]:
-                if mod.boundary[horizon] == "circular":
-                    next_tmp_dict[tmp, balancing_type_horizon] = \
-                        mod.first_horizon_timepoint[horizon]
-                elif mod.boundary[horizon] == "linear":
-                    next_tmp_dict[tmp, balancing_type_horizon] = None
+    for balancing_type in mod.BALANCING_TYPES:
+        for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+            for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
+                if tmp == mod.last_horizon_timepoint[horizon]:
+                    if mod.boundary[horizon] == "circular":
+                        next_tmp_dict[tmp, balancing_type] = \
+                            mod.first_horizon_timepoint[horizon]
+                    elif mod.boundary[horizon] == "linear":
+                        next_tmp_dict[tmp, balancing_type] = None
+                    else:
+                        raise ValueError(
+                            "Invalid boundary value '{}' for horizon '{}'".
+                            format(mod.boundary[horizon], horizon)
+                            + "\n" +
+                            "Horizon boundary must be either 'circular' or "
+                            "'linear'"
+                        )
                 else:
-                    raise ValueError(
-                        "Invalid boundary value '{}' for horizon '{}'".
-                        format(mod.boundary[horizon], horizon)
-                        + "\n" +
-                        "Horizon boundary must be either 'circular' or "
-                        "'linear'"
-                    )
-            else:
-                next_tmp_dict[tmp, balancing_type_horizon] = \
-                    list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
-                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])
-                        .index(tmp) + 1
-                        ]
+                    next_tmp_dict[tmp, balancing_type] = \
+                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
+                            list(mod.TIMEPOINTS_ON_HORIZON[horizon])
+                            .index(tmp) + 1
+                            ]
 
     return next_tmp_dict
 
