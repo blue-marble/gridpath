@@ -91,10 +91,8 @@ class TestHydroNonCurtailable(unittest.TestCase):
 
         # Sets: HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
         expected_operational_horizons = sorted(
-            [("Hydro_NonCurtailable", 202001),
-             ("Hydro_NonCurtailable", 202002),
-             ("Hydro_NonCurtailable", 203001),
-             ("Hydro_NonCurtailable", 203002)]
+            [("Hydro_NonCurtailable", 2020),
+             ("Hydro_NonCurtailable", 2030)]
         )
         actual_operational_horizons = sorted(
             [p for p in instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
@@ -105,10 +103,8 @@ class TestHydroNonCurtailable(unittest.TestCase):
 
         # Param: hydro_noncurtailable_average_power_mwa
         expected_average_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 202001): 3,
-                    ("Hydro_NonCurtailable", 202002): 3,
-                    ("Hydro_NonCurtailable", 203001): 3,
-                    ("Hydro_NonCurtailable", 203002): 3}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 3,
+                    ("Hydro_NonCurtailable", 2030): 3}.items())
         )
         actual_average_power = OrderedDict(
             sorted(
@@ -123,10 +119,8 @@ class TestHydroNonCurtailable(unittest.TestCase):
 
         # Param: hydro_noncurtailable_min_power_mw
         expected_min_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 202001): 1,
-                    ("Hydro_NonCurtailable", 202002): 1,
-                    ("Hydro_NonCurtailable", 203001): 1,
-                    ("Hydro_NonCurtailable", 203002): 1}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 1,
+                    ("Hydro_NonCurtailable", 2030): 1}.items())
         )
         actual_min_power = OrderedDict(
             sorted(
@@ -141,10 +135,8 @@ class TestHydroNonCurtailable(unittest.TestCase):
 
         # Param: hydro_noncurtailable_max_power_mw
         expected_max_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 202001): 6,
-                    ("Hydro_NonCurtailable", 202002): 6,
-                    ("Hydro_NonCurtailable", 203001): 6,
-                    ("Hydro_NonCurtailable", 203002): 6}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 6,
+                    ("Hydro_NonCurtailable", 2030): 6}.items())
         )
         actual_max_power = OrderedDict(
             sorted(
