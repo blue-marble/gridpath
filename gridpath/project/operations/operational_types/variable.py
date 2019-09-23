@@ -736,7 +736,6 @@ def process_module_specific_results(db, c, subscenarios):
 
     print("aggregate variable curtailment")
 
-
     # Delete old aggregated variable curtailment results
     c.execute(
         """DELETE FROM results_project_curtailment_variable 
@@ -749,19 +748,26 @@ def process_module_specific_results(db, c, subscenarios):
     c.execute(
         """INSERT INTO results_project_curtailment_variable
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, 
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
+        load_zone, scheduled_curtailment_mw
+        FROM (
+        SELECT scenario_id, subproblem_id, stage_id, period, horizon, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, load_zone, 
         sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
         FROM results_project_dispatch_variable
+        GROUP BY subproblem_id, stage_id, timepoint, load_zone
+        ) as agg_curtailment_tbl
+        JOIN (
+        SELECT subproblem_id, period, timepoint, month,  hour_of_day
+        FROM inputs_temporal_timepoints
+        ) as tmp_info_tbl
+        USING (subproblem_id, period, timepoint)
         WHERE scenario_id = {}
-        GROUP BY subproblem_id, stage_id, timepoint, 
-        load_zone
-        ORDER BY subproblem_id, stage_id, timepoint, 
-        load_zone;""".format(
+        ORDER BY subproblem_id, stage_id, load_zone, timepoint;""".format(
             subscenarios.SCENARIO_ID,
         )
     )

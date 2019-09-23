@@ -109,18 +109,19 @@ def temporal(
                     timepoint_dict["previous_stage_timepoint_map"]
                 spinup_or_lookahead = timepoint_dict["spinup_or_lookahead"]
                 month = timepoint_dict["month"]
+                hour_of_day = timepoint_dict["hour_of_day"]
                 c.execute(
                     """INSERT INTO inputs_temporal_timepoints
                     (temporal_scenario_id, subproblem_id, stage_id, timepoint,
                     period, number_of_hours_in_timepoint, timepoint_weight, 
                     previous_stage_timepoint_map, 
-                    spinup_or_lookahead, month)
-                    VALUES ({}, {}, {},  {}, {}, {}, {}, {}, {}, {});"""
+                    spinup_or_lookahead, month, hour_of_day)
+                    VALUES ({}, {}, {},  {}, {}, {}, {}, {}, {}, {}, {});"""
                     .format(
                         temporal_scenario_id, subproblem_id, stage_id,
                         timepoint, period, number_of_hours_in_timepoint,
                         timepoint_weight, previous_stage_timepoint_map,
-                        spinup_or_lookahead, month
+                        spinup_or_lookahead, month, hour_of_day
                     )
                 )
     io.commit()
