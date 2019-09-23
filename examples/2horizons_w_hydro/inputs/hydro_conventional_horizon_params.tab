@@ -1,0 +1,3 @@
+project	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
+Hydro	1	2	1	6
+Hydro	2	4	1	6
