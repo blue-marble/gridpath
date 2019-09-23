@@ -36,12 +36,12 @@ def temporal(
         name of the param as key and its value as value)
     :param subproblem_horizons: dictionary with subproblems as the first
         key, horizons as the second key, and a dictionary containing the
-        horizon params (horizon_length_type, period, and boundary) as the
+        horizon params (balancing_type_horizon, period, and boundary) as the
         value for each horizon
     :param subproblem_stage_timepoint_horizons: dictionary with subproblem IDs
         as the first key, stage IDs as the second key, the timepoint as the
         third key, and list of tuple with the (horizon,
-        horizon_length_types) that the timepoint belongs to
+        balancing_type_horizons) that the timepoint belongs to
     """
 
     # Create subscenario
@@ -128,17 +128,17 @@ def temporal(
     print("horizons")
     for subproblem_id in subproblem_horizons.keys():
         for horizon in subproblem_horizons[subproblem_id]:
-            horizon_length_type = subproblem_horizons[subproblem_id][horizon][
-                "horizon_length_type"]
+            balancing_type_horizon = subproblem_horizons[subproblem_id][horizon][
+                "balancing_type_horizon"]
             period = subproblem_horizons[subproblem_id][horizon]["period"]
             boundary = subproblem_horizons[subproblem_id][horizon]["boundary"]
             c.execute(
                 """INSERT INTO inputs_temporal_horizons
                 (temporal_scenario_id, subproblem_id, horizon, 
-                horizon_length_type, period, boundary)
+                balancing_type_horizon, period, boundary)
                 VALUES ({}, {}, {}, '{}', {}, '{}');""".format(
                     temporal_scenario_id, subproblem_id, horizon,
-                    horizon_length_type, period, boundary
+                    balancing_type_horizon, period, boundary
                 )
             )
     io.commit()
@@ -152,14 +152,14 @@ def temporal(
                 for horizon_info in subproblem_stage_timepoint_horizons[
                             subproblem_id][stage_id][timepoint]:
                     horizon = horizon_info[0]
-                    horizon_length_type = horizon_info[1]
+                    balancing_type_horizon = horizon_info[1]
                     c.execute("""INSERT INTO 
                     inputs_temporal_horizon_timepoints
                     (temporal_scenario_id, subproblem_id, stage_id, 
-                    timepoint, horizon, horizon_length_type)
+                    timepoint, horizon, balancing_type_horizon)
                     VALUES ({}, {}, {}, {}, {}, '{}')""".format(
                         temporal_scenario_id, subproblem_id, stage_id,
-                        timepoint, horizon, horizon_length_type
+                        timepoint, horizon, balancing_type_horizon
                     ))
     io.commit()
 

@@ -49,41 +49,41 @@ def add_model_components(m, d):
 
     """
     m.HORIZONS = Set(ordered=True)
-    m.horizon_length_type = Param(m.HORIZONS)
+    m.balancing_type_horizon = Param(m.HORIZONS)
     m.boundary = Param(m.HORIZONS, within=['circular', 'linear'])
 
-    def horizon_length_types_init(mod):
+    def balancing_type_horizons_init(mod):
         """
         :param mod:
         :return:
         """
-        horizon_length_types = list()
+        balancing_type_horizons = list()
         for h in mod.HORIZONS:
-            if mod.horizon_length_type[h] in horizon_length_types:
+            if mod.balancing_type_horizon[h] in balancing_type_horizons:
                 pass
             else:
-                horizon_length_types.append(mod.horizon_length_type[h])
+                balancing_type_horizons.append(mod.balancing_type_horizon[h])
 
-        return horizon_length_types
+        return balancing_type_horizons
 
-    m.HORIZON_LENGTH_TYPES = Set(initialize=horizon_length_types_init)
+    m.HORIZON_LENGTH_TYPES = Set(initialize=balancing_type_horizons_init)
 
-    def horizons_by_horizon_length_type_init(mod, bt):
+    def horizons_by_balancing_type_horizon_init(mod, bt):
         """
         :param mod:
         :param bt:
         :return:
         """
-        horizons_of_horizon_length_type = []
+        horizons_of_balancing_type_horizon = []
         for horizon in mod.HORIZONS:
-            if mod.horizon_length_type[horizon] == bt:
-                horizons_of_horizon_length_type.append(horizon)
+            if mod.balancing_type_horizon[horizon] == bt:
+                horizons_of_balancing_type_horizon.append(horizon)
 
-        return horizons_of_horizon_length_type
+        return horizons_of_balancing_type_horizon
 
     m.HORIZONS_BY_BALANCING_TYPE = Set(
         m.HORIZON_LENGTH_TYPES, within=PositiveIntegers,
-        initialize=horizons_by_horizon_length_type_init
+        initialize=horizons_by_balancing_type_horizon_init
     )
 
     m.TIMEPOINTS_ON_HORIZON = Set(
@@ -124,11 +124,11 @@ def add_model_components(m, d):
     )
 
 
-def previous_timepoint_init(mod, tmp, horizon_length_type):
+def previous_timepoint_init(mod, tmp, balancing_type_horizon):
     """
     :param mod:
     :param tmp:
-    :param horizon_length_type:
+    :param balancing_type_horizon:
     :return:
 
     Determine the previous timepoint for each timepoint. If the timepoint is
@@ -140,15 +140,15 @@ def previous_timepoint_init(mod, tmp, horizon_length_type):
     one with an index of tmp-1.
     """
     prev_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[horizon_length_type]:
+    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type_horizon]:
         for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
             if tmp == mod.first_horizon_timepoint[horizon]:
                 if mod.boundary[horizon] == "circular":
-                    prev_tmp_dict[tmp, horizon_length_type] = \
+                    prev_tmp_dict[tmp, balancing_type_horizon] = \
                         mod.last_horizon_timepoint[
                             horizon]
                 elif mod.boundary[horizon] == "linear":
-                    prev_tmp_dict[tmp, horizon_length_type] = None
+                    prev_tmp_dict[tmp, balancing_type_horizon] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for horizon '{}'".
@@ -160,7 +160,7 @@ def previous_timepoint_init(mod, tmp, horizon_length_type):
                         "'linear'"
                     )
             else:
-                prev_tmp_dict[tmp, horizon_length_type] = \
+                prev_tmp_dict[tmp, balancing_type_horizon] = \
                     list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
                         list(mod.TIMEPOINTS_ON_HORIZON[horizon])
                         .index(tmp) - 1
@@ -169,11 +169,11 @@ def previous_timepoint_init(mod, tmp, horizon_length_type):
     return prev_tmp_dict
 
 
-def next_timepoint_init(mod, tmp, horizon_length_type):
+def next_timepoint_init(mod, tmp, balancing_type_horizon):
     """
     :param mod:
     :param tmp:
-    :param horizon_length_type:
+    :param balancing_type_horizon:
     :return:
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,
@@ -183,14 +183,14 @@ def next_timepoint_init(mod, tmp, horizon_length_type):
     other cases, the next timepoint is the one with an index of tmp+1.
     """
     next_tmp_dict = {}
-    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[horizon_length_type]:
+    for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type_horizon]:
         for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
             if tmp == mod.last_horizon_timepoint[horizon]:
                 if mod.boundary[horizon] == "circular":
-                    next_tmp_dict[tmp, horizon_length_type] = \
+                    next_tmp_dict[tmp, balancing_type_horizon] = \
                         mod.first_horizon_timepoint[horizon]
                 elif mod.boundary[horizon] == "linear":
-                    next_tmp_dict[tmp, horizon_length_type] = None
+                    next_tmp_dict[tmp, balancing_type_horizon] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for horizon '{}'".
@@ -200,7 +200,7 @@ def next_timepoint_init(mod, tmp, horizon_length_type):
                         "'linear'"
                     )
             else:
-                next_tmp_dict[tmp, horizon_length_type] = \
+                next_tmp_dict[tmp, balancing_type_horizon] = \
                     list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
                         list(mod.TIMEPOINTS_ON_HORIZON[horizon])
                         .index(tmp) + 1
@@ -214,9 +214,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "horizons.tab"),
-                     select=("horizon", "horizon_length_type", "boundary"),
+                     select=("horizon", "balancing_type_horizon", "boundary"),
                      index=m.HORIZONS,
-                     param=(m.horizon_length_type, m.boundary)
+                     param=(m.balancing_type_horizon, m.boundary)
                      )
 
     with open(os.path.join(scenario_directory, subproblem, stage,
@@ -251,7 +251,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c1 = conn.cursor()
     horizons = c1.execute(
-        """SELECT horizon, horizon_length_type, boundary
+        """SELECT horizon, balancing_type_horizon, boundary
            FROM inputs_temporal_horizons
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {};""".format(
@@ -262,7 +262,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     c2 = conn.cursor()
     timepoint_horizons = c2.execute(
-        """SELECT horizon, horizon_length_type, timepoint
+        """SELECT horizon, balancing_type_horizon, timepoint
         FROM inputs_temporal_horizon_timepoints
         WHERE temporal_scenario_id = {}
        AND subproblem_id = {}
@@ -311,7 +311,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         hwriter = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        hwriter.writerow(["horizon", "horizon_length_type", "boundary"])
+        hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
 
         for row in horizons:
             hwriter.writerow(row)
@@ -321,7 +321,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t")
 
         # Write header
-        thwriter.writerow(["horizon", "horizon_length_type", "timepoint"])
+        thwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
 
         for row in timepoint_horizons:
             thwriter.writerow(row)
