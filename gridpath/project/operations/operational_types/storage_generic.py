@@ -514,8 +514,9 @@ def export_module_specific_results(mod, d,
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_storage_generic.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "starting_energy_mwh",
                          "charge_mw", "discharge_mw"])
@@ -523,6 +524,7 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
+                mod.balancing_type[p],
                 mod.horizon[tmp, mod.balancing_type[p]],
                 tmp,
                 mod.timepoint_weight[tmp],

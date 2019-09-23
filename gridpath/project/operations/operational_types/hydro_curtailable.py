@@ -495,8 +495,9 @@ def export_module_specific_results(mod, d,
                            "dispatch_hydro_curtailable.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type", "horizon",
+                         "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw"
                          ])
@@ -505,6 +506,7 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
+                mod.balancing_type[p],
                 mod.horizon[tmp, mod.balancing_type[p]],
                 tmp,
                 mod.timepoint_weight[tmp],
@@ -534,6 +536,8 @@ def get_module_specific_inputs_from_database(
     # Select only horizons on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
+    # TODO: should we ensure that the project balancing type and the horizon
+    #  length type match (e.g. by joining on them being equal here)
     hydro_chars = c.execute(
         """SELECT project, horizon, average_power_mwa, min_power_mw,
         max_power_mw
@@ -695,6 +699,7 @@ def import_module_specific_results_to_database(
             period INTEGER,
             subproblem_id INTEGER,
             stage_id INTEGER,
+            balancing_type VARCHAR(64),
             horizon INTEGER,
             timepoint INTEGER,
             timepoint_weight FLOAT,
@@ -718,26 +723,27 @@ def import_module_specific_results_to_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[7]
-            technology = row[6]
-            power_mw = row[8]
-            scheduled_curtailment_mw = row[9]
+            balancing_type = row[2]
+            horizon = row[3]
+            timepoint = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load_zone = row[8]
+            technology = row[7]
+            power_mw = row[9]
+            scheduled_curtailment_mw = row[10]
             c.execute(
                 """INSERT INTO
                 temp_results_project_dispatch_hydro_curtailable"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    horizon, timepoint, timepoint_weight,
+                    balancing_type, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, scheduled_curtailment_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
+                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
                     '{}', '{}', {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
+                    balancing_type, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, scheduled_curtailment_mw
                 )
@@ -748,11 +754,13 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_hydro_curtailable
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        balancing_type, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        balancing_type, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw
         FROM temp_results_project_dispatch_hydro_curtailable"""
         + str(scenario_id) +
@@ -783,7 +791,6 @@ def process_module_specific_results(db, c, subscenarios):
 
     print("aggregate hydro curtailment")
 
-
     # Delete old aggregated hydro curtailment results
     c.execute(
         """DELETE FROM results_project_curtailment_hydro 
@@ -795,11 +802,11 @@ def process_module_specific_results(db, c, subscenarios):
     # Aggregate hydro curtailment (just scheduled curtailment)
     c.execute(
         """INSERT INTO results_project_curtailment_hydro
-        (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint,
         load_zone, scheduled_curtailment_mw)
         SELECT
-        scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint,
         load_zone, 
         sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw

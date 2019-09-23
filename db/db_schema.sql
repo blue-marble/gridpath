@@ -166,7 +166,6 @@ FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 
 -- Horizons
 -- How timepoints are organized for operational-decision purposes
-
 DROP TABLE IF EXISTS inputs_temporal_horizons;
 CREATE TABLE inputs_temporal_horizons (
 temporal_scenario_id INTEGER,
@@ -2149,6 +2148,7 @@ project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+balancing_type VARCHAR(64),
 horizon INTEGER,
 timepoint INTEGER,
 timepoint_weight FLOAT,
@@ -2245,8 +2245,6 @@ scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
 period INTEGER,
-balancing_type VARCHAR(64),
-horizon INTEGER,
 timepoint INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
