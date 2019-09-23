@@ -47,18 +47,18 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     relevant_tmps = [tmp]
 
     if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
             == "linear":
         pass  # no relevant timepoints, keep list limited to *t*
     else:
         # The first possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
         # minimum up/down time, we'll break out of the loop immediately)
-        relevant_tmp = mod.previous_timepoint[tmp, mod.balancing_type[g]]
+        relevant_tmp = mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
         hours_from_tmp = \
             mod.number_of_hours_in_timepoint[
-                mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
 
         while hours_from_tmp < min_time:
             # If we haven't exceed the minimum up/down time yet, this timepoint
@@ -68,17 +68,17 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # In a 'linear' horizon setting, once we reach the first timepoint
             # of the horizon, we break out of the loop since there are no more
             # timepoints to consider
-            if mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+            if mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
                     == "linear" \
                     and relevant_tmp == \
                     mod.first_horizon_timepoint[
-                        mod.horizon[tmp, mod.balancing_type[g]]]:
+                        mod.horizon[tmp, mod.balancing_type_project[g]]]:
                 break
             # In a 'circular' horizon setting, once we reach timepoint *t*,
             # we break out of the loop since there are no more timepoints to
             # consider (we have already added all horizon timepoints as
             # relevant)
-            elif mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] \
+            elif mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
                     == "circular" \
                     and relevant_tmp == tmp:
                 break
@@ -89,10 +89,10 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                 hours_from_tmp += \
                     mod.number_of_hours_in_timepoint[
                         mod.previous_timepoint[
-                            relevant_tmp, mod.balancing_type[g]
+                            relevant_tmp, mod.balancing_type_project[g]
                         ]
                     ]
                 relevant_tmp = mod.previous_timepoint[
-                    relevant_tmp, mod.balancing_type[g]]
+                    relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps

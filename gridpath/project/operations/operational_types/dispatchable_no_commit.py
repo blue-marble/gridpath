@@ -179,12 +179,12 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
         return None
     else:
         return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-            mod.Provide_Power_DispNoCommit_MW[g, mod.previous_timepoint[tmp, mod.balancing_type[g]]]
+            mod.Provide_Power_DispNoCommit_MW[g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -194,13 +194,13 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
         pass
     else:
         return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
                mod.Provide_Power_DispNoCommit_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                ]
 
 

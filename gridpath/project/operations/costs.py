@@ -137,8 +137,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
@@ -169,8 +169,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
@@ -207,7 +207,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp, m.balancing_type[p]],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
@@ -228,7 +228,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp, m.balancing_type[p]],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
@@ -249,7 +249,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp, m.balancing_type[p]],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
@@ -270,7 +270,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp, m.balancing_type[p]],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],

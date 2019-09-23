@@ -39,7 +39,7 @@ def add_module_specific_components(m, d):
     m.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_HORIZONS = \
         Set(dimen=2,
             rule=lambda mod:
-            set((g, mod.horizon[tmp, mod.balancing_type[g]]) for (g, tmp) in
+            set((g, mod.horizon[tmp, mod.balancing_type_project[g]]) for (g, tmp) in
                 mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.SHIFTABLE_LOAD_GENERIC_PROJECTS))
 
@@ -188,16 +188,16 @@ def power_delta_rule(mod, l, tmp):
     :return:
     """
     if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type[l]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type[l]]] == \
+        mod.horizon[tmp, mod.balancing_type_project[l]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[l]]] == \
             "linear":
         pass
     else:
         return (mod.Generic_Shiftable_Load_Shift_Up_MW[l, tmp]
                 - mod.Generic_Shiftable_Load_Shift_Down_MW[l, tmp]) - \
             (mod.Generic_Shiftable_Load_Shift_Up_MW[
-                 l, mod.previous_timepoint[tmp, mod.balancing_type[l]]
+                 l, mod.previous_timepoint[tmp, mod.balancing_type_project[l]]
              ]
                 - mod.Generic_Shiftable_Load_Shift_Down_MW[
-                 l, mod.previous_timepoint[tmp, mod.balancing_type[l]]
+                 l, mod.previous_timepoint[tmp, mod.balancing_type_project[l]]
              ])

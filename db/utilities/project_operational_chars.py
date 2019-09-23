@@ -229,7 +229,7 @@ def update_project_hydro_opchar(
                     c.execute(
                         """INSERT INTO inputs_project_hydro_operational_chars
                         (project, hydro_operational_chars_scenario_id, 
-                        balancing_type, horizon, period, 
+                        balancing_type_project, horizon, period, 
                         average_power_mwa, min_power_mw, max_power_mw)
                         VALUES ('{}', {}, '{}', {}, {}, {}, {}, {});""".format(
                             p, scenario, bt, h,
