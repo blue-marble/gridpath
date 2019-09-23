@@ -2,23 +2,19 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make plot of costs by period for a certain zone/stage
+Make plot of costs by period for a certain scenario/zone/stage
 """
 
 from argparse import ArgumentParser
-from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
-from bokeh.plotting import figure
-from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
-from bokeh.palettes import cividis
 
 import pandas as pd
 import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_scenario_and_scenario_id
+from viz.common_functions import create_stacked_bar_plot, show_plot, \
+    get_scenario_and_scenario_id, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -26,44 +22,27 @@ def parse_arguments(arguments):
 
     :return:
     """
-    parser = ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument("--database",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+    parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
-    parser.add_argument("--load_zone",
+    parser.add_argument("--load_zone", required=True, type=str,
                         help="The name of the load zone. Required.")
-    parser.add_argument("--stage", default=1,
+    parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
-    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
-    parser.add_argument("--show",
-                        default=False, action="store_true",
-                        help="Show and save figure to "
-                             "results/figures directory "
-                             "under scenario directory.")
-    parser.add_argument("--return_json",
-                        default=False, action="store_true",
-                        help="Return plot as a json file."
-                        )
+
     # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
 
 
-def get_costs(c, scenario_id, load_zone, stage):
+def get_plotting_data(conn, scenario_id, load_zone, stage):
     """
-    Get costs results
-    :param c:
+    Get costs results by period and component for a given
+    scenario/load_zone/stage.
+    :param conn:
     :param scenario_id:
     :param load_zone:
     :param stage:
@@ -158,123 +137,29 @@ def get_costs(c, scenario_id, load_zone, stage):
         USING (scenario_id, period)
         ;"""
 
-    costs = c.execute(sql, (scenario_id, stage, load_zone,
-                            scenario_id, stage, load_zone,
-                            scenario_id, stage, load_zone,
-                            scenario_id, stage, load_zone,
-                            scenario_id, stage, load_zone,
-                            scenario_id, stage, load_zone)
-                      )
-
-    return costs
-
-
-def create_data_df(c, scenario_id, load_zone, stage):
-    """
-    Get costs results and put into df
-    :param c:
-    :param scenario_id:
-    :param load_zone:
-    :param stage:
-    :return:
-    """
-
-    costs = get_costs(c, scenario_id, load_zone, stage)
-
-    df = pd.DataFrame(
-        data=costs.fetchall(),
-        columns=[n[0] for n in costs.description]
+    df = pd.read_sql(
+        sql,
+        con=conn,
+        params=(scenario_id, stage, load_zone,
+                scenario_id, stage, load_zone,
+                scenario_id, stage, load_zone,
+                scenario_id, stage, load_zone,
+                scenario_id, stage, load_zone,
+                scenario_id, stage, load_zone)
     )
 
-    # Set index to period and change index type from int to string
-    # (required for categorical bar chart)
-    df.set_index("period", inplace=True)
-    df.index = df.index.map(str)
-
-    # For Testing:
-    # df = pd.DataFrame(
-    #     index=["2018", "2020"],
-    #     data=[[0, 3000, 500, 1500],
-    #           [0, 6000, 4500, 2300]],
-    #     columns=["Biomass", "Hydro", "Solar", "Wind"]
-    # )
-    # df.index.name = "period"
+    # Melt dataframe from wide format to long
+    # (create_stacked_bar_plot requires un-pivoted dataframe)
+    df = pd.melt(
+        df,
+        id_vars=['period'],
+        value_vars=['Capacity_Additions', 'Fuel', 'Variable_OM',
+                    'Startups', 'Shutdowns', 'Hurdle_Rates'],
+        var_name='Cost Component',
+        value_name='Cost ($MM)'
+    )
 
     return df
-
-
-def create_plot(df, title, ylimit=None):
-    """
-
-    :param df:
-    :param title: string, plot title
-    :param ylimit: float/int, upper limit of y-axis; optional
-    :return:
-    """
-    # TODO: handle empty dataframe (will give bokeh warning)
-
-    # Set up data source
-    source = ColumnDataSource(data=df)
-
-    # Determine column types for plotting, legend and colors
-    # Order of stacked_cols will define order of stacked areas in chart
-    stacked_cols = list(df.columns)
-
-    # Stacked Area Colors
-    colors = cividis(len(stacked_cols))
-
-    # Set up the figure
-    plot = figure(
-        plot_width=800, plot_height=500,
-        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
-        title=title,
-        x_range=df.index.values
-        # sizing_mode="scale_both"
-    )
-
-    # Add stacked area chart to plot
-    area_renderers = plot.vbar_stack(
-        stackers=stacked_cols,
-        x="period",
-        source=source,
-        color=colors,
-        width=0.5,
-    )
-
-    # Keep track of legend items
-    legend_items = [(y, [area_renderers[i]]) for i, y in enumerate(stacked_cols)
-                    if df[y].mean() > 0]
-
-    # Add Legend
-    legend = Legend(items=legend_items)
-    plot.add_layout(legend, 'right')
-    plot.legend[0].items.reverse()  # Reverse legend to match stacked order
-    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
-    # Note: Doesn't rescale the graph down, simply hides the area
-    # Note2: There's currently no way to auto-size legend based on graph size(?)
-    # except for maybe changing font size automatically?
-    show_hide_legend(plot=plot)  # Hide legend on double click
-
-    # Format Axes (labels, number formatting, range, etc.)
-    plot.xaxis.axis_label = "Period"
-    plot.yaxis.axis_label = "Cost ($MM)"
-    plot.yaxis.formatter = NumeralTickFormatter(format="$0,0")
-    plot.y_range.end = ylimit  # will be ignored if ylimit is None
-
-    # Add HoverTools for stacked bars/areas
-    for r in area_renderers:
-        category = r.name
-        hover = HoverTool(
-            tooltips=[
-                ("Period", "@period"),
-                ("Cost Category", category),
-                ("Cost", "@%s{$0,0} MM" % category)
-            ],
-            renderers=[r],
-            toggleable=False)
-        plot.add_tools(hover)
-
-    return plot
 
 
 def main(args=None):
@@ -301,16 +186,20 @@ def main(args=None):
     plot_name = "CostPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.stage)
 
-    df = create_data_df(
-        c=c,
+    df = get_plotting_data(
+        conn=conn,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
         stage=parsed_args.stage
     )
 
-    plot = create_plot(
+    plot = create_stacked_bar_plot(
         df=df,
         title=plot_title,
+        y_axis_column="Cost ($MM)",
+        x_axis_column="period",
+        group_column="Cost Component",
+        column_mapper={"period": "Period"},
         ylimit=parsed_args.ylimit
     )
 

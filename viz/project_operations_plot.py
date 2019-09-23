@@ -23,7 +23,7 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from viz.common_functions import show_hide_legend, show_plot, \
-    get_scenario_and_scenario_id
+    get_scenario_and_scenario_id, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -31,53 +31,36 @@ def parse_arguments(arguments):
 
     :return:
     """
-    parser = ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument("--database",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+    parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
-    parser.add_argument("--project",
+    parser.add_argument("--project", required=True, type=str,
                         help="The name of the project. Required")
-    parser.add_argument("--period",
+    parser.add_argument("--period", required=True, type=int,
                         help="The desired modeling period. Required")
-    parser.add_argument("--stage", default=1,
+    parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
-    parser.add_argument("--horizon_start",
+    parser.add_argument("--horizon_start", type=int,
                         help="The desired starting horizon. Assumes horizons"
                              "are a set of increasing numbers. Optional")
-    parser.add_argument("--horizon_end",
+    parser.add_argument("--horizon_end", type=int,
                         help="The desired ending horizon. Assumes horizons are"
                              "a set of increasing numbers. Optional")
-    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
-    parser.add_argument("--show",
-                        default=False, action="store_true",
-                        help="Show and save figure to "
-                             "results/figures directory "
-                             "under scenario directory.")
-    parser.add_argument("--return_json",
-                        default=False, action="store_true",
-                        help="Return plot as a json file."
-                        )
+
     # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
 
 
-def get_data(c, scenario_id, project, period, stage,
-             horizon_start, horizon_end):
+def get_plotting_data(conn, scenario_id, project, period, stage,
+                      horizon_start, horizon_end):
     """
-
-    :param c:
+    Get operations by timepoint for a given scenario/project/period/stage and
+    horizon range.
+    :param conn:
     :param scenario_id:
     :param project:
     :param period:
@@ -87,11 +70,12 @@ def get_data(c, scenario_id, project, period, stage,
     :return:
     """
 
-    # TODO: this seems a clugey way to deal with this. It might make more sense
+    # TODO: this seems a kludgy way to deal with this. It might make more sense
     #    to harmonize the dispatch tables such that there is only one and just
     #    NULL out results that don't apply (e.g. commitment decisions for
     #    projects with no commitments
     # Get operational type to determine table
+    c = conn.cursor()
     sql = """SELECT operational_type from inputs_project_operational_chars
         INNER JOIN scenarios
         USING (project_operational_chars_scenario_id)
@@ -204,29 +188,10 @@ def get_data(c, scenario_id, project, period, stage,
         ORDER BY horizon, timepoint
         ;""".format(table, horizon_start_slice, horizon_end_slice)
 
-    return c.execute(sql, (scenario_id, project, period, stage))
-
-
-def create_data_df(c, scenario_id, project, period, stage,
-                   horizon_start, horizon_end):
-    """
-    Get data into pandas DataFrame
-    :param c:
-    :param scenario_id:
-    :param project
-    :param period:
-    :param stage:
-    :param horizon_start:
-    :param horizon_end:
-    :return:
-    """
-
-    data = get_data(c, scenario_id, project, period, stage,
-                    horizon_start, horizon_end)
-
-    df = pd.DataFrame(
-        data=data.fetchall(),
-        columns=[n[0] for n in data.description]
+    df = pd.read_sql(
+        sql,
+        con=conn,
+        params=(scenario_id, project, period, stage)
     )
 
     # Add additional info for hovers
@@ -412,8 +377,8 @@ def main(args=None):
 
     plot_title += appendix
 
-    df = create_data_df(
-        c=c,
+    df = get_plotting_data(
+        conn=conn,
         scenario_id=scenario_id,
         project=parsed_args.project,
         period=parsed_args.period,
