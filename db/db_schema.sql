@@ -559,6 +559,7 @@ lifetime_yrs INTEGER,
 annualized_real_cost_per_kw_yr FLOAT,
 annualized_real_cost_per_kwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
+binary_build_size_mw, -- only used for binary build types
 supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, period),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
@@ -2092,6 +2093,22 @@ technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
+new_build_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_new_binary_build_generator;
+CREATE TABLE results_project_capacity_new_binary_build_generator (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+new_build_binary INTEGER,
 new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );

@@ -1,0 +1,15 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_binary_solar* #####
+
+### CAPACITY RESULTS ###
+
+--> New Binary Build Generation Capacity <--
+                              New Binary Build Capacity (MW)
+load_zone technology  period                                
+Zone1     unspecified 2020                                10
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                   31            100
