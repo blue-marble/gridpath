@@ -1161,10 +1161,10 @@ def import_module_specific_results_to_database(
                 """INSERT INTO temp_results_project_dispatch_capacity_commit"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    balancing_type_project, horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, 
-                    power_mw, committed_mw, committed_units)
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint, 
+                    load_zone, technology, power_mw, committed_mw, 
+                    committed_units)
                     VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {}, 
                     '{}', '{}', {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
@@ -1184,9 +1184,10 @@ def import_module_specific_results_to_database(
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         committed_mw, committed_units)
         SELECT
-        scenario_id, project, period, subproblem_id, stage_id, balancing_type_project,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw, committed_units
+        scenario_id, project, period, subproblem_id, stage_id,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
+        committed_mw, committed_units
         FROM temp_results_project_dispatch_capacity_commit"""
         + str(scenario_id) +
         """

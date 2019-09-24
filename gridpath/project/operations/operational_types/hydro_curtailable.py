@@ -737,8 +737,8 @@ def import_module_specific_results_to_database(
                 temp_results_project_dispatch_hydro_curtailable"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    balancing_type_project, horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint, 
                     load_zone, technology, power_mw, scheduled_curtailment_mw)
                     VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
                     '{}', '{}', {}, {});""".format(

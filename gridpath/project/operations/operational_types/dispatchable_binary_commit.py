@@ -1241,19 +1241,17 @@ def import_module_specific_results_to_database(
                 """INSERT INTO temp_results_project_dispatch_binary_commit"""
                 + str(scenario_id) + """ 
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    balancing_type_project, horizon, timepoint, timepoint_weight, 
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, 
-                    power_mw, committed_mw, committed_units, 
-                    started_units, stopped_units)
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint, 
+                    load_zone, technology, power_mw, committed_mw, 
+                    committed_units, started_units, stopped_units)
                     VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {}, '{}', 
                     '{}', {}, {}, {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    balancing_type_project, horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology,
-                    power_mw, committed_mw, committed_units,
-                    started_units, stopped_units
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint,
+                    load_zone, technology, power_mw, committed_mw,
+                    committed_units, started_units, stopped_units
                 )
             )
     db.commit()
@@ -1261,14 +1259,14 @@ def import_module_specific_results_to_database(
     # Insert sorted results into permanent results table
     c.execute(
         """INSERT INTO results_project_dispatch_binary_commit
-        (scenario_id, project, period, subproblem_id, stage_id, balancing_type_project,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, 
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units)
         SELECT
-        scenario_id, project, period, subproblem_id, stage_id, balancing_type_project,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, 
+        scenario_id, project, period, subproblem_id, stage_id,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units
         FROM temp_results_project_dispatch_binary_commit"""
         + str(scenario_id) +
