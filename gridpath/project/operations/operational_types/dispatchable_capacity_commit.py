@@ -1056,7 +1056,7 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_capacity_commit.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project, "
+        writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
@@ -1180,7 +1180,7 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_capacity_commit
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, balancing_type_project, timepoint, timepoint_weight, 
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         committed_mw, committed_units)
         SELECT
