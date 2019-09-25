@@ -1,0 +1,10 @@
+##### SUMMARY RESULTS FOR SCENARIO *2horizons_w_hydro_w_balancing_types* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                 60.0          100.0

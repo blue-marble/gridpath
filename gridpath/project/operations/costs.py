@@ -137,8 +137,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Startup_Cost[g, tmp] \
@@ -169,8 +169,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
@@ -199,7 +199,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "costs_operations_variable_om.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "horizon_weight",
+            ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "variable_om_cost"]
         )
@@ -207,9 +207,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -220,7 +220,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "costs_operations_fuel.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "horizon_weight",
+            ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "fuel_cost"]
         )
@@ -228,9 +228,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -241,7 +241,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "costs_operations_startup.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "horizon_weight",
+            ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "startup_cost"]
         )
@@ -249,9 +249,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -262,7 +262,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "costs_operations_shutdown.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "horizon_weight",
+            ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "shutdown_cost"]
         )
@@ -270,9 +270,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
@@ -321,7 +321,7 @@ def import_results_into_database(
         stage_id INTEGER,
         horizon INTEGER,
         timepoint INTEGER,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         load_zone VARCHAR(32),
         technology VARCHAR(32),
@@ -343,7 +343,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -353,13 +353,13 @@ def import_results_into_database(
                 temp_results_project_costs_operations_variable_om"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, subproblem_id, stage_id,
-                horizon, timepoint, horizon_weight,
+                horizon, timepoint, timepoint_weight,
                 number_of_hours_in_timepoint,
                 load_zone, technology, variable_om_cost)
                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}',
                 {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, variable_om_cost
                 )
@@ -370,11 +370,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_costs_operations_variable_om
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, variable_om_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, variable_om_cost
         FROM temp_results_project_costs_operations_variable_om"""
         + str(scenario_id) +
@@ -419,7 +419,7 @@ def import_results_into_database(
             stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -441,7 +441,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -451,13 +451,13 @@ def import_results_into_database(
                 temp_results_project_costs_operations_fuel"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, fuel_cost)
                     VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
                     '{}', '{}', {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, fuel_cost
                 )
@@ -468,11 +468,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_costs_operations_fuel
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel_cost
         FROM temp_results_project_costs_operations_fuel"""
         + str(scenario_id) +
@@ -517,7 +517,7 @@ def import_results_into_database(
             stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -539,7 +539,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -549,13 +549,13 @@ def import_results_into_database(
                 temp_results_project_costs_operations_startup"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, startup_cost)
                     VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
                     '{}', '{}', {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, startup_cost
                 )
@@ -566,11 +566,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_costs_operations_startup
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost
         FROM temp_results_project_costs_operations_startup"""
         + str(scenario_id) +
@@ -614,7 +614,7 @@ def import_results_into_database(
             stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -636,7 +636,7 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             technology = row[7]
@@ -646,13 +646,13 @@ def import_results_into_database(
                 temp_results_project_costs_operations_shutdown"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, shutdown_cost)
                     VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
                     '{}', '{}', {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, shutdown_cost
                 )
@@ -663,11 +663,11 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_costs_operations_shutdown
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, shutdown_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, shutdown_cost
         FROM temp_results_project_costs_operations_shutdown"""
         + str(scenario_id) +

@@ -159,9 +159,16 @@ def get_power_by_tech_results(c, scenario_id, load_zone, horizon, stage):
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND timepoint IN (
+        SELECT DISTINCT timepoint
+        FROM results_project_dispatch_all
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
         AND horizon = {}
+        AND stage_id = {})
         AND stage_id = {};""".format(
-            scenario_id, load_zone, horizon, stage
+            scenario_id, load_zone, scenario_id, load_zone, horizon, stage,
+        stage
         )
 
     power_by_technology_list = c.execute(query).fetchall()
@@ -210,9 +217,16 @@ def get_variable_curtailment_results(
             FROM results_project_curtailment_variable
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND timepoint IN (
+            SELECT DISTINCT timepoint
+            FROM results_project_dispatch_all
+            WHERE scenario_id = {}
+            AND load_zone = '{}'
             AND horizon = {}
+            AND stage_id = {})
             AND stage_id = {};""".format(
-                scenario_id, load_zone, horizon, stage
+                scenario_id, load_zone, scenario_id, load_zone, horizon,
+                stage, stage
             )
 
     curtailment = [i[0] for i in c.execute(query).fetchall()]
@@ -234,9 +248,16 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, horizon, stage):
             FROM results_project_curtailment_hydro
             WHERE scenario_id = {}
             AND load_zone = '{}'
+            AND timepoint IN (
+            SELECT DISTINCT timepoint
+            FROM results_project_dispatch_all
+            WHERE scenario_id = {}
+            AND load_zone = '{}'
             AND horizon = {}
+            AND stage_id = {})
             AND stage_id = {};""".format(
-                scenario_id, load_zone, horizon, stage
+                scenario_id, load_zone, scenario_id, load_zone, horizon,
+                stage, stage
             )
 
     curtailment = [i[0] for i in c.execute(query).fetchall()]
@@ -259,9 +280,16 @@ def get_imports_exports_results(c, scenario_id, load_zone, horizon, stage):
         FROM results_transmission_imports_exports
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND timepoint IN (
+        SELECT DISTINCT timepoint
+        FROM results_project_dispatch_all
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
         AND horizon = {}
+        AND stage_id = {})
         AND stage_id = {};""".format(
-            scenario_id, load_zone, horizon, stage
+            scenario_id, load_zone, scenario_id, load_zone, horizon,
+            stage, stage
         )
     ).fetchall()
 
@@ -287,9 +315,16 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
         FROM results_system_load_balance
         WHERE scenario_id = {}
         AND load_zone = '{}'
+        AND timepoint IN (
+        SELECT DISTINCT timepoint
+        FROM results_project_dispatch_all
+        WHERE scenario_id = {}
+        AND load_zone = '{}'
         AND horizon = {}
+        AND stage_id = {})
         AND stage_id = {};""".format(
-            scenario_id, load_zone, horizon, stage
+            scenario_id, load_zone, scenario_id, load_zone, horizon,
+            stage, stage
         )
     ).fetchall()
 

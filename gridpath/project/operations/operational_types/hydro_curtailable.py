@@ -27,18 +27,17 @@ def add_module_specific_components(m, d):
     *hydro_curtailable_ramp_down_rate* \ :sub:`chg`\ -- the project's downward
     ramp rate limit, defined as a fraction of its capacity per minute \n
     :param m:
+    :param d:
     :return:
     """
     # Sets and params
     m.HYDRO_CURTAILABLE_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=
-        generator_subset_init("operational_type",
-                              "hydro_curtailable")
+        generator_subset_init("operational_type", "hydro_curtailable")
     )
 
-    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = \
-        Set(dimen=2)
+    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = Set(dimen=2)
 
     m.hydro_curtailable_average_power_mwa = \
         Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
@@ -119,7 +118,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_curtailable_max_power_mw[g, mod.horizon[tmp]]
+            <= mod.hydro_curtailable_max_power_mw[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
     m.Hydro_Curtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -136,7 +136,8 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_curtailable_min_power_mw[g, mod.horizon[tmp]]
+            >= mod.hydro_curtailable_min_power_mw[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
     m.Hydro_Curtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -158,29 +159,33 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp up the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_up_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
-             >= 1:
+                * mod.number_of_hours_in_timepoint[
+                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    - mod.Hydro_Curtailable_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[
+                            tmp, mod.balancing_type_project[g]]]) \
                 <= \
                 mod.hydro_curtailable_ramp_up_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp]] \
+                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Up_Constraint = \
@@ -204,29 +209,32 @@ def add_module_specific_components(m, d):
         :param tmp: 
         :return: 
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         # If you can ramp down the the total project's capacity within the
         # previous timepoint, skip the constraint (it won't bind)
         elif mod.hydro_curtailable_ramp_down_rate[g] * 60 \
-             * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]] \
-             >= 1:
+            * mod.number_of_hours_in_timepoint[
+            mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                >= 1:
             return Constraint.Skip
         else:
             return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
                     + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
                     - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp]) \
                 - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    + mod.Hydro_Curtailable_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
                 >= \
                 - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
                 * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp]] \
+                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
                 * mod.Capacity_MW[g, mod.period[tmp]] \
                 * mod.availability_derate[g, tmp]
     m.Hydro_Curtailable_Ramp_Down_Constraint = \
@@ -347,17 +355,19 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         pass
     else:
         return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
                 mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
                (mod.Hydro_Curtailable_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                 ]
                 + mod.Hydro_Curtailable_Curtail_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                 ])
 
 
@@ -485,8 +495,9 @@ def export_module_specific_results(mod, d,
                            "dispatch_hydro_curtailable.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type_project", "horizon",
+                         "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw"
                          ])
@@ -495,9 +506,10 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
+                mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
@@ -524,6 +536,8 @@ def get_module_specific_inputs_from_database(
     # Select only horizons on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
+    # TODO: should we ensure that the project balancing type and the horizon
+    #  length type match (e.g. by joining on them being equal here)
     hydro_chars = c.execute(
         """SELECT project, horizon, average_power_mwa, min_power_mw,
         max_power_mw
@@ -685,9 +699,10 @@ def import_module_specific_results_to_database(
             period INTEGER,
             subproblem_id INTEGER,
             stage_id INTEGER,
+            balancing_type_project VARCHAR(64),
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -708,26 +723,27 @@ def import_module_specific_results_to_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            horizon_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[7]
-            technology = row[6]
-            power_mw = row[8]
-            scheduled_curtailment_mw = row[9]
+            balancing_type_project = row[2]
+            horizon = row[3]
+            timepoint = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load_zone = row[8]
+            technology = row[7]
+            power_mw = row[9]
+            scheduled_curtailment_mw = row[10]
             c.execute(
                 """INSERT INTO
                 temp_results_project_dispatch_hydro_curtailable"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    horizon, timepoint, horizon_weight,
-                    number_of_hours_in_timepoint,
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint, 
                     load_zone, technology, power_mw, scheduled_curtailment_mw)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
+                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
                     '{}', '{}', {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    balancing_type_project, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, scheduled_curtailment_mw
                 )
@@ -738,11 +754,13 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_hydro_curtailable
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw
         FROM temp_results_project_dispatch_hydro_curtailable"""
         + str(scenario_id) +
@@ -773,7 +791,6 @@ def process_module_specific_results(db, c, subscenarios):
 
     print("aggregate hydro curtailment")
 
-
     # Delete old aggregated hydro curtailment results
     c.execute(
         """DELETE FROM results_project_curtailment_hydro 
@@ -786,19 +803,26 @@ def process_module_specific_results(db, c, subscenarios):
     c.execute(
         """INSERT INTO results_project_curtailment_hydro
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, 
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
+        load_zone, scheduled_curtailment_mw
+        FROM (
+        SELECT scenario_id, subproblem_id, stage_id, period, horizon, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, load_zone, 
         sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-        FROM results_project_dispatch_hydro_curtailable
+        FROM results_project_dispatch_hydro
+        GROUP BY subproblem_id, stage_id, timepoint, load_zone
+        ) as agg_curtailment_tbl
+        JOIN (
+        SELECT subproblem_id, period, timepoint, month, hour_of_day
+        FROM inputs_temporal_timepoints
+        ) as tmp_info_tbl
+        USING (subproblem_id, period, timepoint)
         WHERE scenario_id = {}
-        GROUP BY subproblem_id, stage_id, timepoint, 
-        load_zone
-        ORDER BY subproblem_id, stage_id, timepoint, 
-        load_zone;""".format(
+        ORDER BY subproblem_id, stage_id, load_zone, timepoint;""".format(
             subscenarios.SCENARIO_ID,
         )
     )

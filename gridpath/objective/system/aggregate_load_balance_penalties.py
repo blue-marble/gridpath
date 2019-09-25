@@ -38,7 +38,7 @@ def add_model_components(m, d):
                     mod.Overgeneration_MW[z, tmp]
                     * mod.overgeneration_penalty_per_mw[z])
                    * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
+                   * mod.timepoint_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)

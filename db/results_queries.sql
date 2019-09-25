@@ -33,7 +33,7 @@ LEFT JOIN scenarios USING (scenario_id)
 
 -- Annual generation by scenario, project, and period
 SELECT scenario_id, scenario_name, project, technology, period,
-sum(power_mw * horizon_weight * number_of_hours_in_timepoint ) as annual_mwh
+sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
 FROM results_project_dispatch_capacity_commit
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
@@ -48,7 +48,7 @@ SELECT scenario_id, scenario_name, project, technology, period, annual_mwh,
 capacity_mw, annual_mwh/(8760*capacity_mw) as cap_factor
 FROM
 (SELECT scenario_id, scenario_name, project, technology, period,
-sum(power_mw * horizon_weight * number_of_hours_in_timepoint ) as annual_mwh
+sum(power_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
 FROM results_project_dispatch_all
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
@@ -70,11 +70,11 @@ USING (scenario_id, scenario_name, project, technology, period)
 -- operational-type-with-commitment table with a UNION in the on-the-fly
 -- 'commitment_table' (like the commented-out example with the
 -- results_project_dispatch_hybridized table)
-select scenario_id, project, period, horizon, timepoint, horizon_weight,
+select scenario_id, project, period, horizon, timepoint, timepoint_weight,
 commitment, power_mw, spin_mw, reg_up_mw, reg_down_mw, lf_up_mw, lf_down_mw,
  frq_resp_mw
 from
-(select scenario_id, project, period, horizon, timepoint, horizon_weight, project, power_mw
+(select scenario_id, project, period, horizon, timepoint, timepoint_weight, project, power_mw
 from results_project_dispatch_all
 -- where project in ()
 ) as disp_tbl
@@ -119,7 +119,7 @@ SELECT scenario_id, scenario_name, project, technology, period, annual_mwh,
 capacity_mw, annual_mwh/(8760*capacity_mw) as cap_factor
 FROM
 (SELECT scenario_id, scenario_name, project, technology, period,
-sum(reserve_provision_mw * horizon_weight * number_of_hours_in_timepoint ) as annual_mwh
+sum(reserve_provision_mw * timepoint_weight * number_of_hours_in_timepoint ) as annual_mwh
 FROM results_project_frequency_response
 JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
@@ -139,20 +139,20 @@ USING (scenario_id, scenario_name, project, technology, period)
 -- Project startups by scenario project, and horizon (headers assume horizon
 -- is a day)
 -- NOTE: this is a bit of a hack; we should export plant starts directly
-select scenario_id, scenario_name, project, period, horizon, horizon_weight,
+select scenario_id, scenario_name, project, period, horizon, timepoint_weight,
 technology, daily_startup_cost, startup_cost_per_mw, capacity_mw,
 unit_size_mw,
 daily_startup_cost/(startup_cost_per_mw * capacity_mw) as daily_plant_starts,
 daily_startup_cost/(startup_cost_per_mw * unit_size_mw) as daily_unit_starts,
-horizon_weight * daily_startup_cost/(startup_cost_per_mw * capacity_mw)
+timepoint_weight * daily_startup_cost/(startup_cost_per_mw * capacity_mw)
 as weighted_plant_starts,
-horizon_weight * daily_startup_cost/(startup_cost_per_mw * unit_size_mw)
+timepoint_weight * daily_startup_cost/(startup_cost_per_mw * unit_size_mw)
 as weighted_unit_starts
 from
-(select scenario_id, project, period, horizon, horizon_weight, technology,
+(select scenario_id, project, period, horizon, timepoint_weight, technology,
 daily_startup_cost
 from (
-select scenario_id, project, period, horizon, horizon_weight, technology,
+select scenario_id, project, period, horizon, timepoint_weight, technology,
 sum(startup_cost) as daily_startup_cost
 from results_project_costs_operations_startup
 -- where load_zone = 'CAISO'
@@ -176,7 +176,7 @@ join scenarios using (scenario_id)
 
 -- Generation by scenario, load_zone, period, and technology
 SELECT scenario_id, scenario_name, load_zone, period, technology,
-sum(horizon_weight*power_mw) as mwh
+sum(timepoint_weight*power_mw) as mwh
 FROM results_project_dispatch_all
 LEFT JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, load_zone, period, technology
@@ -185,7 +185,7 @@ ORDER BY scenario_id, load_zone, period, technology
 
 -- Net imports by scenario, load_zone, and period
 select scenario_id, load_zone, period,
-sum(horizon_weight * net_imports_mw) as net imports
+sum(timepoint_weight * net_imports_mw) as net imports
 from results_transmission_imports_exports
 --where load_zone = 'CAISO'
 group by scenario_id, load_zone, period
@@ -206,31 +206,31 @@ FROM
 FROM  results_project_costs_capacity
 GROUP BY scenario_id, period) AS cap_costs
 JOIN
-(SELECT scenario_id, period, sum(fuel_cost * horizon_weight * number_of_hours_in_timepoint) AS fuel_cost
+(SELECT scenario_id, period, sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) AS fuel_cost
 FROM
 results_project_costs_operations_fuel
 GROUP BY scenario_id, period) AS fuel_costs
 USING (scenario_id, period)
 JOIN
-(SELECT scenario_id, period, sum(variable_om_cost * horizon_weight * number_of_hours_in_timepoint) AS variable_om_cost
+(SELECT scenario_id, period, sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) AS variable_om_cost
 FROM
 results_project_costs_operations_variable_om
 GROUP BY scenario_id, period) AS variable_om_costs
 USING (scenario_id, period)
 JOIN
-(SELECT scenario_id, period, sum(startup_cost * horizon_weight * number_of_hours_in_timepoint) AS startup_cost
+(SELECT scenario_id, period, sum(startup_cost * timepoint_weight * number_of_hours_in_timepoint) AS startup_cost
 FROM
 results_project_costs_operations_startup
 GROUP BY scenario_id, period) AS startup_costs
 USING (scenario_id, period)
 JOIN
-(SELECT scenario_id, period, sum(shutdown_cost * horizon_weight * number_of_hours_in_timepoint) AS shutdown_cost
+(SELECT scenario_id, period, sum(shutdown_cost * timepoint_weight * number_of_hours_in_timepoint) AS shutdown_cost
 FROM
 results_project_costs_operations_shutdown
 GROUP BY scenario_id, period) AS shutdown_costs
 USING (scenario_id, period)
 JOIN
-(SELECT scenario_id, period, sum((hurdle_cost_positive_direction+hurdle_cost_negative_direction) * horizon_weight * number_of_hours_in_timepoint) AS hurdle_cost
+(SELECT scenario_id, period, sum((hurdle_cost_positive_direction+hurdle_cost_negative_direction) * timepoint_weight * number_of_hours_in_timepoint) AS hurdle_cost
 FROM
 results_transmission_hurdle_costs
 GROUP BY scenario_id, period) AS hurdle_costs

@@ -268,16 +268,20 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Up_Startup_MW[g, tmp] \
                 <= \
                 (mod.Commit_Capacity_MW[g, tmp]
-                 - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
+                 - mod.Commit_Capacity_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
                 * mod.dispcapcommit_startup_plus_ramp_up_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
     m.Ramp_Up_Off_to_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_off_to_on_constraint_rule
@@ -310,15 +314,19 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Up_When_On_MW[g, tmp] \
                 <= \
-                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                mod.Commit_Capacity_MW[
+                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
                 * mod.dispcapcommit_ramp_up_when_on_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
     m.Ramp_Up_When_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_on_to_on_constraint_rule
@@ -338,17 +346,20 @@ def add_module_specific_components(m, d):
         :return:
         """
         # TODO: check behavior more carefully (same for ramp down)
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Up_When_On_MW[g, tmp] \
                 <= \
-                mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                mod.Commit_Capacity_MW[
+                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
                 - (mod.Provide_Power_DispCapacityCommit_MW[
-                    g, mod.previous_timepoint[tmp]]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    - mod.DispCapCommit_Downwards_Reserves_MW[
-                    g, mod.previous_timepoint[tmp]])
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]])
     m.Ramp_Up_When_On_Headroom_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_up_on_to_on_headroom_constraint_rule
@@ -376,18 +387,22 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # start up the full capacity and ramp up the full operable range
         # between timepoints, constraint won't bind, so skip
         elif (mod.dispcapcommit_startup_plus_ramp_up_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
               >= 1
               and
               mod.dispcapcommit_ramp_up_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
               >= (1 - mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
             return Constraint.Skip
@@ -395,9 +410,10 @@ def add_module_specific_components(m, d):
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                     + mod.DispCapCommit_Upwards_Reserves_MW[g, tmp]) \
                 - (mod.Provide_Power_DispCapacityCommit_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    - mod.DispCapCommit_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                   ) \
                 <= \
                 mod.Ramp_Up_Startup_MW[g, tmp] \
                 + mod.Ramp_Up_When_On_MW[g, tmp]
@@ -424,16 +440,20 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 >= \
                 (mod.Commit_Capacity_MW[g, tmp]
-                 - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]) \
+                 - mod.Commit_Capacity_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
                 * mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
     m.Ramp_Down_On_to_Off_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_on_to_off_constraint_rule
@@ -449,15 +469,18 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.Ramp_Down_When_On_MW[g, tmp] \
                 >= \
                 mod.Commit_Capacity_MW[g, tmp] \
                 * (-mod.dispcapcommit_ramp_down_when_on_rate[g]) * 60 \
-                * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+                * mod.number_of_hours_in_timepoint[
+                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
     m.Ramp_Down_When_On_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_on_to_on_constraint_rule
@@ -476,8 +499,10 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return -mod.Ramp_Down_When_On_MW[g, tmp] \
@@ -510,18 +535,22 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         # If ramp rate limits, adjusted for timepoint duration, allow you to
         # shut down the full capacity and ramp down the full operable range
         # between timepoints, constraint won't bind, so skip
         elif (mod.dispcapcommit_shutdown_plus_ramp_down_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
               >= 1
               and
               mod.dispcapcommit_ramp_down_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[tmp]]
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
               >= (1-mod.disp_cap_commit_min_stable_level_fraction[g])
               ):
             return Constraint.Skip
@@ -529,9 +558,10 @@ def add_module_specific_components(m, d):
             return (mod.Provide_Power_DispCapacityCommit_MW[g, tmp]
                     - mod.DispCapCommit_Downwards_Reserves_MW[g, tmp]) \
                 - (mod.Provide_Power_DispCapacityCommit_MW[
-                        g, mod.previous_timepoint[tmp]]
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
                    + mod.DispCapCommit_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp]]) \
+                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                   ) \
                 >= \
                 mod.Ramp_Down_Shutdown_MW[g, tmp] \
                 + mod.Ramp_Down_When_On_MW[g, tmp]
@@ -560,13 +590,16 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.DispCapCommit_Startup_MW[g, tmp] \
                 >= mod.Commit_Capacity_MW[g, tmp] \
-                - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
+                - mod.Commit_Capacity_MW[
+                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
 
     m.DispCapCommit_Startup_Constraint = Constraint(
         m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -582,12 +615,15 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
             return Constraint.Skip
         else:
             return mod.DispCapCommit_Shutdown_MW[g, tmp] \
-                   >= mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]] \
+                   >= mod.Commit_Capacity_MW[
+                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
                    - mod.Commit_Capacity_MW[g, tmp]
 
     m.DispCapCommit_Shutdown_Constraint = Constraint(
@@ -616,7 +652,7 @@ def add_module_specific_components(m, d):
         capacities.
         """
         relevant_tmps = determine_relevant_timepoints(
-            mod, tmp, mod.dispcapcommit_min_up_time_hours[g]
+            mod, g, tmp, mod.dispcapcommit_min_up_time_hours[g]
         )
 
         # If only the current timepoint is determined to be relevant,
@@ -663,7 +699,7 @@ def add_module_specific_components(m, d):
         """
 
         relevant_tmps = determine_relevant_timepoints(
-            mod, tmp, mod.dispcapcommit_min_down_time_hours[g]
+            mod, g, tmp, mod.dispcapcommit_min_down_time_hours[g]
         )
 
         capacity_turned_off_min_down_time_or_less_hours_ago = \
@@ -827,12 +863,15 @@ def startup_shutdown_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         return None
     else:
         return mod.Commit_Capacity_MW[g, tmp] \
-         - mod.Commit_Capacity_MW[g, mod.previous_timepoint[tmp]]
+         - mod.Commit_Capacity_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -842,13 +881,15 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         pass
     else:
         return mod.Provide_Power_DispCapacityCommit_MW[g, tmp] - \
                mod.Provide_Power_DispCapacityCommit_MW[
-                   g, mod.previous_timepoint[tmp]
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                ]
 
 
@@ -1015,8 +1056,9 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_capacity_commit.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "committed_mw", "committed_units"
                          ])
@@ -1027,9 +1069,10 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
+                mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
@@ -1079,9 +1122,10 @@ def import_module_specific_results_to_database(
             period INTEGER,
             subproblem_id INTEGER,
             stage_id INTEGER,
+            balancing_type_project VARCHAR(64),
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),
             technology VARCHAR(32),
@@ -1103,27 +1147,28 @@ def import_module_specific_results_to_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            horizon_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[7]
-            technology = row[6]
-            power_mw = row[8]
-            committed_mw = row[9]
-            committed_units = row[10]
+            balancing_type_project = row[2]
+            horizon = row[3]
+            timepoint = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load_zone = row[8]
+            technology = row[7]
+            power_mw = row[9]
+            committed_mw = row[10]
+            committed_units = row[11]
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_capacity_commit"""
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id, 
-                    horizon, timepoint, horizon_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, 
-                    power_mw, committed_mw, committed_units)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
+                    balancing_type_project, horizon, timepoint,
+                    timepoint_weight, number_of_hours_in_timepoint, 
+                    load_zone, technology, power_mw, committed_mw, 
+                    committed_units)
+                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {}, 
                     '{}', '{}', {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    balancing_type_project, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology,
                     power_mw, committed_mw, committed_units
@@ -1135,12 +1180,14 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_capacity_commit
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw, committed_units)
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
+        committed_mw, committed_units)
         SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, committed_mw, committed_units
+        scenario_id, project, period, subproblem_id, stage_id,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
+        committed_mw, committed_units
         FROM temp_results_project_dispatch_capacity_commit"""
         + str(scenario_id) +
         """

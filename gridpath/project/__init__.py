@@ -116,6 +116,7 @@ def add_model_components(m, d):
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
+    m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
 
     # Variable O&M cost
     # TODO: all projects have this for now; is that what makes the most sense?
@@ -143,9 +144,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
-                             "operational_type", "variable_om_cost_per_mwh"),
+                             "operational_type", "variable_om_cost_per_mwh",
+                             "balancing_type_project"),
                      param=(m.load_zone, m.capacity_type,
-                            m.operational_type, m.variable_om_cost_per_mwh)
+                            m.operational_type, m.variable_om_cost_per_mwh,
+                            m.balancing_type_project)
                      )
 
     # Technology column is optional (default param value is 'unspecified')
@@ -172,7 +175,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     projects = c.execute(
-        """SELECT project, capacity_type, operational_type, technology,
+        """SELECT project, capacity_type, operational_type, 
+        balancing_type_project, technology,
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
@@ -192,7 +196,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         AND project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, operational_type, technology,
+        (SELECT project, operational_type, balancing_type_project, technology,
         fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
         startup_cost_per_mw, shutdown_cost_per_mw,
@@ -440,7 +444,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "operational_type", "technology",
+            ["project", "capacity_type", "operational_type",
+             "balancing_type_project", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",
              "startup_cost_per_mw", "shutdown_cost_per_mw",

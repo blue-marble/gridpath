@@ -29,7 +29,7 @@ def add_model_components(m, d):
             (mod.Hurdle_Cost_Positive_Direction[tx, tmp] +
              mod.Hurdle_Cost_Negative_Direction[tx, tmp])
             * mod.number_of_hours_in_timepoint[tmp]
-            * mod.horizon_weight[mod.horizon[tmp]]
+            * mod.timepoint_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
             for (tx, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)

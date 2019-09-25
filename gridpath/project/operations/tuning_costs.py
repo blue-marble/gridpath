@@ -67,8 +67,8 @@ def add_model_components(m, d):
             mod.ramp_tuning_cost if gen_op_type in [
                 "hydro_curtailable", "hydro_noncurtailable", "storage_generic"
             ] else 0
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         elif tuning_cost == 0:
             return Constraint.Skip
@@ -93,8 +93,8 @@ def add_model_components(m, d):
             mod.ramp_tuning_cost \
             if gen_op_type in ["hydro_curtailable", "hydro_noncurtailable"] \
             else 0
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         elif tuning_cost == 0:
             return Constraint.Skip

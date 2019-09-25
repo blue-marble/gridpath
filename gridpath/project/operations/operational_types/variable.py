@@ -321,8 +321,10 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         pass
     else:
         return \
@@ -330,9 +332,15 @@ def power_delta_rule(mod, g, tmp):
              * mod.availability_derate[g, tmp]
              * mod.cap_factor[g, tmp]) - \
             (mod.Capacity_MW[
-                 g, mod.period[mod.previous_timepoint[tmp]]
-             ] * mod.availability_derate[g, mod.previous_timepoint[tmp]]
-             * mod.cap_factor[g, mod.previous_timepoint[tmp]]
+                 g, mod.period[
+                     mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+                 ]
+             ] * mod.availability_derate[
+                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+            ]
+             * mod.cap_factor[
+                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+             ]
              )
 
 
@@ -422,8 +430,9 @@ def export_module_specific_results(mod, d,
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_variable.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type_project", "horizon",
+                         "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw",
                          "subhourly_curtailment_mw",
@@ -435,9 +444,10 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
+                mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
@@ -626,9 +636,10 @@ def import_module_specific_results_to_database(
         period INTEGER,
         subproblem_id INTEGER,
         stage_id INTEGER,
+        balancing_type_project VARCHAR(64),
         horizon INTEGER,
         timepoint INTEGER,
-        horizon_weight FLOAT,
+        timepoint_weight FLOAT,
         number_of_hours_in_timepoint FLOAT,
         load_zone VARCHAR(32),
         technology VARCHAR(32),
@@ -651,30 +662,30 @@ def import_module_specific_results_to_database(
         for row in reader:
             project = row[0]
             period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            horizon_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[7]
-            technology = row[6]
-            power_mw = row[8]
-            scheduled_curtailment_mw = row[9]
-            subhourly_curtailment_mw = row[10]
-            subhourly_energy_delivered_mw = row[11]
-            total_curtailment_mw = row[12]
+            balancing_type_project = row[2]
+            horizon = row[3]
+            timepoint = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load_zone = row[8]
+            technology = row[7]
+            power_mw = row[9]
+            scheduled_curtailment_mw = row[10]
+            subhourly_curtailment_mw = row[11]
+            subhourly_energy_delivered_mw = row[12]
+            total_curtailment_mw = row[13]
             c.execute(
                 """INSERT INTO temp_results_project_dispatch_variable"""
                 + str(scenario_id) + """
                 (scenario_id, project, period, subproblem_id, stage_id,
-                horizon, timepoint, horizon_weight,
-                number_of_hours_in_timepoint,
-                load_zone, technology, power_mw, 
+                balancing_type_project, horizon, timepoint, timepoint_weight,
+                number_of_hours_in_timepoint, load_zone, technology, power_mw, 
                 scheduled_curtailment_mw, subhourly_curtailment_mw,
                 subhourly_energy_delivered_mw, total_curtailment_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
+                VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
                 '{}', '{}', {}, {}, {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    balancing_type_project, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw,
                     scheduled_curtailment_mw, subhourly_curtailment_mw,
@@ -687,14 +698,14 @@ def import_module_specific_results_to_database(
     c.execute(
         """INSERT INTO results_project_dispatch_variable
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, 
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         scheduled_curtailment_mw, subhourly_curtailment_mw,
         subhourly_energy_delivered_mw, total_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw,
+        balancing_type_project, horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, power_mw,
         scheduled_curtailment_mw, subhourly_curtailment_mw,
         subhourly_energy_delivered_mw, total_curtailment_mw
         FROM temp_results_project_dispatch_variable"""
@@ -724,7 +735,6 @@ def process_module_specific_results(db, c, subscenarios):
 
     print("aggregate variable curtailment")
 
-
     # Delete old aggregated variable curtailment results
     c.execute(
         """DELETE FROM results_project_curtailment_variable 
@@ -737,19 +747,26 @@ def process_module_specific_results(db, c, subscenarios):
     c.execute(
         """INSERT INTO results_project_curtailment_variable
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
         SELECT
         scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
-        horizon_weight, number_of_hours_in_timepoint,
-        load_zone, 
+        timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
+        load_zone, scheduled_curtailment_mw
+        FROM (
+        SELECT scenario_id, subproblem_id, stage_id, period, horizon, 
+        timepoint, timepoint_weight, number_of_hours_in_timepoint, load_zone, 
         sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
         FROM results_project_dispatch_variable
+        GROUP BY subproblem_id, stage_id, timepoint, load_zone
+        ) as agg_curtailment_tbl
+        JOIN (
+        SELECT subproblem_id, period, timepoint, month,  hour_of_day
+        FROM inputs_temporal_timepoints
+        ) as tmp_info_tbl
+        USING (subproblem_id, period, timepoint)
         WHERE scenario_id = {}
-        GROUP BY subproblem_id, stage_id, timepoint, 
-        load_zone
-        ORDER BY subproblem_id, stage_id, timepoint, 
-        load_zone;""".format(
+        ORDER BY subproblem_id, stage_id, load_zone, timepoint;""".format(
             subscenarios.SCENARIO_ID,
         )
     )

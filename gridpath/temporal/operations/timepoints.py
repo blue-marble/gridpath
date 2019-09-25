@@ -31,6 +31,13 @@ def add_model_components(m, d):
     will have 4 hours per timepoint. This parameter is used by other modules
     to track energy (e.g. storage state of charge).
 
+    The *timepoint_weight* parameter accounts for the number of other similar
+    'timepoints' that are not explicitly included in the optimization, but that
+    the included timepoint represents in the objective function. For example,
+    we could include one day from the month to represent the entire month,
+    in which case the *timepoint_weight*\ :sub:`t`\ for each timepoint
+    on that day will be the number of the days in :math:`h`'s respective month.
+
     Timepoints do not need to have the same *number_of_hours_in_timepoint*
     value, i.e. one of them can represent a 5-minute segment and another a
     24-hour segment.
@@ -41,6 +48,9 @@ def add_model_components(m, d):
     m.TIMEPOINTS = Set(within=NonNegativeIntegers, ordered=True)
     m.number_of_hours_in_timepoint = \
         Param(m.TIMEPOINTS, within=NonNegativeReals)
+    # TODO: what checks do we need on the sum of all timepoint weights (x
+    #  number of hours in timepoint?)
+    m.timepoint_weight = Param(m.TIMEPOINTS, within=NonNegativeReals)
     m.previous_stage_timepoint_map = \
         Param(m.TIMEPOINTS, within=NonNegativeIntegers)
 
@@ -53,11 +63,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
                      index=m.TIMEPOINTS,
-                     param=(m.number_of_hours_in_timepoint,
+                     param=(m.timepoint_weight,
+                            m.number_of_hours_in_timepoint,
                             m.previous_stage_timepoint_map,
                             m.month),
-                     select=("TIMEPOINTS", "number_of_hours_in_timepoint",
-                             "previous_stage_timepoint_map", "month")
+                     select=("TIMEPOINTS",
+                             "timepoint_weight",
+                             "number_of_hours_in_timepoint",
+                             "previous_stage_timepoint_map",
+                             "month")
                      )
 
 
@@ -71,7 +85,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     timepoints = c.execute(
-        """SELECT timepoint, period, horizon, 
+        """SELECT timepoint, period, timepoint_weight,
            number_of_hours_in_timepoint, previous_stage_timepoint_map, month
            FROM inputs_temporal_timepoints
            WHERE temporal_scenario_id = {}
@@ -114,12 +128,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     timepoints = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "timepoints.tab"), "w", newline="") as \
-            timepoints_tab_file:
+    with open(os.path.join(inputs_directory, "timepoints.tab"),
+              "w", newline="") as timepoints_tab_file:
         writer = csv.writer(timepoints_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["TIMEPOINTS", "period", "horizon",
+        writer.writerow(["TIMEPOINTS", "period", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "previous_stage_timepoint_map", "month"])
 

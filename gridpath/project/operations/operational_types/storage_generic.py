@@ -264,27 +264,27 @@ def add_module_specific_components(m, d):
         """
 
         :param mod:
-        :param g:
+        :param s:
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-                and mod.boundary[mod.horizon[tmp]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[s]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[s]]] == "linear":
             return Constraint.Skip
         else:
             return \
                 mod.Starting_Energy_in_Generic_Storage_MWh[s, tmp] \
                 == mod.Starting_Energy_in_Generic_Storage_MWh[
-                    s, mod.previous_timepoint[tmp]] \
+                    s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
                 + mod.Generic_Storage_Charge_MW[
-                      s, mod.previous_timepoint[tmp]] \
+                      s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
                 * mod.number_of_hours_in_timepoint[
-                      mod.previous_timepoint[tmp]] \
+                      mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
                 * mod.storage_generic_charging_efficiency[s] \
                 - mod.Generic_Storage_Discharge_MW[
-                      s, mod.previous_timepoint[tmp]] \
+                      s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
                 * mod.number_of_hours_in_timepoint[
-                      mod.previous_timepoint[tmp]] \
+                      mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
                 / mod.storage_generic_discharging_efficiency[s]
 
     m.Storage_Generic_Energy_Tracking_Constraint = \
@@ -310,7 +310,7 @@ def add_module_specific_components(m, d):
 def power_provision_rule(mod, s, tmp):
     """
     :param mod: the Pyomo abstract model
-    :param g: the project
+    :param s: the project
     :param tmp: the operational timepoint
     :return: expression for power provision by generic storage resources
 
@@ -435,17 +435,19 @@ def power_delta_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]] \
-            and mod.boundary[mod.horizon[tmp]] == "linear":
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         pass
     else:
         return (mod.Generic_Storage_Discharge_MW[g, tmp] -
                 mod.Generic_Storage_Charge_MW[g, tmp]) - \
                (mod.Generic_Storage_Discharge_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                 ] -
                 mod.Generic_Storage_Charge_MW[
-                    g, mod.previous_timepoint[tmp]
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                 ])
 
 
@@ -512,8 +514,9 @@ def export_module_specific_results(mod, d,
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_storage_generic.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
+                         "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "starting_energy_mwh",
                          "charge_mw", "discharge_mw"])
@@ -521,9 +524,10 @@ def export_module_specific_results(mod, d,
             writer.writerow([
                 p,
                 mod.period[tmp],
-                mod.horizon[tmp],
+                mod.balancing_type_project[p],
+                mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.horizon_weight[mod.horizon[tmp]],
+                mod.timepoint_weight[tmp],
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],

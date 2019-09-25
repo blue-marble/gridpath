@@ -158,7 +158,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "rps_by_project.csv"), "w", newline="") as rps_results_file:
         writer = csv.writer(rps_results_file)
         writer.writerow(["project", "load_zone", "rps_zone",
-                         "timepoint", "period", "horizon", "horizon_weight",
+                         "timepoint", "period", "horizon", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
                          "scheduled_rps_energy_mw",
                          "scheduled_curtailment_mw",
@@ -171,8 +171,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.rps_zone[p],
                 tmp,
                 m.period[tmp],
-                m.horizon[tmp],
-                m.horizon_weight[m.horizon[tmp]],
+                m.horizon[tmp, m.balancing_type_project[p]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.technology[p],
                 value(m.Scheduled_RPS_Energy_MW[p, tmp]),
@@ -317,7 +317,7 @@ def import_results_into_database(
          stage_id INTEGER,
          horizon INTEGER,
          timepoint INTEGER,
-         horizon_weight FLOAT,
+         timepoint_weight FLOAT,
          number_of_hours_in_timepoint FLOAT,
          load_zone VARCHAR(32),
          rps_zone VARCHAR(32),
@@ -345,7 +345,7 @@ def import_results_into_database(
             timepoint = row[3]
             period = row[4]
             horizon = row[5]
-            horizon_weight = row[6]
+            timepoint_weight = row[6]
             hours_in_tmp = row[7]
             technology = row[8]
             scheduled_energy = row[9]
@@ -358,7 +358,7 @@ def import_results_into_database(
                 temp_results_project_rps"""
                 + str(scenario_id) + """
                  (scenario_id, project, period, subproblem_id, stage_id, 
-                 horizon, timepoint, horizon_weight, 
+                 horizon, timepoint, timepoint_weight, 
                  number_of_hours_in_timepoint, 
                  load_zone, rps_zone, technology, 
                  scheduled_rps_energy_mw, scheduled_curtailment_mw, 
@@ -366,7 +366,7 @@ def import_results_into_database(
                  VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}', 
                  {}, {}, {}, {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight, hours_in_tmp,
+                    horizon, timepoint, timepoint_weight, hours_in_tmp,
                     load_zone, rps_zone, technology,
                     scheduled_energy, scheduled_curtailment,
                     subhourly_energy, subhourly_curtailment
@@ -378,13 +378,13 @@ def import_results_into_database(
     c.execute(
         """INSERT INTO results_project_rps
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         load_zone, rps_zone, technology, 
         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, 
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         load_zone, rps_zone, technology, 
         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw

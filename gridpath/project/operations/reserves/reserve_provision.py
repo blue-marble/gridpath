@@ -338,16 +338,16 @@ def generic_export_module_specific_results(
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "horizon_weight", "number_of_hours_in_timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
                          "balancing_area", "load_zone", "technology",
                          "reserve_provision_mw"])
         for (p, tmp) in getattr(m, reserve_project_operational_timepoints_set):
             writer.writerow([
                 p,
                 m.period[tmp],
-                m.horizon[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.horizon_weight[m.horizon[tmp]],
+                m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 getattr(m, reserve_ba_param_name)[p],
                 m.load_zone[p],
@@ -394,7 +394,7 @@ def generic_import_results_into_database(
             stage_id INTEGER,
             horizon INTEGER,
             timepoint INTEGER,
-            horizon_weight FLOAT,
+            timepoint_weight FLOAT,
             number_of_hours_in_timepoint FLOAT,
             load_zone VARCHAR(32),""" +
         reserve_type + """_ba VARCHAR(32),
@@ -417,7 +417,7 @@ def generic_import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            horizon_weight = row[4]
+            timepoint_weight = row[4]
             number_of_hours_in_timepoint = row[5]
             ba = row[6]
             load_zone = row[7]
@@ -427,14 +427,14 @@ def generic_import_results_into_database(
                 """INSERT INTO temp_results_project_""" + reserve_type
                 + str(scenario_id) + """
                     (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, """ + reserve_type + """_ba, technology, 
                     reserve_provision_mw)
                     VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
                     '{}', '{}', '{}', {});""".format(
                     scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, horizon_weight,
+                    horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     ba, load_zone, technology, reserve_provision
                 )
@@ -445,11 +445,11 @@ def generic_import_results_into_database(
     c.execute(
         """INSERT INTO results_project_""" + reserve_type + """
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, """
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, """
         + reserve_type + """_ba, load_zone, technology, reserve_provision_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, horizon_weight, number_of_hours_in_timepoint, """
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, """
         + reserve_type + """_ba, load_zone, technology, reserve_provision_mw
         FROM temp_results_project_""" + reserve_type + str(scenario_id) +
         """ ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""

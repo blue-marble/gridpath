@@ -144,13 +144,13 @@ def update_project_variable_profiles(
     :param io:
     :param c:
     :param proj_profile_names: nested dictionary; top level is the project
-    name, second-level is the scenario id; the value is a tuple with the
-    scenario name and the scenario description
+        name, second-level is the scenario id; the value is a tuple with the
+        scenario name and the scenario description
     :param proj_tmp_profiles:
-    Nested dictionary: top-level key is the project name, second-level key
-    is the scenario id, third-level key is the stage, fourth level
-    key is the timepoint, and the value is the capacity factor for that
-    project-timepoint.
+        Nested dictionary: top-level key is the project name, second-level key
+        is the scenario id, third-level key is the stage, fourth level
+        key is the timepoint, and the value is the capacity factor for that
+        project-timepoint.
     :return:
     """
     print("project variable profiles")
@@ -196,11 +196,14 @@ def update_project_hydro_opchar(
 
     :param io:
     :param c:
-    :param proj_opchar_names:
+    :param proj_opchar_names: nested dictionary; top level is the project
+        name, second-level is the scenario id; the value is a tuple with the
+        scenario name and the scenario description
     :param proj_horizon_chars:
-    Nested dictionary: top-level key is the project name, second key is the
-    horizon, third-level keys are 'mwa' (the energy budget (MWa)),
-    min_mw (minimum MW) and max_mw (maximum MW), with a value for each
+        Nested dictionary: top-level key is the project name, second key is
+        the balancing type, third key is the horizon, fourth-level keys are
+        'period' (the period of the horizon), 'mwa' (the energy budget (MWa)),
+        min_mw (minimum MW) and max_mw (maximum MW), with a value for each
     :return:
     """
     print("project hydro operating characteristics")
@@ -221,18 +224,21 @@ def update_project_hydro_opchar(
     # Insert data
     for p in list(proj_horizon_chars.keys()):
         for scenario in list(proj_horizon_chars[p].keys()):
-            for h in list(proj_horizon_chars[p][scenario].keys()):
-                c.execute(
-                    """INSERT INTO inputs_project_hydro_operational_chars
-                    (project, hydro_operational_chars_scenario_id, horizon, 
-                    average_power_mwa, min_power_mw, max_power_mw)
-                    VALUES ('{}', {}, {}, {}, {}, {});""".format(
-                        p, scenario, h,
-                        proj_horizon_chars[p][scenario][h]["mwa"],
-                        proj_horizon_chars[p][scenario][h]["min_mw"],
-                        proj_horizon_chars[p][scenario][h]["max_mw"]
+            for bt in list(proj_horizon_chars[p][scenario].keys()):
+                for h in list(proj_horizon_chars[p][scenario][bt].keys()):
+                    c.execute(
+                        """INSERT INTO inputs_project_hydro_operational_chars
+                        (project, hydro_operational_chars_scenario_id, 
+                        balancing_type_project, horizon, period, 
+                        average_power_mwa, min_power_mw, max_power_mw)
+                        VALUES ('{}', {}, '{}', {}, {}, {}, {}, {});""".format(
+                            p, scenario, bt, h,
+                            proj_horizon_chars[p][scenario][bt][h]["period"],
+                            proj_horizon_chars[p][scenario][bt][h]["mwa"],
+                            proj_horizon_chars[p][scenario][bt][h]["min_mw"],
+                            proj_horizon_chars[p][scenario][bt][h]["max_mw"]
+                        )
                     )
-                )
     io.commit()
 
 

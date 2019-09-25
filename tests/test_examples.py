@@ -124,6 +124,43 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
+    def test_example_2horizons_w_hydro(self):
+        """
+        Check objective function value of "2horizons_w_hydro" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario", "2horizons_w_hydro", "--quiet",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
+                               "--mute_solver_output", "--testing"])
+
+        expected_objective = 100062.36
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
+    def test_example_2horizons_w_hydro_w_balancing_types(self):
+        """
+        Check objective function value of
+        "2horizons_w_hydro_w_balancing_types" example. The objective
+        function of this example should be lower than that of the
+        '2horizons_w_hydro' example, as the average hydro budget is the
+        same across all timepoints, but the hydro balancing horizon is now
+        longer.
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "2horizons_w_hydro_w_balancing_types",
+                               "--quiet",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
+                               "--mute_solver_output", "--testing"])
+
+        expected_objective = 98134.16
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
     def test_example_2periods(self):
         """
         Check objective function value of "2periods" example

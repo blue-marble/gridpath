@@ -8,12 +8,10 @@ operational decisions are linked together and which are independent). Some
 operational constraints are enforced at the horizon level.
 """
 
-from builtins import range
 import csv
 import os.path
 
-from pyomo.environ import Set, Param, NonNegativeIntegers, NonNegativeReals,\
-    PositiveIntegers
+from pyomo.environ import Set, Param, PositiveIntegers
 
 
 def add_model_components(m, d):
@@ -21,15 +19,22 @@ def add_model_components(m, d):
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the dynamic inputs class object; not used here
 
-    The module adds the *HORIZONS* set to the model formulation.
+    The module adds the * BALANCING_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
+    sets to the model formulation.
 
-    Horizons must be non-negative integers and the set is ordered.
+    Balancing types are strings, e.g. year, month, week, day.
 
-    We will designate the *HORIZONS* set with :math:`H` and the timepoints
-    index will be :math:`h`.
+    Horizons must be non-negative integers and each value of the
+    HORIZONS_BY_BALANCING_TYPE indexed set is ordered (i.e. the horizons
+    within a balancing type are ordered).
 
-    Each horizon is associated with a *boundary* parameter and a *horizon_weight*
-    parameter.
+    We will designate the *BALANCING_TYPES* set with :math:`B` and
+    balancing type index with :math:`b`.
+
+    The *HORIZONS_BY_BALANCING_TYPE* set is designated with :math:`H_b` and
+    the horizons index will be :math:`h_b`.
+
+    Each horizon is associated with a *boundary* parameter.
 
     The *boundary*\ :sub:`h`\ parameter can take one of two values:
     'circular' or 'linear.' If the boundary is 'circular,' then the last
@@ -37,121 +42,139 @@ def add_model_components(m, d):
     first timepoint of the horizon (e.g. for ramping constraints or tracking
     storage state of charge).
 
-    The *horizon_weight* parameter accounts for the number of other similar
-    'horizons' that are not explicitly included in the optimization, but that
-    the included horizon represents in the objective function. For example,
-    we could include one day from the month to represent the entire month,
-    in which case the *horizon_weight*\ :sub:`h`\ will be the number of the
-    days in :math:`h`'s respective month.
-
-    This module organizes timepoints into horizons. Each timepoint is
-    assigned a *horizon* parameter where :math:`horizon_t\in H`, i.e. each
-    timepoint occurs within a specific horizon.
-
-    We also derive the following set and parameters:
-
-    We use :math:`horizon_t` to create the indexed set
-    *TIMEPOINTS_ON_HORIZON* (:math:`\{T_h\}_{h\in H}`;
-    :math:`T_h\subset T`) that allows us to determine the subsets of
-    timepoints :math:`T_h` that occur on each horizon :math:`h`.
-
-    Next, we use the *TIMEPOINTS_ON_HORIZON* set to determine the first and
-    last timepoint on each horizon. The respective parameters are
-    *first_horizon_timepoint*\ :sub:`h`\ and *last_horizon_timepoint*\
-    :sub:`h`\.
+    This module organizes timepoints into balancing types and horizons. Each
+    timepoint is assigned a *horizon* parameter for each balancing type where
+    :math:`horizon_{t,b}\in H`, i.e. each timepoint occurs within a
+    specific horizon for each balancing type.
 
     """
-    m.HORIZONS = Set(within=NonNegativeIntegers, ordered=True)
-
+    m.HORIZONS = Set(ordered=True)
+    m.balancing_type_horizon = Param(m.HORIZONS)
     m.boundary = Param(m.HORIZONS, within=['circular', 'linear'])
-    # TODO: think through and document what happens with the horizon weights
-    #  if we have one horizon that is a day and another horizon that is a week
-    # TODO: what checks do we need on the sum of all horizon weights (if a
-    #  period is a year, then the sum of the weights of distinct horizons of
-    #  timepoints in the same period should sum up to 365 (or 365.25 or 366?)
-    #  but is there are more general case? Or maybe we need to be summing
-    #  over the the timepoint number_of_hours_represented times the
-    #  horizon_weight for the timepoint's horizon and get 8760?
-    #  Maybe think of the horizon weight as the number of (not explicitly
-    #  modeled) *days* it represents, similar to the timepoint representing
-    #  number of *hours*
-    m.horizon_weight = Param(m.HORIZONS, within=NonNegativeReals)
 
-    # Assign horizons to timepoints
-    m.horizon = Param(m.TIMEPOINTS, within=m.HORIZONS)
+    def balancing_type_horizons_init(mod):
+        """
+        :param mod:
+        :return:
+        """
+        balancing_type_horizons = list()
+        for h in mod.HORIZONS:
+            if mod.balancing_type_horizon[h] in balancing_type_horizons:
+                pass
+            else:
+                balancing_type_horizons.append(mod.balancing_type_horizon[h])
 
-    m.TIMEPOINTS_ON_HORIZON = \
-        Set(m.HORIZONS, ordered=True,
-            initialize=lambda mod, h:
-            set(tmp for tmp in mod.TIMEPOINTS if mod.horizon[tmp] == h))
+        return balancing_type_horizons
+
+    m.BALANCING_TYPES = Set(initialize=balancing_type_horizons_init)
+
+    def horizons_by_balancing_type_horizon_init(mod, bt):
+        """
+        :param mod:
+        :param bt:
+        :return:
+        """
+        horizons_of_balancing_type_horizon = []
+        for horizon in mod.HORIZONS:
+            if mod.balancing_type_horizon[horizon] == bt:
+                horizons_of_balancing_type_horizon.append(horizon)
+
+        return horizons_of_balancing_type_horizon
+
+    m.HORIZONS_BY_BALANCING_TYPE = Set(
+        m.BALANCING_TYPES, within=PositiveIntegers,
+        initialize=horizons_by_balancing_type_horizon_init
+    )
+
+    m.TIMEPOINTS_ON_HORIZON = Set(
+        m.HORIZONS, within=PositiveIntegers, ordered=True
+    )
+
+    # TODO: can create here instead of upstream in data (i.e. we can get the
+    #  balancing type index from the horizon of the timepoint)
+    m.horizon = Param(m.TIMEPOINTS, m.BALANCING_TYPES)
 
     # Determine the first and last timepoint of the horizon
-    # TODO: is there are a better way to do this than relying on min and max?
-    m.first_horizon_timepoint = \
-        Param(m.HORIZONS,
-              initialize=
-              lambda mod, h: min(tmp for tmp in mod.TIMEPOINTS_ON_HORIZON[h]))
+    # NOTE: it's an ordered set, so getting the first and last element seems
+    # fine; do this in a separate commit
+    m.first_horizon_timepoint = Param(
+        m.HORIZONS, within=PositiveIntegers,
+        initialize=lambda mod, h:
+        list(mod.TIMEPOINTS_ON_HORIZON[h])[0]
+    )
 
-    m.last_horizon_timepoint = \
-        Param(m.HORIZONS,
-              initialize=
-              lambda mod, h: max(tmp for tmp in mod.TIMEPOINTS_ON_HORIZON[h]))
+    m.last_horizon_timepoint = Param(
+        m.HORIZONS, within=PositiveIntegers,
+        initialize=lambda mod, h:
+        list(mod.TIMEPOINTS_ON_HORIZON[h])[-1]
+    )
 
     # Determine the previous timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
-    m.previous_timepoint = \
-        Param(m.TIMEPOINTS,
-              initialize=previous_timepoint_init)
+    m.previous_timepoint = Param(
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=previous_timepoint_init
+    )
 
     # Determine the next timepoint for each timepoint; depends on
     # whether horizon is circular or linear and relies on having ordered
     # TIMEPOINTS
-    m.next_timepoint = \
-        Param(m.TIMEPOINTS,
-              initialize=next_timepoint_init)
+    m.next_timepoint = Param(
+        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=next_timepoint_init
+    )
 
 
-def previous_timepoint_init(mod, tmp):
+def previous_timepoint_init(mod, tmp, balancing_type_horizon):
     """
     :param mod:
     :param tmp:
+    :param balancing_type_horizon:
     :return:
 
     Determine the previous timepoint for each timepoint. If the timepoint is
     the first timepoint of a horizon and the horizon boundary is circular,
     then the previous timepoint is the last timepoint of the respective
-    horizon. If the timepoint is the first timepoint of a horizon and the
-    horizon boundary is linear, then no previous timepoint is defined. In all
-    other cases, the previous timepoints is the one with an index of tmp-1.
+    horizon (for each horizon type). If the timepoint is the first timepoint
+    of a horizon and the horizon boundary is linear, then no previous
+    timepoint is defined. In all other cases, the previous timepoints is the
+    one with an index of tmp-1.
     """
     prev_tmp_dict = {}
-    for tmp in mod.TIMEPOINTS:
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp]]:
-            if mod.boundary[mod.horizon[tmp]] == "circular":
-                prev_tmp_dict[tmp] = \
-                    mod.last_horizon_timepoint[mod.horizon[tmp]]
-            elif mod.boundary[mod.horizon[tmp]] == "linear":
-                prev_tmp_dict[tmp] = None
-            else:
-                raise ValueError(
-                    "Invalid boundary value '{}' for horizon '{}'".
-                    format(
-                        mod.boundary[mod.horizon[tmp]], mod.horizon[tmp])
-                    + "\n" +
-                    "Horizon boundary must be either 'circular' or 'linear'"
-                )
-        else:
-            prev_tmp_dict[tmp] = \
-                list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)-1]
+    for balancing_type in mod.BALANCING_TYPES:
+        for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+            for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
+                if tmp == mod.first_horizon_timepoint[horizon]:
+                    if mod.boundary[horizon] == "circular":
+                        prev_tmp_dict[tmp, balancing_type] = \
+                            mod.last_horizon_timepoint[
+                                horizon]
+                    elif mod.boundary[horizon] == "linear":
+                        prev_tmp_dict[tmp, balancing_type] = None
+                    else:
+                        raise ValueError(
+                            "Invalid boundary value '{}' for horizon '{}'".
+                            format(
+                                mod.boundary[horizon],
+                                horizon)
+                            + "\n" +
+                            "Horizon boundary must be either 'circular' or "
+                            "'linear'"
+                        )
+                else:
+                    prev_tmp_dict[tmp, balancing_type] = \
+                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
+                            list(mod.TIMEPOINTS_ON_HORIZON[horizon])
+                            .index(tmp) - 1
+                            ]
 
     return prev_tmp_dict
 
 
-def next_timepoint_init(mod, tmp):
+def next_timepoint_init(mod, tmp, balancing_type_horizon):
     """
     :param mod:
     :param tmp:
+    :param balancing_type_horizon:
     :return:
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,
@@ -161,24 +184,29 @@ def next_timepoint_init(mod, tmp):
     other cases, the next timepoint is the one with an index of tmp+1.
     """
     next_tmp_dict = {}
-    for tmp in mod.TIMEPOINTS:
-        if tmp == mod.last_horizon_timepoint[mod.horizon[tmp]]:
-            if mod.boundary[mod.horizon[tmp]] == "circular":
-                next_tmp_dict[tmp] = \
-                    mod.first_horizon_timepoint[mod.horizon[tmp]]
-            elif mod.boundary[mod.horizon[tmp]] == "linear":
-                next_tmp_dict[tmp] = None
-            else:
-                raise ValueError(
-                    "Invalid boundary value '{}' for horizon '{}'".
-                    format(
-                        mod.boundary[mod.horizon[tmp]], mod.horizon[tmp])
-                    + "\n" +
-                    "Horizon boundary must be either 'circular' or 'linear'"
-                )
-        else:
-            next_tmp_dict[tmp] = \
-                list(mod.TIMEPOINTS)[list(mod.TIMEPOINTS).index(tmp)+1]
+    for balancing_type in mod.BALANCING_TYPES:
+        for horizon in mod.HORIZONS_BY_BALANCING_TYPE[balancing_type]:
+            for tmp in mod.TIMEPOINTS_ON_HORIZON[horizon]:
+                if tmp == mod.last_horizon_timepoint[horizon]:
+                    if mod.boundary[horizon] == "circular":
+                        next_tmp_dict[tmp, balancing_type] = \
+                            mod.first_horizon_timepoint[horizon]
+                    elif mod.boundary[horizon] == "linear":
+                        next_tmp_dict[tmp, balancing_type] = None
+                    else:
+                        raise ValueError(
+                            "Invalid boundary value '{}' for horizon '{}'".
+                            format(mod.boundary[horizon], horizon)
+                            + "\n" +
+                            "Horizon boundary must be either 'circular' or "
+                            "'linear'"
+                        )
+                else:
+                    next_tmp_dict[tmp, balancing_type] = \
+                        list(mod.TIMEPOINTS_ON_HORIZON[horizon])[
+                            list(mod.TIMEPOINTS_ON_HORIZON[horizon])
+                            .index(tmp) + 1
+                            ]
 
     return next_tmp_dict
 
@@ -188,17 +216,31 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "horizons.tab"),
-                     select=("HORIZONS", "boundary", "horizon_weight"),
+                     select=("horizon", "balancing_type_horizon", "boundary"),
                      index=m.HORIZONS,
-                     param=(m.boundary, m.horizon_weight)
+                     param=(m.balancing_type_horizon, m.boundary)
                      )
 
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "timepoints.tab"),
-                     select=("TIMEPOINTS","horizon"),
-                     index=m.TIMEPOINTS,
-                     param=m.horizon
-                     )
+    with open(os.path.join(scenario_directory, subproblem, stage,
+                           "inputs", "horizon_timepoints.tab")
+              ) as f:
+        reader = csv.reader(f, delimiter="\t")
+        next(reader)
+        tmps_on_horizon = dict()
+        horizon_by_tmp = dict()
+        for row in reader:
+            if int(row[0]) not in tmps_on_horizon.keys():
+                tmps_on_horizon[int(row[0])] = [int(row[2])]
+            else:
+                tmps_on_horizon[int(row[0])].append(int(row[2]))
+
+            horizon_by_tmp[int(row[2]), row[1]] = int(row[0])
+
+    data_portal.data()[
+        "TIMEPOINTS_ON_HORIZON"
+    ] = tmps_on_horizon
+
+    data_portal.data()["horizon"] = horizon_by_tmp
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -209,9 +251,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    c = conn.cursor()
-    horizons = c.execute(
-        """SELECT horizon, boundary, horizon_weight
+    c1 = conn.cursor()
+    horizons = c1.execute(
+        """SELECT horizon, balancing_type_horizon, boundary
            FROM inputs_temporal_horizons
            WHERE temporal_scenario_id = {}
            AND subproblem_id = {};""".format(
@@ -220,7 +262,20 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         )
     )
 
-    return horizons
+    c2 = conn.cursor()
+    timepoint_horizons = c2.execute(
+        """SELECT horizon, balancing_type_horizon, timepoint
+        FROM inputs_temporal_horizon_timepoints
+        WHERE temporal_scenario_id = {}
+       AND subproblem_id = {}
+       AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    )
+
+    return horizons, timepoint_horizons
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -250,15 +305,26 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    horizons = get_inputs_from_database(
+    horizons, timepoint_horizons = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "horizons.tab"), "w", newline="") as \
-            horizons_tab_file:
-        writer = csv.writer(horizons_tab_file, delimiter="\t")
+    with open(os.path.join(inputs_directory, "horizons.tab"),
+              "w", newline="") as horizons_tab_file:
+        hwriter = csv.writer(horizons_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["HORIZONS", "boundary", "horizon_weight"])
+        hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
 
         for row in horizons:
-            writer.writerow(row)
+            hwriter.writerow(row)
+
+    with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
+              newline="") as timepoint_horizons_tab_file:
+        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t")
+
+        # Write header
+        thwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
+
+        for row in timepoint_horizons:
+            thwriter.writerow(row)
+

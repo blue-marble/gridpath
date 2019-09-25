@@ -84,35 +84,15 @@ def get_curtailment(c, scenario_id, load_zone, period, stage):
     """
 
     # Curtailment by period and timepoint
-    sql = """SELECT month, hour_on_horizon, 
-        SUM(scheduled_curtailment_mwh) AS scheduled_curtailment_mwh
-        FROM (
-            SELECT scenario_id, horizon, period, timepoint, 
-            (scheduled_curtailment_mw * horizon_weight * 
-            number_of_hours_in_timepoint) as scheduled_curtailment_mwh, 
-            month, SUM(number_of_hours_in_timepoint) OVER (
-            PARTITION BY horizon ORDER BY timepoint) AS hour_on_horizon
-            FROM results_project_curtailment_variable
-    
-            INNER JOIN
-    
-            (SELECT scenario_id, temporal_scenario_id 
-            FROM scenarios)
-            USING (scenario_id)
-    
-            INNER JOIN
-    
-            (SELECT temporal_scenario_id, period, horizon, month 
-            FROM inputs_temporal_horizons)
-            USING (temporal_scenario_id, period, horizon)
-    
-            WHERE scenario_id = ?
-            AND load_zone = ?
-            AND period = ?
-            AND stage_id = ?
-        )
-        GROUP BY month, hour_on_horizon
-        ORDER BY month, hour_on_horizon
+    sql = """SELECT month, hour_of_day, 
+        SUM(scheduled_curtailment_mw) AS scheduled_curtailment_mwh
+        FROM results_project_curtailment_variable
+        WHERE scenario_id = ?
+        AND load_zone = ?
+        AND period = ?
+        AND stage_id = ?       
+        GROUP BY month, hour_of_day
+        ORDER BY month, hour_of_day
         ;"""
 
     curtailment = c.execute(sql, (scenario_id, load_zone, period, stage))
@@ -177,10 +157,10 @@ def create_plot(df, title, ylimit=None):
 
     # Round hours and convert to string (required for x-axis)
     # TODO: figure out a way to handle subhourly data properly!
-    df["hour_on_horizon"] = df["hour_on_horizon"].map(int).map(str)
+    df["hour_of_day"] = df["hour_of_day"].map(int).map(str)
 
     # Get list of hours and months (used in xrange/yrange)
-    hours = list(df["hour_on_horizon"].unique())
+    hours = list(df["hour_of_day"].unique())
     months = list(reversed(df["month"].unique()))
 
     # Set up color mapper
@@ -208,7 +188,7 @@ def create_plot(df, title, ylimit=None):
 
     # Plot heatmap rectangles
     hm = plot.rect(
-        x="hour_on_horizon",
+        x="hour_of_day",
         y="month",
         width=1, height=1,
         source=df,
@@ -240,7 +220,7 @@ def create_plot(df, title, ylimit=None):
     hover = HoverTool(
         tooltips=[
             ("Month", "@month"),
-            ("Hour", "@hour_on_horizon"),
+            ("Hour", "@hour_of_day"),
             ("Curtailment", "@scheduled_curtailment_mwh{0,0} MWh")
         ],
         renderers=[hm],

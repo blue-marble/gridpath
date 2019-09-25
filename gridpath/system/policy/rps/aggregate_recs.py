@@ -33,7 +33,7 @@ def add_model_components(m, d):
                  - mod.Subhourly_Curtailment_MW[g, tmp]
                  + mod.Subhourly_RPS_Energy_Delivered_MW[g,tmp])
                 * mod.number_of_hours_in_timepoint[tmp]
-                * mod.horizon_weight[mod.horizon[tmp]]
+                * mod.timepoint_weight[tmp]
                 for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
                 and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
@@ -56,7 +56,7 @@ def add_model_components(m, d):
                     mod.Subhourly_Curtailment_MW[g, tmp] -
                     mod.Subhourly_RPS_Energy_Delivered_MW[g, tmp])
                    * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
+                   * mod.timepoint_weight[tmp]
                    for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
                    if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
                    and tmp in mod.TIMEPOINTS_IN_PERIOD[p]

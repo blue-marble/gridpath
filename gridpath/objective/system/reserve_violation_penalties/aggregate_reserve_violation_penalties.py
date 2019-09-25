@@ -37,7 +37,7 @@ def generic_add_model_components(
         return sum(getattr(mod, reserve_violation_variable)[ba, tmp]
                    * getattr(mod, reserve_violation_penalty_param)[ba]
                    * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.horizon_weight[mod.horizon[tmp]]
+                   * mod.timepoint_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (ba, tmp)
