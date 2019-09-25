@@ -8,12 +8,10 @@ Get inputs, run scenario, and import results.
 from argparse import ArgumentParser
 import signal
 import sys
-import sqlite3
-import time
 import traceback
 
 # GridPath modules
-from db.common_functions import connect_to_database
+from db.common_functions import connect_to_database, spin_database_lock
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 
@@ -103,28 +101,6 @@ def update_run_status(db_path, scenario, status_id):
         timeout=120,
         interval=1
     )
-
-
-def spin_database_lock(db, cursor, sql, timeout, interval):
-    for i in range(1, timeout+1):  # give up after timeout seconds
-        # print("Attempt {} of {}".format(i, timeout))
-        try:
-            cursor.execute(sql)
-            db.commit()
-        except sqlite3.OperationalError as e:
-            traceback.print_exc()
-            if "locked" in str(e):
-                print("Database is locked, sleeping for {} second, "
-                      "then retrying".format(interval))
-                if i == timeout - 1:
-                    print("Database still locked after {} seconds. "
-                          "Exiting.".format(timeout))
-                    sys.exit(1)
-                else:
-                    time.sleep(interval)
-        # Do this if exception not caught
-        else:
-            break
 
 
 # TODO: add more run status types?

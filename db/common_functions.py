@@ -3,6 +3,9 @@
 
 import os.path
 import sqlite3
+import sys
+import time
+import traceback
 
 
 def connect_to_database(db_path, relative_path="..", timeout=5,
@@ -35,3 +38,25 @@ def connect_to_database(db_path, relative_path="..", timeout=5,
     conn = sqlite3.connect(db_path, timeout=timeout, detect_types=detect_types)
 
     return conn
+
+
+def spin_database_lock(db, cursor, sql, timeout, interval):
+    for i in range(1, timeout+1):  # give up after timeout seconds
+        # print("Attempt {} of {}".format(i, timeout))
+        try:
+            cursor.execute(sql)
+            db.commit()
+        except sqlite3.OperationalError as e:
+            traceback.print_exc()
+            if "locked" in str(e):
+                print("Database is locked, sleeping for {} second, "
+                      "then retrying".format(interval))
+                if i == timeout - 1:
+                    print("Database still locked after {} seconds. "
+                          "Exiting.".format(timeout))
+                    sys.exit(1)
+                else:
+                    time.sleep(interval)
+        # Do this if exception not caught
+        else:
+            break
