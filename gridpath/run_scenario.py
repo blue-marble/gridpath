@@ -520,11 +520,13 @@ def solve(instance, parsed_arguments):
     solver_name = parsed_arguments.solver
 
     # Get any user-requested solver options
-    solver_options = dict()
-    solver_options_file = os.path.join(
-        parsed_arguments.scenario_location, parsed_arguments.scenario,
-        "solver_options.csv"
+    scenario_directory = determine_scenario_directory(
+        scenario_location=parsed_arguments.scenario_location,
+        scenario_name=parsed_arguments.scenario
     )
+    solver_options = dict()
+    solver_options_file = os.path.join(scenario_directory,
+                                       "solver_options.csv")
     if os.path.exists(solver_options_file):
         with open(solver_options_file) as f:
             _reader = reader(f, delimiter=",")
