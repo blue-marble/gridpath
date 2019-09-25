@@ -331,8 +331,13 @@ def main(args=None):
         )
         sys.exit()
     else:
+        # Connect to the database
         db = sqlite3.connect(database=db_path)
+        # Allow concurrent reading and writing
+        db.execute("PRAGMA journal_mode=WAL")
+        # Create schema
         create_database_schema(db=db, parsed_arguments=parsed_args)
+        # Load data
         load_data(db=db, omit_data=parsed_args.omit_data)
 
 

@@ -92,10 +92,6 @@ def update_run_status(db_path, scenario, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    # TODO: what's the best place for setting this
-    # Allow concurrent reading and writing
-    conn.execute("PRAGMA journal_mode=WAL")
-
     sql = """UPDATE scenarios
         SET run_status_id = {}
         WHERE scenario_name = '{}';""".format(status_id, scenario)
