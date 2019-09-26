@@ -40,20 +40,44 @@ def connect_to_database(db_path, relative_path="..", timeout=5,
     return conn
 
 
-def spin_database_lock(db, cursor, sql, timeout, interval):
-    for i in range(1, timeout+1):  # give up after timeout seconds
-        # print("Attempt {} of {}".format(i, timeout))
+def spin_on_database_lock(conn, cursor, sql, data, many=True,
+                          max_attempts=61, interval=10):
+    """
+    :param conn: the connection object
+    :param cursor: the cursor object
+    :param sql: the SQL statement to execute
+    :param data: the data to bind to the SQL statement
+    :param many: boolean for whether to use executemany or execute; the
+        default is True (i.e. use executemany)
+    :param max_attempts: how long to wait for the database lock to be
+        released; the default is 600 seconds, but that can be overridden
+    :param interval: how frequently to poll the database for whether
+        the lock has been released; the default is 10 seconds, but that can
+        be overridden
+
+    If the database is locked, wait for the lock to be released for a
+    certain amount of time and occasionally retry to execute the SQL
+    statement until the timeout.
+    """
+    for i in range(0, max_attempts):
+        # if i == 0:
+        #     pass
+        # else:
+        #     print("...retrying (attempt {})...".format(i))
         try:
-            cursor.execute(sql)
-            db.commit()
+            if many:
+                cursor.executemany(sql, data)
+            else:
+                cursor.execute(sql, data)
+            conn.commit()
         except sqlite3.OperationalError as e:
             traceback.print_exc()
             if "locked" in str(e):
-                print("Database is locked, sleeping for {} second, "
+                print("Database is locked, sleeping for {} seconds, "
                       "then retrying".format(interval))
-                if i == timeout - 1:
+                if i == max_attempts:
                     print("Database still locked after {} seconds. "
-                          "Exiting.".format(timeout))
+                          "Exiting.".format(max_attempts * interval))
                     sys.exit(1)
                 else:
                     time.sleep(interval)
