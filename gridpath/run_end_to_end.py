@@ -11,7 +11,7 @@ import sys
 import traceback
 
 # GridPath modules
-from db.common_functions import connect_to_database, spin_database_lock
+from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 
@@ -86,21 +86,15 @@ def update_run_status(db_path, scenario, status_id):
     Update the run status in the database for the scenario.
     """
 
-    # Database
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
     sql = """UPDATE scenarios
-        SET run_status_id = {}
-        WHERE scenario_name = '{}';""".format(status_id, scenario)
+        SET run_status_id = ?
+        WHERE scenario_name = ?;"""
 
-    spin_database_lock(
-        db=conn,
-        cursor=c,
-        sql=sql,
-        timeout=120,
-        interval=1
-    )
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql,
+                          data=(status_id, scenario), many=False)
 
 
 # TODO: add more run status types?
