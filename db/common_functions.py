@@ -71,7 +71,6 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
                 cursor.execute(sql, data)
             conn.commit()
         except sqlite3.OperationalError as e:
-            traceback.print_exc()
             if "locked" in str(e):
                 print("Database is locked, sleeping for {} seconds, "
                       "then retrying".format(interval))
@@ -81,6 +80,10 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
                     sys.exit(1)
                 else:
                     time.sleep(interval)
+            else:
+                print("Error while running the following query: ", sql)
+                traceback.print_exc()
+                sys.exit()
         # Do this if exception not caught
         else:
             break
