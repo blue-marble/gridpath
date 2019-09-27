@@ -29,6 +29,7 @@ def create_scenario_all_args(
         of_prm,
         of_local_capacity,
         of_elcc_surface,
+        of_tuning,
         temporal_scenario_id,
         load_zone_scenario_id,
         lf_reserves_up_ba_scenario_id,
@@ -111,6 +112,7 @@ def create_scenario_all_args(
     :param of_prm:
     :param of_local_capacity:
     :param of_elcc_surface:
+    :param of_tuning:
     :param temporal_scenario_id:
     :param load_zone_scenario_id:
     :param lf_reserves_up_ba_scenario_id:
@@ -191,6 +193,7 @@ def create_scenario_all_args(
         of_prm,
         of_local_capacity,
         of_elcc_surface,
+        of_tuning,
         temporal_scenario_id,
         load_zone_scenario_id,
         lf_reserves_up_ba_scenario_id,
@@ -268,6 +271,7 @@ def create_scenario_all_args(
         of_prm,
         of_local_capacity,
         of_elcc_surface,
+        of_tuning,
         temporal_scenario_id,
         load_zone_scenario_id,
         lf_reserves_up_ba_scenario_id,
@@ -326,6 +330,7 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id
         ) VALUES (
+        ?,
         ?,
         ?,
         ?,

@@ -45,14 +45,10 @@ def update_project_potentials(
         for period in list(project_period_potentials[prj].keys()):
             inputs_data.append(
                 (project_new_potential_scenario_id, prj, period,
-                 'NULL' if project_period_potentials[prj][period][0] is
-                 None else project_period_potentials[prj][period][0],
-                 'NULL' if project_period_potentials[prj][period][1] is
-                 None else project_period_potentials[prj][period][1],
-                 'NULL' if project_period_potentials[prj][period][2] is
-                 None else project_period_potentials[prj][period][2],
-                 'NULL' if project_period_potentials[prj][period][3] is
-                 None else project_period_potentials[prj][period][3])
+                 project_period_potentials[prj][period][0],
+                 project_period_potentials[prj][period][1],
+                 project_period_potentials[prj][period][2],
+                 project_period_potentials[prj][period][3])
             )
     inputs_sql = \
         """INSERT INTO inputs_project_new_potential

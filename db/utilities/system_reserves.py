@@ -52,13 +52,14 @@ def insert_system_reserves(
                     (reserve_scenario_id, ba, stage, tmp,
                      ba_stage_timepoint_reserve_req[ba][stage][tmp])
                 )
-                sql = \
-                    """INSERT INTO inputs_system_{}
-                    ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw)
-                    VALUES (?, ?, ?, ?, ?)
-                    ;""".format(
-                        reserve_type, reserve_type, reserve_type, reserve_type
-                    )
+    inputs_sql = \
+        """INSERT INTO inputs_system_{}
+        ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw)
+        VALUES (?, ?, ?, ?, ?)
+        ;""".format(
+            reserve_type, reserve_type, reserve_type, reserve_type
+        )
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 if __name__ == "__main__":
