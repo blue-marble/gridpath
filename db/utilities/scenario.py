@@ -6,6 +6,8 @@ Create or update scenario.
 """
 import warnings
 
+from db.common_functions import spin_on_database_lock
+
 
 def create_scenario_all_args(
         io, c,
@@ -169,8 +171,84 @@ def create_scenario_all_args(
     :return:
     """
 
-    print("creating scenario '{}'".format(scenario_name))
-    c.execute(
+    print("creating scenario {}".format(scenario_name))
+    sc_data = (
+        scenario_name,
+        of_fuels,
+        of_multi_stage,
+        of_transmission,
+        of_transmission_hurdle_rates,
+        of_simultaneous_flow_limits,
+        of_lf_reserves_up,
+        of_lf_reserves_down,
+        of_regulation_up,
+        of_regulation_down,
+        of_frequency_response,
+        of_spinning_reserves,
+        of_rps,
+        of_carbon_cap,
+        of_track_carbon_imports,
+        of_prm,
+        of_local_capacity,
+        of_elcc_surface,
+        temporal_scenario_id,
+        load_zone_scenario_id,
+        lf_reserves_up_ba_scenario_id,
+        lf_reserves_down_ba_scenario_id,
+        regulation_up_ba_scenario_id,
+        regulation_down_ba_scenario_id,
+        frequency_response_ba_scenario_id,
+        spinning_reserves_ba_scenario_id,
+        rps_zone_scenario_id,
+        carbon_cap_zone_scenario_id,
+        prm_zone_scenario_id,
+        local_capacity_zone_scenario_id,
+        project_portfolio_scenario_id,
+        project_operational_chars_scenario_id,
+        project_availability_scenario_id,
+        fuel_scenario_id,
+        project_load_zone_scenario_id,
+        project_lf_reserves_up_ba_scenario_id,
+        project_lf_reserves_down_ba_scenario_id,
+        project_regulation_up_ba_scenario_id,
+        project_regulation_down_ba_scenario_id,
+        project_frequency_response_ba_scenario_id,
+        project_spinning_reserves_ba_scenario_id,
+        project_rps_zone_scenario_id,
+        project_carbon_cap_zone_scenario_id,
+        project_prm_zone_scenario_id,
+        project_elcc_chars_scenario_id,
+        prm_energy_only_scenario_id,
+        project_local_capacity_zone_scenario_id,
+        project_local_capacity_chars_scenario_id,
+        project_existing_capacity_scenario_id,
+        project_existing_fixed_cost_scenario_id,
+        fuel_price_scenario_id,
+        project_new_cost_scenario_id,
+        project_new_potential_scenario_id,
+        transmission_portfolio_scenario_id,
+        transmission_load_zone_scenario_id,
+        transmission_existing_capacity_scenario_id,
+        transmission_operational_chars_scenario_id,
+        transmission_hurdle_rate_scenario_id,
+        transmission_carbon_cap_zone_scenario_id,
+        transmission_simultaneous_flow_limit_scenario_id,
+        transmission_simultaneous_flow_limit_line_group_scenario_id,
+        load_scenario_id,
+        lf_reserves_up_scenario_id,
+        lf_reserves_down_scenario_id,
+        regulation_up_scenario_id,
+        regulation_down_scenario_id,
+        frequency_response_scenario_id,
+        spinning_reserves_scenario_id,
+        rps_target_scenario_id,
+        carbon_cap_target_scenario_id,
+        prm_requirement_scenario_id,
+        elcc_surface_scenario_id,
+        local_capacity_requirement_scenario_id,
+        tuning_scenario_id,
+        solver_options_id)
+    sc_sql = \
         """INSERT INTO scenarios (
         scenario_name,
         of_fuels,
@@ -248,161 +326,85 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id
         ) VALUES (
-        '{}',
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
-        );""".format(
-            scenario_name,
-            of_fuels,
-            of_multi_stage,
-            of_transmission,
-            of_transmission_hurdle_rates,
-            of_simultaneous_flow_limits,
-            of_lf_reserves_up,
-            of_lf_reserves_down,
-            of_regulation_up,
-            of_regulation_down,
-            of_frequency_response,
-            of_spinning_reserves,
-            of_rps,
-            of_carbon_cap,
-            of_track_carbon_imports,
-            of_prm,
-            of_local_capacity,
-            of_elcc_surface,
-            temporal_scenario_id,
-            load_zone_scenario_id,
-            lf_reserves_up_ba_scenario_id,
-            lf_reserves_down_ba_scenario_id,
-            regulation_up_ba_scenario_id,
-            regulation_down_ba_scenario_id,
-            frequency_response_ba_scenario_id,
-            spinning_reserves_ba_scenario_id,
-            rps_zone_scenario_id,
-            carbon_cap_zone_scenario_id,
-            prm_zone_scenario_id,
-            local_capacity_zone_scenario_id,
-            project_portfolio_scenario_id,
-            project_operational_chars_scenario_id,
-            project_availability_scenario_id,
-            fuel_scenario_id,
-            project_load_zone_scenario_id,
-            project_lf_reserves_up_ba_scenario_id,
-            project_lf_reserves_down_ba_scenario_id,
-            project_regulation_up_ba_scenario_id,
-            project_regulation_down_ba_scenario_id,
-            project_frequency_response_ba_scenario_id,
-            project_spinning_reserves_ba_scenario_id,
-            project_rps_zone_scenario_id,
-            project_carbon_cap_zone_scenario_id,
-            project_prm_zone_scenario_id,
-            project_elcc_chars_scenario_id,
-            prm_energy_only_scenario_id,
-            project_local_capacity_zone_scenario_id,
-            project_local_capacity_chars_scenario_id,
-            project_existing_capacity_scenario_id,
-            project_existing_fixed_cost_scenario_id,
-            fuel_price_scenario_id,
-            project_new_cost_scenario_id,
-            project_new_potential_scenario_id,
-            transmission_portfolio_scenario_id,
-            transmission_load_zone_scenario_id,
-            transmission_existing_capacity_scenario_id,
-            transmission_operational_chars_scenario_id,
-            transmission_hurdle_rate_scenario_id,
-            transmission_carbon_cap_zone_scenario_id,
-            transmission_simultaneous_flow_limit_scenario_id,
-            transmission_simultaneous_flow_limit_line_group_scenario_id,
-            load_scenario_id,
-            lf_reserves_up_scenario_id,
-            lf_reserves_down_scenario_id,
-            regulation_up_scenario_id,
-            regulation_down_scenario_id,
-            frequency_response_scenario_id,
-            spinning_reserves_scenario_id,
-            rps_target_scenario_id,
-            carbon_cap_target_scenario_id,
-            prm_requirement_scenario_id,
-            elcc_surface_scenario_id,
-            local_capacity_requirement_scenario_id,
-            tuning_scenario_id,
-            solver_options_id
-        )
-    )
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+        );"""
 
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=sc_sql, data=sc_data,
+                          many=False)
 
 
 def create_scenario(io, c, column_values_dict):
@@ -447,7 +449,8 @@ def create_scenario(io, c, column_values_dict):
                 if column_values_dict[column_name] is not None \
                 else ', NULL'
 
-    c.execute("INSERT INTO scenarios ({}) VALUES ({});".format(
+    # TODO: figure out how to wrap this in spin_on_database_lock
+    c.execute("INSERT INTO scenarios ({}) VALUES ({}});".format(
             column_names_string, column_values_string
         )
     )
@@ -477,8 +480,6 @@ def update_scenario_multiple_columns(
             column_value=column_values_dict[column_name]
         )
 
-    io.commit()
-
 
 def update_scenario_single_column(
         io, c,
@@ -505,15 +506,16 @@ def update_scenario_single_column(
         column_value = 'NULL'
 
     # Update the column value for the scenario
-    c.execute(
+    update_data = [(scenario_name)]
+    update_sql = \
         """UPDATE scenarios
         SET {} = {}
-        WHERE scenario_name = '{}';""".format(
-            column_name, column_value, scenario_name
+        WHERE scenario_name = ?;""".format(
+            column_name, column_value
         )
-    )
 
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data,
+                          many=False)
 
 
 def delete_scenario(conn, scenario_id):
@@ -537,16 +539,17 @@ def delete_scenario(conn, scenario_id):
     ]
 
     # Delete from all results and status tables
+    tbls_data = []
     for tbl in results_tables + status_tables:
-        c.execute(
-            """DELETE FROM {} WHERE scenario_id = {};""".format(
-                tbl, scenario_id
-            )
+        tbls_data.append((tbl))
+    tbls_sql = \
+        """DELETE FROM {} WHERE scenario_id = ?;""".format(
+            tbl, scenario_id
         )
-    conn.commit()
+    spin_on_database_lock(conn=conn, cursor=c, sql=tbls_sql, data=tbls_data)
 
     # Delete from scenarios table
-    c.execute(
-        "DELETE FROM scenarios WHERE scenario_id = {}".format(scenario_id)
-    )
-    conn.commit()
+    sc_id_data = [(scenario_id)]
+    sc_id_sql = "DELETE FROM scenarios WHERE scenario_id = ?"
+    spin_on_database_lock(conn=conn, cursor=c, sql=sc_id_sql, data=sc_id_data,
+                          many=False)

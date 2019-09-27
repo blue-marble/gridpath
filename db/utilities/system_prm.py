@@ -6,8 +6,9 @@ ELCC characteristics of projects
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
 
-import warnings
+from db.common_functions import spin_on_database_lock
 
 
 def prm_requirement(
@@ -31,25 +32,24 @@ def prm_requirement(
     print("prm requirement")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(prm_requirement_scenario_id, scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_system_prm_requirement
         (prm_requirement_scenario_id, name, description)
-        VALUES ({}, '{}', '{}');""".format(
-            prm_requirement_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for zone in list(zone_period_requirement.keys()):
         for period in list(zone_period_requirement[zone].keys()):
-            c.execute(
-                """INSERT INTO inputs_system_prm_requirement
-                (prm_requirement_scenario_id, 
-                prm_zone, period, prm_requirement_mw)
-                VALUES ({}, '{}', {}, {});""".format(
-                    prm_requirement_scenario_id, zone, period,
-                    zone_period_requirement[zone][period]
-                )
+            inputs_data.append(
+                (prm_requirement_scenario_id, zone, period,
+                    zone_period_requirement[zone][period])
             )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_system_prm_requirement
+        (prm_requirement_scenario_id, 
+        prm_zone, period, prm_requirement_mw)
+        VALUES (?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

@@ -6,6 +6,8 @@ ELCC characteristics of projects
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
 
 import warnings
 
@@ -38,53 +40,54 @@ def project_elcc_chars(
     """
     print("project elcc characteristics")
     # Subscenarios
-    c.execute(
+    subs_data = [
+        (project_elcc_chars_scenario_id, scenario_name, scenario_description)
+    ]
+    subs_sql = \
         """INSERT INTO subscenarios_project_elcc_chars
         (project_elcc_chars_scenario_id, name, description)
-        VALUES ({}, '{}', '{}');""".format(
-            project_elcc_chars_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for proj in list(proj_prm_type.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_elcc_chars 
-            (project_elcc_chars_scenario_id, project, prm_type)
-            VALUES ({}, '{}', '{}');""".format(
-                project_elcc_chars_scenario_id, proj,
-                proj_prm_type[proj]
-            )
+        inputs_data.append(
+            (project_elcc_chars_scenario_id, proj, proj_prm_type[proj])
         )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_project_elcc_chars 
+        (project_elcc_chars_scenario_id, project, prm_type)
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
     # Update the rest of the data and warn for inconsistencies
     # ELCC simple fraction
+    update_data = []
     for proj in list(proj_elcc_simple_fraction.keys()):
-        c.execute(
-            """UPDATE inputs_project_elcc_chars
-            SET elcc_simple_fraction = {}
-            WHERE project = '{}'
-            AND project_elcc_chars_scenario_id = {};""".format(
-                proj_elcc_simple_fraction[proj], proj,
-                project_elcc_chars_scenario_id
-            )
+        update_data.append(
+            (proj_elcc_simple_fraction[proj], proj,
+             project_elcc_chars_scenario_id)
         )
-    io.commit()
+    update_sql = \
+        """UPDATE inputs_project_elcc_chars
+        SET elcc_simple_fraction = ?
+        WHERE project = ?
+        AND project_elcc_chars_scenario_id = ?;"""
+    spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
 
     # ELCC surface
+    surf_data = []
     for proj in list(proj_elcc_surface.keys()):
-        c.execute(
-            """UPDATE inputs_project_elcc_chars
-            SET contributes_to_elcc_surface = {}
-            WHERE project = '{}'
-            AND project_elcc_chars_scenario_id = {};""".format(
-                proj_elcc_surface[proj], proj,
-                project_elcc_chars_scenario_id
-            )
+        surf_data.append(
+            (proj_elcc_surface[proj], proj, project_elcc_chars_scenario_id)
         )
-    io.commit()
+    surf_sql = \
+        """UPDATE inputs_project_elcc_chars
+        SET contributes_to_elcc_surface = ?
+        WHERE project = ?
+        AND project_elcc_chars_scenario_id = ?;"""
+    spin_on_database_lock(conn=io, cursor=c, sql=surf_sql, data=surf_data)
 
     # Min duration for full capacity credit
     energy_limited_projects = [p[0] for p in c.execute(
@@ -110,6 +113,7 @@ def project_elcc_chars(
                 )
             )
 
+    min_dur_data = []
     for proj in list(proj_min_duration_for_full.keys()):
         # Check if proj is actually energy-limited, as it doesn't require
         # this param otherwise
@@ -121,17 +125,17 @@ def project_elcc_chars(
                 need the 'min_duration_for_full_capacity_credit_hours' 
                 parameter.""".format(proj, project_elcc_chars_scenario_id)
             )
-
-        c.execute(
-            """UPDATE inputs_project_elcc_chars
-            SET min_duration_for_full_capacity_credit_hours = {}
-            WHERE project = '{}'
-            AND project_elcc_chars_scenario_id = {};""".format(
-                proj_min_duration_for_full[proj], proj,
-                project_elcc_chars_scenario_id
-            )
+        min_dur_data.append(
+            (proj_min_duration_for_full[proj], proj,
+             project_elcc_chars_scenario_id)
         )
-    io.commit()
+    min_dur_sql = \
+        """UPDATE inputs_project_elcc_chars
+        SET min_duration_for_full_capacity_credit_hours = ?
+        WHERE project = ?
+        AND project_elcc_chars_scenario_id = ?;"""
+    spin_on_database_lock(conn=io, cursor=c, sql=min_dur_sql,
+                          data=min_dur_data)
 
     # Deliverability group
     energy_only_projects = [p[0] for p in c.execute(
@@ -157,6 +161,7 @@ def project_elcc_chars(
                 )
             )
 
+    del_g_data = []
     for proj in list(proj_deliv_group.keys()):
         # Check if proj is actually energy-only, as it doesn't require
         # this param otherwise
@@ -169,16 +174,15 @@ def project_elcc_chars(
                 parameter.""".format(proj, project_elcc_chars_scenario_id)
             )
 
-        c.execute(
-            """UPDATE inputs_project_elcc_chars
-            SET deliverability_group = '{}'
-            WHERE project = '{}'
-            AND project_elcc_chars_scenario_id = {};""".format(
-                proj_deliv_group[proj], proj,
-                project_elcc_chars_scenario_id
-            )
+        del_g_data.append(
+            (proj_deliv_group[proj], proj, project_elcc_chars_scenario_id)
         )
-    io.commit()
+    del_g_sql = \
+        """UPDATE inputs_project_elcc_chars
+        SET deliverability_group = ?
+        WHERE project = ?
+        AND project_elcc_chars_scenario_id = ?;"""
+    spin_on_database_lock(conn=io, cursor=c, sql=del_g_sql, data=del_g_data)
 
 
 def deliverability_groups(
@@ -203,31 +207,32 @@ def deliverability_groups(
     print("deliverability group params")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(prm_energy_only_scenario_id, scenario_name,
+                  scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_project_prm_energy_only
         (prm_energy_only_scenario_id, name, description)
-        VALUES ({}, '{}', '{}');""".format(
-            prm_energy_only_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for group in list(deliv_group_params.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_prm_energy_only
-            (prm_energy_only_scenario_id,
-            deliverability_group, 
-            deliverability_group_no_cost_deliverable_capacity_mw,
-            deliverability_group_deliverability_cost_per_mw,
-            deliverability_group_energy_only_capacity_limit_mw)
-            VALUES ({}, '{}', {}, {}, {});""".format(
-                prm_energy_only_scenario_id, group,
-                deliv_group_params[group][0],
-                deliv_group_params[group][1],
-                deliv_group_params[group][2]
-            )
+        inputs_data.append(
+            (prm_energy_only_scenario_id, group,
+             deliv_group_params[group][0],
+             deliv_group_params[group][1],
+             deliv_group_params[group][2])
         )
+    inputs_sql = \
+        """INSERT INTO inputs_project_prm_energy_only
+        (prm_energy_only_scenario_id,
+        deliverability_group, 
+        deliverability_group_no_cost_deliverable_capacity_mw,
+        deliverability_group_deliverability_cost_per_mw,
+        deliverability_group_energy_only_capacity_limit_mw)
+        VALUES (?, ?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 def elcc_surface(
@@ -256,47 +261,48 @@ def elcc_surface(
     print("elcc surface")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(prm_zone_scenario_id, elcc_surface_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_system_elcc_surface
         (prm_zone_scenario_id, elcc_surface_scenario_id, name, description)
-        VALUES ({}, {}, '{}', '{}');""".format(
-            prm_zone_scenario_id, elcc_surface_scenario_id,
-            scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # ELCC surface intercepts (by PRM zone)
+    ints_data = []
     for zone in list(zone_period_facet_intercepts.keys()):
         for period in list(zone_period_facet_intercepts[zone].keys()):
-            for facet in list(zone_period_facet_intercepts[zone][period].keys()):
-                c.execute(
-                    """INSERT INTO inputs_system_prm_zone_elcc_surface
-                    (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone,
-                     period, facet, elcc_surface_intercept)
-                    VALUES ({}, {}, '{}', {}, {}, {});""".format(
-                        prm_zone_scenario_id, elcc_surface_scenario_id,
-                        zone, period, facet,
-                        zone_period_facet_intercepts[zone][period][facet]
-                    )
+            for facet in list(
+                    zone_period_facet_intercepts[zone][period].keys()
+            ):
+                ints_data.append(
+                    (prm_zone_scenario_id, elcc_surface_scenario_id,
+                     zone, period, facet,
+                     zone_period_facet_intercepts[zone][period][facet])
                 )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_system_prm_zone_elcc_surface
+        (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone,
+         period, facet, elcc_surface_intercept)
+        VALUES (?, ?, ?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=ints_data)
 
     # ELCC coefficients (by project)
+    coef_data = []
     for proj in list(proj_period_facet_coeff.keys()):
         for period in list(proj_period_facet_coeff[proj].keys()):
             for facet in list(proj_period_facet_coeff[proj][period].keys()):
-                c.execute(
-                    """INSERT INTO inputs_project_elcc_surface 
-                    (prm_zone_scenario_id, 
-                    project_prm_zone_scenario_id,
-                    elcc_surface_scenario_id, 
-                    project, period, facet, elcc_surface_coefficient)
-                    VALUES ({}, {}, {}, '{}', {}, {}, {});""".format(
-                        prm_zone_scenario_id, project_prm_zone_scenario_id,
-                        elcc_surface_scenario_id,
-                        proj, period, facet,
-                        proj_period_facet_coeff[proj][period][facet]
-                    )
+                coef_data.append(
+                    (prm_zone_scenario_id, project_prm_zone_scenario_id,
+                     elcc_surface_scenario_id, proj, period, facet,
+                     proj_period_facet_coeff[proj][period][facet])
                 )
-    io.commit()
+    coef_sql = \
+        """INSERT INTO inputs_project_elcc_surface 
+        (prm_zone_scenario_id, 
+        project_prm_zone_scenario_id,
+        elcc_surface_scenario_id, 
+        project, period, facet, elcc_surface_coefficient)
+        VALUES (?, ?, ?, ?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=coef_sql, data=coef_data)

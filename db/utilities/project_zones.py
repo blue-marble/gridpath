@@ -6,6 +6,7 @@ Create a list of all projects
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
 
 def project_load_zones(
         io, c,
@@ -30,29 +31,31 @@ def project_load_zones(
     print("project load zones")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(load_zone_scenario_id, project_load_zone_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_project_load_zones
         (load_zone_scenario_id, project_load_zone_scenario_id, name,
         description)
-        VALUES ({}, {}, '{}', '{}');""".format(
-            load_zone_scenario_id, project_load_zone_scenario_id,
-            scenario_name, scenario_description
+        VALUES (?, ?, ?, ?);""".format(
+
         )
-    )
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert all projects with their modeled load_zones
-    for project in list(project_load_zones.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_load_zones
-            (load_zone_scenario_id, project_load_zone_scenario_id, project, 
-            load_zone)
-            VALUES ({}, {}, '{}', '{}');""".format(
-                load_zone_scenario_id, project_load_zone_scenario_id,
-                project, project_load_zones[project]
-            )
+    inputs_data = []
+    for p in list(project_load_zones.keys()):
+        inputs_data.append(
+            (load_zone_scenario_id, project_load_zone_scenario_id,
+             p, project_load_zones[p])
         )
-    io.commit()
+
+    inputs_sql = \
+        """INSERT INTO inputs_project_load_zones
+        (load_zone_scenario_id, project_load_zone_scenario_id, project, 
+        load_zone)
+        VALUES (?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
     # Check that all projects got assigned a load zone
     all_projects = [
@@ -65,15 +68,14 @@ def project_load_zones(
         lz = c.execute(
             """SELECT load_zone
             FROM inputs_project_load_zones
-            WHERE load_zone_scenario_id = {}
-            AND project_load_zone_scenario_id = {}
-            AND project = '{}';""".format(
-                load_zone_scenario_id, project_load_zone_scenario_id, prj
-            )
+            WHERE load_zone_scenario_id = ?
+            AND project_load_zone_scenario_id = ?
+            AND project = ?;""",
+            (load_zone_scenario_id, project_load_zone_scenario_id, prj)
         ).fetchall()
 
         if lz is None:
-            raise ValueError("Project {}".format(prj)
+            raise ValueError("Project ?".format(prj)
                              + " has not been assigned a load_zone")
 
 
@@ -90,31 +92,32 @@ def project_reserve_bas(
     print("project " + reserve_type + " bas")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(reserve_ba_scenario_id, project_reserve_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_project_{}_bas
         ({}_ba_scenario_id, project_{}_ba_scenario_id, 
         name, description)
-        VALUES ({}, {}, '{}', '{}');""".format(
+        VALUES (?, ?, ?, ?);""".format(
             reserve_type, reserve_type, reserve_type,
-            reserve_ba_scenario_id, project_reserve_scenario_id,
-            scenario_name, scenario_description
         )
-    )
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert projects with BAs
+    inputs_data = []
     for project in list(project_bas.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_{}_bas
-            ({}_ba_scenario_id, 
-            project_{}_ba_scenario_id, project, {}_ba)
-            VALUES ({}, {}, '{}', '{}');""".format(
-                reserve_type, reserve_type, reserve_type, reserve_type,
-                reserve_ba_scenario_id, project_reserve_scenario_id,
-                project, project_bas[project]
-            )
+        inputs_data.append(
+            (reserve_ba_scenario_id, project_reserve_scenario_id,
+                project, project_bas[project])
         )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_project_{}_bas
+        ({}_ba_scenario_id, 
+        project_{}_ba_scenario_id, project, {}_ba)
+        VALUES (?, ?, ?, ?);""".format(
+            reserve_type, reserve_type, reserve_type, reserve_type,
+        )
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 def project_policy_zones(
@@ -142,31 +145,32 @@ def project_policy_zones(
     print("project " + policy_type + " zones")
     
     # Subscenarios
-    c.execute(
+    subs_data = [(policy_zone_scenario_id, project_policy_zone_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_project_{}_zones
         ({}_zone_scenario_id, project_{}_zone_scenario_id, name,
         description)
-        VALUES ({}, {}, '{}', '{}');""".format(
+        VALUES (?, ?, ?, ?);""".format(
             policy_type, policy_type, policy_type,
-            policy_zone_scenario_id, project_policy_zone_scenario_id,
-            scenario_name, scenario_description
         )
-    )
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Project zones data
+    inputs_data = []
     for project in list(project_zones.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_{}_zones
-            ({}_zone_scenario_id, project_{}_zone_scenario_id, project, 
-            {}_zone)
-            VALUES ({}, {}, '{}', '{}');""".format(
-                policy_type, policy_type, policy_type, policy_type,
-                policy_zone_scenario_id, project_policy_zone_scenario_id,
-                project, project_zones[project]
-            )
+        inputs_data.append(
+            (policy_zone_scenario_id, project_policy_zone_scenario_id,
+             project, project_zones[project])
         )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_project_{}_zones
+        ({}_zone_scenario_id, project_{}_zone_scenario_id, project, 
+        {}_zone)
+        VALUES (?, ?, ?, ?);""".format(
+            policy_type, policy_type, policy_type, policy_type,
+        )
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 if __name__ == "__main__":

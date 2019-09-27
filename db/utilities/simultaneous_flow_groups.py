@@ -7,6 +7,10 @@ be applied
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
+from db.common_functions import spin_on_database_lock
+
 
 def insert_transmission_simultaneous_flow_groups(
         io, c,
@@ -31,29 +35,28 @@ def insert_transmission_simultaneous_flow_groups(
     print("transmission simultaneous flow groups")
 
     # Subscenarios
-    c.execute(
+    subs_data = [(transmission_simultaneous_flow_limit_line_group_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_transmission_simultaneous_flow_limit_line_groups
         (transmission_simultaneous_flow_limit_line_group_scenario_id, name,
         description)
-        VALUES ({}, '{}', '{}');""".format(
-            transmission_simultaneous_flow_limit_line_group_scenario_id,
-            scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for group in list(group_lines.keys()):
         for tx_line in group_lines[group]:
-            c.execute(
-                """INSERT INTO 
-                inputs_transmission_simultaneous_flow_limit_line_groups
+            inputs_data.append(
                 (transmission_simultaneous_flow_limit_line_group_scenario_id,
-                transmission_simultaneous_flow_limit,
-                transmission_line, simultaneous_flow_direction)
-                VALUES ({}, '{}', '{}', {});""".format(
-                    transmission_simultaneous_flow_limit_line_group_scenario_id,
-                    group, tx_line[0], tx_line[1]
-                )
+                    group, tx_line[0], tx_line[1])
             )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO 
+        inputs_transmission_simultaneous_flow_limit_line_groups
+        (transmission_simultaneous_flow_limit_line_group_scenario_id,
+        transmission_simultaneous_flow_limit,
+        transmission_line, simultaneous_flow_direction)
+        VALUES (?, ?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

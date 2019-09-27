@@ -6,6 +6,8 @@ Project portfolios
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
 
 def update_project_portfolios(
         io, c,
@@ -17,25 +19,26 @@ def update_project_portfolios(
     print("project portfolios")
 
     # Subscenario
-    c.execute(
+    subs_data = [(project_portfolio_scenario_id, scenario_name,
+                  scenario_description)]
+    subs_sql = \
         """INSERT INTO subscenarios_project_portfolios
         (project_portfolio_scenario_id, name, description)
-        VALUES ({}, '{}', '{}');""".format(
-            project_portfolio_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
+    # Insert data
+    inputs_data = []
     for project in list(project_cap_types.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_portfolios
-             (project_portfolio_scenario_id, project, capacity_type)
-             VALUES ({}, '{}', '{}');""".format(
-                project_portfolio_scenario_id, project,
-                project_cap_types[project]
-            )
+        inputs_data.append(
+            (project_portfolio_scenario_id, project,
+             project_cap_types[project])
         )
-    io.commit()
+    inputs_sql = \
+        """INSERT INTO inputs_project_portfolios
+         (project_portfolio_scenario_id, project, capacity_type)
+         VALUES (?, ?, ?);"""
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 if __name__ == "__main__":
