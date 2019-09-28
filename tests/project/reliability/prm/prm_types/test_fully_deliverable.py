@@ -88,7 +88,8 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
 
         # Set: FULLY_DELIVERABLE_PRM_PROJECTS
         expected_projects = sorted([
-            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
+            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New",
+            "Gas_CCGT_New_Binary", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
             "Hydro", 'Hydro_NonCurtailable',
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",

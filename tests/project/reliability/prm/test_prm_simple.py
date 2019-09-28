@@ -89,6 +89,7 @@ class TestProjPRMSimple(unittest.TestCase):
             sorted(
                 {"Coal": 0.8, "Coal_z2": 0.8,
                  "Gas_CCGT": 0.8, "Gas_CCGT_New": 0.8,
+                 "Gas_CCGT_New_Binary": 0.8,
                  "Gas_CCGT_z2": 0.8, "Gas_CT": 0.8,
                  "Gas_CT_New": 0.8, "Gas_CT_z2": 0.8,
                  "Nuclear": 0.8, "Nuclear_z2": 0.8,

@@ -89,10 +89,12 @@ class TestRegulationDownAgg(unittest.TestCase):
 
         # Set: REGULATION_DOWN_PROJECTS_OPERATIONAL_IN_TIMEPOINT
         projects_2020 = sorted(["Gas_CCGT", "Coal", "Gas_CCGT_New",
+                                "Gas_CCGT_New_Binary",
                                 "Gas_CCGT_z2", "Coal_z2",
                                 "Battery", "Battery_Specified", "Hydro",
                                 "Hydro_NonCurtailable"])
         projects_2030 = sorted(["Gas_CCGT", "Coal", "Gas_CCGT_New",
+                                "Gas_CCGT_New_Binary",
                                 "Gas_CCGT_z2", "Coal_z2",
                                 "Battery", "Hydro", "Hydro_NonCurtailable"])
         expected_projects = OrderedDict(sorted(
