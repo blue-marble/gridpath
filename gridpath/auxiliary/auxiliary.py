@@ -15,6 +15,8 @@ import os.path
 import sys
 import pandas as pd
 
+from db.common_functions import spin_on_database_lock
+
 
 def load_subtype_modules(
         required_subtype_modules, package, required_attributes
@@ -613,3 +615,54 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
                  print_bad_projects, operational_type, reserve)
              )
     return results
+
+
+def results_import_setup(conn, cursor, table, scenario_id, subproblem, stage):
+    """
+    :param conn: the connection object
+    :param cursor: the cursor object
+    :param table: the results table we'll be inserting into
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+
+    Prepare for results import: 1) delete prior results and 2) create a
+    temporary table we'll insert into first (for sorting before inserting
+    into the final table)
+    """
+    # Delete prior results
+    del_sql = """
+        DELETE FROM {} 
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """.format(table)
+    spin_on_database_lock(conn=conn, cursor=cursor, sql=del_sql,
+                          data=(scenario_id, subproblem, stage), many=False)
+
+    # Create temporary table, which we'll use to sort the results before
+    # inserting them into our persistent table
+    drop_tbl_sql = \
+        """DROP TABLE IF EXISTS temp_{}{};
+        """.format(table, scenario_id)
+    spin_on_database_lock(conn=conn, cursor=cursor, sql=drop_tbl_sql,
+                          data=(), many=False)
+
+    # Get the CREATE statemnt for the persistent table
+    tbl_sql = cursor.execute("""
+        SELECT sql 
+        FROM sqlite_master
+        WHERE type='table'
+        AND name='{}'
+        """.format(table)
+                             ).fetchone()[0]
+
+    # Create a temporary table with the same structure as the persistent table
+    temp_tbl_sql = \
+        tbl_sql.replace(
+            "CREATE TABLE {}".format(table),
+            "CREATE TEMPORARY TABLE temp_{}{}".format(table, scenario_id)
+        )
+
+    spin_on_database_lock(conn=conn, cursor=cursor, sql=temp_tbl_sql,
+                          data=(), many=False)
