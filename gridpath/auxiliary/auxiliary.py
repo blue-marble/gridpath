@@ -320,11 +320,13 @@ def write_validation_to_database(validation_results, conn):
     validation_results = [row + (timestamp,) for row in validation_results]
     c = conn.cursor()
     for row in validation_results:
-        query = """INSERT INTO status_validation
-                (scenario_id, subproblem_id, stage_id, 
-                gridpath_module, related_subscenario, related_database_table, 
-                issue_type, issue_description, timestamp)
-                VALUES ({});""".format(','.join(['?' for item in row]))
+        query = """
+        INSERT INTO status_validation
+        (scenario_id, subproblem_id, stage_id, 
+        gridpath_module, related_subscenario, related_database_table, 
+        issue_type, issue_description, timestamp)
+        VALUES ({});
+        """.format(','.join(['?' for item in row]))
 
         c.execute(query, row)
 
@@ -617,7 +619,7 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
     return results
 
 
-def results_import_setup(conn, cursor, table, scenario_id, subproblem, stage):
+def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
     """
     :param conn: the connection object
     :param cursor: the cursor object

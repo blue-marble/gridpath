@@ -258,16 +258,18 @@ def reset_input_validation(conn, scenario_id):
     """
     c = conn.cursor()
 
-    sql = \
-        """DELETE FROM status_validation
-        WHERE scenario_id = ?;"""
+    sql = """
+        DELETE FROM status_validation
+        WHERE scenario_id = ?;
+        """
     spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=(scenario_id,),
                           many=False)
 
-    sql = \
-        """UPDATE scenarios
+    sql = """
+        UPDATE scenarios
         SET validation_status_id = 0
-        WHERE scenario_id = ?;"""
+        WHERE scenario_id = ?;
+        """
     spin_on_database_lock(conn=conn, cursor=c, sql=sql,  data=(scenario_id,),
                           many=False)
 
@@ -291,10 +293,11 @@ def update_validation_status(conn, scenario_id):
     else:
         status = 1
 
-    sql = \
-        """UPDATE scenarios
+    sql = """
+        UPDATE scenarios
         SET validation_status_id = ?
-        WHERE scenario_id = ?;"""
+        WHERE scenario_id = ?;
+        """
     spin_on_database_lock(conn=conn, cursor=c, sql=sql,
                           data=(status, scenario_id), many=False)
 

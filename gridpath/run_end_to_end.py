@@ -89,9 +89,11 @@ def update_run_status(db_path, scenario, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    sql = """UPDATE scenarios
+    sql = """
+        UPDATE scenarios
         SET run_status_id = ?
-        WHERE scenario_name = ?;"""
+        WHERE scenario_name = ?;
+        """
 
     spin_on_database_lock(conn=conn, cursor=c, sql=sql,
                           data=(status_id, scenario), many=False)

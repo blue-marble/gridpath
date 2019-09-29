@@ -16,7 +16,8 @@ import os.path
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Expression, value
 
-
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import prm_cost_group_sets, \
     prm_cost_group_prm_type
 
@@ -491,47 +492,20 @@ def import_module_specific_results_into_database(
 
     # Energy-only and deliverable capacity by project
     print("project energy-only and deliverable capacities")
-    c.execute(
-        """DELETE FROM results_project_prm_deliverability
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_prm_deliverability",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_project_prm_deliverability"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE 
-        temp_results_project_prm_deliverability"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        project VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        prm_zone VARCHAR(64),
-        capacity_mw FLOAT,
-        deliverable_capacity_mw FLOAT,
-        energy_only_capacity_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-        );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(
             results_directory,
             "project_prm_energy_only_and_deliverable_capacity.csv"),
-              "r") as capacity_costs_file:
-        reader = csv.reader(capacity_costs_file)
+              "r") as deliv_file:
+        reader = csv.reader(deliv_file)
 
         next(reader)  # skip header
         for row in reader:
@@ -541,25 +515,26 @@ def import_module_specific_results_into_database(
             total_capacity_mw = row[3]
             deliverable_capacity = row[4]
             energy_only_capacity = row[5]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_project_prm_deliverability"""
-                + str(scenario_id) + """
-                (scenario_id, project, period, subproblem_id, stage_id,
-                prm_zone, capacity_mw, 
-                deliverable_capacity_mw, energy_only_capacity_mw)
-                VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    prm_zone, total_capacity_mw,
-                    deliverable_capacity, energy_only_capacity
-                )
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 prm_zone, total_capacity_mw,
+                 deliverable_capacity, energy_only_capacity)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_prm_deliverability{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        prm_zone, capacity_mw, 
+        deliverable_capacity_mw, energy_only_capacity_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_prm_deliverability
+    insert_sql = """
+        INSERT INTO results_project_prm_deliverability
         (scenario_id, project, period, subproblem_id, stage_id,
         prm_zone, capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw)
@@ -567,65 +542,24 @@ def import_module_specific_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id,
         prm_zone, capacity_mw, 
         deliverable_capacity_mw, energy_only_capacity_mw
-        FROM temp_results_project_prm_deliverability"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_project_prm_deliverability{}
          ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_prm_deliverability"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # Group capacity cost results
     print("project prm group deliverability costs")
 
-    # Delete prior results
-    c.execute(
-        """DELETE FROM 
-        results_project_prm_deliverability_group_capacity_and_costs
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};""".format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_prm_deliverability_group_capacity_and_costs",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_project_prm_deliverability_group_capacity_and_costs"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE 
-        temp_results_project_prm_deliverability_group_capacity_and_costs"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        deliverability_group VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        deliverability_group_no_cost_deliverable_capacity_mw FLOAT,
-        deliverability_group_deliverability_cost_per_mw FLOAT,
-        total_capacity_mw FLOAT,
-        deliverable_capacity_mw FLOAT,
-        energy_only_capacity_mw FLOAT,
-        deliverable_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, deliverability_group, period, subproblem_id, 
-        stage_id)
-        );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(
             results_directory, "deliverability_group_capacity_and_costs.csv"),
               "r") as capacity_costs_file:
@@ -641,34 +575,34 @@ def import_module_specific_results_into_database(
             deliverable_capacity = row[5]
             energy_only_capacity_mw = row[6]
             deliverable_capacity_cost = row[7]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_project_prm_deliverability_group_capacity_and_costs"""
-                + str(scenario_id) + """
-                (scenario_id, deliverability_group, period, subproblem_id, 
-                stage_id,
-                deliverability_group_no_cost_deliverable_capacity_mw, 
-                deliverability_group_deliverability_cost_per_mw,
-                total_capacity_mw, 
-                deliverable_capacity_mw, 
-                energy_only_capacity_mw,
-                deliverable_capacity_cost)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
-                """.format(
-                    scenario_id, group, period, subproblem, stage,
-                    deliverability_group_no_cost_deliverable_capacity_mw,
-                    deliverability_group_deliverability_cost_per_mw,
-                    total_capacity_mw,
-                    deliverable_capacity, energy_only_capacity_mw,
-                    deliverable_capacity_cost
-                )
+            
+            results.append(
+                (scenario_id, group, period, subproblem, stage,
+                 deliverability_group_no_cost_deliverable_capacity_mw,
+                 deliverability_group_deliverability_cost_per_mw,
+                 total_capacity_mw,
+                 deliverable_capacity, energy_only_capacity_mw,
+                 deliverable_capacity_cost)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_prm_deliverability_group_capacity_and_costs{}
+        (scenario_id, deliverability_group, period, subproblem_id, 
+        stage_id,
+        deliverability_group_no_cost_deliverable_capacity_mw, 
+        deliverability_group_deliverability_cost_per_mw,
+        total_capacity_mw, 
+        deliverable_capacity_mw, 
+        energy_only_capacity_mw,
+        deliverable_capacity_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO 
+    insert_sql = """
+        INSERT INTO 
         results_project_prm_deliverability_group_capacity_and_costs
         (scenario_id, deliverability_group, period, subproblem_id, stage_id,
         deliverability_group_no_cost_deliverable_capacity_mw, 
@@ -684,23 +618,12 @@ def import_module_specific_results_into_database(
         deliverable_capacity_mw, energy_only_capacity_mw,
         deliverable_capacity_cost
         FROM 
-        temp_results_project_prm_deliverability_group_capacity_and_costs"""
-        + str(scenario_id) +
-        """
-         ORDER BY scenario_id, deliverability_group, period, subproblem_id, 
-         stage_id;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE 
-        temp_results_project_prm_deliverability_group_capacity_and_costs"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        temp_results_project_prm_deliverability_group_capacity_and_costs{}
+        ORDER BY scenario_id, deliverability_group, period, subproblem_id, 
+        stage_id;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def process_module_specific_results(db, c, subscenarios):
@@ -727,17 +650,19 @@ def process_module_specific_results(db, c, subscenarios):
         "results_project_elcc_surface"
     ]
 
+    results = []
     for row in project_period_eocap:
-        for table in tables_to_update:
-            c.execute(
-                """UPDATE {}
-                SET energy_only_capacity_mw = {}
-                WHERE scenario_id = {}
-                AND project = '{}'
-                AND period = {};""".format(
-                    table, row[2], subscenarios.SCENARIO_ID,
-                    row[0], row[1]
-                )
-            )
+        results.append(
+            (row[2], subscenarios.SCENARIO_ID, row[0], row[1])
+        )
 
-    db.commit()
+    for table in tables_to_update:
+        sql = """
+            UPDATE {}
+            SET energy_only_capacity_mw = ?
+            WHERE scenario_id = ?
+            AND project = ?
+            AND period = ?;""".format(table)
+
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)
+

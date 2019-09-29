@@ -13,6 +13,8 @@ import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
     NonNegativeReals, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
@@ -277,42 +279,16 @@ def import_results_into_database(
     """
     # Carbon emission imports by transmission line and timepoint
     print("transmission carbon emissions")
-    c.execute(
-        """DELETE FROM results_transmission_carbon_emissions 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_transmission_carbon_emissions"""
-        + str(scenario_id) + """;"""
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_transmission_carbon_emissions",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_transmission_carbon_emissions"""
-        + str(scenario_id) + """(
-         scenario_id INTEGER,
-         tx_line VARCHAR(64),
-         period INTEGER,
-         subproblem_id INTEGER,
-         stage_id INTEGER,
-         timepoint INTEGER,
-         timepoint_weight FLOAT,
-         number_of_hours_in_timepoint FLOAT,
-         carbon_emission_imports_tons FLOAT,
-         carbon_emission_imports_tons_degen FLOAT,
-         PRIMARY KEY (scenario_id, tx_line, timepoint)
-         );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "carbon_emission_imports_by_tx_line.csv"), "r") as \
             emissions_file:
@@ -327,30 +303,30 @@ def import_results_into_database(
             number_of_hours_in_timepoint = row[4]
             carbon_emission_imports_tons = row[5]
             carbon_emission_imports_tons_degen = row[6]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_transmission_carbon_emissions"""
-                + str(scenario_id) + """
-                 (scenario_id, tx_line, period, subproblem_id, stage_id, 
-                 timepoint, timepoint_weight, 
-                 number_of_hours_in_timepoint, 
-                 carbon_emission_imports_tons, 
+            
+            results.append(
+                (scenario_id, tx_line, period, subproblem, stage,
+                 timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 carbon_emission_imports_tons,
                  carbon_emission_imports_tons_degen)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {});
-                 """.format(
-                    scenario_id, tx_line, period, subproblem, stage,
-                    timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    carbon_emission_imports_tons,
-                    carbon_emission_imports_tons_degen
-                )
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_transmission_carbon_emissions{}
+         (scenario_id, tx_line, period, subproblem_id, stage_id, 
+         timepoint, timepoint_weight, 
+         number_of_hours_in_timepoint, 
+         carbon_emission_imports_tons, 
+         carbon_emission_imports_tons_degen)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_transmission_carbon_emissions
+    insert_sql = """
+        INSERT INTO results_transmission_carbon_emissions
         (scenario_id, tx_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen)
@@ -358,18 +334,8 @@ def import_results_into_database(
         scenario_id, tx_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         carbon_emission_imports_tons, carbon_emission_imports_tons_degen
-        FROM temp_results_transmission_carbon_emissions"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_transmission_carbon_emissions{}
          ORDER BY scenario_id, tx_line, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_transmission_carbon_emissions"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

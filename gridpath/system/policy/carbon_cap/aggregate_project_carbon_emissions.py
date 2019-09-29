@@ -14,6 +14,8 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
@@ -94,39 +96,16 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     """
     # Carbon emissions by in-zone projects
     print("system carbon emissions (project)")
-    c.execute(
-        """DELETE FROM results_system_carbon_emissions 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_system_carbon_emissions",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_system_carbon_emissions"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_system_carbon_emissions"""
-        + str(scenario_id) + """(
-         scenario_id INTEGER,
-         carbon_cap_zone VARCHAR(64),
-         period INTEGER,
-         subproblem_id INTEGER,
-         stage_id INTEGER,
-         carbon_cap_mmt FLOAT,
-         in_zone_project_emissions_mmt FLOAT,
-         PRIMARY KEY (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id)
-         );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "carbon_cap_total_project.csv"), "r") as \
             emissions_file:
@@ -138,41 +117,32 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             period = row[1]
             carbon_cap_mmt = row[4]
             project_carbon_emissions_mmt = row[5]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_system_carbon_emissions"""
-                + str(scenario_id) + """
-                 (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
-                 carbon_cap_mmt, in_zone_project_emissions_mmt)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {});""".format(
-                    scenario_id, carbon_cap_zone, period, subproblem, stage,
-                    carbon_cap_mmt, project_carbon_emissions_mmt
-                )
+            
+            results.append(
+                (scenario_id, carbon_cap_zone, period, subproblem, stage,
+                 carbon_cap_mmt, project_carbon_emissions_mmt)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_system_carbon_emissions{}
+         (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
+         carbon_cap_mmt, in_zone_project_emissions_mmt)
+         VALUES (?, ?, ?, ?, ?, ?, ?);
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_system_carbon_emissions
+    insert_sql = """
+        INSERT INTO results_system_carbon_emissions
         (scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
         carbon_cap_mmt, in_zone_project_emissions_mmt)
         SELECT
         scenario_id, carbon_cap_zone, period, subproblem_id, stage_id,
         carbon_cap_mmt, in_zone_project_emissions_mmt
-        FROM temp_results_system_carbon_emissions"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_system_carbon_emissions{}
          ORDER BY scenario_id, carbon_cap_zone, period, subproblem_id, 
         stage_id;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_system_carbon_emissions"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

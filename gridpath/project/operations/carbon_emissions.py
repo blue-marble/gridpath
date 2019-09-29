@@ -13,6 +13,9 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
+
 
 def add_model_components(m, d):
     """
@@ -211,43 +214,16 @@ def import_results_into_database(
     """
     # Carbon emission imports by project and timepoint
     print("project carbon emissions")
-    c.execute(
-        """DELETE FROM results_project_carbon_emissions 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_project_carbon_emissions"""
-        + str(scenario_id) + """;"""
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_carbon_emissions",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_carbon_emissions"""
-        + str(scenario_id) + """(
-         scenario_id INTEGER,
-         project VARCHAR(64),
-         period INTEGER,
-         subproblem_id INTEGER,
-         stage_id INTEGER,
-         horizon INTEGER,
-         timepoint INTEGER,
-         timepoint_weight FLOAT,
-         number_of_hours_in_timepoint FLOAT,
-         load_zone VARCHAR(32),
-         carbon_emission_tons FLOAT,
-         PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-         );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "carbon_emissions_by_project.csv"), "r") as \
             emissions_file:
@@ -263,28 +239,28 @@ def import_results_into_database(
             number_of_hours_in_timepoint = row[5]
             load_zone = row[6]
             carbon_emissions_tons = row[7]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_project_carbon_emissions"""
-                + str(scenario_id) + """
-                 (scenario_id, project, period, subproblem_id, stage_id,
-                 horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, carbon_emission_tons)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', {});
-                 """.format(
-                    scenario_id, project, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
-                    load_zone, carbon_emissions_tons
-                )
+                    load_zone, carbon_emissions_tons)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_carbon_emissions{}
+         (scenario_id, project, period, subproblem_id, stage_id,
+         horizon, timepoint, timepoint_weight,
+         number_of_hours_in_timepoint,
+         load_zone, carbon_emission_tons)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_carbon_emissions
+    insert_sql = """
+        INSERT INTO results_project_carbon_emissions
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, carbon_emission_tons)
@@ -292,20 +268,11 @@ def import_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, carbon_emission_tons
-        FROM temp_results_project_carbon_emissions"""
-        + str(scenario_id)
-        + """
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_carbon_emissions"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_project_carbon_emissions{}
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def process_results(db, c, subscenarios):
@@ -354,31 +321,29 @@ def process_results(db, c, subscenarios):
         "results_project_elcc_surface"
     ]
 
+    updates = []
     for (prj, zone) in project_zones:
-        for tbl in tables_to_update:
-            c.execute(
-                """UPDATE {}
-                SET carbon_cap_zone = '{}'
-                WHERE scenario_id = {}
-                AND project = '{}';""".format(
-                    tbl,
-                    zone,
-                    subscenarios.SCENARIO_ID,
-                    prj
-                )
-            )
-    db.commit()
+        updates.append(
+            (zone, subscenarios.SCENARIO_ID, prj)
+        )
+    for tbl in tables_to_update:
+        sql = """
+            UPDATE {}
+            SET carbon_cap_zone = ?
+            WHERE scenario_id = ?
+            AND project = ?;
+            """.format(tbl)
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=updates)
 
     # Set carbon_cap_zone to 'no_carbon_cap' for all other projects
     # This helps for later joins (can't join on NULL values)
     for tbl in tables_to_update:
-        c.execute(
-            """UPDATE {}
+        no_cc_sql = """
+            UPDATE {}
             SET carbon_cap_zone = 'no_carbon_cap'
-            WHERE scenario_id = {}
-            AND carbon_cap_zone IS NULL;""".format(
-                tbl,
-                subscenarios.SCENARIO_ID
-            )
-        )
-    db.commit()
+            WHERE scenario_id = ?
+            AND carbon_cap_zone IS NULL;
+            """.format(tbl)
+        spin_on_database_lock(conn=db, cursor=c, sql=no_cc_sql,
+                              data=(subscenarios.SCENARIO_ID,),
+                              many=False)

@@ -13,6 +13,7 @@ import os.path
 from pyomo.environ import Param, Var, Set, NonNegativeReals, Constraint, \
     Expression, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components, total_cost_components
 
@@ -212,16 +213,18 @@ def import_results_into_database(
     # then elcc_simple_mw imported
     # Update results_system_prm with NULL for surface contribution just in
     # case (instead of clearing prior results)
-    c.execute(
-        """UPDATE results_system_prm
+    nullify_sql = """
+        UPDATE results_system_prm
         SET elcc_surface_mw = NULL
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
-
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql, 
+                          data=(scenario_id, subproblem, stage),
+                          many=False)
+    
+    results = []
     with open(os.path.join(results_directory,
                            "prm_elcc_surface.csv"), "r") as \
             surface_file:
@@ -232,16 +235,18 @@ def import_results_into_database(
             prm_zone = row[0]
             period = row[1]
             elcc = row[2]
-
-            c.execute(
-                """UPDATE results_system_prm
-                SET elcc_surface_mw = {}
-                WHERE scenario_id = {}
-                AND prm_zone = '{}'
-                AND period = {}
-                AND subproblem_id = {}
-                AND stage_id = {}""".format(
-                    elcc, scenario_id, prm_zone, period, subproblem, stage
-                )
+            
+            results.append(
+                (elcc, scenario_id, prm_zone, period, subproblem, stage)
             )
-    db.commit()
+
+    update_sql = """
+        UPDATE results_system_prm
+        SET elcc_surface_mw = ?
+        WHERE scenario_id = ?
+        AND prm_zone = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
