@@ -4,12 +4,11 @@
 from __future__ import print_function
 
 from builtins import str
-import os.path
 import sqlite3
 import sys
 from argparse import ArgumentParser
 
-from db.common_functions import connect_to_database
+from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
     write_validation_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -258,18 +257,21 @@ def reset_input_validation(conn, scenario_id):
     :return: 
     """
     c = conn.cursor()
-    c.execute(
-        """DELETE FROM status_validation
-        WHERE scenario_id = {};""".format(str(scenario_id))
-    )
 
-    c.execute(
-        """UPDATE scenarios
+    sql = """
+        DELETE FROM status_validation
+        WHERE scenario_id = ?;
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql, data=(scenario_id,),
+                          many=False)
+
+    sql = """
+        UPDATE scenarios
         SET validation_status_id = 0
-        WHERE scenario_id = {};""".format(str(scenario_id))
-    )
-
-    conn.commit()
+        WHERE scenario_id = ?;
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql,  data=(scenario_id,),
+                          many=False)
 
 
 def update_validation_status(conn, scenario_id):
@@ -291,13 +293,13 @@ def update_validation_status(conn, scenario_id):
     else:
         status = 1
 
-    c.execute(
-        """UPDATE scenarios
-        SET validation_status_id = {}
-        WHERE scenario_id = {};""".format(str(status), str(scenario_id))
-    )
-
-    conn.commit()
+    sql = """
+        UPDATE scenarios
+        SET validation_status_id = ?
+        WHERE scenario_id = ?;
+        """
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql,
+                          data=(status, scenario_id), many=False)
 
 
 def parse_arguments(args):
@@ -372,6 +374,9 @@ def main(args=None):
 
     # Update validation status:
     update_validation_status(conn, subscenarios.SCENARIO_ID)
+
+    # Close the database connection explicitly
+    conn.close()
 
 
 if __name__ == "__main__":

@@ -14,6 +14,9 @@ import csv
 import os.path
 from pyomo.environ import Set, Var, Constraint, Expression, Reals, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
+
 
 def add_model_components(m, d):
     """
@@ -124,42 +127,15 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     """
     print("transmission operations")
 
-    c.execute(
-        """DELETE FROM results_transmission_operations
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_transmission_operations",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_transmission_operations"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_transmission_operations""" 
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        transmission_line VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        timepoint INTEGER,
-        timepoint_weight FLOAT,
-        number_of_hours_in_timepoint FLOAT,
-        load_zone_from VARCHAR(32),
-        load_zone_to VARCHAR(32),
-        transmission_flow_mw FLOAT,
-        PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
-            );"""
-    )
-    db.commit()
-
+    
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory, "transmission_operations.csv"), 
               "r") as tx_op_file:
         reader = csv.reader(tx_op_file)
@@ -174,26 +150,27 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
             tx_flow = row[7]
-            c.execute(
-                """INSERT INTO temp_results_transmission_operations"""
-                + str(scenario_id) + """
-                (scenario_id, transmission_line, period, subproblem_id, 
-                stage_id, timepoint, timepoint_weight, 
-                number_of_hours_in_timepoint,
-                load_zone_from, load_zone_to, transmission_flow_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, '{}', '{}', 
-                {});""".format(
-                    scenario_id, tx_line, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, tx_line, period, subproblem, stage,
                     timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
-                    lz_from, lz_to, tx_flow
-                )
+                    lz_from, lz_to, tx_flow)
             )
-    db.commit()
+            
+    insert_temp_sql = """
+        INSERT INTO temp_results_transmission_operations{}
+        (scenario_id, transmission_line, period, subproblem_id, 
+        stage_id, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint,
+        load_zone_from, load_zone_to, transmission_flow_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_transmission_operations
+    insert_sql = """
+        INSERT INTO results_transmission_operations
         (scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, transmission_flow_mw)
@@ -201,19 +178,9 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone_from, load_zone_to, transmission_flow_mw
-        FROM temp_results_transmission_operations"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_transmission_operations{}
          ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
         timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_transmission_operations"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

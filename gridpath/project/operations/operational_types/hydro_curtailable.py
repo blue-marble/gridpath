@@ -15,7 +15,9 @@ import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, \
     Expression, NonNegativeReals, PercentFraction, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import generator_subset_init, \
+    setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 
@@ -673,47 +675,15 @@ def import_module_specific_results_to_database(
     """
     print("project dispatch hydro curtailable")
     # dispatch_hydro_curtailable.csv
-    c.execute(
-        """DELETE FROM results_project_dispatch_hydro_curtailable
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="project_dispatch_hydro_curtailable",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_dispatch_hydro_curtailable"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE
-        temp_results_project_dispatch_hydro_curtailable"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            balancing_type_project VARCHAR(64),
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            power_mw FLOAT,
-            scheduled_curtailment_mw FLOAT,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-            );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "dispatch_hydro_curtailable.csv"),
               "r") as h_dispatch_file:
@@ -732,27 +702,27 @@ def import_module_specific_results_to_database(
             technology = row[7]
             power_mw = row[9]
             scheduled_curtailment_mw = row[10]
-            c.execute(
-                """INSERT INTO
-                temp_results_project_dispatch_hydro_curtailable"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, subproblem_id, stage_id, 
-                    balancing_type_project, horizon, timepoint,
-                    timepoint_weight, number_of_hours_in_timepoint, 
-                    load_zone, technology, power_mw, scheduled_curtailment_mw)
-                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
-                    '{}', '{}', {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    balancing_type_project, horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, scheduled_curtailment_mw
-                )
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 balancing_type_project, horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, power_mw, scheduled_curtailment_mw)
             )
-    db.commit()
+    insert_temp_sql = """
+        INSERT INTO
+        temp_results_project_dispatch_hydro_curtailable{}
+            (scenario_id, project, period, subproblem_id, stage_id, 
+            balancing_type_project, horizon, timepoint,
+            timepoint_weight, number_of_hours_in_timepoint, 
+            load_zone, technology, power_mw, scheduled_curtailment_mw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_dispatch_hydro_curtailable
+    insert_sql = """
+        INSERT INTO results_project_dispatch_hydro_curtailable
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint,
@@ -762,22 +732,11 @@ def import_module_specific_results_to_database(
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw
-        FROM temp_results_project_dispatch_hydro_curtailable"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_project_dispatch_hydro_curtailable{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE
-        temp_results_project_dispatch_hydro_curtailable"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def process_module_specific_results(db, c, subscenarios):
@@ -792,16 +751,17 @@ def process_module_specific_results(db, c, subscenarios):
     print("aggregate hydro curtailment")
 
     # Delete old aggregated hydro curtailment results
-    c.execute(
-        """DELETE FROM results_project_curtailment_hydro 
-        WHERE scenario_id = {}
-        """.format(subscenarios.SCENARIO_ID)
-    )
-    db.commit()
+    del_sql = """
+        DELETE FROM results_project_curtailment_hydro 
+        WHERE scenario_id = ?
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
 
     # Aggregate hydro curtailment (just scheduled curtailment)
-    c.execute(
-        """INSERT INTO results_project_curtailment_hydro
+    agg_sql = """
+        INSERT INTO results_project_curtailment_hydro
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
@@ -823,13 +783,14 @@ def process_module_specific_results(db, c, subscenarios):
             WHERE temporal_scenario_id = (
                 SELECT temporal_scenario_id 
                 FROM scenarios
-                WHERE scenario_id = {}
+                WHERE scenario_id = ?
                 )
         ) as tmp_info_tbl
         USING (subproblem_id, period, timepoint)
-        WHERE scenario_id = {}
-        ORDER BY subproblem_id, stage_id, load_zone, timepoint;""".format(
-            subscenarios.SCENARIO_ID,
-        )
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        ORDER BY subproblem_id, stage_id, load_zone, timepoint;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=agg_sql,
+                          data=(subscenarios.SCENARIO_ID,
+                                subscenarios.SCENARIO_ID),
+                          many=False)

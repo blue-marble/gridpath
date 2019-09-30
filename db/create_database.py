@@ -12,6 +12,8 @@ import os.path
 import sqlite3
 import sys
 
+from db.common_functions import spin_on_database_lock
+
 
 def database_file_exists(db_path):
     """
@@ -95,226 +97,184 @@ def load_data(db, omit_data):
     """
     if not omit_data:
         c = db.cursor()
-
         # General Model Data
-
-        # mod_months
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_months.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_months
-                    (month, description)
-                    VALUES ({}, '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_capacity_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_capacity_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_capacity_types
-                    (capacity_type, description)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_operational_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_operational_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_operational_types
-                    (operational_type, description)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # reserve_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_reserve_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_reserve_types
-                    (reserve_type, description)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_capacity_and_operational_type_invalid_combos
-        with open(
-                os.path.join(
-                    os.getcwd(), "data",
-                    "mod_capacity_and_operational_type_invalid_combos.csv"
-                ),
-                "r"
-        ) as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO 
-                    mod_capacity_and_operational_type_invalid_combos
-                    (capacity_type, operational_type)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_horizon_boundary_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_horizon_boundary_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_horizon_boundary_types
-                    (horizon_boundary_type, description)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_run_status_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_run_status_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_run_status_types
-                    (run_status_id, run_status_name)
-                    VALUES ({}, '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_validation_status_types
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_validation_status_types.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_validation_status_types
-                    (validation_status_id, validation_status_name)
-                    VALUES ({}, '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_features
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_features.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_features
-                    (feature, description)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
-
-        # mod_feature_subscenarios
-        with open(os.path.join(os.getcwd(), "data",
-                               "mod_feature_subscenarios.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO mod_feature_subscenarios
-                    (feature, subscenario_id)
-                    VALUES ('{}', '{}');""".format(row[0], row[1])
-                )
-            db.commit()
+        load_mod_months(db=db, c=c)
+        load_mod_capacity_types(db=db, c=c)
+        load_mod_operational_types(db=db, c=c)
+        load_mod_reserve_types(db=db, c=c)
+        load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
+        load_mod_horizon_boundary_types(db=db, c=c)
+        load_mod_run_status_types(db=db, c=c)
+        load_mod_validation_status_types(db=db, c=c)
+        load_mod_features(db=db, c=c)
+        load_mod_feature_subscenarios(db=db, c=c)
 
         # Data required for the UI
-
-        # ui_scenario_detail_table_metadata
-        with open(os.path.join(os.getcwd(), "data",
-                               "ui_scenario_detail_table_metadata.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO ui_scenario_detail_table_metadata
-                    (ui_table, include, ui_table_caption)
-                    VALUES ('{}', {}, '{}');""".format(row[0], row[1], row[2])
-                )
-            db.commit()
-
-        # ui_scenario_detail_table_row_metadata
-        with open(os.path.join(os.getcwd(), "data",
-                               "ui_scenario_detail_table_row_metadata.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO ui_scenario_detail_table_row_metadata
-                    (ui_table, ui_table_row, include, ui_row_caption,
-                    ui_row_db_scenarios_view_column, 
-                    ui_row_db_subscenario_table, 
-                    ui_row_db_subscenario_table_id_column, 
-                    ui_row_db_input_table)
-                    VALUES ('{}', '{}', {}, '{}', '{}', '{}', '{}', '{}');
-                    """.format(row[0], row[1], row[2], row[3], row[4],
-                               row[5], row[6], row[7])
-                )
-            db.commit()
-
-        # ui_scenario_results_plot_metadata
-        with open(os.path.join(os.getcwd(), "data",
-                               "ui_scenario_results_plot_metadata.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO ui_scenario_results_plot_metadata
-                    (results_plot, include, caption, load_zone_form_control,
-                    rps_zone_form_control, carbon_cap_zone_form_control,
-                    period_form_control, horizon_form_control, 
-                    stage_form_control, project_form_control)
-                    VALUES ('{}', {}, '{}', {}, {}, {}, {}, {}, {}, {});
-                    """.format(row[0], row[1], row[2], row[3], row[4],
-                               row[5], row[6], row[7], row[8], row[9])
-                )
-            db.commit()
-
-        # ui_scenario_results_plot_metadata
-        with open(os.path.join(os.getcwd(), "data",
-                               "ui_scenario_results_table_metadata.csv"),
-                  "r") as f:
-            reader = csv.reader(f, delimiter=",")
-            next(reader)
-            for row in reader:
-                c.execute(
-                    """INSERT INTO ui_scenario_results_table_metadata
-                    (results_table, include, caption)
-                    VALUES ('{}', {}, '{}');
-                    """.format(row[0], row[1], row[2])
-                )
-            db.commit()
+        load_ui_scenario_detail_table_metadata(db=db, c=c)
+        ui_scenario_detail_table_row_metadata(db=db, c=c)
+        load_ui_scenario_results_table_metadata(db=db, c=c)
+        load_ui_scenario_results_plot_metadata(db=db, c=c)
 
     else:
         pass
+
+
+def load_mod_months(db, c):
+    sql = """
+        INSERT INTO mod_months
+        (month, description)
+        VALUES (?, ?);"""    
+    load_aux_data(conn=db, cursor=c, filename="mod_months.csv", sql=sql)
+
+
+def load_mod_capacity_types(db, c):
+    sql = """
+        INSERT INTO mod_capacity_types
+        (capacity_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_capacity_types.csv", 
+                  sql=sql)
+
+
+def load_mod_operational_types(db, c):
+    sql = """
+        INSERT INTO mod_operational_types
+        (operational_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_operational_types.csv", 
+                  sql=sql)
+
+
+def load_mod_reserve_types(db, c):
+    sql = """
+        INSERT INTO mod_reserve_types
+        (reserve_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_reserve_types.csv", sql=sql)
+
+
+def load_mod_capacity_and_operational_type_invalid_combos(db, c):
+    sql = """
+        INSERT INTO 
+        mod_capacity_and_operational_type_invalid_combos
+        (capacity_type, operational_type)
+        VALUES (?, ?);""".format()
+    load_aux_data(conn=db, cursor=c, 
+                  filename=
+                  "mod_capacity_and_operational_type_invalid_combos.csv", 
+                  sql=sql)
+
+
+def load_mod_horizon_boundary_types(db, c):
+    sql = """
+        INSERT INTO mod_horizon_boundary_types
+        (horizon_boundary_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_horizon_boundary_types.csv",
+                  sql=sql)
+
+
+def load_mod_run_status_types(db, c):
+    sql = """
+        INSERT INTO mod_run_status_types
+        (run_status_id, run_status_name)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_run_status_types.csv", 
+                  sql=sql)
+
+
+def load_mod_validation_status_types(db, c):
+    sql = """
+        INSERT INTO mod_validation_status_types
+        (validation_status_id, validation_status_name)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, 
+                  filename="mod_validation_status_types.csv", sql=sql)
+
+
+def load_mod_features(db, c):
+    sql = """
+        INSERT INTO mod_features
+        (feature, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_features.csv", sql=sql)
+
+
+def load_mod_feature_subscenarios(db, c):
+    sql = """
+        INSERT INTO mod_feature_subscenarios
+        (feature, subscenario_id)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_feature_subscenarios.csv", 
+                  sql=sql)
+
+
+def load_ui_scenario_detail_table_metadata(db, c):
+    sql = """
+        INSERT INTO ui_scenario_detail_table_metadata
+        (ui_table, include, ui_table_caption)
+        VALUES (?, ?, ?);"""
+    load_aux_data(conn=db, cursor=c, 
+                  filename="ui_scenario_detail_table_metadata.csv", sql=sql)
+
+
+def ui_scenario_detail_table_row_metadata(db, c):
+    sql = """
+        INSERT INTO ui_scenario_detail_table_row_metadata
+        (ui_table, ui_table_row, include, ui_row_caption,
+        ui_row_db_scenarios_view_column, 
+        ui_row_db_subscenario_table, 
+        ui_row_db_subscenario_table_id_column, 
+        ui_row_db_input_table)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        """
+    load_aux_data(conn=db, cursor=c,
+                  filename="ui_scenario_detail_table_row_metadata.csv",
+                  sql=sql)
+
+
+def load_ui_scenario_results_table_metadata(db, c):
+    sql = """
+        INSERT INTO ui_scenario_results_table_metadata
+        (results_table, include, caption)
+        VALUES (?, ?, ?);
+        """
+    load_aux_data(conn=db, cursor=c,
+                  filename="ui_scenario_results_table_metadata.csv",
+                  sql=sql)
+
+
+def load_ui_scenario_results_plot_metadata(db, c):
+    sql = """
+        INSERT INTO ui_scenario_results_plot_metadata
+        (results_plot, include, caption, load_zone_form_control,
+        rps_zone_form_control, carbon_cap_zone_form_control,
+        period_form_control, horizon_form_control, 
+        stage_form_control, project_form_control)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+    load_aux_data(conn=db, cursor=c,
+                  filename="ui_scenario_results_plot_metadata.csv",
+                  sql=sql)
+
+
+def load_aux_data(conn, cursor, filename, sql):
+    """
+    :param conn: 
+    :param cursor: 
+    :param filename: 
+    :param sql: 
+    
+    
+    """
+    data = []
+    with open(os.path.join(os.getcwd(), "data", filename), "r") as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader)
+        for row in reader:
+            data.append(tuple([row[i] for i in range(len(row))]))
+
+    spin_on_database_lock(conn=conn, cursor=cursor, sql=sql, data=data)
 
 
 def main(args=None):
@@ -331,9 +291,16 @@ def main(args=None):
         )
         sys.exit()
     else:
+        # Connect to the database
         db = sqlite3.connect(database=db_path)
+        # Allow concurrent reading and writing
+        db.execute("PRAGMA journal_mode=WAL")
+        # Create schema
         create_database_schema(db=db, parsed_arguments=parsed_args)
+        # Load data
         load_data(db=db, omit_data=parsed_args.omit_data)
+        # Close the database
+        db.close()
 
 
 if __name__ == "__main__":

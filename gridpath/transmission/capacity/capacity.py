@@ -19,9 +19,11 @@ from functools import reduce
 import os.path
 from pyomo.environ import Set, Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
+    setup_results_import
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules, \
     total_cost_components
-from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules
 
 
 def add_model_components(m, d):
@@ -196,40 +198,16 @@ def import_results_into_database(scenario_id, subproblem, stage,
     """
     # Tx capacity results
     print("transmission capacity")
-    c.execute(
-        """DELETE FROM results_transmission_capacity
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_transmission_capacity",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_transmission_capacity"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_transmission_capacity"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            tx_line VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            load_zone_from VARCHAR(32),
-            load_zone_to VARCHAR(32),
-            min_mw FLOAT,
-            max_mw FLOAT,
-            PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
-            );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "transmission_capacity.csv"), "r") as \
             capacity_costs_file:
@@ -243,81 +221,48 @@ def import_results_into_database(scenario_id, subproblem, stage,
             load_zone_to = row[3]
             min_mw = row[4]
             max_mw = row[5]
-
-            c.execute(
-                """INSERT INTO temp_results_transmission_capacity"""
-                + str(scenario_id) + """
-                    (scenario_id, tx_line, period, subproblem_id, stage_id,
-                    load_zone_from, load_zone_to,
-                    min_mw, max_mw)
-                    VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {}, {});
-                    """.format(
-                        scenario_id, tx_line, period, subproblem, stage,
-                        load_zone_from, load_zone_to,
-                        min_mw, max_mw
-                    )
+            
+            results.append(
+                (scenario_id, tx_line, period, subproblem, stage,
+                 load_zone_from, load_zone_to, min_mw, max_mw)
             )
-    db.commit()
+
+
+    insert_temp_sql = """
+        INSERT INTO temp_results_transmission_capacity{}
+            (scenario_id, tx_line, period, subproblem_id, stage_id,
+            load_zone_from, load_zone_to,
+            min_mw, max_mw)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_transmission_capacity
+    insert_sql = """
+        INSERT INTO results_transmission_capacity
         (scenario_id, tx_line, period, subproblem_id, stage_id,
         load_zone_from, load_zone_to, min_mw, max_mw)
         SELECT
         scenario_id, tx_line, period, subproblem_id, stage_id,
         load_zone_from, load_zone_to, min_mw, max_mw
-        FROM temp_results_transmission_capacity"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_transmission_capacity{}
          ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_transmission_capacity""" + str(
-            scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # Capacity cost results
     print("transmission capacity costs")
-    c.execute(
-        """DELETE FROM results_transmission_costs_capacity
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, stage, subproblem)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_transmission_costs_capacity"""
-        + str(scenario_id) + """;"""
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_transmission_costs_capacity",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_transmission_costs_capacity"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        tx_line VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        load_zone_from VARCHAR(32),
-        load_zone_to VARCHAR(32),
-        annualized_capacity_cost FLOAT,
-        PRIMARY KEY (scenario_id, tx_line, period, subproblem_id, stage_id)
-        );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "costs_transmission_capacity.csv"), "r") as \
             capacity_costs_file:
@@ -330,38 +275,30 @@ def import_results_into_database(scenario_id, subproblem, stage,
             load_zone_from = row[2]
             load_zone_to = row[3]
             annualized_capacity_cost = row[4]
-
-            c.execute(
-                """INSERT INTO temp_results_transmission_costs_capacity"""
-                + str(scenario_id) + """
-                (scenario_id, tx_line, period, subproblem_id, stage_id,
-                load_zone_from, load_zone_to, annualized_capacity_cost)
-                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {});""".format(
-                    scenario_id, tx_line, period, subproblem, stage,
-                    load_zone_from, load_zone_to, annualized_capacity_cost
-                )
+            
+            results.append(
+                (scenario_id, tx_line, period, subproblem, stage,
+                 load_zone_from, load_zone_to, annualized_capacity_cost)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO  temp_results_transmission_costs_capacity{}
+        (scenario_id, tx_line, period, subproblem_id, stage_id,
+        load_zone_from, load_zone_to, annualized_capacity_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_transmission_costs_capacity
+    insert_sql = """
+        INSERT INTO results_transmission_costs_capacity
         (scenario_id, tx_line, period, subproblem_id, stage_id, 
         load_zone_from, load_zone_to, annualized_capacity_cost)
         SELECT
         scenario_id, tx_line, period, subproblem_id, stage_id, 
         load_zone_from, load_zone_to, annualized_capacity_cost
-        FROM temp_results_transmission_costs_capacity"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_transmission_costs_capacity{}
          ORDER BY scenario_id, tx_line, period, subproblem_id, stage_id;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_transmission_costs_capacity"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

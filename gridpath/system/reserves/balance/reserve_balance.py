@@ -7,6 +7,9 @@ import csv
 import os.path
 from pyomo.environ import Var, Constraint, NonNegativeReals
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
+
 
 def generic_add_model_components(
         m,
@@ -112,43 +115,15 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
     :return:
     """
 
-    c.execute(
-        """DELETE FROM results_system_""" + reserve_type + """_balance
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};""".format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_system_{}_balance""".format(reserve_type),
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_system_""" + reserve_type + """_balance"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_system_""" + reserve_type + """_balance"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        """ + reserve_type + """_ba VARCHAR(32),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        timepoint INTEGER,
-        discount_factor FLOAT,
-        number_years_represented FLOAT,
-        timepoint_weight FLOAT,
-        number_of_hours_in_timepoint FLOAT,
-        violation_mw FLOAT,
-        PRIMARY KEY (scenario_id, """ + reserve_type + """_ba,
-        subproblem_id, stage_id, timepoint)
-        );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            reserve_type + "_violation.csv"),
               "r") as violation_file:
@@ -164,52 +139,45 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
             violation = row[7]
-            c.execute(
-                """INSERT INTO 
-                temp_results_system_""" + reserve_type + """_balance"""
-                + str(scenario_id) + """
-                (scenario_id, """ + reserve_type + """_ba, period,
-                subproblem_id, stage_id, timepoint, 
-                discount_factor, number_years_represented, timepoint_weight, 
-                number_of_hours_in_timepoint,
-                violation_mw)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, {}, {});
-                """.format(
-                    scenario_id, ba, period,
-                    subproblem, stage, timepoint,
-                    discount_factor, number_years_represented, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    violation
-                )
+
+            results.append(
+                (scenario_id, ba, period,
+                 subproblem, stage, timepoint,
+                 discount_factor, number_years_represented, timepoint_weight,
+                 number_of_hours_in_timepoint, violation)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_system_{}_balance{}
+        (scenario_id, {}_ba, period,
+        subproblem_id, stage_id, timepoint, 
+        discount_factor, number_years_represented, timepoint_weight, 
+        number_of_hours_in_timepoint,
+        violation_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(reserve_type, scenario_id, reserve_type)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_system_""" + reserve_type + """_balance
-        (scenario_id, """ + reserve_type + """_ba, period, 
+    insert_sql = """
+        INSERT INTO results_system_{}_balance
+        (scenario_id, {}_ba, period, 
         subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw)
         SELECT
-        scenario_id, """ + reserve_type + """_ba, period, 
+        scenario_id, {}_ba, period, 
         subproblem_id, stage_id, timepoint,
         discount_factor, number_years_represented, timepoint_weight, 
         number_of_hours_in_timepoint, violation_mw
-        FROM temp_results_system_""" + reserve_type + """_balance"""
-        + str(scenario_id) +
-        """ ORDER BY scenario_id, """ + reserve_type + """_ba, 
-        subproblem_id, stage_id, timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_system_""" + reserve_type + """_balance"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_system_{}_balance{}
+        ORDER BY scenario_id, {}_ba, 
+        subproblem_id, stage_id, timepoint;
+        """.format( reserve_type, reserve_type, reserve_type, reserve_type,
+                    scenario_id, reserve_type)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # Update duals
     dual_files = {
@@ -223,6 +191,7 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         "spinning_reserves": "Meet_Spinning_Reserves_Constraint.csv"
     }
 
+    duals_results = []
     with open(os.path.join(results_directory, dual_files[reserve_type]),
               "r") as reserve_balance_duals_file:
         reader = csv.reader(reserve_balance_duals_file)
@@ -230,30 +199,32 @@ def generic_import_results_to_database(scenario_id, subproblem, stage,
         next(reader)  # skip header
 
         for row in reader:
-            c.execute(
-                """UPDATE results_system_""" + reserve_type + """_balance
-                SET dual = {}
-                WHERE {}_ba = '{}'
-                AND timepoint = {}
-                AND scenario_id = {}
-                AND subproblem_id = {}
-                AND stage_id = {};
-                """.format(
-                    row[2], reserve_type, row[0], row[1], scenario_id,
-                    subproblem, stage
-                )
+            duals_results.append(
+                (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
-    db.commit()
+
+    duals_sql = """
+        UPDATE results_system_{}_balance
+        SET dual = ?
+        WHERE {}_ba = ?
+        AND timepoint = ?
+        AND scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """.format(reserve_type, reserve_type)
+
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
     # Calculate marginal cost per MW
-    c.execute(
-        """UPDATE results_system_""" + reserve_type + """_balance
+    mc_sql = """
+        UPDATE results_system_{}_balance
         SET marginal_price_per_mw = 
         dual / (discount_factor * number_years_represented * timepoint_weight 
         * number_of_hours_in_timepoint)
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """.format(reserve_type)
+    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)

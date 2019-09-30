@@ -23,8 +23,9 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, Expression, value, BuildAction
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
-    load_gen_storage_capacity_type_modules, join_sets
+    load_gen_storage_capacity_type_modules, join_sets, setup_results_import
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -326,40 +327,15 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     """
     # Capacity results
     print("project capacity")
-    c.execute(
-        """DELETE FROM results_project_capacity_all 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_project_capacity_all"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_capacity_all"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        project VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        technology VARCHAR(32),
-        load_zone VARCHAR(32),
-        capacity_mw FLOAT,
-        energy_capacity_mwh FLOAT,
-        PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-        );"""
-    )
-    db.commit()
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_capacity_all",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory, "capacity_all.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
@@ -373,38 +349,32 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             capacity_mw = row[4]
             energy_capacity_mwh = 'NULL' if row[5] == "" else row[5]
 
-            c.execute(
-                """INSERT INTO temp_results_project_capacity_all"""
-                + str(scenario_id) + """
-                (scenario_id, project, period, subproblem_id, stage_id,
-                technology, load_zone, capacity_mw, energy_capacity_mwh)
-                VALUES ({}, '{}', {}, {}, {}, '{}', '{}', {}, {});
-                """.format(
-                    scenario_id, project, period, subproblem, stage,
-                    technology, load_zone, capacity_mw, energy_capacity_mwh
-                )
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 technology, load_zone, capacity_mw, energy_capacity_mwh)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_capacity_all{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        technology, load_zone, capacity_mw, energy_capacity_mwh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_capacity_all
+    insert_sql = """
+        INSERT INTO results_project_capacity_all
         (scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, capacity_mw, energy_capacity_mwh)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, capacity_mw, energy_capacity_mwh
-        FROM temp_results_project_capacity_all""" + str(scenario_id) + """
-        ORDER BY scenario_id, project, period, subproblem_id, stage_id;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_capacity_all""" + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_project_capacity_all{}
+        ORDER BY scenario_id, project, period, subproblem_id, 
+        stage_id;""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def operational_periods_by_project(prj, project_operational_periods):

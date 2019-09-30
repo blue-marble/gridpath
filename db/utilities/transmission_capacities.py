@@ -6,6 +6,8 @@ Transmission load zones
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
 
 def insert_transmission_capacities(
         io, c,
@@ -30,29 +32,30 @@ def insert_transmission_capacities(
     print("transmission capacities")
 
     # Subscenarios
-    c.execute(
-        """INSERT INTO subscenarios_transmission_existing_capacity
+    subs_data = [(transmission_existing_capacity_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id, name,
         description)
-        VALUES ({}, '{}', '{}');""".format(
-            transmission_existing_capacity_scenario_id,
-            scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for tx_line in list(tx_line_period_capacities.keys()):
         for period in list(tx_line_period_capacities[tx_line].keys()):
-            c.execute(
-                """INSERT INTO inputs_transmission_existing_capacity
+            inputs_data.append(
                 (transmission_existing_capacity_scenario_id,
-                transmission_line, period, min_mw, max_mw)
-                VALUES ({}, '{}', {}, {}, {});""".format(
-                    transmission_existing_capacity_scenario_id,
-                    tx_line, period,
-                    tx_line_period_capacities[tx_line][period][0],
-                    tx_line_period_capacities[tx_line][period][1]
-                )
+                 tx_line, period,
+                 tx_line_period_capacities[tx_line][period][0],
+                 tx_line_period_capacities[tx_line][period][1])
             )
-    io.commit()
+    inputs_sql = """
+        INSERT INTO inputs_transmission_existing_capacity
+        (transmission_existing_capacity_scenario_id,
+        transmission_line, period, min_mw, max_mw)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

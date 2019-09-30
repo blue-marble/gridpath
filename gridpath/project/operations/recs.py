@@ -13,8 +13,10 @@ import csv
 import os.path
 from pyomo.environ import Param, Set, Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
+    setup_results_import
 from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
 
 
 def add_model_components(m, d):
@@ -290,48 +292,15 @@ def import_results_into_database(
     """
     # REC provision by project and timepoint
     print("project recs")
-    c.execute(
-        """DELETE FROM results_project_rps 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_rps",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_project_rps"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_rps"""
-        + str(scenario_id) + """(
-         scenario_id INTEGER,
-         project VARCHAR(64),
-         period INTEGER,
-         subproblem_id INTEGER,
-         stage_id INTEGER,
-         horizon INTEGER,
-         timepoint INTEGER,
-         timepoint_weight FLOAT,
-         number_of_hours_in_timepoint FLOAT,
-         load_zone VARCHAR(32),
-         rps_zone VARCHAR(32),
-         technology VARCHAR(32),
-         scheduled_rps_energy_mw FLOAT,
-         scheduled_curtailment_mw FLOAT,
-         subhourly_rps_energy_delivered_mw FLOAT,
-         subhourly_curtailment_mw FLOAT,
-         PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-         );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "rps_by_project.csv"), "r") as \
             rps_file:
@@ -352,31 +321,31 @@ def import_results_into_database(
             scheduled_curtailment = row[10]
             subhourly_energy = row[11]
             subhourly_curtailment = row[12]
-
-            c.execute(
-                """INSERT INTO 
-                temp_results_project_rps"""
-                + str(scenario_id) + """
-                 (scenario_id, project, period, subproblem_id, stage_id, 
-                 horizon, timepoint, timepoint_weight, 
-                 number_of_hours_in_timepoint, 
-                 load_zone, rps_zone, technology, 
-                 scheduled_rps_energy_mw, scheduled_curtailment_mw, 
-                 subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
-                 VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}', '{}', 
-                 {}, {}, {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight, hours_in_tmp,
                     load_zone, rps_zone, technology,
                     scheduled_energy, scheduled_curtailment,
-                    subhourly_energy, subhourly_curtailment
-                )
+                    subhourly_energy, subhourly_curtailment)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_rps{}
+         (scenario_id, project, period, subproblem_id, stage_id, 
+         horizon, timepoint, timepoint_weight, 
+         number_of_hours_in_timepoint, 
+         load_zone, rps_zone, technology, 
+         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
+         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_rps
+    insert_sql = """
+        INSERT INTO results_project_rps
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         load_zone, rps_zone, technology, 
@@ -388,20 +357,11 @@ def import_results_into_database(
         load_zone, rps_zone, technology, 
         scheduled_rps_energy_mw, scheduled_curtailment_mw, 
         subhourly_rps_energy_delivered_mw, subhourly_curtailment_mw
-        FROM temp_results_project_rps"""
-        + str(scenario_id)
-        + """
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_rps"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_project_rps{}
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def process_results(db, c, subscenarios):
@@ -450,17 +410,17 @@ def process_results(db, c, subscenarios):
         "results_project_elcc_surface"
     ]
 
+    results = []
     for (prj, zone) in project_zones:
-        for tbl in tables_to_update:
-            c.execute(
-                """UPDATE {}
-                SET rps_zone = '{}'
-                WHERE scenario_id = {}
-                AND project = '{}';""".format(
-                    tbl,
-                    zone,
-                    subscenarios.SCENARIO_ID,
-                    prj
-                )
-            )
-    db.commit()
+        results.append(
+            (zone, subscenarios.SCENARIO_ID, prj)
+        )
+
+    for tbl in tables_to_update:
+        sql = """
+            UPDATE {}
+            SET rps_zone = ?
+            WHERE scenario_id = ?
+            AND project = ?;
+            """.format(tbl)
+        spin_on_database_lock(conn=db, cursor=c, sql=sql, data=results)

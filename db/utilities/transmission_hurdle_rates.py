@@ -6,6 +6,10 @@ Hurdle rates
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
+from db.common_functions import spin_on_database_lock
+
 
 def insert_transmission_hurdle_rates(
         io, c,
@@ -30,30 +34,32 @@ def insert_transmission_hurdle_rates(
     print("transmission hurdle rates")
 
     # Subscenarios
-    c.execute(
-         """INSERT INTO subscenarios_transmission_hurdle_rates
+    subs_data = [(transmission_hurdle_rate_scenario_id,
+                  scenario_name, scenario_description)]
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_hurdle_rates
             (transmission_hurdle_rate_scenario_id, name, description)
-            VALUES ({}, '{}', '{}');""".format(
-            transmission_hurdle_rate_scenario_id,
-            scenario_name, scenario_description
-            )
-    )
-    io.commit()
+            VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for tx_line in list(tx_line_period_hurdle_rates.keys()):
         for period in list(tx_line_period_hurdle_rates[tx_line].keys()):
-            c.execute(
-                """INSERT INTO inputs_transmission_hurdle_rates
+            inputs_data.append(
                 (transmission_hurdle_rate_scenario_id,
-                transmission_line, period,
-                hurdle_rate_positive_direction_per_mwh,
-                hurdle_rate_negative_direction_per_mwh)
-                VALUES ({}, '{}', {}, {}, {});""".format(
-                    transmission_hurdle_rate_scenario_id,
-                    tx_line, period,
-                    tx_line_period_hurdle_rates[tx_line][period][0],
-                    tx_line_period_hurdle_rates[tx_line][period][1]
-                )
+                 tx_line, period,
+                 tx_line_period_hurdle_rates[tx_line][period][0],
+                 tx_line_period_hurdle_rates[tx_line][period][1])
             )
-    io.commit()
+    inputs_sql = """
+        INSERT INTO inputs_transmission_hurdle_rates
+        (transmission_hurdle_rate_scenario_id,
+        transmission_line, period,
+        hurdle_rate_positive_direction_per_mwh,
+        hurdle_rate_negative_direction_per_mwh)
+        VALUES (?, ?, ?, ?, ?);
+        """
+
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

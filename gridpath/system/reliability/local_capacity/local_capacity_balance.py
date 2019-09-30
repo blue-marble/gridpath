@@ -14,6 +14,7 @@ import os.path
 from pyomo.environ import Param, Var, Constraint, Expression, \
     NonNegativeReals, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     local_capacity_balance_provision_components
 
@@ -128,17 +129,19 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     print("system local_capacity total")
 
     # Local capacity contribution
-    c.execute(
-        """UPDATE results_system_local_capacity
+    nullify_sql = """
+        UPDATE results_system_local_capacity
         SET local_capacity_requirement_mw = NULL,
         local_capacity_provision_mw = NULL
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
         """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql, 
+                          data=(scenario_id, subproblem, stage),
+                          many=False)
 
+    results = []
     with open(os.path.join(results_directory,
                            "local_capacity.csv"), "r") as \
             surface_file:
@@ -153,23 +156,25 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             local_capacity_req_mw = row[4]
             local_capacity_prov_mw = row[5]
 
-            c.execute(
-                """UPDATE results_system_local_capacity
-                SET local_capacity_requirement_mw = {},
-                local_capacity_provision_mw = {},
-                discount_factor = {},
-                number_years_represented = {}
-                WHERE scenario_id = {}
-                AND local_capacity_zone = '{}'
-                AND period = {}""".format(
-                    local_capacity_req_mw, local_capacity_prov_mw,
+            results.append(
+                (local_capacity_req_mw, local_capacity_prov_mw,
                     discount_factor, number_years,
-                    scenario_id, local_capacity_zone, period
-                )
+                    scenario_id, local_capacity_zone, period)
             )
-    db.commit()
+
+    update_sql = """
+        UPDATE results_system_local_capacity
+        SET local_capacity_requirement_mw = ?,
+        local_capacity_provision_mw = ?,
+        discount_factor = ?,
+        number_years_represented = ?
+        WHERE scenario_id = ?
+        AND local_capacity_zone = ?
+        AND period = ?"""
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
     # Update duals
+    duals_results = []
     with open(os.path.join(results_directory, "Local_Capacity_Constraint.csv"),
               "r") as local_capacity_duals_file:
         reader = csv.reader(local_capacity_duals_file)
@@ -177,27 +182,30 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         next(reader)  # skip header
 
         for row in reader:
-            c.execute(
-                """UPDATE results_system_local_capacity
-                SET dual = {}
-                WHERE local_capacity_zone = '{}'
-                AND period = {}
-                AND scenario_id = {}
-                AND subproblem_id = {}
-                AND stage_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id, subproblem, stage
-                )
+            duals_results.append(
+                (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
-    db.commit()
+
+    duals_sql = """
+        UPDATE results_system_local_capacity
+        SET dual = ?
+        WHERE local_capacity_zone = ?
+        AND period = ?
+        AND scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
     # Calculate marginal carbon cost per MMt
-    c.execute(
-        """UPDATE results_system_local_capacity
+    mc_sql = """
+        UPDATE results_system_local_capacity
         SET local_capacity_marginal_cost_per_mw = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)

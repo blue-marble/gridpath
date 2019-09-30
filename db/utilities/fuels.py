@@ -6,6 +6,10 @@ Fuels data
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
+from db.common_functions import spin_on_database_lock
+
 
 def update_fuels(
         io, c,
@@ -25,25 +29,24 @@ def update_fuels(
     :return: 
     """
     # Subscenarios
-    c.execute(
-        """INSERT INTO subscenarios_project_fuels (fuel_scenario_id, name,
+    subs_data = [(fuel_scenario_id, scenario_name, scenario_description)]
+    subs_sql = """
+        INSERT INTO subscenarios_project_fuels (fuel_scenario_id, name,
         description)
-        VALUES ({}, '{}', '{}');""".format(
-            fuel_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    data = []
     for f in list(fuel_chars.keys()):
-        c.execute(
-            """INSERT INTO inputs_project_fuels
-            (fuel_scenario_id, fuel, co2_intensity_tons_per_mmbtu)
-            VALUES ({}, '{}', {});""".format(
-                fuel_scenario_id, f, fuel_chars[f]
-            )
-        )
-    io.commit()
+        data.append((fuel_scenario_id, f, fuel_chars[f]))
+    sql = """
+        INSERT INTO inputs_project_fuels
+        (fuel_scenario_id, fuel, co2_intensity_tons_per_mmbtu)
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=sql, data=data)
 
 
 def update_fuel_prices(
@@ -67,31 +70,30 @@ def update_fuel_prices(
     """
     print("fuel prices")
     # Subscenario
-    c.execute(
-        """INSERT INTO subscenarios_project_fuel_prices (
+    subs_data = [(fuel_price_scenario_id, scenario_name, scenario_description)]
+    subs_sql = """
+        INSERT INTO subscenarios_project_fuel_prices (
         fuel_price_scenario_id, 
         name,
         description)
-        VALUES ({}, '{}', '{}');""".format(
-            fuel_price_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    inputs_data = []
     for f in list(fuel_month_prices.keys()):
         for p in list(fuel_month_prices[f].keys()):
             for m in list(fuel_month_prices[f][p].keys()):
-                c.execute(
-                    """INSERT INTO inputs_project_fuel_prices
-                    (fuel_price_scenario_id, fuel, period, month, 
-                    fuel_price_per_mmbtu)
-                    VALUES ({}, '{}', {}, {}, {});""".format(
-                        fuel_price_scenario_id, f, p, m,
-                        fuel_month_prices[f][p][m]
-                    )
-                )
-    io.commit()
+                inputs_data.append((fuel_price_scenario_id, f, p, m,
+                             fuel_month_prices[f][p][m]))
+    inputs_sql = """
+        INSERT INTO inputs_project_fuel_prices
+        (fuel_price_scenario_id, fuel, period, month, 
+        fuel_price_per_mmbtu)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 if __name__ == "__main__":

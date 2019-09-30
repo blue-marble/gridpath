@@ -6,6 +6,10 @@ Existing/planned project capacities
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
+from db.common_functions import spin_on_database_lock
+
 
 def update_project_new_costs(
         io, c,
@@ -17,31 +21,34 @@ def update_project_new_costs(
     print("project new costs")
 
     # Subscenarios
-    c.execute(
-        """INSERT INTO subscenarios_project_new_cost
+    subs_data = [(project_new_cost_scenario_id, scenario_name, scenario_description)]
+    subs_sql = """
+        INSERT INTO subscenarios_project_new_cost
          (project_new_cost_scenario_id, name, description)
-         VALUES ({}, '{}', '{}');""".format(
-            project_new_cost_scenario_id, scenario_name, scenario_description
-        )
-    )
-    io.commit()
+         VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
+    # Insert inputs
+    inputs_data = []
     for project in list(project_period_lifetimes_costs.keys()):
         for period in list(project_period_lifetimes_costs[project].keys()):
-            c.execute(
-                """INSERT INTO inputs_project_new_cost
-                (project_new_cost_scenario_id, project, period, lifetime_yrs,
-                annualized_real_cost_per_kw_yr,
-                annualized_real_cost_per_kwh_yr)
-                VALUES ({}, '{}', {}, {}, {}, {});""".format(
-                    project_new_cost_scenario_id,
-                    project,
-                    period,
-                    project_period_lifetimes_costs[project][period][0],
-                    project_period_lifetimes_costs[project][period][1],
-                    'NULL' if project_period_lifetimes_costs[project][
-                        period][2] is None
-                    else project_period_lifetimes_costs[project][period][2]
-                )
+            inputs_data.append(
+                (project_new_cost_scenario_id,
+                 project,
+                 period,
+                 project_period_lifetimes_costs[project][period][0],
+                 project_period_lifetimes_costs[project][period][1],
+                 'NULL'
+                 if project_period_lifetimes_costs[project][period][2] is None
+                 else project_period_lifetimes_costs[project][period][2])
             )
-    io.commit()
+    inputs_sql = """
+        INSERT INTO inputs_project_new_cost
+        (project_new_cost_scenario_id, project, period, lifetime_yrs,
+        annualized_real_cost_per_kw_yr,
+        annualized_real_cost_per_kwh_yr)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
+
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

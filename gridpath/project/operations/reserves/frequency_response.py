@@ -14,6 +14,8 @@ import os.path
 import pandas as pd
 from pyomo.environ import Set, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.reserves.reserve_provision import \
     generic_determine_dynamic_components, generic_add_model_components, \
     generic_load_model_data
@@ -327,45 +329,15 @@ def import_results_into_database(
     :param results_directory:
     :return: 
     """
-    c.execute(
-        """DELETE FROM results_project_frequency_response 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_frequency_response",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_project_frequency_response"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_frequency_response""" + str(
-            scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            frequency_response_ba VARCHAR(32),
-            technology VARCHAR(32),
-            reserve_provision_mw FLOAT,
-            partial INTEGER,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-                );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "reserves_provision_frequency_response.csv"), "r") \
             as reserve_provision_file:
@@ -384,27 +356,27 @@ def import_results_into_database(
             technology = row[8]
             reserve_provision = row[9]
             partial = row[10]
-            c.execute(
-                """INSERT INTO temp_results_project_frequency_response"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, timepoint_weight, 
-                    number_of_hours_in_timepoint, 
-                    frequency_response_ba, load_zone, technology,
-                    reserve_provision_mw, partial)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, 
-                    '{}', '{}', '{}', {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
-                    ba, load_zone, technology, reserve_provision, partial
-                )
+                    ba, load_zone, technology, reserve_provision, partial)
             )
-    db.commit()
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_frequency_response{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, 
+        frequency_response_ba, load_zone, technology,
+        reserve_provision_mw, partial)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
+        ?, ?, ?, ?, ?);""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_frequency_response
+    insert_sql = """
+        INSERT INTO results_project_frequency_response
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint, 
         frequency_response_ba, load_zone, technology,
@@ -414,15 +386,8 @@ def import_results_into_database(
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         frequency_response_ba, load_zone, technology,
         reserve_provision_mw, partial
-        FROM temp_results_project_frequency_response""" + str(scenario_id) +
-        """ ORDER BY scenario_id, project, subproblem_id, stage_id, 
-        timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_frequency_response"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
+        FROM temp_results_project_frequency_response{} 
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

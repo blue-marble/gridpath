@@ -146,6 +146,9 @@ def main(args=None):
         scenario_directory=scenario_directory
     )
 
+    # Close the database connection
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

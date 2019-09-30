@@ -13,6 +13,8 @@ import csv
 import os.path
 from pyomo.environ import Expression, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components
 
@@ -82,38 +84,16 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     """
 
     print("system prm simple elcc")
-    c.execute(
-        """DELETE FROM results_system_prm 
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS 
-        temp_results_system_prm"""
-        + str(scenario_id) + """;"""
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_system_prm",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_system_prm"""
-        + str(scenario_id) + """(
-         scenario_id INTEGER,
-         prm_zone VARCHAR(64),
-         period INTEGER,
-         subproblem_id INTEGER,
-         stage_id INTEGER,
-         elcc_simple_mw FLOAT,
-         PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
-         );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "prm_elcc_simple.csv"), "r") as \
             emissions_file:
@@ -125,34 +105,25 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             period = row[1]
             elcc = row[2]
 
-            c.execute(
-                """INSERT INTO 
-                temp_results_system_prm"""
-                + str(scenario_id) + """
-                 (scenario_id, prm_zone, period, subproblem_id, stage_id, 
-                 elcc_simple_mw)
-                 VALUES ({}, '{}', {}, {}, {}, {});""".format(
-                    scenario_id, prm_zone, period, subproblem, stage, elcc
-                )
+            results.append(
+                (scenario_id, prm_zone, period, subproblem, stage, elcc)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_system_prm{}
+         (scenario_id, prm_zone, period, subproblem_id, stage_id, 
+         elcc_simple_mw)
+         VALUES (?, ?, ?, ?, ?, ?);""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_system_prm
+    insert_sql = """
+        INSERT INTO results_system_prm
         (scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw)
         SELECT scenario_id, prm_zone, period, subproblem_id, stage_id, elcc_simple_mw
-        FROM temp_results_system_prm"""
-        + str(scenario_id)
-        + """
-         ORDER BY scenario_id, prm_zone, period, subproblem_id, stage_id;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_system_prm"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_system_prm{}
+         ORDER BY scenario_id, prm_zone, period, subproblem_id, stage_id;
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

@@ -18,7 +18,9 @@ import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     Binary, PercentFraction, Expression, value
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import generator_subset_init, \
+    setup_results_import
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -1173,49 +1175,15 @@ def import_module_specific_results_to_database(
     """
     print("project dispatch binary commit")
     # dispatch_binary_commit.csv
-    c.execute(
-        """DELETE FROM results_project_dispatch_binary_commit
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_dispatch_binary_commit",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_dispatch_binary_commit"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_dispatch_binary_commit"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            balancing_type_project VARCHAR(64),
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            power_mw FLOAT,
-            committed_mw FLOAT,
-            committed_units INTEGER,
-            started_units INTEGER,
-            stopped_units INTEGER,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-                );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(
             results_directory, "dispatch_binary_commit.csv"), "r") \
             as cc_dispatch_file:
@@ -1237,28 +1205,29 @@ def import_module_specific_results_to_database(
             committed_units = row[11]
             started_units = row[12]
             stopped_units = row[13]
-            c.execute(
-                """INSERT INTO temp_results_project_dispatch_binary_commit"""
-                + str(scenario_id) + """ 
-                    (scenario_id, project, period, subproblem_id, stage_id, 
-                    balancing_type_project, horizon, timepoint,
-                    timepoint_weight, number_of_hours_in_timepoint, 
-                    load_zone, technology, power_mw, committed_mw, 
-                    committed_units, started_units, stopped_units)
-                    VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {}, '{}', 
-                    '{}', {}, {}, {}, {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     balancing_type_project, horizon, timepoint,
                     timepoint_weight, number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units
-                )
+                    committed_units, started_units, stopped_units)
             )
-    db.commit()
+    insert_temp_sql ="""
+        INSERT INTO temp_results_project_dispatch_binary_commit{}
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        balancing_type_project, horizon, timepoint,
+        timepoint_weight, number_of_hours_in_timepoint, 
+        load_zone, technology, power_mw, committed_mw, 
+        committed_units, started_units, stopped_units)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
+        ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_dispatch_binary_commit
+    insert_sql = """
+        INSERT INTO results_project_dispatch_binary_commit
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
@@ -1268,18 +1237,9 @@ def import_module_specific_results_to_database(
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
         committed_mw, committed_units, started_units, stopped_units
-        FROM temp_results_project_dispatch_binary_commit"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_project_dispatch_binary_commit{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_dispatch_binary_commit""" + str(
-            scenario_id) +
-        """;"""
-    )
-    db.commit()

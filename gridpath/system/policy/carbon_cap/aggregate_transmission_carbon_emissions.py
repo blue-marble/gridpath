@@ -14,6 +14,7 @@ import os.path
 from pyomo.environ import Param, Set, Var, Constraint, Expression, \
     NonNegativeReals, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 from gridpath.transmission.operations.carbon_emissions import \
@@ -123,16 +124,19 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     # then project total emissions imported
     # Update results_system_carbon_emissions with NULL just in case (instead of
     # clearing prior results)
-    c.execute(
-        """UPDATE results_system_carbon_emissions
+    # TODO: why not just clear the results?
+    nullify_sql = """
+        UPDATE results_system_carbon_emissions
         SET import_emissions_mmt = NULL
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)
 
+    results = []
     with open(os.path.join(results_directory,
                            "carbon_cap_total_transmission.csv"), "r") as \
             emissions_file:
@@ -144,34 +148,35 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             period = row[1]
             tx_carbon_emissions_mmt = row[3]
             tx_carbon_emissions_mmt_degen = row[4]
-
-            c.execute(
-                """UPDATE results_system_carbon_emissions
-                SET import_emissions_mmt = {},
-                import_emissions_mmt_degen = {}
-                WHERE scenario_id = {}
-                AND carbon_cap_zone = '{}'
-                AND period = {}
-                AND subproblem_id = {}
-                AND stage_id = {}""".format(
-                    tx_carbon_emissions_mmt,
+            
+            results.append(
+                (tx_carbon_emissions_mmt,
                     tx_carbon_emissions_mmt_degen,
                     scenario_id, carbon_cap_zone, period,
-                    subproblem, stage
-                )
+                    subproblem, stage)
             )
 
-    db.commit()
+    imports_sql = """
+        UPDATE results_system_carbon_emissions
+        SET import_emissions_mmt = ?,
+        import_emissions_mmt_degen = ?
+        WHERE scenario_id = ?
+        AND carbon_cap_zone = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=imports_sql, data=results)
 
     # Update the total emissions in case of degeneracy
-    c.execute(
-        """UPDATE results_system_carbon_emissions
+    total_degen_sql = """
+        UPDATE results_system_carbon_emissions
            SET total_emissions_mmt_degen = 
            in_zone_project_emissions_mmt + import_emissions_mmt_degen
-           WHERE scenario_id = {}
-           AND subproblem_id = {}
-           AND stage_id = {};
-           """.format(scenario_id, subproblem, stage)
-    )
-
-    db.commit()
+           WHERE scenario_id = ?
+           AND subproblem_id = ?
+           AND stage_id = ?;
+           """
+    spin_on_database_lock(conn=db, cursor=c, sql=total_degen_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)

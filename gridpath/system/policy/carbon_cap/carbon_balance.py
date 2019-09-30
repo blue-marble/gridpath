@@ -13,6 +13,7 @@ import os.path
 
 from pyomo.environ import Constraint, Expression, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     carbon_cap_balance_emission_components
 
@@ -100,16 +101,18 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     # then project total emissions imported
     # Update results_system_carbon_emissions with NULL just in case (instead of
     # clearing prior results)
-    c.execute(
-        """UPDATE results_system_carbon_emissions
+    nullify_sql = """
+        UPDATE results_system_carbon_emissions
         SET total_emissions_mmt = NULL
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)
 
+    results = []
     with open(os.path.join(results_directory,
                            "carbon_cap.csv"), "r") as \
             emissions_file:
@@ -122,25 +125,28 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             discount_factor = row[2]
             number_years = row[3]
             total_emissions_mmt = row[5]
-
-            c.execute(
-                """UPDATE results_system_carbon_emissions
-                SET total_emissions_mmt = {},
-                discount_factor = {},
-                number_years_represented = {}
-                WHERE scenario_id = {}
-                AND carbon_cap_zone = '{}'
-                AND period = {}
-                AND subproblem_id = {}
-                AND stage_id = {}""".format(
-                    total_emissions_mmt, discount_factor, number_years,
-                    scenario_id, carbon_cap_zone, period,
-                    subproblem, stage
-                )
+            
+            results.append(
+                (total_emissions_mmt, discount_factor, number_years,
+                 scenario_id, carbon_cap_zone, period,
+                 subproblem, stage)
             )
-    db.commit()
+
+    total_sql = """
+        UPDATE results_system_carbon_emissions
+        SET total_emissions_mmt = ?,
+        discount_factor = ?,
+        number_years_represented = ?
+        WHERE scenario_id = ?
+        AND carbon_cap_zone = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;"""
+
+    spin_on_database_lock(conn=db, cursor=c, sql=total_sql, data=results)
 
     # Update duals
+    duals_results = []
     with open(os.path.join(results_directory, "Carbon_Cap_Constraint.csv"),
               "r") as carbon_cap_duals_file:
         reader = csv.reader(carbon_cap_duals_file)
@@ -148,27 +154,28 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         next(reader)  # skip header
 
         for row in reader:
-            c.execute(
-                """UPDATE results_system_carbon_emissions
-                SET dual = {}
-                WHERE carbon_cap_zone = '{}'
-                AND period = {}
-                AND scenario_id = {}
-                AND subproblem_id = {}
-                AND stage_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id, subproblem, stage
-                )
+            duals_results.append(
+                (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
-    db.commit()
+    duals_sql = """ 
+        UPDATE results_system_carbon_emissions
+        SET dual = ?
+        WHERE carbon_cap_zone = ?
+        AND period = ?
+        AND scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;"""
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
     # Calculate marginal carbon cost per MMt
-    c.execute(
-        """UPDATE results_system_carbon_emissions
+    mc_sql = """
+        UPDATE results_system_carbon_emissions
         SET carbon_cap_marginal_cost_per_mmt = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)

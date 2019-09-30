@@ -19,7 +19,9 @@ from pyomo.environ import Param, Set, Var, Constraint, NonNegativeReals, \
     Expression, value
 import warnings
 
-from gridpath.auxiliary.auxiliary import generator_subset_init
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import generator_subset_init, \
+    setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     footroom_variables, headroom_variables, reserve_variable_derate_params
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
@@ -612,48 +614,15 @@ def import_module_specific_results_to_database(
 
     print("project dispatch variable")
     # dispatch_variable.csv
-    c.execute(
-        """DELETE FROM results_project_dispatch_variable
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_dispatch_variable",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS temp_results_project_dispatch_variable"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_dispatch_variable"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        project VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        balancing_type_project VARCHAR(64),
-        horizon INTEGER,
-        timepoint INTEGER,
-        timepoint_weight FLOAT,
-        number_of_hours_in_timepoint FLOAT,
-        load_zone VARCHAR(32),
-        technology VARCHAR(32),
-        power_mw FLOAT,
-        scheduled_curtailment_mw FLOAT,
-        subhourly_curtailment_mw FLOAT,
-        subhourly_energy_delivered_mw FLOAT,
-        total_curtailment_mw FLOAT,
-        PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-            );"""
-    )
-    db.commit()
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "dispatch_variable.csv"), "r") as v_dispatch_file:
         reader = csv.reader(v_dispatch_file)
@@ -674,29 +643,29 @@ def import_module_specific_results_to_database(
             subhourly_curtailment_mw = row[11]
             subhourly_energy_delivered_mw = row[12]
             total_curtailment_mw = row[13]
-            c.execute(
-                """INSERT INTO temp_results_project_dispatch_variable"""
-                + str(scenario_id) + """
-                (scenario_id, project, period, subproblem_id, stage_id,
-                balancing_type_project, horizon, timepoint, timepoint_weight,
-                number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-                scheduled_curtailment_mw, subhourly_curtailment_mw,
-                subhourly_energy_delivered_mw, total_curtailment_mw)
-                VALUES ({}, '{}', {}, {}, {}, '{}', {}, {}, {}, {},
-                '{}', '{}', {}, {}, {}, {}, {});""".format(
-                    scenario_id, project, period, subproblem, stage,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     balancing_type_project, horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, power_mw,
                     scheduled_curtailment_mw, subhourly_curtailment_mw,
-                    subhourly_energy_delivered_mw, total_curtailment_mw
-                )
+                    subhourly_energy_delivered_mw, total_curtailment_mw)
             )
-    db.commit()
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_dispatch_variable{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        balancing_type_project, horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
+        scheduled_curtailment_mw, subhourly_curtailment_mw,
+        subhourly_energy_delivered_mw, total_curtailment_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_dispatch_variable
+    insert_sql = """
+        INSERT INTO results_project_dispatch_variable
         (scenario_id, project, period, subproblem_id, stage_id,
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
@@ -708,20 +677,11 @@ def import_module_specific_results_to_database(
         number_of_hours_in_timepoint, load_zone, technology, power_mw,
         scheduled_curtailment_mw, subhourly_curtailment_mw,
         subhourly_energy_delivered_mw, total_curtailment_mw
-        FROM temp_results_project_dispatch_variable"""
-        + str(scenario_id) +
-        """
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;"""
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_dispatch_variable"""
-        + str(scenario_id) +
-        """;"""
-    )
-    db.commit()
+        FROM temp_results_project_dispatch_variable{}
+         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+         """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 def process_module_specific_results(db, c, subscenarios):
@@ -736,16 +696,17 @@ def process_module_specific_results(db, c, subscenarios):
     print("aggregate variable curtailment")
 
     # Delete old aggregated variable curtailment results
-    c.execute(
-        """DELETE FROM results_project_curtailment_variable 
-        WHERE scenario_id = {}
-        """.format(subscenarios.SCENARIO_ID)
-    )
-    db.commit()
+    del_sql = """
+        DELETE FROM results_project_curtailment_variable 
+        WHERE scenario_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=del_sql,
+                          data=(subscenarios.SCENARIO_ID,),
+                          many=False)
 
     # Aggregate variable curtailment (just scheduled curtailment)
-    c.execute(
-        """INSERT INTO results_project_curtailment_variable
+    insert_sql = """
+        INSERT INTO results_project_curtailment_variable
         (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
@@ -767,13 +728,15 @@ def process_module_specific_results(db, c, subscenarios):
             WHERE temporal_scenario_id = (
                 SELECT temporal_scenario_id 
                 FROM scenarios
-                WHERE scenario_id = {}
+                WHERE scenario_id = ?
                 )
         ) as tmp_info_tbl
         USING (subproblem_id, period, timepoint)
-        WHERE scenario_id = {}
-        ORDER BY subproblem_id, stage_id, load_zone, timepoint;""".format(
-            subscenarios.SCENARIO_ID, subscenarios.SCENARIO_ID
-        )
+        WHERE scenario_id = ?
+        ORDER BY subproblem_id, stage_id, load_zone, timepoint;"""
+
+    spin_on_database_lock(
+        conn=db, cursor=c, sql=insert_sql,
+        data=(subscenarios.SCENARIO_ID, subscenarios.SCENARIO_ID),
+        many=False
     )
-    db.commit()

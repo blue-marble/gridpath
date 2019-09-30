@@ -6,6 +6,10 @@ Create a list of all projects
 """
 from __future__ import print_function
 
+from db.common_functions import spin_on_database_lock
+
+from db.common_functions import spin_on_database_lock
+
 
 def project_list(
         io, c,
@@ -22,15 +26,11 @@ def project_list(
 
     print("project list")
 
-    for project in projects:
-        c.execute(
-            """INSERT INTO inputs_project_all
-            (project)
-            VALUES ('{}');""".format(
-                project
-            )
-        )
-    io.commit()
+    data = [(p,) for p in projects]
+    sql = """
+        INSERT INTO inputs_project_all (project) VALUES (?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=sql, data=data)
 
 
 if __name__ == "__main__":

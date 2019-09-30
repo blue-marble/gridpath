@@ -13,6 +13,7 @@ import os.path
 
 from pyomo.environ import Constraint, Expression, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
     prm_balance_provision_components
 
@@ -101,17 +102,19 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     # then elcc_simple_mw imported
     # Update results_system_prm with NULL for requirement and total just in
     # case (instead of clearing prior results)
-    c.execute(
-        """UPDATE results_system_prm
+    nullify_sql = """
+        UPDATE results_system_prm
         SET prm_requirement_mw = NULL,
         elcc_total_mw = NULL
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=nullify_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)
 
+    results = []
     with open(os.path.join(results_directory,
                            "prm.csv"), "r") as \
             surface_file:
@@ -125,27 +128,29 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             number_years = row[3]
             prm_req_mw = row[4]
             prm_prov_mw = row[5]
-
-            c.execute(
-                """UPDATE results_system_prm
-                SET prm_requirement_mw = {},
-                elcc_total_mw = {},
-                discount_factor = {},
-                number_years_represented = {}
-                WHERE scenario_id = {}
-                AND prm_zone = '{}'
-                AND period = {}
-                AND subproblem_id = {}
-                AND stage_id = {}""".format(
-                    prm_req_mw, prm_prov_mw,
-                    discount_factor, number_years,
-                    scenario_id, prm_zone, period,
-                    subproblem, stage
-                )
+            
+            results.append(
+                (prm_req_mw, prm_prov_mw,
+                 discount_factor, number_years,
+                 scenario_id, prm_zone, period,
+                 subproblem, stage)
             )
-    db.commit()
+
+    update_sql = """
+        UPDATE results_system_prm
+        SET prm_requirement_mw = ?,
+        elcc_total_mw = ?,
+        discount_factor = ?,
+        number_years_represented = ?
+        WHERE scenario_id = ?
+        AND prm_zone = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?"""
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
     # Update duals
+    duals_results = []
     with open(os.path.join(results_directory, "PRM_Constraint.csv"),
               "r") as prm_duals_file:
         reader = csv.reader(prm_duals_file)
@@ -153,27 +158,29 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         next(reader)  # skip header
 
         for row in reader:
-            c.execute(
-                """UPDATE results_system_prm
-                SET dual = {}
-                WHERE prm_zone = '{}'
-                AND period = {}
-                AND scenario_id = {}
-                AND subproblem_id = {}
-                AND stage_id = {};""".format(
-                    row[2], row[0], row[1], scenario_id, subproblem, stage
-                )
+            duals_results.append(
+                (row[2], row[0], row[1], scenario_id, subproblem, stage)
             )
-    db.commit()
+    duals_sql = """
+        UPDATE results_system_prm
+        SET dual = ?
+        WHERE prm_zone = ?
+        AND period = ?
+        AND scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=duals_sql, data=duals_results)
 
     # Calculate marginal carbon cost per MMt
-    c.execute(
-        """UPDATE results_system_prm
+    mc_sql = """
+        UPDATE results_system_prm
         SET prm_marginal_cost_per_mw = 
         dual / (discount_factor * number_years_represented)
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
+        WHERE scenario_id = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+    spin_on_database_lock(conn=db, cursor=c, sql=mc_sql,
+                          data=(scenario_id, subproblem, stage),
+                          many=False)

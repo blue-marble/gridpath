@@ -16,8 +16,10 @@ import csv
 import os.path
 from pyomo.environ import Var, Expression, Constraint, NonNegativeReals, value
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
+    setup_results_import
 
 
 def add_model_components(m, d):
@@ -294,44 +296,14 @@ def import_results_into_database(
     print("project costs operations")
 
     # costs_operations_variable_om.csv
-    c.execute(
-        """DELETE FROM results_project_costs_operations_variable_om
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_costs_operations_variable_om"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_costs_operations_variable_om"""
-        + str(scenario_id) + """(
-        scenario_id INTEGER,
-        project VARCHAR(64),
-        period INTEGER,
-        subproblem_id INTEGER,
-        stage_id INTEGER,
-        horizon INTEGER,
-        timepoint INTEGER,
-        timepoint_weight FLOAT,
-        number_of_hours_in_timepoint FLOAT,
-        load_zone VARCHAR(32),
-        technology VARCHAR(32),
-        variable_om_cost FLOAT,
-        PRIMARY KEY (scenario_id, project, timepoint)
-            );"""
-    )
-    db.commit()
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_costs_operations_variable_om",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "costs_operations_variable_om.csv"), "r") as \
             dispatch_file:
@@ -348,27 +320,27 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             variable_om_cost = row[8]
-            c.execute(
-                """INSERT INTO
-                temp_results_project_costs_operations_variable_om"""
-                + str(scenario_id) + """
-                (scenario_id, project, period, subproblem_id, stage_id,
-                horizon, timepoint, timepoint_weight,
-                number_of_hours_in_timepoint,
-                load_zone, technology, variable_om_cost)
-                VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {}, '{}', '{}',
-                {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, variable_om_cost
-                )
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, variable_om_cost)
             )
-    db.commit()
+
+    insert_temp_sql = """
+        INSERT INTO
+        temp_results_project_costs_operations_variable_om{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, variable_om_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_costs_operations_variable_om
+    insert_sql = """
+        INSERT INTO results_project_costs_operations_variable_om
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, variable_om_cost)
@@ -376,60 +348,22 @@ def import_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, variable_om_cost
-        FROM temp_results_project_costs_operations_variable_om"""
-        + str(scenario_id) +
-        """
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_costs_operations_variable_om"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
+        FROM temp_results_project_costs_operations_variable_om{}
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # costs_operations_fuel.csv
-    c.execute(
-        """DELETE FROM results_project_costs_operations_fuel
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
 
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_costs_operations_fuel"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_costs_operations_fuel"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            fuel_cost FLOAT,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-                );"""
-    )
-    db.commit()
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_costs_operations_fuel",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "costs_operations_fuel.csv"), "r") as \
             dispatch_file:
@@ -446,27 +380,28 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             fuel_cost = row[8]
-            c.execute(
-                """INSERT INTO
-                temp_results_project_costs_operations_fuel"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, subproblem_id, stage_id,
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
                     horizon, timepoint, timepoint_weight,
                     number_of_hours_in_timepoint,
                     load_zone, technology, fuel_cost)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
-                    '{}', '{}', {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, fuel_cost
-                )
             )
-    db.commit()
+            
+    insert_temp_sql = """
+        INSERT INTO
+        temp_results_project_costs_operations_fuel{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, fuel_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_costs_operations_fuel
+    insert_sql = """
+        INSERT INTO results_project_costs_operations_fuel
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel_cost)
@@ -474,60 +409,21 @@ def import_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, fuel_cost
-        FROM temp_results_project_costs_operations_fuel"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_project_costs_operations_fuel{}
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_costs_operations_fuel"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # costs_operations_startup.csv
-    c.execute(
-        """DELETE FROM results_project_costs_operations_startup
-        WHERE scenario_id = {}
-        AND subproblem_id = {}
-        AND stage_id = {};
-        """.format(scenario_id, subproblem, stage)
-    )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_costs_operations_startup"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_costs_operations_startup"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            startup_cost FLOAT,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-                );"""
-    )
-    db.commit()
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_costs_operations_startup",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "costs_operations_startup.csv"), "r") as \
             dispatch_file:
@@ -544,27 +440,27 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             startup_cost = row[8]
-            c.execute(
-                """INSERT INTO
-                temp_results_project_costs_operations_startup"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, startup_cost)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
-                    '{}', '{}', {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, startup_cost
-                )
+            
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, startup_cost)
             )
-    db.commit()
+    insert_temp_sql = """
+        INSERT INTO
+        temp_results_project_costs_operations_startup{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, startup_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_costs_operations_startup
+    insert_sql = """
+        INSERT INTO results_project_costs_operations_startup
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost)
@@ -572,59 +468,21 @@ def import_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost
-        FROM temp_results_project_costs_operations_startup"""
-        + str(scenario_id) +
-        """
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_costs_operations_startup"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
+        FROM temp_results_project_costs_operations_startup{}
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # costs_operations_shutdown.csv
-    c.execute(
-        """DELETE FROM results_project_costs_operations_shutdown
-        WHERE scenario_id = {};""".format(
-            scenario_id
-        )
-    )
-    db.commit()
-
-    # Create temporary table, which we'll use to sort results and then drop
-    c.execute(
-        """DROP TABLE IF EXISTS
-        temp_results_project_costs_operations_shutdown"""
-        + str(scenario_id) + """;"""
-    )
-    db.commit()
-
-    c.execute(
-        """CREATE TABLE temp_results_project_costs_operations_shutdown"""
-        + str(scenario_id) + """(
-            scenario_id INTEGER,
-            project VARCHAR(64),
-            period INTEGER,
-            subproblem_id INTEGER,
-            stage_id INTEGER,
-            horizon INTEGER,
-            timepoint INTEGER,
-            timepoint_weight FLOAT,
-            number_of_hours_in_timepoint FLOAT,
-            load_zone VARCHAR(32),
-            technology VARCHAR(32),
-            shutdown_cost FLOAT,
-            PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-                );"""
-    )
-    db.commit()
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_costs_operations_shutdown",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
 
     # Load results into the temporary table
+    results = []
     with open(os.path.join(results_directory,
                            "costs_operations_shutdown.csv"), "r") as \
             dispatch_file:
@@ -641,27 +499,27 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             shutdown_cost = row[8]
-            c.execute(
-                """INSERT INTO
-                temp_results_project_costs_operations_shutdown"""
-                + str(scenario_id) + """
-                    (scenario_id, project, period, subproblem_id, stage_id,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, shutdown_cost)
-                    VALUES ({}, '{}', {}, {}, {}, {}, {}, {}, {},
-                    '{}', '{}', {});""".format(
-                    scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, shutdown_cost
-                )
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint, load_zone, technology,
+                 shutdown_cost)
             )
-    db.commit()
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_costs_operations_shutdown{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, shutdown_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
-    c.execute(
-        """INSERT INTO results_project_costs_operations_shutdown
+    insert_sql = """
+        INSERT INTO results_project_costs_operations_shutdown
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, shutdown_cost)
@@ -669,18 +527,8 @@ def import_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, shutdown_cost
-        FROM temp_results_project_costs_operations_shutdown"""
-        + str(scenario_id) +
-        """
+        FROM temp_results_project_costs_operations_shutdown{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """
-    )
-    db.commit()
-
-    # Drop the temporary table
-    c.execute(
-        """DROP TABLE temp_results_project_costs_operations_shutdown""" + str(
-            scenario_id) +
-        """;"""
-    )
-    db.commit()
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
