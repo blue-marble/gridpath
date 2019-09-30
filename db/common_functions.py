@@ -58,12 +58,19 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
     If the database is locked, wait for the lock to be released for a
     certain amount of time and occasionally retry to execute the SQL
     statement until the timeout.
+
+    To lock the database deliberately, run the following:
+        PRAGMA locking_mode = EXCLUSIVE;
+        BEGIN EXCLUSIVE;
+    The database will be locked until you run:
+        COMMIT;
     """
     for i in range(0, max_attempts):
-        # if i == 0:
-        #     pass
-        # else:
-        #     print("...retrying (attempt {})...".format(i))
+        if i == 0:
+            # print("initial attempt")
+            pass
+        else:
+            print("...retrying (attempt {} of {})...".format(i, max_attempts))
         try:
             if many:
                 cursor.executemany(sql, data)
@@ -73,7 +80,7 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
         except sqlite3.OperationalError as e:
             if "locked" in str(e):
                 print("Database is locked, sleeping for {} seconds, "
-                      "then retrying".format(interval))
+                      "then retrying.".format(interval))
                 if i == max_attempts:
                     print("Database still locked after {} seconds. "
                           "Exiting.".format(max_attempts * interval))
@@ -81,9 +88,10 @@ def spin_on_database_lock(conn, cursor, sql, data, many=True,
                 else:
                     time.sleep(interval)
             else:
-                print("Error while running the following query: ", sql)
+                print("Error while running the following query:\n", sql)
                 traceback.print_exc()
                 sys.exit()
         # Do this if exception not caught
         else:
+            # print("...done.")
             break
