@@ -421,46 +421,51 @@ def create_scenario(io, c, column_values_dict):
     should not be inserted directly. If the scenario_id is specified,
     it will be skipped (not inserted) and a warning will be raised.
 
-    :param io: the database path
+    :param io: the database connection object
     :param c: database cursor object
     :param column_values_dict: dictionary containing the scenarios table
         column names to populate as keys and the scenarios table column
         values as the dictionary values
     :return: None
     """
-    column_names_string = str()
-    column_values_string = str()
+    column_names_sql_string = str()
+    column_values_sql_string = str()
+    column_values_data = tuple()
 
     # TODO: add a check that the column names are correct and values are
     #  integers
     for column_name in column_values_dict.keys():
+        print(column_name)
         if column_name == 'scenario_id':
             warnings.warn(
                 "The scenario_id is an AUTOINCREMENT column and should not be "
                 "inserted directly. \n"
-                "The scenario will be assigned a scenario_id automatically. \n"
+                "Your scenario will be assigned a scenario_id automatically.\n"
                 "Remove the 'scenario_id' key from the dictionary to avoid "
                 "seeing this warning again.")
-        if list(column_values_dict.keys()).index(column_name) == 0:
-            column_names_string += column_name
-            column_values_string += \
-                "'" + str(column_values_dict[column_name]) + "'" \
-                if column_values_dict[column_name] is not None \
-                else 'NULL'
         else:
-            column_names_string += ", " + column_name
-            column_values_string += \
-                ", " + str(column_values_dict[column_name]) \
-                if column_values_dict[column_name] is not None \
-                else ', NULL'
+            if list(column_values_dict.keys()).index(column_name) == 0:
+                column_names_sql_string += "{}, ".format(column_name)
+                column_values_sql_string += "?,"
+                column_values_data = (column_values_dict[column_name],)
+            elif list(column_values_dict.keys()).index(column_name) \
+                    == len(list(column_values_dict.keys())) - 1:
+                column_names_sql_string += "{}".format(column_name)
+                column_values_sql_string += "?"
+                column_values_data = \
+                    column_values_data + (column_values_dict[column_name],)
+            else:
+                column_names_sql_string += "{}, ".format(column_name)
+                column_values_sql_string += "?,"
+                column_values_data = \
+                    column_values_data + (column_values_dict[column_name],)
 
-    # TODO: figure out how to wrap this in spin_on_database_lock
-    c.execute("INSERT INTO scenarios ({}) VALUES ({}});".format(
-            column_names_string, column_values_string
-        )
-    )
+    sql = """
+        INSERT INTO scenarios ({}) VALUES ({});
+    """.format(column_names_sql_string, column_values_sql_string)
 
-    io.commit()
+    spin_on_database_lock(conn=io, cursor=c, sql=sql, data=column_values_data,
+                          many=False)
 
 
 def update_scenario_multiple_columns(
@@ -501,25 +506,19 @@ def update_scenario_single_column(
     :param column_value:
     :return:
     """
-    # Add quotes if the column value is a string for the update statement
-    # string below
-    if isinstance(column_value, str):
-        column_value = "'" + str(column_value) + "'"
-
     # If no value specified, update to NULL
     if column_value is None:
         column_value = 'NULL'
 
     # Update the column value for the scenario
-    update_data = [(scenario_name)]
-    update_sql = \
-        """UPDATE scenarios
-        SET {} = {}
-        WHERE scenario_name = ?;""".format(
-            column_name, column_value
-        )
+    update_sql = """
+        UPDATE scenarios
+        SET {} = ?
+        WHERE scenario_name = ?;
+        """.format(column_name)
 
-    spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data,
+    spin_on_database_lock(conn=io, cursor=c, sql=update_sql,
+                          data=(column_value, scenario_name),
                           many=False)
 
 
@@ -546,7 +545,7 @@ def delete_scenario(conn, scenario_id):
     # Delete from all results and status tables
     tbls_data = []
     for tbl in results_tables + status_tables:
-        tbls_data.append((tbl))
+        tbls_data.append((tbl,))
     tbls_sql = \
         """DELETE FROM {} WHERE scenario_id = ?;""".format(
             tbl, scenario_id
@@ -554,7 +553,7 @@ def delete_scenario(conn, scenario_id):
     spin_on_database_lock(conn=conn, cursor=c, sql=tbls_sql, data=tbls_data)
 
     # Delete from scenarios table
-    sc_id_data = [(scenario_id)]
     sc_id_sql = "DELETE FROM scenarios WHERE scenario_id = ?"
-    spin_on_database_lock(conn=conn, cursor=c, sql=sc_id_sql, data=sc_id_data,
+    spin_on_database_lock(conn=conn, cursor=c, sql=sc_id_sql,
+                          data=(scenario_id,),
                           many=False)
