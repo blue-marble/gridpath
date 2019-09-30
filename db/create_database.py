@@ -299,6 +299,8 @@ def main(args=None):
         create_database_schema(db=db, parsed_arguments=parsed_args)
         # Load data
         load_data(db=db, omit_data=parsed_args.omit_data)
+        # Close the database
+        db.close()
 
 
 if __name__ == "__main__":

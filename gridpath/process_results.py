@@ -100,6 +100,9 @@ def main(args=None):
         subscenarios=subscenarios
     )
 
+    # Close the database connection
+    conn.close()
+
 
 if __name__ == "__main__":
     main()

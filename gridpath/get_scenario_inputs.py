@@ -480,6 +480,9 @@ def main(args=None):
         solver_options=solver_options
     )
 
+    # Close the database connection
+    conn.close()
+
 
 if __name__ == "__main__":
     main()
