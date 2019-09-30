@@ -120,25 +120,25 @@ def load_data(db, omit_data):
 
 
 def load_mod_months(db, c):
-    sql = \
-        """INSERT INTO mod_months
+    sql = """
+        INSERT INTO mod_months
         (month, description)
         VALUES (?, ?);"""    
     load_aux_data(conn=db, cursor=c, filename="mod_months.csv", sql=sql)
 
 
 def load_mod_capacity_types(db, c):
-    sql = \
-         """INSERT INTO mod_capacity_types
-                (capacity_type, description)
-                VALUES (?, ?);"""
+    sql = """
+        INSERT INTO mod_capacity_types
+        (capacity_type, description)
+        VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_capacity_types.csv", 
                   sql=sql)
 
 
 def load_mod_operational_types(db, c):
-    sql = \
-        """INSERT INTO mod_operational_types
+    sql = """
+        INSERT INTO mod_operational_types
         (operational_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_operational_types.csv", 
@@ -146,16 +146,16 @@ def load_mod_operational_types(db, c):
 
 
 def load_mod_reserve_types(db, c):
-    sql = \
-        """INSERT INTO mod_reserve_types
+    sql = """
+        INSERT INTO mod_reserve_types
         (reserve_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_reserve_types.csv", sql=sql)
 
 
 def load_mod_capacity_and_operational_type_invalid_combos(db, c):
-    sql = \
-        """INSERT INTO 
+    sql = """
+        INSERT INTO 
         mod_capacity_and_operational_type_invalid_combos
         (capacity_type, operational_type)
         VALUES (?, ?);""".format()
@@ -166,8 +166,8 @@ def load_mod_capacity_and_operational_type_invalid_combos(db, c):
 
 
 def load_mod_horizon_boundary_types(db, c):
-    sql = \
-        """INSERT INTO mod_horizon_boundary_types
+    sql = """
+        INSERT INTO mod_horizon_boundary_types
         (horizon_boundary_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_horizon_boundary_types.csv",
@@ -175,8 +175,8 @@ def load_mod_horizon_boundary_types(db, c):
 
 
 def load_mod_run_status_types(db, c):
-    sql = \
-        """INSERT INTO mod_run_status_types
+    sql = """
+        INSERT INTO mod_run_status_types
         (run_status_id, run_status_name)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_run_status_types.csv", 
@@ -184,8 +184,8 @@ def load_mod_run_status_types(db, c):
 
 
 def load_mod_validation_status_types(db, c):
-    sql = \
-        """INSERT INTO mod_validation_status_types
+    sql = """
+        INSERT INTO mod_validation_status_types
         (validation_status_id, validation_status_name)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, 
@@ -193,16 +193,16 @@ def load_mod_validation_status_types(db, c):
 
 
 def load_mod_features(db, c):
-    sql = \
-        """INSERT INTO mod_features
+    sql = """
+        INSERT INTO mod_features
         (feature, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_features.csv", sql=sql)
 
 
 def load_mod_feature_subscenarios(db, c):
-    sql = \
-        """INSERT INTO mod_feature_subscenarios
+    sql = """
+        INSERT INTO mod_feature_subscenarios
         (feature, subscenario_id)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_feature_subscenarios.csv", 
@@ -210,8 +210,8 @@ def load_mod_feature_subscenarios(db, c):
 
 
 def load_ui_scenario_detail_table_metadata(db, c):
-    sql = \
-        """INSERT INTO ui_scenario_detail_table_metadata
+    sql = """
+        INSERT INTO ui_scenario_detail_table_metadata
         (ui_table, include, ui_table_caption)
         VALUES (?, ?, ?);"""
     load_aux_data(conn=db, cursor=c, 
@@ -219,8 +219,8 @@ def load_ui_scenario_detail_table_metadata(db, c):
 
 
 def ui_scenario_detail_table_row_metadata(db, c):
-    sql = \
-        """INSERT INTO ui_scenario_detail_table_row_metadata
+    sql = """
+        INSERT INTO ui_scenario_detail_table_row_metadata
         (ui_table, ui_table_row, include, ui_row_caption,
         ui_row_db_scenarios_view_column, 
         ui_row_db_subscenario_table, 
@@ -234,8 +234,8 @@ def ui_scenario_detail_table_row_metadata(db, c):
 
 
 def load_ui_scenario_results_table_metadata(db, c):
-    sql = \
-        """INSERT INTO ui_scenario_results_table_metadata
+    sql = """
+        INSERT INTO ui_scenario_results_table_metadata
         (results_table, include, caption)
         VALUES (?, ?, ?);
         """
@@ -245,8 +245,8 @@ def load_ui_scenario_results_table_metadata(db, c):
 
 
 def load_ui_scenario_results_plot_metadata(db, c):
-    sql = \
-        """INSERT INTO ui_scenario_results_plot_metadata
+    sql = """
+        INSERT INTO ui_scenario_results_plot_metadata
         (results_plot, include, caption, load_zone_form_control,
         rps_zone_form_control, carbon_cap_zone_form_control,
         period_form_control, horizon_form_control, 
