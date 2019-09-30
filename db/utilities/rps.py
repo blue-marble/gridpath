@@ -31,10 +31,11 @@ def insert_rps_targets(
     # Subscenario
     subs_data = [(rps_target_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_system_rps_targets
+    subs_sql = """
+        INSERT INTO subscenarios_system_rps_targets
         (rps_target_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -45,11 +46,12 @@ def insert_rps_targets(
                 (rps_target_scenario_id, zone, period,
                  zone_period_targets[zone][period])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_system_rps_targets
+    inputs_sql = """
+        INSERT INTO inputs_system_rps_targets
         (rps_target_scenario_id, rps_zone, period,
         rps_target_mwh)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

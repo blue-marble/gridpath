@@ -33,10 +33,11 @@ def update_project_potentials(
     # Subscenarios
     subs_data = [(project_new_potential_scenario_id, scenario_name,
             scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_new_potential
+    subs_sql = """
+        INSERT INTO subscenarios_project_new_potential
          (project_new_potential_scenario_id, name, description)
-         VALUES (?, ?, ?);"""
+         VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -50,12 +51,13 @@ def update_project_potentials(
                  project_period_potentials[prj][period][2],
                  project_period_potentials[prj][period][3])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_project_new_potential
+    inputs_sql = """
+        INSERT INTO inputs_project_new_potential
         (project_new_potential_scenario_id, project, period,
         minimum_cumulative_new_build_mw,
         minimum_cumulative_new_build_mwh,
         maximum_cumulative_new_build_mw, 
         maximum_cumulative_new_build_mwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

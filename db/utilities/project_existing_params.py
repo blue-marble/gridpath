@@ -33,10 +33,11 @@ def update_project_capacities(
     # Subscenario
     subs_data = [(project_existing_capacity_scenario_id, scenario_name,
             scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_existing_capacity
+    subs_sql = """
+        INSERT INTO subscenarios_project_existing_capacity
          (project_existing_capacity_scenario_id, name, description)
-         VALUES (?, ?, ?);"""
+         VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -49,11 +50,12 @@ def update_project_capacities(
                  'NULL' if project_capacities[project][period][1] is None
                  else project_capacities[project][period][1])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_project_existing_capacity
+    inputs_sql = """
+        INSERT INTO inputs_project_existing_capacity
         (project_existing_capacity_scenario_id, project, period,
         existing_capacity_mw, existing_capacity_mwh)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -79,10 +81,11 @@ def update_project_fixed_costs(
     # Subscenario
     subs_data = [(project_existing_fixed_cost_scenario_id, scenario_name,
                   scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_existing_fixed_cost
+    subs_sql = """
+        INSERT INTO subscenarios_project_existing_fixed_cost
          (project_existing_fixed_cost_scenario_id, name, description)
-         VALUES (?, ?, ?);"""
+         VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -95,11 +98,12 @@ def update_project_fixed_costs(
                  'NULL' if project_fixed_costs[project][period][1] is None
                  else project_fixed_costs[project][period][1])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_project_existing_fixed_cost
+    inputs_sql = """
+        INSERT INTO inputs_project_existing_fixed_cost
         (project_existing_fixed_cost_scenario_id, project, period,
         annual_fixed_cost_per_kw_year, annual_fixed_cost_per_kwh_year)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

@@ -35,11 +35,12 @@ def insert_transmission_load_zones(
     # Subscenarios
     subs_data = [(load_zone_scenario_id, transmission_load_zone_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_transmission_load_zones
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_load_zones
         (load_zone_scenario_id, transmission_load_zone_scenario_id, 
         name, description)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -52,12 +53,13 @@ def insert_transmission_load_zones(
              tx_line_load_zones[tx_line][0],
              tx_line_load_zones[tx_line][1])
         )
-    inputs_sql = \
-        """INSERT INTO inputs_transmission_load_zones
-           (load_zone_scenario_id, 
-           transmission_load_zone_scenario_id,
-           transmission_line, load_zone_from, load_zone_to)
-           VALUES (?, ?, ?, ?, ?);"""
+    inputs_sql = """
+        INSERT INTO inputs_transmission_load_zones
+        (load_zone_scenario_id, 
+        transmission_load_zone_scenario_id,
+        transmission_line, load_zone_from, load_zone_to)
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -89,11 +91,12 @@ def insert_transmission_carbon_cap_zones(
     subs_data = [(carbon_cap_zone_scenario_id,
                   transmission_carbon_cap_zone_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_transmission_carbon_cap_zones
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_carbon_cap_zones
         (carbon_cap_zone_scenario_id, transmission_carbon_cap_zone_scenario_id, 
         name, description)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -107,11 +110,12 @@ def insert_transmission_carbon_cap_zones(
              tx_line_carbon_cap_zones[tx_line][1],
              tx_line_carbon_cap_zones[tx_line][2])
         )
-    inputs_sql = \
-        """INSERT INTO inputs_transmission_carbon_cap_zones
-           (carbon_cap_zone_scenario_id,
-           transmission_carbon_cap_zone_scenario_id,
-           transmission_line, carbon_cap_zone, import_direction,
-           tx_co2_intensity_tons_per_mwh)
-           VALUES (?, ?, ?, ?, ?, ?);"""
+    inputs_sql = """
+        INSERT INTO inputs_transmission_carbon_cap_zones
+        (carbon_cap_zone_scenario_id,
+        transmission_carbon_cap_zone_scenario_id,
+        transmission_line, carbon_cap_zone, import_direction,
+        tx_co2_intensity_tons_per_mwh)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

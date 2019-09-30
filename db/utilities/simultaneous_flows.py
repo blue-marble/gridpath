@@ -35,11 +35,12 @@ def insert_transmission_simultaneous_flow_limits(
     # Subscenarios
     subs_data = [(transmission_simultaneous_flow_limit_scenario_id,
             scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_transmission_simultaneous_flow_limits
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_simultaneous_flow_limits
         (transmission_simultaneous_flow_limit_scenario_id, name,
         description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -50,11 +51,12 @@ def insert_transmission_simultaneous_flow_limits(
                 (transmission_simultaneous_flow_limit_scenario_id,
                     group, period, group_period_limits[group][period])
             )
-    inputs_sql = \
-        """INSERT INTO
+    inputs_sql = """
+        INSERT INTO
         inputs_transmission_simultaneous_flow_limits
         (transmission_simultaneous_flow_limit_scenario_id,
         transmission_simultaneous_flow_limit, period,
         max_flow_mw)
-        VALUES (?, ?, ?, ?)"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

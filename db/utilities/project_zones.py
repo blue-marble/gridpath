@@ -33,11 +33,12 @@ def project_load_zones(
     # Subscenarios
     subs_data = [(load_zone_scenario_id, project_load_zone_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_load_zones
+    subs_sql = """
+        INSERT INTO subscenarios_project_load_zones
         (load_zone_scenario_id, project_load_zone_scenario_id, name,
         description)
-        VALUES (?, ?, ?, ?);""".format(
+        VALUES (?, ?, ?, ?);
+        """.format(
 
         )
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
@@ -50,11 +51,12 @@ def project_load_zones(
              p, project_load_zones[p])
         )
 
-    inputs_sql = \
-        """INSERT INTO inputs_project_load_zones
+    inputs_sql = """
+        INSERT INTO inputs_project_load_zones
         (load_zone_scenario_id, project_load_zone_scenario_id, project, 
         load_zone)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
     # Check that all projects got assigned a load zone
@@ -70,7 +72,8 @@ def project_load_zones(
             FROM inputs_project_load_zones
             WHERE load_zone_scenario_id = ?
             AND project_load_zone_scenario_id = ?
-            AND project = ?;""",
+            AND project = ?;
+        """,
             (load_zone_scenario_id, project_load_zone_scenario_id, prj)
         ).fetchall()
 
@@ -94,13 +97,12 @@ def project_reserve_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, project_reserve_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_{}_bas
+    subs_sql = """
+        INSERT INTO subscenarios_project_{}_bas
         ({}_ba_scenario_id, project_{}_ba_scenario_id, 
         name, description)
-        VALUES (?, ?, ?, ?);""".format(
-            reserve_type, reserve_type, reserve_type,
-        )
+        VALUES (?, ?, ?, ?);
+        """.format(reserve_type, reserve_type, reserve_type)
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert projects with BAs
@@ -110,13 +112,12 @@ def project_reserve_bas(
             (reserve_ba_scenario_id, project_reserve_scenario_id,
                 project, project_bas[project])
         )
-    inputs_sql = \
-        """INSERT INTO inputs_project_{}_bas
+    inputs_sql = """
+        INSERT INTO inputs_project_{}_bas
         ({}_ba_scenario_id, 
         project_{}_ba_scenario_id, project, {}_ba)
-        VALUES (?, ?, ?, ?);""".format(
-            reserve_type, reserve_type, reserve_type, reserve_type,
-        )
+        VALUES (?, ?, ?, ?);
+        """.format(reserve_type, reserve_type, reserve_type, reserve_type)
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -147,13 +148,12 @@ def project_policy_zones(
     # Subscenarios
     subs_data = [(policy_zone_scenario_id, project_policy_zone_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_{}_zones
+    subs_sql = """
+        INSERT INTO subscenarios_project_{}_zones
         ({}_zone_scenario_id, project_{}_zone_scenario_id, name,
         description)
-        VALUES (?, ?, ?, ?);""".format(
-            policy_type, policy_type, policy_type,
-        )
+        VALUES (?, ?, ?, ?);
+        """.format(policy_type, policy_type, policy_type)
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Project zones data
@@ -163,13 +163,12 @@ def project_policy_zones(
             (policy_zone_scenario_id, project_policy_zone_scenario_id,
              project, project_zones[project])
         )
-    inputs_sql = \
-        """INSERT INTO inputs_project_{}_zones
+    inputs_sql = """
+        INSERT INTO inputs_project_{}_zones
         ({}_zone_scenario_id, project_{}_zone_scenario_id, project, 
         {}_zone)
-        VALUES (?, ?, ?, ?);""".format(
-            policy_type, policy_type, policy_type, policy_type,
-        )
+        VALUES (?, ?, ?, ?);
+        """.format(policy_type, policy_type, policy_type, policy_type)
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

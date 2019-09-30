@@ -35,10 +35,11 @@ def insert_transmission_portfolio(
     # Subscenarios
     subs_data = [(transmission_portfolio_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_transmission_portfolios
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_portfolios
         (transmission_portfolio_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -48,10 +49,11 @@ def insert_transmission_portfolio(
             (transmission_portfolio_scenario_id,
              tx_line, tx_line_cap_types[tx_line])
         )
-    inputs_sql = \
-        """INSERT INTO inputs_transmission_portfolios
+    inputs_sql = """
+        INSERT INTO inputs_transmission_portfolios
            (transmission_portfolio_scenario_id,
            transmission_line, capacity_type)
-           VALUES (?, ?, ?);"""
+           VALUES (?, ?, ?);
+        """
 
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

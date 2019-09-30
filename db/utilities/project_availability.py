@@ -30,10 +30,11 @@ def update_project_availability(
     # Subscenario
     subs_data = [(project_availability_scenario_id, scenario_name,
                   scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_availability
+    subs_sql = """
+        INSERT INTO subscenarios_project_availability
         (project_availability_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Inputs
@@ -44,9 +45,10 @@ def update_project_availability(
                 inputs_data.append((project_availability_scenario_id, prj,
                                     stage, tmp,
                                     project_avail[prj][stage][tmp]))
-    inputs_sql = \
-        """INSERT INTO inputs_project_availability
+    inputs_sql = """
+        INSERT INTO inputs_project_availability
         (project_availability_scenario_id, project, stage_id, 
         timepoint, availability)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

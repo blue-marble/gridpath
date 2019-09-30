@@ -33,10 +33,11 @@ def prm_requirement(
 
     # Subscenarios
     subs_data = [(prm_requirement_scenario_id, scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_system_prm_requirement
+    subs_sql = """
+        INSERT INTO subscenarios_system_prm_requirement
         (prm_requirement_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -47,9 +48,10 @@ def prm_requirement(
                 (prm_requirement_scenario_id, zone, period,
                     zone_period_requirement[zone][period])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_system_prm_requirement
+    inputs_sql = """
+        INSERT INTO inputs_system_prm_requirement
         (prm_requirement_scenario_id, 
         prm_zone, period, prm_requirement_mw)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

@@ -52,10 +52,11 @@ def temporal(
     subscenario_data = [
         (temporal_scenario_id, scenario_name, scenario_description)
     ]
-    subscenario_sql = \
-        """INSERT INTO subscenarios_temporal
+    subscenario_sql = """
+        INSERT INTO subscenarios_temporal
         (temporal_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subscenario_sql,
                           data=subscenario_data)
 
@@ -67,11 +68,12 @@ def temporal(
              periods[period][ "number_years_represented"])
         )
         
-    periods_sql = \
-        """INSERT INTO inputs_temporal_periods
+    periods_sql = """
+        INSERT INTO inputs_temporal_periods
         (temporal_scenario_id, period, discount_factor, 
         number_years_represented)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=periods_sql,
                           data=periods_data)
 
@@ -81,10 +83,11 @@ def temporal(
     for subproblem_id in subproblems:
         subproblems_data.append((temporal_scenario_id, subproblem_id))
         
-    subproblems_sql = \
-        """INSERT INTO inputs_temporal_subproblems
+    subproblems_sql = """
+        INSERT INTO inputs_temporal_subproblems
         (temporal_scenario_id, subproblem_id)
-        VALUES (?, ?);"""
+        VALUES (?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subproblems_sql,
                           data=subproblems_data)
     
@@ -95,10 +98,11 @@ def temporal(
         for stage in subproblem_stages[subproblem_id]:
             stages_data.append((temporal_scenario_id, subproblem_id, 
                                 stage[0], stage[1]))
-    stages_sql = \
-        """INSERT INTO inputs_temporal_subproblems_stages
+    stages_sql = """
+        INSERT INTO inputs_temporal_subproblems_stages
         (temporal_scenario_id, subproblem_id, stage_id, stage_name)
-        VALUES (?, ?, ?, ?)"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=stages_sql,
                           data=stages_data)
 
@@ -128,13 +132,14 @@ def temporal(
                         spinup_or_lookahead, month, hour_of_day)
                 )
     
-    timepoints_sql = \
-        """INSERT INTO inputs_temporal_timepoints
+    timepoints_sql = """
+        INSERT INTO inputs_temporal_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint,
         period, number_of_hours_in_timepoint, timepoint_weight, 
         previous_stage_timepoint_map, 
         spinup_or_lookahead, month, hour_of_day)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
     
     spin_on_database_lock(conn=io, cursor=c, sql=timepoints_sql,
                           data=timepoints_data)
@@ -153,11 +158,12 @@ def temporal(
                  balancing_type_horizon, period, boundary)
             )
             
-    horizons_sql = \
-        """INSERT INTO inputs_temporal_horizons
+    horizons_sql = """
+        INSERT INTO inputs_temporal_horizons
         (temporal_scenario_id, subproblem_id, horizon, 
         balancing_type_horizon, period, boundary)
-        VALUES (?, ?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=horizons_sql,
                           data=horizons_data)
 
@@ -178,11 +184,12 @@ def temporal(
                          timepoint, horizon, balancing_type_horizon)
                     )
 
-    horizon_timepoints_sql = \
-        """INSERT INTO inputs_temporal_horizon_timepoints
+    horizon_timepoints_sql = """
+        INSERT INTO inputs_temporal_horizon_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint, horizon, 
         balancing_type_horizon)
-        VALUES (?, ?, ?, ?, ?, ?)"""
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=horizon_timepoints_sql,
                           data=horizon_timepoints_data)
 

@@ -27,10 +27,11 @@ def make_scenario_and_insert_all_projects(
     # Subscenarios
     subs_data = [(project_operational_chars_scenario_id, scenario_name,
                   scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_project_operational_chars (
+    subs_sql = """
+        INSERT INTO subscenarios_project_operational_chars (
         project_operational_chars_scenario_id, name,
-        description) VALUES (?, ?, ?);"""
+        description) VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert all projects into operational chars table
@@ -38,10 +39,11 @@ def make_scenario_and_insert_all_projects(
                              "FROM inputs_project_all;").fetchall()
     inputs_data = [(project_operational_chars_scenario_id, p[0])
                    for p in all_projects]
-    inputs_sql = \
-        """INSERT INTO inputs_project_operational_chars
+    inputs_sql = """
+        INSERT INTO inputs_project_operational_chars
         (project_operational_chars_scenario_id, project)
-        VALUES (?, ?);"""
+        VALUES (?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -67,11 +69,12 @@ def update_project_opchar_column(
             (project_char[project],
              project,
              project_operational_chars_scenario_id))
-    update_sql = \
-        """UPDATE inputs_project_operational_chars
+    update_sql = """
+        UPDATE inputs_project_operational_chars
         SET {} = ?
         WHERE project = ?
-        AND project_operational_chars_scenario_id = ?;""".format(column)
+        AND project_operational_chars_scenario_id = ?;
+        """.format(column)
     spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
 
 
@@ -95,12 +98,13 @@ def update_project_opchar_variable_gen_profile_scenario_id(
         (variable_generator_profile_scenario_id,
          project_operational_chars_scenario_id)
     ]
-    update_sql = \
-        """UPDATE inputs_project_operational_chars
+    update_sql = """
+        UPDATE inputs_project_operational_chars
         SET variable_generator_profile_scenario_id = ?
         WHERE (operational_type = 'variable' 
         OR operational_type = 'variable_no_curtailment')
-        AND project_operational_chars_scenario_id = ?;"""
+        AND project_operational_chars_scenario_id = ?;
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
 
 
@@ -124,12 +128,13 @@ def update_project_opchar_hydro_opchar_scenario_id(
         (hydro_operational_chars_scenario_id,
          project_operational_chars_scenario_id)
     ]
-    update_sql = \
-        """UPDATE inputs_project_operational_chars
+    update_sql = """
+        UPDATE inputs_project_operational_chars
         SET hydro_operational_chars_scenario_id = ?
         WHERE (operational_type = 'hydro_curtailable'
         OR operational_type ='hydro_noncurtailable')
-        AND project_operational_chars_scenario_id = ?;"""
+        AND project_operational_chars_scenario_id = ?;
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
 
 
@@ -161,10 +166,11 @@ def update_project_variable_profiles(
                 (prj, scenario_id, proj_profile_names[prj][scenario_id][0],
                  proj_profile_names[prj][scenario_id][1])
             )
-    subs_sql = \
-        """INSERT INTO subscenarios_project_variable_generator_profiles
+    subs_sql = """
+        INSERT INTO subscenarios_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, name, description)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -180,11 +186,12 @@ def update_project_variable_profiles(
                         (prj, scenario, stage, tmp,
                             proj_tmp_profiles[prj][scenario][stage][tmp])
                     )
-    inputs_sql = \
-        """INSERT INTO inputs_project_variable_generator_profiles
+    inputs_sql = """
+        INSERT INTO inputs_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, stage_id,
         timepoint, cap_factor)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -217,10 +224,11 @@ def update_project_hydro_opchar(
                 (prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
                  proj_opchar_names[prj][scenario_id][1])
             )
-    subs_sql = \
-        """INSERT INTO subscenarios_project_hydro_operational_chars
+    subs_sql = """
+        INSERT INTO subscenarios_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, name, description)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -236,12 +244,13 @@ def update_project_hydro_opchar(
                          proj_horizon_chars[p][scenario][bt][h]["min_mw"],
                          proj_horizon_chars[p][scenario][bt][h]["max_mw"])
                     )
-    inputs_sql = \
-        """INSERT INTO inputs_project_hydro_operational_chars
+    inputs_sql = """
+        INSERT INTO inputs_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, 
         balancing_type_project, horizon, period, 
         average_power_mwa, min_power_mw, max_power_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
@@ -273,10 +282,11 @@ def update_project_hr_curves(
                 (prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
                  proj_opchar_names[prj][scenario_id][1])
             )
-    subs_sql = \
-        """INSERT INTO subscenarios_project_heat_rate_curves
+    subs_sql = """
+        INSERT INTO subscenarios_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, name, description)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -290,11 +300,12 @@ def update_project_hr_curves(
                      proj_hr_chars[p][scenario][hr_curve_point][0],
                      proj_hr_chars[p][scenario][hr_curve_point][1])
                 )
-    inputs_sql = \
-        """INSERT INTO inputs_project_heat_rate_curves
+    inputs_sql = """
+        INSERT INTO inputs_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

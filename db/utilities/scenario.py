@@ -251,8 +251,8 @@ def create_scenario_all_args(
         local_capacity_requirement_scenario_id,
         tuning_scenario_id,
         solver_options_id)
-    sc_sql = \
-        """INSERT INTO scenarios (
+    sc_sql = """
+        INSERT INTO scenarios (
         scenario_name,
         of_fuels,
         of_multi_stage,
@@ -406,7 +406,8 @@ def create_scenario_all_args(
         ?,
         ?,
         ?
-        );"""
+        );
+        """
 
     spin_on_database_lock(conn=io, cursor=c, sql=sc_sql, data=sc_data,
                           many=False)
@@ -462,7 +463,7 @@ def create_scenario(io, c, column_values_dict):
 
     sql = """
         INSERT INTO scenarios ({}) VALUES ({});
-    """.format(column_names_sql_string, column_values_sql_string)
+        """.format(column_names_sql_string, column_values_sql_string)
 
     spin_on_database_lock(conn=io, cursor=c, sql=sql, data=column_values_data,
                           many=False)
@@ -546,10 +547,9 @@ def delete_scenario(conn, scenario_id):
     tbls_data = []
     for tbl in results_tables + status_tables:
         tbls_data.append((tbl,))
-    tbls_sql = \
-        """DELETE FROM {} WHERE scenario_id = ?;""".format(
-            tbl, scenario_id
-        )
+    tbls_sql = """
+        DELETE FROM {} WHERE scenario_id = ?;
+        """.format(tbl, scenario_id)
     spin_on_database_lock(conn=conn, cursor=c, sql=tbls_sql, data=tbls_data)
 
     # Delete from scenarios table

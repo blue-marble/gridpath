@@ -30,10 +30,11 @@ def insert_system_static_loads(
 
     # Subscenario
     subs_data = [(load_scenario_id, scenario_name, scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_system_load
+    subs_sql = """
+        INSERT INTO subscenarios_system_load
         (load_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -47,10 +48,11 @@ def insert_system_static_loads(
                     (load_scenario_id, z, stage, tmp,
                         zone_stage_timepoint_static_loads[z][stage][tmp])
                 )
-    inputs_sql = \
-        """INSERT INTO inputs_system_load
+    inputs_sql = """
+        INSERT INTO inputs_system_load
         (load_scenario_id, load_zone, stage_id, timepoint, load_mw)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

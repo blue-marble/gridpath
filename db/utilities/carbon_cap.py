@@ -31,10 +31,11 @@ def insert_carbon_cap_targets(
     # Subscenario
     subs_data = [(carbon_cap_target_scenario_id, scenario_name,
                   scenario_description)]
-    subs_sql = \
-        """INSERT INTO subscenarios_system_carbon_cap_targets
+    subs_sql = """
+        INSERT INTO subscenarios_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, name, description)
-        VALUES (?, ?, ?);"""
+        VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -45,11 +46,12 @@ def insert_carbon_cap_targets(
                 (carbon_cap_target_scenario_id, zone, period,
                  zone_period_targets[zone][period])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_system_carbon_cap_targets
+    inputs_sql = """
+        INSERT INTO inputs_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, carbon_cap_zone, period,
         carbon_cap_mmt)
-        VALUES (?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

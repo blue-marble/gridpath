@@ -36,10 +36,11 @@ def insert_transmission_hurdle_rates(
     # Subscenarios
     subs_data = [(transmission_hurdle_rate_scenario_id,
                   scenario_name, scenario_description)]
-    subs_sql = \
-         """INSERT INTO subscenarios_transmission_hurdle_rates
+    subs_sql = """
+        INSERT INTO subscenarios_transmission_hurdle_rates
             (transmission_hurdle_rate_scenario_id, name, description)
-            VALUES (?, ?, ?);"""
+            VALUES (?, ?, ?);
+        """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
@@ -52,12 +53,13 @@ def insert_transmission_hurdle_rates(
                  tx_line_period_hurdle_rates[tx_line][period][0],
                  tx_line_period_hurdle_rates[tx_line][period][1])
             )
-    inputs_sql = \
-        """INSERT INTO inputs_transmission_hurdle_rates
+    inputs_sql = """
+        INSERT INTO inputs_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id,
         transmission_line, period,
         hurdle_rate_positive_direction_per_mwh,
         hurdle_rate_negative_direction_per_mwh)
-        VALUES (?, ?, ?, ?, ?);"""
+        VALUES (?, ?, ?, ?, ?);
+        """
 
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
