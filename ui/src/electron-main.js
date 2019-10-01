@@ -4,7 +4,8 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const storage = require('electron-json-storage');
 const process = require('process');
 const path = require('path');
-const { spawn } = require('child_process');
+const ps = require('ps-node');
+const { spawn, exec } = require('child_process');
 
 // Are we on Windows
 const isWindows = process.platform === "win32";
@@ -130,6 +131,7 @@ app.on('before-quit', () => {
   // TODO: this could still throw an error if we tried but failed to launch
   //  the server process; need to check that the server actually started
   if ( tryToStartServer ) {
+    console.log("Stopping server...")
     if (isWindows) {
       // Signals don't really work on Windows, so we can't use them to shut
       // down the server process: see
@@ -144,6 +146,7 @@ app.on('before-quit', () => {
       // For now server must be manually shut down by closing its console window
 
       // ps.kill(serverChildProcess.pid, ( err ) => {
+      //   console.log("Trying to kill process");
       //   if (err) {
       //       throw new Error( err );
       //   }
@@ -152,8 +155,11 @@ app.on('before-quit', () => {
       //   }
       // });
 
-      // This does not kill the process, even if it's not detached.
-      serverChildProcess.kill()
+      console.log(serverChildProcess.pid);
+      exec('taskkill /pid ' + serverChildProcess.pid + ' /T /F')
+
+      // // This does not kill the process, even if it's not detached.
+      // serverChildProcess.kill()
     }
     else {
       serverChildProcess.kill('SIGTERM')
@@ -408,10 +414,14 @@ function startServer () {
           // how to kill the server process upon exit.
 
           // Process now spawned via the server entry point
+          // OMG: https://github.com/nodejs/node/issues/21825
+          // It seems to kill the server process with taskkill when exiting
+          // Electron, we need shell: false, detached: true (WTF)
+          // windowsHide does not appear to be working
           serverChildProcess = spawn(
            serverEntryPoint, [],
             {
-              shell: true, detached: true, windowsHide: false,
+              shell: false, detached: true, windowsHide: true,
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
@@ -424,6 +434,18 @@ function startServer () {
           // Why are we getting the wrong pid here? On Mac, it's the correct one...
           // How to kill the server process on app exit without knowing its
           // PID?
+
+          // When using server entry point:
+          // Update: the PID returned is that of the CMD shell in
+          // detached=false mode, but the Python process is not killed
+          // Still don't know what the PID returned is in detached=true
+          // mode (it's not that of the CMD)
+          // Update: the PID returned is that of the gridpath_run_server
+          // script when using shell=false, detached=false
+          // Update: I don't know what the PID returned is when using
+          // shell=false, detached=true, but it appears that way we can
+          // kill the gridpath_run_server process tree on Electron exit
+          // with taskkill
           console.log(serverChildProcess.pid);
         }
         else {
