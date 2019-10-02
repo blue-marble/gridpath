@@ -135,7 +135,9 @@ app.on('before-quit', () => {
       // down the server process: see
       // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
       // Instead we'll use taskkill
-      // Note: for this to work, we need
+      // Note: for this to work, we need to spawn the server child process via
+      // the GridPath entry point script and with we need
+      // shell: false, detached: true
       exec('taskkill /pid ' + serverChildProcess.pid + ' /T /F')
 
     }
