@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const storage = require('electron-json-storage');
 const process = require('process');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 
 // Are we on Windows
 const isWindows = process.platform === "win32";
@@ -131,29 +131,15 @@ app.on('before-quit', () => {
   //  the server process; need to check that the server actually started
   if ( tryToStartServer ) {
     if (isWindows) {
-      // Signals don't really work on Windows, so we can't use them to shut
+      // Signals don't work on Windows, so we can't use them to shut
       // down the server process: see
       // https://stackoverflow.com/questions/35772001/how-to-handle-the-signal-in-python-on-windows-machine
-      // TL;DR: just look at the first comment
-      // Can't kill process with ps.kill, as serverChildProcess.pid seems to
-      // return an incorrect pid here. I don't think this is a closure issue,
-      // as it appears the wrong pid is returned even right after the process
-      // is spawned whereas on Mac the correct one is returned. Commenting out
-      // the ps.kill code since it doesn't work on the wrong PID.
-      // TODO: perhaps IPC process communciation will work?
-      // For now server must be manually shut down by closing its console window
+      // Instead we'll use taskkill
+      // Note: for this to work, we need to spawn the server child process via
+      // the GridPath entry point script and with we need
+      // shell: false, detached: true
+      exec('taskkill /pid ' + serverChildProcess.pid + ' /T /F')
 
-      // ps.kill(serverChildProcess.pid, ( err ) => {
-      //   if (err) {
-      //       throw new Error( err );
-      //   }
-      //   else {
-      //       console.log( `Server process pid ${serverChildProcess.pid} has been killed.`);
-      //   }
-      // });
-
-      // This does not kill the process, even if it's not detached.
-      serverChildProcess.kill()
     }
     else {
       serverChildProcess.kill('SIGTERM')
@@ -375,43 +361,24 @@ function startServer () {
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
         if (isWindows) {
-          // Using Anaconda, the Windows requirements for the server were:
-          // commandToRun, shell: true, detached: true
-          // With Anaconda, tried:
-          // 1. commandToRun, shell: false, detached: false --> ENOENT error
-          // 2. commandToRun, shell: true, detached: false -->
-          // Python process closing code: 120
-          // 3. commandToRun, shell: false, detached: true --> ENOENT error
-          // 4. pythonPath, scriptPath, shell: true, detached: true -->
-          // Python process closing code: 120
-          // The 'Python process closing code: 120' error appears to be that
-          // the Anaconda environment is not activated on opening the
-          // shell, at least in the case of having a separate command
-          // (Python binary path) and arguments (script path); I'm not
-          // totally sure why using commandToRun with shell set to true but
-          // not detached also results in that error
-          // Also, windowsHide does not work:
-          // https://github.com/nodejs/node/issues/21825
-
-          // Using Python 3.7 distribution downloaded from python.org and
-          // venv for managing environments, 'shell' must be 'true'
-          // 1. commandToRun, shell: false, detached: false --> fail with
-          // Python process closing code: -4058
-          // 2. commandToRun, shell: true, detached: false -->
-          // DO THIS LAST
-          // 3. commandToRun, shell: false, detached: true --> fail with
-          // Python process closing code: -4058
-          // 4. pythonPath, scriptPath, shell: true, detached: true -->
-          // Python process closing code: 120
-          // While the process does not need to be detached with a pyenv
-          // environment, I'm leaving it as detached, as I still don't know
-          // how to kill the server process upon exit.
-
-          // Process now spawned via the server entry point
+          // Server process spawned via the server entry point
+          // OMG: https://github.com/nodejs/node/issues/21825
+          // To kill the server process with taskkill when exiting
+          // Electron, we need shell: false, detached: true (WTF)
+          // windowsHide does not appear to be working, so the server
+          // console window will be visible on Windows
+          // NOTE: the PID returned is that of the CMD shell in
+          // detached: false mode, but the Python process is not killed
+          // NOTE: the PID returned is that of the gridpath_run_server
+          // script when using shell=false, detached=false
+          // NOTE: I don't know what the PID returned is when using
+          // shell=false, detached=true, but it appears that way we can
+          // kill the gridpath_run_server process tree on Electron exit
+          // with taskkill
           serverChildProcess = spawn(
            serverEntryPoint, [],
             {
-              shell: true, detached: true, windowsHide: false,
+              shell: false, detached: true, windowsHide: true,
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
@@ -421,9 +388,6 @@ function startServer () {
               }
             },
             );
-          // Why are we getting the wrong pid here? On Mac, it's the correct one...
-          // How to kill the server process on app exit without knowing its
-          // PID?
           console.log(serverChildProcess.pid);
         }
         else {
