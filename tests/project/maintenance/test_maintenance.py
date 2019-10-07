@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 from __future__ import print_function
 
@@ -7,6 +7,7 @@ from builtins import str
 from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -20,12 +21,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.maintenance.maintenance",
-    "project.fuels", "project.operations",
-    "project.operations.operational_types",
-    "project.operations.power", "project.operations.tuning_costs"]
-NAME_OF_MODULE_BEING_TESTED = \
-    "objective.project.aggregate_operational_tuning_costs"
+    "project.capacity.capacity"]
+NAME_OF_MODULE_BEING_TESTED = "project.maintenance.maintenance"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -43,7 +40,7 @@ except ImportError:
           " to test.")
 
 
-class TestOperationalTuningCostsAgg(unittest.TestCase):
+class TestMaintenance(unittest.TestCase):
     """
 
     """
@@ -71,10 +68,11 @@ class TestOperationalTuningCostsAgg(unittest.TestCase):
                                      stage=""
                                      )
 
-    def test_data_loaded_correctly(self):
+    def test_initialized_components(self):
         """
-        Test that the data loaded are as expected
-        :return:
+        Create components; check they are initialized with data as expected.
+        Capacity-type modules should have added appropriate data;
+        make sure it is all as expected.
         """
         m, data = add_components_and_load_data(
             prereq_modules=IMPORTED_PREREQ_MODULES,

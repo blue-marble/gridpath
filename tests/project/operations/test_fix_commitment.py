@@ -20,7 +20,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.fuels", "project.operations",
+    "project.capacity.capacity", "project.maintenance.maintenance",
+    "project.fuels", "project.operations",
     "project.operations.operational_types", "project.operations.power"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.fix_commitment"
 IMPORTED_PREREQ_MODULES = list()

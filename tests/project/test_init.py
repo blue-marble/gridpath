@@ -77,6 +77,15 @@ class TestProjectInit(unittest.TestCase):
         self.assertListEqual(expected_required_capacity_modules,
                              actual_required_capacity_modules)
 
+        # Check if maintenance type modules are as expected
+        expected_required_maintenance_modules = sorted([
+            "exogenous_maintenance"
+        ])
+        actual_required_maintenance_modules = \
+            sorted(getattr(d, "required_maintenance_modules"))
+        self.assertListEqual(expected_required_maintenance_modules,
+                             actual_required_maintenance_modules)
+
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
             "dispatchable_capacity_commit", "hydro_curtailable",
@@ -152,7 +161,7 @@ class TestProjectInit(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
                 sep="\t", usecols=[
-                    'project', 'load_zone',"capacity_type",
+                    'project', 'load_zone', "capacity_type",
                     "operational_type", "variable_om_cost_per_mwh"
                 ]
             )
@@ -194,6 +203,26 @@ class TestProjectInit(unittest.TestCase):
         )
 
         self.assertDictEqual(expected_cap_type, actual_cap_type)
+
+        # Params: maintenance_type
+        expected_maintenance_type = OrderedDict(
+            sorted(
+                projects_df.set_index('project').to_dict()[
+                    'capacity_type'].items()
+            )
+        )
+        for key in expected_maintenance_type.keys():
+            expected_maintenance_type[key] = "exogenous_maintenance"
+
+        actual_maintenance_type = OrderedDict(
+            sorted(
+                {prj: instance.maintenance_type[prj] for prj in
+                 instance.PROJECTS}.items()
+            )
+        )
+
+        self.assertDictEqual(expected_maintenance_type,
+                             actual_maintenance_type)
 
         # Params: operational_type
         expected_op_type = OrderedDict(
