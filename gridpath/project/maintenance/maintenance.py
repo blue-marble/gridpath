@@ -47,6 +47,47 @@ def add_model_components(m, d):
     )
 
 
+def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
+    """
+
+    :param m:
+    :param d:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    imported_maintenance_modules = \
+        load_maintenance_type_modules(
+            getattr(d, required_maintenance_modules)
+        )
+    for op_m in getattr(d, required_maintenance_modules):
+        if hasattr(imported_maintenance_modules[op_m],
+                   "load_module_specific_data"):
+            imported_maintenance_modules[op_m].load_module_specific_data(
+                m, data_portal, scenario_directory, subproblem, stage)
+        else:
+            pass
+
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+
+    :param subscenarios:
+    :param subproblem:
+    :param stage:
+    :param conn:
+    :return:
+    """
+    # TODO: what is our process for iterating over types to do type-specific
+    #  validation?
+    from gridpath.project.maintenance.maintenance_types\
+        .exogenous_maintenance import validate_inputs
+    validate_inputs(subscenarios=subscenarios, subproblem=subproblem,
+                    stage=stage, conn=conn)
+
+
 def load_maintenance_type_modules(required_maintenance_types):
     """
 

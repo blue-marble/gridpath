@@ -67,6 +67,7 @@ def all_modules_list():
         "project.capacity.capacity_types",
         "project.capacity.capacity",
         "project.capacity.costs",
+        "project.maintenance.maintenance",
         "project.fuels",
         "project.operations",
         "project.operations.reserves.lf_reserves_up",

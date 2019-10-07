@@ -65,15 +65,14 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
 
     # Required maintenance types
     # If the column 'maintenance_type' exists, take values from there;
-    # otherwise, we will only use the 'no_maintenance" maintenance type module
-    if "maintenance_type" in project_dynamic_data_df.colunns:
+    # otherwise, we will only use the 'exogenous_maintenance" maintenance type
+    # module
+    if "maintenance_type" in project_dynamic_data_df.columns:
         setattr(d, required_maintenance_modules,
                 project_dynamic_data_df.maintenance_type.unique()
                 )
     else:
-        setattr(d, required_maintenance_modules,
-                ["no_maintenance"]
-                )
+        setattr(d, required_maintenance_modules, ["exogenous_maintenance"])
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
@@ -126,6 +125,7 @@ def add_model_components(m, d):
     m.PROJECTS = Set()
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
+    m.maintenance_type = Param(m.PROJECTS, default="exogenous_maintenance")
     m.operational_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
 
@@ -161,6 +161,22 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                             m.operational_type, m.variable_om_cost_per_mwh,
                             m.balancing_type_project)
                      )
+
+    # Maintenance type is optional (default param value is
+    # 'exogenous_maintenance', which will look for project_availability.tab
+    # file and assign 1 to the maintenance derate for projects for which an
+    # availability derate is not specified)
+    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
+                                      "inputs", "projects.tab"),
+                         sep="\t", header=None, nrows=1).values[0]
+
+    if "maintenance_type" in header:
+        data_portal.load(filename=os.path.join(
+                            scenario_directory, subproblem, stage, "inputs",
+                            "projects.tab"),
+                         select=("project", "maintenance_type"),
+                         param=m.technology
+                         )
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,

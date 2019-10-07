@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 """
 
@@ -102,7 +102,7 @@ def add_module_specific_components(m, d):
                    g, mod.previous_timepoint[tmp, mod.balancing_type[g]]
                ]
 
-    m.Maintenance_Event_Duration_Constraint = Constraint(
+    m.Maintenance_Start_and_Stop_Constraint = Constraint(
         m.BINARY_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS,
         rule=maintenance_start_and_stop_rule
     )
