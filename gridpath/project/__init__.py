@@ -13,7 +13,8 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    required_operational_modules, headroom_variables, footroom_variables
+    required_maintenance_modules, required_operational_modules, \
+    headroom_variables, footroom_variables
 from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
     check_column_sign_positive, write_validation_to_database, check_prj_column
 
@@ -49,26 +50,36 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     'footroom_variables' dictionary.
     """
 
-    project_dynamic_data = \
+    project_dynamic_data_df = \
         pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage, "inputs",
                          "projects.tab"),
-            sep="\t", usecols=["project",
-                               "capacity_type",
-                               "operational_type"]
+            sep="\t"
         )
 
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
     setattr(d, required_capacity_modules,
-            project_dynamic_data.capacity_type.unique()
+            project_dynamic_data_df.capacity_type.unique()
             )
+
+    # Required maintenance types
+    # If the column 'maintenance_type' exists, take values from there;
+    # otherwise, we will only use the 'no_maintenance" maintenance type module
+    if "maintenance_type" in project_dynamic_data_df.colunns:
+        setattr(d, required_maintenance_modules,
+                project_dynamic_data_df.maintenance_type.unique()
+                )
+    else:
+        setattr(d, required_maintenance_modules,
+                ["no_maintenance"]
+                )
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
     # (in projects.tab)
     setattr(d, required_operational_modules,
-            project_dynamic_data.operational_type.unique()
+            project_dynamic_data_df.operational_type.unique()
             )
 
     # From here on, the dynamic components will be further populated by the
@@ -80,10 +91,10 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     # We need to make the dictionaries first; it is the lists for each key
     # that are populated by the modules
     setattr(d, headroom_variables,
-            {r: [] for r in project_dynamic_data.project}
+            {r: [] for r in project_dynamic_data_df.project}
             )
     setattr(d, footroom_variables,
-            {r: [] for r in project_dynamic_data.project}
+            {r: [] for r in project_dynamic_data_df.project}
             )
 
 
