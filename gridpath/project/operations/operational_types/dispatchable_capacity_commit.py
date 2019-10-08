@@ -177,7 +177,7 @@ def add_module_specific_components(m, d):
         """
         return mod.Commit_Capacity_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Maintenance_Derate[g, tmp]
+            * mod.Availability_Derate[g, tmp]
     m.Commit_Capacity_Constraint = \
         Constraint(
             m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -718,7 +718,7 @@ def add_module_specific_components(m, d):
         # down in the relevant timepoints
         else:
             return mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.Maintenance_Derate[g, tmp] \
+                * mod.Availability_Derate[g, tmp] \
                 - mod.Commit_Capacity_MW[g, tmp] \
                 >= capacity_turned_off_min_down_time_or_less_hours_ago
 
@@ -734,7 +734,7 @@ def add_module_specific_components(m, d):
 
         Note: The availability de-rate is already accounted for in
         Commit_Capacity_MW so we don't need to multiply the intercept
-        by the Maintenance_Derate like we do for always_on generators.
+        by the Availability_Derate like we do for always_on generators.
         :param mod:
         :param g:
         :param tmp:

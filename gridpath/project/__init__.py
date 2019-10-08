@@ -13,7 +13,7 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    required_maintenance_modules, required_operational_modules, \
+    required_availability_modules, required_operational_modules, \
     headroom_variables, footroom_variables
 from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
     check_column_sign_positive, write_validation_to_database, check_prj_column
@@ -63,16 +63,10 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
             project_dynamic_data_df.capacity_type.unique()
             )
 
-    # Required maintenance types
-    # If the column 'maintenance_type' exists, take values from there;
-    # otherwise, we will only use the 'exogenous_maintenance" maintenance type
-    # module
-    if "maintenance_type" in project_dynamic_data_df.columns:
-        setattr(d, required_maintenance_modules,
-                project_dynamic_data_df.maintenance_type.unique()
-                )
-    else:
-        setattr(d, required_maintenance_modules, ["exogenous_maintenance"])
+    # Required availability types
+    setattr(d, required_availability_modules,
+            project_dynamic_data_df.availability_type.unique()
+            )
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
@@ -125,7 +119,7 @@ def add_model_components(m, d):
     m.PROJECTS = Set()
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
-    m.maintenance_type = Param(m.PROJECTS, default="exogenous_maintenance")
+    m.availability_type = Param(m.PROJECTS, default="exogenous_availability")
     m.operational_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
 
@@ -155,27 +149,27 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
-                             "maintenance_type", "operational_type",
+                             "availability_type", "operational_type",
                              "variable_om_cost_per_mwh",
                              "balancing_type_project"),
-                     param=(m.load_zone, m.capacity_type, m.maintenance_type,
+                     param=(m.load_zone, m.capacity_type, m.availability_type,
                             m.operational_type, m.variable_om_cost_per_mwh,
                             m.balancing_type_project)
                      )
 
-    # Maintenance type is optional (default param value is
-    # 'exogenous_maintenance', which will look for project_availability.tab
-    # file and assign 1 to the maintenance derate for projects for which an
+    # Availability type is optional (default param value is
+    # 'exogenous_availability', which will look for project_availability.tab
+    # file and assign 1 to the availability derate for projects for which an
     # availability derate is not specified)
     header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
                                       "inputs", "projects.tab"),
                          sep="\t", header=None, nrows=1).values[0]
 
-    if "maintenance_type" in header:
+    if "availability_type" in header:
         data_portal.load(filename=os.path.join(
                             scenario_directory, subproblem, stage, "inputs",
                             "projects.tab"),
-                         select=("project", "maintenance_type"),
+                         select=("project", "availability_type"),
                          param=m.technology
                          )
 
@@ -210,7 +204,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     #  we don't have startup costs, so we don't need to have the associated
     #  columns in projects.tab
     projects = c.execute(
-        """SELECT project, capacity_type, maintenance_type, operational_type, 
+        """SELECT project, capacity_type, availability_type, operational_type, 
         balancing_type_project, technology,
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
@@ -231,8 +225,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         AND project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
-        (SELECT project, maintenance_type
-        FROM inputs_project_maintenance_types
+        (SELECT project, availability_type
+        FROM inputs_project_availability_types
         WHERE project_availability_scenario_id = {}) as prj_mnt_types
         USING (project)
         LEFT OUTER JOIN
@@ -485,7 +479,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "maintenance_type",
+            ["project", "capacity_type", "availability_type",
              "operational_type", "balancing_type_project", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",

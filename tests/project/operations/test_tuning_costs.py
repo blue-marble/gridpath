@@ -20,7 +20,7 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.maintenance.maintenance",
+    "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations",
     "project.operations.operational_types",
     "project.operations.power"]

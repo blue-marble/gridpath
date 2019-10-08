@@ -16,7 +16,7 @@ required_capacity_modules = "required_capacity_modules"
 capacity_type_operational_period_sets = "capacity_type_operational_period_sets"
 storage_only_capacity_type_operational_period_sets = \
     "storage_only_capacity_type_operational_period_sets"
-required_maintenance_modules = "required_maintenance_modules"
+required_availability_modules = "required_availability_modules"
 required_operational_modules = "required_operational_modules"
 required_prm_modules = "required_prm_modules"
 required_reserve_modules = "required_reserve_modules"
@@ -77,9 +77,9 @@ class DynamicComponents(object):
         setattr(self, storage_only_capacity_type_operational_period_sets,
                 list())
 
-        # Maintenance type modules (the list of unique maintenance typs in
+        # Availability type modules (the list of unique availability typs in
         # the project list)
-        setattr(self, required_maintenance_modules, list())
+        setattr(self, required_availability_modules, list())
 
         # Operational type modules (the list of unique operational types in
         # the project list)

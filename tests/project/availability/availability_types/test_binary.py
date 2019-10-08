@@ -23,7 +23,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.investment.periods", "geography.load_zones", "project",
     "project.capacity.capacity"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.maintenance.maintenance_types.binary_maintenance"
+    "project.availability.availability_types.binary"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -41,7 +41,7 @@ except ImportError:
           " to test.")
 
 
-class TestExogenousMaintenanceType(unittest.TestCase):
+class TestExogenousAvailabilityType(unittest.TestCase):
     """
 
     """
@@ -84,23 +84,23 @@ class TestExogenousMaintenanceType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: BINARY_MAINTENANCE_PROJECTS
+        # Set: BINARY_AVAILABILITY_PROJECTS
         expected_project_subset = sorted([
             "Gas_CCGT"
         ])
         actual_project_subset = sorted([
-            prj for prj in instance.BINARY_MAINTENANCE_PROJECTS
+            prj for prj in instance.BINARY_AVAILABILITY_PROJECTS
         ])
         self.assertListEqual(expected_project_subset,
                              actual_project_subset)
 
-        # Set: BINARY_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS
+        # Set: BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(expected_project_subset)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.BINARY_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS]
+             instance.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)

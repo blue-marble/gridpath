@@ -103,7 +103,7 @@ def power_provision_rule(mod, g, tmp):
     """
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp] \
+        * mod.Availability_Derate[g, tmp] \
         * mod.cap_factor_no_curtailment[g, tmp]
 
 
@@ -116,7 +116,7 @@ def online_capacity_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp]
 
 
 # RPS
@@ -131,7 +131,7 @@ def rec_provision_rule(mod, g, tmp):
     """
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp] \
+        * mod.Availability_Derate[g, tmp] \
         * mod.cap_factor_no_curtailment[g, tmp]
 
 
@@ -219,14 +219,14 @@ def power_delta_rule(mod, g, tmp):
         pass
     else:
         return (mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Maintenance_Derate[g, tmp]
+                * mod.Availability_Derate[g, tmp]
                 * mod.cap_factor_no_curtailment[g, tmp]) - \
                (mod.Capacity_MW[
                     g, mod.period[
                         mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                     ]
                 ]
-                * mod.Maintenance_Derate[
+                * mod.Availability_Derate[
                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                 ]
                 * mod.cap_factor_no_curtailment[

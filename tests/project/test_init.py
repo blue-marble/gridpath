@@ -77,14 +77,14 @@ class TestProjectInit(unittest.TestCase):
         self.assertListEqual(expected_required_capacity_modules,
                              actual_required_capacity_modules)
 
-        # Check if maintenance type modules are as expected
-        expected_required_maintenance_modules = sorted([
-            "exogenous_maintenance", "binary_maintenance"
-        ])
-        actual_required_maintenance_modules = \
-            sorted(getattr(d, "required_maintenance_modules"))
-        self.assertListEqual(expected_required_maintenance_modules,
-                             actual_required_maintenance_modules)
+        # Check if availability type modules are as expected
+        expected_required_availability_modules = sorted(
+            ["exogenous", "binary"]
+        )
+        actual_required_availability_modules = \
+            sorted(getattr(d, "required_availability_modules"))
+        self.assertListEqual(expected_required_availability_modules,
+                             actual_required_availability_modules)
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
@@ -162,7 +162,7 @@ class TestProjectInit(unittest.TestCase):
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
                 sep="\t", usecols=[
                     'project', 'load_zone', "capacity_type",
-                    "maintenance_type", "operational_type",
+                    "availability_type", "operational_type",
                     "variable_om_cost_per_mwh"
                 ]
             )
@@ -205,22 +205,22 @@ class TestProjectInit(unittest.TestCase):
 
         self.assertDictEqual(expected_cap_type, actual_cap_type)
 
-        # Params: maintenance_type
-        expected_maintenance_type = OrderedDict(
+        # Params: availability_type
+        expected_availability_type = OrderedDict(
             sorted(
-                projects_df.set_index('project').to_dict()['maintenance_type']
+                projects_df.set_index('project').to_dict()['availability_type']
                 .items()
             )
         )
-        actual_maintenance_type = OrderedDict(
+        actual_availability_type = OrderedDict(
             sorted(
-                {prj: instance.maintenance_type[prj] for prj in
+                {prj: instance.availability_type[prj] for prj in
                  instance.PROJECTS}.items()
             )
         )
 
-        self.assertDictEqual(expected_maintenance_type,
-                             actual_maintenance_type)
+        self.assertDictEqual(expected_availability_type,
+                             actual_availability_type)
 
         # Params: operational_type
         expected_op_type = OrderedDict(

@@ -11,7 +11,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
 from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes
-from gridpath.project.maintenance.maintenance_types.common_functions import \
+from gridpath.project.availability.availability_types.common_functions import \
     determine_project_subset
 
 
@@ -23,27 +23,27 @@ def add_module_specific_components(m, d):
     :return:
     """
     # Sets
-    m.EXOGENOUS_MAINTENANCE_PROJECTS = Set(within=m.PROJECTS)
+    m.EXOGENOUS_AVAILABILITY_PROJECTS = Set(within=m.PROJECTS)
 
     # TODO: factor out this lambda rule, as it is used in all operational type
-    #  modules and maintenance type modules
-    m.EXOGENOUS_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
+    #  modules and availability type modules
+    m.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            if g in mod.EXOGENOUS_MAINTENANCE_PROJECTS
+            if g in mod.EXOGENOUS_AVAILABILITY_PROJECTS
             )
     )
     
-    # Availability derate (e.g. for maintenance/planned outages)
+    # Availability derate (e.g. for availability/planned outages)
     # This can be optionally loaded from external data, but defaults to 1
-    m.availability_derate = Param(
-        m.EXOGENOUS_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS,
+    m.availability_derate_exogenous = Param(
+        m.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction, default=1
     )
 
 
-def maintenance_derate_rule(mod, g, tmp):
+def availability_derate_rule(mod, g, tmp):
     """
 
     :param mod:
@@ -51,7 +51,7 @@ def maintenance_derate_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return mod.availability_derate[g, tmp]
+    return mod.availability_derate_exogenous[g, tmp]
 
 
 def load_module_specific_data(
@@ -65,7 +65,7 @@ def load_module_specific_data(
     :param stage:
     :return:
     """
-    # Figure out which projects have this maintenance type
+    # Figure out which projects have this availability type
     projects_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs", "projects.tab"
     )
@@ -73,21 +73,21 @@ def load_module_specific_data(
         projects_file, sep="\t", header=None, nrows=1
     ).values[0]
 
-    # If "maintenance_type" is among the column headers, use that to
-    # determine; otherwise, assign "exogenous_maintenance" to all projects
-    # (this is the default for the maintenance_type param defined in the
+    # If "availability_type" is among the column headers, use that to
+    # determine; otherwise, assign "exogenous_availability" to all projects
+    # (this is the default for the availability_type param defined in the
     # project __init__.py module)
-    if "maintenance_type" in header:
+    if "availability_type" in header:
         project_subset = determine_project_subset(
             scenario_directory=scenario_directory,
-            subproblem=subproblem, stage=stage, column="maintenance_type",
-            type="exogenous_maintenance"
+            subproblem=subproblem, stage=stage, column="availability_type",
+            type="exogenous"
         )
     else:
         project_subset = \
             pd.read_csv(projects_file, sep="\t")["project"].tolist()
 
-    data_portal.data()["EXOGENOUS_MAINTENANCE_PROJECTS"] = \
+    data_portal.data()["EXOGENOUS_AVAILABILITY_PROJECTS"] = \
         {None: project_subset}
 
     # Availability derates
@@ -103,7 +103,7 @@ def load_module_specific_data(
     if os.path.exists(availability_file):
         data_portal.load(
             filename=availability_file,
-            param=m.availability_derate
+            param=m.availability_derate_exogenous
         )
     else:
         pass

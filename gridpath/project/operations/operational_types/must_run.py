@@ -91,7 +91,7 @@ def power_provision_rule(mod, g, tmp):
     timepoints when they are operational.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp]
 
 
 def online_capacity_rule(mod, g, tmp):
@@ -103,7 +103,7 @@ def online_capacity_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
@@ -115,7 +115,7 @@ def rec_provision_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):

@@ -749,7 +749,7 @@ subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id)
 );
 
--- Project availability (e.g. due to planned outages/maintenance)
+-- Project availability (e.g. due to planned outages/availability)
 DROP TABLE IF EXISTS subscenarios_project_availability;
 CREATE TABLE subscenarios_project_availability (
 project_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -757,48 +757,49 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_maintenance_types;
-CREATE TABLE inputs_project_maintenance_types (
+DROP TABLE IF EXISTS inputs_project_availability_types;
+CREATE TABLE inputs_project_availability_types (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-maintenance_type VARCHAR(32),
-PRIMARY KEY (project_availability_scenario_id, project, maintenance_type)
+availability_type VARCHAR(32),
+PRIMARY KEY (project_availability_scenario_id, project, availability_type)
 );
 
 DROP TABLE IF EXISTS inputs_project_availability_exogenous;
 CREATE TABLE inputs_project_availability_exogenous (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-maintenance_type VARCHAR(32),
+availability_type VARCHAR(32),
 stage_id INTEGER,
 timepoint INTEGER,
 availability FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, maintenance_type,
+PRIMARY KEY (project_availability_scenario_id, project, availability_type,
              stage_id, timepoint),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
 subscenarios_project_availability (project_availability_scenario_id),
-FOREIGN KEY (project_availability_scenario_id, project, maintenance_type)
-    REFERENCES inputs_project_maintenance_types
-        (project_availability_scenario_id, project, maintenance_type),
-CHECK (maintenance_type IN ('exogenous_maintenance'))
+FOREIGN KEY (project_availability_scenario_id, project, availability_type)
+    REFERENCES inputs_project_availability_types
+        (project_availability_scenario_id, project, availability_type),
+CHECK (availability_type IN ('exogenous_availability'))
 );
 
 DROP TABLE IF EXISTS inputs_project_availability_endogenous;
 CREATE TABLE inputs_project_availability_endogenous (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-maintenance_type VARCHAR(32),
+availability_type VARCHAR(32),
 period INTEGER,
-maintenance_hours_per_period FLOAT,
-maintenance_hours_per_event FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, maintenance_type,
+unavailable_hours_per_period FLOAT,
+unavailable_hours_per_event FLOAT,
+PRIMARY KEY (project_availability_scenario_id, project, availability_type,
              period),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
 subscenarios_project_availability (project_availability_scenario_id),
-FOREIGN KEY (project_availability_scenario_id, project, maintenance_type)
-    REFERENCES inputs_project_maintenance_types
-        (project_availability_scenario_id, project, maintenance_type),
-CHECK (maintenance_type IN ('binary_maintenance', 'continuous_maintenance'))
+FOREIGN KEY (project_availability_scenario_id, project, availability_type)
+    REFERENCES inputs_project_availability_types
+        (project_availability_scenario_id, project, availability_type),
+-- TODO: add types to auxiliary data
+CHECK (availability_type IN ('binary', 'continuous'))
 );
 
 

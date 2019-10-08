@@ -55,7 +55,7 @@ def add_module_specific_components(m, d):
             sum(getattr(mod, c)[g, tmp]
                 for c in getattr(d, headroom_variables)[g]) \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Maintenance_Derate[g, tmp]
+            * mod.Availability_Derate[g, tmp]
     m.DispNoCommit_Max_Power_Constraint = \
         Constraint(
             m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -101,7 +101,7 @@ def online_capacity_rule(mod, g, tmp):
     :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
-        * mod.Maintenance_Derate[g, tmp]
+        * mod.Availability_Derate[g, tmp]
 
 
 def rec_provision_rule(mod, g, tmp):
