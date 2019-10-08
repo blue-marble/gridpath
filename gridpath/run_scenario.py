@@ -19,7 +19,8 @@ from pyutilib.services import TempfileManager
 import sys
 import traceback
 
-from gridpath.common_functions import determine_scenario_directory
+from gridpath.common_functions import determine_scenario_directory, \
+    get_scenario_name_parser, get_scenario_location_parser, get_solve_parser
 from gridpath.auxiliary.auxiliary import Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -780,62 +781,25 @@ def summarize_results(scenario_directory, subproblem, stage, loaded_modules,
 
 
 # Parse run options
-def parse_arguments(arguments):
+def parse_arguments(args):
     """
-    :param arguments: the script arguments specified by the user
+    :param args: the script arguments specified by the user
     :return: the parsed known argument values (<class 'argparse.Namespace'>
     Python object)
 
     Parse the known arguments.
     """
-    parser = argparse.ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument("--scenario",
-                        help="Name of the scenario problem to solve.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory the scenario directory"
-                             "is located (absolute or relative to the "
-                             "location of this script).")
-    # Output options
-    parser.add_argument("--log", default=False, action="store_true",
-                        help="Log output to a file in the scenario's 'logs' "
-                             "directory as well as the terminal.")
-    parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print run output.")
-    # Solver options
-    parser.add_argument("--solver", help="Name of the solver to use. "
-                                         "GridPath will use Cbc if solver is "
-                                         "not specified here and a "
-                                         "'solver_options.csv' file does not "
-                                         "exist in the scenario directory.")
-    parser.add_argument("--solver_executable",
-                        help="The path to the solver executable to use. This "
-                             "is optional; if you don't specify it, "
-                             "Pyomo will look for the solver executable in "
-                             "your PATH. The solver specified with the "
-                             "--solver option must be the same as the solver "
-                             "for which you are providing an executable.")
-    parser.add_argument("--mute_solver_output", default=False,
-                        action="store_true",
-                        help="Don't print solver output if set to true.")
-    parser.add_argument("--write_solver_files_to_logs_dir", default=False,
-                        action="store_true", help="Write the temporary "
-                                                  "solver files to the logs "
-                                                  "directory.")
-    parser.add_argument("--keepfiles", default=False, action="store_true",
-                        help="Save temporary solver files.")
-    parser.add_argument("--symbolic", default=False, action="store_true",
-                        help="Use symbolic labels in solver files.")
-    # Flag for test runs (various changes in behavior)
-    parser.add_argument("--testing", default=False, action="store_true",
-                        help="Flag for test suite runs.")
+    parser = argparse.ArgumentParser(
+        add_help=True,
+        parents=[get_scenario_name_parser(), get_scenario_location_parser(),
+                 get_solve_parser()]
+    )
 
     # Parse arguments
     # TODO: should we throw warning for unknown arguments (here and in the
     #  other scripts)? run_start_to_end does pass unknown arguments (e.g.
     #  the database file path), so we'd have to suppress warnings then
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
 
