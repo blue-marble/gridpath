@@ -260,15 +260,19 @@ class Logging(object):
         self.log_file.flush()
 
 
+# TODO: handle non-existing scenarios/scenario_ids
 def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     """
-    huh
+    Get the scenario_id and the scenario_ name. Usually only one is given (the
+    other one will be 'None'), so this functions determine the missing one from
+    the one that is provided. If both are provided, this function checks whether
+    they match.
 
     :param scenario_id_arg: 
     :param scenario_name_arg: 
     :param c: 
     :param script: 
-    :return: 
+    :return: (scenario_id, scenario_name)
     """
     if scenario_id_arg is None and scenario_name_arg is None:
         raise TypeError(

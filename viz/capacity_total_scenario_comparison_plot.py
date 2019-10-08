@@ -16,7 +16,7 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_scenario_and_scenario_id, get_parent_parser
+    get_parent_parser
 
 
 def parse_arguments(arguments):

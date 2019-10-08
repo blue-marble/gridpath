@@ -22,8 +22,8 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_scenario_and_scenario_id, get_parent_parser
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -353,9 +353,11 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    scenario, scenario_id = get_scenario_and_scenario_id(
-        parsed_arguments=parsed_args,
-        c=c
+    scenario_id, scenario = get_scenario_id_and_name(
+        scenario_id_arg=parsed_args.scenario_id,
+        scenario_name_arg=parsed_args.scenario,
+        c=c,
+        script="project_operations_plot"
     )
 
     plot_title = "Operations Plot - {} - {} - Stage {}".format(

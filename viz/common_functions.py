@@ -64,44 +64,6 @@ def show_plot(plot, plot_name, plot_write_directory, scenario=None):
     show(plot)
 
 
-# TODO: handle non-existing scenarios/scenario_ids
-def get_scenario_and_scenario_id(parsed_arguments, c):
-    """
-    Get the scenario and the scenario_id from the parsed arguments.
-
-    Usually only one is given, so we determine the missing one from the one
-    that is provided.
-
-    :param parsed_arguments:
-    :param c:
-    :return:
-    """
-
-    if parsed_arguments.scenario_id is None \
-            and parsed_arguments.scenario is None:
-        raise IOError("Missing scenario input arguments. Please provide at "
-                      "least one of the following arguments to the script:"
-                      " '--scenario' or '--scenario_id'")
-    elif parsed_arguments.scenario_id is None:
-        scenario = parsed_arguments.scenario
-        # Get the scenario ID
-        scenario_id = c.execute(
-            """SELECT scenario_id
-            FROM scenarios
-            WHERE scenario_name = '{}';""".format(scenario)
-        ).fetchone()[0]
-    else:
-        scenario_id = parsed_arguments.scenario_id
-        # Get the scenario name
-        scenario = c.execute(
-            """SELECT scenario_name
-            FROM scenarios
-            WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
-
-    return scenario, scenario_id
-
-
 def get_parent_parser():
     """
     Create "parent" ArgumentParser object which has the common set of arguments
