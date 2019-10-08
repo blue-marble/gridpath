@@ -233,7 +233,6 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    scenario_location = parsed_args.scenario_location
     scenario, scenario_id = get_scenario_and_scenario_id(
         parsed_arguments=parsed_args,
         c=c
@@ -262,10 +261,10 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario_directory=scenario_location,
-                  scenario=scenario,
-                  plot=plot,
-                  plot_name=plot_name)
+        show_plot(plot=plot,
+                  plot_name=plot_name,
+                  plot_write_directory=parsed_args.plot_write_directory,
+                  scenario=scenario)
 
     # Return plot in json format if requested
     if parsed_args.return_json:

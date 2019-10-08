@@ -63,30 +63,32 @@ def get_plotting_data(conn, scenario_id, load_zone, stage):
     sql = """SELECT project, period, technology, 
         period_mwh/(period_weight*capacity_mw) AS cap_factor
         FROM
-        (SELECT scenario_id, project, period, technology,
-        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint) 
-        AS period_mwh,
-        sum(timepoint_weight * number_of_hours_in_timepoint) 
-        AS period_weight
-        FROM results_project_dispatch_all
-        
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, scenario_id FROM scenarios)
-        USING (scenario_id)
-        
-        INNER JOIN
-        
-        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
-        spinup_or_lookahead
-        FROM inputs_temporal_timepoints)
-        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
-        
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone = ?
-        AND spinup_or_lookahead is NULL
-        group by period, project) AS energy_table
+            (SELECT scenario_id, project, period, technology,
+            sum(power_mw * timepoint_weight * number_of_hours_in_timepoint) 
+            AS period_mwh,
+            sum(timepoint_weight * number_of_hours_in_timepoint) 
+            AS period_weight
+            FROM results_project_dispatch_all
+            
+            INNER JOIN
+            
+            (SELECT temporal_scenario_id, scenario_id FROM scenarios)
+            USING (scenario_id)
+            
+            INNER JOIN
+            
+            (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
+            spinup_or_lookahead
+            FROM inputs_temporal_timepoints)
+            USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+            
+            WHERE scenario_id = ?
+            AND stage_id = ?
+            AND load_zone = ?
+            AND spinup_or_lookahead is NULL
+            group by period, project) 
+            
+            AS energy_table
         
         INNER JOIN
         
@@ -229,7 +231,6 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    scenario_location = parsed_args.scenario_location
     scenario, scenario_id = get_scenario_and_scenario_id(
         parsed_arguments=parsed_args,
         c=c
@@ -254,10 +255,10 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario_directory=scenario_location,
-                  scenario=scenario,
-                  plot=plot,
-                  plot_name=plot_name)
+        show_plot(plot=plot,
+                  plot_name=plot_name,
+                  plot_write_directory=parsed_args.plot_write_directory,
+                  scenario=scenario)
 
     # Return plot in json format if requested
     if parsed_args.return_json:

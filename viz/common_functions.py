@@ -15,8 +15,7 @@ from bokeh.models import CustomJS, ColumnDataSource, Legend, \
 from bokeh.models.tools import HoverTool
 from bokeh.palettes import cividis
 
-from gridpath.common_functions import determine_scenario_directory, \
-    create_directory_if_not_exists
+from gridpath.common_functions import create_directory_if_not_exists
 
 
 def show_hide_legend(plot):
@@ -34,27 +33,38 @@ def show_hide_legend(plot):
     )
 
 
-def show_plot(scenario_directory, scenario, plot, plot_name):
+def show_plot(plot, plot_name, plot_write_directory, scenario=None):
     """
-    Show plot in HTML browser file if requested
+    Show plot in HTML browser file if requested.
 
-    :param scenario_directory:
-    :param scenario:
+    When comparing scenario, the plot will be saved in the "scenario_comparison"
+    subfolfder of the plot_write_directory.
+
+    When looking at a particular scenario, the plot will be saved in the
+    "scenario/results/figures" subfolder of the plot_write_directory.
+
     :param plot:
     :param plot_name:
+    :param plot_write_directory:
+    :param scenario: str, optional (not required if comparing scenarios)
     :return:
     """
 
-    scenario_directory = determine_scenario_directory(
-        scenario_location=scenario_directory, scenario_name=scenario)
-    figures_directory = os.path.join(scenario_directory, "results", "figures")
-    create_directory_if_not_exists(figures_directory)
+    if scenario is None:
+        plot_write_subdir = os.path.join(plot_write_directory,
+                                         "scenario_comparison", "figures")
+    else:
+        plot_write_subdir = os.path.join(plot_write_directory, scenario,
+                                         "results", "figures")
 
-    filename = plot_name + ".html"
-    output_file(os.path.join(figures_directory, filename))
+    create_directory_if_not_exists(plot_write_subdir)
+    file_path = os.path.join(plot_write_subdir, plot_name + ".html")
+
+    output_file(file_path)
     show(plot)
 
 
+# TODO: handle non-existing scenarios/scenario_ids
 def get_scenario_and_scenario_id(parsed_arguments, c):
     """
     Get the scenario and the scenario_id from the parsed arguments.
@@ -107,16 +117,15 @@ def get_parent_parser():
     parser.add_argument("--database",
                         help="The database file path. Defaults to ../db/io.db "
                              "if not specified")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
+    parser.add_argument("--plot_write_directory", default="../scenarios",
+                        help="The path to the base directory in which to save "
+                             "the plot html file. Note: the file will be saved "
+                             "in a subfolder of this base directory, generally "
+                             "'scenario_name/results/figures'")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
-                        help="Show and save figure to "
-                             "results/figures directory "
-                             "under scenario directory.")
+                        help="Show figure and save html file")
     parser.add_argument("--return_json",
                         default=False, action="store_true",
                         help="Return plot as a json file.")

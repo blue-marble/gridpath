@@ -14,8 +14,9 @@ import pandas as pd
 import sys
 
 # GridPath modules
-from viz.common_functions import connect_to_database, create_stacked_bar_plot, \
-    show_plot, get_scenario_and_scenario_id, get_parent_parser
+from db.common_functions import connect_to_database
+from viz.common_functions import create_stacked_bar_plot, show_plot, \
+    get_scenario_and_scenario_id, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -79,7 +80,7 @@ def main(args=None):
         args = sys.argv[1:]
     parsed_args = parse_arguments(arguments=args)
 
-    conn = connect_to_database(parsed_arguments=parsed_args)
+    conn = connect_to_database(db_path=parsed_args.database)
 
     plot_title = "Total Capacity by Scenario - {} - Subproblem {} - Stage {}"\
         .format(
@@ -116,10 +117,9 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario_directory=parsed_args.scenario_location,
-                  scenario="scenario_comparison",
-                  plot=plot,
-                  plot_name=plot_name)
+        show_plot(plot=plot,
+                  plot_name=plot_name,
+                  plot_write_directory=parsed_args.plot_write_directory)
 
     # Return plot in json format if requested
     if parsed_args.return_json:
