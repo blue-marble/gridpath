@@ -87,7 +87,7 @@ class TestExogenousMaintenanceType(unittest.TestCase):
 
         # Set: EXOGENOUS_MAINTENANCE_PROJECTS
         expected_project_subset = sorted([
-            "Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Wind", "Gas_CCGT_New",
+            "Nuclear", "Coal", "Gas_CT", "Wind", "Gas_CCGT_New",
             "Gas_CT_New", "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
             "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             "Hydro_NonCurtailable", "Disp_Binary_Commit", "Disp_Cont_Commit",
@@ -101,14 +101,14 @@ class TestExogenousMaintenanceType(unittest.TestCase):
                              actual_project_subset)
 
         # Set: EXOGENOUS_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS
-        expected_operational_timpoints_by_project = sorted(
+        expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(expected_project_subset)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.EXOGENOUS_MAINTENANCE_PROJECTS_OPERATIONAL_TIMEPOINTS]
         )
-        self.assertListEqual(expected_operational_timpoints_by_project,
+        self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
         # Param: availability_derate

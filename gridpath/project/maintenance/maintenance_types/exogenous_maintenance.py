@@ -121,17 +121,17 @@ def get_module_specific_inputs_from_database(
     """
 
     # Get project availability if project_availability_scenario_id is not NUL
-    c1 = conn.cursor()
+    c = conn.cursor()
     if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = c1.execute(
+        availabilities = c.execute(
             """SELECT project, timepoint, availability
             FROM inputs_project_availability
             WHERE 1=0"""
         )
     else:
-        availabilities = c1.execute(
+        availabilities = c.execute(
             """SELECT project, timepoint, availability
-            FROM inputs_project_availability
+            FROM inputs_project_availability_exogenous
             INNER JOIN inputs_project_portfolios
             USING (project)
             INNER JOIN

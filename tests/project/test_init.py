@@ -79,7 +79,7 @@ class TestProjectInit(unittest.TestCase):
 
         # Check if maintenance type modules are as expected
         expected_required_maintenance_modules = sorted([
-            "exogenous_maintenance"
+            "exogenous_maintenance", "binary_maintenance"
         ])
         actual_required_maintenance_modules = \
             sorted(getattr(d, "required_maintenance_modules"))
@@ -162,7 +162,8 @@ class TestProjectInit(unittest.TestCase):
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "projects.tab"),
                 sep="\t", usecols=[
                     'project', 'load_zone', "capacity_type",
-                    "operational_type", "variable_om_cost_per_mwh"
+                    "maintenance_type", "operational_type",
+                    "variable_om_cost_per_mwh"
                 ]
             )
 
@@ -207,13 +208,10 @@ class TestProjectInit(unittest.TestCase):
         # Params: maintenance_type
         expected_maintenance_type = OrderedDict(
             sorted(
-                projects_df.set_index('project').to_dict()[
-                    'capacity_type'].items()
+                projects_df.set_index('project').to_dict()['maintenance_type']
+                .items()
             )
         )
-        for key in expected_maintenance_type.keys():
-            expected_maintenance_type[key] = "exogenous_maintenance"
-
         actual_maintenance_type = OrderedDict(
             sorted(
                 {prj: instance.maintenance_type[prj] for prj in

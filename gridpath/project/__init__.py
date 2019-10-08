@@ -155,9 +155,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
-                             "operational_type", "variable_om_cost_per_mwh",
+                             "maintenance_type", "operational_type",
+                             "variable_om_cost_per_mwh",
                              "balancing_type_project"),
-                     param=(m.load_zone, m.capacity_type,
+                     param=(m.load_zone, m.capacity_type, m.maintenance_type,
                             m.operational_type, m.variable_om_cost_per_mwh,
                             m.balancing_type_project)
                      )
@@ -201,8 +202,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     c = conn.cursor()
+
+    # TODO: for now, will require project_availability_scenario_id to be
+    #  defined; however, we should break down this query and have the
+    #  subtype modules write to projects.tab instead of getting everything
+    #  in one go here; this will help in a situation when, for example,
+    #  we don't have startup costs, so we don't need to have the associated
+    #  columns in projects.tab
     projects = c.execute(
-        """SELECT project, capacity_type, operational_type, 
+        """SELECT project, capacity_type, maintenance_type, operational_type, 
         balancing_type_project, technology,
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
@@ -223,6 +231,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         AND project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
+        (SELECT project, maintenance_type
+        FROM inputs_project_maintenance_types
+        WHERE project_availability_scenario_id = {}) as prj_mnt_types
+        USING (project)
+        LEFT OUTER JOIN
         (SELECT project, operational_type, balancing_type_project, technology,
         fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
@@ -241,6 +254,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -471,8 +485,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "operational_type",
-             "balancing_type_project", "technology",
+            ["project", "capacity_type", "maintenance_type",
+             "operational_type", "balancing_type_project", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",
              "startup_cost_per_mw", "shutdown_cost_per_mw",

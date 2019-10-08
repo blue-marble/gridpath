@@ -86,6 +86,7 @@ class TestExogenousMaintenanceType(unittest.TestCase):
 
         # Set: BINARY_MAINTENANCE_PROJECTS
         expected_project_subset = sorted([
+            "Gas_CCGT"
         ])
         actual_project_subset = sorted([
             prj for prj in instance.BINARY_MAINTENANCE_PROJECTS

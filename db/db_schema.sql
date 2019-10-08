@@ -757,16 +757,48 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability;
-CREATE TABLE inputs_project_availability (
+DROP TABLE IF EXISTS inputs_project_maintenance_types;
+CREATE TABLE inputs_project_maintenance_types (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
+maintenance_type VARCHAR(32),
+PRIMARY KEY (project_availability_scenario_id, project, maintenance_type)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous;
+CREATE TABLE inputs_project_availability_exogenous (
+project_availability_scenario_id INTEGER,
+project VARCHAR(64),
+maintenance_type VARCHAR(32),
 stage_id INTEGER,
 timepoint INTEGER,
 availability FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, stage_id, timepoint),
+PRIMARY KEY (project_availability_scenario_id, project, maintenance_type,
+             stage_id, timepoint),
 FOREIGN KEY (project_availability_scenario_id) REFERENCES
-subscenarios_project_availability (project_availability_scenario_id)
+subscenarios_project_availability (project_availability_scenario_id),
+FOREIGN KEY (project_availability_scenario_id, project, maintenance_type)
+    REFERENCES inputs_project_maintenance_types
+        (project_availability_scenario_id, project, maintenance_type),
+CHECK (maintenance_type IN ('exogenous_maintenance'))
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_endogenous;
+CREATE TABLE inputs_project_availability_endogenous (
+project_availability_scenario_id INTEGER,
+project VARCHAR(64),
+maintenance_type VARCHAR(32),
+period INTEGER,
+maintenance_hours_per_period FLOAT,
+maintenance_hours_per_event FLOAT,
+PRIMARY KEY (project_availability_scenario_id, project, maintenance_type,
+             period),
+FOREIGN KEY (project_availability_scenario_id) REFERENCES
+subscenarios_project_availability (project_availability_scenario_id),
+FOREIGN KEY (project_availability_scenario_id, project, maintenance_type)
+    REFERENCES inputs_project_maintenance_types
+        (project_availability_scenario_id, project, maintenance_type),
+CHECK (maintenance_type IN ('binary_maintenance', 'continuous_maintenance'))
 );
 
 
