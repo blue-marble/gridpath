@@ -4,8 +4,10 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -104,6 +106,38 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
+
+        # Param: unavailable_hours_per_period_binary
+        expected_unavailable_hours_per_period = OrderedDict(
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                             "project_availability_endogenous.tab"),
+                sep="\t"
+            ).set_index('project').to_dict()[
+                "unavailable_hours_per_period"].items()
+        )
+        actual_unavailable_hours_per_period = {
+            prj: instance.unavailable_hours_per_period_binary[prj]
+            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+        }
+        self.assertDictEqual(expected_unavailable_hours_per_period,
+                             actual_unavailable_hours_per_period)
+
+        # Param: unavailable_hours_per_period_binary
+        expected_unavailable_hours_per_event = OrderedDict(
+            pd.read_csv(
+                os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                             "project_availability_endogenous.tab"),
+                sep="\t"
+            ).set_index('project').to_dict()[
+                "unavailable_hours_per_event"].items()
+        )
+        actual_unavailable_hours_per_event = {
+            prj: instance.unavailable_hours_per_event_binary[prj]
+            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+        }
+        self.assertDictEqual(expected_unavailable_hours_per_event,
+                             actual_unavailable_hours_per_event)
 
 
 if __name__ == "__main__":
