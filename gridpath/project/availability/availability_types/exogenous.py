@@ -92,7 +92,7 @@ def load_module_specific_data(
 
     # Availability derates
     # Get any derates from the project_availability.tab file if it exists;
-    # if it does not exists, all projects will get 1 as a derate; if it does
+    # if it does not exist, all projects will get 1 as a derate; if it does
     # exist but projects are not specified in it, they will also get 1
     # assigned as their derate
     availability_file = os.path.join(

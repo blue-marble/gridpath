@@ -50,13 +50,13 @@ def add_module_specific_components(m, d):
     )
 
     # Variables
-    m.Down_for_Availability_Binary = Var(
+    m.Unavailable_Binary = Var(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
     )
-    m.Start_Availability_Binary = Var(
+    m.Start_Unavailability_Binary = Var(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
     )
-    m.Stop_Availability_Binary = Var(
+    m.Stop_Unavailability_Binary = Var(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
     )
 
@@ -73,7 +73,7 @@ def add_module_specific_components(m, d):
         TODO: it's possible that solve time will be faster if we make this
             constraint >= instead of ==, but then degeneracy could be an issue
         """
-        return sum(mod.Down_for_Availability_Binary[g, tmp]
+        return sum(mod.Unavailable_Binary[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
                    for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
                    ) \
@@ -95,13 +95,13 @@ def add_module_specific_components(m, d):
         availability status in the current and previous timepoint. If the
         generator is down for availability in the current timepoint and was
         not down for availability in the previous timepoint, then the RHS is 1
-        and Start_Availability_Binary must be set to 1. If the generator is not
+        and Start_Unavailability_Binary must be set to 1. If the generator is not
         down for availability in the current timepoint and was down for
         availability in the previous timepoint, then the RHS is -1 and
-        Stop_Availability_Binary must be set to 1.
+        Stop_Unavailability_Binary must be set to 1.
         """
         # TODO: refactor skipping of constraint in first timepoint of linear
-        #  horizons
+        #  horizons, as we do it a lot
         if tmp == mod.first_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 and mod.boundary[mod.horizon[tmp,
@@ -109,10 +109,10 @@ def add_module_specific_components(m, d):
                 == "linear":
             return Constraint.Skip
         else:
-            return mod.Start_Availability_Binary[g, tmp] \
-                - mod.Stop_Availability_Binary[g, tmp] \
-                == mod.Down_for_Availability_Binary[g, tmp] \
-                - mod.Down_for_Availability_Binary[
+            return mod.Start_Unavailability_Binary[g, tmp] \
+                - mod.Stop_Unavailability_Binary[g, tmp] \
+                == mod.Unavailable_Binary[g, tmp] \
+                - mod.Unavailable_Binary[
                        g, mod.previous_timepoint[tmp,
                                                  mod.balancing_type_project[g]]
                    ]
@@ -129,10 +129,10 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
 
-        If availability was started within unavailable_hours_per_event_binary from the
-        current timepoint, it could not have also been stopped during that
-        time, i.e. the generator could not have changed its down for
-        availability status and must still be down for availability in the
+        If availability was started within unavailable_hours_per_event_binary 
+        from the current timepoint, it could not have also been stopped 
+        during that time, i.e. the generator could not have changed its down
+        for availability status and must still be down for availability in the
         current timepoint.
         """
         relevant_tmps = determine_relevant_timepoints(
@@ -141,8 +141,8 @@ def add_module_specific_components(m, d):
         if relevant_tmps == [tmp]:
             return Constraint.Skip
         return sum(
-            mod.Start_Availability_Binary[g, tp] 
-            + mod.Stop_Availability_Binary[g, tp]
+            mod.Start_Unavailability_Binary[g, tp] 
+            + mod.Stop_Unavailability_Binary[g, tp]
             for tp in relevant_tmps
         ) <= 1
 
@@ -160,7 +160,7 @@ def availability_derate_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return 1 - mod.Down_for_Availability_Binary[g, tmp]
+    return 1 - mod.Unavailable_Binary[g, tmp]
 
 
 def load_module_specific_data(
