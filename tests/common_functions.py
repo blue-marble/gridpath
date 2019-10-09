@@ -20,10 +20,12 @@ def determine_dynamic_components(prereq_modules, module_to_test, test_data_dir,
 
     for mod in prereq_modules:
         if hasattr(mod, 'determine_dynamic_components'):
-            mod.determine_dynamic_components(d, test_data_dir, "", "")
+            mod.determine_dynamic_components(
+                d, test_data_dir, subproblem, stage)
     if hasattr(module_to_test, "determine_dynamic_components"):
         module_to_test.determine_dynamic_components(
-            d, test_data_dir, subproblem, stage)
+            d, test_data_dir, subproblem, stage
+        )
 
     return d
 
