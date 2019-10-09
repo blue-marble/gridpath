@@ -119,7 +119,7 @@ def add_model_components(m, d):
     m.PROJECTS = Set()
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
-    m.availability_type = Param(m.PROJECTS, default="exogenous_availability")
+    m.availability_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
 
@@ -145,8 +145,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage: 
     :return: 
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "projects.tab"),
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem,
+                                           stage, "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
                              "availability_type", "operational_type",
@@ -156,22 +156,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                             m.operational_type, m.variable_om_cost_per_mwh,
                             m.balancing_type_project)
                      )
-
-    # Availability type is optional (default param value is
-    # 'exogenous_availability', which will look for project_availability.tab
-    # file and assign 1 to the availability derate for projects for which an
-    # availability derate is not specified)
-    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                      "inputs", "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
-
-    if "availability_type" in header:
-        data_portal.load(filename=os.path.join(
-                            scenario_directory, subproblem, stage, "inputs",
-                            "projects.tab"),
-                         select=("project", "availability_type"),
-                         param=m.technology
-                         )
 
     # Technology column is optional (default param value is 'unspecified')
     header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,

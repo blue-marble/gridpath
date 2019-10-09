@@ -97,7 +97,7 @@ def load_module_specific_data(
     # assigned as their derate
     availability_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs",
-        "project_availability.tab"
+        "project_availability_exogenous.tab"
     )
 
     if os.path.exists(availability_file):

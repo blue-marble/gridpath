@@ -15,7 +15,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
     # Import needed availability type modules
     imported_availability_modules = \
         load_availability_type_modules(
