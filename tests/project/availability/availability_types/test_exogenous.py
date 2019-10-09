@@ -114,7 +114,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         # Param: availability_derate
         availability_df = pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "project_availability.tab"),
+                         "project_availability_exogenous.tab"),
             sep="\t"
         )
         defaults = {
@@ -138,6 +138,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             for (prj, tmp) in
             instance.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
         }
+
         self.assertDictEqual(expected_availability_derate,
                              actual_availability_derate)
 
