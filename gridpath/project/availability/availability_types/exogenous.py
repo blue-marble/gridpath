@@ -109,7 +109,7 @@ def load_module_specific_data(
         pass
 
 
-def get_module_specific_inputs_from_database(
+def get_inputs_from_database(
         subscenarios, subproblem, stage, conn
 ):
     """
@@ -120,41 +120,72 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
-    # Get project availability if project_availability_scenario_id is not NUL
+
     c = conn.cursor()
-    if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = c.execute(
-            """SELECT project, timepoint, availability
-            FROM inputs_project_availability
-            WHERE 1=0"""
-        )
-    else:
-        availabilities = c.execute(
-            """SELECT project, timepoint, availability
-            FROM inputs_project_availability_exogenous
-            INNER JOIN inputs_project_portfolios
-            USING (project)
-            INNER JOIN
-            (SELECT timepoint
+    availabilities = c.execute("""
+        SELECT project, timepoint, availability_derate
+        FROM (
+        SELECT project
+        FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        ) as portfolio_tbl
+        INNER JOIN (
+            SELECT project, exogenous_availability_scenario_id
+            FROM inputs_project_availability_types
+            WHERE project_availability_scenario_id = {}
+            AND availability_type = 'exogenous'
+            AND exogenous_availability_scenario_id IS NOT NULL
+            ) AS avail_char
+         USING (project)
+         CROSS JOIN (
+            SELECT stage_id, timepoint, period
             FROM inputs_temporal_timepoints
             WHERE temporal_scenario_id = {}
             AND subproblem_id = {}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            WHERE project_portfolio_scenario_id = {}
-            AND project_availability_scenario_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            )
+            AND stage_id = {}
+            ) as tmps_tbl
+        LEFT OUTER JOIN
+        inputs_project_availability_exogenous
+        USING (exogenous_availability_scenario_id, project, stage_id, timepoint)
+        INNER JOIN
+            (SELECT project, period
+            FROM
+                (SELECT project, period
+                FROM inputs_project_existing_capacity
+                INNER JOIN
+                (SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {})
+                USING (period)
+                WHERE project_existing_capacity_scenario_id = {}
+                AND existing_capacity_mw > 0) as existing
+            UNION
+            SELECT project, period
+            FROM inputs_project_new_cost
+            INNER JOIN
+                (SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {})
+            USING (period)
+            WHERE project_new_cost_scenario_id = {}) as op_periods_tbl
+            USING (project, period);
+        """.format(
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subproblem,
+        stage,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
+        subscenarios.TEMPORAL_SCENARIO_ID,
+        subscenarios.PROJECT_NEW_COST_SCENARIO_ID
         )
+    )
 
     return availabilities
 
 
-def write_module_specific_inputs(
+def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
     """
@@ -165,13 +196,14 @@ def write_module_specific_inputs(
     :param conn:
     :return:
     """
-    availabilities = get_module_specific_inputs_from_database(
+    availabilities = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
     # Fetch availability inputs
     availabilities = availabilities.fetchall()
 
     if availabilities:
-        with open(os.path.join(inputs_directory, "project_availability.tab"),
+        with open(os.path.join(inputs_directory,
+                               "project_availability_exogenous.tab"),
                   "w", newline="") as \
                 availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t")
@@ -190,7 +222,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn:
     :return:
     """
-    availabilities = get_module_specific_inputs_from_database(
+    availabilities = get_inputs_from_database(
         subscenarios, subproblem, stage, conn
     )
 

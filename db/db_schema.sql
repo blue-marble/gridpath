@@ -27,6 +27,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented availability types
+DROP TABLE IF EXISTS mod_availability_types;
+CREATE TABLE mod_availability_types (
+availability_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Implemented operational types
 DROP TABLE IF EXISTS mod_operational_types;
 CREATE TABLE mod_operational_types (
@@ -750,6 +757,7 @@ subscenarios_project_hydro_operational_chars
 );
 
 -- Project availability (e.g. due to planned outages/availability)
+-- Subscenarios
 DROP TABLE IF EXISTS subscenarios_project_availability;
 CREATE TABLE subscenarios_project_availability (
 project_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -757,49 +765,60 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
+-- Define availability type and IDs for type characteristics
+-- TODO: implement check that there are exogenous IDs only for exogenous
+--  types and endogenous IDs only for endogenous types
 DROP TABLE IF EXISTS inputs_project_availability_types;
 CREATE TABLE inputs_project_availability_types (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
 availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
+endogenous_availability_scenario_id INTEGER,
 PRIMARY KEY (project_availability_scenario_id, project, availability_type)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous;
+CREATE TABLE subscenarios_project_availability_exogenous (
+project VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, exogenous_availability_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_availability_exogenous;
 CREATE TABLE inputs_project_availability_exogenous (
-project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
-availability FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, availability_type,
-             stage_id, timepoint),
-FOREIGN KEY (project_availability_scenario_id) REFERENCES
-subscenarios_project_availability (project_availability_scenario_id),
-FOREIGN KEY (project_availability_scenario_id, project, availability_type)
-    REFERENCES inputs_project_availability_types
-        (project_availability_scenario_id, project, availability_type),
-CHECK (availability_type IN ('exogenous_availability'))
+availability_derate FLOAT,
+PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id, timepoint),
+FOREIGN KEY (project, exogenous_availability_scenario_id)
+    REFERENCES subscenarios_project_availability_exogenous
+        (project, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_endogenous;
+CREATE TABLE subscenarios_project_availability_endogenous (
+project VARCHAR(64),
+endogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, endogenous_availability_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_availability_endogenous;
 CREATE TABLE inputs_project_availability_endogenous (
-project_availability_scenario_id INTEGER,
 project VARCHAR(64),
-availability_type VARCHAR(32),
-period INTEGER,
+endogenous_availability_scenario_id INTEGER,
 unavailable_hours_per_period FLOAT,
 unavailable_hours_per_event FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, availability_type,
-             period),
-FOREIGN KEY (project_availability_scenario_id) REFERENCES
-subscenarios_project_availability (project_availability_scenario_id),
-FOREIGN KEY (project_availability_scenario_id, project, availability_type)
-    REFERENCES inputs_project_availability_types
-        (project_availability_scenario_id, project, availability_type),
--- TODO: add types to auxiliary data
-CHECK (availability_type IN ('binary', 'continuous'))
+PRIMARY KEY (project, endogenous_availability_scenario_id),
+FOREIGN KEY (project, endogenous_availability_scenario_id)
+    REFERENCES subscenarios_project_availability_endogenous
+        (project, endogenous_availability_scenario_id)
 );
 
 

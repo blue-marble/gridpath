@@ -46,6 +46,39 @@ def add_model_components(m, d):
     )
 
 
+def write_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+
+    Get inputs from database and write out the model input .tab files
+    """
+    c = conn.cursor()
+    # Load in the required capacity type modules
+    scenario_id = subscenarios.SCENARIO_ID
+    required_availability_type_modules = \
+        get_required_availability_type_modules(scenario_id, c)
+
+    imported_availability_type_modules = load_availability_type_modules(
+        required_availability_type_modules)
+
+    # Get module-specific inputs
+    for op_m in required_availability_type_modules:
+        if hasattr(imported_availability_type_modules[op_m],
+                   "write_module_specific_model_inputs"):
+            imported_availability_type_modules[op_m].\
+                write_module_specific_model_inputs(
+                    inputs_directory, subscenarios, subproblem, stage, conn)
+        else:
+            pass
+
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
@@ -87,6 +120,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                     stage=stage, conn=conn)
 
 
+# TODO: this seems like a better place for this function than
+#  auxiliary.auxiliary, but it's inconsistent with the rest of the types
 def load_availability_type_modules(required_availability_types):
     """
 
@@ -98,3 +133,41 @@ def load_availability_type_modules(required_availability_types):
         package="gridpath.project.availability.availability_types",
         required_attributes=["availability_derate_rule"]
     )
+
+
+def get_required_availability_type_modules(scenario_id, c):
+    """
+    :param scenario_id: user-specified scenario ID
+    :param c: database cursor
+    :return: List of the required capacity type submodules
+
+    Get the required availability type submodules based on the database inputs
+    for the specified scenario_id. Required modules are the unique set of
+    generator availability types in the scenario's portfolio. Get the list
+    based on the project_availability_scenario_id of the scenario_id.
+
+    This list will be used to know for which availability type submodules we
+    should validate inputs, get inputs from database , or save results to
+    database.
+
+    Note: once we have determined the dynamic components, this information
+    will also be stored in the DynamicComponents class object.
+    """
+
+    project_availability_scenario_id = c.execute(
+        """SELECT project_availability_scenario_id 
+        FROM scenarios 
+        WHERE scenario_id = {}""".format(scenario_id)
+    ).fetchone()[0]
+
+    required_availability_type_modules = [
+        p[0] for p in c.execute(
+            """SELECT DISTINCT availability_type 
+            FROM inputs_project_availability_types
+            WHERE project_availability_scenario_id = {}""".format(
+                project_availability_scenario_id
+            )
+        ).fetchall()
+    ]
+
+    return required_availability_type_modules

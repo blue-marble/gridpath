@@ -205,30 +205,35 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     # Get project availability if project_availability_scenario_id is not NUL
     c = conn.cursor()
     availability_params = c.execute("""
-        SELECT project, availability_hours_per_period,
-        availability_hours_per_event
-        FROM inputs_project_availability_endogenous
-        INNER JOIN inputs_project_portfolios
-        USING (project)
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {}) as relevant_periods
-        USING (period)
-        WHERE project_portfolio_scenario_id = {}
-        AND project_availability_scenario_id = {};
-        """.format(
-            subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
+            SELECT project, unavailable_hours_per_period, 
+            unavailable_hours_per_event
+            FROM (
+            SELECT project
+            FROM inputs_project_portfolios
+            WHERE project_portfolio_scenario_id = {}
+            ) as portfolio_tbl
+            INNER JOIN (
+                SELECT project, endogenous_availability_scenario_id
+                FROM inputs_project_availability_types
+                WHERE project_availability_scenario_id = {}
+                AND availability_type = 'endogenous'
+                AND endogenous_availability_scenario_id IS NOT NULL
+                ) AS avail_char
+             USING (project)
+            LEFT OUTER JOIN
+            inputs_project_availability_endogenous
+            USING (endogenous_availability_scenario_id, project);
+            """.format(
+        subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+        subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID
         )
     )
 
     return availability_params
 
 
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
-                       conn):
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn):
     """
 
     :param inputs_directory:
@@ -250,8 +255,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage,
 
         # Write header
         writer.writerow(
-            ["project", "availability_hours_per_period",
-             "availability_hours_per_event"]
+            ["project", "unavailable_hours_per_period",
+             "unavailable_hours_per_event"]
         )
 
         for row in endogenous_availability_params:
