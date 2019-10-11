@@ -559,11 +559,27 @@ lifetime_yrs INTEGER,
 annualized_real_cost_per_kw_yr FLOAT,
 annualized_real_cost_per_kwh_yr FLOAT,
 levelized_cost_per_mwh FLOAT,  -- useful if available, although not used
-binary_build_size_mw, -- only used for binary build types
 supply_curve_scenario_id INTEGER,
 PRIMARY KEY (project_new_cost_scenario_id, project, period),
 FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
+);
+
+
+-- TODO: add subscenarios table for new build size scenario id
+-- TODO: add the tables to cpuc irp setup script
+-- TODO: follow flow of inputs from this table to the tab file and model
+-- New project binary build size
+DROP TABLE IF EXISTS inputs_project_binary_build_size;
+CREATE TABLE inputs_project_binary_build_size (
+project_new_binary_build_size_scenario_id INTEGER,
+project VARCHAR(64),
+binary_build_size_mw,
+binary_build_size_mwh,
+PRIMARY KEY (project_new_binary_build_size_scenario_id, project),
+FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
+subscenarios_project_new_binary_build_size
+(project_new_binary_build_size_scenario_id)
 );
 
 
