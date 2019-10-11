@@ -6,14 +6,16 @@
 """
 
 import os.path
-import sqlite3
+from argparse import ArgumentParser
 
 from bokeh import events
-from bokeh.models import CustomJS
-from bokeh.plotting import output_file, show
+from bokeh.plotting import figure, output_file, show
+from bokeh.models import CustomJS, ColumnDataSource, Legend, \
+    NumeralTickFormatter
+from bokeh.models.tools import HoverTool
+from bokeh.palettes import cividis
 
-from gridpath.common_functions import determine_scenario_directory, \
-    create_directory_if_not_exists
+from gridpath.common_functions import create_directory_if_not_exists
 
 
 def show_hide_legend(plot):
@@ -31,54 +33,177 @@ def show_hide_legend(plot):
     )
 
 
-def show_plot(scenario_directory, scenario, plot, plot_name):
+def show_plot(plot, plot_name, plot_write_directory, scenario=None):
     """
-    Show plot in HTML browser file if requested
+    Show plot in HTML browser file if requested.
 
-    :param scenario_directory:
-    :param scenario:
+    When comparing scenario, the plot will be saved in the "scenario_comparison"
+    subfolfder of the plot_write_directory.
+
+    When looking at a particular scenario, the plot will be saved in the
+    "scenario/results/figures" subfolder of the plot_write_directory.
+
     :param plot:
     :param plot_name:
+    :param plot_write_directory:
+    :param scenario: str, optional (not required if comparing scenarios)
     :return:
     """
 
-    scenario_directory = determine_scenario_directory(
-        scenario_location=scenario_directory, scenario_name=scenario)
-    figures_directory = os.path.join(scenario_directory, "results", "figures")
-    create_directory_if_not_exists(figures_directory)
+    if scenario is None:
+        plot_write_subdir = os.path.join(plot_write_directory,
+                                         "scenario_comparison", "figures")
+    else:
+        plot_write_subdir = os.path.join(plot_write_directory, scenario,
+                                         "results", "figures")
 
-    filename = plot_name + ".html"
-    output_file(os.path.join(figures_directory, filename))
+    create_directory_if_not_exists(plot_write_subdir)
+    file_path = os.path.join(plot_write_subdir, plot_name + ".html")
+
+    output_file(file_path)
     show(plot)
 
 
-def get_scenario_and_scenario_id(parsed_arguments, c):
+def get_parent_parser():
     """
-    Get the scenario and the scenario_id from the parsed arguments.
+    Create "parent" ArgumentParser object which has the common set of arguments
+    that each plot requires. We can then simply add 'parents=[parent_parser]'
+    when we create a parser for a plot to inherit these common arguments.
 
-    Usually only one is given, so we determine the missing one from the one
-    that is provided.
+    Note that 'add_help' is set to 'False' to avoid multiple `-h/--help` options
+    (one for parent and one for each child), which will throw an error.
+    :return: 
+    """
 
-    :param parsed_arguments:
-    :param c:
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument("--database",
+                        help="The database file path. Defaults to ../db/io.db "
+                             "if not specified")
+    parser.add_argument("--plot_write_directory", default="../scenarios",
+                        help="The path to the base directory in which to save "
+                             "the plot html file. Note: the file will be saved "
+                             "in a subfolder of this base directory, generally "
+                             "'scenario_name/results/figures'")
+    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
+    parser.add_argument("--show",
+                        default=False, action="store_true",
+                        help="Show figure and save html file")
+    parser.add_argument("--return_json",
+                        default=False, action="store_true",
+                        help="Return plot as a json file.")
+
+    return parser
+
+
+def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
+                            group_column, column_mapper={}, ylimit=None):
+    """
+    Create a stacked bar chart based on a DataFrame and the desired x-axis,
+    y-axis, and group (category). Different groups/categories will be stacked.
+
+    Example:
+        data = {'year': [2018, 2018], 'mw': [5, 8], 'tech': ['t1', 't2']}
+        df = pd.DataFrame(data)
+        create_stacked_bar_plot(
+            df=df,
+            title="example_plot",
+            y_axis_column="mw",
+            x_axis_column="year",
+            group_column="tech"
+        )
+
+    :param df: a data-base style DataFrame which should at least include the
+        columns 'y_axis_column', 'x_axis_column' and 'group_column'. The
+        'x_axis_column' and 'group_column' should uniquely identify the value of
+        the 'y_axis_column' (e.g. capacity should be uniquely defined by the
+        period and the technology).
+    :param title: string, plot title
+    :param y_axis_column:
+    :param x_axis_column:
+    :param group_column:
+    :param column_mapper: optional dict that maps columns names to cleaner
+        labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
+    :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
 
-    if parsed_arguments.scenario_id is None:
-        scenario = parsed_arguments.scenario
-        # Get the scenario ID
-        scenario_id = c.execute(
-            """SELECT scenario_id
-            FROM scenarios
-            WHERE scenario_name = '{}';""".format(scenario)
-        ).fetchone()[0]
-    else:
-        scenario_id = parsed_arguments.scenario_id
-        # Get the scenario name
-        scenario = c.execute(
-            """SELECT scenario_name
-            FROM scenarios
-            WHERE scenario_id = {};""".format(scenario_id)
-        ).fetchone()[0]
+    # Rename axis/group labels using mapper (if specified)
+    for k, v in column_mapper.items():
+        y_axis_column = y_axis_column.replace(k, v)
+        x_axis_column = x_axis_column.replace(k, v)
+        group_column = group_column.replace(k, v)
 
-    return scenario, scenario_id
+    # Pre-process DataFrame:
+    # 1. rename
+    df.rename(columns=column_mapper, inplace=True)
+    # 2. Pivot such that values in group column become column headers
+    df = df.pivot(
+        index=x_axis_column,
+        columns=group_column,
+        values=y_axis_column
+    ).fillna(0)
+    # 3. Change type of index to str, required for categorical bar chart
+    df.index = df.index.map(str)
+
+    # Set up data source
+    source = ColumnDataSource(data=df)
+
+    # Determine column types for plotting, legend and colors
+    # Order of stacked_cols will define order of stacked areas in chart
+    stacked_cols = list(df.columns)
+
+    # Stacked Area Colors
+    colors = cividis(len(stacked_cols))
+
+    # Set up the figure
+    plot = figure(
+        plot_width=800, plot_height=500,
+        tools=["pan", "reset", "zoom_in", "zoom_out", "save", "help"],
+        title=title,
+        x_range=df.index.values
+        # sizing_mode="scale_both"
+    )
+
+    # Add stacked area chart to plot
+    area_renderers = plot.vbar_stack(
+        stackers=stacked_cols,
+        x=x_axis_column,
+        source=source,
+        color=colors,
+        width=0.5,
+    )
+
+    # Add Legend
+    legend_items = [(y, [area_renderers[i]]) for i, y in enumerate(stacked_cols)
+                    if df[y].mean() > 0]
+    legend = Legend(items=legend_items)
+    plot.add_layout(legend, 'right')
+    plot.legend.title = group_column
+    plot.legend[0].items.reverse()  # Reverse legend to match stacked order
+    plot.legend.click_policy = 'hide'  # Add interactivity to the legend
+    show_hide_legend(plot=plot)  # Hide legend on double click
+
+    # Format Axes (labels, number formatting, range, etc.)
+    plot.xaxis.axis_label = "{}".format(x_axis_column)
+    plot.yaxis.axis_label = "{}".format(y_axis_column)
+    plot.yaxis.formatter = NumeralTickFormatter(format="0,0")
+    plot.y_range.end = ylimit  # will be ignored if ylimit is None
+
+    # Add HoverTools for stacked bars/areas
+    for r in area_renderers:
+        group = r.name
+        if "$" in y_axis_column:
+            y_axis_formatter = "@%s{$0,0}" % group
+        else:
+            y_axis_formatter = "@%s{0,0}" % group
+        hover = HoverTool(
+            tooltips=[
+                ("%s" % x_axis_column, "@{%s}" % x_axis_column),
+                ("%s" % group_column, group),
+                ("%s" % y_axis_column, y_axis_formatter)
+            ],
+            renderers=[r],
+            toggleable=False)
+        plot.add_tools(hover)
+
+    return plot

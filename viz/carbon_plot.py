@@ -21,8 +21,8 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_scenario_and_scenario_id
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -30,46 +30,29 @@ def parse_arguments(arguments):
 
     :return:
     """
-    parser = ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument("--database",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+    parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
-    parser.add_argument("--carbon_cap_zone",
+    parser.add_argument("--carbon_cap_zone", required=True, type=str,
                         help="The name of the carbon cap zone. Required")
-    parser.add_argument("--subproblem", default=1,
+    parser.add_argument("--subproblem", default=1, type=int,
                         help="The subproblem ID. Defaults to 1.")
-    parser.add_argument("--stage", default=1,
+    parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
-    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
-    parser.add_argument("--show",
-                        default=False, action="store_true",
-                        help="Show and save figure to "
-                             "results/figures directory "
-                             "under scenario directory.")
-    parser.add_argument("--return_json",
-                        default=False, action="store_true",
-                        help="Return plot as a json file."
-                        )
+
     # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
 
 
-def get_data(c, scenario_id, carbon_cap_zone, subproblem, stage):
+def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage):
     """
-    Get the necessary plotting data
-    :param c:
+    Get the carbon results by period for a given
+    scenario/carbon_cap_zone/subproblem/stage.
+    :param conn:
     :param scenario_id:
     :param carbon_cap_zone:
     :param subproblem:
@@ -92,25 +75,10 @@ def get_data(c, scenario_id, carbon_cap_zone, subproblem, stage):
         AND stage_id = ?
         ;"""
 
-    return c.execute(sql, (scenario_id, carbon_cap_zone, subproblem, stage))
-
-
-def create_data_df(c, scenario_id, carbon_cap_zone, subproblem, stage):
-    """
-    Get data and convert to pandas DataFrame
-    :param c:
-    :param scenario_id:
-    :param carbon_cap_zone:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-
-    data = get_data(c, scenario_id, carbon_cap_zone, subproblem, stage)
-
-    df = pd.DataFrame(
-        data=data.fetchall(),
-        columns=[n[0] for n in data.description]
+    df = pd.read_sql(
+        sql,
+        con=conn,
+        params=(scenario_id, carbon_cap_zone, subproblem, stage)
     )
 
     # For Testing:
@@ -265,20 +233,22 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    scenario_location = parsed_args.scenario_location
-    scenario, scenario_id = get_scenario_and_scenario_id(
-        parsed_arguments=parsed_args,
-        c=c
+    scenario_id, scenario = get_scenario_id_and_name(
+        scenario_id_arg=parsed_args.scenario_id,
+        scenario_name_arg=parsed_args.scenario,
+        c=c,
+        script="carbon_plot"
     )
 
-    plot_title = "Carbon Emissions Result by Period - {}"\
-                 " - Subproblem {} - Stage {}".format(
-        parsed_args.carbon_cap_zone, parsed_args.subproblem, parsed_args.stage)
+    plot_title = "Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
+        .format(
+            parsed_args.carbon_cap_zone, parsed_args.subproblem,
+            parsed_args.stage)
     plot_name = "CarbonPlot-{}-{}-{}".format(
         parsed_args.carbon_cap_zone, parsed_args.subproblem, parsed_args.stage)
 
-    df = create_data_df(
-        c=c,
+    df = get_plotting_data(
+        conn=conn,
         scenario_id=scenario_id,
         carbon_cap_zone=parsed_args.carbon_cap_zone,
         subproblem=parsed_args.subproblem,
@@ -293,10 +263,10 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario_directory=scenario_location,
-                  scenario=scenario,
-                  plot=plot,
-                  plot_name=plot_name)
+        show_plot(plot=plot,
+                  plot_name=plot_name,
+                  plot_write_directory=parsed_args.plot_write_directory,
+                  scenario=scenario)
 
     # Return plot in json format if requested
     if parsed_args.return_json:
