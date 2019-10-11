@@ -11,8 +11,7 @@ import pandas as pd
 from pyomo.environ import Param, Set, PercentFraction
 
 from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes
-from gridpath.project.availability.availability_types.common_functions import \
-    determine_project_subset
+from gridpath.project.common_functions import determine_project_subset
 
 
 def add_module_specific_components(m, d):

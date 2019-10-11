@@ -9,7 +9,7 @@ import os.path
 import pandas as pd
 
 
-# TODO: combine with capacity and operational type project subset
+# TODO: use this in capacity and operational type project subset
 #  determinations
 def determine_project_subset(
         scenario_directory, subproblem, stage, column, type

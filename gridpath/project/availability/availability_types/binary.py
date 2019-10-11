@@ -13,8 +13,7 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
-from gridpath.project.availability.availability_types.common_functions import \
-    determine_project_subset
+from gridpath.project.common_functions import determine_project_subset
 
 
 def add_module_specific_components(m, d):
