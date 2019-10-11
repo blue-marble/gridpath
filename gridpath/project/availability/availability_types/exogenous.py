@@ -65,26 +65,11 @@ def load_module_specific_data(
     :return:
     """
     # Figure out which projects have this availability type
-    projects_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs", "projects.tab"
+    project_subset = determine_project_subset(
+        scenario_directory=scenario_directory,
+        subproblem=subproblem, stage=stage, column="availability_type",
+        type="exogenous"
     )
-    header = pd.read_csv(
-        projects_file, sep="\t", header=None, nrows=1
-    ).values[0]
-
-    # If "availability_type" is among the column headers, use that to
-    # determine; otherwise, assign "exogenous_availability" to all projects
-    # (this is the default for the availability_type param defined in the
-    # project __init__.py module)
-    if "availability_type" in header:
-        project_subset = determine_project_subset(
-            scenario_directory=scenario_directory,
-            subproblem=subproblem, stage=stage, column="availability_type",
-            type="exogenous"
-        )
-    else:
-        project_subset = \
-            pd.read_csv(projects_file, sep="\t")["project"].tolist()
 
     data_portal.data()["EXOGENOUS_AVAILABILITY_PROJECTS"] = \
         {None: project_subset}
@@ -118,7 +103,6 @@ def get_inputs_from_database(
     :param conn:
     :return:
     """
-
 
     c = conn.cursor()
     availabilities = c.execute("""
@@ -233,7 +217,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
     # Check data types availability
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_availability"])
+        conn, ["inputs_project_availability_types",
+               "inputs_project_availability_exogenous"])
     dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
     for error in dtype_errors:
         validation_results.append(
@@ -272,13 +257,13 @@ def validate_availability(av_df):
     """
     results = []
 
-    invalids = ((av_df["availability"] < 0) |
-                (av_df["availability"] > 1))
+    invalids = ((av_df["availability_derate"] < 0) |
+                (av_df["availability_derate"] > 1))
     if invalids.any():
         bad_projects = av_df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         results.append(
-            "Project(s) '{}': expected 0 <= availability <= 1"
+            "Project(s) '{}': expected 0 <= availability_derate <= 1"
             .format(print_bad_projects)
         )
 

@@ -271,7 +271,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_portfolios", "inputs_project_load_zones",
+        conn, ["inputs_project_portfolios",
+               "inputs_project_availability_types",
+               "inputs_project_load_zones",
                "inputs_project_operational_chars"]
     )
 
