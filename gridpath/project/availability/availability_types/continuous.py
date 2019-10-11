@@ -252,17 +252,26 @@ def write_module_specific_model_inputs(
         subscenarios=subscenarios, subproblem=subproblem, stage=stage,
         conn=conn
     )
-    with open(os.path.join(inputs_directory,
-                           "project_availability_endogenous.tab"),
-              "w", newline="") as f:
+
+    # Check if project_availability_endogenous.tab exists; only write header
+    # if the file wasn't already created
+    availability_file = os.path.join(
+        inputs_directory, subproblem, stage, "inputs",
+        "project_availability_endogenous.tab"
+    )
+
+    if not os.path.exists(availability_file):
+        with open(availability_file, "w", newline="") as f:
+            writer = csv.writer(f, delimiter="\t")
+            # Write header
+            writer.writerow(
+                ["project", "unavailable_hours_per_period",
+                 "unavailable_hours_per_event"]
+            )
+
+    with open(availability_file, "a", newline="") as f:
         writer = csv.writer(f, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["project", "unavailable_hours_per_period",
-             "unavailable_hours_per_event"]
-        )
-
+        # Write rows
         for row in endogenous_availability_params:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
