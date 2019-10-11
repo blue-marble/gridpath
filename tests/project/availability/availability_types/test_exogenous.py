@@ -143,7 +143,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                              actual_availability_derate)
 
     def test_availability_validations(self):
-        av_df_columns = ["project", "horizon", "availability"]
+        av_df_columns = ["project", "horizon", "availability_derate"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"av_df": pd.DataFrame(
@@ -161,7 +161,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, 0]
                       ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= availability <= 1"]
+                "error": ["Project(s) 'gas_ct': expected 0 <= availability_derate <= 1"]
                 },
             # Availabilities > 1 are flagged
             3: {"av_df": pd.DataFrame(
@@ -170,7 +170,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= availability <= 1"]
+                "error": ["Project(s) 'coal_plant': expected 0 <= availability_derate <= 1"]
                 },
             # Make sure multiple errors are flagged correctly
             4: {"av_df": pd.DataFrame(
@@ -179,7 +179,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability <= 1"]
+                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability_derate <= 1"]
                 },
         }
 
