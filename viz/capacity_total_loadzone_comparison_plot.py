@@ -2,7 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make plot of energy by period and technology for a specified zone/stage
+Create plot of total capacity by load zone and technology for a given
+scenario/period/subproblem/stage.
+
 """
 
 from argparse import ArgumentParser
@@ -28,9 +30,11 @@ def parse_arguments(arguments):
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--load_zone",
-                        help="The name of the load zone. Required")
-    parser.add_argument("--stage", default=1,
+    parser.add_argument("--period", required=True, type=int,
+                        help="The name of the load zone. Required.")
+    parser.add_argument("--subproblem", default=1, type=int,
+                        help="The subproblem ID. Defaults to 1.")
+    parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
     # Parse arguments
@@ -39,44 +43,31 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, load_zone, stage):
+def get_plotting_data(conn, scenario_id, period, subproblem, stage):
     """
-    Get energy results by period for a given scenario/load_zone/stage.
+    Get total capacity results by load zone/technology for a given
+    scenario/period/subproblem/stage.
     :param conn:
     :param scenario_id:
-    :param load_zone:
+    :param period:
+    :param subproblem:
     :param stage:
     :return:
     """
 
-    # TODO: add curtailment and imports? What about storage charging?
-
-    # Energy by period and technology
-    # Spinup/lookahead timepoints are ignored by adding the resp. column tag
-    # through inner joins and adding a conditional to ignore those timepoints
-    sql = """SELECT period, technology, 
-        sum(power_mw * timepoint_weight * number_of_hours_in_timepoint)/1000000
-        as energy_twh
-        FROM results_project_dispatch_by_technology
-        INNER JOIN
-        (SELECT temporal_scenario_id, scenario_id
-        FROM scenarios)
-        USING (scenario_id)
-        INNER JOIN
-        (SELECT temporal_scenario_id, stage_id, subproblem_id, timepoint, 
-        spinup_or_lookahead
-        FROM inputs_temporal_timepoints)
-        USING (temporal_scenario_id, stage_id, subproblem_id, timepoint)
+    # Total capacity by load_zone and technology
+    sql = """SELECT load_zone, technology, sum(capacity_mw) as capacity_mw
+        FROM results_project_capacity_all
         WHERE scenario_id = ?
-        AND load_zone = ?
+        AND period = ?
+        AND subproblem_id = ?
         AND stage_id = ?
-        AND spinup_or_lookahead is NULL
-        GROUP BY period, technology"""
+        GROUP BY load_zone, technology;"""
 
     df = pd.read_sql(
         sql,
         con=conn,
-        params=(scenario_id, load_zone, stage)
+        params=(scenario_id, period, subproblem, stage)
     )
 
     return df
@@ -99,28 +90,38 @@ def main(args=None):
         scenario_id_arg=parsed_args.scenario_id,
         scenario_name_arg=parsed_args.scenario,
         c=c,
-        script="energy_plot"
+        script="capacity_total_loadzone_comparison_plot"
     )
-    plot_title = "Energy by Period - {} - Stage {}".format(
-        parsed_args.load_zone, parsed_args.stage)
-    plot_name = "EnergyPlot-{}-{}".format(
-        parsed_args.load_zone, parsed_args.stage)
+
+    plot_title = "Total Capacity by Load Zone - {} - Subproblem {} - Stage {}"\
+        .format(
+            parsed_args.period,
+            parsed_args.subproblem,
+            parsed_args.stage
+        )
+    plot_name = "TotalCapacityPlot-{}-{}-{}"\
+        .format(
+            parsed_args.period,
+            parsed_args.subproblem,
+            parsed_args.stage
+        )
 
     df = get_plotting_data(
         conn=conn,
         scenario_id=scenario_id,
-        load_zone=parsed_args.load_zone,
+        period=parsed_args.period,
+        subproblem=parsed_args.subproblem,
         stage=parsed_args.stage
     )
 
     plot = create_stacked_bar_plot(
         df=df,
         title=plot_title,
-        y_axis_column="energy_twh",
-        x_axis_column="period",
+        y_axis_column="capacity_mw",
+        x_axis_column="load_zone",
         group_column="technology",
-        column_mapper={"energy_twh": "Energy (TWh)",
-                       "period": "Period",
+        column_mapper={"capacity_mw": "New Capacity (MW)",
+                       "load_zone": "Load Zone",
                        "technology": "Technology"},
         ylimit=parsed_args.ylimit
     )

@@ -12,66 +12,28 @@ import traceback
 
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
+from gridpath.common_functions import get_db_parser, get_solve_parser, \
+    get_scenario_location_parser
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 
 
-# TODO: can arguments be consolidated somehow with the other scripts
-def parse_arguments(arguments):
+def parse_arguments(args):
     """
-    :param arguments: the script arguments specified by the user
+    :param args: the script arguments specified by the user
     :return: the parsed known argument values (<class 'argparse.Namespace'>
     Python object)
 
     Parse the known arguments.
     """
-    parser = ArgumentParser(add_help=True)
 
-    # The database file path
-    parser.add_argument("--database", help="The database file path.")
+    parser = ArgumentParser(
+        add_help=True,
+        parents=[get_db_parser(), get_scenario_location_parser(),
+                 get_solve_parser()]
+    )
 
-    # Scenario name and location options
-    parser.add_argument("--scenario",
-                        help="The name of the scenario (the same as "
-                             "the directory name)")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory.")
-    # Output options
-    parser.add_argument("--log", default=False, action="store_true",
-                        help="Log output to a file in the logs directory as "
-                             "well as the terminal.")
-    parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print run output.")
-
-    # Solve options
-    parser.add_argument("--solver", default="cbc",
-                        help="Name of the solver to use. Default is cbc.")
-    parser.add_argument("--solver_executable",
-                        help="The path to the solver executable to use. This "
-                             "is optional; if you don't specify it, "
-                             "Pyomo will look for the solver executable in "
-                             "your PATH. The solver specified with the "
-                             "--solver option must be the same as the solver "
-                             "for which you are providing an executable.")
-    parser.add_argument("--mute_solver_output", default=True,
-                        action="store_false",
-                        help="Don't print solver output if set to true.")
-    parser.add_argument("--write_solver_files_to_logs_dir", default=False,
-                        action="store_true", help="Write the temporary "
-                                                  "solver files to the logs "
-                                                  "directory.")
-    parser.add_argument("--keepfiles", default=False, action="store_true",
-                        help="Save temporary solver files.")
-    parser.add_argument("--symbolic", default=False, action="store_true",
-                        help="Use symbolic labels in solver files.")
-
-    # Flag for test runs (various changes in behavior)
-    parser.add_argument("--testing", default=False, action="store_true",
-                        help="Flag for test suite runs. Results not saved.")
-
-    # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_args(args=args)
 
     return parsed_arguments
 
@@ -100,6 +62,12 @@ def update_run_status(db_path, scenario, status_id):
 
 
 # TODO: add more run status types?
+# TODO: handle case where scenario_name is not specified but ID is (run_scenario
+#   will fail right now, as well as the update_run_status() calls (?)
+# TODO: handle error messages for parser: the argparser error message will refer
+#   to run_end_to_end.py, even if the parsing fails at one of the scripts
+#   being called here (e.g. run_scenario.py), while the listed arguments refer
+#   to the parser used when the script fails
 def main(args=None):
 
     if args is None:

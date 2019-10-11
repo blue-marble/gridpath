@@ -9,7 +9,9 @@ Make results dispatch plot for a specified zone/stage/horizon
 # TODO: create a database table with technologies and colors for each tech
 #   note: currently technology more narrowly defined than tech color (latter
 #   includes curtailment etc.)
-# TODO: add example df for testing?
+# TODO: okay to default stage to 1 for cases with only one stage? Need to
+#   make sure this is aligned with SQL tables (default value for column)
+#   and data validation
 
 from argparse import ArgumentParser
 from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
@@ -22,8 +24,8 @@ import sys
 
 # GridPath modules
 from db.common_functions import connect_to_database
-from viz.common_functions import show_hide_legend, show_plot, \
-    get_scenario_and_scenario_id
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
 
 
 def parse_arguments(arguments):
@@ -31,40 +33,20 @@ def parse_arguments(arguments):
 
     :return:
     """
-    parser = ArgumentParser(add_help=True)
-
-    # Scenario name and location options
-    parser.add_argument("--database",
-                        help="The database file path. Defaults to ../db/io.db "
-                             "if not specified")
+    parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the directory in which to create "
-                             "the scenario directory. Defaults to "
-                             "'../scenarios' if not specified.")
-    parser.add_argument("--load_zone",
+    parser.add_argument("--load_zone", required=True, type=str,
                         help="The name of the load zone. Required.")
-    parser.add_argument("--horizon", help="The horizon ID. Required.")
-    parser.add_argument("--stage", default=1,
+    parser.add_argument("--horizon", required=True, type=int,
+                        help="The horizon ID. Required.")
+    parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
-    parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
-    parser.add_argument("--show",
-                        default=False, action="store_true",
-                        help="Show and save figure to "
-                             "results/figures directory "
-                             "under scenario directory.")
-    parser.add_argument("--return_json",
-                        default=False, action="store_true",
-                        help="Return plot as a json file."
-                        )
-    # TODO: okay to default stage to 1 for cases with only one stage? Need to
-    #   make sure this is aligned with SQL tables (default value for column)
-    #   and data validation
+
     # Parse arguments
-    parsed_arguments = parser.parse_known_args(args=arguments)[0]
+    parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
 
@@ -333,9 +315,10 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     return load
 
 
-def create_data_df(c, scenario_id, load_zone, horizon, stage):
+def get_plotting_data(c, scenario_id, load_zone, horizon, stage):
     """
-
+    Get the dispatch data by timepoint and technology for a given
+    scenario/load_zone/horizon/stage.
     :param c:
     :param scenario_id:
     :param load_zone:
@@ -630,10 +613,11 @@ def main(args=None):
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    scenario_location = parsed_args.scenario_location
-    scenario, scenario_id = get_scenario_and_scenario_id(
-        parsed_arguments=parsed_args,
-        c=c
+    scenario_id, scenario = get_scenario_id_and_name(
+        scenario_id_arg=parsed_args.scenario_id,
+        scenario_name_arg=parsed_args.scenario,
+        c=c,
+        script="dispatch_plot"
     )
 
     plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
@@ -641,7 +625,7 @@ def main(args=None):
     plot_name = "dispatchPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.horizon)
 
-    df = create_data_df(
+    df = get_plotting_data(
         c=c,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
@@ -657,10 +641,10 @@ def main(args=None):
 
     # Show plot in HTML browser file if requested
     if parsed_args.show:
-        show_plot(scenario_directory=scenario_location,
-                  scenario=scenario,
-                  plot=plot,
-                  plot_name=plot_name)
+        show_plot(plot=plot,
+                  plot_name=plot_name,
+                  plot_write_directory=parsed_args.plot_write_directory,
+                  scenario=scenario)
 
     # Return plot in json format if requested
     if parsed_args.return_json:

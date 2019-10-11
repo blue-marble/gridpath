@@ -9,7 +9,8 @@ import os.path
 import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from gridpath.common_functions import determine_scenario_directory
+from gridpath.common_functions import determine_scenario_directory, \
+    get_db_parser, get_scenario_location_parser
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
@@ -72,22 +73,18 @@ def import_results_into_database(loaded_modules, scenario_id, subproblems,
 
 def parse_arguments(args):
     """
-    Parse arguments
+    :param args: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
     :param args: 
     :return: 
     """
-    parser = ArgumentParser(add_help=True)
-    parser.add_argument("--database", help="The database file path.")
-    parser.add_argument("--scenario",
-                        help="The name of the scenario. Not needed if "
-                             "scenario_id is specified.")
-    parser.add_argument("--scenario_id",
-                        help="The scenario_id from the database. Not needed "
-                             "if scenario_name is specified.")
-    parser.add_argument("--scenario_location",
-                        help="The path to the base directory where the "
-                             "scenario directory is located. Defaults to "
-                             "'../scenarios' if not specified.")
+    parser = ArgumentParser(
+        add_help=True,
+        parents=[get_db_parser(), get_scenario_location_parser()]
+    )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments

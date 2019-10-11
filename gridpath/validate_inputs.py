@@ -11,6 +11,7 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name, \
     write_validation_to_database
+from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
@@ -310,12 +311,11 @@ def parse_arguments(args):
 
     Parse the known arguments.
     """
-    parser = ArgumentParser(add_help=True)
-    parser.add_argument("--database", help="The database file path.")
-    parser.add_argument("--scenario_id",
-                        help="The scenario_id from the database.")
-    parser.add_argument("--scenario",
-                        help="The scenario_name from the database.")
+    parser = ArgumentParser(
+        add_help=True,
+        parents=[get_db_parser()]
+    )
+
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
