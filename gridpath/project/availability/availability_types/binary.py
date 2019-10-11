@@ -282,7 +282,7 @@ def export_module_specific_results(
 
     # First power
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "project_availability_exogenous.csv"),
+                           "project_availability_endogenous.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
@@ -290,7 +290,7 @@ def export_module_specific_results(
                          "load_zone", "technology",
                          "unavailability_decision", "start_unavailability",
                          "stop_unavailability", "availability_derate"])
-        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -325,14 +325,14 @@ def import_module_specific_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_project_availability_exogenous",
+        table="results_project_availability_endogenous",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory, 
-                           "project_availability_exogenous.csv"), "r") as \
+                           "project_availability_endogenous.csv"), "r") as \
             dispatch_file:
         reader = csv.reader(dispatch_file)
 
@@ -360,7 +360,7 @@ def import_module_specific_results_into_database(
                  availability_derate)
             )
     insert_temp_sql = """
-        INSERT INTO temp_results_project_availability_exogenous{}
+        INSERT INTO temp_results_project_availability_endogenous{}
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight,
         number_of_hours_in_timepoint,
@@ -372,7 +372,7 @@ def import_module_specific_results_into_database(
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_availability_exogenous
+        INSERT INTO results_project_availability_endogenous
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, unavailability_decision, start_unavailablity, 
@@ -381,7 +381,7 @@ def import_module_specific_results_into_database(
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw
-        FROM temp_results_project_availability_exogenous{}
+        FROM temp_results_project_availability_endogenous{}
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
