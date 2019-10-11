@@ -2,12 +2,12 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Projects with timepoint-level, binary availability decision variables.
+Projects with timepoint-level, continuous availability decision variables.
 """
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, Binary, value
+from pyomo.environ import Param, Set, Var, Constraint, PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -24,41 +24,44 @@ def add_module_specific_components(m, d):
     :return:
     """
     # Sets
-    m.BINARY_AVAILABILITY_PROJECTS = Set(within=m.PROJECTS)
-    m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS = Set(
+    m.CONTINUOUS_AVAILABILITY_PROJECTS = Set(within=m.PROJECTS)
+    m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_PERIODS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_PERIODS
-            if g in mod.BINARY_AVAILABILITY_PROJECTS
+            if g in mod.CONTINUOUS_AVAILABILITY_PROJECTS
             )
     )
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
-    m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
+    m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            if g in mod.BINARY_AVAILABILITY_PROJECTS
+            if g in mod.CONTINUOUS_AVAILABILITY_PROJECTS
             )
     )
 
     # Params
-    m.unavailable_hours_per_period_binary = Param(
-        m.BINARY_AVAILABILITY_PROJECTS
+    m.unavailable_hours_per_period_continuous = Param(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS
     )
-    m.unavailable_hours_per_event_binary = Param(
-        m.BINARY_AVAILABILITY_PROJECTS
+    m.unavailable_hours_per_event_continuous = Param(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS
     )
 
     # Variables
-    m.Unavailable_Binary = Var(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
+    m.Unavailable_Continuous = Var(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        within=PercentFraction
     )
-    m.Start_Unavailability_Binary = Var(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
+    m.Start_Unavailability_Continuous = Var(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        within=PercentFraction
     )
-    m.Stop_Unavailability_Binary = Var(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS, within=Binary
+    m.Stop_Unavailability_Continuous = Var(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        within=PercentFraction
     )
 
     # Constraints
@@ -70,18 +73,18 @@ def add_module_specific_components(m, d):
         :return:
 
         The generator must be down for availability for
-        unavailable_hours_per_period_binary in each period.
+        unavailable_hours_per_period_continuous in each period.
         TODO: it's possible that solve time will be faster if we make this
             constraint >= instead of ==, but then degeneracy could be an issue
         """
-        return sum(mod.Unavailable_Binary[g, tmp]
+        return sum(mod.Unavailable_Continuous[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
                    for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
                    ) \
-            == mod.unavailable_hours_per_period_binary[g]
+            == mod.unavailable_hours_per_period_continuous[g]
 
-    m.Total_Scheduled_Availability_Per_Period_Binary_Constraint = Constraint(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS,
+    m.Total_Scheduled_Availability_Per_Period_Continuous_Constraint = Constraint(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS,
         rule=total_scheduled_availability_per_period_rule
     )
 
@@ -96,10 +99,10 @@ def add_module_specific_components(m, d):
         availability status in the current and previous timepoint. If the
         generator is down for availability in the current timepoint and was
         not down for availability in the previous timepoint, then the RHS is 1
-        and Start_Unavailability_Binary must be set to 1. If the generator is not
+        and Start_Unavailability_Continuous must be set to 1. If the generator is not
         down for availability in the current timepoint and was down for
         availability in the previous timepoint, then the RHS is -1 and
-        Stop_Unavailability_Binary must be set to 1.
+        Stop_Unavailability_Continuous must be set to 1.
         """
         # TODO: refactor skipping of constraint in first timepoint of linear
         #  horizons, as we do it a lot
@@ -110,16 +113,16 @@ def add_module_specific_components(m, d):
                 == "linear":
             return Constraint.Skip
         else:
-            return mod.Start_Unavailability_Binary[g, tmp] \
-                - mod.Stop_Unavailability_Binary[g, tmp] \
-                == mod.Unavailable_Binary[g, tmp] \
-                - mod.Unavailable_Binary[
+            return mod.Start_Unavailability_Continuous[g, tmp] \
+                - mod.Stop_Unavailability_Continuous[g, tmp] \
+                == mod.Unavailable_Continuous[g, tmp] \
+                - mod.Unavailable_Continuous[
                        g, mod.previous_timepoint[tmp,
                                                  mod.balancing_type_project[g]]
                    ]
 
-    m.Availability_Start_and_Stop_Binary_Constraint = Constraint(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+    m.Availability_Start_and_Stop_Continuous_Constraint = Constraint(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
         rule=availability_start_and_stop_rule
     )
 
@@ -130,25 +133,25 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
 
-        If availability was started within unavailable_hours_per_event_binary 
+        If availability was started within unavailable_hours_per_event_continuous 
         from the current timepoint, it could not have also been stopped 
         during that time, i.e. the generator could not have changed its down
         for availability status and must still be down for availability in the
         current timepoint.
         """
         relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.unavailable_hours_per_event_binary[g]
+            mod, g, tmp, mod.unavailable_hours_per_event_continuous[g]
         )
         if relevant_tmps == [tmp]:
             return Constraint.Skip
         return sum(
-            mod.Start_Unavailability_Binary[g, tp] 
-            + mod.Stop_Unavailability_Binary[g, tp]
+            mod.Start_Unavailability_Continuous[g, tp] 
+            + mod.Stop_Unavailability_Continuous[g, tp]
             for tp in relevant_tmps
         ) <= 1
 
-    m.Availability_Event_Duration_Binary_Constraint = Constraint(
-        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+    m.Availability_Event_Duration_Continuous_Constraint = Constraint(
+        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
         rule=availability_event_duration_rule
     )
 
@@ -161,7 +164,7 @@ def availability_derate_rule(mod, g, tmp):
     :param tmp:
     :return:
     """
-    return 1 - mod.Unavailable_Binary[g, tmp]
+    return 1 - mod.Unavailable_Continuous[g, tmp]
 
 
 def load_module_specific_data(
@@ -179,18 +182,18 @@ def load_module_specific_data(
     project_subset = determine_project_subset(
         scenario_directory=scenario_directory,
         subproblem=subproblem, stage=stage, column="availability_type",
-        type="binary"
+        type="continuous"
     )
 
-    data_portal.data()["BINARY_AVAILABILITY_PROJECTS"] = \
+    data_portal.data()["CONTINUOUS_AVAILABILITY_PROJECTS"] = \
         {None: project_subset}
 
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage,
                               "inputs", "project_availability_endogenous.tab"),
-        index=m.BINARY_AVAILABILITY_PROJECTS,
-        param=(m.unavailable_hours_per_period_binary,
-               m.unavailable_hours_per_event_binary)
+        index=m.CONTINUOUS_AVAILABILITY_PROJECTS,
+        param=(m.unavailable_hours_per_period_continuous,
+               m.unavailable_hours_per_event_continuous)
     )
 
 
@@ -217,7 +220,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                 SELECT project, endogenous_availability_scenario_id
                 FROM inputs_project_availability_types
                 WHERE project_availability_scenario_id = {}
-                AND availability_type = 'binary'
+                AND availability_type = 'continuous'
                 AND endogenous_availability_scenario_id IS NOT NULL
                 ) AS avail_char
              USING (project)
@@ -290,7 +293,7 @@ def export_module_specific_results(
                          "load_zone", "technology",
                          "unavailability_decision", "start_unavailability",
                          "stop_unavailability", "availability_derate"])
-        for (p, tmp) in m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -300,10 +303,10 @@ def export_module_specific_results(
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Unavailable_Binary[p, tmp]),
-                value(m.Start_Unavailability_Binary[p, tmp]),
-                value(m.Stop_Unavailability_Binary[p, tmp]),
-                1-value(m.Unavailable_Binary[p, tmp])
+                value(m.Unavailable_Continuous[p, tmp]),
+                value(m.Start_Unavailability_Continuous[p, tmp]),
+                value(m.Stop_Unavailability_Continuous[p, tmp]),
+                1-value(m.Unavailable_Continuous[p, tmp])
             ])
 
 
