@@ -2194,6 +2194,29 @@ retired_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
+DROP TABLE IF EXISTS results_project_availability_exogenous;
+CREATE TABLE results_project_availability_exogenous (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_project VARCHAR(64),
+horizon INTEGER,
+timepoint INTEGER,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+unavailability_decision FLOAT,
+start_unavailablity FLOAT,
+stop_unavailability FLOAT,
+availability_derate FLOAT,
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+);
+
 DROP TABLE IF EXISTS results_project_dispatch_all;
 CREATE TABLE results_project_dispatch_all (
 scenario_id INTEGER,

@@ -7,8 +7,10 @@ Projects with timepoint-level, binary availability decision variables.
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, Binary
+from pyomo.environ import Param, Set, Var, Constraint, Binary, value
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
 from gridpath.project.availability.availability_types.common_functions import \
@@ -262,3 +264,126 @@ def write_module_specific_model_inputs(
         for row in endogenous_availability_params:
             replace_nulls = ["." if i is None else i for i in row]
             writer.writerow(replace_nulls)
+
+
+def export_module_specific_results(
+        scenario_directory, subproblem, stage, m, d):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    The Pyomo abstract model
+    :param d:
+    Dynamic components
+    :return:
+    Nothing
+    """
+
+    # First power
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+                           "project_availability_exogenous.csv"),
+              "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
+                         "load_zone", "technology",
+                         "unavailability_decision", "start_unavailability",
+                         "stop_unavailability", "availability_derate"])
+        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
+            writer.writerow([
+                p,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
+                tmp,
+                m.timepoint_weight[tmp],
+                m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
+                value(m.Unavailable_Binary[p, tmp]),
+                value(m.Start_Unavailability_Binary[p, tmp]),
+                value(m.Stop_Unavailability_Binary[p, tmp]),
+                1-value(m.Unavailable_Binary[p, tmp])
+            ])
+
+
+def import_module_specific_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    print("project availability")
+    # dispatch_all.csv
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_availability_exogenous",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory, 
+                           "project_availability_exogenous.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            timepoint_weight = row[4]
+            number_of_hours_in_timepoint = row[5]
+            load_zone = row[6]
+            technology = row[7]
+            unavailability_decision = row[8]
+            start_unavailability = row[9]
+            stop_unavailability = row[10]
+            availability_derate = row[11]
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, unavailability_decision,
+                 start_unavailability, stop_unavailability,
+                 availability_derate)
+            )
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_availability_exogenous{}
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, unavailability_decision, start_unavailablity, 
+        stop_unavailability, availability_derate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_project_availability_exogenous
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        load_zone, technology, unavailability_decision, start_unavailablity, 
+        stop_unavailability, availability_derate)
+        SELECT
+        scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw
+        FROM temp_results_project_availability_exogenous{}
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)

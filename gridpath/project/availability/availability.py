@@ -103,6 +103,63 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             pass
 
 
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+
+    Export availability results.
+    """
+
+    # Module-specific capacity results
+    imported_availability_modules = \
+        load_availability_type_modules(
+            getattr(d, required_availability_modules)
+        )
+    for op_m in getattr(d, required_availability_modules):
+        if hasattr(imported_availability_modules[op_m],
+                   "export_module_specific_results"):
+            imported_availability_modules[
+                op_m].export_module_specific_results(
+                scenario_directory, subproblem, stage, m, d
+            )
+        else:
+            pass
+
+
+def import_results_into_database(scenario_id, subproblem, stage,
+                                 c, db, results_directory):
+    """
+
+    :param scenario_id:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+
+    # Load in the required capacity type modules
+    required_availability_type_modules = \
+        get_required_availability_type_modules(scenario_id, c)
+    imported_availability_modules = \
+        load_availability_type_modules(required_availability_type_modules)
+
+    # Import module-specific results
+    for op_m in required_availability_type_modules:
+        if hasattr(imported_availability_modules[op_m],
+                   "import_module_specific_results_into_database"):
+            imported_availability_modules[op_m]. \
+                import_module_specific_results_into_database(
+                scenario_id, subproblem, stage, c, db, results_directory
+            )
+        else:
+            pass
+
+
 def validate_inputs(subscenarios, subproblem, stage, conn):
     """
 
