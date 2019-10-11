@@ -79,6 +79,8 @@ def load_module_specific_data(
     # if it does not exist, all projects will get 1 as a derate; if it does
     # exist but projects are not specified in it, they will also get 1
     # assigned as their derate
+    # The test examples do not currently have a
+    # project_availability_exogenous.tab, but use the default instead
     availability_file = os.path.join(
         scenario_directory, subproblem, stage, "inputs",
         "project_availability_exogenous.tab"
