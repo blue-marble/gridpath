@@ -79,7 +79,7 @@ class TestProjectInit(unittest.TestCase):
 
         # Check if availability type modules are as expected
         expected_required_availability_modules = sorted(
-            ["exogenous", "binary"]
+            ["exogenous", "binary", "continuous"]
         )
         actual_required_availability_modules = \
             sorted(getattr(d, "required_availability_modules"))

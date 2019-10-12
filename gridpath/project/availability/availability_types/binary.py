@@ -46,7 +46,16 @@ def add_module_specific_components(m, d):
     m.unavailable_hours_per_period_binary = Param(
         m.BINARY_AVAILABILITY_PROJECTS
     )
-    m.unavailable_hours_per_event_binary = Param(
+    m.unavailable_hours_per_event_min_binary = Param(
+        m.BINARY_AVAILABILITY_PROJECTS
+    )
+    m.unavailable_hours_per_event_max_binary = Param(
+        m.BINARY_AVAILABILITY_PROJECTS
+    )
+    m.available_hours_between_events_min_binary = Param(
+        m.BINARY_AVAILABILITY_PROJECTS
+    )
+    m.available_hours_between_events_max_binary = Param(
         m.BINARY_AVAILABILITY_PROJECTS
     )
 
@@ -69,7 +78,7 @@ def add_module_specific_components(m, d):
         :param p:
         :return:
 
-        The generator must be down for availability for
+        The generator must be down for
         unavailable_hours_per_period_binary in each period.
         TODO: it's possible that solve time will be faster if we make this
             constraint >= instead of ==, but then degeneracy could be an issue
@@ -94,12 +103,11 @@ def add_module_specific_components(m, d):
 
         Constrain the start and stop availability variables based on the
         availability status in the current and previous timepoint. If the
-        generator is down for availability in the current timepoint and was
-        not down for availability in the previous timepoint, then the RHS is 1
-        and Start_Unavailability_Binary must be set to 1. If the generator is not
-        down for availability in the current timepoint and was down for
-        availability in the previous timepoint, then the RHS is -1 and
-        Stop_Unavailability_Binary must be set to 1.
+        generator is down in the current timepoint and was not down in the
+        previous timepoint, then the RHS is 1 and Start_Unavailability_Binary
+        must be set to 1. If the generator is not down in the current
+        timepoint and was down in the previous timepoint, then the RHS is -1
+        and Stop_Unavailability_Binary must be set to 1.
         """
         # TODO: refactor skipping of constraint in first timepoint of linear
         #  horizons, as we do it a lot
@@ -123,33 +131,108 @@ def add_module_specific_components(m, d):
         rule=availability_start_and_stop_rule
     )
 
-    def availability_event_duration_rule(mod, g, tmp):
+    def availability_event_min_duration_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
         :param tmp:
         :return:
 
-        If availability was started within unavailable_hours_per_event_binary 
-        from the current timepoint, it could not have also been stopped 
-        during that time, i.e. the generator could not have changed its down
-        for availability status and must still be down for availability in the
-        current timepoint.
+        If a generator became unavailable within
+        unavailable_hours_per_event_min_binary from the current timepoint,
+        it must still be unavailable in the current timepoint.
         """
         relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.unavailable_hours_per_event_binary[g]
+            mod, g, tmp, mod.unavailable_hours_per_event_min_binary[g]
+        )
+        if relevant_tmps == [tmp]:
+            return Constraint.Skip
+        return sum(mod.Start_Unavailability_Binary[g, tp]
+                   for tp in relevant_tmps) \
+            <= mod.Unavailable_Binary[g, tmp]
+
+    m.Availability_Event_Min_Duration_Binary_Constraint = Constraint(
+        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        rule=availability_event_min_duration_rule
+    )
+
+    def availability_event_max_duration_rule(mod, g, tmp):
+        """
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+
+        If a generator became unavailable within
+        max_unavailable_hours_per_event_min_binary from the current timepoint,
+        it must have also been brought back to availability during that time.
+        """
+        relevant_tmps = determine_relevant_timepoints(
+            mod, g, tmp, mod.unavailable_hours_per_event_max_binary[g]
         )
         if relevant_tmps == [tmp]:
             return Constraint.Skip
         return sum(
-            mod.Start_Unavailability_Binary[g, tp] 
-            + mod.Stop_Unavailability_Binary[g, tp]
+            (mod.Start_Unavailability_Binary[g, tp] -
+             mod.Stop_Unavailability_Binary[g, tp])
             for tp in relevant_tmps
-        ) <= 1
+        ) <= 0
 
-    m.Availability_Event_Duration_Binary_Constraint = Constraint(
+    m.Availability_Event_Max_Duration_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_event_duration_rule
+        rule=availability_event_max_duration_rule
+    )
+
+    def min_time_between_availability_events_rule(mod, g, tmp):
+        """
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+
+        If a generator became available within
+        unavailable_hours_per_event_min_binary from the current timepoint, 
+        it must still be available in the current timepoint.
+        """
+        relevant_tmps = determine_relevant_timepoints(
+            mod, g, tmp, mod.available_hours_between_events_min_binary[g]
+        )
+        if relevant_tmps == [tmp]:
+            return Constraint.Skip
+        return sum(mod.Stop_Unavailability_Binary[g, tp]
+                   for tp in relevant_tmps) \
+            <= 1 - mod.Unavailable_Binary[g, tmp]
+
+    m.Min_Time_Between_Availability_Events_Binary_Constraint = Constraint(
+        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        rule=min_time_between_availability_events_rule
+    )
+
+    def max_time_between_availability_events_rule(mod, g, tmp):
+        """
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+
+        If a generator became available within
+        available_hours_between_events_min_binary from the current timepoint,
+        it must have also been brought back to down during that time.
+        """
+        relevant_tmps = determine_relevant_timepoints(
+            mod, g, tmp, mod.available_hours_between_events_min_binary[g]
+        )
+        if relevant_tmps == [tmp]:
+            return Constraint.Skip
+        return sum(
+            (mod.Stop_Unavailability_Binary[g, tp] -
+             mod.Start_Unavailability_Binary[g, tp])
+            for tp in relevant_tmps
+        ) <= 0
+
+    m.Max_Time_Between_Availability_Events_Binary_Constraint = Constraint(
+        m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+        rule=max_time_between_availability_events_rule
     )
 
 
@@ -185,13 +268,41 @@ def load_module_specific_data(
     data_portal.data()["BINARY_AVAILABILITY_PROJECTS"] = \
         {None: project_subset}
 
-    data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
+    unavailable_hours_per_period_binary_dict = {}
+    unavailable_hours_per_event_min_binary_dict = {}
+    unavailable_hours_per_event_max_binary_dict = {}
+    available_hours_between_events_min_binary_dict = {}
+    available_hours_between_events_max_binary_dict = {}
+
+    with open(os.path.join(scenario_directory, subproblem, stage,
                               "inputs", "project_availability_endogenous.tab"),
-        index=m.BINARY_AVAILABILITY_PROJECTS,
-        param=(m.unavailable_hours_per_period_binary,
-               m.unavailable_hours_per_event_binary)
-    )
+              "r") as f:
+        reader = csv.reader(f, delimiter="\t")
+        next(reader)
+
+        for row in reader:
+            if row[0] in project_subset:
+                unavailable_hours_per_period_binary_dict[row[0]] = \
+                    float(row[1])
+                unavailable_hours_per_event_min_binary_dict[row[0]] = \
+                    float(row[2])
+                unavailable_hours_per_event_max_binary_dict[row[0]] = \
+                    float(row[3])
+                available_hours_between_events_min_binary_dict[row[0]] = \
+                    float(row[4])
+                available_hours_between_events_max_binary_dict[row[0]] = \
+                    float(row[5])
+
+    data_portal.data()["unavailable_hours_per_period_binary"] = \
+        unavailable_hours_per_period_binary_dict
+    data_portal.data()["unavailable_hours_per_event_min_binary"] = \
+        unavailable_hours_per_event_min_binary_dict
+    data_portal.data()["unavailable_hours_per_event_max_binary"] = \
+        unavailable_hours_per_event_max_binary_dict
+    data_portal.data()["available_hours_between_events_min_binary"] = \
+        available_hours_between_events_min_binary_dict
+    data_portal.data()["available_hours_between_events_max_binary"] = \
+        available_hours_between_events_max_binary_dict
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
@@ -207,7 +318,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     availability_params = c.execute("""
             SELECT project, unavailable_hours_per_period, 
-            unavailable_hours_per_event
+            unavailable_hours_per_event_min, unavailable_hours_per_event_max,
+            available_hours_between_events_min, 
+            available_hours_between_events_max
             FROM (
             SELECT project
             FROM inputs_project_portfolios

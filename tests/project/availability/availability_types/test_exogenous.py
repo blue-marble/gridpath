@@ -87,7 +87,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
 
         # Set: EXOGENOUS_AVAILABILITY_PROJECTS
         expected_project_subset = sorted([
-            "Nuclear", "Coal", "Gas_CT", "Wind", "Gas_CCGT_New",
+            "Nuclear", "Coal", "Wind", "Gas_CCGT_New",
             "Gas_CT_New", "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
             "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             "Hydro_NonCurtailable", "Disp_Binary_Commit", "Disp_Cont_Commit",

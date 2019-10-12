@@ -1,2 +1,2 @@
-project	unavailable_hours_per_period_binary	unavailable_hours_per_event_binary
-Nuclear	1	1
+project	unavailable_hours_per_period	unavailable_hours_per_event_min	unavailable_hours_per_event_max	available_hours_between_events_min	available_hours_between_events_max
+Nuclear	1	1	1	1	1

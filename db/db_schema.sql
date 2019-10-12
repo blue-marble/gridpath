@@ -814,7 +814,10 @@ CREATE TABLE inputs_project_availability_endogenous (
 project VARCHAR(64),
 endogenous_availability_scenario_id INTEGER,
 unavailable_hours_per_period FLOAT,
-unavailable_hours_per_event FLOAT,
+unavailable_hours_per_event_min FLOAT,
+unavailable_hours_per_event_max FLOAT,
+available_hours_between_events_min FLOAT,
+available_hours_between_events_max FLOAT,
 PRIMARY KEY (project, endogenous_availability_scenario_id),
 FOREIGN KEY (project, endogenous_availability_scenario_id)
     REFERENCES subscenarios_project_availability_endogenous

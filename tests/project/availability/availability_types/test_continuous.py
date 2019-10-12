@@ -43,7 +43,7 @@ except ImportError:
           " to test.")
 
 
-class TestExogenousAvailabilityType(unittest.TestCase):
+class TestContinuousAvailabilityType(unittest.TestCase):
     """
 
     """
@@ -88,7 +88,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
 
         # Set: CONTINUOUS_AVAILABILITY_PROJECTS
         expected_project_subset = sorted([
-            "Gas_CCGT"
+            "Gas_CT"
         ])
         actual_project_subset = sorted([
             prj for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
@@ -108,14 +108,11 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                              actual_operational_timepoints_by_project)
 
         # Param: unavailable_hours_per_period_continuous
-        expected_unavailable_hours_per_period = OrderedDict(
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                             "project_availability_endogenous.tab"),
-                sep="\t"
-            ).set_index('project').to_dict()[
-                "unavailable_hours_per_period"].items()
+        expected_unavailable_hours_per_period = get_endogenous_params(
+            param="unavailable_hours_per_period",
+            project_subset=actual_project_subset
         )
+
         actual_unavailable_hours_per_period = {
             prj: instance.unavailable_hours_per_period_continuous[prj]
             for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
@@ -123,21 +120,81 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         self.assertDictEqual(expected_unavailable_hours_per_period,
                              actual_unavailable_hours_per_period)
 
-        # Param: unavailable_hours_per_period_continuous
-        expected_unavailable_hours_per_event = OrderedDict(
-            pd.read_csv(
-                os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                             "project_availability_endogenous.tab"),
-                sep="\t"
-            ).set_index('project').to_dict()[
-                "unavailable_hours_per_event"].items()
+        # Param: unavailable_hours_per_event_min_continuous
+        expected_unavailable_hours_per_event = get_endogenous_params(
+            param="unavailable_hours_per_event_min",
+            project_subset=actual_project_subset
         )
+
         actual_unavailable_hours_per_event = {
-            prj: instance.unavailable_hours_per_event_continuous[prj]
+            prj: instance.unavailable_hours_per_event_min_continuous[prj]
             for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)
+
+        # Param: unavailable_hours_per_event_max_continuous
+        expected_unavailable_hours_per_event = get_endogenous_params(
+            param="unavailable_hours_per_event_max",
+            project_subset=actual_project_subset
+        )
+        actual_unavailable_hours_per_event = {
+            prj: instance.unavailable_hours_per_event_max_continuous[prj]
+            for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
+        }
+        self.assertDictEqual(expected_unavailable_hours_per_event,
+                             actual_unavailable_hours_per_event)
+
+        # Param: available_hours_between_events_min_continuous
+        expected_unavailable_hours_per_event = get_endogenous_params(
+            param="available_hours_between_events_min",
+            project_subset=actual_project_subset
+        )
+        actual_unavailable_hours_per_event = {
+            prj: instance.available_hours_between_events_min_continuous[prj]
+            for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
+        }
+        self.assertDictEqual(expected_unavailable_hours_per_event,
+                             actual_unavailable_hours_per_event)
+
+        # Param: available_hours_between_events_max_continuous
+        expected_unavailable_hours_per_event = get_endogenous_params(
+            param="available_hours_between_events_max",
+            project_subset=actual_project_subset
+        )
+        actual_unavailable_hours_per_event = {
+            prj: instance.available_hours_between_events_max_continuous[prj]
+            for prj in instance.CONTINUOUS_AVAILABILITY_PROJECTS
+        }
+        self.assertDictEqual(expected_unavailable_hours_per_event,
+                             actual_unavailable_hours_per_event)
+
+
+def get_endogenous_params(param, project_subset):
+    """
+    :param param:
+    :param project_subset:
+    :return:
+
+    Get the correct subset dictionary for a param from
+    project_availability_endogenous.tab.
+    """
+    all_dict = OrderedDict(
+        pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "project_availability_endogenous.tab"),
+            sep="\t"
+        ).set_index('project').to_dict()[
+            param].items()
+    )
+    subset_dict = dict()
+    for prj in all_dict:
+        if prj in project_subset:
+            subset_dict[prj] = all_dict[prj]
+        else:
+            pass
+
+    return subset_dict
 
 
 if __name__ == "__main__":
