@@ -6,9 +6,10 @@ Get inputs, run scenario, and import results.
 """
 
 from argparse import ArgumentParser
+import logging
+import os
 import signal
 import sys
-import traceback
 
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
@@ -75,41 +76,42 @@ def main(args=None):
 
     parsed_args = parse_arguments(args)
 
+    # Update run status to 'running'
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
 
     try:
         get_scenario_inputs.main(args=args)
-    except Exception:
+    except Exception as e:
+        logging.exception(e)
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when getting inputs from the database for "
               "scenario {}.".format(parsed_args.scenario))
-        traceback.print_exc()
         sys.exit(1)
     try:
         run_scenario.main(args=args)
-    except Exception:
+    except Exception as e:
+        logging.exception(e)
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when running scenario {}.".format(
             parsed_args.scenario))
-        traceback.print_exc()
         sys.exit(1)
 
     try:
         import_scenario_results.main(args=args)
-    except Exception:
+    except Exception as e:
+        logging.exception(e)
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when importing results for "
               "scenario {}.".format(parsed_args.scenario))
-        traceback.print_exc()
         sys.exit(1)
 
     try:
         process_results.main(args=args)
-    except Exception:
+    except Exception as e:
+        logging.exception(e)
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print('Error encountered when importing results for '
               'scenario {}.'.format(parsed_args.scenario))
-        traceback.print_exc()
         sys.exit(1)
 
     # If we make it here, mark run as complete
