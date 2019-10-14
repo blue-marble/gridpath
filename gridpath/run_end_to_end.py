@@ -62,6 +62,28 @@ def update_run_status(db_path, scenario, status_id):
                           data=(status_id, scenario), many=False)
 
 
+def record_process_id(db_path, scenario, process_id):
+    """
+    :param db_path:
+    :param scenario:
+    :param process_id:
+    :return:
+
+    Record the scenario run's process ID.
+    """
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    sql = """
+        UPDATE scenarios
+        SET run_process_id = ?
+        WHERE scenario_name = ?;
+        """
+
+    spin_on_database_lock(conn=conn, cursor=c, sql=sql,
+                          data=(process_id, scenario), many=False)
+
+
 # TODO: add more run status types?
 # TODO: handle case where scenario_name is not specified but ID is (run_scenario
 #   will fail right now, as well as the update_run_status() calls (?)
@@ -78,6 +100,9 @@ def main(args=None):
 
     # Update run status to 'running'
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
+    # Get and record process ID
+    process_id = os.getpid()
+    update_run_status(parsed_args.database, parsed_args.scenario, process_id)
 
     try:
         get_scenario_inputs.main(args=args)
@@ -116,6 +141,7 @@ def main(args=None):
 
     # If we make it here, mark run as complete
     update_run_status(parsed_args.database, parsed_args.scenario, 2)
+    # TODO: should the process ID be set back to NULL?
 
 
 # TODO: need to make sure that the database can be closed properly, pending
