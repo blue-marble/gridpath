@@ -5,7 +5,6 @@ Launch a scenario end-to-end run in its own process.
 """
 
 import os
-import psutil
 from flask_socketio import emit
 import subprocess
 import sys
@@ -38,7 +37,7 @@ def launch_scenario_process(
     ).fetchone()[0]
 
     # First, check if the scenario is already running
-    process_status = check_scenario_process_status(
+    process_status = check_scenario_run_status(
         db_path=db_path,
         scenario_status=scenario_status,
         scenario_id=scenario_id
@@ -53,7 +52,7 @@ def launch_scenario_process(
             "scenario already running"
         )
     # If the scenario is not found among the running processes, launch a
-    # multiprocessing process
+    # process
     else:
         print("Starting process for scenario_id " + str(scenario_id))
         # Get the run_gridpath_e2e entry point script from the
@@ -67,7 +66,7 @@ def launch_scenario_process(
         run_gridpath_e2e_executable = \
             sys.executable[:-chars_to_remove] + "gridpath_run_e2e"
         p = subprocess.Popen(
-            [run_gridpath_e2e_executable, "-u",
+            [run_gridpath_e2e_executable,
              "--log",
              "--database", db_path,
              "--scenario", scenario_name,
@@ -79,26 +78,17 @@ def launch_scenario_process(
         return p, scenario_id, scenario_name
 
 
-def check_scenario_process_status(db_path, scenario_status, scenario_id):
+def check_scenario_run_status(db_path, scenario_id):
     """
     Check if there is any running process that contains the given scenario
     """
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
-    scenario_name = c.execute(
-        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
-            scenario_id
-        )
-    ).fetchone()[0]
+    scenario_name, run_status, process_id = c.execute("""
+        SELECT run_status_id, run_process_id
+        FROM scenarios
+        WHERE scenario_id = {}
+        """.format(scenario_id)
+    ).fetchone()
 
-    if (scenario_id, scenario_name) in scenario_status.keys():
-        pid = scenario_status[(scenario_id, scenario_name)]["process_id"]
-        # Process ID saved in global and process is still running
-        if pid in [p.pid for p in psutil.process_iter()] \
-                and psutil.Process(pid).status() == "running":
-            return True
-        else:
-            # Process ID saved in global but process is not running
-            return False
-    else:
-        return False
+    return run_status, process_id
