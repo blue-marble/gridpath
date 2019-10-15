@@ -361,6 +361,12 @@ class SubScenarios(object):
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
 
+        self.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID = cursor.execute(
+            """SELECT project_new_binary_build_size_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+
         self.PRM_ENERGY_ONLY_SCENARIO_ID = cursor.execute(
             """SELECT prm_energy_only_scenario_id
                FROM scenarios
