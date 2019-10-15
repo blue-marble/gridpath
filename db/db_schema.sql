@@ -577,8 +577,8 @@ DROP TABLE IF EXISTS inputs_project_new_binary_build_size;
 CREATE TABLE inputs_project_new_binary_build_size (
 project_new_binary_build_size_scenario_id INTEGER,
 project VARCHAR(64),
-binary_build_size_mw,
-binary_build_size_mwh,
+binary_build_size_mw FLOAT,
+binary_build_size_mwh FLOAT,
 PRIMARY KEY (project_new_binary_build_size_scenario_id, project),
 FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
 subscenarios_project_new_binary_build_size

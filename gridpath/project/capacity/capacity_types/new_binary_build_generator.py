@@ -23,7 +23,7 @@ from pyomo.environ import Set, Param, Var, NonNegativeReals, Binary, \
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.auxiliary.auxiliary import check_column_sign_positive, \
-    get_expected_dtypes, check_dtypes
+    get_expected_dtypes, check_dtypes, write_validation_to_database
 from gridpath.project.capacity.capacity_types.common_methods import \
     operational_periods_by_project_vintage, project_operational_periods, \
     project_vintages_operational_in_period
@@ -339,10 +339,12 @@ def get_module_specific_inputs_from_database(
     :return:
     """
 
+    # TODO: remove "as annualized_real_cost_per_kw_yr" statement
+    #  once database columns and tab file columns are aligned
     c1 = conn.cursor()
     new_gen_costs = c1.execute(
         """SELECT project, period, lifetime_yrs,
-        annualized_real_cost_per_kw_yr * 1000
+        annualized_real_cost_per_kw_yr * 1000 as annualized_real_cost_per_kw_yr
         FROM inputs_project_portfolios
         
         CROSS JOIN
@@ -507,6 +509,9 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              "Missing Costs",
              error)
         )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
 
 
 def validate_projects(list1, list2):
