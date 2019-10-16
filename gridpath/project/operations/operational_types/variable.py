@@ -119,16 +119,15 @@ def add_module_specific_components(m, d):
 
     def scheduled_curtailment_expression_rule(mod, g, tmp):
         """
-        Scheduled curtailment
-        Assume cap factors don't incorporate availability derates, 
-        so don't multply capacity by Availability_Derate here (will count
-        as curtailment)
+        Scheduled curtailment is the available power minus what was actually
+        provided.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
         return mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp] \
             * mod.cap_factor[g, tmp] - \
             mod.Provide_Variable_Power_MW[g, tmp]
 
