@@ -218,7 +218,7 @@ def write_module_specific_model_inputs(
                 writer.writerow(row)
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     :param subscenarios:
     :param subproblem:
@@ -248,7 +248,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              stage,
              __name__,
              "PROJECT_AVAILABILITY",
-             "inputs_project_availability",
+             "inputs_project_availability_exogenous",
              "Invalid data type",
              error
              )
@@ -263,8 +263,8 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  stage,
                  __name__,
                  "PROJECT_AVAILABILITY",
-                 "inputs_project_availability",
-                 "Invalid availability",
+                 "inputs_project_availability_exogenous",
+                 "Invalid availability (exogenous)",
                  error
                  )
             )
@@ -284,7 +284,7 @@ def validate_availability(av_df):
         bad_projects = av_df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         results.append(
-            "Project(s) '{}': expected 0 <= availability_derate <= 1"
+            "Project(s) '{}': expected 0 <= availability_derate_exogenous <= 1"
             .format(print_bad_projects)
         )
 

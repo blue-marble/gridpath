@@ -161,7 +161,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, 0]
                       ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= availability_derate <= 1"]
+                "error": ["Project(s) 'gas_ct': expected 0 <= availability_derate_exogenous <= 1"]
                 },
             # Availabilities > 1 are flagged
             3: {"av_df": pd.DataFrame(
@@ -170,7 +170,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= availability_derate <= 1"]
+                "error": ["Project(s) 'coal_plant': expected 0 <= availability_derate_exogenous <= 1"]
                 },
             # Make sure multiple errors are flagged correctly
             4: {"av_df": pd.DataFrame(
@@ -179,7 +179,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability_derate <= 1"]
+                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability_derate_exogenous <= 1"]
                 },
         }
 

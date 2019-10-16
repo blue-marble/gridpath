@@ -169,12 +169,23 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn:
     :return:
     """
-    # TODO: what is our process for iterating over types to do type-specific
-    #  validation?
-    from gridpath.project.availability.availability_types\
-        .exogenous import validate_inputs
-    validate_inputs(subscenarios=subscenarios, subproblem=subproblem,
-                    stage=stage, conn=conn)
+    # Load in the required operational modules
+    c = conn.cursor()
+    scenario_id = subscenarios.SCENARIO_ID
+    required_opchar_modules = get_required_availability_type_modules(
+        scenario_id, c)
+    imported_operational_modules = load_availability_type_modules(
+        required_opchar_modules)
+
+    # Validate module-specific inputs
+    for op_m in required_opchar_modules:
+        if hasattr(imported_operational_modules[op_m],
+                   "validate_module_specific_inputs"):
+            imported_operational_modules[op_m]. \
+                validate_module_specific_inputs(
+                subscenarios, subproblem, stage, conn)
+        else:
+            pass
 
 
 # TODO: this seems like a better place for this function than
