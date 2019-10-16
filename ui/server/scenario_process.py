@@ -6,6 +6,7 @@ Launch a scenario end-to-end run in its own process.
 
 import os
 from flask_socketio import emit
+import psutil
 import subprocess
 import sys
 
@@ -37,12 +38,11 @@ def launch_scenario_process(
     ).fetchone()[0]
 
     # First, check if the scenario is already running
-    process_status = check_scenario_run_status(
+    run_status, process_id = check_scenario_run_status(
         db_path=db_path,
-        scenario_status=scenario_status,
         scenario_id=scenario_id
     )
-    if process_status:
+    if run_status == 'running':
         # TODO: what should happen if the scenario is already running? At a
         #  minimum, it should be a warning and perhaps a way to stop the
         #  process and re-start the scenario run.
@@ -84,11 +84,35 @@ def check_scenario_run_status(db_path, scenario_id):
     """
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
-    scenario_name, run_status, process_id = c.execute("""
-        SELECT run_status_id, run_process_id
+    run_status, process_id = c.execute("""
+        SELECT run_status_name, run_process_id
         FROM scenarios
+        JOIN mod_run_status_types 
+        USING (run_status_id)
         WHERE scenario_id = {}
         """.format(scenario_id)
     ).fetchone()
 
     return run_status, process_id
+
+
+def stop_scenario_run(db_path, scenario_id):
+    """
+
+    :param db_path:
+    :param scenario_id:
+    :return:
+    """
+    print("Really stopping scenario run for scenario ID {}".format(
+      scenario_id))
+    run_status, process_id = check_scenario_run_status(db_path=db_path,
+                                                       scenario_id=scenario_id)
+    if run_status != "running":
+        # TODO: Tell user scenario is not running
+        pass
+    else:
+        print("Here we are")
+        p = psutil.Process(process_id)
+        print("Process ID seen by stop_scenario_run is {}".format(process_id))
+        print("Attempting to terminate")
+        p.terminate()

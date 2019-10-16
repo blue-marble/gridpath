@@ -81,6 +81,12 @@
               (click)="viewResults()">
               View Results
             </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='running'"
+              (click)="stopScenarioRun()">
+              Stop Scenario Run
+            </button>
           </td>
         </tr>
       </table>

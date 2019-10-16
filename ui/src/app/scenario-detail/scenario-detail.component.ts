@@ -75,7 +75,8 @@ export class ScenarioDetailComponent implements OnInit {
 
     socket.emit(
             'launch_scenario_process',
-            {scenario: this.scenarioID, solver: selectedSolver}
+            {scenario: this.scenarioID, solver: selectedSolver,
+             skipWarnings: false}
         );
     // Keep track of process ID for this scenario run
     // TODO: how should we deal with the situation of a scenario already
@@ -95,6 +96,19 @@ export class ScenarioDetailComponent implements OnInit {
         }
       );
     });
+  }
+
+  stopScenarioRun(): void {
+    console.log(
+      `Stopping scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
+    );
+
+    const socket = socketConnect();
+
+    socket.emit(
+            'stop_scenario_run',
+            {scenario: this.scenarioID}
+        );
   }
 
   editScenario(): void {

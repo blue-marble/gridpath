@@ -92,6 +92,14 @@ def record_process_id(db_path, scenario, process_id):
 #   being called here (e.g. run_scenario.py), while the listed arguments refer
 #   to the parser used when the script fails
 def main(args=None):
+    """
+
+    :param args:
+    :return:
+    """
+    # Signal-handling directives
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGINT, sigint_handler)
 
     if args is None:
         args = sys.argv[1:]
@@ -102,7 +110,8 @@ def main(args=None):
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
     # Get and record process ID
     process_id = os.getpid()
-    update_run_status(parsed_args.database, parsed_args.scenario, process_id)
+    print("Process ID is {}".format(process_id))
+    record_process_id(parsed_args.database, parsed_args.scenario, process_id)
 
     try:
         get_scenario_inputs.main(args=args)
@@ -181,10 +190,4 @@ def sigint_handler(signal, frame):
 
 
 if __name__ == "__main__":
-    # TODO: move these to the 'main' function after confirming behavior is
-    #  the same
-    # Signal-handling directives
-    signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGINT, sigint_handler)
-
     main(args=sys.argv[1:])

@@ -18,7 +18,7 @@ from ui.server.validate_scenario import validate_scenario
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
-  check_scenario_run_status
+  check_scenario_run_status, stop_scenario_run
 
 
 # Define custom signal handlers
@@ -107,11 +107,12 @@ def socket_launch_scenario_process(client_message):
     :return:
     Launch and manage a scenario run process.
     """
+    print(client_message)
     scenario_id = client_message["scenario"]
     solver = SOLVER_EXECUTABLES[client_message["solver"]]
     # TODO: implement functionality to skip warnings if the user has
     #  confirmed they want to re-run scenario
-    skip_warnings = client_message["skip_warnings"]
+    skip_warnings = client_message["skipWarnings"]
 
     warn_user_boolean = False if skip_warnings \
         else warn_user(scenario_id=scenario_id)
@@ -162,6 +163,20 @@ def warn_user(scenario_id):
         return True
     else:
         return False
+
+
+@socketio.on("stop_scenario_run")
+def socket_stop_scenario_run(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    print(client_message)
+    scenario_id = client_message["scenario"]
+    print("Stopping scenario run for scenario ID {}".format(scenario_id))
+    stop_scenario_run(db_path=DATABASE_PATH,
+                      scenario_id=scenario_id)
 
 
 @socketio.on("validate_scenario")
