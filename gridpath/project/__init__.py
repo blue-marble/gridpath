@@ -211,7 +211,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         LEFT OUTER JOIN
         (SELECT project, availability_type
         FROM inputs_project_availability_types
-        WHERE project_availability_scenario_id = {}) as prj_mnt_types
+        WHERE project_availability_scenario_id = {}) as prj_av_types
         USING (project)
         LEFT OUTER JOIN
         (SELECT project, operational_type, balancing_type_project, technology,

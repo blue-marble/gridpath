@@ -94,7 +94,7 @@ def add_module_specific_components(m, d):
         rule=total_scheduled_availability_per_period_rule
     )
 
-    def availability_start_and_stop_rule(mod, g, tmp):
+    def unavailability_start_and_stop_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
@@ -128,10 +128,10 @@ def add_module_specific_components(m, d):
 
     m.Availability_Start_and_Stop_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_start_and_stop_rule
+        rule=unavailability_start_and_stop_rule
     )
 
-    def availability_event_min_duration_rule(mod, g, tmp):
+    def event_min_duration_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
@@ -153,10 +153,10 @@ def add_module_specific_components(m, d):
 
     m.Availability_Event_Min_Duration_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_event_min_duration_rule
+        rule=event_min_duration_rule
     )
 
-    def availability_event_max_duration_rule(mod, g, tmp):
+    def event_max_duration_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
@@ -164,7 +164,7 @@ def add_module_specific_components(m, d):
         :return:
 
         If a generator became unavailable within
-        max_unavailable_hours_per_event_min_binary from the current timepoint,
+        unavailable_hours_per_event_max_binary from the current timepoint,
         it must have also been brought back to availability during that time.
         """
         relevant_tmps = determine_relevant_timepoints(
@@ -180,10 +180,10 @@ def add_module_specific_components(m, d):
 
     m.Availability_Event_Max_Duration_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_event_max_duration_rule
+        rule=event_max_duration_rule
     )
 
-    def min_time_between_availability_events_rule(mod, g, tmp):
+    def min_time_between_events_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
@@ -191,7 +191,7 @@ def add_module_specific_components(m, d):
         :return:
 
         If a generator became available within
-        unavailable_hours_per_event_min_binary from the current timepoint, 
+        available_hours_between_events_min_binary from the current timepoint,
         it must still be available in the current timepoint.
         """
         relevant_tmps = determine_relevant_timepoints(
@@ -205,10 +205,10 @@ def add_module_specific_components(m, d):
 
     m.Min_Time_Between_Availability_Events_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=min_time_between_availability_events_rule
+        rule=min_time_between_events_rule
     )
 
-    def max_time_between_availability_events_rule(mod, g, tmp):
+    def max_time_between_events_rule(mod, g, tmp):
         """
         :param mod:
         :param g:
@@ -216,11 +216,11 @@ def add_module_specific_components(m, d):
         :return:
 
         If a generator became available within
-        available_hours_between_events_min_binary from the current timepoint,
-        it must have also been brought back to down during that time.
+        available_hours_between_events_max_binary from the current timepoint,
+        it must have also been made unavailable again during that time.
         """
         relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.available_hours_between_events_min_binary[g]
+            mod, g, tmp, mod.available_hours_between_events_max_binary[g]
         )
         if relevant_tmps == [tmp]:
             return Constraint.Skip
@@ -232,7 +232,7 @@ def add_module_specific_components(m, d):
 
     m.Max_Time_Between_Availability_Events_Binary_Constraint = Constraint(
         m.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=max_time_between_availability_events_rule
+        rule=max_time_between_events_rule
     )
 
 
