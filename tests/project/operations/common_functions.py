@@ -39,6 +39,17 @@ def get_project_operational_timepoints(project_list):
         )
     ng = [tuple(x) for x in ng_df.values if x[0] in project_list]
 
+    ngb_df = \
+        pd.read_csv(
+            os.path.join(
+                TEST_DATA_DIRECTORY, "inputs",
+                "new_binary_build_generator_vintage_costs.tab"
+            ),
+            usecols=['project', 'vintage'],
+            sep="\t"
+        )
+    ngb = [tuple(x) for x in ngb_df.values if x[0] in project_list]
+
     es_df = \
         pd.read_csv(
             os.path.join(
@@ -67,7 +78,7 @@ def get_project_operational_timepoints(project_list):
         if "Shift_DR" in project_list \
         else []
 
-    expected_proj_period_set = sorted(eg + ng + es + ns + dr)
+    expected_proj_period_set = sorted(eg + ng + ngb + es + ns + dr)
 
     # Then get the operational periods by project
     op_per_by_proj_dict = dict()

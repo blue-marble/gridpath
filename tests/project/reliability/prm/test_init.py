@@ -86,7 +86,8 @@ class TestProjPRMInit(unittest.TestCase):
         # Check data are as expected
         # Set: PRM_PROJECTS
         expected_projects = sorted([
-            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2",
+            "Coal", "Coal_z2", "Gas_CCGT", "Gas_CCGT_New",
+            "Gas_CCGT_New_Binary", "Gas_CCGT_z2",
             "Gas_CT", "Gas_CT_New", "Gas_CT_z2", "Nuclear", "Nuclear_z2",
             "Wind", "Wind_z2", "Battery", "Battery_Specified", "Hydro",
             'Hydro_NonCurtailable',
@@ -102,6 +103,7 @@ class TestProjPRMInit(unittest.TestCase):
             sorted(
                 {"Coal": "PRM_Zone1", "Coal_z2": "PRM_Zone2",
                  "Gas_CCGT": "PRM_Zone1", "Gas_CCGT_New": "PRM_Zone1",
+                 "Gas_CCGT_New_Binary": "PRM_Zone1",
                  "Gas_CCGT_z2": "PRM_Zone2", "Gas_CT": "PRM_Zone1",
                  "Gas_CT_New": "PRM_Zone1", "Gas_CT_z2": "PRM_Zone2",
                  "Nuclear": "PRM_Zone1", "Nuclear_z2": "PRM_Zone2",
@@ -129,6 +131,7 @@ class TestProjPRMInit(unittest.TestCase):
                 {"Coal": "fully_deliverable", "Coal_z2": "fully_deliverable",
                  "Gas_CCGT": "fully_deliverable",
                  "Gas_CCGT_New": "fully_deliverable",
+                 "Gas_CCGT_New_Binary": "fully_deliverable",
                  "Gas_CCGT_z2": "fully_deliverable",
                  "Gas_CT": "fully_deliverable",
                  "Gas_CT_New": "fully_deliverable",
@@ -161,7 +164,7 @@ class TestProjPRMInit(unittest.TestCase):
         # Set: PRM_PROJECTS_BY_PRM_ZONE
         expected_projects_by_zone = {
             "PRM_Zone1": sorted([
-                "Coal", "Gas_CCGT", "Gas_CCGT_New",
+                "Coal", "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
                 "Gas_CT", "Gas_CT_New", "Nuclear",
                 "Wind", "Battery", "Battery_Specified", "Hydro",
                 'Hydro_NonCurtailable',
@@ -190,6 +193,7 @@ class TestProjPRMInit(unittest.TestCase):
             ("Nuclear_z2", 2030), ("Gas_CCGT_z2", 2030), ("Coal_z2", 2030),
             ("Gas_CT_z2", 2030), ("Wind_z2", 2030), ("Battery_Specified", 2020),
             ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030),
+            ("Gas_CCGT_New_Binary", 2020), ("Gas_CCGT_New_Binary", 2030),
             ("Gas_CT_New", 2030), ("Battery", 2020), ("Battery", 2030),
             ("Hydro", 2020), ("Hydro", 2030),
             ("Hydro_NonCurtailable", 2020), ("Hydro_NonCurtailable", 2030),

@@ -89,8 +89,8 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
 
         # Set: DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
         expected_disp_cap_commit_gen_set = sorted([
-            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
-            "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2"
+            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
+            "Gas_CT_New", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2"
         ])
         actual_disp_cap_commit_gen_set = sorted([
             prj for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
@@ -115,6 +115,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: unit_size_mw
         expected_unit_size = {
             "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 6, "Gas_CCGT_New": 6,
+            "Gas_CCGT_New_Binary": 6,
             "Gas_CT_New": 6, "Gas_CCGT_z2": 6, "Coal_z2": 6, "Gas_CT_z2": 6
         }
         actual_unit_size = {
@@ -127,6 +128,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: disp_cap_commit_min_stable_level_fraction
         expected_min_stable_fraction = {
             "Gas_CCGT": 0.4, "Coal": 0.4, "Gas_CT": 0.4, "Gas_CCGT_New": 0.4,
+            "Gas_CCGT_New_Binary": 0.4,
             "Gas_CT_New": 0.4, "Gas_CCGT_z2": 0.4, "Coal_z2": 0.4,
             "Gas_CT_z2": 0.4
         }
@@ -141,6 +143,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_startup_plus_ramp_up_rate
         expected_startup_plus_ramp_up_rate = {
             "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
+            "Gas_CCGT_New_Binary": 0.6,
             "Gas_CT_New": 0.6, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
@@ -156,6 +159,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {
             "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
+            "Gas_CCGT_New_Binary": 0.6,
             "Gas_CT_New": 0.6, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
@@ -171,6 +175,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,
+            "Gas_CCGT_New_Binary": 0.5,
             "Gas_CT_New": 0.8, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
@@ -186,6 +191,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {
             "Gas_CCGT": 0.5, "Coal": 0.3, "Gas_CT": 0.2, "Gas_CCGT_New": 0.8,
+            "Gas_CCGT_New_Binary": 0.8,
             "Gas_CT_New": 0.5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
             "Gas_CT_z2": 1
         }
@@ -201,6 +207,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_min_up_time_hours
         expected_min_up_time = OrderedDict(
             sorted({"Gas_CCGT": 3, "Coal": 2, "Gas_CT": 5, "Gas_CCGT_New": 8,
+                    "Gas_CCGT_New_Binary": 8,
                     "Gas_CT_New": 5, "Gas_CCGT_z2": 1, "Coal_z2": 1,
                     "Gas_CT_z2": 1}.items()
             )
@@ -219,6 +226,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         # Param: dispcapcommit_min_down_time_hours
         expected_min_down_time = OrderedDict(
             sorted({"Gas_CCGT": 7, "Coal": 10, "Gas_CT": 3, "Gas_CCGT_New": 5,
+                    "Gas_CCGT_New_Binary": 5,
                     "Gas_CT_New": 2, "Gas_CCGT_z2": 1, "Coal_z2": 1,
                     "Gas_CT_z2": 1}.items()
                    )

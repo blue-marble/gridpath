@@ -117,6 +117,17 @@ class TestCapacity(unittest.TestCase):
             )
         ng = [tuple(x) for x in ng_df.values]
 
+        ngb_df = \
+            pd.read_csv(
+                os.path.join(
+                    TEST_DATA_DIRECTORY, "inputs",
+                    "new_binary_build_generator_vintage_costs.tab"
+                ),
+                usecols=['project', 'vintage'],
+                sep="\t"
+            )
+        ngb = [tuple(x) for x in ngb_df.values]
+
         es_df = \
             pd.read_csv(
                 os.path.join(
@@ -142,7 +153,7 @@ class TestCapacity(unittest.TestCase):
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + es + ns + dr)
+        expected_proj_period_set = sorted(eg + ng + ngb + es + ns + dr)
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
             in instance.PROJECT_OPERATIONAL_PERIODS
