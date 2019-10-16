@@ -88,7 +88,7 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
 
         # Set: FDDL_PRM_PROJECTS
         expected_projects = sorted([
-            "Battery", "Battery_Specified"]
+            "Battery", "Battery_Binary", "Battery_Specified"]
         )
         actual_projects = sorted([
             prj for prj in instance.FDDL_PRM_PROJECTS
@@ -97,8 +97,9 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
 
         # Set: FDDL_PRM_PROJECT_OPERATIONAL_PERIODS
         expected_proj_period_set = sorted([
-            ("Battery", 2020), ("Battery_Specified", 2020),
-            ("Battery", 2030)
+            ("Battery", 2020), ("Battery", 2030),
+            ("Battery_Binary", 2020), ("Battery_Binary", 2030),
+            ("Battery_Specified", 2020)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
@@ -110,9 +111,10 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
         # Param: min_duration_for_full_capacity_credit
         expected_dur = OrderedDict(
             sorted({
-                       "Battery": 4, "Battery_Specified": 4
-                   }.items()
-                   )
+                "Battery": 4,
+                "Battery_Binary": 4,
+                "Battery_Specified": 4
+            }.items())
         )
         actual_dur = OrderedDict(sorted(
             {p: instance.min_duration_for_full_capacity_credit[p]

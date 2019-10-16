@@ -384,11 +384,14 @@ def process_results(db, c, subscenarios):
         )
     ).fetchall()
 
+    # TODO: update this with all latest types
     # Update tables with RPS zone
     tables_to_update = [
         "results_project_capacity_all",
         "results_project_capacity_new_build_generator",
+        "results_project_capacity_new_binary_build_generator",
         "results_project_capacity_new_build_storage",
+        "results_project_capacity_new_binary_build_storage",
         "results_project_capacity_linear_economic_retirement",
         "results_project_dispatch_all",
         "results_project_dispatch_variable",

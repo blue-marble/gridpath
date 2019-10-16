@@ -150,10 +150,21 @@ class TestCapacity(unittest.TestCase):
             )
         ns = [tuple(x) for x in ns_df.values]
 
+        nsb_df = \
+            pd.read_csv(
+                os.path.join(
+                    TEST_DATA_DIRECTORY, "inputs",
+                    "new_binary_build_storage_vintage_costs.tab"
+                ),
+                usecols=['project', 'vintage'],
+                sep="\t"
+            )
+        nsb = [tuple(x) for x in nsb_df.values]
+
         # Manually add shiftable DR, which is available in all periods
         dr = [("Shift_DR", 2020), ("Shift_DR", 2030)]
 
-        expected_proj_period_set = sorted(eg + ng + ngb + es + ns + dr)
+        expected_proj_period_set = sorted(eg + ng + ngb + es + ns + nsb + dr)
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
             in instance.PROJECT_OPERATIONAL_PERIODS
@@ -161,7 +172,7 @@ class TestCapacity(unittest.TestCase):
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
         # Set: STORAGE_OPERATIONAL_PERIODS
-        expected_storage_proj_period_set = sorted(es + ns + dr)
+        expected_storage_proj_period_set = sorted(es + ns + nsb + dr)
         actual_storage_proj_period_set = sorted([
             (prj, period) for (prj, period)
             in instance.STORAGE_OPERATIONAL_PERIODS
