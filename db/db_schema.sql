@@ -565,6 +565,25 @@ FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
 subscenarios_project_new_cost (project_new_cost_scenario_id)
 );
 
+-- New project binary build size
+DROP TABLE IF EXISTS subscenarios_project_new_binary_build_size;
+CREATE TABLE subscenarios_project_new_binary_build_size (
+project_new_binary_build_size_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
+name VARCHAR(32),
+description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS inputs_project_new_binary_build_size;
+CREATE TABLE inputs_project_new_binary_build_size (
+project_new_binary_build_size_scenario_id INTEGER,
+project VARCHAR(64),
+binary_build_size_mw FLOAT,
+binary_build_size_mwh FLOAT,
+PRIMARY KEY (project_new_binary_build_size_scenario_id, project),
+FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
+subscenarios_project_new_binary_build_size
+(project_new_binary_build_size_scenario_id)
+);
 
 -- Shiftable load supply curve
 DROP TABLE IF EXISTS inputs_project_shiftable_load_supply_curve;
@@ -576,7 +595,6 @@ supply_curve_slope FLOAT,
 supply_curve_intercept FLOAT,
 PRIMARY KEY (supply_curve_scenario_id, project, supply_curve_point)
 );
-
 
 DROP TABLE IF EXISTS subscenarios_project_new_potential;
 CREATE TABLE subscenarios_project_new_potential (
@@ -1861,6 +1879,7 @@ project_existing_fixed_cost_scenario_id INTEGER,
 fuel_price_scenario_id INTEGER,
 project_new_cost_scenario_id INTEGER,
 project_new_potential_scenario_id INTEGER,
+project_new_binary_build_size_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
@@ -1986,6 +2005,9 @@ FOREIGN KEY (project_new_cost_scenario_id) REFERENCES
     subscenarios_project_new_cost (project_new_cost_scenario_id),
 FOREIGN KEY (project_new_potential_scenario_id) REFERENCES
     subscenarios_project_new_potential (project_new_potential_scenario_id),
+FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
+    subscenarios_project_new_binary_build_size
+    (project_new_binary_build_size_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
     subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
 FOREIGN KEY (load_zone_scenario_id, transmission_load_zone_scenario_id)
@@ -2092,6 +2114,22 @@ technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
+new_build_mw FLOAT,
+PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_project_capacity_new_binary_build_generator;
+CREATE TABLE results_project_capacity_new_binary_build_generator (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+technology VARCHAR(32),
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+new_build_binary INTEGER,
 new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
@@ -3200,6 +3238,7 @@ subscenarios_project_existing_capacity.name AS project_existing_capacity,
 subscenarios_project_existing_fixed_cost.name AS project_existing_fixed_cost,
 subscenarios_project_new_cost.name AS project_new_cost,
 subscenarios_project_new_potential.name AS project_new_potential,
+subscenarios_project_new_binary_build_size.name AS project_new_binary_build_size,
 subscenarios_transmission_portfolios.name AS transmission_portfolio,
 subscenarios_transmission_load_zones.name AS transmission_load_zones,
 subscenarios_transmission_existing_capacity.name
@@ -3299,6 +3338,8 @@ LEFT JOIN subscenarios_project_existing_fixed_cost
 LEFT JOIN subscenarios_project_new_cost USING (project_new_cost_scenario_id)
 LEFT JOIN subscenarios_project_new_potential
     USING (project_new_potential_scenario_id)
+LEFT JOIN subscenarios_project_new_binary_build_size
+    USING (project_new_binary_build_size_scenario_id)
 LEFT JOIN subscenarios_transmission_portfolios
     USING (transmission_portfolio_scenario_id)
 LEFT JOIN subscenarios_transmission_load_zones
