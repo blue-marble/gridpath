@@ -51,6 +51,7 @@
         <tr>
           <th>Name</th>
           <th>Value</th>
+          <th>Action</th>
           <th>Detail</th>
         </tr>
         <tr>
@@ -59,6 +60,12 @@
               'green' : scenarioDetail.validationStatus == 'valid',
               'red' : scenarioDetail.validationStatus == 'invalid'
            }">{{scenarioDetail.validationStatus}}</td>
+          <td>
+            <button class="button-secondary"
+              (click)="validateScenario(scenarioID)">
+              Validate Scenario
+            </button>
+          </td>
           <td>
             <button class='button-secondary'
             *ngIf="scenarioDetail.validationStatus=='invalid'"
@@ -77,15 +84,23 @@
           <td>
             <button
               class='button-secondary'
-              *ngIf="scenarioDetail.runStatus=='complete'"
-              (click)="viewResults()">
-              View Results
-            </button>
-            <button
-              class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='running'"
               (click)="stopScenarioRun()">
               Stop Scenario Run
+            </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus!=='running'"
+              (click)="runScenario()">
+              Run Scenario
+            </button>
+          </td>
+          <td>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='complete'"
+              (click)="viewResults()">
+              View Results
             </button>
           </td>
         </tr>
