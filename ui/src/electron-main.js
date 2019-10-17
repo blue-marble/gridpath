@@ -93,6 +93,21 @@ function createMainWindow () {
         mainWindow.show()
     });
 
+    // Warn user on closing the app
+    mainWindow.on('close', function(e) {
+      let choice = require('electron').dialog.showMessageBox(this,
+          {
+            type: 'question',
+            buttons: ['Yes', 'No'],
+            title: 'Confirm',
+            message: 'Are you sure you want to quit? Any scenarios still' +
+              ' running will be stopped.'
+         });
+         if(choice === 1) {
+           e.preventDefault();  // prevent default behavior, which is to close
+         }
+      });
+
     // Emitted when the window is closed.
     mainWindow.on('closed', () => {
         // Dereference the window object, usually you would store windows
@@ -111,11 +126,7 @@ app.on('ready', createMainWindow);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
-    // On macOS it is common for applications and their menu bar
-    // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform !== 'darwin') {
-        app.quit()
-    }
+  app.quit()
 });
 
 app.on('before-quit', () => {
