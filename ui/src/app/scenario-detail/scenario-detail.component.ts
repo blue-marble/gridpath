@@ -69,13 +69,11 @@ export class ScenarioDetailComponent implements OnInit {
       `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
     );
 
-    const selectedSolver = this.solversForm.value.solverFormControl;
-
     const socket = socketConnect();
 
     socket.emit(
             'launch_scenario_process',
-            {scenario: this.scenarioID, solver: selectedSolver,
+            {scenario: this.scenarioID, solver: this.scenarioDetail.solver,
              skipWarnings: false}
         );
     // Keep track of process ID for this scenario run
