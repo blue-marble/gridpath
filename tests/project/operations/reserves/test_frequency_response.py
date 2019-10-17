@@ -88,8 +88,8 @@ class TestProjFrequencyResponse(unittest.TestCase):
 
         # Set: FREQUENCY_RESPONSE_PROJECTS
         expected_projects = sorted([
-            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2", "Battery",
-            "Battery_Specified", "Hydro", "Hydro_NonCurtailable"
+            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CCGT_z2",
+            "Battery", "Battery_Specified", "Hydro", "Hydro_NonCurtailable"
         ])
         actual_projects = sorted([
             prj for prj in instance.FREQUENCY_RESPONSE_PROJECTS
@@ -98,7 +98,7 @@ class TestProjFrequencyResponse(unittest.TestCase):
 
         # Set: FREQUENCY_RESPONSE_PARTIAL_PROJECTS
         expected_partial_projects = sorted([
-            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2"
+            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CCGT_z2"
         ])
         actual_partial_projects = sorted([
             prj for prj in instance.FREQUENCY_RESPONSE_PARTIAL_PROJECTS
@@ -110,6 +110,7 @@ class TestProjFrequencyResponse(unittest.TestCase):
         # Param: frequency_response_ba
         expected_reserves_zone = OrderedDict(sorted(
             {"Gas_CCGT": "Zone1", "Gas_CCGT_New": "Zone1",
+             "Gas_CCGT_New_Binary": "Zone1",
              "Gas_CCGT_z2": "Zone2", "Battery": "Zone1",
              "Battery_Specified": "Zone1", "Hydro": "Zone1",
              "Hydro_NonCurtailable": "Zone1"}.items()
@@ -135,8 +136,8 @@ class TestProjFrequencyResponse(unittest.TestCase):
         # Param: frequency_response_derate (defaults to 1 if not specified)
         expected_derate = OrderedDict(sorted(
             {"Battery": 1, "Battery_Specified": 0.5, "Gas_CCGT": 1,
-             "Gas_CCGT_New": 1, "Gas_CCGT_z2": 1, "Hydro": 1,
-             "Hydro_NonCurtailable": 1}.items()
+             "Gas_CCGT_New": 1, "Gas_CCGT_New_Binary": 1, "Gas_CCGT_z2": 1,
+             "Hydro": 1, "Hydro_NonCurtailable": 1}.items()
         )
         )
         actual_derate = OrderedDict(sorted(

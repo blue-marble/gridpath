@@ -299,8 +299,10 @@ def process_results(db, c, subscenarios):
     tables_to_update = [
         "results_project_capacity_all",
         "results_project_capacity_new_build_generator",
+        "results_project_capacity_new_binary_build_generator",
         "results_project_capacity_new_build_storage",
         "results_project_capacity_linear_economic_retirement",
+        "results_project_capacity_binary_economic_retirement",
         "results_project_dispatch_all",
         "results_project_dispatch_variable",
         "results_project_dispatch_capacity_commit",

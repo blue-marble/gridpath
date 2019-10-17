@@ -23,8 +23,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
-    "project", "project.capacity.capacity", "project.fuels",
-    "project.operations",
+    "project", "project.capacity.capacity", "project.availability.availability",
+    "project.fuels", "project.operations",
     "project.operations.operational_types",
     "project.operations.power", "project.operations.fuel_burn"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.carbon_emissions"
@@ -89,7 +89,8 @@ class TestCarbonEmissions(unittest.TestCase):
 
         # Set: CARBONACEOUS_PROJECTS
         expected_carbonaceous_projects = sorted(
-            ["Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
+            ["Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
+             "Gas_CCGT_New_Binary", "Gas_CT_New",
              "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Disp_Binary_Commit",
              "Disp_Cont_Commit", "Disp_No_Commit", "Clunky_Old_Gen",
              "Clunky_Old_Gen2"])
@@ -104,6 +105,7 @@ class TestCarbonEmissions(unittest.TestCase):
             "Coal": "Carbon_Cap_Zone1",
             "Gas_CT": "Carbon_Cap_Zone1",
             "Gas_CCGT_New": "Carbon_Cap_Zone1",
+            "Gas_CCGT_New_Binary": "Carbon_Cap_Zone1",
             "Gas_CT_New": "Carbon_Cap_Zone1",
             "Gas_CCGT_z2": "Carbon_Cap_Zone2",
             "Coal_z2": "Carbon_Cap_Zone2",
@@ -125,7 +127,8 @@ class TestCarbonEmissions(unittest.TestCase):
         # Set: CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE
         expected_prj_by_zone = OrderedDict(sorted({
             "Carbon_Cap_Zone1": sorted([
-                "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
+                "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
+                "Gas_CCGT_New_Binary", "Gas_CT_New",
                 "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
                 "Clunky_Old_Gen", "Clunky_Old_Gen2"
             ]),

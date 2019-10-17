@@ -25,7 +25,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.fuels"
+    "project.capacity.capacity", "project.availability.availability",
+    "project.fuels"
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.operations"
 IMPORTED_PREREQ_MODULES = list()
@@ -106,7 +107,8 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: STARTUP_COST_PROJECTS
         expected_startup_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_z2", "Coal_z2",
+            "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
+            "Gas_CCGT_z2", "Coal_z2",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Clunky_Old_Gen",
             "Clunky_Old_Gen2"
         ])
@@ -122,6 +124,7 @@ class TestOperationsInit(unittest.TestCase):
             "Gas_CCGT": 1,
             "Coal": 1,
             "Gas_CCGT_New": 1,
+            "Gas_CCGT_New_Binary": 1,
             "Gas_CCGT_z2": 1,
             "Coal_z2": 1,
             "Disp_Binary_Commit": 1,
@@ -141,7 +144,8 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: SHUTDOWN_COST_PROJECTS
         expected_shutdown_projects = sorted([
-            "Gas_CCGT", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New", "Gas_CCGT_z2",
+            "Gas_CCGT", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
+            "Gas_CT_New", "Gas_CCGT_z2",
             "Gas_CT_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
             "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
@@ -155,6 +159,7 @@ class TestOperationsInit(unittest.TestCase):
             "Gas_CCGT": 2,
             "Gas_CT": 1,
             "Gas_CCGT_New": 2,
+            "Gas_CCGT_New_Binary": 2,
             "Gas_CT_New": 1,
             "Gas_CCGT_z2": 2,
             "Gas_CT_z2": 1,
@@ -176,6 +181,7 @@ class TestOperationsInit(unittest.TestCase):
         # Set: FUEL_COST_PROJECTS
         expected_fuel_projects = sorted([
             "Nuclear", "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New",
+            "Gas_CCGT_New_Binary",
             "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2", "Gas_CT_New",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
             "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"
@@ -193,6 +199,7 @@ class TestOperationsInit(unittest.TestCase):
             "Coal": "Coal",
             "Gas_CT": "Gas",
             "Gas_CCGT_New": "Gas",
+            "Gas_CCGT_New_Binary": "Gas",
             "Nuclear_z2": "Uranium",
             "Gas_CCGT_z2": "Gas",
             "Coal_z2": "Coal",
@@ -232,6 +239,7 @@ class TestOperationsInit(unittest.TestCase):
             ("Coal", 0),
             ("Gas_CT", 0),
             ("Gas_CCGT_New", 0),
+            ("Gas_CCGT_New_Binary", 0),
             ("Nuclear_z2", 0),
             ("Gas_CCGT_z2", 0),
             ("Coal_z2", 0),
@@ -273,6 +281,7 @@ class TestOperationsInit(unittest.TestCase):
             ("Coal", 0): 10,
             ("Gas_CT", 0): 8,
             ("Gas_CCGT_New", 0): 6,
+            ("Gas_CCGT_New_Binary", 0): 6,
             ("Nuclear_z2", 0): 1666.67,
             ("Gas_CCGT_z2", 0): 6,
             ("Coal_z2", 0): 10,
@@ -302,6 +311,7 @@ class TestOperationsInit(unittest.TestCase):
             ("Coal", 0): 2976,
             ("Gas_CT", 0): 480.8,
             ("Gas_CCGT_New", 0): 1500,
+            ("Gas_CCGT_New_Binary", 0): 1500,
             ("Nuclear_z2", 0): 0,
             ("Gas_CCGT_z2", 0): 1500,
             ("Coal_z2", 0): 2976,
@@ -348,7 +358,8 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: STARTUP_FUEL_PROJECTS
         expected_startup_fuel_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CT_New",
+            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
+            "Gas_CT_New",
             "Gas_CCGT_z2", "Coal_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
             "Disp_No_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
@@ -361,6 +372,7 @@ class TestOperationsInit(unittest.TestCase):
         # Param: startup_fuel_mmbtu_per_mw
         expected_startup_fuel_mmbtu_per_mw = OrderedDict(sorted({
             "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 0.5, "Gas_CCGT_New": 6,
+            "Gas_CCGT_New_Binary": 6,
             "Gas_CT_New": 0.5, "Gas_CCGT_z2": 6, "Coal_z2": 6,
             "Disp_Binary_Commit": 10, "Disp_Cont_Commit": 10,
             "Disp_No_Commit": 10,
@@ -388,35 +400,6 @@ class TestOperationsInit(unittest.TestCase):
 
         self.assertListEqual(expected_tmps_by_startup_fuel_project,
                              actual_tmps_by_startup_fuel_project)
-
-        # Param: availability_derate
-        availability_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "project_availability.tab"),
-            sep="\t"
-        )
-        defaults = {
-            (p, tmp): 1 for p in instance.PROJECTS
-            for tmp in instance.TIMEPOINTS
-        }
-        derates = {
-            (p, tmp): avail for p, tmp, avail
-            in zip(availability_df.project, availability_df.timepoint,
-                   availability_df.availability_derate)
-        }
-        expected_availability = dict()
-        for (p, tmp) in defaults.keys():
-            if (p, tmp) in derates.keys():
-                expected_availability[p, tmp] = derates[p, tmp]
-            else:
-                expected_availability[p, tmp] = defaults[p, tmp]
-
-        actual_availability = {
-            (p, tmp): instance.availability_derate[p, tmp]
-            for p in instance.PROJECTS for tmp in instance.TIMEPOINTS
-        }
-
-        self.assertDictEqual(expected_availability, actual_availability)
 
     def test_calculate_heat_rate_slope_intercept(self):
         """
@@ -452,54 +435,6 @@ class TestOperationsInit(unittest.TestCase):
 
             self.assertDictEqual(expected_slopes, actual_slopes)
             self.assertDictEqual(expected_intercepts, actual_intercepts)
-
-    def test_availability_validations(self):
-        av_df_columns = ["project", "horizon", "availability"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative availabilities are flagged
-            2: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= availability <= 1"]
-                },
-            # Availabilities > 1 are flagged
-            3: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= availability <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = MODULE_BEING_TESTED.validate_availability(
-                av_df=test_cases[test_case]["av_df"],
-            )
-            self.assertListEqual(expected_list, actual_list)
 
     def test_heat_rate_validations(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",

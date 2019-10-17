@@ -13,7 +13,8 @@ import pandas as pd
 from pyomo.environ import Set, Param, NonNegativeReals
 
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
-    required_operational_modules, headroom_variables, footroom_variables
+    required_availability_modules, required_operational_modules, \
+    headroom_variables, footroom_variables
 from gridpath.auxiliary.auxiliary import check_dtypes, get_expected_dtypes, \
     check_column_sign_positive, write_validation_to_database, check_prj_column
 
@@ -49,26 +50,29 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     'footroom_variables' dictionary.
     """
 
-    project_dynamic_data = \
+    project_dynamic_data_df = \
         pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage, "inputs",
                          "projects.tab"),
-            sep="\t", usecols=["project",
-                               "capacity_type",
-                               "operational_type"]
+            sep="\t"
         )
 
     # Required modules are the unique set of generator capacity types
     # This list will be used to know which capacity type modules to load
     setattr(d, required_capacity_modules,
-            project_dynamic_data.capacity_type.unique()
+            project_dynamic_data_df.capacity_type.unique()
+            )
+
+    # Required availability types
+    setattr(d, required_availability_modules,
+            project_dynamic_data_df.availability_type.unique()
             )
 
     # Required operational modules
     # Will be determined based on operational_types specified in the data
     # (in projects.tab)
     setattr(d, required_operational_modules,
-            project_dynamic_data.operational_type.unique()
+            project_dynamic_data_df.operational_type.unique()
             )
 
     # From here on, the dynamic components will be further populated by the
@@ -80,10 +84,10 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     # We need to make the dictionaries first; it is the lists for each key
     # that are populated by the modules
     setattr(d, headroom_variables,
-            {r: [] for r in project_dynamic_data.project}
+            {r: [] for r in project_dynamic_data_df.project}
             )
     setattr(d, footroom_variables,
-            {r: [] for r in project_dynamic_data.project}
+            {r: [] for r in project_dynamic_data_df.project}
             )
 
 
@@ -115,6 +119,7 @@ def add_model_components(m, d):
     m.PROJECTS = Set()
     m.load_zone = Param(m.PROJECTS, within=m.LOAD_ZONES)
     m.capacity_type = Param(m.PROJECTS)
+    m.availability_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
     m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
 
@@ -140,13 +145,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage: 
     :return: 
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "projects.tab"),
+    data_portal.load(filename=os.path.join(scenario_directory, subproblem,
+                                           stage, "inputs", "projects.tab"),
                      index=m.PROJECTS,
                      select=("project", "load_zone", "capacity_type",
-                             "operational_type", "variable_om_cost_per_mwh",
+                             "availability_type", "operational_type",
+                             "variable_om_cost_per_mwh",
                              "balancing_type_project"),
-                     param=(m.load_zone, m.capacity_type,
+                     param=(m.load_zone, m.capacity_type, m.availability_type,
                             m.operational_type, m.variable_om_cost_per_mwh,
                             m.balancing_type_project)
                      )
@@ -174,8 +180,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     c = conn.cursor()
+
+    # TODO: for now, will require project_availability_scenario_id to be
+    #  defined; however, we should break down this query and have the
+    #  subtype modules write to projects.tab instead of getting everything
+    #  in one go here; this will help in a situation when, for example,
+    #  we don't have startup costs, so we don't need to have the associated
+    #  columns in projects.tab
     projects = c.execute(
-        """SELECT project, capacity_type, operational_type, 
+        """SELECT project, capacity_type, availability_type, operational_type, 
         balancing_type_project, technology,
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
@@ -196,6 +209,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         AND project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
+        (SELECT project, availability_type
+        FROM inputs_project_availability_types
+        WHERE project_availability_scenario_id = {}) as prj_av_types
+        USING (project)
+        LEFT OUTER JOIN
         (SELECT project, operational_type, balancing_type_project, technology,
         fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
@@ -214,6 +232,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE project_portfolio_scenario_id = {}""".format(
             subscenarios.LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
+            subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -252,7 +271,9 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Check data types:
     expected_dtypes = get_expected_dtypes(
-        conn, ["inputs_project_portfolios", "inputs_project_load_zones",
+        conn, ["inputs_project_portfolios",
+               "inputs_project_availability_types",
+               "inputs_project_load_zones",
                "inputs_project_operational_chars"]
     )
 
@@ -444,8 +465,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["project", "capacity_type", "operational_type",
-             "balancing_type_project", "technology",
+            ["project", "capacity_type", "availability_type",
+             "operational_type", "balancing_type_project", "technology",
              "load_zone", "fuel", "variable_om_cost_per_mwh",
              "min_stable_level_fraction", "unit_size_mw",
              "startup_cost_per_mw", "shutdown_cost_per_mw",

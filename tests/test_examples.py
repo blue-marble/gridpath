@@ -139,6 +139,33 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
+    def test_example_2horizons_w_hydro_and_nuclear_binary_availability(self):
+        """
+        Check objective function value of
+        "2horizons_w_hydro_and_nuclear_binary_availability" example
+        :return:
+
+        NOTE: the objective function for this example is lower than that for
+        the '2horizons_w_hydro' example because of the unrealistically high
+        relative heat rate of the 'Nuclear' project relative to the gas
+        projects; allowing binary availability for a must-run project
+        actually allows lower-cost power when the nuclear plant is
+        unavailable. We should probably re-think this example as part of a
+        future more general revamp of the examples.
+        """
+        actual_objective = \
+            run_scenario.main(
+                ["--scenario",
+                 "2horizons_w_hydro_and_nuclear_binary_availability",
+                 "--quiet", "--scenario_location", EXAMPLES_DIRECTORY,
+                 "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 81943.32
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
     def test_example_2horizons_w_hydro_w_balancing_types(self):
         """
         Check objective function value of
@@ -566,7 +593,7 @@ class TestExamples(unittest.TestCase):
                  "--quiet", "--mute_solver_output", "--testing"]
             )
 
-        expected_objective = 866736555.0133034
+        expected_objective = 866735867.6799834
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)

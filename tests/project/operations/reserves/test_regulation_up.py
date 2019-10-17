@@ -88,7 +88,8 @@ class TestRegulationUpProvision(unittest.TestCase):
 
         # Set: REGULATION_UP_PROJECTS
         expected_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_z2", "Coal_z2",
+            "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
+            "Gas_CCGT_z2", "Coal_z2",
             "Battery", "Battery_Specified", "Hydro", "Hydro_NonCurtailable"
         ])
         actual_projects = sorted([
@@ -99,6 +100,7 @@ class TestRegulationUpProvision(unittest.TestCase):
         # Param: regulation_up_zone
         expected_reserves_zone = OrderedDict(sorted(
             {"Gas_CCGT": "Zone1", "Coal": "Zone1", "Gas_CCGT_New": "Zone1",
+             "Gas_CCGT_New_Binary": "Zone1",
              "Gas_CCGT_z2": "Zone2", "Coal_z2": "Zone2", "Battery": "Zone1",
              "Battery_Specified": "Zone1", "Hydro": "Zone1",
              "Hydro_NonCurtailable": "Zone1"}.items()
@@ -124,7 +126,8 @@ class TestRegulationUpProvision(unittest.TestCase):
         # Param: regulation_up_derate (defaults to 1 if not specified)
         expected_derate = OrderedDict(sorted(
             {"Battery": 1, "Battery_Specified": 0.5, "Coal": 1,
-             "Coal_z2": 1, "Gas_CCGT": 1, "Gas_CCGT_New": 1, "Gas_CCGT_z2": 1,
+             "Coal_z2": 1, "Gas_CCGT": 1, "Gas_CCGT_New": 1,
+             "Gas_CCGT_New_Binary": 1, "Gas_CCGT_z2": 1,
              "Hydro": 1, "Hydro_NonCurtailable": 1}.items()
         )
         )

@@ -8,6 +8,8 @@ Gas_CT	6	88.13333
 Nuclear	6	1666.67
 Gas_CCGT_New	3	506
 Gas_CCGT_New	6	256
+Gas_CCGT_New_Binary	3	506
+Gas_CCGT_New_Binary	6	256
 Gas_CT_New	2.4	208.33333
 Gas_CT_New	6	88.13333
 Coal_z2	2.4	1250

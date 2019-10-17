@@ -22,8 +22,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.load_following_up_balancing_areas", "project",
-    "project.capacity.capacity",
-     "project.fuels", "project.operations",
+    "project.capacity.capacity", "project.availability.availability",
+    "project.fuels", "project.operations",
     "project.operations.reserves.lf_reserves_up",
     "project.operations.operational_types"]
 NAME_OF_MODULE_BEING_TESTED = \
@@ -92,7 +92,8 @@ class TestLFReservesUpProvision(unittest.TestCase):
         # specified)
         expected_rr_limit = OrderedDict(sorted(
             {"Battery": 1, "Battery_Specified": 1, "Gas_CCGT": 0.1,
-             "Gas_CCGT_New": 0.2, "Gas_CCGT_z2": 0.1, "Hydro": 0.2,
+             "Gas_CCGT_New": 0.2, "Gas_CCGT_New_Binary": 0.2,
+             "Gas_CCGT_z2": 0.1, "Hydro": 0.2,
              "Hydro_NonCurtailable": 0.2}.items()
         )
         )

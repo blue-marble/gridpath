@@ -14,7 +14,7 @@ from pandas import read_csv
 import numpy as np
 import pandas as pd
 import os.path
-from pyomo.environ import Set, Param, PositiveReals, PercentFraction, Reals
+from pyomo.environ import Set, Param, PositiveReals, Reals
 
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
@@ -92,13 +92,6 @@ def add_model_components(m, d):
             rule=lambda mod:
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.STARTUP_FUEL_PROJECTS))
-
-    # Availability derate (e.g. for maintenance/planned outages)
-    # This can be optionally loaded from external data, but defaults to 1
-    # TODO: move this to the capacity package?
-    m.availability_derate = Param(
-        m.PROJECTS, m.TIMEPOINTS, within=PercentFraction, default=1
-    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -284,20 +277,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["startup_fuel_mmbtu_per_mw"] = \
             determine_startup_fuel_projects()[1]
 
-    # Availability derates
-    availability_file = os.path.join(
-        scenario_directory, subproblem, stage, "inputs",
-        "project_availability.tab"
-    )
-
-    if os.path.exists(availability_file):
-        data_portal.load(
-            filename=availability_file,
-            param=m.availability_derate
-        )
-    else:
-        pass
-
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -308,41 +287,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # Get project availability if project_availability_scenario_id is not NUL
-    c1 = conn.cursor()
-    if subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID is None:
-        availabilities = c1.execute(
-            """SELECT project, timepoint, availability
-            FROM inputs_project_availability
-            WHERE 1=0"""
-        )
-    else:
-        availabilities = c1.execute(
-            """SELECT project, timepoint, availability
-            FROM inputs_project_availability
-            INNER JOIN inputs_project_portfolios
-            USING (project)
-            INNER JOIN
-            (SELECT timepoint
-            FROM inputs_temporal_timepoints
-            WHERE temporal_scenario_id = {}
-            AND subproblem_id = {}
-            AND stage_id = {}) as relevant_timepoints
-            USING (timepoint)
-            WHERE project_portfolio_scenario_id = {}
-            AND project_availability_scenario_id = {};""".format(
-                subscenarios.TEMPORAL_SCENARIO_ID,
-                subproblem,
-                stage,
-                subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-                subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
-            )
-        )
-
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
-    c2 = conn.cursor()
-    heat_rates = c2.execute(
+    c = conn.cursor()
+    heat_rates = c.execute(
         """
         SELECT project, fuel, heat_rate_curves_scenario_id, 
         load_point_mw, average_heat_rate_mmbtu_per_mwh
@@ -360,7 +308,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return availabilities, heat_rates
+    return heat_rates
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -376,49 +324,14 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Get the project input data
-    availabilities, heat_rates = get_inputs_from_database(
+    heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
-    av_df = pd.DataFrame(
-        data=availabilities.fetchall(),
-        columns=[s[0] for s in availabilities.description]
-    )
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
     )
-
-    # Check data types availability:
-    expected_dtypes = get_expected_dtypes(conn, ["inputs_project_availability"])
-    dtype_errors, error_columns = check_dtypes(av_df, expected_dtypes)
-    for error in dtype_errors:
-        validation_results.append(
-            (subscenarios.SCENARIO_ID,
-             subproblem,
-             stage,
-             __name__,
-             "PROJECT_AVAILABILITY",
-             "inputs_project_availability",
-             "Invalid data type",
-             error
-             )
-        )
-
-    if "availability" not in error_columns:
-        validation_errors = validate_availability(av_df)
-        for error in validation_errors:
-            validation_results.append(
-                (subscenarios.SCENARIO_ID,
-                 subproblem,
-                 stage,
-                 __name__,
-                 "PROJECT_AVAILABILITY",
-                 "inputs_project_availability",
-                 "Invalid availability",
-                 error
-                 )
-            )
 
     # Check data types heat_rates:
     hr_curve_mask = pd.notna(hr_df["heat_rate_curves_scenario_id"])
@@ -497,27 +410,6 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-
-
-def validate_availability(av_df):
-    """
-    Check 0 <= availability <= 1
-    :param av_df:
-    :return:
-    """
-    results = []
-
-    invalids = ((av_df["availability"] < 0) |
-                (av_df["availability"] > 1))
-    if invalids.any():
-        bad_projects = av_df["project"][invalids].values
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': expected 0 <= availability <= 1"
-            .format(print_bad_projects)
-        )
-
-    return results
 
 
 def validate_fuel_vs_heat_rates(hr_df):
@@ -622,7 +514,7 @@ def validate_heat_rate_curves(hr_df):
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
-    project_availability.tab and heat_rate_curves.tab files
+    heat_rate_curves.tab files
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -630,7 +522,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    availabilities, heat_rates = get_inputs_from_database(
+    heat_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert heat rates to dataframes and pre-process data
@@ -642,20 +534,6 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     fuel_mask = pd.notna(hr_df["fuel"])
     columns = ["project", "load_point_mw", "average_heat_rate_mmbtu_per_mwh"]
     heat_rates = hr_df[columns][fuel_mask].values
-
-    # Fetch availability inputs
-    availabilities = availabilities.fetchall()
-
-    if availabilities:
-        with open(os.path.join(inputs_directory, "project_availability.tab"),
-                  "w", newline="") as \
-                availability_tab_file:
-            writer = csv.writer(availability_tab_file, delimiter="\t")
-
-            writer.writerow(["project", "timepoint", "availability_derate"])
-
-            for row in availabilities:
-                writer.writerow(row)
 
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
               "w", newline="") as \

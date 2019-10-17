@@ -100,6 +100,7 @@ def load_data(db, omit_data):
         # General Model Data
         load_mod_months(db=db, c=c)
         load_mod_capacity_types(db=db, c=c)
+        load_mod_availability_types(db=db, c=c)
         load_mod_operational_types(db=db, c=c)
         load_mod_reserve_types(db=db, c=c)
         load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
@@ -133,6 +134,15 @@ def load_mod_capacity_types(db, c):
         (capacity_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_capacity_types.csv", 
+                  sql=sql)
+
+
+def load_mod_availability_types(db, c):
+    sql = """
+        INSERT INTO mod_availability_types
+        (availability_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_availability_types.csv",
                   sql=sql)
 
 

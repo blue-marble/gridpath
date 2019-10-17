@@ -88,7 +88,7 @@ class TestProjELCCSurface(unittest.TestCase):
         expected_elcc_contr = OrderedDict(
             sorted(
                 {"Coal": 0, "Coal_z2": 0,
-                 "Gas_CCGT": 0, "Gas_CCGT_New": 0,
+                 "Gas_CCGT": 0, "Gas_CCGT_New": 0, "Gas_CCGT_New_Binary": 0,
                  "Gas_CCGT_z2": 0, "Gas_CT": 0,
                  "Gas_CT_New": 0, "Gas_CT_z2": 0,
                  "Nuclear": 1, "Nuclear_z2": 0,

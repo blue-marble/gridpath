@@ -20,7 +20,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.fuels", "project.operations",
+    "project.capacity.capacity", "project.availability.availability",
+    "project.fuels", "project.operations",
     "project.operations.operational_types", "project.operations.power"]
 NAME_OF_MODULE_BEING_TESTED = "project.operations.fix_commitment"
 IMPORTED_PREREQ_MODULES = list()
@@ -84,9 +85,9 @@ class TestFixCommitment(unittest.TestCase):
 
         # Set: FINAL_COMMITMENT_PROJECTS
         expected_final_projects = sorted([
-            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_z2", "Disp_Binary_Commit",
-            "Disp_Cont_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2", "Coal",
-            "Coal_z2"
+            "Gas_CCGT", "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CCGT_z2",
+            "Disp_Binary_Commit", "Disp_Cont_Commit", "Clunky_Old_Gen",
+            "Clunky_Old_Gen2", "Coal", "Coal_z2"
         ])
         actual_final_projects = sorted([
             prj for prj in instance.FINAL_COMMITMENT_PROJECTS
@@ -134,6 +135,18 @@ class TestFixCommitment(unittest.TestCase):
             ("Gas_CCGT_New", 20200119), ("Gas_CCGT_New", 20200120),
             ("Gas_CCGT_New", 20200121), ("Gas_CCGT_New", 20200122),
             ("Gas_CCGT_New", 20200123), ("Gas_CCGT_New", 20200124),
+            ("Gas_CCGT_New_Binary", 20200101), ("Gas_CCGT_New_Binary", 20200102),
+            ("Gas_CCGT_New_Binary", 20200103), ("Gas_CCGT_New_Binary", 20200104),
+            ("Gas_CCGT_New_Binary", 20200105), ("Gas_CCGT_New_Binary", 20200106),
+            ("Gas_CCGT_New_Binary", 20200107), ("Gas_CCGT_New_Binary", 20200108),
+            ("Gas_CCGT_New_Binary", 20200109), ("Gas_CCGT_New_Binary", 20200110),
+            ("Gas_CCGT_New_Binary", 20200111), ("Gas_CCGT_New_Binary", 20200112),
+            ("Gas_CCGT_New_Binary", 20200113), ("Gas_CCGT_New_Binary", 20200114),
+            ("Gas_CCGT_New_Binary", 20200115), ("Gas_CCGT_New_Binary", 20200116),
+            ("Gas_CCGT_New_Binary", 20200117), ("Gas_CCGT_New_Binary", 20200118),
+            ("Gas_CCGT_New_Binary", 20200119), ("Gas_CCGT_New_Binary", 20200120),
+            ("Gas_CCGT_New_Binary", 20200121), ("Gas_CCGT_New_Binary", 20200122),
+            ("Gas_CCGT_New_Binary", 20200123), ("Gas_CCGT_New_Binary", 20200124),
             ("Disp_Binary_Commit", 20200101), ("Disp_Binary_Commit", 20200102),
             ("Disp_Binary_Commit", 20200103), ("Disp_Binary_Commit", 20200104),
             ("Disp_Binary_Commit", 20200105), ("Disp_Binary_Commit", 20200106),
