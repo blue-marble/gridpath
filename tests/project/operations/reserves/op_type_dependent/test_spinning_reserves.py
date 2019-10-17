@@ -22,7 +22,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.spinning_reserves_balancing_areas", "project",
-    "project.capacity.capacity",
+    "project.capacity.capacity", "project.availability.availability",
      "project.fuels", "project.operations",
     "project.operations.reserves.spinning_reserves",
     "project.operations.operational_types"]

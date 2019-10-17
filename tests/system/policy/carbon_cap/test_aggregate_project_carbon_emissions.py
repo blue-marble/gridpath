@@ -21,8 +21,8 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones",
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
-    "project", "project.capacity.capacity", "project.fuels",
-    "project.operations",
+    "project", "project.capacity.capacity", "project.availability.availability",
+    "project.fuels", "project.operations",
     "project.operations.operational_types",
     "project.operations.power", "project.operations.fuel_burn", "project.operations.carbon_emissions"]
 NAME_OF_MODULE_BEING_TESTED = \

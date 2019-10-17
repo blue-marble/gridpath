@@ -25,7 +25,8 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project",
-    "project.capacity.capacity", "project.fuels"
+    "project.capacity.capacity", "project.availability.availability",
+    "project.fuels"
 ]
 NAME_OF_MODULE_BEING_TESTED = "project.operations"
 IMPORTED_PREREQ_MODULES = list()
@@ -400,35 +401,6 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_tmps_by_startup_fuel_project,
                              actual_tmps_by_startup_fuel_project)
 
-        # Param: availability_derate
-        availability_df = pd.read_csv(
-            os.path.join(TEST_DATA_DIRECTORY, "inputs",
-                         "project_availability.tab"),
-            sep="\t"
-        )
-        defaults = {
-            (p, tmp): 1 for p in instance.PROJECTS
-            for tmp in instance.TIMEPOINTS
-        }
-        derates = {
-            (p, tmp): avail for p, tmp, avail
-            in zip(availability_df.project, availability_df.timepoint,
-                   availability_df.availability_derate)
-        }
-        expected_availability = dict()
-        for (p, tmp) in defaults.keys():
-            if (p, tmp) in derates.keys():
-                expected_availability[p, tmp] = derates[p, tmp]
-            else:
-                expected_availability[p, tmp] = defaults[p, tmp]
-
-        actual_availability = {
-            (p, tmp): instance.availability_derate[p, tmp]
-            for p in instance.PROJECTS for tmp in instance.TIMEPOINTS
-        }
-
-        self.assertDictEqual(expected_availability, actual_availability)
-
     def test_calculate_heat_rate_slope_intercept(self):
         """
         Check that heat rate slope and intercept calculation gives expected
@@ -463,54 +435,6 @@ class TestOperationsInit(unittest.TestCase):
 
             self.assertDictEqual(expected_slopes, actual_slopes)
             self.assertDictEqual(expected_intercepts, actual_intercepts)
-
-    def test_availability_validations(self):
-        av_df_columns = ["project", "horizon", "availability"]
-        test_cases = {
-            # Make sure correct inputs don't throw error
-            1: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": []
-                },
-            # Negative availabilities are flagged
-            2: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, -1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, 0]
-                      ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= availability <= 1"]
-                },
-            # Availabilities > 1 are flagged
-            3: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= availability <= 1"]
-                },
-            # Make sure multiple errors are flagged correctly
-            4: {"av_df": pd.DataFrame(
-                columns=av_df_columns,
-                data=[["gas_ct", 201801, 1.5],
-                      ["gas_ct", 201802, 0.9],
-                      ["coal_plant", 201801, -0.5]
-                      ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability <= 1"]
-                },
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["error"]
-            actual_list = MODULE_BEING_TESTED.validate_availability(
-                av_df=test_cases[test_case]["av_df"],
-            )
-            self.assertListEqual(expected_list, actual_list)
 
     def test_heat_rate_validations(self):
         hr_columns = ["project", "fuel", "heat_rate_curves_scenario_id",

@@ -27,6 +27,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented availability types
+DROP TABLE IF EXISTS mod_availability_types;
+CREATE TABLE mod_availability_types (
+availability_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Implemented operational types
 DROP TABLE IF EXISTS mod_operational_types;
 CREATE TABLE mod_operational_types (
@@ -767,7 +774,8 @@ subscenarios_project_hydro_operational_chars
 (project, hydro_operational_chars_scenario_id)
 );
 
--- Project availability (e.g. due to planned outages/maintenance)
+-- Project availability (e.g. due to planned outages/availability)
+-- Subscenarios
 DROP TABLE IF EXISTS subscenarios_project_availability;
 CREATE TABLE subscenarios_project_availability (
 project_availability_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -775,16 +783,63 @@ name VARCHAR(32),
 description VARCHAR(128)
 );
 
-DROP TABLE IF EXISTS inputs_project_availability;
-CREATE TABLE inputs_project_availability (
+-- Define availability type and IDs for type characteristics
+-- TODO: implement check that there are exogenous IDs only for exogenous
+--  types and endogenous IDs only for endogenous types
+DROP TABLE IF EXISTS inputs_project_availability_types;
+CREATE TABLE inputs_project_availability_types (
 project_availability_scenario_id INTEGER,
 project VARCHAR(64),
+availability_type VARCHAR(32),
+exogenous_availability_scenario_id INTEGER,
+endogenous_availability_scenario_id INTEGER,
+PRIMARY KEY (project_availability_scenario_id, project, availability_type)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_exogenous;
+CREATE TABLE subscenarios_project_availability_exogenous (
+project VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_exogenous;
+CREATE TABLE inputs_project_availability_exogenous (
+project VARCHAR(64),
+exogenous_availability_scenario_id INTEGER,
 stage_id INTEGER,
 timepoint INTEGER,
-availability FLOAT,
-PRIMARY KEY (project_availability_scenario_id, project, stage_id, timepoint),
-FOREIGN KEY (project_availability_scenario_id) REFERENCES
-subscenarios_project_availability (project_availability_scenario_id)
+availability_derate FLOAT,
+PRIMARY KEY (project, exogenous_availability_scenario_id, stage_id, timepoint),
+FOREIGN KEY (project, exogenous_availability_scenario_id)
+    REFERENCES subscenarios_project_availability_exogenous
+        (project, exogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS subscenarios_project_availability_endogenous;
+CREATE TABLE subscenarios_project_availability_endogenous (
+project VARCHAR(64),
+endogenous_availability_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, endogenous_availability_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_availability_endogenous;
+CREATE TABLE inputs_project_availability_endogenous (
+project VARCHAR(64),
+endogenous_availability_scenario_id INTEGER,
+unavailable_hours_per_period FLOAT,
+unavailable_hours_per_event_min FLOAT,
+unavailable_hours_per_event_max FLOAT,
+available_hours_between_events_min FLOAT,
+available_hours_between_events_max FLOAT,
+PRIMARY KEY (project, endogenous_availability_scenario_id),
+FOREIGN KEY (project, endogenous_availability_scenario_id)
+    REFERENCES subscenarios_project_availability_endogenous
+        (project, endogenous_availability_scenario_id)
 );
 
 
@@ -2178,6 +2233,29 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 retired_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
+);
+
+DROP TABLE IF EXISTS results_project_availability_exogenous;
+CREATE TABLE results_project_availability_exogenous (
+scenario_id INTEGER,
+project VARCHAR(64),
+period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
+balancing_type_project VARCHAR(64),
+horizon INTEGER,
+timepoint INTEGER,
+timepoint_weight FLOAT,
+number_of_hours_in_timepoint FLOAT,
+load_zone VARCHAR(32),
+rps_zone VARCHAR(32),
+carbon_cap_zone VARCHAR(32),
+technology VARCHAR(32),
+unavailability_decision FLOAT,
+start_unavailablity FLOAT,
+stop_unavailability FLOAT,
+availability_derate FLOAT,
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_all;
