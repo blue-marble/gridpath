@@ -71,7 +71,8 @@
             <button
               class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='not_run' ||
-              scenarioDetail.runStatus=='run_error'"
+              scenarioDetail.runStatus=='run_error' ||
+              scenarioDetail.runStatus=='run_stopped'"
               (click)="runScenario()">
               Run Scenario
             </button>

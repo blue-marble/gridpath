@@ -162,7 +162,7 @@ def exit_gracefully():
     print('Exiting gracefully')
     args = sys.argv[1:]
     parsed_args = parse_arguments(args)
-    update_run_status(parsed_args.database, parsed_args.scenario, 3)
+    update_run_status(parsed_args.database, parsed_args.scenario, 4)
 
 
 def sigterm_handler(signal, frame):
