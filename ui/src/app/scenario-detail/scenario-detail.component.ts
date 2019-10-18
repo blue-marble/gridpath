@@ -204,4 +204,9 @@ export class ScenarioDetailComponent implements OnInit {
     });
   }
 
+  updateScenarioDetail(): void {
+    console.log('Updating view...');
+    this.getScenarioDetailAPI(this.scenarioID);
+  }
+
 }
