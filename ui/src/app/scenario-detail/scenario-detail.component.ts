@@ -169,39 +169,42 @@ export class ScenarioDetailComponent implements OnInit {
     this.router.navigate(['/scenario', this.scenarioID, 'results']);
   }
 
-  // TODO: add confirmations for clearing and deleting
   clearScenario(): void {
-    const socket = socketConnect();
+    if (confirm(`Are you sure you want to clear all results for scenario ${this.scenarioDetail.scenarioName}?`)) {
+      const socket = socketConnect();
 
-    socket.emit(
-            'clear_scenario',
-            {scenario: this.scenarioID}
+      socket.emit(
+              'clear_scenario',
+              {scenario: this.scenarioID}
+          );
+
+      socket.on('scenario_cleared', () => {
+        console.log('Scenario cleared');
+        this.zone.run(
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          }
         );
-
-    socket.on('scenario_cleared', () => {
-      console.log('Scenario cleared');
-      this.zone.run(
-        () => {
-          this.getScenarioDetailAPI(this.scenarioID);
-        }
-      );
-    });
+      });
+    }
   }
 
   deleteScenario(): void {
-    const socket = socketConnect();
+    if (confirm(`Are you sure you want to delete scenario ${this.scenarioDetail.scenarioName}?`)) {
+      const socket = socketConnect();
 
-    socket.emit(
-            'delete_scenario',
-            {scenario: this.scenarioID}
-        );
-
-    socket.on('scenario_deleted', () => {
-      console.log('Scenario deleted');
-      this.zone.run(
-        () => this.router.navigate(['/scenarios'])
+      socket.emit(
+        'delete_scenario',
+        {scenario: this.scenarioID}
       );
-    });
+
+      socket.on('scenario_deleted', () => {
+        console.log('Scenario deleted');
+        this.zone.run(
+          () => this.router.navigate(['/scenarios'])
+        );
+      });
+    }
   }
 
   updateScenarioDetail(): void {
