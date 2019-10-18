@@ -14,6 +14,8 @@ from ui.server.create_api import add_api_resources
 
 # Database operations functions (Socket IO)
 from ui.server.db_ops.add_scenario import add_or_update_scenario
+from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
+  delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
 
 # Scenario process functions (Socket IO)
@@ -125,7 +127,6 @@ def socket_launch_scenario_process(client_message):
         p, scenario_id, scenario_name = launch_scenario_process(
           db_path=DATABASE_PATH,
           scenarios_directory=SCENARIOS_DIRECTORY,
-          scenario_status=SCENARIO_STATUS,
           scenario_id=scenario_id,
           solver=solver
         )
@@ -189,6 +190,30 @@ def socket_validate_scenario(client_message):
     validate_scenario(db_path=DATABASE_PATH,
                       client_message=client_message)
     emit("validation_complete")
+
+
+@socketio.on("clear_scenario")
+def socket_clear_scenario(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    clear_scenario(db_path=DATABASE_PATH,
+                   scenario_id=client_message["scenario"])
+    emit("scenario_cleared")
+
+
+@socketio.on("delete_scenario")
+def socket_clear_scenario(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    delete_scenario(db_path=DATABASE_PATH,
+                    scenario_id=client_message["scenario"])
+    emit("scenario_deleted")
 
 
 def main():

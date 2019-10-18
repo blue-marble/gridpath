@@ -21,6 +21,10 @@
       <button id="editScenarioButton" class="button-primary"
             (click)="editScenario()">Edit Scenario</button>
     </div>
+    <div class="col col-md-auto">
+      <button id="deleteScenarioButton" class="button-primary"
+            (click)="deleteScenario()">Delete Scenario</button>
+    </div>
 
     <div class="col-md-auto btn-group" data-toggle="buttons" id="solvers">
       <form [formGroup]="solversForm" (ngSubmit)="runScenario()">
@@ -91,9 +95,16 @@
             </button>
             <button
               class='button-secondary'
-              *ngIf="scenarioDetail.runStatus!=='running'"
+              *ngIf="scenarioDetail.runStatus=='not_run' ||
+              scenarioDetail.runStatus=='run_error'"
               (click)="runScenario()">
               Run Scenario
+            </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='complete'"
+              (click)="clearScenario()">
+              Clear Scenario Results
             </button>
           </td>
           <td>

@@ -37,7 +37,7 @@ def add_or_update_scenario(db_path, msg):
         # TODO: need a process for dealing with updating scenarios that have
         #  been run
         update_scenario_multiple_columns(
-            io=io, c=c,
+            io=conn, c=c,
             scenario_name=msg['scenarioName'],
             column_values_dict=make_column_values_dict(db_path=db_path,
                                                        msg=msg)
@@ -45,7 +45,7 @@ def add_or_update_scenario(db_path, msg):
     else:
         print('Inserting new scenario {}'.format(msg['scenarioName']))
         create_scenario(
-            io=io, c=c,
+            io=conn, c=c,
             column_values_dict=make_column_values_dict(db_path=db_path,
                                                        msg=msg)
         )

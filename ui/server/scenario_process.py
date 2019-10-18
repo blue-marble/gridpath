@@ -13,13 +13,10 @@ import sys
 from db.common_functions import connect_to_database
 
 
-def launch_scenario_process(
-    db_path, scenarios_directory, scenario_status, scenario_id, solver
-):
+def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
     """
     :param db_path:
     :param scenarios_directory:
-    :param scenario_status:
     :param scenario_id: integer, the scenario_id from the database
     :param solver: dictionary with keys "name" and "executable" for the solver
     :return:
@@ -31,11 +28,8 @@ def launch_scenario_process(
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    scenario_name = c.execute(
-        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
-            scenario_id
-        )
-    ).fetchone()[0]
+    scenario_name = get_scenario_name_from_scenario_id(cursor=c,
+                                                       scenario_id=scenario_id)
 
     # First, check if the scenario is already running
     run_status, process_id = check_scenario_run_status(
@@ -46,6 +40,8 @@ def launch_scenario_process(
         # TODO: what should happen if the scenario is already running? At a
         #  minimum, it should be a warning and perhaps a way to stop the
         #  process and re-start the scenario run.
+        #  TODO: run-scenario button is only available when the scenario is
+        #   not running, so maybe that's good enough
         print("Scenario already running.")
         emit(
             "scenario_already_running",
@@ -103,16 +99,30 @@ def stop_scenario_run(db_path, scenario_id):
     :param scenario_id:
     :return:
     """
-    print("Really stopping scenario run for scenario ID {}".format(
-      scenario_id))
     run_status, process_id = check_scenario_run_status(db_path=db_path,
                                                        scenario_id=scenario_id)
     if run_status != "running":
         # TODO: Tell user scenario is not running
         pass
     else:
-        print("Here we are")
+        # TODO: is there an additional check to do, to make sure we don't
+        #  terminate the wrong process (e.g. because of a prior crash,
+        #  scenario appearing as running, but a different process actually
+        #  having this id)
         p = psutil.Process(process_id)
-        print("Process ID seen by stop_scenario_run is {}".format(process_id))
-        print("Attempting to terminate")
         p.terminate()
+
+
+def get_scenario_name_from_scenario_id(cursor, scenario_id):
+    """
+    :param cursor:
+    :param scenario_id:
+    :return:
+    """
+    scenario_name = cursor.execute(
+        "SELECT scenario_name FROM scenarios WHERE scenario_id = {}".format(
+            scenario_id
+        )
+    ).fetchone()[0]
+
+    return scenario_name
