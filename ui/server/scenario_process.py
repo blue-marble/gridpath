@@ -53,12 +53,8 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
         print("Starting process for scenario_id " + str(scenario_id))
         # Get the run_gridpath_e2e entry point script from the
         # sys.executable (remove 'python' and add 'gridpath_run_e2e')
-        if os.name == "nt":
-            chars_to_remove = 10
-            shell_bool = True
-        else:
-            chars_to_remove = 6
-            shell_bool = False
+        chars_to_remove = 10 if os.name == "nt" else 6
+
         run_gridpath_e2e_executable = \
             sys.executable[:-chars_to_remove] + "gridpath_run_e2e"
         p = subprocess.Popen(
@@ -69,7 +65,7 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
              "--scenario_location", scenarios_directory,
              "--solver", solver["name"],
              "--solver_executable", solver["executable"]],
-            shell=shell_bool)
+            shell=False)
 
         return p, scenario_id, scenario_name
 
