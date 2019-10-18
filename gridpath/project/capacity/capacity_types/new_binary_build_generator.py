@@ -420,8 +420,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 'new_binary_build_generator';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
 
@@ -437,7 +436,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     )
 
     # get the project lists
-    projects = [p[0] for p in prj_periods]  # this will have duplicates if multiple periods!
+    projects = [p[0] for p in prj_periods]  # will have duplicates if >1 periods
     bld_size_projects = bld_size_df["project"]
 
     # Get expected dtypes
@@ -456,7 +455,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              stage,
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_heat_rate_curves",
+             "inputs_project_new_cost",
              "Invalid data type",
              error
              )
@@ -478,7 +477,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              stage,
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_costs",
+             "inputs_project_new_cost",
              "Invalid numeric sign",
              error)
         )
@@ -507,7 +506,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              stage,
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
-             "inputs_project_new_costs",
+             "inputs_project_new_cost",
              "Missing Costs",
              error)
         )
