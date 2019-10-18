@@ -70,23 +70,23 @@ export class ScenarioDetailComponent implements OnInit {
             {scenario: this.scenarioID, solver: this.scenarioDetail.solver,
              skipWarnings: false}
         );
-    // Keep track of process ID for this scenario run
-    // TODO: how should we deal with the situation of a scenario already
-    //  running?
-    socket.on('scenario_already_running', (msg) => {
-        console.log('Server says scenario is already running.');
-        console.log (msg);
-    });
 
     // Check and update the run status (whole API) when the scenario process is
     // launched
     socket.on('scenario_process_launched', () => {
       console.log('Scenario process launched.');
-      this.zone.run(
-        () => {
-          this.getScenarioDetailAPI(this.scenarioID);
-        }
-      );
+      // this.zone.run(
+      //   () => {
+      //     this.getScenarioDetailAPI(this.scenarioID);
+      //   }
+      // );
+      setTimeout(() => {
+        this.zone.run(
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          }
+        );
+      }, 3000);
     });
   }
 
@@ -97,10 +97,16 @@ export class ScenarioDetailComponent implements OnInit {
 
     const socket = socketConnect();
 
-    socket.emit(
-            'stop_scenario_run',
-            {scenario: this.scenarioID}
-        );
+    socket.emit('stop_scenario_run', {scenario: this.scenarioID});
+
+    // Check and update the run status (whole API) when the scenario process is
+    // launched
+    socket.on('scenario_stopped', () => {
+      this.zone.run(
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          });
+    });
   }
 
   editScenario(): void {

@@ -7,7 +7,6 @@ from flask_socketio import SocketIO, emit
 import os
 import signal
 import sys
-import time
 
 # API
 from ui.server.create_api import add_api_resources
@@ -138,9 +137,7 @@ def socket_launch_scenario_process(client_message):
         SCENARIO_STATUS[scenario_id]['scenario_name'] = scenario_name
         SCENARIO_STATUS[scenario_id]['process_id'] = p.pid
 
-        # Wait a couple of seconds, then tell the client the process was
-        # launched, so that the client can refresh the run status
-        time.sleep(2)
+        # Tell the client the process launched
         emit("scenario_process_launched")
 
 
@@ -178,6 +175,9 @@ def socket_stop_scenario_run(client_message):
     print("Stopping scenario run for scenario ID {}".format(scenario_id))
     stop_scenario_run(db_path=DATABASE_PATH,
                       scenario_id=scenario_id)
+
+    # Tell the client the run was stopped
+    emit("scenario_stopped")
 
 
 @socketio.on("validate_scenario")
