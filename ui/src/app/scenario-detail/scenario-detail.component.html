@@ -13,10 +13,6 @@
   </div>
 
   <div class="row">
-    <div class="col-md-auto">
-      <button class="button-primary" id="validateScenarioButton"
-              (click)="validateScenario(scenarioID)">Validate Scenario</button>
-    </div>
     <div class="col col-md-auto">
       <button id="editScenarioButton" class="button-primary"
             (click)="editScenario()">Edit Scenario</button>
@@ -24,27 +20,6 @@
     <div class="col col-md-auto">
       <button id="deleteScenarioButton" class="button-primary"
             (click)="deleteScenario()">Delete Scenario</button>
-    </div>
-
-    <div class="col-md-auto btn-group" data-toggle="buttons" id="solvers">
-      <form [formGroup]="solversForm" (ngSubmit)="runScenario()">
-        <label class="btn btn-primary">
-          <input type="radio" value="cbc" formControlName="solverFormControl">
-       <span> Cbc</span>
-        </label>
-        <label class="btn btn-primary">
-          <input type="radio" value="cplex"
-                 formControlName="solverFormControl">
-          <span> CPLEX</span>
-        </label>
-        <label class="btn btn-primary">
-          <input type="radio" value="gurobi"
-                 formControlName="solverFormControl">
-          <span> Gurobi</span>
-        </label>
-      <button id="runScenarioButton" class="button-primary"
-            type="submit">Run Scenario</button>
-      </form>
     </div>
   </div>
 

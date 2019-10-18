@@ -1,7 +1,6 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormControl, FormGroup } from '@angular/forms';
 
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
@@ -23,11 +22,6 @@ export class ScenarioDetailComponent implements OnInit {
   // To get the right route
   scenarioID: number;
   private sub: any;
-
-  // Select a solver for the run
-  solversForm = new FormGroup ({
-    solverFormControl: new FormControl()
-  });
 
   constructor(
     private route: ActivatedRoute,
