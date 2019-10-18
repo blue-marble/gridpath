@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 from db.common_functions import connect_to_database
+from gridpath.run_end_to_end import update_run_status
 
 
 def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
@@ -107,6 +108,17 @@ def stop_scenario_run(db_path, scenario_id):
         #  having this id)
         p = psutil.Process(process_id)
         p.terminate()
+
+        # Update the scenario status to 'run_stopped'
+        # This is only needed on Windows; on Mac, the signal is caught by
+        # run_end_to_end
+        if os.name == "nt":
+            conn = connect_to_database(db_path=db_path)
+            c = conn.cursor()
+            scenario_name = get_scenario_name_from_scenario_id(
+              cursor=c, scenario_id=scenario_id)
+            update_run_status(db_path=db_path, scenario=scenario_name,
+                              status_id=4)
 
 
 def get_scenario_name_from_scenario_id(cursor, scenario_id):
