@@ -38,15 +38,11 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
         scenario_id=scenario_id
     )
     if run_status == 'running':
-        # TODO: what should happen if the scenario is already running? At a
-        #  minimum, it should be a warning and perhaps a way to stop the
-        #  process and re-start the scenario run.
-        #  TODO: run-scenario button is only available when the scenario is
-        #   not running, so maybe that's good enough
+        # This shouldn't ever happen, as the Run Scenario button should
+        # disappear when status changes to 'running'
         print("Scenario already running.")
         emit(
-            "scenario_already_running",
-            "scenario already running"
+            "scenario_already_running"
         )
     # If the scenario is not found among the running processes, launch a
     # process

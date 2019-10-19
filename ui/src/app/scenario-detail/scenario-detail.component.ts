@@ -19,6 +19,9 @@ export class ScenarioDetailComponent implements OnInit {
 
   scenarioDetail: ScenarioDetailAPI;
 
+  // To disable runScenarioButton on click
+  runScenarioClicked: boolean;
+
   // To get the right route
   scenarioID: number;
   private sub: any;
@@ -87,6 +90,13 @@ export class ScenarioDetailComponent implements OnInit {
           }
         );
       }, 3000);
+    });
+
+    // If the scenario is already running, warn the user
+    // This shouldn't ever happen, as the Run Scenario button should
+    // disappear when status changes to 'running'
+    socket.on('scenario_already_running', () => {
+      alert(`Scenario ${this.scenarioDetail.scenarioName} already running. You can stop and restart it.`);
     });
   }
 
