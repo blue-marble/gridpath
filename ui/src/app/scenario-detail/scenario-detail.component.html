@@ -14,33 +14,16 @@
 
   <div class="row">
     <div class="col-md-auto">
-      <button class="button-primary" id="validateScenarioButton"
-              (click)="validateScenario(scenarioID)">Validate Scenario</button>
+      <button id="updateScenarioDetailButton" class="button-primary"
+              (click)="updateScenarioDetail()">Update scenario detail</button>
     </div>
     <div class="col col-md-auto">
       <button id="editScenarioButton" class="button-primary"
             (click)="editScenario()">Edit Scenario</button>
     </div>
-
-    <div class="col-md-auto btn-group" data-toggle="buttons" id="solvers">
-      <form [formGroup]="solversForm" (ngSubmit)="runScenario()">
-        <label class="btn btn-primary">
-          <input type="radio" value="cbc" formControlName="solverFormControl">
-       <span> Cbc</span>
-        </label>
-        <label class="btn btn-primary">
-          <input type="radio" value="cplex"
-                 formControlName="solverFormControl">
-          <span> CPLEX</span>
-        </label>
-        <label class="btn btn-primary">
-          <input type="radio" value="gurobi"
-                 formControlName="solverFormControl">
-          <span> Gurobi</span>
-        </label>
-      <button id="runScenarioButton" class="button-primary"
-            type="submit">Run Scenario</button>
-      </form>
+    <div class="col col-md-auto">
+      <button id="deleteScenarioButton" class="button-primary"
+            (click)="deleteScenario()">Delete Scenario</button>
     </div>
   </div>
 
@@ -50,8 +33,10 @@
         <caption>Scenario Status</caption>
         <tr>
           <th>Name</th>
-          <th>Value</th>
+          <th>Status</th>
+          <th>Action</th>
           <th>Detail</th>
+          <th>Options</th>
         </tr>
         <tr>
           <td>Validation Status</td>
@@ -59,6 +44,12 @@
               'green' : scenarioDetail.validationStatus == 'valid',
               'red' : scenarioDetail.validationStatus == 'invalid'
            }">{{scenarioDetail.validationStatus}}</td>
+          <td>
+            <button class="button-secondary"
+              (click)="validateScenario(scenarioID)">
+              Validate Scenario
+            </button>
+          </td>
           <td>
             <button class='button-secondary'
             *ngIf="scenarioDetail.validationStatus=='invalid'"
@@ -77,11 +68,35 @@
           <td>
             <button
               class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='running'"
+              (click)="stopScenarioRun(); runScenarioClicked = false">
+              Stop Scenario Run
+            </button>
+            <button
+              class='button-secondary'
+              [disabled]="runScenarioClicked"
+              *ngIf="scenarioDetail.runStatus=='not_run' ||
+              scenarioDetail.runStatus=='run_error' ||
+              scenarioDetail.runStatus=='run_stopped'"
+              (click)="runScenario(); runScenarioClicked = true">
+              Run Scenario
+            </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='complete'"
+              (click)="clearScenario(); runScenarioClicked = true">
+              Clear Scenario Results
+            </button>
+          </td>
+          <td>
+            <button
+              class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='complete'"
               (click)="viewResults()">
               View Results
             </button>
           </td>
+          <td>{{scenarioDetail.solver}}</td>
         </tr>
       </table>
     </div>

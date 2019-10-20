@@ -1,7 +1,6 @@
 import { Component, OnInit, NgZone } from '@angular/core';
 import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
-import { FormControl, FormGroup } from '@angular/forms';
 
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
@@ -20,14 +19,12 @@ export class ScenarioDetailComponent implements OnInit {
 
   scenarioDetail: ScenarioDetailAPI;
 
+  // To disable runScenarioButton on click
+  runScenarioClicked: boolean;
+
   // To get the right route
   scenarioID: number;
   private sub: any;
-
-  // Select a solver for the run
-  solversForm = new FormGroup ({
-    solverFormControl: new FormControl()
-  });
 
   constructor(
     private route: ActivatedRoute,
@@ -69,31 +66,56 @@ export class ScenarioDetailComponent implements OnInit {
       `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
     );
 
-    const selectedSolver = this.solversForm.value.solverFormControl;
-
     const socket = socketConnect();
 
     socket.emit(
             'launch_scenario_process',
-            {scenario: this.scenarioID, solver: selectedSolver}
+            {scenario: this.scenarioID, solver: this.scenarioDetail.solver,
+             skipWarnings: false}
         );
-    // Keep track of process ID for this scenario run
-    // TODO: how should we deal with the situation of a scenario already
-    //  running?
-    socket.on('scenario_already_running', (msg) => {
-        console.log('Server says scenario is already running.');
-        console.log (msg);
-    });
 
     // Check and update the run status (whole API) when the scenario process is
     // launched
     socket.on('scenario_process_launched', () => {
       console.log('Scenario process launched.');
+      // this.zone.run(
+      //   () => {
+      //     this.getScenarioDetailAPI(this.scenarioID);
+      //   }
+      // );
+      setTimeout(() => {
+        this.zone.run(
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          }
+        );
+      }, 3000);
+    });
+
+    // If the scenario is already running, warn the user
+    // This shouldn't ever happen, as the Run Scenario button should
+    // disappear when status changes to 'running'
+    socket.on('scenario_already_running', () => {
+      alert(`Scenario ${this.scenarioDetail.scenarioName} already running. You can stop and restart it.`);
+    });
+  }
+
+  stopScenarioRun(): void {
+    console.log(
+      `Stopping scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
+    );
+
+    const socket = socketConnect();
+
+    socket.emit('stop_scenario_run', {scenario: this.scenarioID});
+
+    // Check and update the run status (whole API) when the scenario process is
+    // launched
+    socket.on('scenario_stopped', () => {
       this.zone.run(
-        () => {
-          this.getScenarioDetailAPI(this.scenarioID);
-        }
-      );
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          });
     });
   }
 
@@ -155,6 +177,49 @@ export class ScenarioDetailComponent implements OnInit {
 
   viewResults(): void {
     this.router.navigate(['/scenario', this.scenarioID, 'results']);
+  }
+
+  clearScenario(): void {
+    if (confirm(`Are you sure you want to clear all results for scenario ${this.scenarioDetail.scenarioName}?`)) {
+      const socket = socketConnect();
+
+      socket.emit(
+              'clear_scenario',
+              {scenario: this.scenarioID}
+          );
+
+      socket.on('scenario_cleared', () => {
+        console.log('Scenario cleared');
+        this.zone.run(
+          () => {
+            this.getScenarioDetailAPI(this.scenarioID);
+          }
+        );
+      });
+    }
+  }
+
+  deleteScenario(): void {
+    if (confirm(`Are you sure you want to delete scenario ${this.scenarioDetail.scenarioName}?`)) {
+      const socket = socketConnect();
+
+      socket.emit(
+        'delete_scenario',
+        {scenario: this.scenarioID}
+      );
+
+      socket.on('scenario_deleted', () => {
+        console.log('Scenario deleted');
+        this.zone.run(
+          () => this.router.navigate(['/scenarios'])
+        );
+      });
+    }
+  }
+
+  updateScenarioDetail(): void {
+    console.log('Updating view...');
+    this.getScenarioDetailAPI(this.scenarioID);
   }
 
 }

@@ -7,18 +7,19 @@ from flask_socketio import SocketIO, emit
 import os
 import signal
 import sys
-import time
 
 # API
 from ui.server.create_api import add_api_resources
 
 # Database operations functions (Socket IO)
 from ui.server.db_ops.add_scenario import add_or_update_scenario
+from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
+  delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
-  check_scenario_process_status
+  check_scenario_run_status, stop_scenario_run
 
 
 # Define custom signal handlers
@@ -99,7 +100,6 @@ def socket_add_or_edit_new_scenario(msg):
 
 
 # ### RUNNING SCENARIOS ### #
-# TODO: incomplete functionality
 
 @socketio.on('launch_scenario_process')
 def socket_launch_scenario_process(client_message):
@@ -108,42 +108,76 @@ def socket_launch_scenario_process(client_message):
     :return:
     Launch and manage a scenario run process.
     """
-    # Launch the process, get back the process object, scenario_id,
-    # and scenario_name
-    p, scenario_id, scenario_name = launch_scenario_process(
-      db_path=DATABASE_PATH,
-      scenarios_directory=SCENARIOS_DIRECTORY,
-      scenario_status=SCENARIO_STATUS,
-      scenario_id=client_message["scenario"],
-      solver=SOLVER_EXECUTABLES[client_message["solver"]]
+    print(client_message)
+    scenario_id = client_message["scenario"]
+    solver = SOLVER_EXECUTABLES[client_message["solver"]]
+    # TODO: implement functionality to skip warnings if the user has
+    #  confirmed they want to re-run scenario
+    skip_warnings = client_message["skipWarnings"]
 
-    )
-    # Needed to ensure child processes are terminated when server exits
-    atexit.register(p.terminate)
+    warn_user_boolean = False if skip_warnings \
+        else warn_user(scenario_id=scenario_id)
 
-    # Save the scenario's process ID
-    # TODO: we should save to Electron instead, as closing the UI will
-    #  delete the global data for the server
-    SCENARIO_STATUS[(scenario_id, scenario_name)] = dict()
-    SCENARIO_STATUS[(scenario_id, scenario_name)]['process_id'] = p.pid
+    if warn_user_boolean:
+        pass
+    else:
+        # Launch the process, get back the process object, scenario_id,
+        # and scenario_name
+        p, scenario_id, scenario_name = launch_scenario_process(
+          db_path=DATABASE_PATH,
+          scenarios_directory=SCENARIOS_DIRECTORY,
+          scenario_id=scenario_id,
+          solver=solver
+        )
+        # Needed to ensure child processes are terminated when server exits
+        atexit.register(p.terminate)
 
-    # Wait a couple of seconds, then tell the client the process was
-    # launched, so that the client can refresh the run status
-    time.sleep(2)
-    emit("scenario_process_launched")
+        # Save the scenario's process ID
+        SCENARIO_STATUS[scenario_id] = dict()
+        SCENARIO_STATUS[scenario_id]['scenario_name'] = scenario_name
+        SCENARIO_STATUS[scenario_id]['process_id'] = p.pid
+
+        # Tell the client the process launched
+        emit("scenario_process_launched")
 
 
-# TODO: implement functionality to check on the process from the UI (
-#  @socketio is not linked to anything yet)
-@socketio.on('check_scenario_process_status')
-def socket_check_scenario_process_status(client_message):
+def warn_user(scenario_id):
     """
+    :param scenario_id:
+    :return:
+    """
+    run_status, process_id = check_scenario_run_status(
+      db_path=DATABASE_PATH, scenario_id=scenario_id
+    )
+
+    # Warn user if scenario is running or is complete
+    if run_status == "running":
+        emit("warn_user_scenario_is_running",
+             {"scenario_id": scenario_id, "process_id": process_id})
+        return True
+    elif run_status == "complete":
+        emit("warn_user_scenario_is_complete",
+             {"scenario_id": scenario_id})
+        return True
+    else:
+        return False
+
+
+@socketio.on("stop_scenario_run")
+def socket_stop_scenario_run(client_message):
+    """
+
     :param client_message:
     :return:
     """
-    check_scenario_process_status(db_path=DATABASE_PATH,
-                                  scenario_status=SCENARIO_STATUS,
-                                  scenario_id=client_message["scenario"])
+    print(client_message)
+    scenario_id = client_message["scenario"]
+    print("Stopping scenario run for scenario ID {}".format(scenario_id))
+    stop_scenario_run(db_path=DATABASE_PATH,
+                      scenario_id=scenario_id)
+
+    # Tell the client the run was stopped
+    emit("scenario_stopped")
 
 
 @socketio.on("validate_scenario")
@@ -156,6 +190,30 @@ def socket_validate_scenario(client_message):
     validate_scenario(db_path=DATABASE_PATH,
                       client_message=client_message)
     emit("validation_complete")
+
+
+@socketio.on("clear_scenario")
+def socket_clear_scenario(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    clear_scenario(db_path=DATABASE_PATH,
+                   scenario_id=client_message["scenario"])
+    emit("scenario_cleared")
+
+
+@socketio.on("delete_scenario")
+def socket_clear_scenario(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    delete_scenario(db_path=DATABASE_PATH,
+                    scenario_id=client_message["scenario"])
+    emit("scenario_deleted")
 
 
 def main():

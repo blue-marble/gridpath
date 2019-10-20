@@ -67,6 +67,7 @@ export class ScenarioNewComponent implements OnInit {
     features$prm: new FormControl(),
     features$elcc_surface: new FormControl(),
     features$local_capacity: new FormControl(),
+    features$tuning: new FormControl(),
     temporal$temporal: new FormControl(),
     load_zones$load_zones: new FormControl(),
     load_zones$project_load_zones: new FormControl(),

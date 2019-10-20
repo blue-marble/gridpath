@@ -1881,6 +1881,7 @@ scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 scenario_name VARCHAR(64) UNIQUE,
 validation_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
+run_process_id INTEGER DEFAULT NULL,
 of_fuels INTEGER,
 of_multi_stage INTEGER,
 of_transmission INTEGER,
@@ -3243,7 +3244,8 @@ carbon_cap,
 prm_requirement,
 elcc_surface,
 local_capacity_requirement,
-tuning
+tuning,
+solver
 )
 AS
 SELECT
@@ -3345,7 +3347,8 @@ subscenarios_system_prm_requirement.name AS prm_requirement,
 subscenarios_system_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
-subscenarios_tuning.name AS tuning
+subscenarios_tuning.name AS tuning,
+options_solver_descriptions.solver as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3459,6 +3462,7 @@ LEFT JOIN subscenarios_system_elcc_surface
 LEFT JOIN subscenarios_system_local_capacity_requirement
     USING (local_capacity_requirement_scenario_id)
 LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
+LEFT JOIN options_solver_descriptions USING (solver_options_id)
 ;
 
 
