@@ -104,7 +104,11 @@ def delete_prior_aux_files(scenario_directory):
     ]
 
     for f in prior_aux_files:
-        os.remove(os.path.join(scenario_directory, f))
+        if f in os.listdir(scenario_directory):
+            print(f)
+            os.remove(os.path.join(scenario_directory, f))
+        else:
+            pass
 
 
 def delete_prior_inputs(inputs_directory):
