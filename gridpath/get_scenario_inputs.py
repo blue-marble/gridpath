@@ -68,9 +68,10 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
             if not os.path.exists(inputs_directory):
                 os.makedirs(inputs_directory)
 
-            # Delete input files that may have existed before to avoid phantom
-            # inputs
-            delete_prior_inputs(inputs_directory)
+            # Delete auxiliary and input files that may have existed before to
+            # avoid phantom files/inputs
+            delete_prior_aux_files(scenario_directory=scenario_directory)
+            delete_prior_inputs(inputs_directory=inputs_directory)
 
             # Write model input .tab files for each of the loaded_modules if
             # appropriate. Note that all input files are saved in the
@@ -89,6 +90,21 @@ def write_model_inputs(scenario_directory, subproblems, loaded_modules,
                     )
                 else:
                     pass
+
+
+def delete_prior_aux_files(scenario_directory):
+    """
+    Delete all auxiliary files that may exist in the scenario directory
+    :param scenario_directory: the scenario directory
+    :return:
+    """
+    prior_aux_files = [
+        "features.csv", "scenario_description.csv", "scenario_id.txt",
+        "solver_options.csv"
+    ]
+
+    for f in prior_aux_files:
+        os.remove(os.path.join(scenario_directory, f))
 
 
 def delete_prior_inputs(inputs_directory):
