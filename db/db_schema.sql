@@ -1512,6 +1512,7 @@ DROP TABLE IF EXISTS inputs_transmission_operational_chars;
 CREATE TABLE inputs_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER,
 transmission_line VARCHAR(64),
+operational_type VARCHAR(32),
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 subscenarios_transmission_operational_chars

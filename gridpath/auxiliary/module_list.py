@@ -100,6 +100,7 @@ def all_modules_list():
         "transmission",
         "transmission.capacity.capacity_types",
         "transmission.capacity.capacity",
+        "transmission.operations.operational_types",
         "transmission.operations.operations",
         "transmission.operations.costs",
         "transmission.operations.simultaneous_flow_limits",
@@ -169,6 +170,7 @@ def optional_modules_list():
             ["transmission",
              "transmission.capacity.capacity_types",
              "transmission.capacity.capacity",
+             "transmission.operations.operational_types",
              "transmission.operations.operations",
              "system.load_balance.aggregate_transmission_power"],
         "lf_reserves_up":
