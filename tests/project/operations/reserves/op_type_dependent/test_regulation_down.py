@@ -91,7 +91,8 @@ class TestRegulationDownProvision(unittest.TestCase):
         # Param: regulation_down_ramp_rate_limit (defaults to 1 if not
         # specified)
         expected_rr_limit = OrderedDict(sorted(
-            {"Battery": 0.05, "Battery_Specified": 0.05, "Coal": 0.05,
+            {"Battery": 0.05, "Battery_Binary": 0.05, "Battery_Specified": 0.05,
+             "Coal": 0.05,
              "Coal_z2": 0.05, "Gas_CCGT": 0.05, "Gas_CCGT_New": 0.05,
              "Gas_CCGT_New_Binary": 0.05,
              "Gas_CCGT_z2": 0.05, "Hydro": 0.05,

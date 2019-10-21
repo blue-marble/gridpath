@@ -89,9 +89,10 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         expected_project_subset = sorted([
             "Nuclear", "Coal", "Wind", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
             "Gas_CT_New", "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
-            "Wind_z2", "Battery", "Battery_Specified", "Hydro",
-            "Hydro_NonCurtailable", "Disp_Binary_Commit", "Disp_Cont_Commit",
-            "Disp_No_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2",
+            "Wind_z2", "Battery", "Battery_Binary", "Battery_Specified",
+            "Hydro", "Hydro_NonCurtailable",
+            "Disp_Binary_Commit", "Disp_Cont_Commit", "Disp_No_Commit",
+            "Clunky_Old_Gen", "Clunky_Old_Gen2",
             "Customer_PV", "Nuclear_Flexible", "Shift_DR"
         ])
         actual_project_subset = sorted([

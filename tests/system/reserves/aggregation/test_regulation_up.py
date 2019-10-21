@@ -91,12 +91,12 @@ class TestRegulationUpAgg(unittest.TestCase):
         projects_2020 = sorted(["Gas_CCGT", "Coal", "Gas_CCGT_New",
                                 "Gas_CCGT_New_Binary",
                                 "Gas_CCGT_z2", "Coal_z2",
-                                "Battery", "Battery_Specified", "Hydro",
+                                "Battery", "Battery_Binary", "Battery_Specified", "Hydro",
                                 "Hydro_NonCurtailable"])
         projects_2030 = sorted(["Gas_CCGT", "Coal", "Gas_CCGT_New",
                                 "Gas_CCGT_New_Binary",
                                 "Gas_CCGT_z2", "Coal_z2",
-                                "Battery", "Hydro", "Hydro_NonCurtailable"])
+                                "Battery", "Battery_Binary", "Hydro", "Hydro_NonCurtailable"])
         expected_projects = OrderedDict(sorted(
             {
                 20200101: projects_2020,

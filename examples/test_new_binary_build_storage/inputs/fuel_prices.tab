@@ -1,0 +1,7 @@
+fuel	period	month	fuel_price_per_mmbtu
+Gas	2020	1	5
+Coal	2020	1		4
+Uranium		2020	1	2
+Gas	2030	1	5
+Coal	2030	1		4
+Uranium		2030	1	2
