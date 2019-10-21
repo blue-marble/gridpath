@@ -31,6 +31,7 @@ prm_cost_group_sets = "prm_cost_groups"
 prm_cost_group_prm_type = "prm_cost_group_prm_type"
 
 required_tx_capacity_modules = "required_tx_capacity_modules"
+required_tx_operational_modules = "required_tx_operational_modules"
 
 load_balance_production_components = "load_balance_production_components"
 load_balance_consumption_components = "load_balance_consumption_components"
@@ -77,7 +78,7 @@ class DynamicComponents(object):
         setattr(self, storage_only_capacity_type_operational_period_sets,
                 list())
 
-        # Availability type modules (the list of unique availability typs in
+        # Availability type modules (the list of unique availability types in
         # the project list)
         setattr(self, required_availability_modules, list())
 
@@ -94,6 +95,7 @@ class DynamicComponents(object):
 
         # Transmission
         setattr(self, required_tx_capacity_modules, list())
+        setattr(self, required_tx_operational_modules, list())
 
         # ### Operating reserves ### #
 

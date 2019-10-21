@@ -129,6 +129,20 @@ def load_tx_capacity_type_modules(required_tx_capacity_modules):
     )
 
 
+def load_tx_operational_type_modules(required_tx_operational_modules):
+    """
+    Load a specified set of transmission operational type modules
+    :param required_tx_operational_modules:
+    :return: dictionary with the imported subtype modules
+        {name of subtype module: Python module object}
+    """
+    return load_subtype_modules(
+        required_subtype_modules=required_tx_operational_modules,
+        package="gridpath.transmission.operations.operational_types",
+        required_attributes=["transmit_power_rule"]
+    )
+
+
 def join_sets(mod, set_list):
     """
     Join sets in a list.

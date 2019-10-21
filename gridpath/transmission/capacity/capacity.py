@@ -22,8 +22,8 @@ from pyomo.environ import Set, Expression, value
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import load_tx_capacity_type_modules, \
     setup_results_import
-from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules, \
-    total_cost_components
+from gridpath.auxiliary.dynamic_components import \
+    required_tx_capacity_modules, total_cost_components
 
 
 def add_model_components(m, d):
@@ -79,6 +79,32 @@ def add_model_components(m, d):
     m.Transmission_Max_Capacity_MW = \
         Expression(m.TRANSMISSION_OPERATIONAL_PERIODS,
                    rule=transmission_max_capacity_rule)
+
+    # Define various sets to be used in transmission operations module
+    m.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE = \
+        Set(m.TRANSMISSION_LINES,
+            rule=lambda mod, tx: set(
+                p for (l, p) in mod.TRANSMISSION_OPERATIONAL_PERIODS if
+                l == tx)
+            )
+
+    def tx_op_tmps_init(mod):
+        tx_tmps = set()
+        for tx in mod.TRANSMISSION_LINES:
+            for p in mod.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE[tx]:
+                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]:
+                    tx_tmps.add((tx, tmp))
+        return tx_tmps
+
+    m.TRANSMISSION_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=2, rule=tx_op_tmps_init)
+
+    m.TRANSMISSION_LINES_OPERATIONAL_IN_TIMEPOINT = \
+        Set(m.TIMEPOINTS,
+            rule=lambda mod, tmp: set(
+                tx for (tx, t) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
+                if t == tmp)
+            )
 
     # Add costs to objective function
     def tx_capacity_cost_rule(mod, tx, p):
