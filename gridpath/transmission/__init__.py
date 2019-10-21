@@ -64,12 +64,6 @@ def add_model_components(m, d):
     # List will be used to initialize TRANSMISSION_OPERATIONAL_PERIODS
     m.tx_capacity_type_operational_period_sets = []
 
-    # TODO: do we need this actually?
-    #  (I don't think so, but added to be aligned with tx cap types)
-    # Operational-type modules will populate this list if called
-    # List will be used to initialize TRANSMISSION_OPERATIONAL_TIMEPOINTS
-    m.tx_operational_type_operational_timepoint_sets = []
-
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """

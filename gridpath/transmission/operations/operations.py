@@ -33,7 +33,7 @@ def add_model_components(m, d):
             getattr(d, required_tx_operational_modules))
 
     # TODO: should we add the module specific components here or in
-    #  capacity_types/__init__.py? Doing it in init to be consistent with
+    #  capacity_types/__init__.py? Doing it in __init__.py to be consistent with
     #  projects/operations/power.py
     # Get transmitted power for all lines from the tx operational modules
     def transmit_power_rule(mod, tx, tmp):

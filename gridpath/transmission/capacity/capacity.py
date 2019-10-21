@@ -80,9 +80,6 @@ def add_model_components(m, d):
         Expression(m.TRANSMISSION_OPERATIONAL_PERIODS,
                    rule=transmission_max_capacity_rule)
 
-    # TODO: is this the right place to define these sets?
-    #  needs to be in module imported before operational_types, since
-    #  operational types use these (so can't be in operataions/operations.py)
     # Define various sets to be used in transmission operations module
     m.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE = \
         Set(m.TRANSMISSION_LINES,
