@@ -480,9 +480,17 @@ def get_module_specific_inputs_from_database(
     # Select only timepoints on periods when the project is operational
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
-    variable_profiles = c.execute(
-        """SELECT project, timepoint, cap_factor
+    variable_profiles = c.execute("""
+        SELECT project, timepoint, cap_factor
+        FROM (
+        -- Select only projects from the relevant portfolio
+        SELECT project
         FROM inputs_project_portfolios
+        WHERE project_portfolio_scenario_id = {}
+        ) as portfolio_tbl
+        -- Of the projects in the portfolio, select only those that are in 
+        -- this project_operational_chars_scenario_id and have 'variable' as 
+        -- their operational_type
         INNER JOIN
         (SELECT project, variable_generator_profile_scenario_id
         FROM inputs_project_operational_chars
@@ -490,49 +498,58 @@ def get_module_specific_inputs_from_database(
         AND operational_type = 'variable'
         ) AS op_char
         USING (project)
+        -- Cross join to the timepoints in the relevant 
+        -- temporal_scenario_id, subproblem_id, and stage_id
+        -- Get the period since we'll need that to get only the operational 
+        -- timepoints for a project via an INNER JOIN below
         CROSS JOIN
-        (SELECT timepoint, period
+        (SELECT stage_id, timepoint, period
         FROM inputs_temporal_timepoints
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
-        AND stage_id = {})
+        AND stage_id = {}
+        ) as tmps_tbl
+        -- Now that we have the relevant projects and timepoints, get the 
+        -- respective cap_factor (and no others) from 
+        -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
-        USING (variable_generator_profile_scenario_id, project, timepoint)
+        USING (variable_generator_profile_scenario_id, project, 
+        stage_id, timepoint)
+        -- We also only want timepoints in periods when the project actually 
+        -- exists, so we figure out the operational periods for each of the  
+        -- projects below and INNER JOIN to that
         INNER JOIN
-        (SELECT project, period
-        FROM
-        (SELECT project, period
-        FROM inputs_project_existing_capacity
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_existing_capacity_scenario_id = {}
-        AND existing_capacity_mw > 0) as existing
-        UNION
-        SELECT project, period
-        FROM inputs_project_new_cost
-        INNER JOIN
-        (SELECT period
-        FROM inputs_temporal_periods
-        WHERE temporal_scenario_id = {})
-        USING (period)
-        WHERE project_new_cost_scenario_id = {})
-        USING (project, period)
-        WHERE project_portfolio_scenario_id = {}
-        AND stage_id = {}""".format(
+            (SELECT project, period
+            FROM (
+                -- Get the operational periods for each 'existing' and 
+                -- 'new' project
+                SELECT project, period
+                FROM inputs_project_existing_capacity
+                WHERE project_existing_capacity_scenario_id = {}
+                AND existing_capacity_mw > 0
+                UNION
+                SELECT project, period
+                FROM inputs_project_new_cost
+                WHERE project_new_cost_scenario_id = {}
+                ) as all_operational_project_periods
+            -- Only use the periods in temporal_scenario_id via an INNER JOIN
+            INNER JOIN (
+                SELECT period
+                FROM inputs_temporal_periods
+                WHERE temporal_scenario_id = {}
+                ) as relevant_periods_tbl
+            USING (period)
+            ) as relevant_op_periods_tbl
+        USING (project, period);
+        """.format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
             stage,
-            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
-            subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
-            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            stage
+            subscenarios.TEMPORAL_SCENARIO_ID
         )
     )
 
