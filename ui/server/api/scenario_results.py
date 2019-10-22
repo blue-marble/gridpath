@@ -72,6 +72,17 @@ class ScenarioResultsOptions(Resource):
           ).fetchall()]
         options_api["horizonOptions"] = ['Select Horizon'] + horizon_options
 
+        subproblem_options = [h[0] for h in c.execute(
+            """SELECT DISTINCT subproblem_id
+            FROM inputs_temporal_subproblems 
+            WHERE temporal_scenario_id = (
+            SELECT temporal_scenario_id
+            FROM scenarios
+            WHERE scenario_id = {});""".format(scenario_id)
+          ).fetchall()]
+
+        options_api["subproblemOptions"] = ['Select Subproblem'] + \
+                                           subproblem_options
         # TODO: we need to keep track of subproblems, as stages can differ
         #  by subproblem
         stage_options = [h[0] for h in c.execute(
@@ -107,7 +118,7 @@ class ScenarioResultsPlot(Resource):
         self.db_path = kwargs["db_path"]
 
     def get(self, plot, scenario_id, load_zone, rps_zone, carbon_cap_zone,
-            period, horizon, stage, project, ymax):
+            period, horizon, subproblem, stage, project, ymax):
         """
 
         :return:
@@ -153,6 +164,12 @@ class ScenarioResultsPlot(Resource):
             filter_arguments.append("--horizon")
             filter_arguments.append(horizon)
 
+        if subproblem == 'default':
+            pass
+        else:
+            filter_arguments.append("--subproblem")
+            filter_arguments.append(subproblem)
+
         if stage == 'default':
             pass
         else:
@@ -196,7 +213,7 @@ class ScenarioResultsIncludedPlots(Resource):
         plots_query = c.execute(
           """SELECT results_plot, caption, load_zone_form_control, 
           rps_zone_form_control, carbon_cap_zone_form_control,
-          period_form_control, horizon_form_control,
+          period_form_control, horizon_form_control, subproblem_form_control,
           stage_form_control, project_form_control
           FROM ui_scenario_results_plot_metadata
           WHERE include = 1;"""
@@ -208,7 +225,8 @@ class ScenarioResultsIncludedPlots(Resource):
             (results_plot, caption, load_zone_form_control,
                 rps_zone_form_control, carbon_cap_zone_form_control,
                 period_form_control, horizon_form_control,
-                stage_form_control, project_form_control) \
+                subproblem_form_control, stage_form_control,
+                project_form_control) \
                 = plot
             plot_api = {
                 "plotType": results_plot,
@@ -219,6 +237,7 @@ class ScenarioResultsIncludedPlots(Resource):
                 else "default",
                 "period": [] if period_form_control else "default",
                 "horizon": [] if horizon_form_control else "default",
+                "subproblem": [] if subproblem_form_control else "default",
                 "stage": [] if stage_form_control else "default",
                 "project": [] if project_form_control else "default"
             }

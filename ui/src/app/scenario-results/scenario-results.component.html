@@ -73,6 +73,13 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
+                <select class="custom-select" formControlName="subproblem"
+                        *ngIf="formGroup.value['subproblem'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.subproblemOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
                 <select class="custom-select" formControlName="stage"
                         *ngIf="formGroup.value['stage'] !== 'default'">
                   <ng-container
