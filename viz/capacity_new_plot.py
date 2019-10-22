@@ -35,7 +35,7 @@ def parse_arguments(arguments):
                                               "no --scenario is specified.")
     parser.add_argument("--scenario", help="The scenario name. Required if "
                                            "no --scenario_id is specified.")
-    parser.add_argument("--load_zone", required=True, type=int,
+    parser.add_argument("--load_zone", required=True, type=str,
                         help="The name of the load zone. Required.")
     parser.add_argument("--subproblem", default=1, type=int,
                         help="The subproblem ID. Defaults to 1.")
