@@ -132,6 +132,7 @@ export class ScenarioResultsComponent implements OnInit {
             carbonCapZone: plot.carbonCapZone,
             period: plot.period,
             horizon: plot.horizon,
+            subproblem: plot.subproblem,
             stage: plot.stage,
             project: plot.project,
             yMax: null
@@ -141,6 +142,9 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  // This function is called when a user requests a plot; this will change
+  // some values, namely the plotHTMLTarget and then call ngOnInit, which
+  // in turn calls getResultPlot
   showPlot(formGroup): void {
     // We need to set the plotFormValue and plotHTMLTarget before
     // calling ngOnInit to be able to embed the plot
@@ -152,14 +156,25 @@ export class ScenarioResultsComponent implements OnInit {
     const rpsZone = formGroup.value.rpsZone;
     const period = formGroup.value.period;
     const horizon = formGroup.value.horizon;
-    const stage = formGroup.value.stage;
+    // Set subproblem to 'default' if it is null or 'Select Subproblem' (either
+    // because the user didn't select a subproblem, selected the prompt, or
+    // because we didn't give the subproblem option
+    const subproblem = (formGroup.value.subproblem == null) ? 'default'
+      : (formGroup.value.subproblem === 'Select Subproblem') ? 'default'
+        : formGroup.value.subproblem;
+    // Set stage to 'default' if it is null or 'Select Stage' (either
+    // because the user didn't select a stage, selected the prompt, or
+    // because we didn't give the stage option
+    const stage = (formGroup.value.stage == null) ? 'default'
+      : (formGroup.value.stage === 'Select Stage') ? 'default'
+        : formGroup.value.stage;
     const project = formGroup.value.project;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
     this.scenarioResultsService.getResultsPlot(
       this.scenarioID, plotType, loadZone, rpsZone, carbonCapZone,
-      period, horizon, stage, project, yMax
+      period, horizon, subproblem, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
@@ -167,6 +182,7 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  // This function is called in ngOnInit
   getResultsPlot(scenarioID, formGroup): void {
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
@@ -174,14 +190,25 @@ export class ScenarioResultsComponent implements OnInit {
     const rpsZone = formGroup.value.rpsZone;
     const period = formGroup.value.period;
     const horizon = formGroup.value.horizon;
-    const stage = formGroup.value.stage;
+    // Set subproblem to 'default' if it is null or 'Select Subproblem' (either
+    // because the user didn't select a subproblem, selected the prompt, or
+    // because we didn't give the subproblem option
+    const subproblem = (formGroup.value.subproblem == null) ? 'default'
+      : (formGroup.value.subproblem === 'Select Subproblem') ? 'default'
+        : formGroup.value.subproblem;
+    // Set stage to 'default' if it is null or 'Select Stage' (either
+    // because the user didn't select a stage, selected the prompt, or
+    // because we didn't give the stage option
+    const stage = (formGroup.value.stage == null) ? 'default'
+      : (formGroup.value.stage === 'Select Stage') ? 'default'
+        : formGroup.value.stage;
     const project = formGroup.value.project;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
     this.scenarioResultsService.getResultsPlot(
       scenarioID, plotType, loadZone, rpsZone, carbonCapZone,
-      period, horizon, stage, project, yMax
+      period, horizon, subproblem, stage, project, yMax
     ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot.plotJSON;
         Bokeh.embed.embed_item(this.resultsPlot);

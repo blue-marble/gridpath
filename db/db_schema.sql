@@ -3530,6 +3530,7 @@ rps_zone_form_control INTEGER,
 carbon_cap_zone_form_control INTEGER,
 period_form_control INTEGER,
 horizon_form_control INTEGER,
+subproblem_form_control INTEGER,
 stage_form_control INTEGER,
 project_form_control INTEGER
 );
