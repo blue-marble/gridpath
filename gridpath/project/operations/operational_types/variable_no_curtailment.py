@@ -392,6 +392,7 @@ def get_module_specific_inputs_from_database(
             ) as relevant_op_periods_tbl
         USING (project, period);
         """.format(
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
@@ -401,7 +402,6 @@ def get_module_specific_inputs_from_database(
             subscenarios.TEMPORAL_SCENARIO_ID
         )
     )
-
 
     return variable_profiles
 
