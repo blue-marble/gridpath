@@ -1501,8 +1501,6 @@ subscenarios_transmission_new_cost
 );
 
 -- Operational characteristics
--- This currently makes no difference, as we only have one operational type
--- for transmission
 DROP TABLE IF EXISTS subscenarios_transmission_operational_chars;
 CREATE TABLE subscenarios_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1515,6 +1513,7 @@ CREATE TABLE inputs_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 operational_type VARCHAR(32),
+reactance_ohms FLOAT,
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 subscenarios_transmission_operational_chars

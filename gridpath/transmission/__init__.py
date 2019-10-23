@@ -96,10 +96,13 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+
+    # TODO: we might want to get the reactance in the dc_opf_transmission
+    #  tx_operational_type rather than here (similar comment as in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, operational_type,
-        load_zone_from, load_zone_to
+        load_zone_from, load_zone_to, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
@@ -110,7 +113,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (transmission_line)
         
         INNER JOIN
-            (SELECT transmission_line, operational_type
+            (SELECT transmission_line, operational_type, reactance_ohms
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {})
         USING (transmission_line)
@@ -164,7 +167,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(
             ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to"]
+             "load_zone_from", "load_zone_to", "reactance_ohms"]
         )
 
         for row in transmission_lines:
