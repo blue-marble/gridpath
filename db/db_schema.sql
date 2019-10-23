@@ -268,7 +268,9 @@ DROP TABLE IF EXISTS inputs_geography_load_zones;
 CREATE TABLE inputs_geography_load_zones (
 load_zone_scenario_id INTEGER,
 load_zone VARCHAR(32),
+allow_overgeneration INTEGER,
 overgeneration_penalty_per_mw FLOAT,
+allow_unserved_energy INTEGER,
 unserved_energy_penalty_per_mw FLOAT,
 PRIMARY KEY (load_zone_scenario_id, load_zone),
 FOREIGN KEY (load_zone_scenario_id) REFERENCES

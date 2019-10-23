@@ -8,7 +8,7 @@ at which load is met.
 
 import csv
 import os.path
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Binary, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -22,6 +22,20 @@ def add_model_components(m, d):
     will be *z*.
     """
     m.LOAD_ZONES = Set()
+
+    # TODO: do we want to completely disallow unserved energy and/or overgen
+    #  in some cases (as opposed to assigning a very high cost) -- we could
+    #  not append to the load-balance components given a flag for example,
+    #  or overgen and unserved energy could be their own modules
+    #  This is a more general question for all potential 'soft' constraints or
+    #  constraints that could cause feasibility issues (e.g. reserves, policy,
+    #  etc.)
+    m.allow_overgeneration = Param(m.LOAD_ZONES, within=Binary)
+    m.overgeneration_penalty_per_mw = \
+        Param(m.LOAD_ZONES, within=NonNegativeReals)
+    m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Binary)
+    m.unserved_energy_penalty_per_mw = \
+        Param(m.LOAD_ZONES, within=NonNegativeReals)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -37,9 +51,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "load_zones.tab"),
-                     select=("load_zone",),
                      index=m.LOAD_ZONES,
-                     param=()
+                     param=(
+                         m.allow_overgeneration,
+                         m.overgeneration_penalty_per_mw,
+                         m.allow_unserved_energy,
+                         m.unserved_energy_penalty_per_mw)
                      )
 
 
@@ -52,13 +69,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     c = conn.cursor()
-    load_zones = c.execute(
-        """SELECT load_zone, overgeneration_penalty_per_mw,
-           unserved_energy_penalty_per_mw
-           FROM inputs_geography_load_zones
-           WHERE load_zone_scenario_id = {};""".format(
-            subscenarios.LOAD_ZONE_SCENARIO_ID
-        )
+    load_zones = c.execute("""
+        SELECT load_zone, allow_overgeneration, overgeneration_penalty_per_mw, 
+        allow_unserved_energy, unserved_energy_penalty_per_mw
+        FROM inputs_geography_load_zones
+        WHERE load_zone_scenario_id = {};
+        """.format(subscenarios.LOAD_ZONE_SCENARIO_ID)
     )
 
     return load_zones
@@ -100,7 +116,10 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(load_zones_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["load_zone", "overgeneration_penalty_per_mw",
+        writer.writerow(["load_zone",
+                         "allow_overgeneration",
+                         "overgeneration_penalty_per_mw",
+                         "allow_unserved_energy",
                          "unserved_energy_penalty_per_mw"])
 
         for row in load_zones:
