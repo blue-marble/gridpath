@@ -14,20 +14,17 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-    "temporal.operations.timepoints", "temporal.operations.horizons",
-    "temporal.investment.periods", "geography.load_zones",
-    "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
-    "transmission",
-    "transmission.capacity", "transmission.capacity.capacity",
-    "transmission.operations.operational_types",
-    "transmission.operations.operations"
-]
+     "temporal.operations.timepoints", "temporal.operations.horizons",
+     "temporal.investment.periods", "geography.load_zones", "transmission",
+     "transmission.capacity",
+     "transmission.capacity.capacity"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "transmission.operations.carbon_emissions"
+    "transmission.operations.operational_types.simple_transmission"
+
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -45,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestTxAggregateCarbonEmissions(unittest.TestCase):
+class TestTxOperations(unittest.TestCase):
     """
 
     """
@@ -86,128 +83,16 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Set: CARBONACEOUS_TRANSMISSION_LINES
-        expected_tx_lines = sorted(
-            ["Tx1", "Tx_New"]
+        # Set: TRANSMISSION_LINES_SIMPLE
+        expected_tx = sorted(["Tx_New"])
+        actual_tx = sorted(
+            instance.TRANSMISSION_LINES_SIMPLE
         )
-        actual_tx_lines = sorted(
-            tx for tx in instance.CARBONACEOUS_TRANSMISSION_LINES
-        )
-        self.assertListEqual(expected_tx_lines, actual_tx_lines)
-
-        # Param: tx_carbon_cap_zone
-        expected_zone = OrderedDict(
-            sorted(
-                {"Tx1": "Carbon_Cap_Zone1",
-                 "Tx_New": "Carbon_Cap_Zone1"}.items()
-            )
-        )
-        actual_zone = OrderedDict(
-            sorted(
-                {tx: instance.tx_carbon_cap_zone[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
-            )
-        )
-        self.assertDictEqual(expected_zone, actual_zone)
-
-        # Param: carbon_cap_zone_import_direction
-        expected_dir = OrderedDict(
-            sorted(
-                {"Tx1": "negative", "Tx_New": "negative"}.items()
-            )
-        )
-        actual_dir = OrderedDict(
-            sorted(
-                {tx: instance.carbon_cap_zone_import_direction[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
-            )
-        )
-        self.assertDictEqual(expected_dir, actual_dir)
-
-        # Param: tx_co2_intensity_tons_per_mwh
-        expected_co2 = OrderedDict(
-            sorted(
-                {"Tx1": 0.6, "Tx_New": 0.8}.items()
-            )
-        )
-        actual_co2 = OrderedDict(
-            sorted(
-                {tx: instance.tx_co2_intensity_tons_per_mwh[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
-            )
-        )
-        self.assertDictEqual(expected_co2, actual_co2)
-
-        # Set: CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE
-        expected_tx_by_z = OrderedDict(
-            sorted(
-                {"Carbon_Cap_Zone1": sorted(["Tx1", "Tx_New"]),
-                 "Carbon_Cap_Zone2": sorted([])}.items()
-            )
-        )
-        actual_tx_by_z = OrderedDict(
-            sorted(
-                {z: sorted(
-                    [tx for tx in
-                     instance.
-                     CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE[z]
-                     ]
-                ) for z in instance.CARBON_CAP_ZONES}.items()
-            )
-        )
-        self.assertDictEqual(expected_tx_by_z, actual_tx_by_z)
-
-        # Set: CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS
+        self.assertListEqual(expected_tx, actual_tx)
+        
+        # Set: TX_SIMPLE_OPERATIONAL_TIMEPOINTS
         expect_tx_op_tmp = sorted(
             [
-                ("Tx1", 20200101), ("Tx1", 20200102),
-                ("Tx1", 20200103), ("Tx1", 20200104),
-                ("Tx1", 20200105), ("Tx1", 20200106),
-                ("Tx1", 20200107), ("Tx1", 20200108),
-                ("Tx1", 20200109), ("Tx1", 20200110),
-                ("Tx1", 20200111), ("Tx1", 20200112),
-                ("Tx1", 20200113), ("Tx1", 20200114),
-                ("Tx1", 20200115), ("Tx1", 20200116),
-                ("Tx1", 20200117), ("Tx1", 20200118),
-                ("Tx1", 20200119), ("Tx1", 20200120),
-                ("Tx1", 20200121), ("Tx1", 20200122),
-                ("Tx1", 20200123), ("Tx1", 20200124),
-                ("Tx1", 20200201), ("Tx1", 20200202),
-                ("Tx1", 20200203), ("Tx1", 20200204),
-                ("Tx1", 20200205), ("Tx1", 20200206),
-                ("Tx1", 20200207), ("Tx1", 20200208),
-                ("Tx1", 20200209), ("Tx1", 20200210),
-                ("Tx1", 20200211), ("Tx1", 20200212),
-                ("Tx1", 20200213), ("Tx1", 20200214),
-                ("Tx1", 20200215), ("Tx1", 20200216),
-                ("Tx1", 20200217), ("Tx1", 20200218),
-                ("Tx1", 20200219), ("Tx1", 20200220),
-                ("Tx1", 20200221), ("Tx1", 20200222),
-                ("Tx1", 20200223), ("Tx1", 20200224),
-                ("Tx1", 20300101), ("Tx1", 20300102),
-                ("Tx1", 20300103), ("Tx1", 20300104),
-                ("Tx1", 20300105), ("Tx1", 20300106),
-                ("Tx1", 20300107), ("Tx1", 20300108),
-                ("Tx1", 20300109), ("Tx1", 20300110),
-                ("Tx1", 20300111), ("Tx1", 20300112),
-                ("Tx1", 20300113), ("Tx1", 20300114),
-                ("Tx1", 20300115), ("Tx1", 20300116),
-                ("Tx1", 20300117), ("Tx1", 20300118),
-                ("Tx1", 20300119), ("Tx1", 20300120),
-                ("Tx1", 20300121), ("Tx1", 20300122),
-                ("Tx1", 20300123), ("Tx1", 20300124),
-                ("Tx1", 20300201), ("Tx1", 20300202),
-                ("Tx1", 20300203), ("Tx1", 20300204),
-                ("Tx1", 20300205), ("Tx1", 20300206),
-                ("Tx1", 20300207), ("Tx1", 20300208),
-                ("Tx1", 20300209), ("Tx1", 20300210),
-                ("Tx1", 20300211), ("Tx1", 20300212),
-                ("Tx1", 20300213), ("Tx1", 20300214),
-                ("Tx1", 20300215), ("Tx1", 20300216),
-                ("Tx1", 20300217), ("Tx1", 20300218),
-                ("Tx1", 20300219), ("Tx1", 20300220),
-                ("Tx1", 20300221), ("Tx1", 20300222),
-                ("Tx1", 20300223), ("Tx1", 20300224),
                 ("Tx_New", 20200101), ("Tx_New", 20200102),
                 ("Tx_New", 20200103), ("Tx_New", 20200104),
                 ("Tx_New", 20200105), ("Tx_New", 20200106),
@@ -260,7 +145,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         )
         actual_tx_op_tmp = sorted(
             [(tx, tmp) for (tx, tmp)
-             in instance.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS]
+             in instance.TX_SIMPLE_OPERATIONAL_TIMEPOINTS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 

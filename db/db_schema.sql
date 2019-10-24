@@ -48,6 +48,20 @@ reserve_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented transmission operational types
+DROP TABLE IF EXISTS mod_tx_operational_types;
+CREATE TABLE mod_tx_operational_types (
+operational_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
+-- Implemented transmission capacity types
+DROP TABLE IF EXISTS mod_tx_capacity_types;
+CREATE TABLE mod_tx_capacity_types (
+capacity_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Invalid combinations of capacity type and operational type
 DROP TABLE IF EXISTS mod_capacity_and_operational_type_invalid_combos;
 CREATE TABLE mod_capacity_and_operational_type_invalid_combos (
@@ -56,6 +70,17 @@ operational_type VARCHAR (32),
 PRIMARY KEY (capacity_type, operational_type),
 FOREIGN KEY (capacity_type) REFERENCES mod_capacity_types (capacity_type),
 FOREIGN KEY (operational_type) REFERENCES mod_operational_types
+(operational_type)
+);
+
+-- Invalid combinations of tx capacity type and tx operational type
+DROP TABLE IF EXISTS mod_tx_capacity_and_tx_operational_type_invalid_combos;
+CREATE TABLE mod_tx_capacity_and_tx_operational_type_invalid_combos (
+capacity_type VARCHAR (32),
+operational_type VARCHAR (32),
+PRIMARY KEY (capacity_type, operational_type),
+FOREIGN KEY (capacity_type) REFERENCES mod_tx_capacity_types (capacity_type),
+FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
 (operational_type)
 );
 
@@ -1389,6 +1414,8 @@ PRIMARY KEY (transmission_portfolio_scenario_id, transmission_line),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 subscenarios_transmission_portfolios
 (transmission_portfolio_scenario_id)
+FOREIGN KEY (capacity_type) REFERENCES mod_tx_capacity
+(capacity_type)
 );
 
 -- Transmission geography
@@ -1518,6 +1545,8 @@ PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 subscenarios_transmission_operational_chars
 (transmission_operational_chars_scenario_id)
+FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
+(operational_type)
 );
 
 -- Hurdle rates

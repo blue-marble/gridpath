@@ -65,7 +65,7 @@ class TestLoadZones(unittest.TestCase):
                                          subproblem="",
                                          stage="")
         instance = m.create_instance(data)
-        expected = sorted(["Zone1", "Zone2"])
+        expected = sorted(["Zone1", "Zone2", "Zone3"])
         actual = sorted([z for z in instance.LOAD_ZONES])
         self.assertListEqual(expected, actual,
                              msg="LOAD_ZONES set data does not load correctly."

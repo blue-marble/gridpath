@@ -4,12 +4,15 @@
 """
 This is a line-level module that adds to the formulation components that
 describe the amount of power flowing on each line, subject to DC OPF
-constraints.
+constraints. The DC OPF constraints are based on the Kirchhoff approach laid
+out in Horsch et al. (2018).
 
 Note: transmission operational types can optionally be mixed and matched.
 If there are any non-dc_opf_transmission operational types, they will simply
-not be considered when setting up the network constraints layed out in this
+not be considered when setting up the network constraints laid out in this
 module.
+
+Source: Horsch et al. (2018). Linear Optimal Power Flow Using Cycle Flows
 """
 
 from __future__ import print_function
@@ -183,6 +186,7 @@ def load_module_specific_data(m, data_portal, scenario_directory,
                  "tx_operational_type", "reactance_ohms"]
     )
     df = df[df["tx_operational_type"] == "dc_opf_transmission"].reset_index()
+    df["reactance_ohms"] = pd.to_numeric(df["reactance_ohms"])
 
     # create a network graph from the list of lines (edges) and find
     # the elementary cycles (if any)
@@ -213,6 +217,12 @@ def load_module_specific_data(m, data_portal, scenario_directory,
             tx_line = df.loc[index, "TRANSMISSION_LINES"]
             tx_lines_cycles.append((tx_line, i))
             tx_cycle_directions[(tx_line, i)] = tx_direction
+
+    # If there are more negative directions for tx lines than positive ones,
+    # revert the cycle direction (this is to standardize cycle direction)
+    if sum(tx_cycle_directions.values()) < 0:
+        tx_cycle_directions = {(tx, c): -v
+                               for (tx, c), v in tx_cycle_directions.items()}
 
     # Dict of reactance by dc_opf_transmission line
     reactance_ohms = dict(zip(df["TRANSMISSION_LINES"], df["reactance_ohms"]))
