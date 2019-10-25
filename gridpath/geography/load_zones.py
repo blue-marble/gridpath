@@ -10,7 +10,7 @@ costs are.
 
 import csv
 import os.path
-from pyomo.environ import Set, Param, Binary, NonNegativeReals
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -25,10 +25,10 @@ def add_model_components(m, d):
     """
     m.LOAD_ZONES = Set()
 
-    m.allow_overgeneration = Param(m.LOAD_ZONES, within=Binary)
+    m.allow_overgeneration = Param(m.LOAD_ZONES, within=Boolean)
     m.overgeneration_penalty_per_mw = \
         Param(m.LOAD_ZONES, within=NonNegativeReals)
-    m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Binary)
+    m.allow_unserved_energy = Param(m.LOAD_ZONES, within=Boolean)
     m.unserved_energy_penalty_per_mw = \
         Param(m.LOAD_ZONES, within=NonNegativeReals)
 
