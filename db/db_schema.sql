@@ -292,6 +292,7 @@ DROP TABLE IF EXISTS inputs_geography_lf_reserves_up_bas;
 CREATE TABLE inputs_geography_lf_reserves_up_bas (
 lf_reserves_up_ba_scenario_id INTEGER,
 lf_reserves_up_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba),
@@ -310,6 +311,7 @@ DROP TABLE IF EXISTS inputs_geography_lf_reserves_down_bas;
 CREATE TABLE inputs_geography_lf_reserves_down_bas (
 lf_reserves_down_ba_scenario_id INTEGER,
 lf_reserves_down_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba),
@@ -328,6 +330,7 @@ DROP TABLE IF EXISTS inputs_geography_regulation_up_bas;
 CREATE TABLE inputs_geography_regulation_up_bas (
 regulation_up_ba_scenario_id INTEGER,
 regulation_up_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (regulation_up_ba_scenario_id, regulation_up_ba),
@@ -346,6 +349,7 @@ DROP TABLE IF EXISTS inputs_geography_regulation_down_bas;
 CREATE TABLE inputs_geography_regulation_down_bas (
 regulation_down_ba_scenario_id INTEGER,
 regulation_down_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (regulation_down_ba_scenario_id, regulation_down_ba),
@@ -364,6 +368,7 @@ DROP TABLE IF EXISTS inputs_geography_frequency_response_bas;
 CREATE TABLE inputs_geography_frequency_response_bas (
 frequency_response_ba_scenario_id INTEGER,
 frequency_response_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (frequency_response_ba_scenario_id, frequency_response_ba),
@@ -383,6 +388,7 @@ DROP TABLE IF EXISTS inputs_geography_spinning_reserves_bas;
 CREATE TABLE inputs_geography_spinning_reserves_bas (
 spinning_reserves_ba_scenario_id INTEGER,
 spinning_reserves_ba VARCHAR(32),
+allow_violation INTEGER,
 violation_penalty_per_mw FLOAT,
 reserve_to_energy_adjustment FLOAT,
 PRIMARY KEY (spinning_reserves_ba_scenario_id, spinning_reserves_ba),
