@@ -32,6 +32,21 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
+    def test_example_test_no_overgen_allowed(self):
+        """
+        Check objective function value of "test_no_overgen_allowed" example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario", "test_no_overgen_allowed",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
+                               "--quiet", "--mute_solver_output", "--testing"])
+
+        expected_objective = 1200069229.87995
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
     def test_example_test_new_build_storage(self):
         """
         Check objective function value of "test_new_build_storage" example
