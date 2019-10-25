@@ -3,7 +3,9 @@
 
 """
 The **gridpath.geography.load_zones** module describes the geographic unit
-at which load is met.
+at which load is met. Here, we also define whether violations
+(overgeneration and unserved energy) are allowed and what the violation
+costs are.
 """
 
 import csv
@@ -23,13 +25,6 @@ def add_model_components(m, d):
     """
     m.LOAD_ZONES = Set()
 
-    # TODO: do we want to completely disallow unserved energy and/or overgen
-    #  in some cases (as opposed to assigning a very high cost) -- we could
-    #  not append to the load-balance components given a flag for example,
-    #  or overgen and unserved energy could be their own modules
-    #  This is a more general question for all potential 'soft' constraints or
-    #  constraints that could cause feasibility issues (e.g. reserves, policy,
-    #  etc.)
     m.allow_overgeneration = Param(m.LOAD_ZONES, within=Binary)
     m.overgeneration_penalty_per_mw = \
         Param(m.LOAD_ZONES, within=NonNegativeReals)
