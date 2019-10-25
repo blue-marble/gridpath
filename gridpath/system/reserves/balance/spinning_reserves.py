@@ -18,13 +18,17 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-        "Spinning_Reserves_Violation_MW",
-        "spinning_reserves_requirement_mw", 
-        "Total_Spinning_Reserves_Provision_MW",
-        "Meet_Spinning_Reserves_Constraint"
+        m=m,
+        d=d,
+        reserve_zone_timepoint_set="SPINNING_RESERVES_ZONE_TIMEPOINTS",
+        reserve_violation_variable="Spinning_Reserves_Violation_MW",
+        reserve_violation_expression
+        ="Spinning_Reserves_Violation_MW_Expression",
+        reserve_violation_allowed_param="spinning_reserves_allow_violation",
+        reserve_requirement_param="spinning_reserves_requirement_mw",
+        total_reserve_provision_expression
+        ="Total_Spinning_Reserves_Provision_MW",
+        meet_reserve_constraint="Meet_Spinning_Reserves_Constraint"
         )
 
 
@@ -42,7 +46,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "spinning_reserves_violation.csv",
                            "spinning_reserves_violation_mw",
                            "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-                           "Spinning_Reserves_Violation_MW"
+                           "Spinning_Reserves_Violation_MW_Expression"
                            )
 
 

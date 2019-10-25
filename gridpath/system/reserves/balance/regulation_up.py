@@ -18,13 +18,16 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "REGULATION_UP_ZONE_TIMEPOINTS",
-        "Regulation_Up_Violation_MW",
-        "regulation_up_requirement_mw", 
-        "Total_Regulation_Up_Provision_MW",
-        "Meet_Regulation_Up_Constraint"
+        m=m,
+        d=d,
+        reserve_zone_timepoint_set="REGULATION_UP_ZONE_TIMEPOINTS",
+        reserve_violation_variable="Regulation_Up_Violation_MW",
+        reserve_violation_expression="Regulation_Up_Violation_MW_Expression",
+        reserve_violation_allowed_param="regulation_up_allow_violation",
+        reserve_requirement_param="regulation_up_requirement_mw", 
+        total_reserve_provision_expression
+        ="Total_Regulation_Up_Provision_MW",
+        meet_reserve_constraint="Meet_Regulation_Up_Constraint"
         )
 
 
@@ -42,7 +45,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "regulation_up_violation.csv",
                            "regulation_up_violation_mw",
                            "REGULATION_UP_ZONE_TIMEPOINTS",
-                           "Regulation_Up_Violation_MW"
+                           "Regulation_Up_Violation_MW_Expression"
                            )
 
 

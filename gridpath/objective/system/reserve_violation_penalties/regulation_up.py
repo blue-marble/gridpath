@@ -19,7 +19,6 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "REGULATION_UP_ZONES",
         "REGULATION_UP_ZONE_TIMEPOINTS",
         "Regulation_Up_Violation_MW",
         "regulation_up_violation_penalty_per_mw",

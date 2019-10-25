@@ -19,7 +19,6 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "SPINNING_RESERVES_ZONES",
         "SPINNING_RESERVES_ZONE_TIMEPOINTS",
         "Spinning_Reserves_Violation_MW",
         "spinning_reserves_violation_penalty_per_mw",

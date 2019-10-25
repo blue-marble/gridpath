@@ -22,7 +22,6 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "FREQUENCY_RESPONSE_BAS",
         "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
         "Frequency_Response_Violation_MW",
         "frequency_response_violation_penalty_per_mw",

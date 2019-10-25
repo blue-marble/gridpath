@@ -19,7 +19,6 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "LF_RESERVES_UP_ZONES",
         "LF_RESERVES_UP_ZONE_TIMEPOINTS",
         "LF_Reserves_Up_Violation_MW",
         "lf_reserves_up_violation_penalty_per_mw",

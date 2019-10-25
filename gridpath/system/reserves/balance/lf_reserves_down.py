@@ -18,13 +18,17 @@ def add_model_components(m, d):
     """
 
     generic_add_model_components(
-        m,
-        d,
-        "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
-        "LF_Reserves_Down_Violation_MW",
-        "lf_reserves_down_requirement_mw",
-        "Total_LF_Reserves_Down_Provision_MW",
-        "Meet_LF_Reserves_Down_Constraint"
+        m=m,
+        d=d,
+        reserve_zone_timepoint_set="LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
+        reserve_violation_variable="LF_Reserves_Down_Violation_MW",
+        reserve_violation_expression
+        ="LF_Reserves_Down_Violation_MW_Expression",
+        reserve_violation_allowed_param="lf_reserves_down_allow_violation",
+        reserve_requirement_param="lf_reserves_down_requirement_mw",
+        total_reserve_provision_expression
+        ="Total_LF_Reserves_Down_Provision_MW",
+        meet_reserve_constraint="Meet_LF_Reserves_Down_Constraint"
         )
 
 
@@ -42,7 +46,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "lf_reserves_down_violation.csv",
                            "lf_reserves_down_violation_mw",
                            "LF_RESERVES_DOWN_ZONE_TIMEPOINTS",
-                           "LF_Reserves_Down_Violation_MW"
+                           "LF_Reserves_Down_Violation_MW_Expression"
                            )
 
 

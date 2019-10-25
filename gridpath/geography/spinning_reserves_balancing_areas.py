@@ -3,7 +3,7 @@
 
 import csv
 import os.path
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -14,6 +14,11 @@ def add_model_components(m, d):
     :return:
     """
     m.SPINNING_RESERVES_ZONES = Set()
+
+    m.spinning_reserves_allow_violation = Param(within=Boolean)
+    m.spinning_reserves_violation_penalty_per_mw = Param(
+        within=NonNegativeReals
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -30,9 +35,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "spinning_reserves_balancing_areas.tab"),
-        select=("balancing_area",),
+        select=("balancing_area", "allow_violation",
+                "violation_penalty_per_mw"),
         index=m.SPINNING_RESERVES_ZONES,
-        param=()
+        param=(m.spinning_reserves_allow_violation,
+               m.spinning_reserves_violation_penalty_per_mw)
     )
 
 
@@ -46,7 +53,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     spinning_reserves_bas = c.execute(
-        """SELECT spinning_reserves_ba, 
+        """SELECT spinning_reserves_ba, allow_violation,
            violation_penalty_per_mw, reserve_to_energy_adjustment
            FROM inputs_geography_spinning_reserves_bas
            WHERE spinning_reserves_ba_scenario_id = {};""".format(
@@ -93,7 +100,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(spinning_reserve_bas_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["balancing_area",
+        writer.writerow(["balancing_area", "allow_violation",
                          "violation_penalty_per_mw",
                          "reserve_to_energy_adjustment"])
 
