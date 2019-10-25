@@ -80,8 +80,7 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Power_DispNoCommit_MW[g, tmp] + \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, headroom_variables)[g]) \
+            mod.Dispatchable_No_Commit_Upwards_Reserves_MW[g, tmp] \
             <= mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
     m.DispNoCommit_Max_Power_Constraint = \
@@ -99,8 +98,7 @@ def add_module_specific_components(m, d):
         :return:
         """
         return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-            sum(getattr(mod, c)[g, tmp]
-                for c in getattr(d, footroom_variables)[g]) \
+            mod.Dispatchable_No_Commit_Downwards_Reserves_MW[g, tmp] \
             >= 0
     m.DispNoCommit_Min_Power_Constraint = \
         Constraint(
