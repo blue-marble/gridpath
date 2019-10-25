@@ -11,7 +11,7 @@ from __future__ import print_function
 from builtins import next
 import csv
 import os.path
-from pyomo.environ import Var, Constraint, Expression, NonNegativeReals
+from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -138,8 +138,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.timepoint_weight[tmp],
                     m.number_of_hours_in_timepoint[tmp],
                     m.static_load_mw[z, tmp],
-                    m.Overgeneration_MW_Expression[z, tmp].expr,
-                    m.Unserved_Energy_MW_Expression[z, tmp].expr]
+                    value(m.Overgeneration_MW_Expression[z, tmp]),
+                    value(m.Unserved_Energy_MW_Expression[z, tmp])
+                ]
                 )
 
 
