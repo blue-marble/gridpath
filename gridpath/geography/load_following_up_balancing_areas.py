@@ -15,9 +15,11 @@ def add_model_components(m, d):
     """
     m.LF_RESERVES_UP_ZONES = Set()
 
-    m.lf_reserves_up_allow_violation = Param(within=Boolean)
+    m.lf_reserves_up_allow_violation = Param(
+        m.LF_RESERVES_UP_ZONES, within=Boolean
+    )
     m.lf_reserves_up_violation_penalty_per_mw = Param(
-        within=NonNegativeReals
+        m.LF_RESERVES_UP_ZONES, within=NonNegativeReals
     )
 
 

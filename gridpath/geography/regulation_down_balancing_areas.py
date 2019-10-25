@@ -15,9 +15,11 @@ def add_model_components(m, d):
     """
     m.REGULATION_DOWN_ZONES = Set()
 
-    m.regulation_down_allow_violation = Param(within=Boolean)
+    m.regulation_down_allow_violation = Param(
+        m.REGULATION_DOWN_ZONES, within=Boolean
+    )
     m.regulation_down_violation_penalty_per_mw = Param(
-        within=NonNegativeReals
+        m.REGULATION_DOWN_ZONES, within=NonNegativeReals
     )
 
 

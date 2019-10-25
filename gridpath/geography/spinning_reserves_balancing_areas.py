@@ -15,9 +15,11 @@ def add_model_components(m, d):
     """
     m.SPINNING_RESERVES_ZONES = Set()
 
-    m.spinning_reserves_allow_violation = Param(within=Boolean)
+    m.spinning_reserves_allow_violation = Param(
+        m.SPINNING_RESERVES_ZONES, within=Boolean
+    )
     m.spinning_reserves_violation_penalty_per_mw = Param(
-        within=NonNegativeReals
+        m.SPINNING_RESERVES_ZONES, within=NonNegativeReals
     )
 
 

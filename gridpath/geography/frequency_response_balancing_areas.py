@@ -15,9 +15,11 @@ def add_model_components(m, d):
     """
     m.FREQUENCY_RESPONSE_BAS = Set()
 
-    m.frequency_response_allow_violation = Param(within=Boolean)
+    m.frequency_response_allow_violation = Param(
+        m.FREQUENCY_RESPONSE_BAS, within=Boolean
+    )
     m.frequency_response_violation_penalty_per_mw = Param(
-        within=NonNegativeReals
+        m.FREQUENCY_RESPONSE_BAS, within=NonNegativeReals
     )
 
 
