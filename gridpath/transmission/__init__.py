@@ -173,6 +173,21 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
+    # Check reactance > 0
+    validation_errors = validate_reactance(df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "TRANSMISSION_OPERATIONAL_CHARS",
+             "inputs_transmission_operational_chars",
+             "Invalid reactance inputs",
+             error
+             )
+        )
+
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
 
