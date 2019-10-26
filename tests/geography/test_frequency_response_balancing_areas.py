@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import unittest
@@ -22,6 +23,7 @@ try:
 except ImportError:
     print("ERROR! Couldn't import module " + NAME_OF_MODULE_BEING_TESTED +
           " to test.")
+
 
 class TestLoadFollowingUpBAs(unittest.TestCase):
     """
@@ -63,12 +65,41 @@ class TestLoadFollowingUpBAs(unittest.TestCase):
                                          subproblem="",
                                          stage="")
         instance = m.create_instance(data)
+
+        # Balancing areas
         expected = sorted(["Zone1", "Zone2"])
         actual = sorted([z for z in instance.FREQUENCY_RESPONSE_BAS])
         self.assertListEqual(expected, actual,
                              msg="FREQUENCY_RESPONSE_BAS set data does not "
                                  "load correctly."
                              )
+
+        # Param: allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted({"Zone1": 1, "Zone2": 1}.items())
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {z: instance.frequency_response_allow_violation[z]
+                 for z in instance.FREQUENCY_RESPONSE_BAS}.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation,
+                             actual_allow_violation)
+
+        # Param: violation penalty
+        expected_penalty = OrderedDict(
+            sorted({"Zone1": 99999999, "Zone2": 99999999}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {z: instance.frequency_response_violation_penalty_per_mw[z]
+                 for z in instance.FREQUENCY_RESPONSE_BAS}.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty,
+                             actual_penalty)
+
 
 if __name__ == "__main__":
     unittest.main()
