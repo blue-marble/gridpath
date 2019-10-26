@@ -9,10 +9,9 @@ consumption components added by other modules.
 from __future__ import print_function
 
 from builtins import next
-from builtins import str
 import csv
 import os.path
-from pyomo.environ import Param, Var, Constraint, NonNegativeReals
+from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -42,26 +41,48 @@ def add_model_components(m, d):
     tmp}`
     """
 
-    # TODO: do we want to completely disallow unserved energy and/or overgen
-    #  in some cases (as opposed to assigning a very high cost) -- we could
-    #  not append to the load-balance components given a flag for example,
-    #  or overgen and unserved energy could be their own modules
-    #  This is a more general question for all potential 'soft' constraints or
-    #  constraints that could cause feasibility issues (e.g. reserves, policy,
-    #  etc.)
-    m.overgeneration_penalty_per_mw = \
-        Param(m.LOAD_ZONES, within=NonNegativeReals)
-    m.unserved_energy_penalty_per_mw = \
-        Param(m.LOAD_ZONES, within=NonNegativeReals)
-
     # Penalty variables
     m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
                               within=NonNegativeReals)
     m.Unserved_Energy_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
                                within=NonNegativeReals)
 
-    getattr(d, load_balance_production_components).append("Unserved_Energy_MW")
-    getattr(d, load_balance_consumption_components).append("Overgeneration_MW")
+    # Penalty expressions (will be zero if violations not allowed)
+    def overgeneration_expression_rule(mod, z, tmp):
+        """
+
+        :param mod:
+        :param z:
+        :param tmp:
+        :return:
+        """
+        return mod.allow_overgeneration[z] * mod.Overgeneration_MW[z, tmp]
+
+    m.Overgeneration_MW_Expression = Expression(
+        m.LOAD_ZONES, m.TIMEPOINTS,
+        rule=overgeneration_expression_rule
+    )
+
+    def unserved_energy_expression_rule(mod, z, tmp):
+        """
+
+        :param mod:
+        :param z:
+        :param tmp:
+        :return:
+        """
+        return mod.allow_unserved_energy[z] * mod.Unserved_Energy_MW[z, tmp]
+    m.Unserved_Energy_MW_Expression = Expression(
+        m.LOAD_ZONES, m.TIMEPOINTS,
+        rule=unserved_energy_expression_rule
+    )
+
+    getattr(d, load_balance_production_components).append(
+        "Unserved_Energy_MW_Expression"
+    )
+    getattr(d, load_balance_consumption_components).append(
+        "Overgeneration_MW_Expression"
+    )
 
     def meet_load_rule(mod, z, tmp):
         """
@@ -86,24 +107,6 @@ def add_model_components(m, d):
 
     m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TIMEPOINTS,
                                         rule=meet_load_rule)
-
-
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param stage:
-    :param stage:
-    :return:
-    """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "load_zones.tab"),
-                     param=(m.overgeneration_penalty_per_mw,
-                            m.unserved_energy_penalty_per_mw)
-                     )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -135,8 +138,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                     m.timepoint_weight[tmp],
                     m.number_of_hours_in_timepoint[tmp],
                     m.static_load_mw[z, tmp],
-                    m.Overgeneration_MW[z, tmp].value,
-                    m.Unserved_Energy_MW[z, tmp].value]
+                    value(m.Overgeneration_MW_Expression[z, tmp]),
+                    value(m.Unserved_Energy_MW_Expression[z, tmp])
+                ]
                 )
 
 

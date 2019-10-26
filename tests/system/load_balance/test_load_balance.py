@@ -79,35 +79,6 @@ class TestLoadBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: overgeneration_penalty_per_mw
-        expected_overgen_penalty = OrderedDict(sorted({
-            "Zone1": 99999999, "Zone2": 99999999
-                                                      }.items()
-                                                      )
-                                               )
-        actual_overgen_penalty = OrderedDict(sorted({
-            z: instance.overgeneration_penalty_per_mw[z]
-            for z in instance.LOAD_ZONES
-                                                      }.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_overgen_penalty, actual_overgen_penalty)
-
-        # Param: unserved_energy_penalty_per_mw
-        expected_unserved_energy_penalty = OrderedDict(sorted({
-             "Zone1": 99999999, "Zone2": 99999999
-                                                      }.items()
-                                                      )
-                                               )
-        actual_unserved_energy_penalty = OrderedDict(sorted({
-            z: instance.unserved_energy_penalty_per_mw[z]
-            for z in instance.LOAD_ZONES
-                                                        }.items()
-                                                    )
-                                             )
-        self.assertDictEqual(expected_unserved_energy_penalty,
-                             actual_unserved_energy_penalty)
-
 
 if __name__ == "__main__":
     unittest.main()
