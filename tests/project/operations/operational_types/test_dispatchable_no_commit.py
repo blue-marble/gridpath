@@ -109,6 +109,32 @@ class TestDispatchableNoCommitOperationalType(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
+        # Param: dispatchable_no_commit_ramp_up_rate
+        expected_ramp_up_when_on_rate = {
+            "Disp_No_Commit": 1  # default value
+        }
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispatchable_no_commit_ramp_up_rate[
+                prj]
+            for prj in instance.DISPATCHABLE_NO_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_up_when_on_rate,
+                             actual_ramp_down_when_on_rate
+                             )
+
+        # Param: dispatchable_no_commit_ramp_down_rate
+        expected_ramp_down_when_on_rate = {
+            "Disp_No_Commit": 1  # default value
+        }
+        actual_ramp_down_when_on_rate = {
+            prj: instance.dispatchable_no_commit_ramp_down_rate[
+                prj]
+            for prj in instance.DISPATCHABLE_NO_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_ramp_down_when_on_rate,
+                             actual_ramp_down_when_on_rate
+                             )
+
 
 if __name__ == "__main__":
     unittest.main()
