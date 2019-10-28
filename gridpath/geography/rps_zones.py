@@ -8,7 +8,7 @@ and reserve balancing areas.
 
 import csv
 import os.path
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -21,12 +21,21 @@ def add_model_components(m, d):
 
     m.RPS_ZONES = Set()
 
+    m.rps_allow_violation = Param(
+        m.RPS_ZONES, within=Boolean
+    )
+    m.rps_violation_penalty_per_mwh = Param(
+        m.RPS_ZONES, within=NonNegativeReals
+    )
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "rps_zones.tab"),
-                     set=m.RPS_ZONES
+                     index=m.RPS_ZONES,
+                     param=(m.rps_allow_violation,
+                            m.rps_violation_penalty_per_mwh)
                      )
 
 
@@ -40,7 +49,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     rps_zones = c.execute(
-        """SELECT rps_zone
+        """SELECT rps_zone, allow_violation, violation_penalty_per_mwh,
            FROM inputs_geography_rps_zones
            WHERE rps_zone_scenario_id = {};""".format(
             subscenarios.RPS_ZONE_SCENARIO_ID
@@ -86,7 +95,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(rps_zones_tab_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["rps_zone"])
+        writer.writerow(["rps_zone", "allow_violation",
+                         "violation_penalty_per_mwh"])
 
         for row in rps_zones:
             writer.writerow(row)

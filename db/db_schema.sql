@@ -410,6 +410,8 @@ DROP TABLE IF EXISTS inputs_geography_rps_zones;
 CREATE TABLE inputs_geography_rps_zones (
 rps_zone_scenario_id INTEGER,
 rps_zone VARCHAR(32),
+allow_violation INTEGER,
+violation_penalty_per_mwh FLOAT,
 PRIMARY KEY (rps_zone_scenario_id, rps_zone),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
@@ -429,6 +431,8 @@ DROP TABLE IF EXISTS inputs_geography_carbon_cap_zones;
 CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
+allow_violation INTEGER,
+violation_penalty_per_mmt FLOAT,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)

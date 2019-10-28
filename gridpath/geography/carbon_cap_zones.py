@@ -8,7 +8,7 @@ zones and other balancing areas.
 
 import csv
 import os.path
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -21,12 +21,21 @@ def add_model_components(m, d):
 
     m.CARBON_CAP_ZONES = Set()
 
+    m.carbon_cap_allow_violation = Param(
+        m.CARBON_CAP_ZONES, within=Boolean
+    )
+    m.carbon_cap_violation_penalty_per_mmt = Param(
+        m.CARBON_CAP_ZONES, within=NonNegativeReals
+    )
+
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "carbon_cap_zones.tab"),
-                     set=m.CARBON_CAP_ZONES
+                     index=m.CARBON_CAP_ZONES,
+                     param=(m.carbon_cap_allow_violation,
+                            m.carbon_cap_violation_penalty_per_mmt)
                      )
 
 
@@ -40,7 +49,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     carbon_cap_zone = c.execute(
-        """SELECT carbon_cap_zone
+        """SELECT carbon_cap_zone, allow_violation, violation_penalty_per_mmt
         FROM inputs_geography_carbon_cap_zones
         WHERE carbon_cap_zone_scenario_id = {};
         """.format(
@@ -87,7 +96,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(carbon_cap_zones_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["carbon_cap_zone"])
+        writer.writerow(["carbon_cap_zone", "violation",
+                         "violation_penalty_per_mmt"])
 
         for row in carbon_cap_zone:
             writer.writerow(row)
