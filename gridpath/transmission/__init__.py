@@ -13,6 +13,7 @@ from pyomo.environ import Set, Param
 
 from gridpath.auxiliary.dynamic_components import required_tx_capacity_modules,\
     required_tx_operational_modules
+from gridpath.auxiliary.auxiliary import write_validation_to_database
 
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
@@ -96,10 +97,13 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
+
+    # TODO: we might want to get the reactance in the dc_opf_transmission
+    #  tx_operational_type rather than here (similar comment as in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, operational_type,
-        load_zone_from, load_zone_to
+        load_zone_from, load_zone_to, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
@@ -110,7 +114,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (transmission_line)
         
         INNER JOIN
-            (SELECT transmission_line, operational_type
+            (SELECT transmission_line, operational_type, reactance_ohms
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {})
         USING (transmission_line)
@@ -135,10 +139,100 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    pass
-    # Validation to be added
-    # transmission_lines = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
+
+    c = conn.cursor()
+    validation_results = []
+
+    # Get the transmission inputs
+    transmission_lines = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn
+    )
+
+    # Convert input data into pandas DataFrame
+    df = pd.DataFrame(
+        data=transmission_lines.fetchall(),
+        columns=[s[0] for s in transmission_lines.description]
+    )
+
+    # Check that we're not combining incompatible capacity and operational types
+    invalid_combos = c.execute(
+        """SELECT capacity_type, operational_type 
+        FROM mod_tx_capacity_and_tx_operational_type_invalid_combos"""
+    ).fetchall()
+    validation_errors = validate_op_cap_combos(df, invalid_combos)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "TRANSMISSION_OPERATIONAL_CHARS, TRANSMISSION_PORTFOLIOS",
+             "inputs_transmission_operational_chars, inputs_tranmission_portfolios",
+             "Invalid combination of capacity type and operational type",
+             error
+             )
+        )
+
+    # Check reactance > 0
+    validation_errors = validate_reactance(df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "TRANSMISSION_OPERATIONAL_CHARS",
+             "inputs_transmission_operational_chars",
+             "Invalid reactance inputs",
+             error
+             )
+        )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+
+def validate_op_cap_combos(df, invalid_combos):
+    """
+    Check that there's no mixing of incompatible capacity and operational types
+    :param df:
+    :param invalid_combos:
+    :return:
+    """
+    results = []
+    for combo in invalid_combos:
+        bad_combos = ((df["capacity_type"] == combo[0]) &
+                      (df["operational_type"] == combo[1]))
+        if bad_combos.any():
+            bad_lines = df['transmission_line'][bad_combos].values
+            print_bad_lines = ", ".join(bad_lines)
+            results.append(
+                "Line(s) '{}': '{}' and '{}'"
+                .format(print_bad_lines, combo[0], combo[1])
+            )
+
+    return results
+
+
+def validate_reactance(df):
+    """
+    Check reactance > 1 for dc_opf_transmission lines
+    :param df:
+    :return:
+    """
+    results = []
+
+    # df = df[df["operational_type"] == "dc_opf_transmission"]
+    invalids = (df["reactance_ohms"] <= 0)
+    if invalids.any():
+        bad_lines = df["transmission_line"][invalids].values
+        print_bad_lines = ", ".join(bad_lines)
+        results.append(
+            "Line(s) '{}': expected reactance_ohms > 0"
+            .format(print_bad_lines)
+        )
+
+    return results
 
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
@@ -164,7 +258,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(
             ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to"]
+             "load_zone_from", "load_zone_to", "reactance_ohms"]
         )
 
         for row in transmission_lines:
