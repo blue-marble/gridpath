@@ -144,6 +144,8 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.regulation_down",
         "objective.system.reserve_violation_penalties.frequency_response",
         "objective.system.reserve_violation_penalties.spinning_reserves",
+        "objective.system.policy.rps.aggregate_rps_violation_penalties",
+        "objective.system.policy.rps.aggregate_carbon_cap_violation_penalties",
         "objective.system.prm.dynamic_elcc_tuning_penalties",
         "objective.system.local_capacity"
         ".aggregate_local_capacity_shortage_penalties",
@@ -228,13 +230,16 @@ def optional_modules_list():
              "system.policy.rps.rps_requirement",
              "project.operations.recs",
              "system.policy.rps.aggregate_recs",
-             "system.policy.rps.rps_balance"],
+             "system.policy.rps.rps_balance",
+             "objective.system.policy.rps.aggregate_rps_violation_penalties"],
         "carbon_cap":
             ["geography.carbon_cap_zones",
              "system.policy.carbon_cap.carbon_cap",
              "project.operations.carbon_emissions",
              "system.policy.carbon_cap.aggregate_project_carbon_emissions",
-             "system.policy.carbon_cap.carbon_balance"],
+             "system.policy.carbon_cap.carbon_balance",
+             "objective.system.policy.rps"
+             ".aggregate_carbon_cap_violation_penalties"],
         "prm":
             ["geography.prm_zones",
              "system.reliability.prm.prm_requirement",
