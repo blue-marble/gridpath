@@ -7,7 +7,7 @@ from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 from .aggregate_reserve_violation_penalties import \
-    generic_add_model_components, generic_load_model_data
+    generic_add_model_components
 
 
 def add_model_components(m, d):
@@ -47,11 +47,3 @@ def add_model_components(m, d):
 
     getattr(d, total_cost_components).append(
         "Frequency_Response_Partial_Penalty_Costs")
-
-
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "load_following_up_balancing_areas.tab",
-                            "frequency_response_violation_penalty_per_mw"
-                            )

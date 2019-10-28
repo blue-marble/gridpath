@@ -2,8 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 
-import os.path
-from pyomo.environ import Param, Var, Expression, NonNegativeReals
+from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
@@ -42,31 +41,3 @@ def generic_add_model_components(
 
     getattr(d, total_cost_components).append(
         objective_function_reserve_penalty_cost_component)
-
-
-def generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            ba_list_filename,
-                            reserve_violation_penalty_param
-                            ):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param ba_list_filename:
-    :param reserve_violation_penalty_param:
-    :param requirement_filename:
-    :param reserve_zone_timepoint_set:
-    :param reserve_requirement_param:
-    :return:
-    """
-
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                           ba_list_filename),
-                     select=("balancing_area", "violation_penalty_per_mw"),
-                     param=getattr(m, reserve_violation_penalty_param)
-                     )
