@@ -753,6 +753,23 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_example_test_tx_simple(self):
+        """
+        Check objective function value of "test_tx_simple"
+        example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "test_tx_simple",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
+                               "--quiet", "--mute_solver_output", "--testing"])
+
+        expected_objective = 3100192148.07
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
+
 
 if __name__ == "__main__":
     unittest.main()

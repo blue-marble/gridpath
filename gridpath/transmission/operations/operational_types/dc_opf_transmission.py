@@ -132,8 +132,6 @@ def add_module_specific_components(m, d):
         rule=kirchhoff_voltage_law_rule
     )
 
-    # TODO: should these move to operations.py since all transmission op_types
-    #  have this constraint?
     def min_transmit_rule(mod, l, tmp):
         """
         Line flows cannot exceed the minimum line rating

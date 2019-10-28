@@ -189,7 +189,7 @@ def load_mod_capacity_and_operational_type_invalid_combos(db, c):
         INSERT INTO 
         mod_capacity_and_operational_type_invalid_combos
         (capacity_type, operational_type)
-        VALUES (?, ?);""".format()
+        VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, 
                   filename=
                   "mod_capacity_and_operational_type_invalid_combos.csv", 
@@ -201,7 +201,7 @@ def load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db, c):
         INSERT INTO 
         mod_tx_capacity_and_tx_operational_type_invalid_combos
         (capacity_type, operational_type)
-        VALUES (?, ?);""".format()
+        VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c,
                   filename=
                   "mod_tx_capacity_and_tx_operational_type_invalid_combos.csv",
