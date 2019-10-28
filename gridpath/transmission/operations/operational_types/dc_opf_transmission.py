@@ -49,23 +49,30 @@ def add_module_specific_components(m, d):
             set((l, tmp) for (l, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
                 if l in mod.TRANSMISSION_LINES_DC_OPF))
 
-    # Independent cycles which form a basis for cycles of the graph network
-    m.CYCLES = Set()
+    # 2-D set of independent cycles which form a basis for cycles of the graph
+    # network for each period (the network can change between periods)
+    m.CYCLES_PERIODS = Set(dimen=2)
 
-    # 2-D set of transmission lines and independent cycles it belongs to
-    m.TRANSMISSION_LINE_CYCLES = Set(within=m.TRANSMISSION_LINES * m.CYCLES)
+    # 3-D set of transmission lines and independent cycles it belongs to in
+    # each period
+    m.TRANSMISSION_LINE_CYCLES_PERIODS = Set(
+        within=m.TRANSMISSION_LINES * m.CYCLES_PERIODS)
 
-    # Indexed set of transmission lines in cycle
-    def tx_lines_by_cycle(mod, cycle):
+    # Indexed set of transmission lines in each cycle-period
+    def tx_lines_by_cycle_period(mod, cycle, period):
         """
-        Figure out which tx_lines are in each cycle
+        Figure out which tx_lines are in each cycle-period
         :param mod:
         :param cycle:
+        :param period:
         :return:
         """
-        txs = list(tx for (tx, c) in mod.TRANSMISSION_LINE_CYCLES if c == cycle)
+        txs = list(tx for (tx, c, p) in mod.TRANSMISSION_LINE_CYCLES_PERIODS
+                   if c == cycle and p == period)
         return txs
-    m.TRANSMISSION_LINES_IN_CYCLE = Set(m.CYCLES, initialize=tx_lines_by_cycle)
+    m.TRANSMISSION_LINES_IN_CYCLE_PERIOD = Set(
+        m.CYCLES_PERIODS,
+        initialize=tx_lines_by_cycle_period)
 
     # 2-D Set of cycles and operational timepoints
     # TODO: shouldn't this smartly select only the timepoints that are relevant
@@ -78,8 +85,8 @@ def add_module_specific_components(m, d):
 
     # The series reactance for each DC OPF transmission line
     m.reactance_ohms = Param(m.TRANSMISSION_LINES_DC_OPF)
-    # The value of the cycle incidence matrix for each tx_line and cycle
-    m.tx_cycle_direction = Param(m.TRANSMISSION_LINE_CYCLES)
+    # The value of the cycle incidence matrix for each tx_line-cycle-period
+    m.tx_cycle_direction = Param(m.TRANSMISSION_LINE_CYCLES_PERIODS)
 
     # --- Decision variables ---
 
@@ -122,9 +129,10 @@ def add_module_specific_components(m, d):
         """
 
         return sum(
-            mod.Transmit_Power_DC_OPF_MW[l, tmp] * mod.tx_cycle_direction[l, c]
+            mod.Transmit_Power_DC_OPF_MW[l, tmp]
+            * mod.tx_cycle_direction[l, c, mod.period[tmp]]
             * mod.reactance_ohms[l]
-            for l in mod.TRANSMISSION_LINES_IN_CYCLE[c]
+            for l in mod.TRANSMISSION_LINES_IN_CYCLE_PERIOD[c, mod.period[tmp]]
         ) == 0
 
     m.Kirchhoff_Voltage_Law_Constraint = Constraint(
@@ -183,51 +191,70 @@ def load_module_specific_data(m, data_portal, scenario_directory,
         usecols=["TRANSMISSION_LINES", "load_zone_from", "load_zone_to",
                  "tx_operational_type", "reactance_ohms"]
     )
-    df = df[df["tx_operational_type"] == "dc_opf_transmission"].reset_index()
     df["reactance_ohms"] = pd.to_numeric(df["reactance_ohms"])
 
-    # create a network graph from the list of lines (edges) and find
-    # the elementary cycles (if any)
-    G = nx.Graph()
-    # TODO: make sure there are no parallel edges (or pre-process those)
-    edges = list(zip(df['load_zone_from'], df['load_zone_to']))
-    G.add_edges_from(edges)
-    cycles = nx.cycle_basis(G)  # list with list of nodes for each cycle
+    # TODO: add a for-loop that goes through each period, and then figure out
+    #  which lines are operational in each period and add those to graph
+    #  Check for projects how this is done(?)
+    #  Use new set: m.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD?
 
-    cycle_set = []  # list of cycle_ids
-    tx_lines_cycles = []  # list of tuples with (tx_line, cycle_id)
-    tx_cycle_directions = {}  # indexed by tx_line and cycle
-    for i, cycle in enumerate(cycles):
-        cycle_set.append(i)
-        for tx_from, tx_to in zip(cycle[-1:] + cycle[:-1], cycle):
-            try:
-                index = edges.index((tx_from, tx_to))
-                tx_direction = 1
-            except ValueError:
+    cycle_period_set = []  # list (cycle_id, period)
+    tx_lines_cycles_periods_set = []  # list (tx_line, cycle_id, period)
+    tx_cycle_directions = {}  # indexed by tx_line, cycle and period
+    for period in m.PERIODS:
+        # create a network graph from the list of lines (edges) and find
+        # the elementary cycles (if any)
+        tx_lines = m.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[period]
+        df_slice = df[
+            (df["tx_operational_type"] == "dc_opf_transmission") &
+            (df["TRANSMISSION_LINES"].isin(tx_lines))
+        ].reset_index()
+
+        G = nx.Graph()
+        # TODO: make sure there are no parallel edges (or pre-process those)
+        edges = list(zip(df_slice['load_zone_from'], df_slice['load_zone_to']))
+        G.add_edges_from(edges)
+        cycles = nx.cycle_basis(G)  # list with list of nodes for each cycle
+
+        for i, cycle in enumerate(cycles):
+            cycle_period_set.append((i, period))
+            for tx_from, tx_to in zip(cycle[-1:] + cycle[:-1], cycle):
                 try:
-                    # revert the direction
-                    index = edges.index((tx_to, tx_from))
-                    tx_direction = -1
+                    index = edges.index((tx_from, tx_to))
+                    tx_direction = 1
                 except ValueError:
-                    raise ValueError("The branch connecting {} and {} is not"
-                                     "in the transmission line inputs".format(
-                                        tx_from, tx_to))
-            tx_line = df.loc[index, "TRANSMISSION_LINES"]
-            tx_lines_cycles.append((tx_line, i))
-            tx_cycle_directions[(tx_line, i)] = tx_direction
+                    try:
+                        # revert the direction
+                        index = edges.index((tx_to, tx_from))
+                        tx_direction = -1
+                    except ValueError:
+                        raise ValueError(
+                            "The branch connecting {} and {} is not in the "
+                            "transmission line inputs".format(
+                                tx_from, tx_to
+                            )
+                        )
+                tx_line = df.loc[index, "TRANSMISSION_LINES"]
+                tx_lines_cycles_periods_set.append((tx_line, i, period))
+                tx_cycle_directions[(tx_line, i, period)] = tx_direction
 
     # If there are more negative directions for tx lines than positive ones,
     # revert the cycle direction (this is to standardize cycle direction)
     if sum(tx_cycle_directions.values()) < 0:
-        tx_cycle_directions = {(tx, c): -v
-                               for (tx, c), v in tx_cycle_directions.items()}
+        tx_cycle_directions = {(tx, c, p): -v
+                               for (tx, c, p), v in tx_cycle_directions.items()}
 
     # Dict of reactance by dc_opf_transmission line
-    reactance_ohms = dict(zip(df["TRANSMISSION_LINES"], df["reactance_ohms"]))
+    # TODO: convert to numeric here
+    reactance_ohms = dict(zip(
+        df["TRANSMISSION_LINES"],
+        pd.to_numeric(df["reactance_ohms"])
+    ))
 
     # Load data
-    data_portal.data()["CYCLES"] = {None: cycle_set}
-    data_portal.data()["TRANSMISSION_LINE_CYCLES"] = {None: tx_lines_cycles}
+    data_portal.data()["CYCLES_PERIODS"] = {None: cycle_period_set}
+    data_portal.data()["TRANSMISSION_LINE_CYCLES_PERIODS"] = \
+        {None: tx_lines_cycles_periods_set}
     data_portal.data()["tx_cycle_direction"] = tx_cycle_directions
     data_portal.data()["reactance_ohms"] = reactance_ohms
 
