@@ -21,13 +21,11 @@ def add_model_components(m, d):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum(mod.Carbon_Cap_Overage_MMt_Expression[z, tmp]
+        return sum(mod.Carbon_Cap_Overage_MMt_Expression[z, p]
                    * mod.carbon_cap_violation_penalty_per_mmt[z]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
-                   * mod.number_years_represented[mod.period[tmp]]
-                   * mod.discount_factor[mod.period[tmp]]
-                   for (z, tmp) in mod.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP)
+                   * mod.number_years_represented[p]
+                   * mod.discount_factor[p]
+                   for (z, p) in mod.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP)
     m.Total_Carbon_Cap_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
     getattr(d, total_cost_components).append(
