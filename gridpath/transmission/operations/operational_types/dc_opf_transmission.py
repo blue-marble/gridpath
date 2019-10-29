@@ -49,7 +49,8 @@ def add_module_specific_components(m, d):
             set((l, tmp) for (l, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
                 if l in mod.TRANSMISSION_LINES_DC_OPF))
 
-    # Set of periods, cycles, and zones
+    # Set of periods, cycles, and zones. This is the key set on which all other
+    #  sets below are based (we only want to do the networkx calcs once)
     def periods_cycles_zones_init(mod):
         result = list()
         for period in mod.PERIODS:
@@ -98,8 +99,14 @@ def add_module_specific_components(m, d):
     # Set of ordered zones/nodes in a cycle, indexed by (period, cycle)
     # Helper set, not directly used in constraints/param indices
     def zones_by_period_cycle(mod, period, cycle):
-        return [z for (p, c, z) in mod.PERIODS_CYCLES_ZONES
-                if p == period and c == cycle]
+        zones = [z for (p, c, z) in mod.PERIODS_CYCLES_ZONES
+                 if p == period and c == cycle]
+        # Sort the list while maintaining the order (i.e. rotate)
+        # This is to standardize the cycle direction, since networkx returns
+        # a random direction due to the set.pop() behavior in the algorithm
+        n = zones.index(sorted(zones)[0])
+        zones = zones[:-n] + zones[-n:]
+        return zones
     m.ZONES_IN_PERIOD_CYCLE = Set(
         m.PERIODS_CYCLES,
         rule=zones_by_period_cycle,
@@ -109,6 +116,11 @@ def add_module_specific_components(m, d):
     # 3-D set of periods, cycle_ids, and transmission lines in that period-cycle
     # Tx_cycle direction is indexed by this set, and the set is also used to get
     # TRANSMISSION_LINES_IN_PERIOD_CYCLE set
+    # TODO: factor out edges operational in period as a set?
+    # TODO: factor out dc opf lines operational in period as a set?
+    # TODO: Alternatively, we could simply define this set by the bigger set
+    #  m.PERIODS_CYCLES * m.TRANSMISSION_LINES_DC_OPF and set the
+    #  tx_cycle_direction to zero whenever the line is not part of the cycle.
     def periods_cycles_transmission_lines(mod):
         result = list()
         for p, c in mod.PERIODS_CYCLES:
@@ -166,9 +178,6 @@ def add_module_specific_components(m, d):
         initialize=tx_lines_by_period_cycle
     )
 
-    # TODO: factor out edges operational in period as a set?
-    # TODO: factor out dc opf lines operational in period as a set?
-
     # --- Params ---
 
     # The series reactance for each DC OPF transmission line
@@ -190,16 +199,6 @@ def add_module_specific_components(m, d):
                 )
             )
         return direction
-
-        # TODO: how can we normalize the cycle direction (nx returns random
-        #  order) after the param is initialized?
-        # # If there are more negative directions for tx lines than positive ones,
-        # # revert the cycle direction (this is to standardize cycle direction)
-        # if sum(tx_cycle_directions.values()) < 0:
-        #     tx_cycle_directions = {(p, c, tx): -v
-        #                            for (p, c, tx), v
-        #                            in tx_cycle_directions.items()}
-        # return tx_cycle_directions
 
     m.tx_cycle_direction = Param(
         m.PERIODS_CYCLES_TRANSMISSION_LINES,
