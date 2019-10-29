@@ -28,7 +28,8 @@ setup(name="GridPath",
           "Pyomo",  # Optimization modeling language
           "pandas",  # Data-processing
           "bokeh>=1.3.4",  # Visualization library
-          "pscript"  # Python to JavaScript compiler (for visualization)
+          "pscript",  # Python to JavaScript compiler (for visualization)
+          "networkx"  # network package for DC OPF
       ],
       extras_require={
           "doc": extras_doc,

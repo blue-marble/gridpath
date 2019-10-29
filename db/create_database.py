@@ -103,7 +103,10 @@ def load_data(db, omit_data):
         load_mod_availability_types(db=db, c=c)
         load_mod_operational_types(db=db, c=c)
         load_mod_reserve_types(db=db, c=c)
+        load_mod_tx_capacity_types(db=db, c=c)
+        load_mod_tx_operational_types(db=db, c=c)
         load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
+        load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db=db, c=c)
         load_mod_horizon_boundary_types(db=db, c=c)
         load_mod_run_status_types(db=db, c=c)
         load_mod_validation_status_types(db=db, c=c)
@@ -163,15 +166,45 @@ def load_mod_reserve_types(db, c):
     load_aux_data(conn=db, cursor=c, filename="mod_reserve_types.csv", sql=sql)
 
 
+def load_mod_tx_capacity_types(db, c):
+    sql = """
+        INSERT INTO mod_tx_capacity_types
+        (capacity_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_tx_capacity_types.csv",
+                  sql=sql)
+
+
+def load_mod_tx_operational_types(db, c):
+    sql = """
+        INSERT INTO mod_tx_operational_types
+        (operational_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_tx_operational_types.csv",
+                  sql=sql)
+
+
 def load_mod_capacity_and_operational_type_invalid_combos(db, c):
     sql = """
         INSERT INTO 
         mod_capacity_and_operational_type_invalid_combos
         (capacity_type, operational_type)
-        VALUES (?, ?);""".format()
+        VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, 
                   filename=
                   "mod_capacity_and_operational_type_invalid_combos.csv", 
+                  sql=sql)
+
+
+def load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db, c):
+    sql = """
+        INSERT INTO 
+        mod_tx_capacity_and_tx_operational_type_invalid_combos
+        (capacity_type, operational_type)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c,
+                  filename=
+                  "mod_tx_capacity_and_tx_operational_type_invalid_combos.csv",
                   sql=sql)
 
 

@@ -65,7 +65,7 @@ class TestLoadZones(unittest.TestCase):
                                          subproblem="",
                                          stage="")
         instance = m.create_instance(data)
-        expected = sorted(["Zone1", "Zone2"])
+        expected = sorted(["Zone1", "Zone2", "Zone3"])
         actual = sorted([z for z in instance.LOAD_ZONES])
         self.assertListEqual(expected, actual,
                              msg="LOAD_ZONES set data does not load correctly."
@@ -73,7 +73,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: allow_overgeneration
         expected_allow_overgen = OrderedDict(
-            sorted({"Zone1": 1, "Zone2": 1}.items())
+            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1}.items())
         )
         actual_allow_overgen = OrderedDict(
             sorted(
@@ -85,7 +85,8 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: overgeneration_penalty_per_mw
         expected_overgen_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999}.items())
+            sorted({"Zone1": 99999999, "Zone2": 99999999,
+                    "Zone3": 99999999}.items())
         )
         actual_overgen_penalty = OrderedDict(
             sorted(
@@ -97,7 +98,7 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: allow_unserved_energy
         expected_allow_unserved_energy = OrderedDict(
-            sorted({"Zone1": 1, "Zone2": 1}.items())
+            sorted({"Zone1": 1, "Zone2": 1, "Zone3": 1}.items())
         )
         actual_allow_unserved_energy = OrderedDict(
             sorted(
@@ -110,7 +111,8 @@ class TestLoadZones(unittest.TestCase):
 
         # Param: unserved_energy_penalty_per_mw
         expected_unserved_energy_penalty = OrderedDict(
-            sorted({"Zone1": 99999999, "Zone2": 99999999}.items())
+            sorted({"Zone1": 99999999, "Zone2": 99999999,
+                    "Zone3": 99999999}.items())
         )
         actual_unserved_energy_penalty = OrderedDict(
             sorted(

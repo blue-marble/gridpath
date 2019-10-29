@@ -83,7 +83,10 @@ class TestSpecifiedTransmission(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
-        expected_periods = [("Tx1", 2020), ("Tx1", 2030)]
+        expected_periods = [("Tx1", 2020), ("Tx1", 2030),
+                            ("Tx2", 2020), ("Tx2", 2030),
+                            ("Tx3", 2020), ("Tx3", 2030)
+                            ]
         actual_periods = sorted([
             (tx, p) for (tx, p)
             in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
@@ -92,7 +95,9 @@ class TestSpecifiedTransmission(unittest.TestCase):
 
         # Param: specified_tx_min_mw
         expected_min = OrderedDict(sorted({
-            ("Tx1", 2020): -10, ("Tx1", 2030): -10
+            ("Tx1", 2020): -10, ("Tx1", 2030): -10,
+            ("Tx2", 2020): -10, ("Tx2", 2030): -10,
+            ("Tx3", 2020): -10, ("Tx3", 2030): -10
                                           }.items()
                                           )
                                    )
@@ -106,7 +111,9 @@ class TestSpecifiedTransmission(unittest.TestCase):
 
         # Param: specified_tx_max_mw
         expected_max = OrderedDict(sorted({
-            ("Tx1", 2020): 10, ("Tx1", 2030): 10
+            ("Tx1", 2020): 10, ("Tx1", 2030): 10,
+            ("Tx2", 2020): 10, ("Tx2", 2030): 10,
+            ("Tx3", 2020): 10, ("Tx3", 2030): 10
                                           }.items()
                                           )
                                    )
