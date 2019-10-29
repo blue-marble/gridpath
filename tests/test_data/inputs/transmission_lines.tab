@@ -1,3 +1,5 @@
-TRANSMISSION_LINES	tx_capacity_type	load_zone_from	load_zone_to	carbon_cap_zone	carbon_cap_zone_import_direction	tx_co2_intensity_tons_per_mwh
-Tx1	specified_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.6
-Tx_New	new_build_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.8
+TRANSMISSION_LINES	tx_capacity_type	tx_operational_type	load_zone_from	load_zone_to	carbon_cap_zone	carbon_cap_zone_import_direction	tx_co2_intensity_tons_per_mwh	reactance_ohms
+Tx1	specified_transmission	dc_opf_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.6	0.5
+Tx_New	new_build_transmission	simple_transmission	Zone1	Zone2	Carbon_Cap_Zone1	negative	0.8	.
+Tx2	specified_transmission	dc_opf_transmission	Zone1	Zone3	.	.	.	0.3
+Tx3	specified_transmission	dc_opf_transmission	Zone2	Zone3	.	.	.	0.4

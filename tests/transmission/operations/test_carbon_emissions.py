@@ -23,7 +23,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
-    "transmission.operations.operations"]
+    "transmission.operations.operational_types",
+    "transmission.operations.operations"
+]
 NAME_OF_MODULE_BEING_TESTED = \
     "transmission.operations.carbon_emissions"
 IMPORTED_PREREQ_MODULES = list()

@@ -33,6 +33,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.operations.carbon_emissions",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
+    "transmission.operations.operational_types",
     "transmission.operations.operations",
     "transmission.operations.carbon_emissions",
     "system.policy.carbon_cap.aggregate_project_carbon_emissions",

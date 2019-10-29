@@ -23,7 +23,9 @@ PREREQUISITE_MODULE_NAMES = [
     "geography.carbon_cap_zones", "system.policy.carbon_cap.carbon_cap",
     "transmission",
     "transmission.capacity", "transmission.capacity.capacity",
-    "transmission.operations.operations"]
+    "transmission.operations.operational_types",
+    "transmission.operations.operations"
+]
 NAME_OF_MODULE_BEING_TESTED = \
     "transmission.operations.costs"
 IMPORTED_PREREQ_MODULES = list()
@@ -89,6 +91,10 @@ class TestTxAggregateCosts(unittest.TestCase):
             sorted([
                 (("Tx1", 2020), 1.0),
                 (("Tx1", 2030), 1.0),
+                (("Tx2", 2020), 0),
+                (("Tx2", 2030), 0),
+                (("Tx3", 2020), 0),
+                (("Tx3", 2030), 0),
                 (("Tx_New", 2020), 0.0),
                 (("Tx_New", 2030), 0.0)
             ])
@@ -108,6 +114,10 @@ class TestTxAggregateCosts(unittest.TestCase):
             sorted([
                 (("Tx1", 2020), 1.0),
                 (("Tx1", 2030), 1.0),
+                (("Tx2", 2020), 0),
+                (("Tx2", 2030), 0),
+                (("Tx3", 2020), 0),
+                (("Tx3", 2030), 0),
                 (("Tx_New", 2020), 0.0),
                 (("Tx_New", 2030), 0.0)
             ])

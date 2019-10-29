@@ -20,7 +20,7 @@ def add_model_components(m, d):
         m,
         d,
         "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-        "Spinning_Reserves_Violation_MW",
+        "Spinning_Reserves_Violation_MW_Expression",
         "spinning_reserves_violation_penalty_per_mw",
         "Spinning_Reserves_Penalty_Costs"
         )

@@ -18,10 +18,12 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "transmission",
-     "transmission.capacity",
-     "transmission.capacity.capacity", "transmission.operations.operations"]
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones", "transmission",
+    "transmission.capacity",
+    "transmission.capacity.capacity",
+    "transmission.operations.operational_types",
+    "transmission.operations.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
     "transmission.operations.simultaneous_flow_limits"
 IMPORTED_PREREQ_MODULES = list()

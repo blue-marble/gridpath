@@ -20,7 +20,7 @@ def add_model_components(m, d):
         m,
         d,
         "REGULATION_UP_ZONE_TIMEPOINTS",
-        "Regulation_Up_Violation_MW",
+        "Regulation_Up_Violation_MW_Expression",
         "regulation_up_violation_penalty_per_mw",
         "Regulation_Up_Penalty_Costs"
         )
