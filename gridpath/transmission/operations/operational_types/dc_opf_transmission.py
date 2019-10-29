@@ -121,6 +121,9 @@ def add_module_specific_components(m, d):
     # TODO: Alternatively, we could simply define this set by the bigger set
     #  m.PERIODS_CYCLES * m.TRANSMISSION_LINES_DC_OPF and set the
     #  tx_cycle_direction to zero whenever the line is not part of the cycle.
+    #  This would get rid of the repetitive code in the init function below
+    #  at the cost of iterating over more tx_lines than necessary in the
+    #  summation of the KVL constraint
     def periods_cycles_transmission_lines(mod):
         result = list()
         for p, c in mod.PERIODS_CYCLES:
