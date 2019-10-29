@@ -9,8 +9,7 @@ This module adds load-balance penalty costs to the objective function.
     system/load_balance/load_balance.py
 """
 
-import os.path
-from pyomo.environ import Param, Expression, NonNegativeReals
+from pyomo.environ import Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
@@ -24,7 +23,8 @@ def add_model_components(m, d):
     and add them as a dynamic component to the objective function.
 
     :math:`Total\_Load\_Balance\_Penalty\_Costs =
-    \sum_{z, tmp} {(Unserved\_Energy\_MW_{z, tmp} + Overgeneration\_MW_{z,
+    \sum_{z, tmp} {(Unserved\_Energy\_MW\_Expression_{z, tmp} +
+    Overgeneration\_MW\_Expression_{z,
     tmp})
     \\times number\_of\_hours\_in\_timepoint_{tmp}
     \\times horizon\_weight_{h^{tmp}}
@@ -33,9 +33,9 @@ def add_model_components(m, d):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum((mod.Unserved_Energy_MW[z, tmp]
+        return sum((mod.Unserved_Energy_MW_Expression[z, tmp]
                     * mod.unserved_energy_penalty_per_mw[z] +
-                    mod.Overgeneration_MW[z, tmp]
+                    mod.Overgeneration_MW_Expression[z, tmp]
                     * mod.overgeneration_penalty_per_mw[z])
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.timepoint_weight[tmp]
