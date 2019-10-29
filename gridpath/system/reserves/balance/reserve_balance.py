@@ -2,10 +2,9 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from builtins import next
-from builtins import str
 import csv
 import os.path
-from pyomo.environ import Var, Constraint, NonNegativeReals
+from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -16,6 +15,8 @@ def generic_add_model_components(
         d,
         reserve_zone_timepoint_set,
         reserve_violation_variable,
+        reserve_violation_expression,
+        reserve_violation_allowed_param,
         reserve_requirement_param,
         total_reserve_provision_expression,
         meet_reserve_constraint,
@@ -26,6 +27,8 @@ def generic_add_model_components(
     :param d:
     :param reserve_zone_timepoint_set:
     :param reserve_violation_variable:
+    :param reserve_violation_expression:
+    :param reserve_violation_allowed_param:
     :param reserve_requirement_param:
     :param total_reserve_provision_expression:
     :param meet_reserve_constraint:
@@ -37,6 +40,21 @@ def generic_add_model_components(
             Var(getattr(m, reserve_zone_timepoint_set),
                 within=NonNegativeReals)
             )
+
+    def violation_expression_rule(mod, ba, tmp):
+        """
+
+        :param mod:
+        :param ba:
+        :param tmp:
+        :return:
+        """
+        return getattr(mod, reserve_violation_allowed_param)[ba] \
+            * getattr(mod, reserve_violation_variable)[ba, tmp]
+
+    setattr(m, reserve_violation_expression,
+            Expression(getattr(m, reserve_zone_timepoint_set),
+                       rule=violation_expression_rule))
 
     # Reserve constraints
     def meet_reserve_rule(mod, ba, tmp):
@@ -53,7 +71,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                            filename,
                            column_name,
                            reserve_zone_timepoint_set,
-                           reserve_violation_variable
+                           reserve_violation_expression
                            ):
     """
 
@@ -65,7 +83,7 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
     :param filename:
     :param column_name:
     :param reserve_zone_timepoint_set:
-    :param reserve_violation_variable:
+    :param reserve_violation_expression:
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
@@ -86,7 +104,8 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                 m.number_years_represented[m.period[tmp]],
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
-                getattr(m, reserve_violation_variable)[ba, tmp].value]
+                value(getattr(m, reserve_violation_expression)[ba, tmp])
+            ]
             )
 
 

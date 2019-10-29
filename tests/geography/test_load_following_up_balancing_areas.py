@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import unittest
@@ -69,6 +70,33 @@ class TestLoadFollowingUpBAs(unittest.TestCase):
                              msg="LF_RESERVES_UP_ZONES set data does not "
                                  "load correctly."
                              )
+
+        # Param: allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted({"Zone1": 1, "Zone2": 1}.items())
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {z: instance.lf_reserves_up_allow_violation[z]
+                 for z in instance.LF_RESERVES_UP_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation,
+                             actual_allow_violation)
+
+        # Param: violation penalty
+        expected_penalty = OrderedDict(
+            sorted({"Zone1": 99999999, "Zone2": 99999999}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {z: instance.lf_reserves_up_violation_penalty_per_mw[z]
+                 for z in instance.LF_RESERVES_UP_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty,
+                             actual_penalty)
+
 
 if __name__ == "__main__":
     unittest.main()

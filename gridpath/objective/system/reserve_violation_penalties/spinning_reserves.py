@@ -5,7 +5,7 @@
 from __future__ import absolute_import
 
 from .aggregate_reserve_violation_penalties import \
-    generic_add_model_components, generic_load_model_data
+    generic_add_model_components
 
 
 def add_model_components(m, d):
@@ -19,17 +19,8 @@ def add_model_components(m, d):
     generic_add_model_components(
         m,
         d,
-        "SPINNING_RESERVES_ZONES",
         "SPINNING_RESERVES_ZONE_TIMEPOINTS",
-        "Spinning_Reserves_Violation_MW",
+        "Spinning_Reserves_Violation_MW_Expression",
         "spinning_reserves_violation_penalty_per_mw",
         "Spinning_Reserves_Penalty_Costs"
         )
-
-
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    generic_load_model_data(m, d, data_portal,
-                            scenario_directory, subproblem, stage,
-                            "spinning_reserves_balancing_areas.tab",
-                            "spinning_reserves_violation_penalty_per_mw"
-                            )
