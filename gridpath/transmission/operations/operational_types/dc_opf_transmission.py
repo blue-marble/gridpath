@@ -265,6 +265,15 @@ def load_module_specific_data(m, data_portal, scenario_directory,
                  "tx_operational_type", "reactance_ohms"]
     )
 
+    # TODO: need to find TRANMISSION_LINES_OPERATIONAL_IN_PERIOD here so we
+    #  can figure out the cycles for each operational period. However, this set
+    #  is a derived set (see capacity.py) it is not easily available.
+    #  OPTION 1: move everything to add_model components and derive the tx
+    #  cycle direction param. This step would just read in reactance
+    #  This is what I'm currently trying
+    #  OPTION 2: derive the tx_operational_periods here again from the tab
+    #  files. Not ideal since we'd be doing this twice (also in capacity.py)
+
     # Dict of reactance by dc_opf_transmission line
     reactance_ohms = dict(zip(
         df["TRANSMISSION_LINES"],
