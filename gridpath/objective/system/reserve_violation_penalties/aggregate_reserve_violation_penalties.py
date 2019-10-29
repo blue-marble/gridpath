@@ -11,7 +11,7 @@ def generic_add_model_components(
         m,
         d,
         reserve_zone_timepoint_set,
-        reserve_violation_variable,
+        reserve_violation_expression,
         reserve_violation_penalty_param,
         objective_function_reserve_penalty_cost_component
 ):
@@ -20,14 +20,14 @@ def generic_add_model_components(
     :param m:
     :param d:
     :param reserve_zone_timepoint_set:
-    :param reserve_violation_variable:
+    :param reserve_violation_expression:
     :param reserve_violation_penalty_param:
     :param objective_function_reserve_penalty_cost_component:
     :return:
     """
     # Add violation penalty costs incurred to objective function
     def penalty_costs_rule(mod):
-        return sum(getattr(mod, reserve_violation_variable)[ba, tmp]
+        return sum(getattr(mod, reserve_violation_expression)[ba, tmp]
                    * getattr(mod, reserve_violation_penalty_param)[ba]
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.timepoint_weight[tmp]

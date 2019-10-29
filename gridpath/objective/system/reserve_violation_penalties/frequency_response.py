@@ -23,7 +23,7 @@ def add_model_components(m, d):
         m,
         d,
         "FREQUENCY_RESPONSE_BA_TIMEPOINTS",
-        "Frequency_Response_Violation_MW",
+        "Frequency_Response_Violation_MW_Expression",
         "frequency_response_violation_penalty_per_mw",
         "Frequency_Response_Penalty_Costs"
         )
