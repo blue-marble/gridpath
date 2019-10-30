@@ -41,13 +41,13 @@ def add_module_specific_components(m, d):
 
     m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = Set(dimen=2)
 
-    m.hydro_curtailable_average_power_mwa = \
+    m.hydro_curtailable_average_power_fraction = \
         Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
-    m.hydro_curtailable_min_power_mw = \
+    m.hydro_curtailable_min_power_fraction = \
         Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
-    m.hydro_curtailable_max_power_mw = \
+    m.hydro_curtailable_max_power_fraction = \
         Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
 
@@ -102,7 +102,8 @@ def add_module_specific_components(m, d):
                    * mod.number_of_hours_in_timepoint[tmp]
                    for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
             == \
-            sum(mod.hydro_curtailable_average_power_mwa[g, h]
+            sum(mod.hydro_curtailable_average_power_fraction[g, h]
+                * mod.Capacity_MW[g, mod.period[tmp]]
                 * mod.number_of_hours_in_timepoint[tmp]
                 for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
 
@@ -120,8 +121,10 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_curtailable_max_power_mw[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
+            <= mod.hydro_curtailable_max_power_fraction[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]]
+
     m.Hydro_Curtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -138,8 +141,10 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
             - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_curtailable_min_power_mw[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
+            >= mod.hydro_curtailable_min_power_fraction[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]]
+
     m.Hydro_Curtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -403,27 +408,27 @@ def load_module_specific_data(m, data_portal,
 
     # Determine subset of project-horizons in hydro budgets file
     project_horizons = list()
-    mwa = dict()
-    min_mw = dict()
-    max_mw = dict()
+    avg = dict()
+    min = dict()
+    max = dict()
 
     prj_hor_opchar_df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage, "inputs",
                      "hydro_conventional_horizon_params.tab"),
         sep="\t",
-        usecols=["project", "horizon", "hydro_average_power_mwa",
-                 "hydro_min_power_mw", "hydro_max_power_mw"]
+        usecols=["project", "horizon", "hydro_average_power_fraction",
+                 "hydro_min_power_fraction", "hydro_max_power_fraction"]
     )
     for row in zip(prj_hor_opchar_df["project"],
                    prj_hor_opchar_df["horizon"],
-                   prj_hor_opchar_df["hydro_average_power_mwa"],
-                   prj_hor_opchar_df["hydro_min_power_mw"],
-                   prj_hor_opchar_df["hydro_max_power_mw"]):
+                   prj_hor_opchar_df["hydro_average_power_fraction"],
+                   prj_hor_opchar_df["hydro_min_power_fraction"],
+                   prj_hor_opchar_df["hydro_max_power_fraction"]):
         if row[0] in projects:
             project_horizons.append((row[0], row[1]))
-            mwa[(row[0], row[1])] = float(row[2])
-            min_mw[(row[0], row[1])] = float(row[3])
-            max_mw[(row[0], row[1])] = float(row[4])
+            avg[(row[0], row[1])] = float(row[2])
+            min[(row[0], row[1])] = float(row[3])
+            max[(row[0], row[1])] = float(row[4])
         else:
             pass
 
@@ -433,9 +438,9 @@ def load_module_specific_data(m, data_portal,
     ] = {
         None: project_horizons
     }
-    data_portal.data()["hydro_curtailable_average_power_mwa"] = mwa
-    data_portal.data()["hydro_curtailable_min_power_mw"] = min_mw
-    data_portal.data()["hydro_curtailable_max_power_mw"] = max_mw
+    data_portal.data()["hydro_curtailable_average_power_fraction"] = avg
+    data_portal.data()["hydro_curtailable_min_power_fraction"] = min
+    data_portal.data()["hydro_curtailable_max_power_fraction"] = max
 
     # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
@@ -541,8 +546,8 @@ def get_module_specific_inputs_from_database(
     # TODO: should we ensure that the project balancing type and the horizon
     #  length type match (e.g. by joining on them being equal here)
     hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_mwa, min_power_mw,
-        max_power_mw
+        """SELECT project, horizon, average_power_fraction, min_power_fraction,
+        max_power_fraction
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, hydro_operational_chars_scenario_id
@@ -652,9 +657,9 @@ def write_module_specific_model_inputs(
             # Write header
             writer.writerow(
                 ["project", "horizon",
-                 "hydro_average_power_mwa",
-                 "hydro_min_power_mw",
-                 "hydro_max_power_mw"]
+                 "hydro_average_power_fraction",
+                 "hydro_min_power_fraction",
+                 "hydro_max_power_fraction"]
             )
             for row in hydro_chars:
                 writer.writerow(row)

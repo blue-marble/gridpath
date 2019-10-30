@@ -165,7 +165,7 @@ class TestExamples(unittest.TestCase):
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--mute_solver_output", "--testing"])
 
-        expected_objective = 100062.36
+        expected_objective = 100062.55
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
@@ -421,15 +421,15 @@ class TestExamples(unittest.TestCase):
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
-            1: {"da": 966735355.3466533,
-                "ha": 966735355.3466533,
-                "rt": 966735355.3466533},
-            2: {"da": 966735355.3466533,
-                "ha": 966735355.3466533,
-                "rt": 966735355.3466533},
-            3: {"da": 966735355.3466533,
-                "ha": 966735355.3466533,
-                "rt": 966735355.3466533}
+            1: {"da": 966735555.35,
+                "ha": 966735555.35,
+                "rt": 966735555.35},
+            2: {"da": 966735555.35,
+                "ha": 966735555.35,
+                "rt": 966735555.35},
+            3: {"da": 966735555.35,
+                "ha": 966735555.35,
+                "rt": 966735555.35}
         }
 
         for horizon in [1, 2, 3]:

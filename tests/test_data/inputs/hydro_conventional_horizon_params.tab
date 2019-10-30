@@ -1,7 +1,7 @@
-project	horizon	hydro_average_power_mwa	hydro_min_power_mw	hydro_max_power_mw
-Hydro	202001	3	1	6
-Hydro	202002	3	1	6
-Hydro	203001	3	1	6
-Hydro	203002	3	1	6
-Hydro_NonCurtailable	2020	3	1	6
-Hydro_NonCurtailable	2030	3	1	6
+project	horizon	hydro_average_power_fraction	hydro_min_power_fraction	hydro_max_power_fraction
+Hydro	202001	0.5	0.15	1
+Hydro	202002	0.5	0.15	1
+Hydro	203001	0.5	0.15	1
+Hydro	203002	0.5	0.15	1
+Hydro_NonCurtailable	2020	0.5	0.15	1
+Hydro_NonCurtailable	2030	0.5	0.15	1
