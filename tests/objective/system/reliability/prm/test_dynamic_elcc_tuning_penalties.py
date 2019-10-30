@@ -14,7 +14,7 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..",
                  "test_data")
 
 # Import prerequisite modules
