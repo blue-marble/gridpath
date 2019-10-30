@@ -1,2 +1,2 @@
-carbon_cap_zone
-Zone1
+carbon_cap_zone	allow_violation	violation_penalty
+Zone1	0	0

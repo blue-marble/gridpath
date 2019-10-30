@@ -1,2 +1,2 @@
-rps_zone
-RPSZone1
+rps_zone	allow_violation	violation_penalty
+RPSZone1	0	0
