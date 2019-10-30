@@ -146,8 +146,8 @@ def all_modules_list():
         "objective.system.reserve_violation_penalties.spinning_reserves",
         "objective.system.policy.aggregate_rps_violation_penalties",
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
-        "objective.system.prm.dynamic_elcc_tuning_penalties",
-        "objective.system.local_capacity"
+        "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
+        "objective.system.reliability.local_capacity"
         ".aggregate_local_capacity_shortage_penalties",
         "objective.min_total_cost"
     ]
@@ -260,7 +260,7 @@ def optional_modules_list():
              "system.reliability.local_capacity"
              ".aggregate_local_capacity_contribution",
              "system.reliability.local_capacity.local_capacity_balance",
-             "objective.system.local_capacity"
+             "objective.system.reliability.local_capacity"
              ".aggregate_local_capacity_shortage_penalties",
              ],
         "tuning": [
@@ -296,7 +296,7 @@ def cross_feature_modules_list():
             ["project.reliability.prm.elcc_surface",
              "system.reliability.prm.elcc_surface"],
         ("prm", "elcc_surface", "tuning"):
-            ["objective.system.prm.dynamic_elcc_tuning_penalties"]
+            ["objective.system.reliability.prm.dynamic_elcc_tuning_penalties"]
     }
     return cross_modules
 
