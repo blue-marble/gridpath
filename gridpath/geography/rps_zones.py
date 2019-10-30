@@ -22,10 +22,10 @@ def add_model_components(m, d):
     m.RPS_ZONES = Set()
 
     m.rps_allow_violation = Param(
-        m.RPS_ZONES, within=Boolean
+        m.RPS_ZONES, within=Boolean, default=0
     )
     m.rps_violation_penalty_per_mwh = Param(
-        m.RPS_ZONES, within=NonNegativeReals
+        m.RPS_ZONES, within=NonNegativeReals, default=0
     )
 
 

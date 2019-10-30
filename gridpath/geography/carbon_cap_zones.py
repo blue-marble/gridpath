@@ -22,10 +22,10 @@ def add_model_components(m, d):
     m.CARBON_CAP_ZONES = Set()
 
     m.carbon_cap_allow_violation = Param(
-        m.CARBON_CAP_ZONES, within=Boolean
+        m.CARBON_CAP_ZONES, within=Boolean, default=0
     )
     m.carbon_cap_violation_penalty_per_mmt = Param(
-        m.CARBON_CAP_ZONES, within=NonNegativeReals
+        m.CARBON_CAP_ZONES, within=NonNegativeReals, default=0
     )
 
 
