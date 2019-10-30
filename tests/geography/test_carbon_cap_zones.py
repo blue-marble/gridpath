@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -86,3 +87,29 @@ class TestCarbonCapZones(unittest.TestCase):
             sorted([z for z in instance.CARBON_CAP_ZONES])
         self.assertListEqual(expected_carbon_cap_zones,
                              actual_carbon_cap_zones)
+
+        # Param: allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted({"Carbon_Cap_Zone1": 0, "Carbon_Cap_Zone2": 0}.items())
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {z: instance.carbon_cap_allow_violation[z]
+                 for z in instance.CARBON_CAP_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation,
+                             actual_allow_violation)
+
+        # Param: violation penalty
+        expected_penalty = OrderedDict(
+            sorted({"Carbon_Cap_Zone1": 0, "Carbon_Cap_Zone2": 0}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {z: instance.carbon_cap_violation_penalty_per_mmt[z]
+                 for z in instance.CARBON_CAP_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty,
+                             actual_penalty)

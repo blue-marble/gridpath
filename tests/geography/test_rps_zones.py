@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -83,3 +84,29 @@ class TestRPSZones(unittest.TestCase):
         expected_rps_zones = sorted(["RPS_Zone_1", "RPS_Zone_2"])
         actual_rps_zones = sorted([z for z in instance.RPS_ZONES])
         self.assertListEqual(expected_rps_zones, actual_rps_zones)
+
+        # Param: allow_violation
+        expected_allow_violation = OrderedDict(
+            sorted({"RPS_Zone_1": 0, "RPS_Zone_2": 0}.items())
+        )
+        actual_allow_violation = OrderedDict(
+            sorted(
+                {z: instance.rps_allow_violation[z]
+                 for z in instance.RPS_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_allow_violation,
+                             actual_allow_violation)
+
+        # Param: violation penalty
+        expected_penalty = OrderedDict(
+            sorted({"RPS_Zone_1": 0, "RPS_Zone_2": 0}.items())
+        )
+        actual_penalty = OrderedDict(
+            sorted(
+                {z: instance.rps_violation_penalty_per_mwh[z]
+                 for z in instance.RPS_ZONES}.items()
+            )
+        )
+        self.assertDictEqual(expected_penalty,
+                             actual_penalty)
