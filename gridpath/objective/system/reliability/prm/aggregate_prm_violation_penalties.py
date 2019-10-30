@@ -15,7 +15,7 @@ def add_model_components(m, d):
     """
 
     def total_penalty_costs_rule(mod):
-        return sum(mod.PRM_Shortage_MW[z, p]
+        return sum(mod.PRM_Shortage_MW_Expression[z, p]
                    * mod.prm_violation_penalty_per_mw[z]
                    * mod.number_years_represented[p]
                    * mod.discount_factor[p]

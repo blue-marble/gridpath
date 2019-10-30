@@ -25,10 +25,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-    m.Local_Capacity_Shortage_MW = Var(
-        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
-        within=NonNegativeReals
-    )
 
     m.Total_Local_Capacity_from_All_Sources_Expression_MW = Expression(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
@@ -36,6 +32,20 @@ def add_model_components(m, d):
         sum(getattr(mod, component)[z, p] for component
             in getattr(d, local_capacity_balance_provision_components)
             )
+    )
+
+    m.Local_Capacity_Shortage_MW = Var(
+        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
+        within=NonNegativeReals
+    )
+
+    def violation_expression_rule(mod, z, p):
+        return mod.Local_Capacity_Shortage_MW[z, p] * \
+               mod.local_capacity_allow_violation[z]
+
+    m.Local_Capacity_Shortage_MW_Expression = Expression(
+        m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
+        rule=violation_expression_rule
     )
 
     def local_capacity_requirement_rule(mod, z, p):
@@ -48,7 +58,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p] \
-            + mod.Local_Capacity_Shortage_MW[z, p] \
+            + mod.Local_Capacity_Shortage_MW_Expression[z, p] \
             >= mod.local_capacity_requirement_mw[z, p]
 
     m.Local_Capacity_Constraint = Constraint(
@@ -73,7 +83,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["local_capacity_zone", "period",
                          "discount_factor", "number_years_represented",
                          "local_capacity_requirement_mw",
-                         "local_capacity_provision_mw"])
+                         "local_capacity_provision_mw",
+                         "local_capacity_shortage_mw"])
         for (z, p) in m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow([
                 z,
@@ -83,7 +94,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 float(m.local_capacity_requirement_mw[z, p]),
                 value(
                     m.Total_Local_Capacity_from_All_Sources_Expression_MW[z, p]
-                )
+                ),
+                value(m.Local_Capacity_Shortage_MW_Expression[z, p])
             ])
 
 
@@ -108,7 +120,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     nullify_sql = """
         UPDATE results_system_local_capacity
         SET local_capacity_requirement_mw = NULL,
-        local_capacity_provision_mw = NULL
+        local_capacity_provision_mw = NULL,
+        local_capacity_shortage_mw = NULL
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
@@ -131,17 +144,20 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             number_years = row[3]
             local_capacity_req_mw = row[4]
             local_capacity_prov_mw = row[5]
+            shortage_mw = row[6]
 
             results.append(
                 (local_capacity_req_mw, local_capacity_prov_mw,
-                    discount_factor, number_years,
-                    scenario_id, local_capacity_zone, period)
+                 shortage_mw,
+                 discount_factor, number_years,
+                 scenario_id, local_capacity_zone, period)
             )
 
     update_sql = """
         UPDATE results_system_local_capacity
         SET local_capacity_requirement_mw = ?,
         local_capacity_provision_mw = ?,
+        local_capacity_shortage_mw = ?,
         discount_factor = ?,
         number_years_represented = ?
         WHERE scenario_id = ?

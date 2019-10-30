@@ -11,7 +11,7 @@ from builtins import next
 import csv
 import os.path
 
-from pyomo.environ import Constraint, Expression, value
+from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
@@ -34,6 +34,17 @@ def add_model_components(m, d):
             )
     )
 
+    m.PRM_Shortage_MW = Var(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, within=NonNegativeReals
+    )
+
+    def violation_expression_rule(mod, z, p):
+        return mod.PRM_Shortage_MW[z, p] * mod.prm_allow_violation[z]
+
+    m.PRM_Shortage_MW_Expression = Expression(
+        m.PRM_ZONE_PERIODS_WITH_REQUIREMENT, rule=violation_expression_rule
+    )
+
     def prm_requirement_rule(mod, z, p):
         """
         Total PRM provision must be greater than or equal to the requirement
@@ -43,6 +54,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_PRM_from_All_Sources_Expression[z, p] \
+            + mod.PRM_Shortage_MW_Expression[z, p] \
             >= mod.prm_requirement_mw[z, p]
 
     m.PRM_Constraint = Constraint(
@@ -67,7 +79,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["prm_zone", "period",
                          "discount_factor", "number_years_represented",
                          "prm_requirement_mw",
-                         "prm_provision_mw"])
+                         "prm_provision_mw",
+                         "prm_shortage_mw"])
         for (z, p) in m.PRM_ZONE_PERIODS_WITH_REQUIREMENT:
             writer.writerow([
                 z,
@@ -75,7 +88,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.discount_factor[p],
                 m.number_years_represented[p],
                 float(m.prm_requirement_mw[z, p]),
-                value(m.Total_PRM_from_All_Sources_Expression[z, p])
+                value(m.Total_PRM_from_All_Sources_Expression[z, p]),
+                value(m.PRM_Shortage_MW_Expression[z, p])
             ])
 
 
@@ -105,7 +119,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     nullify_sql = """
         UPDATE results_system_prm
         SET prm_requirement_mw = NULL,
-        elcc_total_mw = NULL
+        elcc_total_mw = NULL,
+        prm_shortage_mw = NULL,
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
@@ -128,9 +143,10 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             number_years = row[3]
             prm_req_mw = row[4]
             prm_prov_mw = row[5]
+            shortage_mw = row[6]
             
             results.append(
-                (prm_req_mw, prm_prov_mw,
+                (prm_req_mw, prm_prov_mw, shortage_mw,
                  discount_factor, number_years,
                  scenario_id, prm_zone, period,
                  subproblem, stage)
@@ -140,6 +156,7 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         UPDATE results_system_prm
         SET prm_requirement_mw = ?,
         elcc_total_mw = ?,
+        prm_shortage_mw = ?,
         discount_factor = ?,
         number_years_represented = ?
         WHERE scenario_id = ?
