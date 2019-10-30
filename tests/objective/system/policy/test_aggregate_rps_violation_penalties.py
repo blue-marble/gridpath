@@ -18,10 +18,20 @@ TEST_DATA_DIRECTORY = \
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.rps_zones",
-     "system.policy.rps.rps_requirement", "system.policy.rps.aggregate_recs",
-     "system.policy.rps.rps_balance"]
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods",
+    "geography.load_zones", "geography.rps_zones",
+    "project",
+    "project.capacity.capacity",
+    "project.availability.availability", "project.fuels",
+    "project.operations",
+    "project.operations.operational_types",
+    "project.operations.power",
+    "project.operations.fuel_burn",
+    "project.operations.recs",
+    "system.policy.rps.rps_requirement", "system.policy.rps.aggregate_recs",
+    "system.policy.rps.rps_balance"
+]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.system.policy.aggregate_rps_violation_penalties"
 IMPORTED_PREREQ_MODULES = list()
