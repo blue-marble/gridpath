@@ -148,7 +148,7 @@ def all_modules_list():
         "objective.system.policy.aggregate_carbon_cap_violation_penalties",
         "objective.system.reliability.prm.dynamic_elcc_tuning_penalties",
         "objective.system.reliability.local_capacity"
-        ".aggregate_local_capacity_shortage_penalties",
+        ".aggregate_local_capacity_violation_penalties",
         "objective.min_total_cost"
     ]
     return all_modules
@@ -261,7 +261,7 @@ def optional_modules_list():
              ".aggregate_local_capacity_contribution",
              "system.reliability.local_capacity.local_capacity_balance",
              "objective.system.reliability.local_capacity"
-             ".aggregate_local_capacity_shortage_penalties",
+             ".aggregate_local_capacity_violation_penalties",
              ],
         "tuning": [
             "project.operations.tuning_costs",

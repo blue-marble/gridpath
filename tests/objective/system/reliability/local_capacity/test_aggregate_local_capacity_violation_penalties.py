@@ -14,7 +14,8 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
+                 "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
@@ -24,7 +25,7 @@ PREREQUISITE_MODULE_NAMES = [
      "system.reliability.local_capacity.local_capacity_balance"]
 NAME_OF_MODULE_BEING_TESTED = \
     "objective.system" \
-    ".local_capacity.aggregate_local_capacity_shortage_penalties"
+    ".local_capacity.aggregate_local_capacity_violation_penalties"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

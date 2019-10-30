@@ -258,7 +258,7 @@ Feature modules include:
     :members:
 .. automodule:: gridpath.system.reliability.local_capacity.local_capacity_balance
     :members:
-.. automodule:: gridpath.objective.system.local_capacity.aggregate_local_capacity_shortage_penalties
+.. automodule:: gridpath.objective.system.local_capacity.aggregate_local_capacity_violation_penalties
     :members:
 
 
