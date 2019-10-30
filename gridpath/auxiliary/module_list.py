@@ -251,7 +251,10 @@ def optional_modules_list():
              "aggregate_project_simple_prm_contribution",
              "system.reliability.prm.prm_balance",
              "objective.project."
-             "aggregate_prm_group_costs"],
+             "aggregate_prm_group_costs",
+             "objective.system.reliability.prm."
+             "aggregate_prm_violation_penalties"
+             ],
         "local_capacity":
             ["geography.local_capacity_zones",
              "system.reliability.local_capacity.local_capacity_requirement",
