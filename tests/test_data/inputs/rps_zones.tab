@@ -1,3 +1,3 @@
-rps_zone
-RPS_Zone_1
-RPS_Zone_2
+rps_zone	allow_violation	violation_penalty
+RPS_Zone_1	0	0
+RPS_Zone_2	0	0
