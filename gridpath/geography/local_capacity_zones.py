@@ -24,7 +24,7 @@ def add_model_components(m, d):
     m.local_capacity_allow_violation = Param(
         m.LOCAL_CAPACITY_ZONES, within=Boolean, default=0
     )
-    m.local_capacity_violation_penalty_per_mwh = Param(
+    m.local_capacity_violation_penalty_per_mw = Param(
         m.LOCAL_CAPACITY_ZONES, within=NonNegativeReals, default=0
     )
 
@@ -45,7 +45,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "local_capacity_zones.tab"),
                      index=m.LOCAL_CAPACITY_ZONES,
                      param=(m.local_capacity_allow_violation,
-                            m.local_capacity_violation_penalty_per_mwh)
+                            m.local_capacity_violation_penalty_per_mw)
                      )
 
 

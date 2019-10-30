@@ -22,10 +22,10 @@ def add_model_components(m, d):
     m.PRM_ZONES = Set()
 
     m.prm_allow_violation = Param(
-        m.RPS_ZONES, within=Boolean, default=0
+        m.PRM_ZONES, within=Boolean, default=0
     )
-    m.prm_violation_penalty_per_mwh = Param(
-        m.RPS_ZONES, within=NonNegativeReals, default=0
+    m.prm_violation_penalty_per_mw = Param(
+        m.PRM_ZONES, within=NonNegativeReals, default=0
     )
 
 
@@ -44,7 +44,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                                            "inputs", "prm_zones.tab"),
                      index=m.PRM_ZONES,
                      param=(m.prm_allow_violation,
-                            m.prm_violation_penalty_per_mwh)
+                            m.prm_violation_penalty_per_mw)
                      )
 
 
