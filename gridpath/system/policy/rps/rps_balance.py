@@ -183,6 +183,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     results_df.drop("total_rps_energy_mwh", axis=1, inplace=True)
     results_df.drop("fraction_of_rps_target_met", axis=1, inplace=True)
     results_df.drop("fraction_of_rps_energy_curtailed", axis=1, inplace=True)
+    results_df.drop("rps_shortage_mwh", axis=1, inplace=True)
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
