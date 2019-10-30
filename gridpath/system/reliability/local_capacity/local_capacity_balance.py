@@ -11,8 +11,7 @@ from builtins import next
 import csv
 import os.path
 
-from pyomo.environ import Param, Var, Constraint, Expression, \
-    NonNegativeReals, value
+from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
@@ -26,10 +25,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
-    m.local_capacity_shortage_penalty_per_mw = \
-        Param(m.LOCAL_CAPACITY_ZONES, within=NonNegativeReals)
-
     m.Local_Capacity_Shortage_MW = Var(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
         within=NonNegativeReals
@@ -59,25 +54,6 @@ def add_model_components(m, d):
     m.Local_Capacity_Constraint = Constraint(
         m.LOCAL_CAPACITY_ZONE_PERIODS_WITH_REQUIREMENT,
         rule=local_capacity_requirement_rule
-    )
-
-
-def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
-    """
-
-    :param m:
-    :param d:
-    :param data_portal:
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-    data_portal.load(
-        filename=os.path.join(
-            scenario_directory, "inputs", "local_capacity_zones.tab"
-        ),
-        param=m.local_capacity_shortage_penalty_per_mw
     )
 
 
