@@ -145,7 +145,12 @@ export class ScenarioResultsComponent implements OnInit {
   // This function is called when a user requests a plot; this will change
   // some values, namely the plotHTMLTarget and then call ngOnInit, which
   // in turn calls getResultPlot
-  showPlot(formGroup): void {
+  showPlotOrDownloadData(formGroup): void {
+
+    // Figure out which button was pressed
+    const buttonName = document.activeElement.getAttribute('Name');
+    console.log(buttonName);
+
     // We need to set the plotFormValue and plotHTMLTarget before
     // calling ngOnInit to be able to embed the plot
     this.plotFormValue = formGroup;
@@ -172,7 +177,8 @@ export class ScenarioResultsComponent implements OnInit {
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
-    this.scenarioResultsService.getResultsPlot(
+    if (buttonName === 'showPlot') {
+      this.scenarioResultsService.getResultsPlot(
       this.scenarioID, plotType, loadZone, rpsZone, carbonCapZone,
       period, horizon, subproblem, stage, project, yMax
     ).subscribe(resultsPlot => {
@@ -180,6 +186,8 @@ export class ScenarioResultsComponent implements OnInit {
         this.resultsToShow = resultsPlot.plotJSON.target_id;
         this.ngOnInit();
       });
+    }
+
   }
 
   // This function is called in ngOnInit
@@ -213,6 +221,10 @@ export class ScenarioResultsComponent implements OnInit {
         this.resultsPlot = resultsPlot.plotJSON;
         Bokeh.embed.embed_item(this.resultsPlot);
       });
+  }
+
+  downloadPlotData(scenarioID, loadZone, subproblem, stage): void {
+    console.log(scenarioID, loadZone, subproblem, stage);
   }
 
   clearPlots(): void {
