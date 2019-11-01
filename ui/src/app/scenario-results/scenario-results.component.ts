@@ -6,8 +6,11 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
+import {socketConnect} from '../app.component';
 
 const Bokeh = ( window as any ).require('bokehjs');
+
+
 
 
 @Component({
@@ -170,6 +173,10 @@ export class ScenarioResultsComponent implements OnInit {
       });
     }
 
+    if (buttonName === 'downloadData') {
+      this.downloadPlotData(formGroup);
+    }
+
   }
 
   // This function is called in ngOnInit
@@ -216,6 +223,22 @@ export class ScenarioResultsComponent implements OnInit {
 
   downloadPlotData(formGroup): void {
     const formValues = this.getFormGroupValues(formGroup);
+
+    const socket = socketConnect();
+
+    socket.emit(
+            'save_plot_data',
+            { plotType: formValues.plotType,
+              loadZone: formValues.loadZone,
+              carbonCapZone: formValues.carbonCapZone,
+              rpsZone: formValues.rpsZone,
+              period: formValues.period,
+              horizon: formValues.horizon,
+              subproblem: formValues.subproblem,
+              stage: formValues.stage,
+              project: formValues.project,
+              yMax: formValues.yMax}
+        );
   }
 
   clearPlots(): void {

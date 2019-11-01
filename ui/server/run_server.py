@@ -93,7 +93,7 @@ add_api_resources(api=api, db_path=DATABASE_PATH)
 
 # ########################## Socket Communication ########################### #
 
-# ### Database operations ### #
+# ### DATABASE OPERATIONS ### #
 @socketio.on('add_new_scenario')
 def socket_add_or_edit_new_scenario(msg):
     add_or_update_scenario(db_path=DATABASE_PATH, msg=msg)
@@ -214,6 +214,17 @@ def socket_clear_scenario(client_message):
     delete_scenario(db_path=DATABASE_PATH,
                     scenario_id=client_message["scenario"])
     emit("scenario_deleted")
+
+
+# ### SAVING DATA ### #
+@socketio.on("save_plot_data")
+def socket_save_plot_data(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    print(client_message)
 
 
 def main():
