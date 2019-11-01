@@ -315,10 +315,14 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     return load
 
 
-def get_plotting_data(c, scenario_id, load_zone, horizon, stage):
+def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     """
     Get the dispatch data by timepoint and technology for a given
     scenario/load_zone/horizon/stage.
+
+    **kwargs needed, so that an error isn't thrown when calling this
+    function with extra arguments from the UI.
+
     :param c:
     :param scenario_id:
     :param load_zone:

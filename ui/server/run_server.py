@@ -16,6 +16,7 @@ from ui.server.db_ops.add_scenario import add_or_update_scenario
 from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
+from ui.server.save_data import save_plot_data_to_csv
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -225,6 +226,21 @@ def socket_save_plot_data(client_message):
     :return:
     """
     print(client_message)
+    save_plot_data_to_csv(
+      scenario_id=client_message["scenarioID"],
+      plot_type=client_message["plotType"],
+      directory="/Users/ana/dev/gridpath_dev/ui",
+      filename="again.csv",
+      db_path=DATABASE_PATH,
+      load_zone=client_message["loadZone"],
+      carbon_cap_zone=client_message["carbonCapZone"],
+      rps_zone=client_message["rpsZone"],
+      period=client_message["period"],
+      horizon=client_message["horizon"],
+      subproblem=client_message["subproblem"],
+      stage=client_message["stage"],
+      project=client_message["project"],
+    )
 
 
 def main():

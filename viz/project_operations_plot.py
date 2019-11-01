@@ -56,10 +56,14 @@ def parse_arguments(arguments):
 
 
 def get_plotting_data(conn, scenario_id, project, period, stage,
-                      horizon_start, horizon_end):
+                      horizon_start, horizon_end, **kwargs):
     """
     Get operations by timepoint for a given scenario/project/period/stage and
     horizon range.
+
+    **kwargs needed, so that an error isn't thrown when calling this
+    function with extra arguments from the UI.
+
     :param conn:
     :param scenario_id:
     :param project:
