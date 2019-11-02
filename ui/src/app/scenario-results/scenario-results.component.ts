@@ -3,6 +3,8 @@ import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormBuilder } from '@angular/forms';
 
+const electron = ( window as any ).require('electron');
+
 import { ScenarioResultsService } from './scenario-results.service';
 import { ScenarioResultsTable, ResultsOptions } from './scenario-results';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
@@ -174,7 +176,13 @@ export class ScenarioResultsComponent implements OnInit {
     }
 
     if (buttonName === 'downloadData') {
-      this.downloadPlotData(formGroup);
+      electron.remote.dialog.showSaveDialog(
+        { title: 'untitled.csv', defaultPath: 'plot.csv',
+          filters: [{extensions: ['csv']}]
+        }, (targetPath) => {
+          this.downloadPlotData(targetPath, formGroup);
+        }
+      );
     }
 
   }
@@ -221,14 +229,14 @@ export class ScenarioResultsComponent implements OnInit {
       subproblem, stage, project, yMax};
   }
 
-  downloadPlotData(formGroup): void {
+  downloadPlotData(targetPath, formGroup): void {
     const formValues = this.getFormGroupValues(formGroup);
-
     const socket = socketConnect();
 
     socket.emit(
             'save_plot_data',
-            { scenarioID: this.scenarioID,
+            { downloadPath: targetPath,
+              scenarioID: this.scenarioID,
               plotType: formValues.plotType,
               loadZone: formValues.loadZone,
               carbonCapZone: formValues.carbonCapZone,

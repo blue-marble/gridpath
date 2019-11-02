@@ -221,17 +221,18 @@ def socket_clear_scenario(client_message):
 @socketio.on("save_plot_data")
 def socket_save_plot_data(client_message):
     """
-
-    :param client_message:
+    :param client_message: dictionary with various params needed for
+      save_plot_data_to_csv function
     :return:
+
+    Function that responds to socket call from client and calls
+    save_plot_data_to_csv function.
     """
-    print(client_message)
     save_plot_data_to_csv(
+      db_path=DATABASE_PATH,
+      download_path=client_message["downloadPath"],
       scenario_id=client_message["scenarioID"],
       plot_type=client_message["plotType"],
-      directory="/Users/ana/dev/gridpath_dev/ui",
-      filename="again.csv",
-      db_path=DATABASE_PATH,
       load_zone=client_message["loadZone"],
       carbon_cap_zone=client_message["carbonCapZone"],
       rps_zone=client_message["rpsZone"],
