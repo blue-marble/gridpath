@@ -355,9 +355,11 @@ function startServer () {
       const cplexExec = data['requestedCPLEXExecutable']['value'];
       const gurobiExec = data['requestedGurobiExecutable']['value'];
 
-      // The server entry point based on the Python directory
+      // The server entry point based on the Python directory and the
+      // executables directory ('Scripts' on Windows, 'bin' otherwise)
+      const executablesDirectory = (isWindows === true) ? 'Scripts' : 'bin';
       const serverEntryPoint = path.join(
-        pyDir, 'gridpath_run_server'
+        pyDir, executablesDirectory, 'gridpath_run_server'
       );
 
       // Start the server (if Python path is set)
