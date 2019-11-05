@@ -2,7 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operational tuning costs. Includes tuning costs on hydro ramps.
+Operational tuning costs that preven erratic dispatch in case of degeneracy.
+Tuning costs can be applied to hydro up and down ramps (hydro_curtailable
+and hydro_noncurtailable operational types) and to storage up-ramps (
+storage_generic operational type) in order to force smoother dispatch.
 """
 
 from builtins import next
