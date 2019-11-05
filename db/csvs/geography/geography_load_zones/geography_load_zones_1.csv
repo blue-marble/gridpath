@@ -1,0 +1,7 @@
+load_zone_scenario_id,1,,
+name,default_1_zone,,
+description,1 zone India,,
+,,,
+,,,
+load_zone_scenario_id,load_zone,overgeneration_penalty_per_mw,unserved_energy_penalty_per_mw
+1,India,50000,50000
