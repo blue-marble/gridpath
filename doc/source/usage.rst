@@ -53,6 +53,10 @@ Once you have Git installed, clone the repository with::
 For more info on cloning repositories, see `the instructions on GitHub
 <https://help.github.com/en/articles/cloning-a-repository>`_.
 
+We will eventually distribute GridPath through pypi and conda, so cloning the
+repository will eventually not be required except for users who want to edit
+the source code.
+
 
 ============
 Requirements
