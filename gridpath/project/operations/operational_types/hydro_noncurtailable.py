@@ -31,14 +31,14 @@ def add_module_specific_components(m, d):
     We also need the *HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS* set
     (:math:`NCHG\_OH`) over which we will define hydro's main operational
     parameters including:
-    *hydro_noncurtailable_average_power_mwa* \ :sub:`nchg, oh`\ -- the
-    average power on a given horizon *oh* (multiply by the timepoint number of
-    hours represented and sum across all timepoints on the horizon to get
-    the horizon energy budget) \n
-    *hydro_noncurtailable_min_power_mw* \ :sub:`nchg, oh`\ -- the minimum
-    power output on each timepoint on horizon *oh* \n
-    *hydro_noncurtailable_max_power_mw* \ :sub:`nchg, oh`\ -- the maximum
-    power output on each timepoint on horizon *oh* \n
+    *hydro_noncurtailable_average_power_fraction* \ :sub:`nchg, oh`\ -- the
+    average power on a given horizon *oh* (multiply by the capacity and the
+    timepoint number of hours represented and sum across all timepoints on the
+    horizon to get the horizon energy budget) \n
+    *hydro_noncurtailable_min_power_fraction* \ :sub:`nchg, oh`\ -- the minimum
+    power output on each timepoint on horizon *oh* as a fraction of capacity \n
+    *hydro_noncurtailable_max_power_fraction* \ :sub:`nchg, oh`\ -- the maximum
+    power output on each timepoint on horizon *oh* as a fraction of capacity \n
     *hydro_noncurtailable_ramp_up_rate* \ :sub:`nchg`\ -- the project's upward
     ramp rate limit, defined as a fraction of its capacity per minute \n
     *hydro_noncurtailable_ramp_down_rate* \ :sub:`nchg`\ -- the project's
@@ -55,14 +55,14 @@ def add_module_specific_components(m, d):
 
     :math:`\sum_{{tmp}\in T_h}{Hydro\_Noncurtailable\_Provide\_Power\_MW_{
     nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp} = \sum_{{
-    tmp}\in T_h}{hydro\_noncurtailable\_average\_power\_mwa_{
+    tmp}\in T_h}{hydro\_noncurtailable\_average\_power\_fraction_{
     nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp}`
 
     For :math:`(nchg, tmp) \in NCHG\_OT`: \n
     :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \geq
-    hydro\_noncurtailable\_min\_power\_mwa_{nchg, tmp}`
+    hydro\_noncurtailable\_min\_power\_fraction_{nchg, tmp}`
     :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \leq
-    hydro\_noncurtailable\_max\_power\_mwa_{nchg, tmp}`
+    hydro\_noncurtailable\_max\_power\_fraction_{nchg, tmp}`
 
     Hydro ramps can be constrained: documentation to be added.
 
@@ -78,13 +78,13 @@ def add_module_specific_components(m, d):
     m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = \
         Set(dimen=2)
 
-    m.hydro_noncurtailable_average_power_mwa = \
+    m.hydro_noncurtailable_average_power_fraction = \
         Param(m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
-    m.hydro_noncurtailable_min_power_mw = \
+    m.hydro_noncurtailable_min_power_fraction = \
         Param(m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
-    m.hydro_noncurtailable_max_power_mw = \
+    m.hydro_noncurtailable_max_power_fraction = \
         Param(m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
               within=NonNegativeReals)
 
@@ -144,7 +144,8 @@ def add_module_specific_components(m, d):
                    * mod.number_of_hours_in_timepoint[tmp]
                    for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
             == \
-            sum(mod.hydro_noncurtailable_average_power_mwa[g, h]
+            sum(mod.hydro_noncurtailable_average_power_fraction[g, h]
+                * mod.Capacity_MW[g, mod.period[tmp]]
                 * mod.number_of_hours_in_timepoint[tmp]
                 for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
 
@@ -162,8 +163,10 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp] \
             + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_noncurtailable_max_power_mw[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
+            <= mod.hydro_noncurtailable_max_power_fraction[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]]
+
     m.Hydro_Noncurtailable_Max_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -180,8 +183,10 @@ def add_module_specific_components(m, d):
         """
         return mod.Hydro_Noncurtailable_Provide_Power_MW[g, tmp]\
             - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_noncurtailable_min_power_mw[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]]
+            >= mod.hydro_noncurtailable_min_power_fraction[
+                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]]
+
     m.Hydro_Noncurtailable_Min_Power_Constraint = \
         Constraint(
             m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -440,9 +445,9 @@ def load_module_specific_data(m, data_portal,
 
     # Determine subset of project-timepoints in variable profiles file
     project_horizons = list()
-    mwa = dict()
-    min_mw = dict()
-    max_mw = dict()
+    avg = dict()
+    min = dict()
+    max = dict()
 
     prj_tmp_cf_df = \
         pd.read_csv(
@@ -450,21 +455,21 @@ def load_module_specific_data(m, data_portal,
                          "hydro_conventional_horizon_params.tab"),
             sep="\t", usecols=[
                 "project", "horizon",
-                "hydro_average_power_mwa",
-                "hydro_min_power_mw",
-                "hydro_max_power_mw"
+                "hydro_average_power_fraction",
+                "hydro_min_power_fraction",
+                "hydro_max_power_fraction"
             ]
         )
     for row in zip(prj_tmp_cf_df["project"],
                    prj_tmp_cf_df["horizon"],
-                   prj_tmp_cf_df["hydro_average_power_mwa"],
-                   prj_tmp_cf_df["hydro_min_power_mw"],
-                   prj_tmp_cf_df["hydro_max_power_mw"]):
+                   prj_tmp_cf_df["hydro_average_power_fraction"],
+                   prj_tmp_cf_df["hydro_min_power_fraction"],
+                   prj_tmp_cf_df["hydro_max_power_fraction"]):
         if row[0] in projects:
             project_horizons.append((row[0], row[1]))
-            mwa[(row[0], row[1])] = float(row[2])
-            min_mw[(row[0], row[1])] = float(row[3])
-            max_mw[(row[0], row[1])] = float(row[4])
+            avg[(row[0], row[1])] = float(row[2])
+            min[(row[0], row[1])] = float(row[3])
+            max[(row[0], row[1])] = float(row[4])
         else:
             pass
 
@@ -474,9 +479,9 @@ def load_module_specific_data(m, data_portal,
     ] = {
         None: project_horizons
     }
-    data_portal.data()["hydro_noncurtailable_average_power_mwa"] = mwa
-    data_portal.data()["hydro_noncurtailable_min_power_mw"] = min_mw
-    data_portal.data()["hydro_noncurtailable_max_power_mw"] = max_mw
+    data_portal.data()["hydro_noncurtailable_average_power_fraction"] = avg
+    data_portal.data()["hydro_noncurtailable_min_power_fraction"] = min
+    data_portal.data()["hydro_noncurtailable_max_power_fraction"] = max
 
     # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
@@ -542,8 +547,8 @@ def get_module_specific_inputs_from_database(
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
     hydro_chars = c.execute(
-        """SELECT project, horizon, average_power_mwa, min_power_mw,
-        max_power_mw
+        """SELECT project, horizon, average_power_fraction, min_power_fraction,
+        max_power_fraction
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, hydro_operational_chars_scenario_id
@@ -653,9 +658,9 @@ def write_module_specific_model_inputs(
             # Write header
             writer.writerow(
                 ["project", "horizon",
-                 "hydro_average_power_mwa",
-                 "hydro_min_power_mw",
-                 "hydro_max_power_mw"]
+                 "hydro_average_power_fraction",
+                 "hydro_min_power_fraction",
+                 "hydro_max_power_fraction"]
             )
             for row in hydro_chars:
                 writer.writerow(row)

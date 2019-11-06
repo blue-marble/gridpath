@@ -102,15 +102,15 @@ class TestHydroNonCurtailable(unittest.TestCase):
         self.assertListEqual(expected_operational_horizons,
                              actual_operational_horizons)
 
-        # Param: hydro_noncurtailable_average_power_mwa
+        # Param: hydro_noncurtailable_average_power_fraction
         expected_average_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 2020): 3,
-                    ("Hydro_NonCurtailable", 2030): 3}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 0.5,
+                    ("Hydro_NonCurtailable", 2030): 0.5}.items())
         )
         actual_average_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_average_power_mwa[prj, period]
+                    instance.hydro_noncurtailable_average_power_fraction[prj, period]
                  for (prj, period) in
                  instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
@@ -118,15 +118,15 @@ class TestHydroNonCurtailable(unittest.TestCase):
         )
         self.assertDictEqual(expected_average_power, actual_average_power)
 
-        # Param: hydro_noncurtailable_min_power_mw
+        # Param: hydro_noncurtailable_min_power_fraction
         expected_min_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 2020): 1,
-                    ("Hydro_NonCurtailable", 2030): 1}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 0.15,
+                    ("Hydro_NonCurtailable", 2030): 0.15}.items())
         )
         actual_min_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_min_power_mw[prj, period]
+                    instance.hydro_noncurtailable_min_power_fraction[prj, period]
                  for (prj, period) in
                  instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
@@ -134,15 +134,15 @@ class TestHydroNonCurtailable(unittest.TestCase):
         )
         self.assertDictEqual(expected_min_power, actual_min_power)
 
-        # Param: hydro_noncurtailable_max_power_mw
+        # Param: hydro_noncurtailable_max_power_fraction
         expected_max_power = OrderedDict(
-            sorted({("Hydro_NonCurtailable", 2020): 6,
-                    ("Hydro_NonCurtailable", 2030): 6}.items())
+            sorted({("Hydro_NonCurtailable", 2020): 1,
+                    ("Hydro_NonCurtailable", 2030): 1}.items())
         )
         actual_max_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_max_power_mw[prj, period]
+                    instance.hydro_noncurtailable_max_power_fraction[prj, period]
                  for (prj, period) in
                  instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
                  }.items()
