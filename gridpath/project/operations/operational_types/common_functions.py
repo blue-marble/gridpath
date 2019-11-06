@@ -96,3 +96,108 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                     relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps
+
+
+def determine_relevant_timepoints_forward(mod, g, tmp, min_time):
+    """
+    Find relevant timepoints for determining the startup power during a certain
+    tmp.
+
+    Example:
+    1. The startup duration is 3 hours and timepoints have an hourly resolution.
+    For tmp 15, this means the relevant timepoints are 16, 17, 18, since any
+    any starts in tmps 16, 17, or 18 will have an impact on timepoint 15. For
+    instance, if you start in timepoint 18, it means there weill be 3-h startup
+    trajectory leading to that, starting in timepoint 15 and ending in timepoint
+    17. The power outputs at the end of each timepoint will be respectively
+    0.33 * Pmin, 0.66 * Pmin and Pmin for tmps 15, 16, 17.
+    2. The startup duration is 3 hours and timepoints have a 4-hour resolution.
+    For tmp 15, this means that the relevant timepoint is just tmp 16, with
+    a power output of Pmin.
+    (or nothing at all??) - NO
+
+        # EXAMPLE:
+        # unit starts in tmp = 15, so the runup will happen during tmp = 14
+        # tmp = 14 has duration of 3 hours and startup
+        # duration is only 2 hours. That means tmp = 14 will contain the full
+        # startup and output will be zero in # tmp = 13 and can be anything in
+        # tmp = 15.
+        # if we're checking relevant tmps for tmp = 14, we should at least get
+        # tmp = 15 returned.
+
+    Note that "starting" a unit during a timepoint means that the unit will be
+    fully online for the first time in that timepoint, with fully controllable
+    power output, but it might have a startup trajectory during the previous
+    timepoints to get there.
+
+    Note 2: We need to end at Pmin at the end of a startup to match constraint
+    (6) in Morales-Espana. Our power expression is different from their energy
+    expression, and the power needs to come from here rather than the Pmin
+    * commitment since commitment in this timepoint (the one before the timepoint
+    in which the unit binary start variable is 1) is zero.
+
+    Note 3: in extreme cases, this might lead you to provide a lot of power for
+    a long duration when it might not have been exactly necessary. E.g. startup-
+    duration is 1 hour, but the timepoint duration is 10 hours. To start in
+    timepoint x, you will need to end at Pmin at timepiont x-1. But since we
+    don't do energy vs. power, we will see this as providing pmin for the
+    whole 10-hours from an energy perspective.
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :param min_time: duration of the startup trajectory in hours
+    :return: a list of timepoints that affect the startup power output for
+    the given timepoint.
+
+
+    """
+
+    # If we are on the last timepoint on a linear horizon,  no future starts
+    # affect the units output so there are no relevant timepoints.
+    if tmp == mod.last_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        relevant_tmps = []
+        # TODO: could add hours_from_tmps to help calculations
+    else:
+        # A start in the next timepoint will always affect the startup power in
+        # the current timepoint, regardless of startup times and timepoint
+        # durations
+        relevant_tmp = mod.next_timepoint[tmp, mod.balancing_type_project[g]]
+        relevant_tmps = [relevant_tmp]
+
+        # If If we haven't exceed the startup duration yet, a startup in the
+        # next next timepoint would affect the current timepoint, so we need
+        # to add it to our list.
+        hours_from_tmp = mod.number_of_hours_in_timepoint[relevant_tmp]
+        while hours_from_tmp < min_time:
+            # In a 'linear' horizon setting, once we reach the last timepoint
+            # of the horizon, we break out of the loop since there are no more
+            # timepoints to consider
+            if mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                    == "linear" \
+                    and relevant_tmp == \
+                    mod.last_horizon_timepoint[
+                        mod.horizon[tmp, mod.balancing_type_project[g]]]:
+                break
+            # In a 'circular' horizon setting, once we reach timepoint *t*,
+            # we break out of the loop since there are no more timepoints to
+            # consider (we have already added all horizon timepoints as
+            # relevant)
+            elif mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                    == "circular" \
+                    and relevant_tmp == tmp:
+                break
+            # Otherwise, we move on to the relevant timepoint's next
+            # timepoint and will add that timepoint's duration to
+            # hours_from_tmp
+            else:
+                relevant_tmp = mod.next_timepoint[
+                    relevant_tmp, mod.balancing_type_project[g]]
+                hours_from_tmp += \
+                    mod.number_of_hours_in_timepoint[relevant_tmp]
+                relevant_tmps.append(relevant_tmp)
+
+    return relevant_tmps
