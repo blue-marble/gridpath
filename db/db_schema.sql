@@ -435,6 +435,8 @@ DROP TABLE IF EXISTS inputs_geography_rps_zones;
 CREATE TABLE inputs_geography_rps_zones (
 rps_zone_scenario_id INTEGER,
 rps_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mwh FLOAT DEFAULT 0,
 PRIMARY KEY (rps_zone_scenario_id, rps_zone),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
@@ -454,6 +456,8 @@ DROP TABLE IF EXISTS inputs_geography_carbon_cap_zones;
 CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mmt FLOAT DEFAULT 0,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
@@ -3151,6 +3155,7 @@ carbon_cap_mmt FLOAT,
 in_zone_project_emissions_mmt FLOAT,
 import_emissions_mmt FLOAT,
 total_emissions_mmt FLOAT,
+carbon_cap_overage_mmt FLOAT,
 import_emissions_mmt_degen FLOAT,
 total_emissions_mmt_degen FLOAT,
 dual FLOAT,
@@ -3174,6 +3179,7 @@ curtailed_rps_energy_mwh FLOAT,
 total_rps_energy_mwh FLOAT,
 fraction_of_rps_target_met FLOAT,
 fraction_of_rps_energy_curtailed FLOAT,
+rps_shortage_mwh FLOAT,
 dual FLOAT,
 rps_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)

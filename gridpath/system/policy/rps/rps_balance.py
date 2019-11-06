@@ -9,12 +9,11 @@ from __future__ import division
 from __future__ import print_function
 
 from builtins import next
-from builtins import str
 import csv
 import os.path
 import pandas as pd
 
-from pyomo.environ import Constraint, value
+from pyomo.environ import Var, Constraint, NonNegativeReals, Expression, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -28,6 +27,17 @@ def add_model_components(m, d):
     :return:
     """
 
+    m.RPS_Shortage_MWh = Var(
+        m.RPS_ZONE_PERIODS_WITH_RPS, within=NonNegativeReals
+    )
+
+    def violation_expression_rule(mod, z, p):
+        return mod.RPS_Shortage_MWh[z, p] * mod.rps_allow_violation[z]
+
+    m.RPS_Shortage_MWh_Expression = Expression(
+        m.RPS_ZONE_PERIODS_WITH_RPS, rule=violation_expression_rule
+    )
+
     def rps_target_rule(mod, z, p):
         """
         Total delivered RPS-eligible energy must exceed target
@@ -37,6 +47,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_Delivered_RPS_Energy_MWh[z, p] \
+            + mod.RPS_Shortage_MWh_Expression[z, p] \
             >= mod.rps_target_mwh[z, p]
 
     m.RPS_Target_Constraint = Constraint(m.RPS_ZONE_PERIODS_WITH_RPS,
@@ -63,7 +74,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "curtailed_rps_energy_mwh",
                          "total_rps_energy_mwh",
                          "fraction_of_rps_target_met",
-                         "fraction_of_rps_energy_curtailed"])
+                         "fraction_of_rps_energy_curtailed",
+                         "rps_shortage_mwh"])
         for (z, p) in m.RPS_ZONE_PERIODS_WITH_RPS:
             writer.writerow([
                 z,
@@ -79,7 +91,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 float(m.rps_target_mwh[z, p]),
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
                 (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
-                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p]))
+                 + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])),
+                value(m.RPS_Shortage_MWh_Expression[z, p])
             ])
 
 
@@ -170,6 +183,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     results_df.drop("total_rps_energy_mwh", axis=1, inplace=True)
     results_df.drop("fraction_of_rps_target_met", axis=1, inplace=True)
     results_df.drop("fraction_of_rps_energy_curtailed", axis=1, inplace=True)
+    results_df.drop("rps_shortage_mwh", axis=1, inplace=True)
 
     # Rearrange the columns
     cols = results_df.columns.tolist()
@@ -216,12 +230,13 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             total = row[7]
             fraction_met = row[8]
             fraction_curtailed = row[9]
+            shortage = row[10]
 
             results.append(
                 (scenario_id, rps_zone, period, subproblem, stage,
                  discount_factor, number_years, rps_target,
                  rps_provision, curtailment, total,
-                 fraction_met, fraction_curtailed)
+                 fraction_met, fraction_curtailed, shortage)
             )
             
     insert_temp_sql = """
@@ -230,8 +245,9 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
          discount_factor, number_years_represented, rps_target_mwh, 
          delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
          total_rps_energy_mwh,
-         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
+         rps_shortage_mwh)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -242,12 +258,14 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
-        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed)
+        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed, 
+        rps_shortage_mwh)
         SELECT scenario_id, rps_zone, period, subproblem_id, stage_id,
         discount_factor, number_years_represented, rps_target_mwh, 
         delivered_rps_energy_mwh, curtailed_rps_energy_mwh,
         total_rps_energy_mwh,
-        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed
+        fraction_of_rps_target_met, fraction_of_rps_energy_curtailed,
+        rps_shortage_mwh
         FROM temp_results_system_rps{}
         ORDER BY scenario_id, rps_zone, period, subproblem_id, stage_id;
         """.format(scenario_id)
