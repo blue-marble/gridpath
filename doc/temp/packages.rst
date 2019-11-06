@@ -373,7 +373,7 @@ spinning_reserves
 .. automodule:: gridpath.objective.system.local_capacity.__init__
     :members:
 .. automodule:: gridpath.objective.system.local_capacity.
-aggregate_local_capacity_shortage_penalties
+aggregate_local_capacity_violation_penalties
     :members:
 
 

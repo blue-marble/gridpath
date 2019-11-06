@@ -90,7 +90,7 @@ class TestLocalCapacityBalance(unittest.TestCase):
         )
         instance = m.create_instance(data)
         
-        # Param: local_capacity_shortage_penalty_per_mw
+        # Param: local_capacity_violation_penalty_per_mw
         expected_penalty = OrderedDict(sorted({
             "Local_Capacity_Zone1": 10000,
             "Local_Capacity_Zone2": 10000
@@ -98,7 +98,7 @@ class TestLocalCapacityBalance(unittest.TestCase):
                                               )
                                        )
         actual_penalty = OrderedDict(sorted({
-            z: instance.local_capacity_shortage_penalty_per_mw[z]
+            z: instance.local_capacity_violation_penalty_per_mw[z]
             for z in instance.LOCAL_CAPACITY_ZONES
                                             }.items()
                                             )

@@ -477,6 +477,8 @@ DROP TABLE IF EXISTS inputs_geography_prm_zones;
 CREATE TABLE inputs_geography_prm_zones (
 prm_zone_scenario_id INTEGER,
 prm_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mw FLOAT DEFAULT 0,
 PRIMARY KEY (prm_zone_scenario_id, prm_zone),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
@@ -496,7 +498,8 @@ DROP TABLE IF EXISTS inputs_geography_local_capacity_zones;
 CREATE TABLE inputs_geography_local_capacity_zones (
 local_capacity_zone_scenario_id INTEGER,
 local_capacity_zone VARCHAR(32),
-local_capacity_shortage_penalty_per_mw FLOAT,
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mw FLOAT DEFAULT 0,
 PRIMARY KEY (local_capacity_zone_scenario_id, local_capacity_zone),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
 subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
@@ -3200,6 +3203,7 @@ prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
+prm_shortage_mw FLOAT,
 dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
@@ -3217,6 +3221,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 local_capacity_requirement_mw FLOAT,
 local_capacity_provision_mw FLOAT,
+local_capacity_shortage_mw FLOAT,
 dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)

@@ -8,7 +8,7 @@ the load zones and other balancing areas.
 
 import csv
 import os.path
-from pyomo.environ import Set
+from pyomo.environ import Set, Param, Boolean, NonNegativeReals
 
 
 def add_model_components(m, d):
@@ -20,6 +20,13 @@ def add_model_components(m, d):
     """
 
     m.LOCAL_CAPACITY_ZONES = Set()
+
+    m.local_capacity_allow_violation = Param(
+        m.LOCAL_CAPACITY_ZONES, within=Boolean, default=0
+    )
+    m.local_capacity_violation_penalty_per_mw = Param(
+        m.LOCAL_CAPACITY_ZONES, within=NonNegativeReals, default=0
+    )
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -36,9 +43,9 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs",
                                            "local_capacity_zones.tab"),
-                     select=("local_capacity_zone",),
                      index=m.LOCAL_CAPACITY_ZONES,
-                     param=()
+                     param=(m.local_capacity_allow_violation,
+                            m.local_capacity_violation_penalty_per_mw)
                      )
 
 
@@ -52,8 +59,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     local_capacity_zones = c.execute(
-        """SELECT local_capacity_zone, 
-        local_capacity_shortage_penalty_per_mw
+        """SELECT local_capacity_zone, allow_violation,
+        violation_penalty_per_mw
         FROM inputs_geography_local_capacity_zones
         WHERE local_capacity_zone_scenario_id = {};
         """.format(
@@ -101,7 +108,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["local_capacity_zone", "local_capacity_shortage_penalty_per_mw"]
+            ["local_capacity_zone", "allow_violation",
+             "violation_penalty_per_mw"]
         )
 
         for row in local_capacity_zones:
