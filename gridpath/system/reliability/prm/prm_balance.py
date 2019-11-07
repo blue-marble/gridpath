@@ -120,7 +120,7 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
         UPDATE results_system_prm
         SET prm_requirement_mw = NULL,
         elcc_total_mw = NULL,
-        prm_shortage_mw = NULL,
+        prm_shortage_mw = NULL
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;

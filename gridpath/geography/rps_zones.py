@@ -49,7 +49,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     rps_zones = c.execute(
-        """SELECT rps_zone, allow_violation, violation_penalty_per_mwh,
+        """SELECT rps_zone, allow_violation, violation_penalty_per_mwh
            FROM inputs_geography_rps_zones
            WHERE rps_zone_scenario_id = {};""".format(
             subscenarios.RPS_ZONE_SCENARIO_ID
