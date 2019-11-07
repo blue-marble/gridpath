@@ -43,7 +43,7 @@ export class HomeComponent implements OnInit {
         if (data.requestedGridPathDatabase.value === null) {
           this.zone.run(() => this.databaseStatus = 'not set');
         }
-        if (data.requestedPythonBinary.value === null) {
+        if (data.requestedPythonEnvironment.value === null) {
           this.zone.run(() => this.pythonStatus = 'not set');
         }
       }
