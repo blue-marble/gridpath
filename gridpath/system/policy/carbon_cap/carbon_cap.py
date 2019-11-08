@@ -69,11 +69,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM inputs_geography_carbon_cap_zones
         WHERE carbon_cap_zone_scenario_id = {}) as relevant_zones
         using (carbon_cap_zone)
-        WHERE carbon_cap_target_scenario_id = {};
+        WHERE carbon_cap_target_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_id = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
-            subscenarios.CARBON_CAP_TARGET_SCENARIO_ID
+            subscenarios.CARBON_CAP_TARGET_SCENARIO_ID,
+            subproblem,
+            stage
         )
     )
 

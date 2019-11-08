@@ -39,18 +39,19 @@ def insert_rps_targets(
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert data
+    # TODO: okay to hard-code subproblem_id and stage_id here?
     inputs_data = []
     for zone in list(zone_period_targets.keys()):
         for period in list(zone_period_targets[zone].keys()):
             inputs_data.append(
                 (rps_target_scenario_id, zone, period,
-                 zone_period_targets[zone][period])
+                 zone_period_targets[zone][period], 1, 1)
             )
     inputs_sql = """
         INSERT INTO inputs_system_rps_targets
-        (rps_target_scenario_id, rps_zone, period,
+        (rps_target_scenario_id, rps_zone, period, subproblem_id, stage_id,
         rps_target_mwh)
-        VALUES (?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
