@@ -14,7 +14,7 @@ You will also need to install the required Python packages to run GridPath
 and the UI server. To do so, navigate to the GridPath root directory and 
 run:
 ```bash
-pip install .[ui]
+pip install -e .[ui]
 ```
 
 ## NodeJS
