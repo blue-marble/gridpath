@@ -50,6 +50,11 @@ Once you have Git installed, clone the repository with::
 
     git clone https://github.com/anamileva/gridpath.git PATH/TO/GRIDPATH
 
+(You could also navigate to :code:`PATH/TO/GRIDPATH` with
+:code:`cd PATH/TO/GRIDPATH` and run
+:code:`git clone https://github.com/anamileva/gridpath.git .` to clone into
+the current directory.)
+
 For more info on cloning repositories, see `the instructions on GitHub
 <https://help.github.com/en/articles/cloning-a-repository>`_.
 
@@ -133,8 +138,8 @@ Packages
 ^^^^^^^^
 
 You can install all needed Python packages, including those for the extra
-features, by navigating to the the GridPath directory PATH/TO/GRIDPATH and
-running:::
+features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
+with :code:`cd PATH/TO/GRIDPATH` and running::
 
     pip install .[all]
 
