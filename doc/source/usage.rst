@@ -11,7 +11,11 @@ installed, you will be able to interact with the platform through the user
 interface.
 
 On Windows, you can use cmd.exe, Windows PowerShell, or another command-line
-interface. On Mac, you can use the Terminal application.
+interface (we test using cmd.exe, so recommend using that). You can search
+for cmd.exe from the Start menu. On Mac, you can use the Terminal
+application. Search for it with Spotlight by clicking the magnifying glass
+icon in the upper-right corner of the menu bar, or by pressing
+Command-Space bar.
 
 
 ==================
