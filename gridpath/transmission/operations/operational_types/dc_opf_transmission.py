@@ -83,12 +83,13 @@ def add_module_specific_components(m, d):
     # 2-D set: Period and cycle_id of the independent cycles of the network
     # graph (the network can change between periods)
     def period_cycles(mod):
-        # TODO: is there a way to remove the duplicates (p, c) more cleanly?
+        # Note: set() will remove duplicates
         return set([(p, c) for (p, c, z) in mod.PERIODS_CYCLES_ZONES])
     m.PERIODS_CYCLES = Set(dimen=2, rule=period_cycles)
 
     # 2-D Set of cycle IDs and operational timepoints
     # KVL constraint is indexed by this set
+    # Note: This assumes timepoints are unique across periods
     m.CYCLES_OPERATIONAL_TIMEPOINTS = Set(
         dimen=2,
         rule=lambda mod:
@@ -101,11 +102,6 @@ def add_module_specific_components(m, d):
     def zones_by_period_cycle(mod, period, cycle):
         zones = [z for (p, c, z) in mod.PERIODS_CYCLES_ZONES
                  if p == period and c == cycle]
-        # Sort the list while maintaining the order (i.e. rotate)
-        # This is to standardize the cycle direction, since networkx returns
-        # a random direction due to the set.pop() behavior in the algorithm
-        n = zones.index(sorted(zones)[0])
-        zones = zones[:-n] + zones[-n:]
         return zones
     m.ZONES_IN_PERIOD_CYCLE = Set(
         m.PERIODS_CYCLES,
@@ -116,9 +112,8 @@ def add_module_specific_components(m, d):
     # 3-D set of periods, cycle_ids, and transmission lines in that period-cycle
     # Tx_cycle direction is indexed by this set, and the set is also used to get
     # TRANSMISSION_LINES_IN_PERIOD_CYCLE set
-    # TODO: factor out edges operational in period as a set?
-    # TODO: factor out dc opf lines operational in period as a set?
-    # TODO: Alternatively, we could simply define this set by the bigger set
+
+    # Note: Alternatively, we could simply define this set by the bigger set
     #  m.PERIODS_CYCLES * m.TRANSMISSION_LINES_DC_OPF and set the
     #  tx_cycle_direction to zero whenever the line is not part of the cycle.
     #  This would get rid of the repetitive code in the init function below
@@ -311,15 +306,7 @@ def load_module_specific_data(m, data_portal, scenario_directory,
         usecols=["TRANSMISSION_LINES", "load_zone_from", "load_zone_to",
                  "tx_operational_type", "reactance_ohms"]
     )
-
-    # TODO: need to find TRANMISSION_LINES_OPERATIONAL_IN_PERIOD here so we
-    #  can figure out the cycles for each operational period. However, this set
-    #  is a derived set (see capacity.py) it is not easily available.
-    #  OPTION 1: move everything to add_model components and derive the tx
-    #  cycle direction param. This step would just read in reactance
-    #  This is what I'm currently trying
-    #  OPTION 2: derive the tx_operational_periods here again from the tab
-    #  files. Not ideal since we'd be doing this twice (also in capacity.py)
+    df = df[df["tx_operational_type"] == "dc_opf_transmission"]
 
     # Dict of reactance by dc_opf_transmission line
     reactance_ohms = dict(zip(
