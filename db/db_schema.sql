@@ -1874,7 +1874,7 @@ prm_zone VARCHAR(32),
 period INTEGER,
 prm_requirement_mw FLOAT,
 prm_zone_scenario_id INTEGER,
-PRIMARY KEY (prm`_requirement_scenario_id, prm_zone, period),
+PRIMARY KEY (prm_requirement_scenario_id, prm_zone, period),
 FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
 inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
 );
