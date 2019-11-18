@@ -90,7 +90,7 @@ class TestDynamicELCCTuningPenalties(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Param: dynamic_elcc_tuning_cost
-        self.assertEqual(instance.dynamic_elcc_tuning_cost, 10e-10)
+        self.assertEqual(instance.dynamic_elcc_tuning_cost_per_mw, 10e-10)
 
 
 if __name__ == "__main__":

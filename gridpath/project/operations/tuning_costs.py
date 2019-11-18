@@ -26,7 +26,7 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.ramp_tuning_cost = Param(default=0)
+    m.ramp_tuning_cost_per_mw = Param(default=0)
 
     # Import needed operational modules
     imported_operational_modules = \
@@ -67,7 +67,7 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
-            mod.ramp_tuning_cost if gen_op_type in [
+            mod.ramp_tuning_cost_per_mw if gen_op_type in [
                 "hydro_curtailable", "hydro_noncurtailable", "storage_generic"
             ] else 0
         if tmp == mod.first_horizon_timepoint[
@@ -96,7 +96,7 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
-            mod.ramp_tuning_cost \
+            mod.ramp_tuning_cost_per_mw \
             if gen_op_type in ["hydro_curtailable", "hydro_noncurtailable"] \
             else 0
         if tmp == mod.first_horizon_timepoint[
@@ -134,8 +134,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     if os.path.exists(tuning_param_file):
         data_portal.load(filename=tuning_param_file,
-                         select=("ramp_tuning_cost",),
-                         param=m.ramp_tuning_cost
+                         select=("ramp_tuning_cost_per_mw",),
+                         param=m.ramp_tuning_cost_per_mw
                          )
     else:
         pass
@@ -151,7 +151,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     ramp_tuning_cost = c.execute(
-        """SELECT ramp_tuning_cost
+        """SELECT ramp_tuning_cost_per_mw
         FROM inputs_tuning
         WHERE tuning_scenario_id = {}""".format(
             subscenarios.TUNING_SCENARIO_ID
@@ -203,7 +203,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
             # Append column header
             header = next(reader)
-            header.append("import_carbon_tuning_cost")
+            header.append("ramp_tuning_cost_per_mw")
             new_rows.append(header)
 
             # Append tuning param value
@@ -222,5 +222,5 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                   "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
-            writer.writerow(["ramp_tuning_cost"])
+            writer.writerow(["ramp_tuning_cost_per_mw"])
             writer.writerow([ramp_tuning_cost])
