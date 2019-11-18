@@ -106,6 +106,13 @@ def add_model_components(m, d):
                 if t == tmp)
             )
 
+    m.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD = \
+        Set(m.PERIODS,
+            rule=lambda mod, period: set(
+                tx for (tx, p) in mod.TRANSMISSION_OPERATIONAL_PERIODS
+                if p == period)
+            )
+
     # Add costs to objective function
     def tx_capacity_cost_rule(mod, tx, p):
         """

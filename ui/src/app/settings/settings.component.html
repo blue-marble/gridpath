@@ -73,8 +73,8 @@
                    placeholder="GridPath Python environment directory"
                    type="text"
                    [(ngModel)]="requestedPythonDirectory">
-            <button id="browsePythonBinary" class="button-primary"
-                    (click)="browsePythonBinary()">Browse</button>
+            <button id="browsePythonEnvironment" class="button-primary"
+                    (click)="browsePythonEnvironment()">Browse</button>
           </td>
           <td  [ngClass]="{
               'orange' : pythonStatus == 'restart required',

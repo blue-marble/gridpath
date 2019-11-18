@@ -48,10 +48,15 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage):
+def get_plotting_data(conn, scenario_id, carbon_cap_zone, subproblem, stage,
+                      **kwargs):
     """
     Get the carbon results by period for a given
     scenario/carbon_cap_zone/subproblem/stage.
+
+    **kwargs needed, so that an error isn't thrown when calling this
+    function with extra arguments from the UI.
+
     :param conn:
     :param scenario_id:
     :param carbon_cap_zone:

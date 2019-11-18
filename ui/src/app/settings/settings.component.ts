@@ -62,13 +62,13 @@ export class SettingsComponent implements OnInit {
     this.zone.run(() => {
       this.currentScenariosDirectory = data.currentScenariosDirectory.value;
       this.currentGridPathDB = data.currentGridPathDatabase.value;
-      this.currentPythonDirectory = data.currentPythonBinary.value;
+      this.currentPythonDirectory = data.currentPythonEnvironment.value;
       this.currentCbcExecutable = data.currentCbcExecutable.value;
       this.currentCPLEXExecutable = data.currentCPLEXExecutable.value;
       this.currentGurobiExecutable = data.currentGurobiExecutable.value;
       this.requestedScenariosDirectory = data.requestedScenariosDirectory.value;
       this.requestedGridPathDB = data.requestedGridPathDatabase.value;
-      this.requestedPythonDirectory = data.requestedPythonBinary.value;
+      this.requestedPythonDirectory = data.requestedPythonEnvironment.value;
       this.requestedCbcExecutable = data.requestedCbcExecutable.value;
       this.requestedCPLEXExecutable = data.requestedCPLEXExecutable.value;
       this.requestedGurobiExecutable = data.requestedGurobiExecutable.value;
@@ -135,7 +135,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  browsePythonBinary() {
+  browsePythonEnvironment() {
     // Open an Electron dialog to select the folder
     electron.remote.dialog.showOpenDialog(
       {title: 'Select a the Python environment directory',
@@ -146,7 +146,7 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setPythonBinarySetting', folderPath[0]);
+        electron.ipcRenderer.send('setPythonEnvironmentSetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedPythonDirectory = folderPath[0];

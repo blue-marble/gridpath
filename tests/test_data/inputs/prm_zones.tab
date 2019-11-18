@@ -1,3 +1,3 @@
-prm_zone
-PRM_Zone1
-PRM_Zone2
+prm_zone	allow_violation	violation_penalty_per_mw
+PRM_Zone1	0	0
+PRM_Zone2	0	0

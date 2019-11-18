@@ -25,10 +25,10 @@ function createMainWindow () {
         const requiredKeys = [
           'currentGridPathDatabase',
           'currentScenariosDirectory',
-          'currentPythonBinary',
+          'currentPythonEnvironment',
           'requestedGridPathDatabase',
           'requestedScenariosDirectory',
-          'requestedPythonBinary',
+          'requestedPythonEnvironment',
         ];
 
         // TODO: should a solver be required; currently not (user can
@@ -196,15 +196,15 @@ ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
   );
 });
 
-// Set the Python binary setting based on Angular input
+// Set the Python environment setting based on Angular input
 // Get setting from renderer and store it
-ipcMain.on('setPythonBinarySetting', (event, pythonbinary) => {
-	console.log(`Python binary directory set to ${pythonbinary}`);
+ipcMain.on('setPythonEnvironmentSetting', (event, pythonenvironment) => {
+	console.log(`Python environment directory set to ${pythonenvironment}`);
 	// TODO: do we need to keep in storage?
-  // Set the Python binary path in Electron JSON storage
+  // Set the Python environment path in Electron JSON storage
   storage.set(
-      'requestedPythonBinary',
-      { 'value': pythonbinary },
+      'requestedPythonEnvironment',
+      { 'value': pythonenvironment },
       (error) => {if (error) throw error;}
   );
 });
@@ -257,13 +257,13 @@ function startServer () {
     [
       'currentGridPathDatabase',
       'currentScenariosDirectory',
-      'currentPythonBinary',
+      'currentPythonEnvironment',
       'currentCbcExecutable',
       'currentCPLEXExecutable',
       'currentGurobiExecutable',
       'requestedGridPathDatabase',
       'requestedScenariosDirectory',
-      'requestedPythonBinary',
+      'requestedPythonEnvironment',
       'requestedCbcExecutable',
       'requestedCPLEXExecutable',
       'requestedGurobiExecutable'
@@ -298,13 +298,13 @@ function startServer () {
           (error) => {if (error) throw error;}
         );
       }
-      if (data['currentPythonBinary']['value']
-        === data['requestedPythonBinary']['value']) {
+      if (data['currentPythonEnvironment']['value']
+        === data['requestedPythonEnvironment']['value']) {
         console.log("Current and requested Python directories match.")
       } else {
         storage.set(
-          'currentPythonBinary',
-          { 'value': data['requestedPythonBinary']['value'] },
+          'currentPythonEnvironment',
+          { 'value': data['requestedPythonEnvironment']['value'] },
           (error) => {
             if (error) throw error;
           }
@@ -350,14 +350,16 @@ function startServer () {
 
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
-      const pyDir = data['requestedPythonBinary']['value'];
+      const pyDir = data['requestedPythonEnvironment']['value'];
       const cbcExec = data['requestedCbcExecutable']['value'];
       const cplexExec = data['requestedCPLEXExecutable']['value'];
       const gurobiExec = data['requestedGurobiExecutable']['value'];
 
-      // The server entry point based on the Python directory
+      // The server entry point based on the Python directory and the
+      // executables directory ('Scripts' on Windows, 'bin' otherwise)
+      const executablesDirectory = (isWindows === true) ? 'Scripts' : 'bin';
       const serverEntryPoint = path.join(
-        pyDir, 'gridpath_run_server'
+        pyDir, executablesDirectory, 'gridpath_run_server'
       );
 
       // Start the server (if Python path is set)
@@ -445,7 +447,7 @@ ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
       ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
-        'currentPythonBinary', 'requestedPythonBinary',
+        'currentPythonEnvironment', 'requestedPythonEnvironment',
         'currentCbcExecutable', 'requestedCbcExecutable',
         'currentCPLEXExecutable', 'requestedCPLEXExecutable',
         'currentGurobiExecutable', 'requestedGurobiExecutable'

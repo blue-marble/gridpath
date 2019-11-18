@@ -39,10 +39,14 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, scenario_id, load_zone, stage):
+def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     """
     Get costs results by period and component for a given
     scenario/load_zone/stage.
+
+    **kwargs needed, so that an error isn't thrown when calling this
+    function with extra arguments from the UI.
+
     :param conn:
     :param scenario_id:
     :param load_zone:
