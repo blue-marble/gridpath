@@ -1821,9 +1821,12 @@ CREATE TABLE inputs_system_rps_targets (
 rps_target_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 rps_target_mwh FLOAT,
 rps_zone_scenario_id INTEGER,
-PRIMARY KEY (rps_target_scenario_id, rps_zone, period),
+PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
+stage_id),
 FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
 inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
 );
@@ -1844,8 +1847,11 @@ CREATE TABLE inputs_system_carbon_cap_targets (
 carbon_cap_target_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 carbon_cap_mmt FLOAT,
-PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period),
+PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
+subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
