@@ -9,16 +9,42 @@ thermal unit commitment problem" (Morales-Espana et al. 2013), available
 online at https://ieeexplore.ieee.org/abstract/document/6485014
 """
 
+# TODO: think about how to best deal with inputs:
+#  need to have different startup costs for different types
+#  need to align min down time and first startup type
+
+# TODO: deal with issue of very high startup ramp which means you don't have
+# a startup trajectory. Current approach still requires unit to sit at Pmin
+# for one timepoint. Ideally should revert to old constraint that lets you
+# jump to whatever that fraction is within one timepoint
+
 # TODO: ramp assumptions about setpoints are clashing with Morales-Espana
 #  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
 #  whereas Morales-Espana assume you reach it end of timepoint.
+
 # TODO: are we double counting fuel burn now? We use power expression which
-#  includes startup/shutdown power when calculating the fuel burn
+#  includes startup/shutdown power when calculating the fuel burn so double count?
+#  also multiple types possible for binary commit
+#  make sure we still output the total fuel cost from a startup trajectory
+
+# TODO: set min down time equal to expression of min offline time +
+#   shortest startup duration + shutdown duration (see Morales Espana 2013b p4))
+#   (or just assume in down time includes shut down and startup duration
+#    and simply check this in validation)
 
 # TODO validations:
 #  disallow binary commit with availability decsisions since non-linear?
 #  don't allow min down time < shutdown + startup (note: default is 0 min_down!)
-#  okay if startup ramp up rate is big enough for you to go straight to pmin
+#   okay if startup ramp up rate is big enough for you to go straight to pmin
+#  make sure first point in startup ramp rate is equal to min down time
+#  make sure ID for startup type is unique and auto-increment! (we use +1)
+#  make sure down time for different startup types is different and increasing
+#  with increasing ID
+
+# TODO: we now include the first timepoint of a startup and the last one of
+#  a shutdown when calculating the trajectory. Since that is zero, we can
+#  technically simply not include it? This raises the question whether the
+#  timepoint that is set to Pmin should be included/count?
 
 # TODO: cleanup
 #  REMOVE "sorted" in results and hard-coded 4h min up and down time
@@ -28,13 +54,17 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  vs. the previous one with startup_plus_rampup_rates, which are used in
 #  capacity commit as well. Seems weird to me that you can ramp higher than
 #  normal ramp rate when starting up.
+#  REMOVE debug print statements
+
+# TODO: output startup type to results
+#  how to do this when we have variable amount of types?
 
 # Untested: if availability changes during a startup process, things could
 # get weird
 
 # Open question: are we double counting startup fuel burn if we have startup
 # fuel burn and fuel burn during startup trajectory below Pmin calculated with
-# the normal fuel burns equations as well (which will have very low heat rate).
+# the normal fuel burns equations as well (which will have very bad heat rate).
 
 from __future__ import division
 
@@ -51,7 +81,8 @@ from gridpath.auxiliary.auxiliary import generator_subset_init, \
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, determine_relevant_timepoints_forward
+    determine_relevant_timepoints, determine_relevant_timepoints_forward, \
+    determine_relevant_timepoints_startup
 
 
 def add_module_specific_components(m, d):
@@ -133,6 +164,34 @@ def add_module_specific_components(m, d):
                 in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
 
+    m.PROJECT_STARTUP_TYPES = Set(dimen=2, ordered=True)
+
+    # Indexed set of startup types by project. Ordered from hottest to coldest
+    def startup_types_by_project(mod, g):
+        """
+        Figure out which startup types are in each project
+        :param mod:
+        :param g:
+        :return:
+        """
+        types = list(l for (_g, l) in mod.PROJECT_STARTUP_TYPES if g == _g)
+        return types
+    m.STARTUP_TYPES_BY_PROJECT = Set(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
+                                     initialize=startup_types_by_project,
+                                     ordered=True)
+
+    m.down_time_hours = Param(
+        m.PROJECT_STARTUP_TYPES, within=NonNegativeReals)
+    m.startup_ramp = Param(
+        m.PROJECT_STARTUP_TYPES, within=PercentFraction)
+
+    m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS = \
+        Set(dimen=3,
+        rule=lambda mod:
+        set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            for _g, l in mod.PROJECT_STARTUP_TYPES
+            if g == _g)
+    )
 
     # Params - Required
     m.disp_binary_commit_min_stable_level_fraction = \
@@ -166,11 +225,11 @@ def add_module_specific_components(m, d):
               within=NonNegativeReals, default=0)
 
     # Derived Params
-    def startup_length_hours_rule(mod, g):
+    def startup_length_hours_rule(mod, g, l):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
-            / mod.dispbincommit_startup_plus_ramp_up_rate[g] / 60
+            / mod.startup_ramp[g, l] / 60
     m.DispBinCommit_Startup_Length_Hours = Param(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
+        m.PROJECT_STARTUP_TYPES,
         rule=startup_length_hours_rule
     )
 
@@ -205,6 +264,15 @@ def add_module_specific_components(m, d):
     # on binary values, even though it is a continuous variable.
     m.Stop_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        within=PercentFraction)
+
+    # Active startup
+    # Continuous variable which takes the value of 1 in the period where the
+    # unit starts up for the start-up type l and 0 otherwise.
+    # Due to the binary logic constraint, this variable will be forced to take
+    # on binary values, even though it is a continuous variable.
+    m.Startup_Type = Var(
+        m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction)
 
     # We assume that generator reaches this setpoint at start of timepoint
@@ -337,20 +405,23 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        relevant_tmps_startup = determine_relevant_timepoints_forward(
-            mod, g, tmp, mod.DispBinCommit_Startup_Length_Hours[g])
-
         relevant_startup_power = 0
-        time_from_startup = 0
-        for t in relevant_tmps_startup:
-            relevant_startup_power += mod.Start_Binary[g, t] \
-                * (mod.DispBinCommit_Pmin_MW[g, tmp]
-                   - time_from_startup * 60
-                   * mod.dispbincommit_startup_plus_ramp_up_rate[g]
-                   * mod.Capacity_MW[g, mod.period[t]]
-                   * mod.Availability_Derate[g, t])
-            time_from_startup += mod.number_of_hours_in_timepoint[t]
-
+        for l in mod.STARTUP_TYPES_BY_PROJECT[g]:
+            relevant_tmps_startup = determine_relevant_timepoints_forward(
+                mod, g, tmp,
+                mod.DispBinCommit_Startup_Length_Hours[g, l]
+            )
+            # print(tmp, l, relevant_tmps_startup)
+            time_from_startup = 0
+            for t in relevant_tmps_startup:
+                relevant_startup_power += mod.Startup_Type[g, t, l] \
+                    * (mod.DispBinCommit_Pmin_MW[g, tmp]
+                       - time_from_startup * 60
+                       * mod.startup_ramp[g, l]
+                       * mod.Capacity_MW[g, mod.period[t]]
+                       * mod.Availability_Derate[g, t])
+                time_from_startup += mod.number_of_hours_in_timepoint[t]
+            # print(tmp, relevant_startup_power)
         return relevant_startup_power
     m.StartUpPower = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -482,14 +553,96 @@ def add_module_specific_components(m, d):
                 == "linear":
             return Constraint.Skip
         else:
-           return mod.Commit_Binary[g, tmp] \
-                  - mod.Commit_Binary[
-                      g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                  == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
+            return mod.Commit_Binary[g, tmp] \
+                - mod.Commit_Binary[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
 
     m.DispBinCommit_Binary_Logic_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=binary_logic_constraint_rule
+    )
+
+    def startup_type_constraint_rule(mod, g, tmp, l):
+        """
+        Startup_type l can only be activated (startup_type ≤ 1) if the unit has
+        previously been down within the appropriate interval. The interval for
+        startup type l is defined by the user specified boundary parameters
+        mod.down_time_hours[l] and mod.down_time_hours[l+1].
+
+        If we're at the coldest (last) startup type, there is no l+1 and the
+        constraint is skipped. This is okay because the model will select a
+        hotter, cheaper startup type if it can and there can only be one
+        startup_type active at once (see next constraint). This also means the
+        constraint will be skipped if there is only one startup type.
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :param l: startup_type
+        :return:
+        """
+
+        # Coldest startup type is un-constrained
+        if l == mod.STARTUP_TYPES_BY_PROJECT[g][-1]:
+            return Constraint.Skip
+
+        # Get the timepoints within [TSU,l; TSU,l+1) hours from *tmp*
+        relevant_tmps = determine_relevant_timepoints_startup(
+            mod, g, tmp,
+            mod.down_time_hours[g, l],
+            mod.down_time_hours[g, l+1]
+        )
+
+        # Skip constraint if we are within TSU,l+1 hours from the start of the
+        # horizon (linear horizon boundary) or from the current tmp (circular
+        # horizon boundary).
+        if len(relevant_tmps) == 0:
+            return Constraint.Skip
+
+        # Equal to 1 if unit has been down within interval [TSU,l; TSU,l+1)
+        # before hour t. This "activates" this particular startup type
+        shutdown_within_interval = \
+            sum(mod.Stop_Binary[g, tp] for tp in relevant_tmps)
+
+        return mod.Startup_Type[g, tmp, l] <= shutdown_within_interval
+
+    m.DispBinCommit_Startup_Type_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
+        rule=startup_type_constraint_rule
+    )
+
+    def only_one_startup_type_constraint_rule(mod, g, tmp):
+        """
+        Ensure that just one startup type is selected when the unit starts up.
+
+        From Morales-Espana 2013b:
+        "In the event that more than one SU type variable can be activated
+        (delta-t,l ≤ 1) then (2) together with the objective function ensure
+        that the hottest, which is the cheapest, possible option is always
+        selected. Therefore, just one of the variables is activated (equal to
+        one). That is, these variables take binary values even though they
+        are modeled as continuous variables. This is due to the convex
+        (monotonically increasing) characteristic of the exponential SU costs
+        of thermal units"
+
+        Equation (2) in Morales-Espana 2013b
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+
+        sum_startup_types = sum(
+            mod.Startup_Type[g, tmp, l]
+            for l in mod.STARTUP_TYPES_BY_PROJECT[g]
+        )
+
+        return sum_startup_types == mod.Start_Binary[g, tmp]
+
+    m.DispBinCommit_Only_One_Startup_Type_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=only_one_startup_type_constraint_rule
     )
 
     def min_power_constraint_rule(mod, g, tmp):
@@ -573,7 +726,7 @@ def add_module_specific_components(m, d):
         will sufficiently constrain the binary start variables of all the
         timepoints before it.
 
-        Constraint (6) in Morales-Espana et al. (2013)
+        Constraint (6) in Morales-Espana et al. (2013a)
 
         Example 1:
           min_up_time = 4; tmps = [0,1,2,3];
@@ -1098,6 +1251,15 @@ def load_module_specific_data(mod, data_portal,
             "dispbincommit_min_down_time_hours"] = \
             min_down_time
 
+    data_portal.load(filename=os.path.join(
+                        scenario_directory, subproblem, stage, "inputs",
+                        "startup_ramps.tab"),
+                     select=("project",	"startup_type_id",
+                             "down_time_hours", "startup_ramp"),
+                     index=mod.PROJECT_STARTUP_TYPES,
+                     param=(mod.down_time_hours, mod.startup_ramp)
+                     )
+
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -1141,13 +1303,19 @@ def export_module_specific_results(mod, d,
             ])
 
             # TODO: remove
-            # print("-----")
-            # print("tmp", tmp)
+            print("-----")
+            print("tmp", tmp)
             # print("p_above_pmin", value(mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[p, tmp]))
             # print("pmin", value(mod.DispBinCommit_Pmin_MW[p, tmp]))
             # print("commit", value(mod.Commit_Binary[p, tmp]))
             # print("startup", value(mod.StartUpPower[p, tmp]))
             # print("shutdown", value(mod.ShutDownPower[p, tmp]))
+            for l in mod.STARTUP_TYPES_BY_PROJECT[p]:
+                print("type_id", l, "startup", value(mod.Startup_Type[p, tmp, l]))
+
+    for g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS:
+        for l in mod.STARTUP_TYPES_BY_PROJECT[g]:
+            print("startup_type", l, "duration", value(mod.DispBinCommit_Startup_Length_Hours[g, l]))
 
 
 def import_module_specific_results_to_database(

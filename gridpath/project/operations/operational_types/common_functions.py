@@ -168,7 +168,7 @@ def determine_relevant_timepoints_forward(mod, g, tmp, min_time):
         relevant_tmp = mod.next_timepoint[tmp, mod.balancing_type_project[g]]
         relevant_tmps = [relevant_tmp]
 
-        # If If we haven't exceed the startup duration yet, a startup in the
+        # If we haven't exceed the startup duration yet, a startup in the
         # next next timepoint would affect the current timepoint, so we need
         # to add it to our list.
         hours_from_tmp = mod.number_of_hours_in_timepoint[relevant_tmp]
@@ -199,5 +199,78 @@ def determine_relevant_timepoints_forward(mod, g, tmp, min_time):
                 hours_from_tmp += \
                     mod.number_of_hours_in_timepoint[relevant_tmp]
                 relevant_tmps.append(relevant_tmp)
+
+    return relevant_tmps
+
+
+def determine_relevant_timepoints_startup(mod, g, tmp, t1, t2):
+    """
+    Find relevant timepoints within t1 hours and t2 hours from tmp
+    If the unit has been down in any of these relevant timepoints, we can
+    activate the startup variable of the associated startup type.
+
+    See constraint (1) in Morales-Espana 2013c
+    :param mod:
+    :param g:
+    :param tmp:
+    :param t1:
+    :param t2:
+    :return:
+    """
+
+    # TODO: think of what happens when you reach tmp in circular setting or
+    #  when you reach first tmp in linear setting
+    # --> this means you are less than TSU,l+1 away from start, so constraint
+    # should not hold for the tmp, since we have no way to know whether unit
+    # was down longer than TSU,l+1 hours, which would push it to be a colder
+    # start
+
+    relevant_tmps = []
+
+    # TODO: in timepoints.py, for each timepoint calculate number of hours from
+    #  start of horizon (if there is a start, doesn't apply if circular)
+
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        pass  # no relevant timepoints
+    else:
+        current_tmp = mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+        hours_from_tmp = mod.number_of_hours_in_timepoint[current_tmp]
+
+        # If we haven't exceeded t2 hours from tmp yet, we keep going back to
+        # previous timepoints.
+        while hours_from_tmp < t2:
+            # if we are within [t1-t2) hours from tmp, add tmp to list
+            if hours_from_tmp >= t1:
+                relevant_tmps.append(current_tmp)
+
+            # In a 'linear' horizon setting, if we reach the first timepoint
+            # of the horizon, it means we are within t2 hrs from the start of
+            # the horizon, and the constraint should be skipped, so we return an
+            # empty list of tmps.
+            if mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                    == "linear" \
+                    and current_tmp == \
+                    mod.first_horizon_timepoint[
+                        mod.horizon[tmp, mod.balancing_type_project[g]]]:
+                relevant_tmps = []
+                break
+            # In a 'circular' horizon setting, if we reach timepoint *tmp*, it
+            # means the horizon length is shorter than t2, and the constraint
+            # should be skipped, so we return an empty list of tmps.
+            elif mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                    == "circular" \
+                    and current_tmp == tmp:
+                relevant_tmps = []
+                break
+
+            # Otherwise, we move on to the current timepoint's previous
+            # timepoint and will add that timepoint's duration to hours_from_tmp
+            else:
+                current_tmp = mod.previous_timepoint[
+                    current_tmp, mod.balancing_type_project[g]]
+                hours_from_tmp += mod.number_of_hours_in_timepoint[current_tmp]
 
     return relevant_tmps
