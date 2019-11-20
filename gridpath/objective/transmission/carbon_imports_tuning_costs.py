@@ -9,7 +9,7 @@ on the line times the emissions intensity. In the case, this constraint is
 non-binding -- and without a tuning cost, the optimization is allowed to
 set Import_Carbon_Emissions higher than the product of flow and emissions
 rate. Adding a tuning cost prevents that behavior as it pushes the emissions
-variable down to be equal
+variable down to be equal.
 """
 
 from builtins import next
@@ -28,7 +28,7 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.import_carbon_tuning_cost = Param(default=0)
+    m.import_carbon_tuning_cost_per_ton = Param(default=0)
 
     def total_import_carbon_tuning_cost_rule(mod):
         """
@@ -38,7 +38,7 @@ def add_model_components(m, d):
         """
         return sum(
             mod.Import_Carbon_Emissions_Tons[tx, tmp]
-            * mod.import_carbon_tuning_cost
+            * mod.import_carbon_tuning_cost_per_ton
             * mod.number_of_hours_in_timepoint[tmp]
             * mod.timepoint_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
@@ -72,8 +72,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     if os.path.exists(tuning_param_file):
         data_portal.load(filename=tuning_param_file,
-                         select=("import_carbon_tuning_cost",),
-                         param=m.import_carbon_tuning_cost
+                         select=("import_carbon_tuning_cost_per_ton",),
+                         param=m.import_carbon_tuning_cost_per_ton
                          )
     else:
         pass
@@ -89,7 +89,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     import_carbon_tuning_cost = c.execute(
-        """SELECT import_carbon_tuning_cost
+        """SELECT import_carbon_tuning_cost_per_ton
         FROM inputs_tuning
         WHERE tuning_scenario_id = {}""".format(
             subscenarios.TUNING_SCENARIO_ID
@@ -140,7 +140,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
             # Append column header
             header = next(reader)
-            header.append("import_carbon_tuning_cost")
+            header.append("import_carbon_tuning_cost_per_ton")
             new_rows.append(header)
 
             # Append tuning param value
@@ -159,5 +159,5 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                   "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
-            writer.writerows(["import_carbon_tuning_cost"])
+            writer.writerows(["import_carbon_tuning_cost_per_ton"])
             writer.writerows([import_carbon_tuning_cost])
