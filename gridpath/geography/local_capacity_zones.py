@@ -113,4 +113,4 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         )
 
         for row in local_capacity_zones:
-            writer.writerow([row[0], row[1]])
+            writer.writerow([row[0], row[1], row[2]])
