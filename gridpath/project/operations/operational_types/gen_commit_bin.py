@@ -10,8 +10,10 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 """
 
 # TODO: think about how to best deal with inputs:
-#  need to have different startup costs for different types
+#  need to have different startup costs for different types - OK
 #  need to align min down time and first startup type
+#  need to allow having no ramp inputs, but still have costs and startup fuels
+
 
 # TODO: deal with issue of very high startup ramp which means you don't have
 # a startup trajectory. Current approach still requires unit to sit at Pmin
@@ -40,6 +42,10 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  make sure ID for startup type is unique and auto-increment! (we use +1)
 #  make sure down time for different startup types is different and increasing
 #  with increasing ID
+#  if startup ramp is defined, cost needs to be defined - ACTUALY NOT?
+#  can't allow both startup fuel and startup ramp because that will double count
+#  the fuel
+#  down time has to be always defined and equal to TD at first down time
 
 # TODO: we now include the first timepoint of a startup and the last one of
 #  a shutdown when calculating the trajectory. Since that is zero, we can
@@ -162,34 +168,46 @@ def add_module_specific_components(m, d):
             rule=lambda mod:
             set((g, tmp, s) for (g, tmp, s)
                 in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
-                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS))
+                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
+            )
 
-    m.PROJECT_STARTUP_TYPES = Set(dimen=2, ordered=True)
+    # TODO: make sure startup_ramp_projects exists or change to startup_cost
+    #  projects
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_WITH_STARTUP = Set(
+        initialize=m.DISPATCHABLE_BINARY_COMMIT_GENERATORS &
+        m.STARTUP_RAMP_PROJECTS
+    )
 
-    # Indexed set of startup types by project. Ordered from hottest to coldest
-    def startup_types_by_project(mod, g):
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES = Set(
+        within=m.PROJECT_STARTUP_TYPES,
+        rule=lambda mod:
+            set((g, l) for (g, l) in mod.PROJECT_STARTUP_TYPES
+                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
+    )
+
+    def get_startup_types_by_project(mod, g):
         """
-        Figure out which startup types are in each project
+        Get indexed set of startup types by project, ordered from hottest to
+        coldest.
         :param mod:
         :param g:
         :return:
         """
-        types = list(l for (_g, l) in mod.PROJECT_STARTUP_TYPES if g == _g)
+        types = list(sorted(l for (_g, l)
+                     in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES
+                     if g == _g))
         return types
-    m.STARTUP_TYPES_BY_PROJECT = Set(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-                                     initialize=startup_types_by_project,
-                                     ordered=True)
-
-    m.down_time_hours = Param(
-        m.PROJECT_STARTUP_TYPES, within=NonNegativeReals)
-    m.startup_ramp = Param(
-        m.PROJECT_STARTUP_TYPES, within=PercentFraction)
+    m.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR = Set(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_WITH_STARTUP,
+        initialize=get_startup_types_by_project,
+        ordered=True
+    )
 
     m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=3,
         rule=lambda mod:
         set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            for _g, l in mod.PROJECT_STARTUP_TYPES
+            for _g, l in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES
             if g == _g)
     )
 
@@ -229,10 +247,11 @@ def add_module_specific_components(m, d):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.startup_ramp[g, l] / 60
     m.DispBinCommit_Startup_Length_Hours = Param(
-        m.PROJECT_STARTUP_TYPES,
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES,
         rule=startup_length_hours_rule
     )
 
+    # TODO: need to rename this variable
     def shutdown_length_hours_rule(mod, g):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.dispbincommit_shutdown_plus_ramp_down_rate[g] / 60
@@ -266,12 +285,11 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction)
 
-    # Active startup
     # Continuous variable which takes the value of 1 in the period where the
     # unit starts up for the start-up type l and 0 otherwise.
     # Due to the binary logic constraint, this variable will be forced to take
     # on binary values, even though it is a continuous variable.
-    m.Startup_Type = Var(
+    m.Start_Binary_Type = Var(
         m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction)
 
@@ -406,7 +424,7 @@ def add_module_specific_components(m, d):
         """
 
         relevant_startup_power = 0
-        for l in mod.STARTUP_TYPES_BY_PROJECT[g]:
+        for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]:
             relevant_tmps_startup = determine_relevant_timepoints_forward(
                 mod, g, tmp,
                 mod.DispBinCommit_Startup_Length_Hours[g, l]
@@ -414,7 +432,7 @@ def add_module_specific_components(m, d):
             # print(tmp, l, relevant_tmps_startup)
             time_from_startup = 0
             for t in relevant_tmps_startup:
-                relevant_startup_power += mod.Startup_Type[g, t, l] \
+                relevant_startup_power += mod.Start_Binary_Type[g, t, l] \
                     * (mod.DispBinCommit_Pmin_MW[g, tmp]
                        - time_from_startup * 60
                        * mod.startup_ramp[g, l]
@@ -584,7 +602,7 @@ def add_module_specific_components(m, d):
         """
 
         # Coldest startup type is un-constrained
-        if l == mod.STARTUP_TYPES_BY_PROJECT[g][-1]:
+        if l == mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g][-1]:
             return Constraint.Skip
 
         # Get the timepoints within [TSU,l; TSU,l+1) hours from *tmp*
@@ -605,9 +623,9 @@ def add_module_specific_components(m, d):
         shutdown_within_interval = \
             sum(mod.Stop_Binary[g, tp] for tp in relevant_tmps)
 
-        return mod.Startup_Type[g, tmp, l] <= shutdown_within_interval
+        return mod.Start_Binary_Type[g, tmp, l] <= shutdown_within_interval
 
-    m.DispBinCommit_Startup_Type_Constraint = Constraint(
+    m.DispBinCommit_Start_Binary_Type_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
         rule=startup_type_constraint_rule
     )
@@ -634,8 +652,8 @@ def add_module_specific_components(m, d):
         """
 
         sum_startup_types = sum(
-            mod.Startup_Type[g, tmp, l]
-            for l in mod.STARTUP_TYPES_BY_PROJECT[g]
+            mod.Start_Binary_Type[g, tmp, l]
+            for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]
         )
 
         return sum_startup_types == mod.Start_Binary[g, tmp]
@@ -1068,9 +1086,32 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_rule(mod, g, tmp, l):
     """
-    Returns the number of MWs that are started up or shut down.
+    Returns the number of MWs that are started up for startup type *l*
+    If horizon is circular, the last timepoint of the horizon is the
+    previous_timepoint for the first timepoint if the horizon;
+    if the horizon is linear, no previous_timepoint is defined for the first
+    timepoint of the horizon, so return 'None' here
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return None
+    else:
+        return mod.Start_Binary_Type[g, tmp, l] \
+               * mod.DispBinCommit_Pmax_MW[g, tmp]
+        # TODO: should we multiply by availability here?
+
+
+def shutdown_rule(mod, g, tmp):
+    """
+    Returns the number of MWs that are shut down.
     Will be positive when there are more generators committed in the current
     timepoint than there were in the previous timepoint.
     If horizon is circular, the last timepoint of the horizon is the
@@ -1088,10 +1129,8 @@ def startup_shutdown_rule(mod, g, tmp):
             == "linear":
         return None
     else:
-        return (mod.Commit_Binary[g, tmp]
-                - mod.Commit_Binary[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
-            * mod.DispBinCommit_Pmax_MW[g, tmp]
+        return mod.Stop_Binary[g, tmp] * mod.DispBinCommit_Pmax_MW[g, tmp]
+    # TODO: should we multiply by availability here?
 
 
 def power_delta_rule(mod, g, tmp):
@@ -1251,15 +1290,6 @@ def load_module_specific_data(mod, data_portal,
             "dispbincommit_min_down_time_hours"] = \
             min_down_time
 
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "startup_ramps.tab"),
-                     select=("project",	"startup_type_id",
-                             "down_time_hours", "startup_ramp"),
-                     index=mod.PROJECT_STARTUP_TYPES,
-                     param=(mod.down_time_hours, mod.startup_ramp)
-                     )
-
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -1310,11 +1340,11 @@ def export_module_specific_results(mod, d,
             # print("commit", value(mod.Commit_Binary[p, tmp]))
             # print("startup", value(mod.StartUpPower[p, tmp]))
             # print("shutdown", value(mod.ShutDownPower[p, tmp]))
-            for l in mod.STARTUP_TYPES_BY_PROJECT[p]:
-                print("type_id", l, "startup", value(mod.Startup_Type[p, tmp, l]))
+            for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[p]:
+                print("type_id", l, "startup", value(mod.Start_Binary_Type[p, tmp, l]))
 
     for g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS:
-        for l in mod.STARTUP_TYPES_BY_PROJECT[g]:
+        for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]:
             print("startup_type", l, "duration", value(mod.DispBinCommit_Startup_Length_Hours[g, l]))
 
 

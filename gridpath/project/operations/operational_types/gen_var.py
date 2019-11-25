@@ -297,16 +297,33 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_rule(mod, g, tmp):
     """
-    Variable generators don't incur startup costs.
+    Variable generators don't incur startup costs
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
     raise ValueError(
-        "ERROR! Variable generators should not incur startup/shutdown "
+        "ERROR! Variable generators should not incur startup "
+        "costs." + "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its startup/shutdown costs to '.' (no value)."
+    )
+
+
+def shutdown_rule(mod, g, tmp, l):
+    """
+    Variable generators don't incur shutdown costs
+    :param mod:
+    :param g:
+    :param tmp:
+    :param l:
+    :return:
+    """
+    raise ValueError(
+        "ERROR! Variable generators should not incur shutdown "
         "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
         "and change its startup/shutdown costs to '.' (no value)."

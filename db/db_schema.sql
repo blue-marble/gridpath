@@ -2813,6 +2813,7 @@ stage_id INTEGER,
 balancing_type_project VARCHAR(64),
 horizon INTEGER,
 timepoint INTEGER,
+startup_type_id INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 load_zone VARCHAR(32),
@@ -2820,7 +2821,8 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 startup_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint,
+startup_type_id)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_shutdown;

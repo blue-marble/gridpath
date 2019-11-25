@@ -73,23 +73,26 @@ def add_model_components(m, d):
     # Startup and shutdown costs
     def total_startup_cost_rule(mod):
         """
-        Sum startup costs for the objective function term.
+        Sum startup costs for the objective function term. Note that there
+        can be different startup types depending on the cooling state or the
+        "hotness" of the start, i.e. how long the unit has been down.
         :param mod:
         :return:
         """
-        return sum(mod.Startup_Cost[g, tmp]
+        return sum(mod.Startup_Cost[g, tmp, l]
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.timepoint_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp)
-                   in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
+                   for (g, tmp, l)
+                   in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
     getattr(d, total_cost_components).append("Total_Startup_Cost")
 
     def total_shutdown_cost_rule(mod):
         """
-        Sum shutdown costs for the objective function term.
+        Sum shutdown costs for the objective function term. Unlike the startup
+        cost, this cost is not dependent on how long the unit has been up.
         :param mod:
         :return:
         """

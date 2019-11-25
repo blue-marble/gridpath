@@ -24,6 +24,7 @@ from gridpath.auxiliary.auxiliary import load_operational_type_modules,\
 
 def add_model_components(m, d):
     """
+    TODO: update with latest changes
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
 
@@ -100,7 +101,37 @@ def add_model_components(m, d):
                              rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
-    def startup_shutdown_rule(mod, g, tmp):
+    def startup_rule(mod, g, tmp, l):
+        """
+        Track units started up from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
+
+        Note that there can be different startup types depending on the cooling
+        state or the "hotness" of the start, i.e. how long the unit has been
+        down.
+        :param mod:
+        :param g:
+        :param tmp:
+        :param l:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            startup_rule(mod, g, tmp, l)
+
+    m.Startup_Expression = Expression(
+        m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
+        rule=startup_rule)
+
+    m.Startup_Cost = Var(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
+                         within=NonNegativeReals)
+
+    # TODO: question: rather than reporting startup costs by startup type,
+    #  should we create aggregate expression by timepoint (sum over types)
+    #  and report that instead to be aligned with shutdown costs which only
+    #  have one type?
+
+    def shutdown_rule(mod, g, tmp):
         """
         Track units started up from timepoint to timepoint; get appropriate
         expression from the generator's operational module.
@@ -111,20 +142,19 @@ def add_model_components(m, d):
         """
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type]. \
-            startup_shutdown_rule(mod, g, tmp)
+            shutdown_rule(mod, g, tmp)
 
-    m.Startup_Shutdown_Expression = Expression(
-        m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS
-        | m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=startup_shutdown_rule)
+    m.Shutdown_Expression = Expression(
+        m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_rule)
 
-    m.Startup_Cost = Var(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-                         within=NonNegativeReals)
     m.Shutdown_Cost = Var(m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
                           within=NonNegativeReals)
 
-    def startup_cost_rule(mod, g, tmp):
+    # Constraints
+    def startup_cost_rule(mod, g, tmp, l):
         """
+        TODO: EDIT DESCRIPTION BECAUSE NO LONGER NEGATIVE?
         Startup expression is positive when more units are on in the current
         timepoint that were on in the previous timepoint. Startup_Cost is
         defined to be non-negative, so if Startup_Expression is 0 or negative
@@ -143,12 +173,12 @@ def add_model_components(m, d):
                 and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
-            return mod.Startup_Cost[g, tmp] \
-                   >= mod.Startup_Shutdown_Expression[g, tmp] \
-                   * mod.startup_cost_per_mw[g]
+            return mod.Startup_Cost[g, tmp, l] \
+                   >= mod.Startup_Expression[g, tmp, l] \
+                   * mod.startup_cost_per_mw[g, l]
 
     m.Startup_Cost_Constraint = \
-        Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
+        Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
                    rule=startup_cost_rule)
 
     # TODO: this looks like a bug -- this constraint is missing a negative
@@ -156,6 +186,7 @@ def add_model_components(m, d):
     #  Shutdown_Cost >= - Startup_Shutdown_Expression X shutdown_cost
     def shutdown_cost_rule(mod, g, tmp):
         """
+        TODO: EDIT DESCRIPTION BECAUSE NO LONGER NEGATIVE?
         Shutdown expression is positive when more units were on in the previous
         timepoint that are on in the current timepoint. Shutdown_Cost is
         defined to be non-negative, so if Shutdown_Expression is 0 or negative
@@ -176,7 +207,7 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
-                   >= mod.Startup_Shutdown_Expression[g, tmp] \
+                   >= mod.Shutdown_Expression[g, tmp] \
                    * mod.shutdown_cost_per_mw[g]
 
     m.Shutdown_Cost_Constraint = Constraint(
@@ -243,21 +274,23 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "costs_operations_startup.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
-            ["project", "period", "horizon", "timepoint", "timepoint_weight",
+            ["project", "period", "horizon", "timepoint", "startup_type_id",
+             "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "startup_cost"]
         )
-        for (p, tmp) in m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp, l) in m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES:
             writer.writerow([
                 p,
                 m.period[tmp],
                 m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
+                l,
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Startup_Cost[p, tmp])
+                value(m.Startup_Cost[p, tmp, l])
             ])
 
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
@@ -435,15 +468,16 @@ def import_results_into_database(
             period = row[1]
             horizon = row[2]
             timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            startup_cost = row[8]
+            startup_type_id = row[4]
+            timepoint_weight = row[5]
+            number_of_hours_in_timepoint = row[6]
+            load_zone = row[7]
+            technology = row[8]
+            startup_cost = row[9]
             
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                 horizon, timepoint, timepoint_weight,
+                 horizon, timepoint, startup_type_id, timepoint_weight,
                  number_of_hours_in_timepoint,
                  load_zone, technology, startup_cost)
             )
@@ -451,10 +485,10 @@ def import_results_into_database(
         INSERT INTO
         temp_results_project_costs_operations_startup{}
         (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
+        horizon, timepoint, startup_type_id, 
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -462,11 +496,13 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_project_costs_operations_startup
         (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, startup_type_id, 
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
+        horizon, timepoint, startup_type_id,
+        timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, startup_cost
         FROM temp_results_project_costs_operations_startup{}
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;

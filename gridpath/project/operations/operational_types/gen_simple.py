@@ -301,20 +301,39 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_rule(mod, g, tmp, l):
     """
-    No commit variables, so shouldn't happen
+
+    :param mod:
+    :param g:
+    :param tmp:
+    :param l:
+    :return:
+    """
+    raise ValueError(
+        "ERROR! dispatchable_no_commit generators should not incur "
+        "startup costs." +
+        "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its startup costs to '.' (no value)."
+    )
+
+
+def shutdown_rule(mod, g, tmp):
+    """
+
     :param mod:
     :param g:
     :param tmp:
     :return:
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
-        return None
-    else:
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-            mod.Provide_Power_DispNoCommit_MW[g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+    raise ValueError(
+        "ERROR! dispatchable_no_commit generators should not incur "
+        "shutdown costs." +
+        "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its shutdown costs to '.' (no value)."
+    )
 
 
 def power_delta_rule(mod, g, tmp):
