@@ -54,7 +54,7 @@ If you install GridPath via the setup script following the instructions above,
 you can use the command `run_gridpath` to run a scenario from any directory 
 -- as long as your GridPath Python environment is enabled -- as follows:
 ```bash
-run_gridpath --scenario SCENARIO_NAME --scenario_location 
+gridpath_run --scenario SCENARIO_NAME --scenario_location 
 /PATH/TO/SCENARIO 
 ```
 
@@ -64,14 +64,14 @@ solve the scenario problem, import the results into the database, and
 process them.
 
 ```bash
-run_gridpath_e2e --scenario SCENARIO_NAME --scenario_location 
+gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location 
 /PATH/TO/SCENARIO 
 ```
 
 To see usage and other optional arguments, e.g. how to specify a 
 solver, check the help menu, e.g.:
 ```bash
-run_gridpath --help
+gridpath_run --help
 ```
 
 ## The run_scenario.py and run_end_to_end.py scripts
