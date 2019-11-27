@@ -56,8 +56,50 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         return imported_operational_modules[gen_op_type].\
             power_provision_rule(mod, g, tmp)
-    m.Power_Provision_MW = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
-                                      rule=power_provision_rule)
+
+    m.Power_Provision_MW = Expression(
+        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=power_provision_rule
+    )
+
+    # Get shutdown for all generators from the generator's operational module
+    def shutdown_rule(mod, g, tmp):
+        """
+        Track units started up from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            shutdown_rule(mod, g, tmp)
+
+    m.Shutdown_MW = Expression(
+        m.SHUTDOWN_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_rule
+    )
+
+    # Get startup for all generators from the generator's operational module
+    def startup_rule(mod, g, tmp, l):
+        """
+        Track units started up from timepoint to timepoint; get appropriate
+        expression from the generator's operational module.
+        :param mod:
+        :param g:
+        :param tmp:
+        :param l:
+        :return:
+        """
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type]. \
+            startup_rule(mod, g, tmp, l)
+
+    m.Startup_MW = Expression(
+        m.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
+        rule=startup_rule
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):

@@ -32,7 +32,7 @@ def add_model_components(m, d):
     imported_operational_modules = \
         load_operational_type_modules(getattr(d, required_operational_modules))
 
-    # Get fuel burn from operations for each project
+    # Operations fuel burn (excludes startup/shutdown)
     def fuel_burn_rule(mod, g, tmp):
         """
         Emissions from each project based on operational type
@@ -51,30 +51,49 @@ def add_model_components(m, d):
 
     m.Operations_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=lambda mod, g, tmp: fuel_burn_rule(mod, g, tmp)
+        rule=fuel_burn_rule
     )
 
-    # Get startup fuel burn if it applies
-    def startup_rule(mod, g, tmp, l):
+    # Shutdown fuel burn
+    m.Shutdown_Fuel_Burn_MMBtu = Var(
+        m.SHUTDOWN_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+        within=NonNegativeReals
+    )
+
+    def shutdown_fuel_burn_rule(mod, g, tmp):
         """
-        Track units started up from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
+        Shutdown expression is positive when less units are on in the current
+        timepoint that were on in the previous timepoint.
+        Shutdown_Fuel_Burn_MMBtu is defined to be non-negative, so if
+        Shutdown_MW is 0 or negative (i.e. no units started or units shut down
+        since the previous timepoint), Shutdown_Fuel will be 0.
+        If horizon is circular, the last timepoint of the horizon is the
+        previous_timepoint for the first timepoint if the horizon;
+        if the horizon is linear, no previous_timepoint is defined for the first
+        timepoint of the horizon, so skip constraint.
         :param mod:
         :param g:
         :param tmp:
-        :param l:
         :return:
         """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            startup_rule(mod, g, tmp, l)
+        if tmp == mod.first_horizon_timepoint[mod.horizon[
+                    tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[
+                    tmp, mod.balancing_type_project[g]]] == "linear":
+            return Constraint.Skip
+        else:
+            return mod.Shutdown_Fuel_Burn_MMBtu[g, tmp] \
+                   >= mod.Shutdown_MW[g, tmp] \
+                   * mod.shutdown_fuel_mmbtu_per_mw[g]
 
-    m.Startup_Expression_for_Fuel_Burn = Expression(
-        m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
-        rule=startup_rule
-    )
+    m.Shutdown_Fuel_Burn_Constraint = \
+        Constraint(m.SHUTDOWN_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+                   rule=shutdown_fuel_burn_rule)
 
-    # Constrain startup fuel burn
+    # Startup fuel burn
+    # TODO: can we remove var construct and replace with expression or do we
+    #  need this construct for capacity commit module to deal with start/stop
+    #  distinction without binary variables
     m.Startup_Fuel_Burn_MMBtu = Var(
         m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
         within=NonNegativeReals
@@ -82,12 +101,11 @@ def add_model_components(m, d):
 
     def startup_fuel_burn_rule(mod, g, tmp, l):
         """
-        TODO: UPDATE SINCE NO LONGER NEGATIVE
         Startup expression is positive when more units are on in the current
-        timepoint that were on in the previous timepoint. Startup_Fuel_Burn_MMBtu is
-        defined to be non-negative, so if Startup_Expression is 0 or negative
-        (i.e. no units started or units shut down since the previous timepoint),
-        Startup_Cost will be 0.
+        timepoint that were on in the previous timepoint.
+        Startup_Fuel_Burn_MMBtu is defined to be non-negative, so if Startup_MW
+        is 0 or negative (i.e. no units started or units shut down since the
+        previous timepoint), Startup_Fuel will be 0.
         If horizon is circular, the last timepoint of the horizon is the
         previous_timepoint for the first timepoint if the horizon;
         if the horizon is linear, no previous_timepoint is defined for the first
@@ -98,17 +116,20 @@ def add_model_components(m, d):
         :param l:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
+        if tmp == mod.first_horizon_timepoint[mod.horizon[
+                    tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[
+                    tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
             return mod.Startup_Fuel_Burn_MMBtu[g, tmp, l] \
-                   >= mod.Startup_Shutdown_Expression_for_Fuel_Burn[g, tmp, l] \
+                   >= mod.Startup_MW[g, tmp, l] \
                    * mod.startup_fuel_mmbtu_per_mw[g, l]
 
-    m.Startup_Fuel_Burn_Constraint = \
-        Constraint(m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
-                   rule=startup_fuel_burn_rule)
+    m.Startup_Fuel_Burn_Constraint = Constraint(
+        m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
+        rule=startup_fuel_burn_rule
+    )
 
     # Calculate total startup fuel burn
     def total_startup_fuel_burn_rule(mod, g, tmp):
@@ -121,7 +142,7 @@ def add_model_components(m, d):
         :return:
         """
         return (sum(mod.Startup_Fuel_Burn_MMBtu[g, tmp, l]
-                    for l in m.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
+                    for l in mod.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
                 if g in mod.STARTUP_FUEL_PROJECTS else 0)
 
     m.Total_Startup_Fuel_Burn_MMBtu = Expression(
@@ -139,6 +160,8 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
+            + (mod.Shutdown_Fuel_Burn_MMBtu[g, tmp]
+               if g in mod.SHUTDOWN_FUEL_PROJECTS else 0) \
             + mod.Total_Startup_Fuel_Burn_MMBtu[g, tmp]
 
     m.Total_Fuel_Burn_MMBtu = Expression(
@@ -166,12 +189,10 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
              "number_of_hours_in_timepoint", "load_zone", "technology", "fuel",
-             "fuel_burn_operations_mmbtu", "fuel_burn_startup_mmbtu",
-             "total_fuel_burn_mmbtu"]
+             "fuel_burn_operations_mmbtu", "fuel_burn_shutdown_mmbtu",
+             "fuel_burn_startup_mmbtu", "fuel_burn_total_mmbtu"]
         )
-        # TODO: need to somehow take out the startup trajectory fuel burn from
-        #  fuel_burn_operations and add it into startup_fuel.
-        for (p, tmp) in m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in sorted(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS):
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -183,6 +204,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[p],
                 m.fuel[p],
                 value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
+                value(m.Shutdown_Fuel_Burn_MMBtu[p, tmp])
+                if p in m.SHUTDOWN_FUEL_PROJECTS
+                else None,
                 value(m.Total_Startup_Fuel_Burn_MMBtu[p, tmp])
                 if p in m.STARTUP_FUEL_PROJECTS
                 else None,
@@ -228,13 +252,18 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             fuel = row[8]
-            fuel_burn_tons = row[9]
+            fuel_burn_operations_mmbtu = row[9]
+            fuel_burn_shutdown_mmbtu = row[10]
+            fuel_burn_startup_mmbtu = row[11]
+            fuel_burn_total_mmbtu = row[12]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, fuel, fuel_burn_tons)
+                 horizon, timepoint, timepoint_weight,
+                 number_of_hours_in_timepoint,
+                 load_zone, technology, fuel,
+                 fuel_burn_operations_mmbtu, fuel_burn_shutdown_mmbtu,
+                 fuel_burn_startup_mmbtu, fuel_burn_total_mmbtu)
             )
 
     insert_temp_sql = """
@@ -243,8 +272,10 @@ def import_results_into_database(
          (scenario_id, project, period, subproblem_id, stage_id, 
          horizon, timepoint, timepoint_weight,
          number_of_hours_in_timepoint,
-         load_zone, technology, fuel, fuel_burn_mmbtu)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+         load_zone, technology, fuel, 
+         fuel_burn_operations_mmbtu, fuel_burn_shutdown_mmbtu,
+         fuel_burn_startup_mmbtu, fuel_burn_total_mmbtu)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
          """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -253,11 +284,15 @@ def import_results_into_database(
         INSERT INTO results_project_fuel_burn
         (scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu)
+        load_zone, technology, fuel, 
+        fuel_burn_operations_mmbtu, fuel_burn_shutdown_mmbtu,
+        fuel_burn_startup_mmbtu, fuel_burn_total_mmbtu)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel, fuel_burn_mmbtu
+        load_zone, technology, fuel, 
+        fuel_burn_operations_mmbtu, fuel_burn_shutdown_mmbtu,
+        fuel_burn_startup_mmbtu, fuel_burn_total_mmbtu
         FROM temp_results_project_fuel_burn{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
          """.format(scenario_id)

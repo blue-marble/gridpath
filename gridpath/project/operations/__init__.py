@@ -5,6 +5,13 @@
 The **gridpath.project.operations** package contains modules to describe the
 operational capabilities, constraints, and costs of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.
+
+*startup_ramp* \ :sub:`g, l`\ -- the project's upward ramp rate limit during
+startup of type l, defined as a fraction of its capacity per minute. If this
+param, adjusted for timepoint duration, is smaller than
+*min_stable_level_fraction*, the unit will have a startup trajectory spanning
+multiple timepoints. \n
+
 """
 
 # changes made:
@@ -20,7 +27,6 @@ import pandas as pd
 import os.path
 from pyomo.environ import Set, Param, PositiveReals, Reals, NonNegativeReals, \
     PercentFraction
-
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
     write_validation_to_database
@@ -38,22 +44,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
-    # ----------------------- SHUTDOWN ----------------------- #
-
-    # 1. Sets
-    m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS)
-
-    m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
-        dimen=2,
-        rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            if g in mod.SHUTDOWN_COST_PROJECTS)
-    )
-
-    # 2. Params
-    m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PROJECTS,
-                                   within=PositiveReals)
 
     # ---------------------- FUELS -------------------------- #
 
@@ -86,52 +76,86 @@ def add_model_components(m, d):
     m.fuel_burn_slope_mmbtu_per_mwh = Param(
         m.FUEL_PROJECT_SEGMENTS, within=PositiveReals)
 
+    # ----------------------- SHUTDOWN ----------------------- #
+
+    # 1. Sets
+    m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS)
+    m.SHUTDOWN_FUEL_PROJECTS = Set(within=m.FUEL_PROJECTS)
+    m.SHUTDOWN_PROJECTS = m.SHUTDOWN_COST_PROJECTS | m.SHUTDOWN_FUEL_PROJECTS
+
+    m.SHUTDOWN_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.SHUTDOWN_PROJECTS)
+    )
+
+    m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.SHUTDOWN_PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.SHUTDOWN_COST_PROJECTS)
+    )
+
+    m.SHUTDOWN_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=2,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.SHUTDOWN_PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.SHUTDOWN_FUEL_PROJECTS)
+    )
+
+    # 2. Params
+    m.shutdown_cost_per_mw = Param(
+        m.SHUTDOWN_COST_PROJECTS, within=PositiveReals
+    )
+    m.shutdown_fuel_mmbtu_per_mw = Param(
+        m.SHUTDOWN_FUEL_PROJECTS, within=PositiveReals
+    )
+
     # ------------------------ STARTUP ---------------------- #
     # with optional multiple types (hottest to coldest)
 
     # 1. Sets
 
-    # TODO: need to add this to load_data too.
-    m.STARTUP_RAMP_PROJECTS = Set(within=m.PROJECTS)
-    m.STARTUP_COST_PROJECTS = Set(within=m.PROJECTS)
-    m.STARTUP_FUEL_PROJECTS = Set(within=m.FUEL_PROJECTS)
+    m.STARTUP_PROJECTS = Set(within=m.PROJECTS)
+    m.STARTUP_RAMP_PROJECTS = Set(within=m.STARTUP_PROJECTS)
+    m.STARTUP_COST_PROJECTS = Set(within=m.STARTUP_PROJECTS)
+    m.STARTUP_FUEL_PROJECTS = Set(within=m.STARTUP_PROJECTS & m.FUEL_PROJECTS)
 
-    m.PROJECT_STARTUP_TYPES = Set(dimen=2, ordered=True)
+    m.STARTUP_PROJECTS_TYPES = Set(dimen=2, ordered=True)
+    m.STARTUP_RAMP_PROJECTS_TYPES = Set(dimen=2, ordered=True)
+    m.STARTUP_COST_PROJECTS_TYPES = Set(dimen=2, ordered=True)
+    m.STARTUP_FUEL_PROJECTS_TYPES = Set(dimen=2, ordered=True)
 
-    # m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
-    #     Set(dimen=2,
-    #         rule=lambda mod:
-    #         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-    #             if g in mod.STARTUP_FUEL_PROJECTS))
+    m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=2,
+        rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_COST_PROJECTS)
+    )
 
-    # m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS = \
-    #     Set(dimen=2,
-    #         rule=lambda mod:
-    #         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-    #             if g in mod.STARTUP_COST_PROJECTS))
+    m.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
+        dimen=3,
+        rule=lambda mod:
+            set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                for _g, l in mod.STARTUP_PROJECTS_TYPES
+                if (g == _g))
+    )
 
     m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-            set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                for _g, l in mod.PROJECT_STARTUP_TYPES
-                if (g == _g and g in mod.STARTUP_COST_PROJECTS))
+            set((g, tmp, l) for (g, tmp, l)
+                in mod.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES
+                if g in mod.STARTUP_COST_PROJECTS)
     )
 
     m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-            set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                for _g, l in mod.PROJECT_STARTUP_TYPES
-                if (g == _g and g in mod.STARTUP_FUEL_PROJECTS))
-    )
-
-    m.STARTUP_RAMP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
-        dimen=3,
-        rule=lambda mod:
-            set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                for _g, l in mod.PROJECT_STARTUP_TYPES
-                if (g == _g and g in mod.STARTUP_RAMP_PROJECTS))
+            set((g, tmp, l) for (g, tmp, l)
+                in mod.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES
+                if g in mod.STARTUP_FUEL_PROJECTS)
     )
 
     def get_startup_types_by_project(mod, g):
@@ -142,8 +166,15 @@ def add_model_components(m, d):
         :param g:
         :return:
         """
-        types = list(l for (_g, l) in mod.PROJECT_STARTUP_TYPES if g == _g)
+        types = list(l for (_g, l) in mod.STARTUP_PROJECTS_TYPES if g == _g)
         return types
+
+    # TODO: change 'initalize' to 'rule' to be consistent?
+    m.STARTUP_TYPES_BY_STARTUP_PROJECT = Set(
+        m.STARTUP_PROJECTS,
+        initialize=get_startup_types_by_project,
+        ordered=True
+    )
 
     m.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT = Set(
         m.STARTUP_RAMP_PROJECTS,
@@ -164,19 +195,14 @@ def add_model_components(m, d):
     )
 
     # 2. Params
-    # TODO: define narrow set of project_startup_ramp_types etc.?
-    #  Need to be able to have projects with no startup costs
-    #  is it okay to have the startup cost to be defined by the more wide set
-    #  PROJECT_STARTUP_TYPES but then only use it for the more narrow set of
-    #  STARTUP_COST_PROJECTS?
     m.down_time_hours = Param(
-        m.PROJECT_STARTUP_TYPES, within=NonNegativeReals)
+        m.STARTUP_PROJECTS_TYPES, within=NonNegativeReals)
     m.startup_ramp = Param(
-        m.PROJECT_STARTUP_TYPES, within=PercentFraction)
+        m.STARTUP_RAMP_PROJECTS_TYPES, within=PercentFraction)
     m.startup_cost_per_mw = Param(
-        m.PROJECT_STARTUP_TYPES, within=PositiveReals)
+        m.STARTUP_COST_PROJECTS_TYPES, within=PositiveReals)
     m.startup_fuel_mmbtu_per_mw = Param(
-        m.PROJECT_STARTUP_TYPES, within=PositiveReals)
+        m.STARTUP_FUEL_PROJECTS_TYPES, within=PositiveReals)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
@@ -191,27 +217,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
 
-    # TODO: what if there are some "." inputs. Wouldn't this lead to string
-    #  datatype and bad interpretation of these inputs?
-    #  We could have "." inputs if we want say, startup ramps, but no startup
-    #  costs.
-    data_portal.load(
-        filename=os.path.join(scenario_directory, subproblem, stage,
-                              "inputs", "startup_ramps.tab"),
-        select=("project",	"startup_type_id",
-                "down_time_hours",
-                "startup_ramp",
-                "startup_cost_per_mw",
-                "startup_fuel_mmbtu_per_mw"),
-        index=m.PROJECT_STARTUP_TYPES,
-        param=(m.down_time_hours, m.startup_ramp,
-               m.startup_cost_per_mw, m.startup_fuel_mmbtu_per_mw)
-    )
-    # TODO: doesn't work with empty DF?
-    #  is it because of the load function? empty index shuld work but perhaps
-    #  we need the right dimension. Now it is None, but it should be
-    #  (None, None)?
-
     # Get column names as a few columns will be optional;
     # won't load data if column does not exist
     with open(os.path.join(scenario_directory, subproblem, stage, "inputs",
@@ -220,139 +225,121 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         reader = csv.reader(prj_file, delimiter="\t")
         headers = next(reader)
 
-    # STARTUP_RAMP_PROJECTS
-    def determine_startup_ramp_projects():
-        """
-        If numeric values greater than 0 for startup ramps are specified
-        for some generators, add those generators to the STARTUP_RAMP_PROJECTS
-        subset
-        :return:
-        """
-        startup_ramp_projects = list()
+    # SHUTDOWN PROJECTS
+    df = read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+    )
 
-        # TODO: make sure we can deal with empty table or another way to skip
-        #  this if no inputs (no input file at all?). Since db table has the
-        #  columns, setting up logic to deal with columns possibly not being
-        #  there seems less ideal?
-        #  should we check validity of the down time duration here too?
-        df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "startup_ramps.tab"),
-            sep="\t",
-            usecols=["project", "startup_ramp"]
-        )
-        for row in zip(df["project"],
-                       df["startup_ramp"]):
-            if is_number(row[1]) and row[0] not in startup_ramp_projects:
-                startup_ramp_projects.append(row[0])
-            else:
-                pass
+    shutdown_cost_projects = set()
+    shutdown_fuel_projects = set()
 
-        return startup_ramp_projects
+    shutdown_costs = dict()
+    shutdown_fuel_mmbtus = dict()
 
-    data_portal.data()["STARTUP_RAMP_PROJECTS"] = \
-        {None: determine_startup_ramp_projects()}
+    shutdown_cost_bool = ("shutdown_cost_per_mw" in headers)
+    shutdown_fuel_bool = ("shutdown_fuel_mmbtu_per_mw" in headers)
+    for i, row in df.iterrows():
+        project = row["project"]
+        if shutdown_cost_bool:
+            shutdown_cost_per_mw = row["shutdown_cost_per_mw"]
+            if shutdown_cost_per_mw != ".":
+                shutdown_cost_projects.add(project)
+                shutdown_costs[project] = float(shutdown_cost_per_mw)
+                # WARNING: obscure Pyomo error without the float wrapper!
+        if shutdown_fuel_bool:
+            shutdown_fuel_mmbtu_per_mw = row["shutdown_fuel_mmbtu_per_mw"]
+            if shutdown_fuel_mmbtu_per_mw != ".":
+                shutdown_fuel_projects.add(project)
+                shutdown_fuel_mmbtus[project] = float(shutdown_fuel_mmbtu_per_mw)
 
-    # STARTUP_COST_PROJECTS
-    def determine_startup_cost_projects():
-        """
-        If numeric values greater than 0 for startup costs are specified
-        for some generators, add those generators to the STARTUP_COST_PROJECTS
-        subset
-        :return:
-        """
-        startup_cost_projects = list()
+    if shutdown_cost_projects:
+        data_portal.data()["SHUTDOWN_COST_PROJECTS"] = \
+            {None: shutdown_cost_projects}
+        data_portal.data()["shutdown_cost_per_mw"] = shutdown_costs
+    if shutdown_fuel_projects:
+        data_portal.data()["SHUTDOWN_FUEL_PROJECTS"] = \
+            {None: shutdown_fuel_projects}
+        data_portal.data()["shutdown_fuel_mmbtu_per_mw"] = shutdown_fuel_mmbtus
 
-        # TODO: make sure we can deal with empty table or another way to skip
-        #  this if no inputs (no input file at all?). Since db table has the
-        #  columns, setting up logic to deal with columns possibly not being
-        #  there seems less ideal?
-        #  should we check validity of the duration here too?
-        df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "startup_ramps.tab"),
-            sep="\t",
-            usecols=["project", "startup_cost_per_mw"]
-        )
-        for row in zip(df["project"],
-                       df["startup_cost_per_mw"]):
-            if (is_number(row[1]) and float(row[1]) > 0
-                    and row[0] not in startup_cost_projects):
-                startup_cost_projects.append(row[0])
-            else:
-                pass
+    # STARTUP_PROJECTS
+    df = read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "startup_ramps.tab"),
+        sep="\t"
+    )
 
-        return startup_cost_projects
+    startup_projects = set()
+    startup_ramp_projects = set()
+    startup_cost_projects = set()
+    startup_fuel_projects = set()
 
-    data_portal.data()["STARTUP_COST_PROJECTS"] = \
-        {None: determine_startup_cost_projects()}
+    startup_projects_types = list()
+    startup_ramp_projects_types = list()
+    startup_cost_projects_types = list()
+    startup_fuel_projects_types = list()
 
-    # STARTUP FUEL_PROJECTS
-    def determine_startup_fuel_projects():
-        """
-        E.g. generators that incur fuel burn when starting up. Note: if we
-        already are setting a startup ramp trajectory, we can't have a startup
-        fuel too since this would be double counting!
-        :return:
-        """
-        startup_fuel_projects = list()
+    down_time_hours_dict = dict()
+    startup_ramps = dict()
+    startup_costs = dict()
+    startup_fuel_mmbtus = dict()
 
-        # TODO: Should we first check whether this is a fuel project?
-        df = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "startup_ramps.tab"),
-            sep="\t",
-            usecols=["project", "startup_fuel_mmbtu_per_mw"]
-        )
+    for i, row in df.iterrows():
+        project = row["project"]
+        startup_type_id = row["startup_type_id"]
+        down_time_hours = row["down_time_hours"]
+        startup_ramp = row["startup_ramp"]
+        startup_cost_per_mw = row["startup_cost_per_mw"]
+        startup_fuel_mmbtu_per_mw = row["startup_fuel_mmbtu_per_mw"]
 
-        for row in zip(df["project"],
-                       df["startup_fuel_mmbtu_per_mw"]):
-            if row[1] != "." and row[0] not in startup_fuel_projects:
-                startup_fuel_projects.append(row[0])
-            else:
-                pass
+        if down_time_hours != ".":
+            startup_projects.add(project)
+            startup_projects_types.append((project, startup_type_id))
+            down_time_hours_dict[(project, startup_type_id)] = \
+                float(down_time_hours)
+        if startup_ramp != ".":
+            startup_ramp_projects.add(project)
+            startup_ramp_projects_types.append((project, startup_type_id))
+            startup_ramps[(project, startup_type_id)] = \
+                float(startup_ramp)
+        if startup_cost_per_mw != ".":
+            startup_cost_projects.add(project)
+            startup_cost_projects_types.append((project, startup_type_id))
+            startup_costs[(project, startup_type_id)] = \
+                float(startup_cost_per_mw)
+        if startup_fuel_mmbtu_per_mw != ".":
+            startup_fuel_projects.add(project)
+            startup_fuel_projects_types.append((project, startup_type_id))
+            startup_fuel_mmbtus[(project, startup_type_id)] = \
+                float(startup_fuel_mmbtu_per_mw)
 
-        return startup_fuel_projects
+    if startup_projects:
+        data_portal.data()["STARTUP_PROJECTS"] = {None: startup_projects}
+        data_portal.data()["STARTUP_PROJECTS_TYPES"] = \
+            {None: startup_projects_types}
+        data_portal.data()["down_time_hours"] = down_time_hours_dict
 
-    data_portal.data()["STARTUP_FUEL_PROJECTS"] = \
-        {None: determine_startup_fuel_projects()}
+    if startup_ramp_projects:
+        data_portal.data()["STARTUP_RAMP_PROJECTS"] = \
+            {None: startup_ramp_projects}
+        data_portal.data()["STARTUP_RAMP_PROJECTS_TYPES"] = \
+            {None: startup_ramp_projects_types}
+        data_portal.data()["startup_ramp"] = startup_ramps
 
-    # SHUTDOWN_COST_PROJECTS
-    def determine_shutdown_cost_projects():
-        """
-        If numeric values greater than 0 for shutdown costs are specified
-        for some generators, add those generators to the
-        SHUTDOWN_COST_PROJECTS subset and initialize the respective shutdown
-        cost param value
-        :return:
-        """
+    if startup_cost_projects:
+        data_portal.data()["STARTUP_COST_PROJECTS"] = \
+            {None: startup_cost_projects}
+        data_portal.data()["STARTUP_COST_PROJECTS_TYPES"] = \
+            {None: startup_cost_projects_types}
+        data_portal.data()["startup_cost_per_mw"] = startup_costs
 
-        shutdown_cost_projects = list()
-        shutdown_cost_per_mw = dict()
-
-        dynamic_components = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "shutdown_cost_per_mw"]
-        )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["shutdown_cost_per_mw"]):
-            if is_number(row[1]) and float(row[1]) > 0:
-                shutdown_cost_projects.append(row[0])
-                shutdown_cost_per_mw[row[0]] = float(row[1])
-            else:
-                pass
-
-        return shutdown_cost_projects, shutdown_cost_per_mw
-
-    if "shutdown_cost_per_mw" in headers:
-        data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
-            None: determine_shutdown_cost_projects()[0]
-        }
-
-        data_portal.data()["shutdown_cost_per_mw"] = \
-            determine_shutdown_cost_projects()[1]
+    if startup_fuel_projects:
+        data_portal.data()["STARTUP_FUEL_PROJECTS"] = \
+            {None: startup_fuel_projects}
+        data_portal.data()["STARTUP_FUEL_PROJECTS_TYPES"] = \
+            {None: startup_fuel_projects_types}
+        data_portal.data()["startup_fuel_mmbtu_per_mw"] = startup_fuel_mmbtus
 
     # FUEL_PROJECT_SEGMENTS
     def determine_fuel_project_segments():
@@ -402,10 +389,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         data_portal.data()["FUEL_PROJECT_SEGMENTS"] = \
             {None: fuel_project_segments}
         data_portal.data()["fuel"] = fuels_dict
-        data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = \
-            slope_dict
-        data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = \
-            intercept_dict
+        data_portal.data()["fuel_burn_slope_mmbtu_per_mwh"] = slope_dict
+        data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = intercept_dict
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):

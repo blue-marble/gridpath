@@ -9,25 +9,17 @@ thermal unit commitment problem" (Morales-Espana et al. 2013), available
 online at https://ieeexplore.ieee.org/abstract/document/6485014
 """
 
-# TODO: think about how to best deal with inputs:
-#  need to have different startup costs for different types - OK
-#  need to align min down time and first startup type
-#  need to allow having no ramp inputs, but still have costs and startup fuels
-
-
 # TODO: deal with issue of very high startup ramp which means you don't have
-# a startup trajectory. Current approach still requires unit to sit at Pmin
-# for one timepoint. Ideally should revert to old constraint that lets you
-# jump to whatever that fraction is within one timepoint
+#  a startup trajectory. Current approach still requires unit to sit at Pmin
+#  for one timepoint. Ideally should revert to old constraint that lets you
+#  jump to whatever that fraction is within one timepoint
+#  Because we include the first timepoint of a startup and the last of a
+#  shutdown when calculating ramp trajectories. Can we simply not include
+#  that last timepoint (the 0 MW)
 
 # TODO: ramp assumptions about setpoints are clashing with Morales-Espana
 #  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
 #  whereas Morales-Espana assume you reach it end of timepoint.
-
-# TODO: are we double counting fuel burn now? We use power expression which
-#  includes startup/shutdown power when calculating the fuel burn so double count?
-#  also multiple types possible for binary commit
-#  make sure we still output the total fuel cost from a startup trajectory
 
 # TODO: set min down time equal to expression of min offline time +
 #   shortest startup duration + shutdown duration (see Morales Espana 2013b p4))
@@ -47,11 +39,6 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  the fuel
 #  down time has to be always defined and equal to TD at first down time
 
-# TODO: we now include the first timepoint of a startup and the last one of
-#  a shutdown when calculating the trajectory. Since that is zero, we can
-#  technically simply not include it? This raises the question whether the
-#  timepoint that is set to Pmin should be included/count?
-
 # TODO: cleanup
 #  REMOVE "sorted" in results and hard-coded 4h min up and down time
 #  add explanations to new functions
@@ -62,15 +49,8 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  normal ramp rate when starting up.
 #  REMOVE debug print statements
 
-# TODO: output startup type to results
-#  how to do this when we have variable amount of types?
-
 # Untested: if availability changes during a startup process, things could
 # get weird
-
-# Open question: are we double counting startup fuel burn if we have startup
-# fuel burn and fuel burn during startup trajectory below Pmin calculated with
-# the normal fuel burns equations as well (which will have very bad heat rate).
 
 from __future__ import division
 
@@ -103,22 +83,17 @@ def add_module_specific_components(m, d):
     *dispbincommit_min_stable_level_fraction* \ :sub:`bcg`\ -- the
     minimum stable level of the dispatchable-binary-commit generator, defined
     as a fraction its capacity \n
-    *dispbincommit_startup_plus_ramp_up_rate* \ :sub:`bcg`\ -- the project's
-    upward ramp rate limit during startup, defined as a fraction of its capacity
-    per minute. This param, adjusted for timepoint duration, has to be equal or
-    larger than *dispbincommit_min_stable_level_fraction* for the unit to be
-    able to start up between timepoints. \n
-    *dispbincommit_shutdown_plus_ramp_down_rate* \ :sub:`bcg`\ -- the project's
-    downward ramp rate limit during shutdown, defined as a fraction of its
-    capacity per minute. This param, adjusted for timepoint duration, has to be
-    equal or larger than *dispbincommit_min_stable_level_fraction* for the
-    unit to be able to shut down between timepoints. \n
     *dispbincommit_ramp_up_when_on_rate* \ :sub:`bcg`\ -- the project's
     upward ramp rate limit during operations, defined as a fraction of its
     capacity per minute. \n
     *dispbincommit_ramp_down_when_on_rate* \ :sub:`bcg`\ -- the project's
     downward ramp rate limit during operations, defined as a fraction of its
     capacity per minute. \n
+    *dispbincommit_shutdown_plus_ramp_down_rate* \ :sub:`bcg`\ -- the project's
+    downward ramp rate limit during shutdown, defined as a fraction of its
+    capacity per minute. This param, adjusted for timepoint duration, has to be
+    equal or larger than *dispbincommit_min_stable_level_fraction* for the
+    unit to be able to shut down between timepoints. \n
 
     *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
     :math:`BCG\_OT\subset RT`) is a two-dimensional set that
@@ -149,7 +124,7 @@ def add_module_specific_components(m, d):
     TODO: add documentation on all constraints
 
     """
-    # Sets
+    # ------------------------ Sets ------------------------ #
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
@@ -171,36 +146,18 @@ def add_module_specific_components(m, d):
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
             )
 
-    # TODO: make sure startup_ramp_projects exists or change to startup_cost
-    #  projects
-    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_WITH_STARTUP = Set(
-        initialize=m.DISPATCHABLE_BINARY_COMMIT_GENERATORS &
-        m.STARTUP_RAMP_PROJECTS
-    )
-
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES = Set(
-        within=m.PROJECT_STARTUP_TYPES,
+            within=m.STARTUP_PROJECTS_TYPES,
         rule=lambda mod:
-            set((g, l) for (g, l) in mod.PROJECT_STARTUP_TYPES
+            set((g, l) for (g, l) in mod.STARTUP_PROJECTS_TYPES
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
     )
 
-    def get_startup_types_by_project(mod, g):
-        """
-        Get indexed set of startup types by project, ordered from hottest to
-        coldest.
-        :param mod:
-        :param g:
-        :return:
-        """
-        types = list(sorted(l for (_g, l)
-                     in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES
-                     if g == _g))
-        return types
-    m.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR = Set(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_WITH_STARTUP,
-        initialize=get_startup_types_by_project,
-        ordered=True
+    m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_RAMP_TYPES = Set(
+            within=m.STARTUP_RAMP_PROJECTS_TYPES,
+        rule=lambda mod:
+            set((g, l) for (g, l) in mod.STARTUP_RAMP_PROJECTS_TYPES
+                if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS = \
@@ -211,27 +168,25 @@ def add_module_specific_components(m, d):
             if g == _g)
     )
 
-    # Params - Required
+    # --------------- Params - Required -------------------- #
     m.disp_binary_commit_min_stable_level_fraction = \
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=PercentFraction)
 
-    # Params - Optional
+    # --------------- Params - Optional -------------------- #
 
     # Ramp rates can be optionally specified and will default to 1 if not
     # Ramp rate units are "percent of project capacity per minute"
     # Startup and shutdown ramp rate are defined as ramp rate limit during
     # startup or shutdown, usually lower than the operational ramp rate.
-    m.dispbincommit_startup_plus_ramp_up_rate = \
-        Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-              within=PercentFraction, default=1)
-    m.dispbincommit_shutdown_plus_ramp_down_rate = \
-        Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-              within=PercentFraction, default=1)
     m.dispbincommit_ramp_up_when_on_rate = \
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
     m.dispbincommit_ramp_down_when_on_rate = \
+        Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
+              within=PercentFraction, default=1)
+
+    m.dispbincommit_shutdown_plus_ramp_down_rate = \
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=PercentFraction, default=1)
 
@@ -242,16 +197,15 @@ def add_module_specific_components(m, d):
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=NonNegativeReals, default=0)
 
-    # Derived Params
+    # ------------------ Derived Params ------------------------ #
     def startup_length_hours_rule(mod, g, l):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.startup_ramp[g, l] / 60
     m.DispBinCommit_Startup_Length_Hours = Param(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES,
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_RAMP_TYPES,
         rule=startup_length_hours_rule
     )
 
-    # TODO: need to rename this variable
     def shutdown_length_hours_rule(mod, g):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.dispbincommit_shutdown_plus_ramp_down_rate[g] / 60
@@ -260,12 +214,12 @@ def add_module_specific_components(m, d):
         rule=shutdown_length_hours_rule
     )
 
-    # Variables - Binary
+    # -------------------- Variables - Binary -------------------- #
     m.Commit_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=Binary)
 
-    # Variables - Continuous
+    # ------------------ Variables - Continuous ------------------ #
 
     # Start_Binary is 1 for the first timepoint the unit is committed after
     # being offline; it will be able to provide power and reserves in that
@@ -303,7 +257,7 @@ def add_module_specific_components(m, d):
         within=NonNegativeReals
     )
 
-    # Expressions:
+    # ---------------------- Expressions --------------------- #
     def pmax_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
@@ -319,7 +273,16 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=pmin_rule)
 
-    def get_shutdown_power(mod, g, tmp):
+    # Calculate active startup
+    def active_startup_rule(mod, g, tmp):
+        return (sum(mod.Start_Binary_Type[g, tmp, l] * l
+                    for l in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g])
+                if g in mod.STARTUP_PROJECTS else 0)
+    m.DispBinCommit_Active_Startup_Type = Expression(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=active_startup_rule)
+
+    def shutdown_power_rule(mod, g, tmp):
         """
         Get the shutdown power (only applicable of timepoint tmp takes place
         during the shutdown trajectory duration).
@@ -383,14 +346,14 @@ def add_module_specific_components(m, d):
         # )
 
         return relevant_shutdown_power
-    m.ShutDownPower = Expression(
+    m.ShutDownPower_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=get_shutdown_power
+        rule=shutdown_power_rule
     )
 
-    def get_startup_power(mod, g, tmp):
+    def startup_power_rule(mod, g, tmp):
         """
-        Get the startup power (only applicable of timepoint tmp takes place
+        Get the startup power (only applicable if timepoint tmp takes place
         during the startup trajectory duration).
 
         We first determine the relevant timepoints, namely the future timepoints
@@ -424,37 +387,44 @@ def add_module_specific_components(m, d):
         """
 
         relevant_startup_power = 0
-        for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]:
-            relevant_tmps_startup = determine_relevant_timepoints_forward(
-                mod, g, tmp,
-                mod.DispBinCommit_Startup_Length_Hours[g, l]
-            )
-            # print(tmp, l, relevant_tmps_startup)
-            time_from_startup = 0
-            for t in relevant_tmps_startup:
-                relevant_startup_power += mod.Start_Binary_Type[g, t, l] \
-                    * (mod.DispBinCommit_Pmin_MW[g, tmp]
-                       - time_from_startup * 60
-                       * mod.startup_ramp[g, l]
-                       * mod.Capacity_MW[g, mod.period[t]]
-                       * mod.Availability_Derate[g, t])
-                time_from_startup += mod.number_of_hours_in_timepoint[t]
-            # print(tmp, relevant_startup_power)
+        if g in mod.STARTUP_RAMP_PROJECTS:
+            for l in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]:
+                relevant_tmps_startup = determine_relevant_timepoints_forward(
+                    mod, g, tmp,
+                    mod.DispBinCommit_Startup_Length_Hours[g, l]
+                )
+                # print(tmp, l, relevant_tmps_startup)
+                time_from_startup = 0
+                for t in relevant_tmps_startup:
+                    relevant_startup_power += mod.Start_Binary_Type[g, t, l] \
+                        * (mod.DispBinCommit_Pmin_MW[g, tmp]
+                           - time_from_startup * 60
+                           * mod.startup_ramp[g, l]
+                           * mod.Capacity_MW[g, mod.period[t]]
+                           * mod.Availability_Derate[g, t])
+                    time_from_startup += mod.number_of_hours_in_timepoint[t]
+                # print(tmp, relevant_startup_power)
         return relevant_startup_power
-    m.StartUpPower = Expression(
+    m.StartUpPower_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=get_startup_power
+        rule=startup_power_rule
     )
 
-    def provide_power_rule(mod, g, tmp):
+    def provide_power_operations_rule(mod, g, tmp):
         return mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp] \
             + mod.DispBinCommit_Pmin_MW[g, tmp] \
-            * mod.Commit_Binary[g, tmp] \
-            + mod.StartUpPower[g, tmp] \
-            + mod.ShutDownPower[g, tmp]
+            * mod.Commit_Binary[g, tmp]
+    m.Provide_Power_Operations_DispBinaryCommit_MW = Expression(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=provide_power_operations_rule)
+
+    def provide_power_all_rule(mod, g, tmp):
+        return mod.Provide_Power_Operations_DispBinaryCommit_MW[g, tmp] \
+            + mod.StartUpPower_DispBinaryCommit_MW[g, tmp] \
+            + mod.ShutDownPower_DispBinaryCommit_MW[g, tmp]
     m.Provide_Power_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=provide_power_rule)
+        rule=provide_power_all_rule)
 
     def ramp_up_rate_rule(mod, g, tmp):
         """
@@ -510,17 +480,20 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_rate_rule)
 
+    # TODO: remove or adjust to be linked to new startup param
     # Note: make sure to limit this to Pmax, otherwise max power rules break
-    def startup_ramp_rate_rule(mod, g, tmp):
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            * min(mod.dispbincommit_startup_plus_ramp_up_rate[g]
-                  * mod.number_of_hours_in_timepoint[tmp]
-                  * 60, 1)
-    m.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint = Expression(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=startup_ramp_rate_rule)
+    # def startup_ramp_rate_rule(mod, g, tmp, l):
+    #     return mod.Capacity_MW[g, mod.period[tmp]] \
+    #         * mod.Availability_Derate[g, tmp] \
+    #         * min(mod.startup_ramp[g, l]
+    #               * mod.number_of_hours_in_timepoint[tmp]
+    #               * 60, 1)
+    # m.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint = Expression(
+    #     m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
+    #     rule=startup_ramp_rate_rule)
 
+    # TODO: remove or link back up to old ramp rate rule for non-quick start
+    #  units
     # Note: make sure to limit this to Pmax, otherwise max power rules break
     def shutdown_ramp_rate_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
@@ -546,7 +519,7 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=downwards_reserve_rule)
 
-    # Constraints
+    # ------------------ Constraints -------------------- #
     def binary_logic_constraint_rule(mod, g, tmp):
         """
         If commit status changes, unit is turning on or shutting down.
@@ -602,7 +575,7 @@ def add_module_specific_components(m, d):
         """
 
         # Coldest startup type is un-constrained
-        if l == mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g][-1]:
+        if l == mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g][-1]:
             return Constraint.Skip
 
         # Get the timepoints within [TSU,l; TSU,l+1) hours from *tmp*
@@ -651,12 +624,15 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        sum_startup_types = sum(
-            mod.Start_Binary_Type[g, tmp, l]
-            for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]
-        )
+        if g not in mod.STARTUP_PROJECTS:
+            return Constraint.Skip
+        else:
+            sum_startup_types = sum(
+                mod.Start_Binary_Type[g, tmp, l]
+                for l in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g]
+            )
 
-        return sum_startup_types == mod.Start_Binary[g, tmp]
+            return sum_startup_types == mod.Start_Binary[g, tmp]
 
     m.DispBinCommit_Only_One_Startup_Type_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -688,12 +664,20 @@ def add_module_specific_components(m, d):
         Power provision adjusted for upward reserves can't exceed generator's
         maximum power output.
 
+        This also sets the power output to Pmin at the last timepoint of an
+        up-period (last committed timeoint).
+
         Constraint (6) in Morales-Espana et al. (2013b)
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
+
+        # TODO: replace with constraint (31) Morales-Espana 2017 and see
+        #  whether this gets rid of
+        #  Note: will also have to take out startup/rampup trajectories if
+        #  the unit is quick-starting (might be okay cause it's zero?)
 
         # *stop_next_tmp* equals the value of the binary stop variable for the
         # next timepoint. If the horizon boundary is linear and we're at the
@@ -961,13 +945,15 @@ def add_module_specific_components(m, d):
     def fuel_burn_constraint_rule(mod, g, tmp, s):
         """
         Fuel burn is set by piecewise linear representation of input/output
-        curve.
+        curve. This does not include fuel burn during startup/shutdown,
+        which is calculated and reported separately.
 
         Note: we assume that when projects are derated for availability, the
         input/output curve is derated by the same amount. The implicit
         assumption is that when a generator is de-rated, some of its units
         are out rather than it being forced to run below minimum stable level
         at very inefficient operating points.
+
         :param mod:
         :param g:
         :param tmp:
@@ -978,7 +964,7 @@ def add_module_specific_components(m, d):
             mod.Fuel_Burn_DispBinCommit_MMBTU[g, tmp] \
             >= \
             mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
-            * mod.Provide_Power_DispBinaryCommit_MW[g, tmp] \
+            * mod.Provide_Power_Operations_DispBinaryCommit_MW[g, tmp] \
             + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
             * mod.Availability_Derate[g, tmp] \
             * mod.Commit_Binary[g, tmp]
@@ -995,9 +981,13 @@ def power_provision_rule(mod, g, tmp):
     :param tmp: the operational timepoint
     :return: expression for power provision by dispatchable-binary-commit
      generators
+
     Power provision for dispatchable-binary-commit generators is a
     variable constrained to be between the generator's minimum stable level
-    and its capacity if the generator is committed and 0 otherwise.
+    and its capacity if the generator is committed and 0 otherwise. The one
+    exception is during startup and shutdown, when the unit can follow a
+    trajectory from zero to the generator's minimum stable level, defined by the
+    startup/shutdown ramp rate.
     """
     return mod.Provide_Power_DispBinaryCommit_MW[g, tmp]
 
@@ -1177,12 +1167,11 @@ def load_module_specific_data(mod, data_portal,
     """
 
     min_stable_fraction = dict()
-    startup_plus_ramp_up_rate = dict()
-    shutdown_plus_ramp_down_rate = dict()
     ramp_up_when_on_rate = dict()
     ramp_down_when_on_rate = dict()
     min_up_time = dict()
     min_down_time = dict()
+    shutdown_plus_ramp_down_rate = dict()
 
     header = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
@@ -1190,15 +1179,14 @@ def load_module_specific_data(mod, data_portal,
         sep="\t", header=None, nrows=1
     ).values[0]
 
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
-                        "ramp_up_when_on_rate",
+    optional_columns = ["ramp_up_when_on_rate",
                         "ramp_down_when_on_rate",
                         "min_up_time_hours",
-                        "min_down_time_hours"]
+                        "min_down_time_hours",
+                        "shutdown_plus_ramp_down_rate"]
     used_columns = [c for c in optional_columns if c in header]
 
-    dynamic_components = pd.read_csv(
+    df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
                      "inputs", "projects.tab"),
         sep="\t",
@@ -1206,9 +1194,9 @@ def load_module_specific_data(mod, data_portal,
                  "min_stable_level_fraction"] + used_columns
 
     )
-    for row in zip(dynamic_components["project"],
-                   dynamic_components["operational_type"],
-                   dynamic_components["min_stable_level_fraction"]):
+    for row in zip(df["project"],
+                   df["operational_type"],
+                   df["min_stable_level_fraction"]):
         if row[1] == "gen_commit_bin":
             min_stable_fraction[row[0]] = float(row[2])
         else:
@@ -1218,9 +1206,9 @@ def load_module_specific_data(mod, data_portal,
 
     # Ramp rate limits are optional, will default to 1 if not specified
     if "startup_plus_ramp_up_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_plus_ramp_up_rate"]):
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["startup_plus_ramp_up_rate"]):
             if row[1] == "gen_commit_bin" and row[2] != ".":
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
             else:
@@ -1230,9 +1218,9 @@ def load_module_specific_data(mod, data_portal,
             startup_plus_ramp_up_rate
 
     if "shutdown_plus_ramp_down_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["shutdown_plus_ramp_down_rate"]):
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["shutdown_plus_ramp_down_rate"]):
             if row[1] == "gen_commit_bin" and row[2] != ".":
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
             else:
@@ -1241,54 +1229,63 @@ def load_module_specific_data(mod, data_portal,
             "dispbincommit_shutdown_plus_ramp_down_rate"] = \
             shutdown_plus_ramp_down_rate
 
+    # Ramp rates are optional, will default to 1 if not specified
     if "ramp_up_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_up_when_on_rate"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["ramp_up_when_on_rate"]):
+            if row[1] == "gen_commmit_bin" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "dispbincommit_ramp_up_when_on_rate"] = \
+        data_portal.data()["dispbincommit_ramp_up_when_on_rate"] = \
             ramp_up_when_on_rate
 
     if "ramp_down_when_on_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["ramp_down_when_on_rate"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["ramp_down_when_on_rate"]):
+            if row[1] == "gen_commmit_bin" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "dispbincommit_ramp_down_when_on_rate"] = \
+        data_portal.data()["dispbincommit_ramp_down_when_on_rate"] = \
             ramp_down_when_on_rate
 
     # Up and down time limits are optional, will default to 1 if not specified
     if "min_up_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_up_time_hours"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["min_up_time_hours"]):
+            if row[1] == "gen_commmit_bin" and row[2] != ".":
                 min_up_time[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "dispbincommit_min_up_time_hours"] = \
+        data_portal.data()["dispbincommit_min_up_time_hours"] = \
             min_up_time
 
     if "min_down_time_hours" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["min_down_time_hours"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["min_down_time_hours"]):
+            if row[1] == "gen_commmit_bin" and row[2] != ".":
                 min_down_time[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "dispbincommit_min_down_time_hours"] = \
+        data_portal.data()["dispbincommit_min_down_time_hours"] = \
             min_down_time
+
+    # Shut down ramp is optional, will default to 1 if not specified
+    if "shutdown_plus_ramp_down_rate" in used_columns:
+        for row in zip(df["project"],
+                       df["operational_type"],
+                       df["shutdown_plus_ramp_down_rate"]):
+            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+                shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()["dispbincommit_shutdown_plus_ramp_down_rate"] = \
+            shutdown_plus_ramp_down_rate
 
 
 def export_module_specific_results(mod, d,
@@ -1306,13 +1303,16 @@ def export_module_specific_results(mod, d,
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",
-                         "number_of_hours_in_timepoint", "technology",
-                         "load_zone", "power_mw", "committed_mw",
-                         "committed_units", "started_units", "stopped_units"
+                         "number_of_hours_in_timepoint",
+                         "technology", "load_zone",
+                         "power_operations_mw", "power_startup_mw",
+                         "power_shutdown_mw", "power_total_mw",
+                         "committed_mw",
+                         "committed_units", "started_units", "stopped_units",
+                         "startup_type_id"
                          ])
 
-        for (p, tmp) \
-                in sorted(mod. \
+        for (p, tmp) in sorted(mod.\
                 DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS):
             writer.writerow([
                 p,
@@ -1324,28 +1324,19 @@ def export_module_specific_results(mod, d,
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
+                value(mod.Provide_Power_Operations_DispBinaryCommit_MW[p, tmp]),
+                value(mod.StartUpPower_DispBinaryCommit_MW[p, tmp]),
+                value(mod.ShutDownPower_DispBinaryCommit_MW[p, tmp]),
                 value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp]),
                 value(mod.DispBinCommit_Pmax_MW[p, tmp])
                 * value(mod.Commit_Binary[p, tmp]),
                 value(mod.Commit_Binary[p, tmp]),
                 value(mod.Start_Binary[p, tmp]),
-                value(mod.Stop_Binary[p, tmp])
+                value(mod.Stop_Binary[p, tmp]),
+                value(mod.DispBinCommit_Active_Startup_Type[p, tmp])
+                if p in mod.STARTUP_PROJECTS
+                else None,
             ])
-
-            # TODO: remove
-            print("-----")
-            print("tmp", tmp)
-            # print("p_above_pmin", value(mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[p, tmp]))
-            # print("pmin", value(mod.DispBinCommit_Pmin_MW[p, tmp]))
-            # print("commit", value(mod.Commit_Binary[p, tmp]))
-            # print("startup", value(mod.StartUpPower[p, tmp]))
-            # print("shutdown", value(mod.ShutDownPower[p, tmp]))
-            for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[p]:
-                print("type_id", l, "startup", value(mod.Start_Binary_Type[p, tmp, l]))
-
-    for g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS:
-        for l in mod.STARTUP_TYPES_BY_DISPATCHABLE_BINARY_COMMIT_GENERATOR[g]:
-            print("startup_type", l, "duration", value(mod.DispBinCommit_Startup_Length_Hours[g, l]))
 
 
 def import_module_specific_results_to_database(
@@ -1387,28 +1378,36 @@ def import_module_specific_results_to_database(
             number_of_hours_in_timepoint = row[6]
             load_zone = row[8]
             technology = row[7]
-            power_mw = row[9]
-            committed_mw = row[10]
-            committed_units = row[11]
-            started_units = row[12]
-            stopped_units = row[13]
+            power_operations_mw = row[9]
+            power_startup_mw = row[10]
+            power_shutdown_mw = row[11]
+            power_total_mw = row[12]
+            committed_mw = row[13]
+            committed_units = row[14]
+            started_units = row[15]
+            stopped_units = row[16]
+            startup_type_id = row[17]
             
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     balancing_type_project, horizon, timepoint,
                     timepoint_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units)
+                    load_zone, technology, power_operations_mw,
+                    power_startup_mw, power_shutdown_mw, power_total_mw,
+                    committed_mw, committed_units, started_units, stopped_units,
+                    startup_type_id)
             )
     insert_temp_sql ="""
         INSERT INTO temp_results_project_dispatch_binary_commit{}
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint,
         timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_mw, committed_mw, 
-        committed_units, started_units, stopped_units)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?);
+        load_zone, technology, power_operations_mw, power_startup_mw, 
+        power_shutdown_mw, power_total_mw,
+        committed_mw, committed_units, started_units, stopped_units,
+        startup_type_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -1416,14 +1415,20 @@ def import_module_specific_results_to_database(
     insert_sql = """
         INSERT INTO results_project_dispatch_binary_commit
         (scenario_id, project, period, subproblem_id, stage_id, 
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units)
+        balancing_type_project, horizon, timepoint, 
+        timepoint_weight, number_of_hours_in_timepoint, 
+        load_zone, technology, power_operations_mw, power_startup_mw, 
+        power_shutdown_mw, power_total_mw,
+        committed_mw, committed_units, started_units, stopped_units,
+        startup_type_id)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units
+        balancing_type_project, horizon, timepoint, 
+        timepoint_weight, number_of_hours_in_timepoint, 
+        load_zone, technology, power_operations_mw, power_startup_mw, 
+        power_shutdown_mw, power_total_mw,
+        committed_mw, committed_units, started_units, stopped_units,
+        startup_type_id
         FROM temp_results_project_dispatch_binary_commit{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)

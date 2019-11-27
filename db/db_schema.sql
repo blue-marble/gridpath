@@ -2492,10 +2492,13 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,
+startup_power_mw FLOAT,
+shutdown_power_mw FLOAT,
 committed_mw FLOAT,
 committed_units INTEGER,
 started_units INTEGER,
 stopped_units INTEGER,
+startup_type_id INTEGER,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
@@ -2862,7 +2865,10 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 fuel VARCHAR(32),
-fuel_burn_mmbtu FLOAT,
+fuel_burn_operations_mmbtu FLOAT,
+fuel_burn_startup_mmbtu FLOAT,
+fuel_burn_shutdown_mmbtu FLOAT,
+fuel_burn_total_mmbtu FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

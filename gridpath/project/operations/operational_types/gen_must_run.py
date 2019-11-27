@@ -189,7 +189,7 @@ def startup_rule(mod, g, tmp, l):
 
 def shutdown_rule(mod, g, tmp):
     """
-    Must-run generators are never started up.
+    Must-run generators are never shut down.
     :param mod:
     :param g:
     :param tmp:
@@ -230,9 +230,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     projects = c1.execute(
         """SELECT project, operational_type,
         fuel, min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
+        shutdown_cost_per_mw,
         shutdown_plus_ramp_down_rate,
         ramp_up_when_on_rate,
         ramp_down_when_on_rate,
@@ -243,9 +241,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         INNER JOIN
         (SELECT project, operational_type,
         fuel, min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
+        shutdown_cost_per_mw,
         shutdown_plus_ramp_down_rate,
         ramp_up_when_on_rate,
         ramp_down_when_on_rate,
@@ -299,9 +295,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     expected_na_columns = [
         "min_stable_level",
         "unit_size_mw",
-        "startup_cost_per_mw", "shutdown_cost_per_mw",
-        "startup_fuel_mmbtu_per_mw",
-        "startup_plus_ramp_up_rate",
+        "shutdown_cost_per_mw",
         "shutdown_plus_ramp_down_rate",
         "ramp_up_when_on_rate",
         "ramp_down_when_on_rate",

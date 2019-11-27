@@ -79,13 +79,13 @@ def add_model_components(m, d):
         :param mod:
         :return:
         """
-        return sum(mod.Startup_Cost[g, tmp, l]
+        return sum(mod.Startup_Cost[g, tmp]
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.timepoint_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for (g, tmp, l)
-                   in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES)
+                   for (g, tmp)
+                   in mod.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS)
     m.Total_Startup_Cost = Expression(rule=total_startup_cost_rule)
     getattr(d, total_cost_components).append("Total_Startup_Cost")
 

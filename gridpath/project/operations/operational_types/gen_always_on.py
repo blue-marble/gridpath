@@ -531,9 +531,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     projects = c.execute(
         """SELECT project, operational_type,
         min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
+        shutdown_cost_per_mw,
         shutdown_plus_ramp_down_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
@@ -542,9 +540,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         INNER JOIN
         (SELECT project, operational_type,
         min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
-        startup_fuel_mmbtu_per_mw,
-        startup_plus_ramp_up_rate,
+        shutdown_cost_per_mw,
         shutdown_plus_ramp_down_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
@@ -587,9 +583,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check that there are no unexpected operational inputs
     expected_na_columns = [
-        "startup_cost_per_mw", "shutdown_cost_per_mw",
-        "startup_fuel_mmbtu_per_mw",
-        "startup_plus_ramp_up_rate",
+        "shutdown_cost_per_mw",
         "shutdown_plus_ramp_down_rate",
         "min_up_time_hours", "min_down_time_hours",
         "charging_efficiency", "discharging_efficiency",
