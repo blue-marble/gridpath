@@ -13,6 +13,7 @@ import { Scenario } from '../scenarios/scenarios.component';
 })
 export class ScenarioComparisonSelectComponent implements OnInit {
 
+  showBaseScenarioColumn: boolean;
   scenariosToCompareForm: FormGroup;
   allScenarios: {id: number, name: string}[];
 

@@ -6,21 +6,34 @@
     </div>
   </div>
 
+  <div>
+    <button type="radio" name="compare-what" value="inputs"
+            (click)="showBaseScenarioColumn=true">Compare
+      Inputs</button>
+    <button type="radio" name="compare-what" value="results"
+            (click)="showBaseScenarioColumn=false">Compare
+      Results</button>
+  </div>
+
   <h5 id="scenario-detail-heading">Scenario Selection</h5>
   <form [formGroup]="scenariosToCompareForm"
           (ngSubmit)="compareScenarioInputs()">
     <table class="scenario-detail">
     <tr>
       <th>Scenario</th>
-      <th>Choose Base Scenario</th>
+      <th *ngIf="showBaseScenarioColumn == true">Choose Base Scenario</th>
       <th>Select Scenarios to Compare</th>
     </tr>
       <ng-container
         *ngFor="let scenario of allScenarios; let i=index">
         <tr>
           <td>{{allScenarios[i].name}}</td>
-          <td><label><input type="radio" formControlName="baseScenario"
-               [value]="allScenarios[i].id"></label></td>
+          <td *ngIf="showBaseScenarioColumn">
+            <label>
+              <input type="radio" formControlName="baseScenario"
+               [value]="allScenarios[i].id">
+            </label>
+          </td>
           <td>
             <label formArrayName="scenariosToCompare">
               <input type="checkbox" [formControlName]="i">
@@ -34,6 +47,7 @@
   <div class="row">
     <div class="col-md-auto">
       <button id="compareInputs" class="button-primary"
+              *ngIf="showBaseScenarioColumn == true"
             (click)="compareScenarioInputs()">Compare Scenario Inputs</button>
     </div>
   </div>
@@ -41,6 +55,7 @@
   <div class="row">
     <div class="col-md-auto">
       <button id="compareResults" class="button-primary"
+              *ngIf="showBaseScenarioColumn == false"
             (click)="compareScenarioResults()">Compare Scenario Results
       (inactive)</button>
     </div>
