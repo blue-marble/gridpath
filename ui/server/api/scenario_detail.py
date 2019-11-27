@@ -3,6 +3,7 @@
 from flask_restful import Resource
 
 from db.common_functions import connect_to_database
+from gridpath.auxiliary.scenario_chars import SolverOptions
 
 
 # ### API: Scenario Detail ### #
@@ -21,8 +22,8 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api = dict()
 
         # Get the scenario name
-        [scenario_name, validation_status, run_status, solver] = c.execute("""
-          SELECT scenario_name, validation_status, run_status, solver
+        [scenario_name, validation_status, run_status] = c.execute("""
+          SELECT scenario_name, validation_status, run_status
           FROM scenarios_view 
           WHERE scenario_id = {}
           """.format(scenario_id)
@@ -31,7 +32,13 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api["scenarioName"] = scenario_name
         scenario_detail_api["validationStatus"] = validation_status
         scenario_detail_api["runStatus"] = run_status
-        scenario_detail_api["solver"] = solver
+
+        # TODO: should probably specify the default solver somewhere in the
+        #  code and use that parameter here
+        scenario_detail_api["solver"] = \
+            "cbc" if SolverOptions(cursor=c, scenario_id=scenario_id).SOLVER \
+            is None \
+            else SolverOptions(cursor=c, scenario_id=scenario_id).SOLVER
 
         # Get the UI table structure and make a dictionary of scenarios_view
         # columns with their ui_table_name_in_db and ui_table_row_name_in_db

@@ -3431,7 +3431,7 @@ subscenarios_system_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
-options_solver_descriptions.solver as solver
+options_solver_descriptions.name as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3608,9 +3608,8 @@ project_form_control INTEGER
 DROP TABLE IF EXISTS options_solver_descriptions;
 CREATE TABLE options_solver_descriptions (
     solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    solver VARCHAR(32),
-    description VARCHAR(128),
-    UNIQUE (solver_options_id, solver)
+    name VARCHAR(32),
+    description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS options_solver_values;
@@ -3620,6 +3619,6 @@ CREATE TABLE options_solver_values (
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
     PRIMARY KEY (solver_options_id, solver, solver_option_name),
-    FOREIGN KEY (solver_options_id, solver)
-        REFERENCES options_solver_descriptions (solver_options_id, solver)
+    FOREIGN KEY (solver_options_id)
+        REFERENCES options_solver_descriptions (solver_options_id)
 );
