@@ -29,3 +29,21 @@
 #scenario-detail-heading {
   padding-top: 20px
 }
+
+
+#plots-title {
+  color: midnightblue;
+}
+
+.navbar-results-button {
+  font-size: small;
+  background: aliceblue;
+  color: midnightblue;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.navbar-results-button:hover {
+  background-color: darkblue;
+  color: white
+}

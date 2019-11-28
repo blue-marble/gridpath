@@ -4,7 +4,8 @@ import {NavigationExtras, Router} from '@angular/router';
 import {FormControl, FormGroup, FormBuilder, FormArray} from '@angular/forms';
 
 import { ScenariosService } from '../scenarios/scenarios.service';
-import { Scenario } from '../scenarios/scenarios.component';
+import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
+import {ResultsOptions} from '../scenario-results/scenario-results';
 
 @Component({
   selector: 'app-scenario-comparison-select',
@@ -13,15 +14,24 @@ import { Scenario } from '../scenarios/scenarios.component';
 })
 export class ScenarioComparisonSelectComponent implements OnInit {
 
-  showBaseScenarioColumn: boolean;
   scenariosToCompareForm: FormGroup;
   allScenarios: {id: number, name: string}[];
+
+  // Will be used to decide which plot options to show
+  baseScenario: number;
+
+  // Results plots
+  showResultsButtons: boolean;
+  allPlotFormGroups: FormGroup[];
+  // The possible options for the forms
+  formOptions: ResultsOptions;
 
   constructor(
     private location: Location,
     private router: Router,
     private formBuilder: FormBuilder,
-    private scenariosService: ScenariosService
+    private scenariosService: ScenariosService,
+    private scenarioResultsService: ScenarioResultsService
   ) {
 
     this.scenariosToCompareForm = this.formBuilder.group({
@@ -33,7 +43,11 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.getScenarios();
   }
 
-  ngOnInit() { }
+  ngOnInit() {
+    this.getFormOptions(this.baseScenario);
+    this.allPlotFormGroups = [];
+    this.makeResultsPlotForms();
+  }
 
   getScenarios(): void {
     this.scenariosService.getScenarios()
@@ -74,7 +88,50 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     );
   }
 
+  getFormOptions(scenarioID): void {
+    this.scenarioResultsService.getOptions(scenarioID)
+      .subscribe(options => {
+        this.formOptions = options;
+      });
+  }
+
+  makeResultsPlotForms(): void {
+    this.scenarioResultsService.getResultsIncludedPlots()
+      .subscribe(includedPlots => {
+        for (const plot of includedPlots) {
+          const form = this.formBuilder.group({
+            plotType: plot.plotType,
+            caption: plot.caption,
+            loadZone: plot.loadZone,
+            rpsZone: plot.rpsZone,
+            carbonCapZone: plot.carbonCapZone,
+            period: plot.period,
+            horizon: plot.horizon,
+            subproblem: plot.subproblem,
+            stage: plot.stage,
+            project: plot.project,
+            yMax: null
+          });
+          this.allPlotFormGroups.push(form);
+        }
+      });
+  }
+
   compareScenarioResults(): void {
+    console.log('Comparing scenario results');
+
+    this.showResultsButtons = true;
+
+    const selectedScenarioIDs = this.scenariosToCompareForm.value.scenariosToCompare
+      .map((v, i) => v ? this.allScenarios[i].id : null)
+      .filter(v => v !== null);
+    const baseScenarioIDToCompare = this.scenariosToCompareForm.value.baseScenario;
+    this.baseScenario = baseScenarioIDToCompare;
+    console.log(this.baseScenario);
+    console.log('Base: ', baseScenarioIDToCompare);
+    console.log('Compare: ', selectedScenarioIDs);
+
+    this.ngOnInit();
 
   }
 
