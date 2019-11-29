@@ -76,8 +76,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     console.log('Base: ', baseScenarioIDToCompare);
     console.log('Compare: ', selectedScenarioIDs);
 
-    // Switch to the scenario-comparison view with the given base scenario
-    // and list of scenarios to compare
+    // Switch to the scenario-comparison-inputs view with the given base
+    // scenario and list of scenarios to compare
     const navigationExtras: NavigationExtras = {
       state: {
         baseScenarioID: baseScenarioIDToCompare,
@@ -123,6 +123,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
     this.showResultsButtons = true;
 
+    // TODO: refactor to consolidate with inputs?
     this.baseScenario = this.scenariosToCompareForm.value.baseScenario;
     this.scenariosToCompare = this.scenariosToCompareForm.value.scenariosToCompare
       .map((v, i) => v ? this.allScenarios[i].id : null)
@@ -136,6 +137,18 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   showResultsPlots(): void {
     // TODO: need to make sure form is disabled after compareScenarioResults
     //  is run (so that the user doesn't change the scenarios selected)
+
+    // Switch to the scenario-comparison-inputs view with the given base
+    // scenario and list of scenarios to compare
+    const navigationExtras: NavigationExtras = {
+      state: {
+        baseScenarioID: this.baseScenario,
+        scenariosIDsToCompare: this.scenariosToCompare
+      }
+    };
+    this.router.navigate(
+      ['/scenario-comparison/results'], navigationExtras
+    );
   }
 
   goBack(): void {
