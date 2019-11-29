@@ -13,8 +13,6 @@ import {socketConnect} from '../app.component';
 const Bokeh = ( window as any ).require('bokehjs');
 
 
-
-
 @Component({
   selector: 'app-scenario-results',
   templateUrl: './scenario-results.component.html',
@@ -164,11 +162,11 @@ export class ScenarioResultsComponent implements OnInit {
 
     if (buttonName === 'showPlot') {
       this.scenarioResultsService.getResultsPlot(
-      this.scenarioID, formValues.plotType, formValues.loadZone,
-        formValues.rpsZone, formValues.carbonCapZone, formValues.period,
-        formValues.horizon, formValues.subproblem, formValues.stage,
-        formValues.project, formValues.yMax
-    ).subscribe(resultsPlot => {
+        this.scenarioID, formValues.plotType, formValues.loadZone,
+          formValues.rpsZone, formValues.carbonCapZone, formValues.period,
+          formValues.horizon, formValues.subproblem, formValues.stage,
+          formValues.project, formValues.yMax
+      ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
         this.ngOnInit();
