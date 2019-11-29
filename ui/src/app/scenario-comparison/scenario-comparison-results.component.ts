@@ -12,6 +12,12 @@ export class ScenarioComparisonResultsComponent implements OnInit {
   baseScenarioID: number;
   scenariosIDsToCompare: number[];
 
+  // TODO: make a type for the form values
+  formValues: {};
+
+  basePlotHTMLTarget: string;
+  comparePlotsHTMLTargets: string[];
+
   constructor(
     private location: Location,
     private router: Router,
@@ -19,7 +25,8 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     const navigation = this.router.getCurrentNavigation();
     const state = navigation.extras.state as {
       baseScenarioID: number,
-      scenariosIDsToCompare: boolean
+      scenariosIDsToCompare: boolean,
+      formValuesToPass: {}
     };
   }
 
@@ -30,9 +37,15 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     // of the scenario name field
     this.baseScenarioID = history.state.baseScenarioID;
     this.scenariosIDsToCompare = history.state.scenariosIDsToCompare;
+    this.formValues = history.state.formValuesToPass;
 
     console.log(this.baseScenarioID);
     console.log(this.scenariosIDsToCompare);
+    console.log(this.formValues);
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 
 }

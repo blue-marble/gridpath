@@ -1,3 +1,21 @@
-<p>
-  scenario-comparison-results works!
-</p>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="goBackButtonTop" class="button-primary"
+            (click)="goBack()">Back</button>
+    </div>
+  </div>
+
+  <!--  Row for the results -->
+  <div class="row">
+    <div class="col overflow-x-auto">
+      <!--  Plots -->
+      <div [id]="basePlotHTMLTarget"></div>
+      <ng-container *ngFor="let comparePlotHTMLTarget of
+      comparePlotsHTMLTargets">
+        <div [id]="comparePlotHTMLTarget"></div>
+      </ng-container>
+    </div>
+  </div>
+
+</div>
