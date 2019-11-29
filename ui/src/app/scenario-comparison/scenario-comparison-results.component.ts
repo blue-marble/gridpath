@@ -35,7 +35,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
   basePlotHTMLTarget: string;
   basePlotJSON: any;
   comparePlotsHTMLTargets: string[];
-  comparePlotJSON: any[];
+  comparePlotsJSON: any[];
 
   constructor(
     private location: Location,
@@ -59,6 +59,10 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     this.formValues = history.state.formValuesToPass;
 
     this.embedBasePlot();
+
+    this.comparePlotsHTMLTargets = [];
+    this.comparePlotsJSON = [];
+    this.embedComparePlots();
   }
 
   embedBasePlot(): void {
@@ -72,6 +76,21 @@ export class ScenarioComparisonResultsComponent implements OnInit {
         this.basePlotJSON = resultsPlot.plotJSON;
         Bokeh.embed.embed_item(this.basePlotJSON);
       });
+  }
+
+  embedComparePlots(): void {
+    for (const scenarioIDTOCompare of this.scenariosIDsToCompare) {
+      this.scenarioResultsService.getResultsPlot(
+        scenarioIDTOCompare, this.formValues.plotType, this.formValues.loadZone,
+          this.formValues.rpsZone, this.formValues.carbonCapZone, this.formValues.period,
+          this.formValues.horizon, this.formValues.subproblem, this.formValues.stage,
+          this.formValues.project, this.formValues.yMax
+      ).subscribe(resultsPlot => {
+        this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);
+        this.comparePlotsJSON.push(resultsPlot.plotJSON);
+        Bokeh.embed.embed_item(resultsPlot.plotJSON);
+      });
+    }
   }
 
   goBack(): void {
