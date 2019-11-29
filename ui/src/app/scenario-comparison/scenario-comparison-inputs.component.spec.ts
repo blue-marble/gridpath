@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ScenarioComparisonComponent } from './scenario-comparison.component';
+import { ScenarioComparisonInputsComponent } from './scenario-comparison-inputs.component';
 
 describe('ScenarioComparisonComponent', () => {
-  let component: ScenarioComparisonComponent;
-  let fixture: ComponentFixture<ScenarioComparisonComponent>;
+  let component: ScenarioComparisonInputsComponent;
+  let fixture: ComponentFixture<ScenarioComparisonInputsComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ScenarioComparisonComponent ]
+      declarations: [ ScenarioComparisonInputsComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ScenarioComparisonComponent);
+    fixture = TestBed.createComponent(ScenarioComparisonInputsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

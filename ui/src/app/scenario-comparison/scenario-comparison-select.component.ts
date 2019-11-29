@@ -19,6 +19,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
   // Will be used to decide which plot options to show
   baseScenario: number;
+  scenariosToCompare: number[];
 
   // Results plots
   showResultsButtons: boolean;
@@ -84,7 +85,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
       }
     };
     this.router.navigate(
-      ['/scenario-comparison'], navigationExtras
+      ['/scenario-comparison/inputs'], navigationExtras
     );
   }
 
@@ -122,17 +123,19 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
     this.showResultsButtons = true;
 
-    const selectedScenarioIDs = this.scenariosToCompareForm.value.scenariosToCompare
+    this.baseScenario = this.scenariosToCompareForm.value.baseScenario;
+    this.scenariosToCompare = this.scenariosToCompareForm.value.scenariosToCompare
       .map((v, i) => v ? this.allScenarios[i].id : null)
       .filter(v => v !== null);
-    const baseScenarioIDToCompare = this.scenariosToCompareForm.value.baseScenario;
-    this.baseScenario = baseScenarioIDToCompare;
-    console.log(this.baseScenario);
-    console.log('Base: ', baseScenarioIDToCompare);
-    console.log('Compare: ', selectedScenarioIDs);
+    console.log('Base: ', this.baseScenario);
+    console.log('Compare: ', this.scenariosToCompare);
 
     this.ngOnInit();
+  }
 
+  showResultsPlots(): void {
+    // TODO: need to make sure form is disabled after compareScenarioResults
+    //  is run (so that the user doesn't change the scenarios selected)
   }
 
   goBack(): void {
