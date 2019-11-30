@@ -29,9 +29,7 @@ def csv_read_data(folder_path):
             csv_subscenario = pd.read_csv(os.path.join(folder_path, f))
 
     for row in range(0, len(csv_subscenario.index)):
-        print(csv_subscenario.iloc[row]['filename'])
         subscenario_filename = csv_subscenario.iloc[row]['filename']
-        print(subscenario_filename)
         if '.csv' not in subscenario_filename:
             subscenario_filename = subscenario_filename + '.csv'
         print(subscenario_filename)

@@ -135,32 +135,25 @@ data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'geography', 'geograph
 
 (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
 
+#### DELETE START ####
 #csv_subscenario_input = OrderedDict(sorted(csv_subscenario_input.items()))
-
-subscenario_input = csv_subscenario_input
-data_input = csv_data_input
-
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
 #subscenario_input = csv_subscenario
 #data_input = csv_data
+#### DELETE END ####
 
 load_geography.load_geography_load_zones(io, c2, csv_subscenario_input, csv_data_input)
 
-'''
+
 ## LOAD RPS ZONES ##
 
-def load_geography_rps_zones():
-    """
-    single rps zone
-    :return:
-    """
-    geography.geography_rps_zones(
-        io=io, c=c2,
-        rps_zone_scenario_id=1,
-        scenario_name='india_rps',
-        scenario_description='INDIA RPS',
-        zones=['India']
-    )
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'rps', 'geography_rps_zones')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+
+'''
 #### LOAD TEMPORAL DATA ####
 
 def load_temporal_data():
