@@ -2,13 +2,23 @@
   <div class="row">
     <div class="col-md-auto">
       <button id="goBackButtonTop" class="button-primary"
+              *ngIf="showResultsButtons == false"
             (click)="goBack()">Back</button>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="resetButtonTop" class="button-primary"
+              *ngIf="showResultsButtons == true"
+            (click)="reset()">Back</button>
     </div>
   </div>
 
 
-  <h5 id="scenario-detail-heading">Scenario Selection</h5>
-  <form [formGroup]="scenariosToCompareForm">
+  <h5 id="scenario-detail-heading"
+      *ngIf="showResultsButtons == false">Scenario Selection</h5>
+  <form [formGroup]="scenariosToCompareForm" *ngIf="showResultsButtons ==
+  false">
     <table class="scenario-detail">
     <tr>
       <th>Scenario</th>
@@ -34,11 +44,11 @@
       </ng-container>
     </table>
     <button name="compareInputs" type="submit"
-            class="button-primary"
+            class="button-primary" *ngIf="showResultsButtons == false"
             (click)="compareScenarioInputs()">Compare Inputs
     </button>
     <button name="compareResults" type="submit"
-        class="button-primary"
+        class="button-primary" *ngIf="showResultsButtons == false"
             (click)="compareScenarioResults()"
     >Compare Results
     </button>

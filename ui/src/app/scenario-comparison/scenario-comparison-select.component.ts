@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import {NavigationExtras, Router} from '@angular/router';
-import {FormControl, FormGroup, FormBuilder, FormArray} from '@angular/forms';
+import { NavigationExtras, Router } from '@angular/router';
+import { FormControl, FormGroup, FormBuilder, FormArray } from '@angular/forms';
 
 import { ScenariosService } from '../scenarios/scenarios.service';
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
@@ -42,6 +42,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
     this.allScenarios = [];
     this.getScenarios();
+
+    this.showResultsButtons = false;
   }
 
   ngOnInit() {
@@ -156,7 +158,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     );
   }
 
-  // TODO: refactor to consolidate with scenario-resuls.component.ts?
+  // TODO: refactor to consolidate with scenario-results.component.ts?
   getFormGroupValues(formGroup) {
     const plotType = formGroup.value.plotType;
     const loadZone = formGroup.value.loadZone;
@@ -186,5 +188,10 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  reset(): void {
+    this.showResultsButtons = false;
+    this.ngOnInit();
   }
 }
