@@ -43,11 +43,11 @@
         </tr>
       </ng-container>
     </table>
-    <button name="compareInputs" type="submit"
+    <button name="compareInputs" type="submit" id="compareInputs"
             class="button-primary" *ngIf="showResultsButtons == false"
             (click)="compareScenarioInputs()">Compare Inputs
     </button>
-    <button name="compareResults" type="submit"
+    <button name="compareResults" type="submit" id="compareResults"
         class="button-primary" *ngIf="showResultsButtons == false"
             (click)="compareScenarioResults()"
     >Compare Results

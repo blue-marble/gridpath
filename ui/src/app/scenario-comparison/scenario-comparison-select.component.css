@@ -1,5 +1,25 @@
 /* scenarioDetailComponent's private CSS styles */
 
+#goBackButtonTop {
+  padding-top: 10px;
+}
+
+#resetButtonTop {
+  padding-top: 10px;
+}
+
+#scenario-detail-heading {
+  padding-top: 20px
+}
+
+#tables-title {
+  padding-top: 20px
+}
+
+#plots-title {
+  padding-top: 20px
+}
+
 .scenario-detail th {
   background-color: midnightblue;
   color: white;
@@ -25,11 +45,6 @@
   margin-top: 10px;
   margin-bottom: 1px;
 }
-
-#scenario-detail-heading {
-  padding-top: 20px
-}
-
 
 #plots-title {
   color: midnightblue;
@@ -79,4 +94,14 @@
   color: midnightblue;
   padding-bottom: 5px;
   text-align: center
+}
+
+#compareInputs {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+#compareResults {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }

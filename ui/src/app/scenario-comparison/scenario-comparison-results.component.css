@@ -1,3 +1,11 @@
+#goBackButtonTop {
+  padding-top: 10px;
+}
+
+#resultsDiv {
+  padding-top: 20px;
+}
+
 .view-data-table th {
   background-color: midnightblue;
   color: white;
