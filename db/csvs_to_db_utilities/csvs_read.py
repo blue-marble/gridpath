@@ -10,7 +10,39 @@ import pandas as pd
 import os
 import csv
 
+
 def csv_read_data(folder_path):
+    '''
+    :param folder_path: Path to folder with input csv files
+    :return csv_subscenario: A pandas dataframe with subscenario id, name, description
+    :return csv_data: Data for all subscenarios in a dataframe
+    '''
+    # The specific function will call a generic file scanner function, which will scan the folder and note the subscenario file. The file only needs the string 'subscenario' in its name.
+    # The function will then read each subscenario data using the filename in the subscenario file. All other files will be ignored.
+
+    csv_data = pd.DataFrame()
+    data_starting_from_row = 1  # Notes rows start from 0. So this is the 6th row in the csv.
+
+    for f in os.listdir(folder_path):
+        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f:
+            print(f)
+            csv_subscenario = pd.read_csv(os.path.join(folder_path, f))
+
+    for row in range(0, len(csv_subscenario.index)):
+        print(csv_subscenario.iloc[row]['filename'])
+        subscenario_filename = csv_subscenario.iloc[row]['filename']
+        print(subscenario_filename)
+        if '.csv' not in subscenario_filename:
+            subscenario_filename = subscenario_filename + '.csv'
+        print(subscenario_filename)
+        csv_data = csv_data.append(
+            pd.read_csv(os.path.join(folder_path, subscenario_filename)))
+
+
+    return (csv_subscenario, csv_data)
+
+
+def csv_read_data_old(folder_path):
     '''
     :param folder_path: Path to folder with input csv files
     :return csv_subscenario: A dictionary with subscenario id, name, description
@@ -44,3 +76,23 @@ def csv_read_data(folder_path):
             csv_data = csv_data.append(pd.read_csv(os.path.join(folder_path, filename), skiprows=range(1-1, data_starting_from_row)))
 
     return (csv_subscenario, csv_data)
+
+# Useful functions ######
+# TODO: do we want to keep these?
+# from https://stackoverflow.com/questions/50929768/pandas-multiindex-more-than-2-levels-dataframe-to-nested-dict-json?noredirect=1&lq=1
+# TODO: Can we move this function out of this function so they are available to the rest of the functions?
+
+def nest(d: dict) -> dict:
+    result = {}
+    for key, value in d.items():
+        target = result
+        for k in key[:-1]:  # traverse all keys but the last
+            target = target.setdefault(k, {})
+        target[key[-1]] = value
+    return result
+
+def df_to_nested_dict(df: pd.DataFrame) -> dict:
+    d = df.to_dict(orient='index')
+    return {k: nest(v) for k, v in d.items()}
+
+    #########

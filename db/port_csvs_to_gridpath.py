@@ -19,7 +19,7 @@ import scipy.stats as stats
 import math
 import time
 import datetime as dt
-
+import sys
 
 # Provide path for gripath modules
 import sys
@@ -40,8 +40,6 @@ from db.utilities import temporal, geography, project_list, project_zones, \
     system_reserves, system_prm, rps, scenario
 
 from db.csvs_to_db_utilities import csvs_read, load_geography
-
-
 
 
 ## MODULES FOR PORTING DATA TO SQL DATABASE
@@ -133,14 +131,21 @@ c2 = io.cursor()
 #### LOAD GEORGRAPHY DATA ####
 
 ## LOAD LOAD ZONES ##
-data_folder_path = os.path.join(os.getcwd(), 'db', 'csvs', 'geography', 'geography_load_zones')
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'geography', 'geography_load_zones')
 
 (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
 
-csv_subscenario_input = OrderedDict(sorted(csv_subscenario_input.items()))
+#csv_subscenario_input = OrderedDict(sorted(csv_subscenario_input.items()))
+
+subscenario_input = csv_subscenario_input
+data_input = csv_data_input
+
+#subscenario_input = csv_subscenario
+#data_input = csv_data
 
 load_geography.load_geography_load_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+'''
 ## LOAD RPS ZONES ##
 
 def load_geography_rps_zones():
@@ -731,3 +736,4 @@ for main_sc in main_scenarios['main_scenario_name'].to_list():
 # port_data_to_gridpath_demand_modules.load_loads()
 #
 
+'''
