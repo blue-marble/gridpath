@@ -158,7 +158,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
       state: {
         baseScenarioID: this.baseScenario,
         scenariosIDsToCompare: this.scenariosToCompare,
-        formValuesToPass: formValues
+        formValuesToPass: formValues,
+        resultType: 'plot'
       }
     };
     this.router.navigate(
@@ -195,18 +196,19 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   showResultsTable(table): void {
-    console.log('Showing results comparison table');
-    // // Switch to the scenario-comparison-inputs view with the given base
-    // // scenario and list of scenarios to compare
-    // const navigationExtras: NavigationExtras = {
-    //   state: {
-    //     baseScenarioID: this.baseScenario,
-    //     scenariosIDsToCompare: this.scenariosToCompare
-    //   }
-    // };
-    // this.router.navigate(
-    //   ['/scenario-comparison/results'], navigationExtras
-    // );
+    // Switch to the scenario-comparison-inputs view with the given base
+    // scenario and list of scenarios to compare
+    const navigationExtras: NavigationExtras = {
+      state: {
+        baseScenarioID: this.baseScenario,
+        scenariosIDsToCompare: this.scenariosToCompare,
+        tableToShow: table,
+        resultType: 'table'
+      }
+    };
+    this.router.navigate(
+      ['/scenario-comparison/results'], navigationExtras
+    );
   }
 
   goBack(): void {

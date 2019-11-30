@@ -9,11 +9,28 @@
   <!--  Row for the results -->
   <div class="row">
     <div class="col overflow-x-auto">
+      <!--  Table -->
+      <table class="view-data-table" *ngIf="resultType == 'table'">
+        <tr>
+          <ng-container *ngFor="let column of tableColumns">
+           <th>{{column}}</th>
+          </ng-container>
+        </tr>
+
+        <ng-container *ngFor="let row of allRowsData">
+           <tr>
+             <ng-container *ngFor="let column of tableColumns">
+               <td>{{row[column]}}</td>
+             </ng-container>
+           </tr>
+        </ng-container>
+      </table>
+
       <!--  Plots -->
-      <div [id]="basePlotHTMLTarget"></div>
+      <div [id]="basePlotHTMLTarget" *ngIf="resultType == 'plot'"></div>
       <ng-container *ngFor="let comparePlotHTMLTarget of
       comparePlotsHTMLTargets">
-        <div [id]="comparePlotHTMLTarget"></div>
+        <div [id]="comparePlotHTMLTarget" *ngIf="resultType == 'plot'"></div>
       </ng-container>
     </div>
   </div>

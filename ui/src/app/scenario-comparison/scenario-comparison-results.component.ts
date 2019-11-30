@@ -17,6 +17,14 @@ export class ScenarioComparisonResultsComponent implements OnInit {
   baseScenarioID: number;
   scenariosIDsToCompare: number[];
 
+  resultType: string;
+
+  // Table comparison
+  tableToShow: string;
+  tableColumns: string[];
+  allRowsData: [];
+
+  // Plots comparison
   // TODO: make a type for the form values
   formValues: {
     plotType: string,
@@ -57,12 +65,35 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     this.baseScenarioID = history.state.baseScenarioID;
     this.scenariosIDsToCompare = history.state.scenariosIDsToCompare;
     this.formValues = history.state.formValuesToPass;
+    this.tableToShow = history.state.tableToShow;
+    this.resultType = history.state.resultType;
 
+    // Create the comparison table to show
+    this.allRowsData = [];
+    this.getComparisonTableData();
+
+    // Embed the plots to compare
     this.embedBasePlot();
-
     this.comparePlotsHTMLTargets = [];
     this.comparePlotsJSON = [];
     this.embedComparePlots();
+  }
+
+  getComparisonTableData(): void {
+    this.scenarioResultsService.getResultsTable(
+      this.baseScenarioID, this.tableToShow
+    ).subscribe(resultsTable => {
+      this.tableColumns = resultsTable.columns;
+      this.allRowsData.push.apply(this.allRowsData, resultsTable.rowsData);
+    });
+
+    for (const scenarioIDTOCompare of this.scenariosIDsToCompare) {
+      this.scenarioResultsService.getResultsTable(
+        scenarioIDTOCompare, this.tableToShow
+      ).subscribe(resultsTable => {
+        this.allRowsData.push.apply(this.allRowsData, resultsTable.rowsData);
+      });
+    }
   }
 
   embedBasePlot(): void {
