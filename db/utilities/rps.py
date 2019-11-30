@@ -42,15 +42,19 @@ def insert_rps_targets(
     inputs_data = []
     for zone in list(zone_period_targets.keys()):
         for period in list(zone_period_targets[zone].keys()):
-            inputs_data.append(
-                (rps_target_scenario_id, zone, period,
-                 zone_period_targets[zone][period])
-            )
+            for subproblem in list(zone_period_targets[zone][period].keys()):
+                for stage in list(zone_period_targets[zone][period][subproblem]
+                                  .keys()):
+                    inputs_data.append(
+                        (rps_target_scenario_id, zone, period,
+                         subproblem, stage,
+                         zone_period_targets[zone][period][subproblem][stage])
+                    )
     inputs_sql = """
         INSERT INTO inputs_system_rps_targets
-        (rps_target_scenario_id, rps_zone, period,
+        (rps_target_scenario_id, rps_zone, period, subproblem_id, stage_id,
         rps_target_mwh)
-        VALUES (?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 

@@ -435,6 +435,8 @@ DROP TABLE IF EXISTS inputs_geography_rps_zones;
 CREATE TABLE inputs_geography_rps_zones (
 rps_zone_scenario_id INTEGER,
 rps_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mwh FLOAT DEFAULT 0,
 PRIMARY KEY (rps_zone_scenario_id, rps_zone),
 FOREIGN KEY (rps_zone_scenario_id) REFERENCES
 subscenarios_geography_rps_zones (rps_zone_scenario_id)
@@ -454,6 +456,8 @@ DROP TABLE IF EXISTS inputs_geography_carbon_cap_zones;
 CREATE TABLE inputs_geography_carbon_cap_zones (
 carbon_cap_zone_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mmt FLOAT DEFAULT 0,
 PRIMARY KEY (carbon_cap_zone_scenario_id, carbon_cap_zone),
 FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
 subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
@@ -473,6 +477,8 @@ DROP TABLE IF EXISTS inputs_geography_prm_zones;
 CREATE TABLE inputs_geography_prm_zones (
 prm_zone_scenario_id INTEGER,
 prm_zone VARCHAR(32),
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mw FLOAT DEFAULT 0,
 PRIMARY KEY (prm_zone_scenario_id, prm_zone),
 FOREIGN KEY (prm_zone_scenario_id) REFERENCES
 subscenarios_geography_prm_zones (prm_zone_scenario_id)
@@ -492,7 +498,8 @@ DROP TABLE IF EXISTS inputs_geography_local_capacity_zones;
 CREATE TABLE inputs_geography_local_capacity_zones (
 local_capacity_zone_scenario_id INTEGER,
 local_capacity_zone VARCHAR(32),
-local_capacity_shortage_penalty_per_mw FLOAT,
+allow_violation INTEGER DEFAULT 0,  -- constraint is hard by default
+violation_penalty_per_mw FLOAT DEFAULT 0,
 PRIMARY KEY (local_capacity_zone_scenario_id, local_capacity_zone),
 FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
 subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
@@ -1814,9 +1821,12 @@ CREATE TABLE inputs_system_rps_targets (
 rps_target_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 rps_target_mwh FLOAT,
 rps_zone_scenario_id INTEGER,
-PRIMARY KEY (rps_target_scenario_id, rps_zone, period),
+PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
+stage_id),
 FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
 inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
 );
@@ -1837,8 +1847,11 @@ CREATE TABLE inputs_system_carbon_cap_targets (
 carbon_cap_target_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 carbon_cap_mmt FLOAT,
-PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period),
+PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
+subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
@@ -1892,6 +1905,18 @@ local_capacity_zone)
 );
 
 -- Case tuning
+-- We can apply additional costs in the model to prevent degeneracy
+-- Currently this includes:
+-- 1) Carbon Imports (see objective.transmission.carbon_imports_tuning_costs
+-- module; prevents the carbon imports expression from being set above actual
+-- flow x intensity in situations when the carbon cap is non-binding)
+-- 2) Ramps (see project.operations.tuning_costs module; applies to
+-- hydro and storage operational types only and prevents erratic-looking
+-- dispatch for these zero-variable-cost resources in case of degeneracy)
+-- 3) Dynamic ELCC (see objective.reliability.prm
+-- .dynamic_elcc_tuning_penalties module; ensures that the dynamic ELCC is set
+-- to the maximum available in
+-- case the PRM constraint is non-binding.
 DROP TABLE IF EXISTS subscenarios_tuning;
 CREATE TABLE subscenarios_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1902,9 +1927,9 @@ description VARCHAR(128)
 DROP TABLE IF EXISTS inputs_tuning;
 CREATE TABLE inputs_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY,
-import_carbon_tuning_cost DOUBLE,
-ramp_tuning_cost DOUBLE,
-dynamic_elcc_tuning_cost DOUBLE,
+import_carbon_tuning_cost_per_ton DOUBLE,
+ramp_tuning_cost_per_mw DOUBLE,  -- applies to hydro and storage only
+dynamic_elcc_tuning_cost_per_mw DOUBLE,
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );
@@ -3151,6 +3176,7 @@ carbon_cap_mmt FLOAT,
 in_zone_project_emissions_mmt FLOAT,
 import_emissions_mmt FLOAT,
 total_emissions_mmt FLOAT,
+carbon_cap_overage_mmt FLOAT,
 import_emissions_mmt_degen FLOAT,
 total_emissions_mmt_degen FLOAT,
 dual FLOAT,
@@ -3174,6 +3200,7 @@ curtailed_rps_energy_mwh FLOAT,
 total_rps_energy_mwh FLOAT,
 fraction_of_rps_target_met FLOAT,
 fraction_of_rps_energy_curtailed FLOAT,
+rps_shortage_mwh FLOAT,
 dual FLOAT,
 rps_marginal_cost_per_mwh FLOAT,
 PRIMARY KEY (scenario_id, rps_zone, period, subproblem_id, stage_id)
@@ -3194,6 +3221,7 @@ prm_requirement_mw FLOAT,
 elcc_simple_mw FLOAT,
 elcc_surface_mw FLOAT,
 elcc_total_mw FLOAT,
+prm_shortage_mw FLOAT,
 dual FLOAT,
 prm_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, prm_zone, period, subproblem_id, stage_id)
@@ -3211,6 +3239,7 @@ discount_factor FLOAT,
 number_years_represented FLOAT,
 local_capacity_requirement_mw FLOAT,
 local_capacity_provision_mw FLOAT,
+local_capacity_shortage_mw FLOAT,
 dual FLOAT,
 local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)

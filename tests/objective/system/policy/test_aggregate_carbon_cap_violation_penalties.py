@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
+# Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 from __future__ import print_function
 
@@ -19,12 +19,11 @@ TEST_DATA_DIRECTORY = \
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.local_capacity_zones",
-     "system.reliability.local_capacity.local_capacity_requirement",
-     "system.reliability.local_capacity.local_capacity_balance"]
+     "temporal.investment.periods", "geography.carbon_cap_zones",
+     "system.policy.carbon_cap.carbon_cap",
+     "system.policy.carbon_cap.carbon_balance"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.system" \
-    ".local_capacity.aggregate_local_capacity_shortage_penalties"
+    "objective.system.policy.aggregate_carbon_cap_violation_penalties"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -42,7 +41,7 @@ except ImportError:
           " to test.")
 
 
-class TestCosts(unittest.TestCase):
+class TestObjectiveCarbonCapPenalties(unittest.TestCase):
     """
 
     """

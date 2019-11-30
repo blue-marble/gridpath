@@ -73,3 +73,12 @@
   background: aliceblue;
   color: midnightblue;
 }
+
+#plotFormCaption {
+  font-size: small;
+  font-weight: 500;
+  background: aliceblue;
+  color: midnightblue;
+  padding-bottom: 5px;
+  text-align: center
+}

@@ -84,8 +84,8 @@ class TestOperationalTuningCosts(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Param: ramp_tuning_cost
-        self.assertEqual(instance.ramp_tuning_cost, 10e-10)
+        # Param: ramp_tuning_cost_per_mw
+        self.assertEqual(instance.ramp_tuning_cost_per_mw, 10e-10)
 
 
 if __name__ == "__main__":

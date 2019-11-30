@@ -11,7 +11,7 @@ from builtins import next
 import csv
 import os.path
 
-from pyomo.environ import Constraint, Expression, value
+from pyomo.environ import Var, Constraint, Expression, NonNegativeReals, value
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import \
@@ -25,6 +25,19 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
+
+    m.Carbon_Cap_Overage_MMt = Var(
+        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP, within=NonNegativeReals
+    )
+
+    def violation_expression_rule(mod, z, p):
+        return mod.Carbon_Cap_Overage_MMt[z, p] * \
+               mod.carbon_cap_allow_violation[z]
+
+    m.Carbon_Cap_Overage_MMt_Expression = Expression(
+        m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
+        rule=violation_expression_rule
+    )
 
     m.Total_Carbon_Emissions_from_All_Sources_Expression = Expression(
         m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP,
@@ -43,6 +56,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Total_Carbon_Emissions_from_All_Sources_Expression[z, p] \
+            - mod.Carbon_Cap_Overage_MMt_Expression[z, p] \
             <= mod.carbon_cap_target_mmt[z, p] * 10**6  # convert to tons
 
     m.Carbon_Cap_Constraint = Constraint(
@@ -67,7 +81,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["carbon_cap_zone", "period",
                          "discount_factor", "number_years_represented",
                          "carbon_cap_target_mmt",
-                         "carbon_emissions_mmt"])
+                         "carbon_emissions_mmt",
+                         "carbon_cap_overage_mmt"])
         for (z, p) in m.CARBON_CAP_ZONE_PERIODS_WITH_CARBON_CAP:
             writer.writerow([
                 z,
@@ -76,7 +91,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.number_years_represented[p],
                 float(m.carbon_cap_target_mmt[z, p]),
                 value(m.Total_Carbon_Emissions_from_All_Sources_Expression[z, p]
-                      / 10**6)  # MMT
+                      / 10**6),
+                value(m.Carbon_Cap_Overage_MMt_Expression[z, p])# MMT
             ])
 
 
@@ -103,7 +119,8 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     # clearing prior results)
     nullify_sql = """
         UPDATE results_system_carbon_emissions
-        SET total_emissions_mmt = NULL
+        SET total_emissions_mmt = NULL,
+        carbon_cap_overage_mmt = NULL
         WHERE scenario_id = ?
         AND subproblem_id = ?
         AND stage_id = ?;
@@ -125,9 +142,10 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
             discount_factor = row[2]
             number_years = row[3]
             total_emissions_mmt = row[5]
+            overage = row[6]
             
             results.append(
-                (total_emissions_mmt, discount_factor, number_years,
+                (total_emissions_mmt, overage, discount_factor, number_years,
                  scenario_id, carbon_cap_zone, period,
                  subproblem, stage)
             )
@@ -135,6 +153,7 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     total_sql = """
         UPDATE results_system_carbon_emissions
         SET total_emissions_mmt = ?,
+        carbon_cap_overage_mmt = ?,
         discount_factor = ?,
         number_years_represented = ?
         WHERE scenario_id = ?

@@ -16,6 +16,7 @@ from ui.server.db_ops.add_scenario import add_or_update_scenario
 from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
+from ui.server.save_data import save_plot_data_to_csv
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -93,7 +94,7 @@ add_api_resources(api=api, db_path=DATABASE_PATH)
 
 # ########################## Socket Communication ########################### #
 
-# ### Database operations ### #
+# ### DATABASE OPERATIONS ### #
 @socketio.on('add_new_scenario')
 def socket_add_or_edit_new_scenario(msg):
     add_or_update_scenario(db_path=DATABASE_PATH, msg=msg)
@@ -214,6 +215,33 @@ def socket_clear_scenario(client_message):
     delete_scenario(db_path=DATABASE_PATH,
                     scenario_id=client_message["scenario"])
     emit("scenario_deleted")
+
+
+# ### SAVING DATA ### #
+@socketio.on("save_plot_data")
+def socket_save_plot_data(client_message):
+    """
+    :param client_message: dictionary with various params needed for
+      save_plot_data_to_csv function
+    :return:
+
+    Function that responds to socket call from client and calls
+    save_plot_data_to_csv function.
+    """
+    save_plot_data_to_csv(
+      db_path=DATABASE_PATH,
+      download_path=client_message["downloadPath"],
+      scenario_id=client_message["scenarioID"],
+      plot_type=client_message["plotType"],
+      load_zone=client_message["loadZone"],
+      carbon_cap_zone=client_message["carbonCapZone"],
+      rps_zone=client_message["rpsZone"],
+      period=client_message["period"],
+      horizon=client_message["horizon"],
+      subproblem=client_message["subproblem"],
+      stage=client_message["stage"],
+      project=client_message["project"],
+    )
 
 
 def main():

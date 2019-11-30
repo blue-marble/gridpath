@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+Subtracting a small amount from the objective function when the Dynamic_ELCC
+expression is higher to make sure that it is set to the maximum available in
+case the PRM constraint is non-binding.
+"""
+
+
 from builtins import next
 import csv
 import os.path
-from pyomo.environ import Param, Expression, NonNegativeReals
+from pyomo.environ import Param, Expression
 
 from gridpath.auxiliary.dynamic_components import total_cost_components
 
@@ -17,7 +24,7 @@ def add_model_components(m, d):
     :return:
     """
 
-    m.dynamic_elcc_tuning_cost = Param(default=0)
+    m.dynamic_elcc_tuning_cost_per_mw = Param(default=0)
 
     def total_elcc_tuning_cost_rule(mod):
         """
@@ -26,12 +33,12 @@ def add_model_components(m, d):
         :param mod:
         :return:
         """
-        if mod.dynamic_elcc_tuning_cost == 0:
+        if mod.dynamic_elcc_tuning_cost_per_mw == 0:
             return 0
         else:
             return - sum(
                 mod.Dynamic_ELCC_MW[z, p]
-                * mod.dynamic_elcc_tuning_cost
+                * mod.dynamic_elcc_tuning_cost_per_mw
                 * mod.number_years_represented[p]
                 * mod.discount_factor[p]
                 for (z, p)
@@ -61,8 +68,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     if os.path.exists(tuning_param_file):
         data_portal.load(filename=tuning_param_file,
-                         select=("dynamic_elcc_tuning_cost",),
-                         param=m.dynamic_elcc_tuning_cost
+                         select=("dynamic_elcc_tuning_cost_per_mw",),
+                         param=m.dynamic_elcc_tuning_cost_per_mw
                          )
     else:
         pass
@@ -78,7 +85,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
     c = conn.cursor()
     dynamic_elcc_tuning_cost = c.execute(
-        """SELECT dynamic_elcc_tuning_cost
+        """SELECT dynamic_elcc_tuning_cost_per_mw
         FROM inputs_tuning
         WHERE tuning_scenario_id = {}""".format(
             subscenarios.TUNING_SCENARIO_ID
@@ -129,7 +136,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
             # Append column header
             header = next(reader)
-            header.append("dynamic_elcc_tuning_cost")
+            header.append("dynamic_elcc_tuning_cost_per_mw")
             new_rows.append(header)
 
             # Append tuning param value
@@ -148,5 +155,5 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                   "w", newline="") as \
                 tuning_params_file_out:
             writer = csv.writer(tuning_params_file_out, delimiter="\t")
-            writer.writerows(["dynamic_elcc_tuning_cost"])
+            writer.writerows(["dynamic_elcc_tuning_cost_per_mw"])
             writer.writerows([dynamic_elcc_tuning_cost])

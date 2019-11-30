@@ -14,22 +14,18 @@ from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
 TEST_DATA_DIRECTORY = \
-    os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
+                 "test_data")
 
 # Import prerequisite modules
-PREREQUISITE_MODULE_NAMES = ["temporal.operations.timepoints",
-                             "temporal.operations.horizons",
-                             "temporal.investment.periods",
-                             "geography.load_zones",
-                             "geography.prm_zones",
-                             "project", "project.capacity.capacity",
-                             "system.reliability.prm.prm_requirement",
-                             "project.reliability.prm",
-                             "project.reliability.prm.prm_types",
-                             "project.reliability.prm.elcc_surface",
-                             "system.reliability.prm.elcc_surface"]
+PREREQUISITE_MODULE_NAMES = [
+     "temporal.operations.timepoints", "temporal.operations.horizons",
+     "temporal.investment.periods", "geography.local_capacity_zones",
+     "system.reliability.local_capacity.local_capacity_requirement",
+     "system.reliability.local_capacity.local_capacity_balance"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "objective.system.prm.dynamic_elcc_tuning_penalties"
+    "objective.system" \
+    ".local_capacity.aggregate_local_capacity_violation_penalties"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -47,7 +43,7 @@ except ImportError:
           " to test.")
 
 
-class TestDynamicELCCTuningPenalties(unittest.TestCase):
+class TestCosts(unittest.TestCase):
     """
 
     """
@@ -77,19 +73,17 @@ class TestDynamicELCCTuningPenalties(unittest.TestCase):
 
     def test_data_loaded_correctly(self):
         """
-
+        Test components initialized with expected data
         :return:
         """
-        m, data = \
-            add_components_and_load_data(prereq_modules=IMPORTED_PREREQ_MODULES,
-                                         module_to_test=MODULE_BEING_TESTED,
-                                         test_data_dir=TEST_DATA_DIRECTORY,
-                                         subproblem="",
-                                         stage="")
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=MODULE_BEING_TESTED,
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
         instance = m.create_instance(data)
-
-        # Param: dynamic_elcc_tuning_cost
-        self.assertEqual(instance.dynamic_elcc_tuning_cost, 10e-10)
 
 
 if __name__ == "__main__":

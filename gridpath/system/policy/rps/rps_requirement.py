@@ -55,7 +55,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
     c = conn.cursor()
-
     rps_targets = c.execute(
         """SELECT rps_zone, period, rps_target_mwh
         FROM inputs_system_rps_targets
@@ -69,11 +68,15 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM inputs_geography_rps_zones
         WHERE rps_zone_scenario_id = {}) as relevant_zones
         using (rps_zone)
-        WHERE rps_target_scenario_id = {};
+        WHERE rps_target_scenario_id = {}
+        AND subproblem_id = {}
+        AND stage_ID = {};
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.RPS_ZONE_SCENARIO_ID,
-            subscenarios.RPS_TARGET_SCENARIO_ID
+            subscenarios.RPS_TARGET_SCENARIO_ID,
+            subproblem,
+            stage
         )
     )
 

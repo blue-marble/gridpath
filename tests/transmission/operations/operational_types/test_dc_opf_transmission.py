@@ -247,33 +247,68 @@ class TestTxOperations(unittest.TestCase):
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
-        # Set: CYCLES
-        expected_cycles = sorted([0])
-        actual_cycles = sorted(
-            [c for c in instance.CYCLES]
+        # Set: PERIODS_CYCLES_ZONES
+        expected_periods_cycles_zones = sorted(
+            [(2020, 0, "Zone1"),
+             (2020, 0, "Zone2"),
+             (2020, 0, "Zone3"),
+             (2030, 0, "Zone1"),
+             (2030, 0, "Zone2"),
+             (2030, 0, "Zone3")]
         )
-        self.assertListEqual(expected_cycles, actual_cycles)
+        actual_periods_cycles_zones = sorted(
+            [(p, c, z) for (p, c, z) in instance.PERIODS_CYCLES_ZONES]
+        )
+        self.assertListEqual(expected_periods_cycles_zones,
+                             actual_periods_cycles_zones)
 
-        # Set: TRANSMISSION_LINE_CYCLES
+        # Set: ZONES_IN_PERIOD_CYCLE
+        expected_zones = OrderedDict(
+            sorted(
+                {(2020, 0): ["Zone1", "Zone2", "Zone3"],
+                 (2030, 0): ["Zone1", "Zone2", "Zone3"]}.items()
+            )
+        )
+        actual_zones = OrderedDict(
+            sorted(
+                {(p, c):
+                 sorted([z for z in instance.ZONES_IN_PERIOD_CYCLE[(p, c)]])
+                 for (p, c) in instance.PERIODS_CYCLES}.items()
+            )
+        )
+        self.assertDictEqual(expected_zones, actual_zones)
+
+        # Set: PERIODS_CYCLES
+        expected_period_cycles = sorted([(2020, 0), (2030, 0)])
+        actual_period_cycles = sorted(
+            [(p, c) for (p, c) in instance.PERIODS_CYCLES]
+        )
+        self.assertListEqual(expected_period_cycles, actual_period_cycles)
+
+        # Set: PERIODS_CYCLES_TRANSMISSION_LINES
         expected_cycles = sorted(
-            [("Tx1", 0), ("Tx2", 0), ("Tx3", 0)]
+            [(2020, 0, "Tx1"), (2020, 0, "Tx2"), (2020, 0, "Tx3"),
+             (2030, 0, "Tx1"), (2030, 0, "Tx2"), (2030, 0, "Tx3")]
         )
         actual_cycles = sorted(
-            [(tx, c) for (tx, c) in instance.TRANSMISSION_LINE_CYCLES]
+            [(p, c, tx) for (p, c, tx)
+             in instance.PERIODS_CYCLES_TRANSMISSION_LINES]
         )
         self.assertListEqual(expected_cycles, actual_cycles)
 
-        # Set: TRANSMISSION_LINES_IN_CYCLE
+        # Set: TRANSMISSION_LINES_IN_PERIOD_CYCLE
         expected_tx_lines = OrderedDict(
             sorted(
-                {0: ["Tx1", "Tx2", "Tx3"]}.items()
+                {(2020, 0): ["Tx1", "Tx2", "Tx3"],
+                 (2030, 0): ["Tx1", "Tx2", "Tx3"]}.items()
             )
         )
         actual_tx_lines = OrderedDict(
             sorted(
-                {c:
-                 sorted([tx for tx in instance.TRANSMISSION_LINES_IN_CYCLE[c]])
-                 for c in instance.CYCLES}.items()
+                {(p, c):
+                 sorted([tx for tx in
+                         instance.TRANSMISSION_LINES_IN_PERIOD_CYCLE[(p, c)]])
+                 for (p, c) in instance.PERIODS_CYCLES}.items()
             )
         )
         self.assertDictEqual(expected_tx_lines, actual_tx_lines)
@@ -338,20 +373,41 @@ class TestTxOperations(unittest.TestCase):
         self.assertListEqual(expect_cycles_op_tmp, actual_cycles_op_tmp)
 
         # Param: tx_cycle_direction
-        expected_direction = OrderedDict(
+        # Note: the direction of the cycle is random so we need to check both
+        # directions (multiply by -1)
+        expected_direction1 = OrderedDict(
             sorted(
-                {("Tx1", 0): 1,
-                 ("Tx2", 0): -1,
-                 ("Tx3", 0): 1}.items()
+                {(2020, 0, "Tx1"): 1,
+                 (2020, 0, "Tx2"): -1,
+                 (2020, 0, "Tx3"): 1,
+                 (2030, 0, "Tx1"): 1,
+                 (2030, 0, "Tx2"): -1,
+                 (2030, 0, "Tx3"): 1
+                 }.items()
             )
         )
+        expected_direction2 = OrderedDict(
+            sorted(
+                {(2020, 0, "Tx1"): -1,
+                 (2020, 0, "Tx2"): 1,
+                 (2020, 0, "Tx3"): -1,
+                 (2030, 0, "Tx1"): -1,
+                 (2030, 0, "Tx2"): 1,
+                 (2030, 0, "Tx3"): -1
+                 }.items()
+            )
+        )
+
         actual_direction = OrderedDict(
             sorted(
-                {(tx, c): instance.tx_cycle_direction[tx, c]
-                 for (tx, c) in instance.TRANSMISSION_LINE_CYCLES}.items()
+                {(p, c, tx): instance.tx_cycle_direction[p, c, tx]
+                 for (p, c, tx) in
+                 instance.PERIODS_CYCLES_TRANSMISSION_LINES}.items()
             )
         )
-        self.assertDictEqual(expected_direction, actual_direction)
+
+        self.assertTrue(actual_direction in [expected_direction1,
+                                             expected_direction2])
 
         # Param: reactance_ohms
         expected_reactance = OrderedDict(

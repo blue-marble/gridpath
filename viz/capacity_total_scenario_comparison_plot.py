@@ -40,10 +40,14 @@ def parse_arguments(arguments):
     return parsed_arguments
 
 
-def get_plotting_data(conn, period, load_zone, subproblem, stage):
+def get_plotting_data(conn, period, load_zone, subproblem, stage, **kwargs):
     """
     Get total capacity results by scenario/technology for a given
     period/load_zone/subproblem/stage.
+
+    **kwargs needed, so that an error isn't thrown when calling this
+    function with extra arguments from the UI.
+
     :param conn:
     :param period:
     :param load_zone:

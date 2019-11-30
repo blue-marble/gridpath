@@ -87,7 +87,7 @@ class TestTxAggregateCosts(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Param: import_carbon_tuning_cost
-        self.assertEqual(instance.import_carbon_tuning_cost, 10e-10)
+        self.assertEqual(instance.import_carbon_tuning_cost_per_ton, 10e-10)
 
 
 if __name__ == "__main__":
