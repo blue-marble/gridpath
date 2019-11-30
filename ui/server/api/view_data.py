@@ -19,27 +19,62 @@ class ViewDataAPI(Resource):
         :return:
         """
         print(scenario_id, table)
-        conn = connect_to_database(db_path=self.db_path)
-        c = conn.cursor()
 
-        table_data_query = c.execute(
-          """SELECT * FROM {} WHERE scenario_id = {}""".format(
-            table, scenario_id
-          )
+        return get_table_data(
+            scenario_id=scenario_id,
+            table=table,
+            db_path=self.db_path
         )
 
-        column_names = [s[0] for s in table_data_query.description]
 
-        rows_data = []
-        for row in table_data_query.fetchall():
-            row_values = list(row)
-            row_dict = dict(zip(column_names, row_values))
-            rows_data.append(row_dict)
+def get_table_data(scenario_id, table, db_path):
+    """
 
+    :param scenario_id:
+    :param table:
+    :param db_path:
+    :return:
+    """
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
 
-        data_table_api = {
-            'columns': column_names,
-            'rowsData': rows_data
-        }
+    query_for_column_names = c.execute(
+      """SELECT * FROM {} LIMIT 1;""".format(table)
+    )
 
-        return data_table_api
+    column_names = [s[0] for s in query_for_column_names.description]
+    for index, value in enumerate(column_names):
+        if value == "scenario_id":
+            column_names[index] = "scenario_name"
+
+    columns_for_query = str()
+    n = 1
+    for column in column_names:
+        if n < len(column_names):
+            columns_for_query += "{}, ".format(column)
+        else:
+            columns_for_query += "{}".format(column)
+        n += 1
+
+    table_data_query = c.execute("""
+      SELECT {}
+      FROM {}
+      JOIN scenarios USING (scenario_id)
+      WHERE scenario_id = {};
+      """.format(
+          columns_for_query, table, scenario_id
+      )
+    )
+
+    rows_data = []
+    for row in table_data_query.fetchall():
+        row_values = list(row)
+        row_dict = dict(zip(column_names, row_values))
+        rows_data.append(row_dict)
+
+    data_table_api = {
+        'columns': column_names,
+        'rowsData': rows_data
+    }
+
+    return data_table_api

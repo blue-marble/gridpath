@@ -4,6 +4,7 @@ from flask_restful import Resource
 import importlib
 
 from db.common_functions import connect_to_database
+from ui.server.api.view_data import get_table_data
 
 
 class ScenarioResultsOptions(Resource):
@@ -264,7 +265,6 @@ class ScenarioResultsTable(Resource):
         else:
             return create_data_table_api(
               db_path=self.db_path,
-              columns='*',
               table=table,
               scenario_id=scenario_id
             )
@@ -304,10 +304,9 @@ class ScenarioResultsIncludedTables(Resource):
 
 
 def create_data_table_api(
-      db_path, columns, table, scenario_id):
+      db_path, table, scenario_id):
     """
     :param db_path:
-    :param columns:
     :param table:
     :param scenario_id:
     :return:
@@ -323,39 +322,16 @@ def create_data_table_api(
         WHERE results_table = '{}';""".format(table.replace("-", "_"))
     ).fetchone()[0]
 
-    column_names, data_rows = get_table_data(
-      db_path=db_path,
-      columns=columns,
-      table=table.replace("-", "_"),
-      scenario_id=scenario_id
-    )
-    data_table_api['columns'] = column_names
-    data_table_api['rowsData'] = data_rows
+    data_table_api['columns'] = get_table_data(
+        db_path=db_path,
+        table=table.replace("-", "_"),
+        scenario_id=scenario_id
+    )['columns']
+
+    data_table_api['rowsData'] = get_table_data(
+        db_path=db_path,
+        table=table.replace("-", "_"),
+        scenario_id=scenario_id
+    )['rowsData']
 
     return data_table_api
-
-
-def get_table_data(db_path, columns, table, scenario_id):
-    """
-    :param db_path:
-    :param columns:
-    :param table:
-    :param scenario_id:
-    :return:
-    """
-    conn = connect_to_database(db_path=db_path)
-    c = conn.cursor()
-
-    table_data_query = c.execute(
-      """SELECT {} FROM {} 
-         WHERE scenario_id = {};""".format(columns, table, scenario_id))
-
-    column_names = [s[0] for s in table_data_query.description]
-
-    rows_data = []
-    for row in table_data_query.fetchall():
-        row_values = list(row)
-        row_dict = dict(zip(column_names, row_values))
-        rows_data.append(row_dict)
-
-    return column_names, rows_data
