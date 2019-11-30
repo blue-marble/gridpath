@@ -47,3 +47,36 @@
   background-color: darkblue;
   color: white
 }
+
+.form-group-list-item {
+  padding-left: 1px;
+  background: aliceblue;
+  list-style-position: inside;
+  border: 1px solid darkgrey;
+  border-radius: 5px
+
+}
+
+.custom-select {
+  width: auto;
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue
+}
+
+#yMaxLabel {
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue;
+}
+
+#plotFormCaption {
+  font-size: small;
+  font-weight: 500;
+  background: aliceblue;
+  color: midnightblue;
+  padding-bottom: 5px;
+  text-align: center
+}
