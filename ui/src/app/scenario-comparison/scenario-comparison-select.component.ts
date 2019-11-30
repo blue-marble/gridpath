@@ -21,8 +21,10 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   baseScenario: number;
   scenariosToCompare: number[];
 
-  // Results plots
   showResultsButtons: boolean;
+  // Results table buttons
+  allTableButtons: {table: string, caption: string}[];
+  // Results plot forms
   allPlotFormGroups: FormGroup[];
   // The possible options for the forms
   formOptions: ResultsOptions;
@@ -47,6 +49,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.allTableButtons = [];
+    this.makeResultsTableButtons();
     this.getFormOptions(this.baseScenario);
     this.allPlotFormGroups = [];
     this.makeResultsPlotForms();
@@ -89,6 +93,13 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.router.navigate(
       ['/scenario-comparison/inputs'], navigationExtras
     );
+  }
+
+  makeResultsTableButtons(): void {
+    this.scenarioResultsService.getResultsIncludedTables()
+      .subscribe(includedTables => {
+        this.allTableButtons = includedTables;
+      });
   }
 
   getFormOptions(scenarioID): void {
@@ -137,9 +148,6 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   showResultsPlots(formGroup): void {
-    // TODO: need to make sure form is disabled after compareScenarioResults
-    //  is run (so that the user doesn't change the scenarios selected)
-
     // Get selected plot options
     const formValues = this.getFormGroupValues(formGroup);
     console.log('Form values: ', formValues);
@@ -184,6 +192,21 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
     return {plotType, loadZone, carbonCapZone, rpsZone, period, horizon,
       subproblem, stage, project, yMax};
+  }
+
+  showResultsTable(table): void {
+    console.log('Showing results comparison table');
+    // // Switch to the scenario-comparison-inputs view with the given base
+    // // scenario and list of scenarios to compare
+    // const navigationExtras: NavigationExtras = {
+    //   state: {
+    //     baseScenarioID: this.baseScenario,
+    //     scenariosIDsToCompare: this.scenariosToCompare
+    //   }
+    // };
+    // this.router.navigate(
+    //   ['/scenario-comparison/results'], navigationExtras
+    // );
   }
 
   goBack(): void {

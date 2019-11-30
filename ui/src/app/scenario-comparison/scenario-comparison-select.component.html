@@ -54,7 +54,21 @@
     </button>
   </form>
 
-<!--      Results Forms (have options the user must select) -->
+
+  <!--  Results Buttons (no options)-->
+  <h6 id="tables-title" *ngIf="showResultsButtons == true">Results Tables</h6>
+  <div class="navbar navbar-expand-sm" id="tables-navbar"
+      *ngIf="showResultsButtons == true">
+    <ul class="navbar-nav">
+      <ng-container *ngFor="let button of allTableButtons">
+        <li class="nav-item">
+          <button [id]="button.table" class="navbar-results-button"
+                  (click)="showResultsTable(button.table)">{{button.caption}}</button>
+        </li>
+      </ng-container>
+    </ul>
+  </div>
+  <!--     Results Forms (have options the user must select) -->
   <h6 id="plots-title" *ngIf="showResultsButtons == true">Results Plots</h6>
   <div class="navbar navbar-expand-sm" id="plots-navbar"
        *ngIf="showResultsButtons == true">
