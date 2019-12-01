@@ -116,10 +116,9 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   }
 
   compareScenarioInputs(): void {
-    const selectedScenarioIDs = this.scenariosToCompareForm.value.scenariosToCompare
-      .map((v, i) => v ? this.allScenarios[i].id : null)
-      .filter(v => v !== null);
-    const baseScenarioIDToCompare = this.scenariosToCompareForm.value.baseScenario;
+    const selectedValues = this.getScenarioSelectionFormValues();
+    const baseScenarioIDToCompare = selectedValues.baseScenarioSelected;
+    const selectedScenarioIDs = selectedValues.scenariosToCompareSelected;
     console.log('Base: ', baseScenarioIDToCompare);
     console.log('Compare: ', selectedScenarioIDs);
 
@@ -177,15 +176,26 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
     this.showResultsButtons = true;
 
-    // TODO: refactor to consolidate with inputs?
-    this.baseScenario = this.scenariosToCompareForm.value.baseScenario;
-    this.scenariosToCompare = this.scenariosToCompareForm.value.scenariosToCompare
-      .map((v, i) => v ? this.allScenarios[i].id : null)
-      .filter(v => v !== null);
+    const selectedValues = this.getScenarioSelectionFormValues();
+
+    this.baseScenario = selectedValues.baseScenarioSelected;
+    this.scenariosToCompare = selectedValues.scenariosToCompareSelected;
     console.log('Base: ', this.baseScenario);
     console.log('Compare: ', this.scenariosToCompare);
 
     this.ngOnInit();
+  }
+
+  getScenarioSelectionFormValues() {
+    const baseScenario = this.scenariosToCompareForm.value.baseScenario;
+    const scenariosToCompare = this.scenariosToCompareForm.value.scenariosToCompare
+      .map((v, i) => v ? this.allScenarios[i].id : null)
+        .filter(v => v !== null);
+
+    return {
+      baseScenarioSelected: baseScenario,
+      scenariosToCompareSelected: scenariosToCompare
+    };
   }
 
   showResultsPlots(formGroup): void {
