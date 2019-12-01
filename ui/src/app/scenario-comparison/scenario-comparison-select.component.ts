@@ -15,6 +15,10 @@ import {ResultsOptions} from '../scenario-results/scenario-results';
 export class ScenarioComparisonSelectComponent implements OnInit {
 
   scenariosToCompareForm: FormGroup;
+  startingValues: {
+    baseScenarioStartingValue: number,
+    scenariosToCompareStartingValues: number[]
+  };
   allScenarios: {id: number, name: string}[];
 
   // Will be used to decide which plot options to show
@@ -37,11 +41,34 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     private scenarioResultsService: ScenarioResultsService
   ) {
 
+    // Create the scenario selection form
+    // Note that the individual form controls for scenarios to compare are
+    // created in getScenarios()
+    // Starting values are also set in getScenarios()
     this.scenariosToCompareForm = this.formBuilder.group({
       baseScenario: new FormControl(),
       scenariosToCompare: new FormArray([])
     });
 
+    // Get starting values for scenario selection from history
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation.extras.state as {
+      startingValues: {
+        baseScenarioStartingValue: null,
+        scenariosToCompareStartingValues: []
+      }
+    };
+    // Set to history, only if history is not 'undefined'
+    if (history.state.startingValues) {
+      this.startingValues = history.state.startingValues;
+    } else {
+      this.startingValues = {
+        baseScenarioStartingValue: null,
+        scenariosToCompareStartingValues: []
+      };
+    }
+
+    // Make the scenarios table (and selection form)
     this.allScenarios = [];
     this.getScenarios();
 
@@ -60,16 +87,29 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.scenariosService.getScenarios()
       .subscribe(scenarios => {
 
+        // Get the scenarios
         for (const scenario of scenarios) {
           this.allScenarios.push(
             {id: scenario.id, name: scenario.name}
           );
         }
 
+        // Set base scenario selection starting value
+        this.scenariosToCompareForm.controls.baseScenario.setValue(
+          this.startingValues.baseScenarioStartingValue, {onlySelf: true}
+        );
+
         // Add form controls for each scenario in the FormArray
-        this.allScenarios.map((o, i) => {
-          (this.scenariosToCompareForm.controls.scenariosToCompare as FormArray).push(
-            new FormControl());
+        // Set starting values (if any)
+        this.allScenarios.map((object, index) => {
+          if (this.startingValues.scenariosToCompareStartingValues.includes(object.id)) {
+            (this.scenariosToCompareForm.controls.scenariosToCompare as FormArray).push(
+              new FormControl([true])
+            );
+          } else {
+            (this.scenariosToCompareForm.controls.scenariosToCompare as FormArray).push(
+              new FormControl());
+          }
         });
     });
   }

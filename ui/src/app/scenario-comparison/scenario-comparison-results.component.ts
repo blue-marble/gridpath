@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router } from '@angular/router';
+import {NavigationExtras, Router} from '@angular/router';
 
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
 
@@ -125,7 +125,16 @@ export class ScenarioComparisonResultsComponent implements OnInit {
   }
 
   goBack(): void {
-    this.location.back();
+    const navigationExtras: NavigationExtras = {
+      state: {
+        startingValues: {
+          baseScenarioStartingValue: this.baseScenarioID,
+          scenariosToCompareStartingValues: this.scenariosIDsToCompare
+        }
+      }
+    };
+
+    this.router.navigate(['scenario-comparison/select'], navigationExtras);
   }
 
 }

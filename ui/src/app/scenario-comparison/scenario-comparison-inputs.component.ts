@@ -97,8 +97,16 @@ export class ScenarioComparisonInputsComponent implements OnInit {
     this.router.navigate(['/scenario-inputs', 0], navigationExtras);
   }
 
-
   goBack(): void {
-    this.location.back();
+    const navigationExtras: NavigationExtras = {
+      state: {
+        startingValues: {
+          baseScenarioStartingValue: this.baseScenarioID,
+          scenariosToCompareStartingValues: this.scenariosIDsToCompare
+        }
+      }
+    };
+
+    this.router.navigate(['scenario-comparison/select'], navigationExtras);
   }
 }
