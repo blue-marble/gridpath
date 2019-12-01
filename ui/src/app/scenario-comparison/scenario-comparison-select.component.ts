@@ -5,7 +5,8 @@ import { FormControl, FormGroup, FormBuilder, FormArray } from '@angular/forms';
 
 import { ScenariosService } from '../scenarios/scenarios.service';
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
-import {ResultsOptions} from '../scenario-results/scenario-results';
+import { ResultsOptions } from '../scenario-results/scenario-results';
+import { getFormGroupValues } from '../scenario-results/scenario-results.component';
 
 @Component({
   selector: 'app-scenario-comparison-select',
@@ -189,7 +190,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
 
   showResultsPlots(formGroup): void {
     // Get selected plot options
-    const formValues = this.getFormGroupValues(formGroup);
+    const formValues = getFormGroupValues(formGroup);
     console.log('Form values: ', formValues);
 
     // Switch to the scenario-comparison-inputs view with the given base
@@ -205,34 +206,6 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.router.navigate(
       ['/scenario-comparison/results'], navigationExtras
     );
-  }
-
-  // TODO: refactor to consolidate with scenario-results.component.ts?
-  getFormGroupValues(formGroup) {
-    const plotType = formGroup.value.plotType;
-    const loadZone = formGroup.value.loadZone;
-    const carbonCapZone = formGroup.value.carbonCapZone;
-    const rpsZone = formGroup.value.rpsZone;
-    const period = formGroup.value.period;
-    const horizon = formGroup.value.horizon;
-    // Set subproblem to 'default' if it is null or 'Select Subproblem' (either
-    // because the user didn't select a subproblem, selected the prompt, or
-    // because we didn't give the subproblem option
-    const subproblem = (formGroup.value.subproblem == null) ? 'default'
-      : (formGroup.value.subproblem === 'Select Subproblem') ? 'default'
-        : formGroup.value.subproblem;
-    // Set stage to 'default' if it is null or 'Select Stage' (either
-    // because the user didn't select a stage, selected the prompt, or
-    // because we didn't give the stage option
-    const stage = (formGroup.value.stage == null) ? 'default'
-      : (formGroup.value.stage === 'Select Stage') ? 'default'
-        : formGroup.value.stage;
-    const project = formGroup.value.project;
-    let yMax = formGroup.value.yMax;
-    if (yMax === null) { yMax = 'default'; }
-
-    return {plotType, loadZone, carbonCapZone, rpsZone, period, horizon,
-      subproblem, stage, project, yMax};
   }
 
   showResultsTable(table): void {
