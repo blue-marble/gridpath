@@ -1,2 +1,2 @@
-prm_zone_scenario_id,prm_zone,allow_violation,violation_penalty_per_mmt
+prm_zone_scenario_id,prm_zone,allow_violation,violation_penalty_per_mw
 1,name_of_zone,0,50000
