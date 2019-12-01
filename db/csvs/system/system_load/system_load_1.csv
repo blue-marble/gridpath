@@ -1,0 +1,5 @@
+load_scenario_id,load_zone,stage_id,timepoint,load_mw
+1,India,1,20180101,20
+1,India,1,20180201,10
+1,MH,1,20180101,5
+1,MH,1,20180201,4

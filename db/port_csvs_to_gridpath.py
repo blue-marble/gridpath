@@ -39,7 +39,7 @@ from db.utilities import temporal, geography, project_list, project_zones, \
     simultaneous_flows, transmission_hurdle_rates, carbon_cap, system_load, \
     system_reserves, system_prm, rps, scenario
 
-from db.csvs_to_db_utilities import csvs_read, load_geography
+from db.csvs_to_db_utilities import csvs_read, load_geography, load_system_load
 
 
 ## MODULES FOR PORTING DATA TO SQL DATABASE
@@ -132,19 +132,26 @@ c2 = io.cursor()
 
 ## LOAD LOAD ZONES ##
 data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'geography', 'geography_load_zones')
-
 (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-
-#### DELETE START ####
-#csv_subscenario_input = OrderedDict(sorted(csv_subscenario_input.items()))
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-#subscenario_input = csv_subscenario
-#data_input = csv_data
-#### DELETE END ####
-
 load_geography.load_geography_load_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+## LOAD CARBON CAP ZONES ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'carbon_cap', 'geography_carbon_cap_zones')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_carbon_cap_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD LOCAL CAPACITY ZONES ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'local_capacity', 'geography_local_capacity_zones')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_local_capacity_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD PRM ZONES ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'prm', 'geography_prm_zones')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_prm_zones(io, c2, csv_subscenario_input, csv_data_input)
 
 ## LOAD RPS ZONES ##
 
@@ -152,6 +159,51 @@ data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'rps', 'geo
 (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
 load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+## LOAD FREQUENCY RESPONSE BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'frequency_response', 'geography_frequency_response_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_frequency_response_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD LOAD FOLLOWING RESERVES DOWN BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'lf_reserves_down', 'geography_lf_reserves_down_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_lf_reserves_down_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD LOAD FOLLOWING RESERVES UP BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'lf_reserves_up', 'geography_lf_reserves_up_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_lf_reserves_up_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD REGULATION DOWN BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'regulation_down', 'geography_regulation_down_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_regulation_down_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD REGULATION UP BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'regulation_up', 'geography_regulation_up_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_regulation_up_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD SPINNING RESERVES BAS ##
+
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'feature', 'spinning_reserves', 'geography_spinning_reserves_bas')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_geography.load_geography_spinning_reserves_bas(io, c2, csv_subscenario_input, csv_data_input)
+
+#### LOAD SYSTEM DATA ####
+
+## LOAD SYSTEM LOAD ##
+data_folder_path = os.path.join(os.getcwd(),'db', 'csvs', 'system', 'system_load')
+(csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+load_system_load.load_system_static_load(io, c2, csv_subscenario_input, csv_data_input)
+
+subscenario_input = csv_subscenario_input
+data_input = csv_data_input
 
 '''
 #### LOAD TEMPORAL DATA ####
