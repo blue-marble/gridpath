@@ -50,7 +50,7 @@
   padding-top: 10px;
 }
 
-.form-group-list-item {
+.form-group-list-item, #tableBox {
   padding-left: 1px;
   background: aliceblue;
   list-style-position: inside;
@@ -74,11 +74,21 @@
   color: midnightblue;
 }
 
-#plotFormCaption {
+.nav-item {
+  width: 150px;
+}
+
+#plotFormCaption, #tableBox {
   font-size: small;
   font-weight: 500;
   background: aliceblue;
   color: midnightblue;
   padding-bottom: 5px;
   text-align: center
+}
+
+.btn-group {
+  padding-top: 10px;
+  display: block;
+  text-align: left;
 }
