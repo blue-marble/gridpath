@@ -16,7 +16,7 @@ from ui.server.db_ops.add_scenario import add_or_update_scenario
 from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
-from ui.server.save_data import save_plot_data_to_csv
+from ui.server.save_data import save_table_data_to_csv, save_plot_data_to_csv
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -218,6 +218,22 @@ def socket_clear_scenario(client_message):
 
 
 # ### SAVING DATA ### #
+
+@socketio.on("save_table_data")
+def socket_save_table_data(client_message):
+    """
+
+    :param client_message:
+    :return:
+    """
+    save_table_data_to_csv(
+        db_path=DATABASE_PATH,
+        table=client_message["tableName"],
+        scenario_id=client_message["scenarioID"],
+        download_path=client_message["downloadPath"]
+    )
+
+
 @socketio.on("save_plot_data")
 def socket_save_plot_data(client_message):
     """

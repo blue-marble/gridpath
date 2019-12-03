@@ -4,9 +4,36 @@
 Functions to save data from the UI to CSVs.
 """
 
+import csv
 from importlib import import_module
 
 from db.common_functions import connect_to_database
+from ui.server.api.view_data import get_table_data
+
+
+def save_table_data_to_csv(db_path, download_path, scenario_id, table):
+    """
+
+    :param db_path:
+    :param download_path:
+    :param scenario_id:
+    :param table:
+    :return:
+    """
+    print(table)
+
+    table_data = get_table_data(
+        scenario_id=scenario_id,
+        table=table,
+        db_path=db_path
+    )
+
+    with open(download_path, "w", newline="") as f:
+        writer = csv.writer(f, delimiter=",")
+        writer.writerow(table_data["columns"])
+        for row in table_data["rowsData"]:
+            values = [row[column] for column in table_data["columns"]]
+            writer.writerow(values)
 
 
 def save_plot_data_to_csv(db_path, download_path, scenario_id, plot_type,
