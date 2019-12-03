@@ -128,7 +128,8 @@ export class ScenarioResultsComponent implements OnInit {
               'save_table_data',
               { downloadPath: targetPath,
                 tableName: tableActual,
-                scenarioID: this.scenarioID
+                scenarioID: this.scenarioID,
+                otherScenarios: []
               }
           );
         }

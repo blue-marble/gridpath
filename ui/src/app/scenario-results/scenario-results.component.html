@@ -16,15 +16,15 @@
       <ng-container *ngFor="let button of allTableButtons">
           <li class="nav-item">
             <div id="tableBox">{{button.caption}}
-            <div class="btn-group">
-              <button [id]="button.table" class="navbar-results-button"
-                      (click)="showTable(button.table)">
-                Show Table
-              </button>
-              <button class="navbar-results-button"
-                (click)="downloadTableData(button.table)">
-                Download Data
-              </button>
+              <div class="btn-group">
+                <button [id]="button.table" class="navbar-results-button"
+                        (click)="showTable(button.table)">
+                  Show Table
+                </button>
+                <button class="navbar-results-button"
+                  (click)="downloadTableData(button.table)">
+                  Download Data
+                </button>
               </div>
             </div>
           </li>

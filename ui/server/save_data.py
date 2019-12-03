@@ -11,12 +11,14 @@ from db.common_functions import connect_to_database
 from ui.server.api.view_data import get_table_data
 
 
-def save_table_data_to_csv(db_path, download_path, scenario_id, table):
+def save_table_data_to_csv(db_path, download_path, scenario_id,
+                           other_scenarios, table):
     """
 
     :param db_path:
     :param download_path:
     :param scenario_id:
+    :param other_scenarios:
     :param table:
     :return:
     """
@@ -24,9 +26,12 @@ def save_table_data_to_csv(db_path, download_path, scenario_id, table):
 
     table_data = get_table_data(
         scenario_id=scenario_id,
+        other_scenarios=other_scenarios,
         table=table,
         db_path=db_path
     )
+
+    print(table_data)
 
     with open(download_path, "w", newline="") as f:
         writer = csv.writer(f, delimiter=",")

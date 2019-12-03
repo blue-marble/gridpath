@@ -3,10 +3,13 @@ import { Location } from '@angular/common';
 import { NavigationExtras, Router } from '@angular/router';
 import { FormControl, FormGroup, FormBuilder, FormArray } from '@angular/forms';
 
+const electron = ( window as any ).require('electron');
+
 import { ScenariosService } from '../scenarios/scenarios.service';
 import { ScenarioResultsService } from '../scenario-results/scenario-results.service';
 import { ResultsOptions } from '../scenario-results/scenario-results';
 import { getFormGroupValues } from '../scenario-results/scenario-results.component';
+import { socketConnect } from '../app.component';
 
 @Component({
   selector: 'app-scenario-comparison-select',
@@ -232,6 +235,27 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     this.router.navigate(
       ['/scenario-comparison/results'], navigationExtras
     );
+  }
+
+  downloadTableData(table): void {
+    electron.remote.dialog.showSaveDialog(
+        { title: 'untitled.csv', defaultPath: 'table.csv',
+          filters: [{extensions: ['csv']}]
+        }, (targetPath) => {
+          const socket = socketConnect();
+
+          const tableActual = table.replace(/-/g, '_');
+
+          socket.emit(
+              'save_table_data',
+              { downloadPath: targetPath,
+                tableName: tableActual,
+                scenarioID: this.baseScenario,
+                otherScenarios: this.scenariosToCompare
+              }
+          );
+        }
+      );
   }
 
   goBack(): void {
