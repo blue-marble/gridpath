@@ -251,7 +251,10 @@ export class ScenarioComparisonSelectComponent implements OnInit {
               { downloadPath: targetPath,
                 tableName: tableActual,
                 scenarioID: this.baseScenario,
-                otherScenarios: this.scenariosToCompare
+                otherScenarios: this.scenariosToCompare,
+                tableType: 'result',
+                uiTableNameInDB: null,
+                uiRowNameInDB: null
               }
           );
         }

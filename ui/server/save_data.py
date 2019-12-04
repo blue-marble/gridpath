@@ -8,11 +8,14 @@ import csv
 from importlib import import_module
 
 from db.common_functions import connect_to_database
-from ui.server.api.view_data import get_table_data
+from ui.server.api.view_data import get_table_data as get_results_table_data
+from ui.server.api.scenario_inputs import create_input_data_table_api as \
+  get_inputs_table_data
 
 
 def save_table_data_to_csv(db_path, download_path, scenario_id,
-                           other_scenarios, table):
+                           other_scenarios, table, table_type,
+                           ui_table_name_in_db, ui_row_name_in_db):
     """
 
     :param db_path:
@@ -24,14 +27,23 @@ def save_table_data_to_csv(db_path, download_path, scenario_id,
     """
     print(table)
 
-    table_data = get_table_data(
-        scenario_id=scenario_id,
-        other_scenarios=other_scenarios,
-        table=table,
-        db_path=db_path
-    )
+    print(table_type)
 
-    print(table_data)
+    if table_type in ["subscenario", "input"]:
+        table_data = get_inputs_table_data(
+            scenario_id=scenario_id,
+            db_path=db_path,
+            table_type=table_type,
+            ui_table_name_in_db=ui_table_name_in_db,
+            ui_row_name_in_db=ui_row_name_in_db
+        )
+    else:
+        table_data = get_results_table_data(
+            scenario_id=scenario_id,
+            other_scenarios=other_scenarios,
+            table=table,
+            db_path=db_path
+        )
 
     with open(download_path, "w", newline="") as f:
         writer = csv.writer(f, delimiter=",")

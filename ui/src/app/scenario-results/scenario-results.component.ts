@@ -129,7 +129,10 @@ export class ScenarioResultsComponent implements OnInit {
               { downloadPath: targetPath,
                 tableName: tableActual,
                 scenarioID: this.scenarioID,
-                otherScenarios: []
+                otherScenarios: [],
+                tableType: 'result',
+                uiTableNameInDB: null,
+                uiRowNameInDB: null
               }
           );
         }

@@ -231,7 +231,10 @@ def socket_save_table_data(client_message):
         table=client_message["tableName"],
         scenario_id=client_message["scenarioID"],
         other_scenarios=client_message["otherScenarios"],
-        download_path=client_message["downloadPath"]
+        download_path=client_message["downloadPath"],
+        table_type=client_message["tableType"],
+        ui_table_name_in_db=client_message["uiTableNameInDB"],
+        ui_row_name_in_db=client_message["uiRowNameInDB"]
     )
 
 
