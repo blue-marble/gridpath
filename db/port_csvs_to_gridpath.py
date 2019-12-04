@@ -39,7 +39,7 @@ from db.utilities import temporal, geography, project_list, project_zones, \
     simultaneous_flows, transmission_hurdle_rates, carbon_cap, system_load, \
     system_reserves, system_prm, rps, scenario
 
-from db.csvs_to_db_utilities import csvs_read, load_geography, load_system_load, load_project_zones
+from db.csvs_to_db_utilities import csvs_read, load_geography, load_system_load, load_system_reserves, load_project_zones
 
 
 ## MODULES FOR PORTING DATA TO SQL DATABASE
@@ -113,6 +113,11 @@ day_array_8760 = np.repeat(day_array_365, 24)
 hour_array_8760 = np.arange(1,8761)
 hour_of_day_array = np.tile(np.arange(1,25), 365)
 
+# Policy and reserves list
+policy_list = ['carbon_cap', 'prm', 'rps']
+reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
+                 'regulation_down', 'regulation_up', 'spinning_reserves']
+
 # Connect to database
 io = sqlite3.connect(
     os.path.join(dbPath, sql_database)
@@ -129,79 +134,60 @@ csv_data_master = pd.read_csv(os.path.join(folder_path, 'csv_data_master.csv'))
 
 #### LOAD GEORGRAPHY DATA ####
 
-## LOAD LOAD ZONES ##
+#### LOAD LOAD DATA ####
 
+## GEOGRAPHY ##
 if csv_data_master.loc[csv_data_master['table'] == 'geography_load_zones', 'include'].iloc[0] == 1:
     data_folder_path = os.path.join(folder_path, csv_data_master.loc[
         csv_data_master['table'] == 'geography_load_zones', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_geography.load_geography_load_zones(io, c2, csv_subscenario_input, csv_data_input)
 
-## LOAD CARBON CAP ZONES ##
-
-if csv_data_master.loc[csv_data_master['table'] == 'geography_carbon_cap_zones', 'include'].iloc[0] == 1:
-    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-        csv_data_master['table'] == 'geography_carbon_cap_zones', 'path'].iloc[0])
-    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-    load_geography.load_geography_carbon_cap_zones(io, c2, csv_subscenario_input, csv_data_input)
-
-## LOAD LOCAL CAPACITY ZONES ##
-
-if csv_data_master.loc[csv_data_master['table'] == 'geography_local_capacity_zones', 'include'].iloc[0] == 1:
-    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-        csv_data_master['table'] == 'geography_local_capacity_zones', 'path'].iloc[0])
-    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-    load_geography.load_geography_local_capacity_zones(io, c2, csv_subscenario_input, csv_data_input)
-
-## LOAD PRM ZONES ##
-
-if csv_data_master.loc[csv_data_master['table'] == 'geography_prm_zones', 'include'].iloc[0] == 1:
-    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-        csv_data_master['table'] == 'geography_prm_zones', 'path'].iloc[0])
-    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-    load_geography.load_geography_prm_zones(io, c2, csv_subscenario_input, csv_data_input)
-
-## LOAD RPS ZONES ##
-
-if csv_data_master.loc[csv_data_master['table'] == 'geography_rps_zones', 'include'].iloc[0] == 1:
-    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-        csv_data_master['table'] == 'geography_rps_zones', 'path'].iloc[0])
-    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-    load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
-
-## LOAD RESERVES BAS ##
-
-reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
-                 'regulation_down', 'regulation_up', 'spinning_reserves']
-
-for reserve_type in reserves_list:
-    if csv_data_master.loc[csv_data_master['table'] == 'geography_' + reserve_type + '_bas', 'include'].iloc[0] == 1:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-            csv_data_master['table'] == 'geography_' + reserve_type + '_bas', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_reserves_bas(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
-
-
-#### LOAD SYSTEM DATA ####
-
-## LOAD SYSTEM LOAD ##
-
-if csv_data_master.loc[csv_data_master['table'] == 'system_load', 'include'].iloc[0] == 1:
-    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-        csv_data_master['table'] == 'system_load', 'path'].iloc[0])
-    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-    load_system_load.load_system_static_load(io, c2, csv_subscenario_input, csv_data_input)
-
-#### LOAD PROJECT ZONES AND BAS DATA ####
-
+## PROJECT LOAD ZONES ##
 if csv_data_master.loc[csv_data_master['table'] == 'project_load_zones', 'include'].iloc[0] == 1:
     data_folder_path = os.path.join(folder_path, csv_data_master.loc[
         csv_data_master['table'] == 'project_load_zones', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_project_zones.load_project_load_zones(io, c2, csv_subscenario_input, csv_data_input)
 
-policy_list = ['carbon_cap', 'prm', 'rps']
+## SYSTEM LOAD ##
+if csv_data_master.loc[csv_data_master['table'] == 'system_load', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'system_load', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_system_load.load_system_static_load(io, c2, csv_subscenario_input, csv_data_input)
 
+#### LOAD POLICY DATA ####
+
+## GEOGRAPHY CARBON CAP ZONES ##
+if csv_data_master.loc[csv_data_master['table'] == 'geography_carbon_cap_zones', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'geography_carbon_cap_zones', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_geography.load_geography_carbon_cap_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## GEOGRAPHY LOCAL CAPACITY ZONES ##
+if csv_data_master.loc[csv_data_master['table'] == 'geography_local_capacity_zones', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'geography_local_capacity_zones', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_geography.load_geography_local_capacity_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## GEOGRAPHY PRM ZONES ##
+if csv_data_master.loc[csv_data_master['table'] == 'geography_prm_zones', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'geography_prm_zones', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_geography.load_geography_prm_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## GEOGRAPHY RPS ZONES ##
+if csv_data_master.loc[csv_data_master['table'] == 'geography_rps_zones', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'geography_rps_zones', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## PROJECT POLICY (CARBON CAP, PRM, RPS) ZONES ##
 for policy_type in policy_list:
     if csv_data_master.loc[csv_data_master['table'] == 'project_' + policy_type + '_zones', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
@@ -209,9 +195,18 @@ for policy_type in policy_list:
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_zones.load_project_policy_zones(io, c2, csv_subscenario_input, csv_data_input, policy_type)
 
-reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
-                 'regulation_down', 'regulation_up', 'spinning_reserves']
 
+#### LOAD RESERVES DATA ####
+
+## GEOGRAPHY BAS ##
+for reserve_type in reserves_list:
+    if csv_data_master.loc[csv_data_master['table'] == 'geography_' + reserve_type + '_bas', 'include'].iloc[0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'geography_' + reserve_type + '_bas', 'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_geography.load_geography_reserves_bas(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+
+## PROJECT RESERVES BAS ##
 for reserve_type in reserves_list:
     if csv_data_master.loc[csv_data_master['table'] == 'project_' + reserve_type + '_bas', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
@@ -219,9 +214,17 @@ for reserve_type in reserves_list:
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_zones.load_project_reserve_bas(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
 
+## SYSTEM RESERVES ##
+if csv_data_master.loc[csv_data_master['table'] == 'system_' + reserve_type, 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'system_' + reserve_type, 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_system_reserves.load_system_reserves(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+
 
 subscenario_input = csv_subscenario_input
 data_input = csv_data_input
+reserve_type_input = reserve_type
 
 '''
 #### LOAD TEMPORAL DATA ####
