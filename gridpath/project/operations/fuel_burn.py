@@ -99,7 +99,7 @@ def add_model_components(m, d):
         within=NonNegativeReals
     )
 
-    def startup_fuel_burn_rule(mod, g, tmp, l):
+    def startup_fuel_burn_rule(mod, g, tmp, s):
         """
         Startup expression is positive when more units are on in the current
         timepoint that were on in the previous timepoint.
@@ -122,9 +122,9 @@ def add_model_components(m, d):
                     tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
-            return mod.Startup_Fuel_Burn_MMBtu[g, tmp, l] \
-                   >= mod.Startup_MW[g, tmp, l] \
-                   * mod.startup_fuel_mmbtu_per_mw[g, l]
+            return mod.Startup_Fuel_Burn_MMBtu[g, tmp, s] \
+                   >= mod.Startup_MW[g, tmp, s] \
+                   * mod.startup_fuel_mmbtu_per_mw[g, s]
 
     m.Startup_Fuel_Burn_Constraint = Constraint(
         m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
@@ -141,8 +141,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        return (sum(mod.Startup_Fuel_Burn_MMBtu[g, tmp, l]
-                    for l in mod.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
+        return (sum(mod.Startup_Fuel_Burn_MMBtu[g, tmp, s]
+                    for s in mod.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
                 if g in mod.STARTUP_FUEL_PROJECTS else 0)
 
     m.Total_Startup_Fuel_Burn_MMBtu = Expression(
@@ -192,7 +192,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "fuel_burn_operations_mmbtu", "fuel_burn_shutdown_mmbtu",
              "fuel_burn_startup_mmbtu", "fuel_burn_total_mmbtu"]
         )
-        for (p, tmp) in sorted(m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS):
+        for (p, tmp) in m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 m.period[tmp],

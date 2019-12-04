@@ -35,14 +35,11 @@ TODO: add other papers
 #  check down time is large enough to include shutdown and startup duration
 
 # TODO: cleanup
-#  REMOVE "sorted" in results and hard-coded 4h min up and down time
-#  add explanations to new functions
 #  add testing to new functions (?)
 #  change naming of ramp up rates -> first see how we deal with this formulation
 #  vs. the previous one with startup_plus_rampup_rates, which are used in
 #  capacity commit as well. Seems weird to me that you can ramp higher than
 #  normal ramp rate when starting up.
-#  REMOVE debug print statements
 
 # Disclaimer: changing availabilty and timepoint duration not fully tested!
 #   - if availability changes during a startup process, things could get weird
@@ -145,22 +142,22 @@ def add_module_specific_components(m, d):
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES = Set(
             within=m.STARTUP_PROJECTS_TYPES,
         rule=lambda mod:
-            set((g, l) for (g, l) in mod.STARTUP_PROJECTS_TYPES
+            set((g, s) for (g, s) in mod.STARTUP_PROJECTS_TYPES
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_RAMP_TYPES = Set(
             within=m.STARTUP_RAMP_PROJECTS_TYPES,
         rule=lambda mod:
-            set((g, l) for (g, l) in mod.STARTUP_RAMP_PROJECTS_TYPES
+            set((g, s) for (g, s) in mod.STARTUP_RAMP_PROJECTS_TYPES
                 if g in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS)
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS = \
         Set(dimen=3,
         rule=lambda mod:
-        set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            for _g, l in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES
+        set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            for _g, s in mod.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_TYPES
             if g == _g)
     )
 
@@ -194,9 +191,9 @@ def add_module_specific_components(m, d):
               within=NonNegativeReals, default=0)
 
     # ------------------ Derived Params ------------------------ #
-    def startup_length_hours_rule(mod, g, l):
+    def startup_length_hours_rule(mod, g, s):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
-            / mod.startup_ramp[g, l] / 60
+            / mod.startup_ramp_rate[g, s] / 60
     m.DispBinCommit_Startup_Length_Hours = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_RAMP_TYPES,
         rule=startup_length_hours_rule
@@ -278,7 +275,7 @@ def add_module_specific_components(m, d):
         """
         if g in mod.STARTUP_RAMP_PROJECTS:
             pmin = mod.disp_binary_commit_min_stable_level_fraction[g]
-            fractions = [mod.startup_ramp[g, s]
+            fractions = [mod.startup_ramp_rate[g, s]
                          * mod.number_of_hours_in_timepoint[tmp] * 60
                          for s in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]]
             hottest_startup_fraction = max(fractions)
@@ -575,7 +572,7 @@ def add_module_specific_components(m, d):
                     relevant_startup_power += mod.Start_Binary_Type[g, t, s] \
                         * (mod.DispBinCommit_Pmin_MW[g, tmp]
                            - time_from_startup * 60
-                           * mod.startup_ramp[g, s]
+                           * mod.startup_ramp_rate[g, s]
                            * mod.Capacity_MW[g, mod.period[t]]
                            * mod.Availability_Derate[g, t])
 
@@ -1301,7 +1298,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_rule(mod, g, tmp, l):
+def startup_rule(mod, g, tmp, s):
     """
     Returns the number of MWs that are started up for startup type *l*
     If horizon is circular, the last timepoint of the horizon is the
@@ -1319,7 +1316,7 @@ def startup_rule(mod, g, tmp, l):
             == "linear":
         return None
     else:
-        return mod.Start_Binary_Type[g, tmp, l] \
+        return mod.Start_Binary_Type[g, tmp, s] \
                * mod.DispBinCommit_Pmax_MW[g, tmp]
         # TODO: should we multiply by availability here?
 
@@ -1537,8 +1534,8 @@ def export_module_specific_results(mod, d,
                          "startup_type_id"
                          ])
 
-        for (p, tmp) in sorted(mod.\
-                DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS):
+        for (p, tmp) in mod.\
+                DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 mod.period[tmp],

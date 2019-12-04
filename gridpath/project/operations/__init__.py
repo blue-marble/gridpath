@@ -197,7 +197,7 @@ def add_model_components(m, d):
     # 2. Params
     m.down_time_hours = Param(
         m.STARTUP_PROJECTS_TYPES, within=NonNegativeReals)
-    m.startup_ramp = Param(
+    m.startup_ramp_rate = Param(
         m.STARTUP_RAMP_PROJECTS_TYPES, within=PercentFraction)
     m.startup_cost_per_mw = Param(
         m.STARTUP_COST_PROJECTS_TYPES, within=PositiveReals)
@@ -266,7 +266,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     # STARTUP_PROJECTS
     df = read_csv(
         os.path.join(scenario_directory, subproblem, stage,
-                     "inputs", "startup_ramps.tab"),
+                     "inputs", "startup_chars.tab"),
         sep="\t"
     )
 
@@ -289,7 +289,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
         project = row["project"]
         startup_type_id = row["startup_type_id"]
         down_time_hours = row["down_time_hours"]
-        startup_ramp = row["startup_ramp"]
+        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
         startup_cost_per_mw = row["startup_cost_per_mw"]
         startup_fuel_mmbtu_per_mw = row["startup_fuel_mmbtu_per_mw"]
 
@@ -298,11 +298,11 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             startup_projects_types.append((project, startup_type_id))
             down_time_hours_dict[(project, startup_type_id)] = \
                 float(down_time_hours)
-        if startup_ramp != ".":
+        if startup_plus_ramp_up_rate != ".":
             startup_ramp_projects.add(project)
             startup_ramp_projects_types.append((project, startup_type_id))
             startup_ramps[(project, startup_type_id)] = \
-                float(startup_ramp)
+                float(startup_plus_ramp_up_rate)
         if startup_cost_per_mw != ".":
             startup_cost_projects.add(project)
             startup_cost_projects_types.append((project, startup_type_id))
@@ -325,7 +325,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             {None: startup_ramp_projects}
         data_portal.data()["STARTUP_RAMP_PROJECTS_TYPES"] = \
             {None: startup_ramp_projects_types}
-        data_portal.data()["startup_ramp"] = startup_ramps
+        data_portal.data()["startup_ramp_rate"] = startup_ramps
 
     if startup_cost_projects:
         data_portal.data()["STARTUP_COST_PROJECTS"] = \
@@ -404,8 +404,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
     # Get heat rate curves;
     # Select only heat rate curves of projects in the portfolio
-    c = conn.cursor()
-    heat_rates = c.execute(
+    c1 = conn.cursor()
+    heat_rates = c1.execute(
         """
         SELECT project, fuel, heat_rate_curves_scenario_id, 
         load_point_mw, average_heat_rate_mmbtu_per_mwh
@@ -423,7 +423,27 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
-    return heat_rates
+    c2 = conn.cursor()
+    startup_chars = c2.execute(
+        """
+        SELECT project, startup_chars_scenario_id, 
+        startup_type_id, down_time_hours, startup_plus_ramp_up_rate, 
+        startup_cost_per_mw, startup_fuel_per_mw,
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, heat_rate_curves_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) AS op_char
+        USING(project)
+        LEFT OUTER JOIN
+        inputs_project_startup_chars
+        USING(project, startup_chars_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return heat_rates, startup_chars
 
 
 def validate_inputs(subscenarios, subproblem, stage, conn):
@@ -439,7 +459,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     validation_results = []
 
     # Get the project input data
-    heat_rates = get_inputs_from_database(
+    heat_rates, startup_chars = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
     # Convert input data into DataFrame
@@ -637,9 +657,10 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     :param conn: database connection
     :return:
     """
-    heat_rates = get_inputs_from_database(
+    heat_rates, startup_chars = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
+    # HEAT RATES
     # Convert heat rates to dataframes and pre-process data
     # (filter out only projects with fuel; select columns)
     hr_df = pd.DataFrame(
@@ -660,6 +681,20 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         for row in heat_rates:
             writer.writerow(row)
+
+    # STARTUP CHARS
+    with open(os.path.join(inputs_directory, "startup_chars.tab"),
+              "w", newline="") as \
+            start_chars_tab_file:
+        writer = csv.writer(start_chars_tab_file, delimiter="\t")
+
+        writer.writerow(["project", "startup_type_id", "down_time_hours",
+                         "startup_plus_ramp_up_rate", "startup_cost_per_mw",
+                         "startup_fuel_mmbtu_per_mw"])
+
+        for row in startup_chars:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
 
 
 def calculate_heat_rate_slope_intercept(project, load_points, heat_rates):

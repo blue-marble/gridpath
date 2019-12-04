@@ -532,6 +532,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         """SELECT project, operational_type,
         min_stable_level, unit_size_mw,
         shutdown_cost_per_mw,
+        shutdown_fuel_mmbtu_per_mw,
         shutdown_plus_ramp_down_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
@@ -541,6 +542,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         (SELECT project, operational_type,
         min_stable_level, unit_size_mw,
         shutdown_cost_per_mw,
+        shutdown_fuel_mmbtu_per_mw,
         shutdown_plus_ramp_down_rate,
         min_up_time_hours, min_down_time_hours,
         charging_efficiency, discharging_efficiency,
@@ -584,6 +586,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # Check that there are no unexpected operational inputs
     expected_na_columns = [
         "shutdown_cost_per_mw",
+        "shutdown_fuel_mmbtu_per_mw",
         "shutdown_plus_ramp_down_rate",
         "min_up_time_hours", "min_down_time_hours",
         "charging_efficiency", "discharging_efficiency",

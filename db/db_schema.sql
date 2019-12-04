@@ -691,13 +691,12 @@ operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
-heat_rate_curves_scenario_id VARCHAR(64),  -- determined heat rate curve
+heat_rate_curves_scenario_id INTEGER,  -- determines heat rate curve
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
-startup_cost_per_mw FLOAT,
+startup_chars_scenario_id INTEGER,   -- determines startup characteristics
 shutdown_cost_per_mw FLOAT,
-startup_fuel_mmbtu_per_mw FLOAT,
-startup_plus_ramp_up_rate FLOAT,
+shutdown_fuel_mmbtu_per_mw FLOAT,
 shutdown_plus_ramp_down_rate FLOAT,
 ramp_up_when_on_rate FLOAT,
 ramp_down_when_on_rate FLOAT,
@@ -742,7 +741,7 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 DROP TABLE IF EXISTS subscenarios_project_heat_rate_curves;
 CREATE TABLE subscenarios_project_heat_rate_curves (
 project VARCHAR(32),
-heat_rate_curves_scenario_id,
+heat_rate_curves_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (project, heat_rate_curves_scenario_id)
@@ -757,6 +756,31 @@ average_heat_rate_mmbtu_per_mwh FLOAT,
 PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_mw),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
+);
+
+-- Startup characteristics
+-- TODO: see comments variable profiles
+DROP TABLE IF EXISTS subscenarios_project_startup_chars;
+CREATE TABLE subscenarios_project_startup_chars (
+project VARCHAR(32),
+startup_chars_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, startup_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_startup_chars;
+CREATE TABLE inputs_project_startup_chars (
+project VARCHAR(64),
+startup_chars_scenario_id INTEGER,
+startup_type_id INTEGER, -- SET TO AUTOINCREMENT?
+down_time_hours FLOAT,
+startup_plus_ramp_up_rate FLOAT
+startup_cost_per_mw FLOAT,
+startup_fuel_mmbtu_per_mw FLOAT,
+PRIMARY KEY (project, startup_chars_scenario_id, startup_type_id),
+FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
+subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
 
 -- Variable generator profiles
@@ -791,7 +815,7 @@ subscenarios_project_variable_generator_profiles
 DROP TABLE IF EXISTS subscenarios_project_hydro_operational_chars;
 CREATE TABLE subscenarios_project_hydro_operational_chars (
 project VARCHAR(64),
-hydro_operational_chars_scenario_id,
+hydro_operational_chars_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (project, hydro_operational_chars_scenario_id)
@@ -2491,9 +2515,10 @@ load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
-power_mw FLOAT,
-startup_power_mw FLOAT,
-shutdown_power_mw FLOAT,
+power_operations_mw FLOAT,
+power_startup_mw FLOAT,
+power_shutdown_mw FLOAT,
+power_total_mw FLOAT,
 committed_mw FLOAT,
 committed_units INTEGER,
 started_units INTEGER,
