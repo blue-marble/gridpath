@@ -17,6 +17,15 @@ Introduction
    introduction
 
 ##############
+Installing GridPath
+##############
+
+.. toctree::
+   :maxdepth: 3
+
+   installation
+
+##############
 Using GridPath
 ##############
 
