@@ -22,13 +22,13 @@ def load_system_static_load(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sub_id in subscenario_input['load_scenario_id'].to_list():
-        sub_name = \
-            subscenario_input.loc[subscenario_input['load_scenario_id'] == sub_id, 'name'].iloc[0]
-        sub_description = \
-            subscenario_input.loc[subscenario_input['load_scenario_id'] == sub_id, 'description'].iloc[0]
+    for sc_id in subscenario_input['load_scenario_id'].to_list():
+        sc_name = \
+            subscenario_input.loc[subscenario_input['load_scenario_id'] == sc_id, 'name'].iloc[0]
+        sc_description = \
+            subscenario_input.loc[subscenario_input['load_scenario_id'] == sc_id, 'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['load_scenario_id'] == sub_id]
+        data_input_subscenario = data_input.loc[data_input['load_scenario_id'] == sc_id]
 
         load = OrderedDict()
         for z in data_input_subscenario['load_zone'].unique():
@@ -43,8 +43,8 @@ def load_system_static_load(io, c, subscenario_input, data_input):
         # Load data into GridPath database
         system_load.insert_system_static_loads(
             io=io, c=c,
-            load_scenario_id=sub_id,
-            scenario_name=sub_name,
-            scenario_description=sub_description,
+            load_scenario_id=sc_id,
+            scenario_name=sc_name,
+            scenario_description=sc_description,
             zone_stage_timepoint_static_loads=load
         )

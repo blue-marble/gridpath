@@ -17,8 +17,9 @@ def csv_read_data(folder_path):
     :return csv_subscenario: A pandas dataframe with subscenario id, name, description
     :return csv_data: Data for all subscenarios in a dataframe
     '''
-    # The specific function will call a generic file scanner function, which will scan the folder and note the subscenario file. The file only needs the string 'subscenario' in its name.
-    # The function will then read each subscenario data using the filename in the subscenario file. All other files will be ignored.
+    # The specific function will call a generic file scanner function, which will scan the folder and note the
+    # subscenario file. The file only needs the string 'subscenario' in its name. The function will then read
+    # each subscenario data using the filename in the subscenario file. All other files will be ignored.
 
     csv_data = pd.DataFrame()
     data_starting_from_row = 1  # Notes rows start from 0. So this is the 6th row in the csv.
