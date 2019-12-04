@@ -137,15 +137,15 @@ def add_model_components(m, d):
     m.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-            set((g, tmp, l) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                for _g, l in mod.STARTUP_PROJECTS_TYPES
+            set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                for _g, s in mod.STARTUP_PROJECTS_TYPES
                 if (g == _g))
     )
 
     m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-            set((g, tmp, l) for (g, tmp, l)
+            set((g, tmp, s) for (g, tmp, s)
                 in mod.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES
                 if g in mod.STARTUP_COST_PROJECTS)
     )
@@ -153,7 +153,7 @@ def add_model_components(m, d):
     m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:
-            set((g, tmp, l) for (g, tmp, l)
+            set((g, tmp, s) for (g, tmp, s)
                 in mod.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES
                 if g in mod.STARTUP_FUEL_PROJECTS)
     )
@@ -166,7 +166,7 @@ def add_model_components(m, d):
         :param g:
         :return:
         """
-        types = list(l for (_g, l) in mod.STARTUP_PROJECTS_TYPES if g == _g)
+        types = list(s for (_g, s) in mod.STARTUP_PROJECTS_TYPES if g == _g)
         return types
 
     # TODO: change 'initalize' to 'rule' to be consistent?

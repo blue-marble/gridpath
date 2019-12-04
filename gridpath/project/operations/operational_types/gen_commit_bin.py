@@ -7,24 +7,18 @@ i.e. generators with on/off commitment decisions.
 The formulation is based on "Tight and compact MILP formulation for the
 thermal unit commitment problem" (Morales-Espana et al. 2013), available
 online at https://ieeexplore.ieee.org/abstract/document/6485014
+
+TODO: add other papers
 """
 
-# TODO: deal with issue of very high startup ramp which means you don't have
-#  a startup trajectory. Current approach still requires unit to sit at Pmin
-#  for one timepoint. Ideally should revert to old constraint that lets you
-#  jump to whatever that fraction is within one timepoint
-#  Because we include the first timepoint of a startup and the last of a
-#  shutdown when calculating ramp trajectories. Can we simply not include
-#  that last timepoint (the 0 MW)
+# TODO: test when starts and stops overlap - will either have to be all on or all off
+#  not sure what is causing this
+
+# TODO: add lit sources at top of this document or in the add module components
 
 # TODO: ramp assumptions about setpoints are clashing with Morales-Espana
 #  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
 #  whereas Morales-Espana assume you reach it end of timepoint.
-
-# TODO: set min down time equal to expression of min offline time +
-#   shortest startup duration + shutdown duration (see Morales Espana 2013b p4))
-#   (or just assume in down time includes shut down and startup duration
-#    and simply check this in validation)
 
 # TODO validations:
 #  disallow binary commit with availability decsisions since non-linear?
@@ -37,7 +31,8 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  if startup ramp is defined, cost needs to be defined - ACTUALY NOT?
 #  can't allow both startup fuel and startup ramp because that will double count
 #  the fuel
-#  down time has to be always defined and equal to TD at first down time
+#  down time has to be always defined and equal to TD at first startup ramp type
+#  check down time is large enough to include shutdown and startup duration
 
 # TODO: cleanup
 #  REMOVE "sorted" in results and hard-coded 4h min up and down time
@@ -49,8 +44,9 @@ online at https://ieeexplore.ieee.org/abstract/document/6485014
 #  normal ramp rate when starting up.
 #  REMOVE debug print statements
 
-# Untested: if availability changes during a startup process, things could
-# get weird
+# Disclaimer: changing availabilty and timepoint duration not fully tested!
+#   - if availability changes during a startup process, things could get weird
+#   - varying timepoint durations are likely not entirely bug free
 
 from __future__ import division
 
@@ -214,6 +210,98 @@ def add_module_specific_components(m, d):
         rule=shutdown_length_hours_rule
     )
 
+    def shutdown_ramp_fraction_per_timepoint_rule(mod, g, tmp):
+        """
+        Convert the ramp rate fraction per minute to ramp rate fraction per
+        timepoint, and limit it between min_stable_level (pmin) and 1 (pmax).
+        This limit is necessary to ensure the unit can't ramp down from above
+        Pmax during shutdown, and to provide a seamless transition between
+        the up (committed) and down (shutdown trajectory) states.
+
+        Remember that *dispbincommit_shutdown_plus_ramp_down_rate* will default
+        to 1 if no inputs are given, which will return 1 for this expression,
+
+        If there are no inputs for *dispbincommit_shutdown_plus_ramp_down_rate*,
+        the model will assume a default of 1, and this expression will also
+        return 1, meaning it is a quick-start unit and it can ramp down from
+        Pmax to zero within one timepoint.
+
+        TODO: what happens if timepoint duration changes and some timepoints
+         will be "quick-start" (can start within timepoint) and others aren't?
+         What if this happens in the middle of a shutdown?
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        shutdown_fraction = mod.dispbincommit_shutdown_plus_ramp_down_rate[g] \
+            * mod.number_of_hours_in_timepoint[tmp] * 60
+        clipped = max(mod.disp_binary_commit_min_stable_level_fraction[g],
+                      min(shutdown_fraction, 1))
+        return clipped
+    m.DispBinCommit_Shutdown_Ramp_Fraction_Per_Timepoint = Param(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=shutdown_ramp_fraction_per_timepoint_rule)
+
+    def startup_ramp_fraction_per_timepoint_rule(mod, g, tmp):
+        """
+        Convert the ramp rate fraction per minute to ramp rate fraction per
+        timepoint, and limit it between min_stable_level (pmin) and 1 (pmax).
+        This limit is necessary to ensure the unit can't ramp to above Pmax
+        during startup, and to provide a seamless transition between the down
+        (startup trajectory) and up (committed) states.
+
+        If no inputs are given for the project (not a startup project), assume
+        the unit is quick-start and can ramp from zero to Pmax in one timepoint.
+
+        We check the hottest start (highest startup ramp) vs. min_stable_level.
+        If even the hottest start has a slower ramp per timepoint than the
+        min_stable_level, it is a slow start unit and we set this ramp
+        expression equal to the min_stable_level. We don't allow inputs where
+        some of the starts are quick-start (within one timepoint) and others
+        are not.
+
+        TODO: not fully vetted for varying timepoint durations.
+         if you start in timepoint 9, but have longer timepoint duration in tmp
+         7, it seems like this longer timepoint duration in 7 is erroneously
+         used to determine that we should skip the startup trajectory approach
+         for tmp 7, even though it is actually a longer duration in tmp 8
+         that might allow us to skip it
+         background: timepoint of 1 hour requires you to do multi time point
+         trajectory while timepoint of 2 hours requires you to do full startup
+         within the tmp
+
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if g in mod.STARTUP_RAMP_PROJECTS:
+            pmin = mod.disp_binary_commit_min_stable_level_fraction[g]
+            fractions = [mod.startup_ramp[g, s]
+                         * mod.number_of_hours_in_timepoint[tmp] * 60
+                         for s in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]]
+            hottest_startup_fraction = max(fractions)
+
+            if len(fractions) > 1 and hottest_startup_fraction >= pmin:
+                raise ValueError(
+                    """
+                    Quick-start units should not have multiple startup types.
+                    Check startup ramp inputs for project '{}'.
+                    Make sure that there is either just one (quick) startup
+                    ramp input or that all startup ramps are slow starts that 
+                    take place over multiple timepoints.
+                    """.format(g)
+                )
+
+            clipped = max(min(hottest_startup_fraction, 1), pmin)
+            return clipped
+        else:
+            return 1
+    m.DispBinCommit_Startup_Ramp_Fraction_Per_Timepoint = Param(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=startup_ramp_fraction_per_timepoint_rule)
+
     # -------------------- Variables - Binary -------------------- #
     m.Commit_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -273,10 +361,9 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=pmin_rule)
 
-    # Calculate active startup
     def active_startup_rule(mod, g, tmp):
-        return (sum(mod.Start_Binary_Type[g, tmp, l] * l
-                    for l in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g])
+        return (sum(mod.Start_Binary_Type[g, tmp, s] * s
+                    for s in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g])
                 if g in mod.STARTUP_PROJECTS else 0)
     m.DispBinCommit_Active_Startup_Type = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -285,7 +372,7 @@ def add_module_specific_components(m, d):
     def shutdown_power_rule(mod, g, tmp):
         """
         Get the shutdown power (only applicable of timepoint tmp takes place
-        during the shutdown trajectory duration).
+        during the shutdown trajectory duration of an active shutdown).
 
         We first determine the relevant timepoints, namely the current timepoint
         and the previous timepoints that are within shutdown_duration hours from
@@ -294,33 +381,57 @@ def add_module_specific_components(m, d):
 
         For each of these relevant timepoints, we then calculate what the
         shutdown power in timepoint tmp would be if the unit was shutting down
-        in that relevant timepoint.
+        in that relevant timepoint, and active it if the unit is in fact
+        shutting down in that relevant timepoint.
 
-        Example:
-        tmp = 5, timepoint_duration_hours = 1 hour, shutdown_duration = 4 hours
-        Pmin = 4 MW
-        --> relevant timepoints = [5, 4, 3, 2], i.e. a shutdown in any of these
-            timepoints would have an effect on the shutdown power in timepoint
-            10
-        --> Let's assume that the unit actually shuts down in timepoint 4
-            (Stop_Binary[4] = 0). That means that in tmp 5, the power output
-            will be 2 MW, which is what this function would return. (note: in
-            tmp 3, the unit will be at PMin at 4 MW, in tmp 4 it will be already
-            down to 3 MW).
+        See constraint (37) in Morales-Espana et al. (2017), namely the
+        summation in the shutdown trajectory from i=2 to i=SD+1. Note that we're
+        not quite getting these timepoints with this function and instead
+        playing with the indexing to get the right trajectory
 
-        Note:  Stop_Binary is 1 first timepoint of shutdown trajectory
-        (Pmin at end of timepoint before)
+        Example 1:
+            tmp = 5,
+            timepoint_duration_hours = 1 hour,
+            shutdown_duration = 4 hours
+            Pmin = 4 MW
+
+            relevant timepoints = [5, 4, 3, 2], i.e. a shutdown in any of these
+            timepoints would have an effect on the shutdown power in timepoint 5
+
+            relevant_shutdown_power in tmp 5 if unit stops in timepoint 5: 3 MW
+            relevant_shutdown_power in tmp 5 if unit stops in timepoint 4: 2 MW
+            relevant_shutdown_power in tmp 5 if unit stops in timepoint 3: 1 MW
+            relevant_shutdown_power in tmp 5 if unit stops in timepoint 2: 0 MW
+
+            Note:  Stop_Binary is 1 first timepoint of shutdown trajectory
+            (unit is still committed but stuck to Pmin at the end of the
+            timtpoint before the timpepoint in which it stops). E.g. if unit
+            shuts down in tmp 5, it will be at Pmin at (end of) tmp 4.
+
+        TODO: change this when convention changes to reaching the setpoint at
+         start of tmp?
 
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        relevant_tmps_shutdown = determine_relevant_timepoints(
-            mod, g, tmp, mod.DispBinCommit_Shutdown_Length_Hours[g])
 
+        shutdown_duration = mod.DispBinCommit_Shutdown_Length_Hours[g]
         relevant_shutdown_power = 0
         time_from_shutdown = 0
+
+        # Quick-start units don't have a shutdown trajectory
+        if shutdown_duration <= mod.number_of_hours_in_timepoint[tmp]:
+            return relevant_shutdown_power
+
+
+        relevant_tmps_shutdown = determine_relevant_timepoints(
+            mod, g, tmp, shutdown_duration)
+        # Note that we are skipping a timepoint and immediately subtracting
+        #  from Pmin, because the timepoint right before the shutdown, with
+        #  setpoint set at Pmin is already covered in the
+        #  provide_power_operations_rule
         for t in relevant_tmps_shutdown[:-1]:
             time_from_shutdown += mod.number_of_hours_in_timepoint[t]
             relevant_shutdown_power += mod.Stop_Binary[g, t] \
@@ -329,21 +440,6 @@ def add_module_specific_components(m, d):
                    * mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
                    * mod.Capacity_MW[g, mod.period[t]]
                    * mod.Availability_Derate[g, t])
-
-        # Alternative with list comprehension
-        # durations = [0] + list(accumulate(
-        #     [mod.number_of_hours_in_timepoint[t]
-        #      for t in relevant_tmps_shutdown][:-1]
-        # ))
-        # relevant_shutdown_power = sum(
-        #     (mod.DispBinCommit_Pmin_MW[g, tmp] -
-        #      durations[i]
-        #      * mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
-        #      * mod.Capacity_MW[g, mod.period[t]]
-        #      * mod.Availability_Derate[g, t])
-        #     * mod.Stop_Binary[g, t]
-        #     for i, t in enumerate(relevant_tmps_shutdown)
-        # )
 
         return relevant_shutdown_power
     m.ShutDownPower_DispBinaryCommit_MW = Expression(
@@ -354,31 +450,78 @@ def add_module_specific_components(m, d):
     def startup_power_rule(mod, g, tmp):
         """
         Get the startup power (only applicable if timepoint tmp takes place
-        during the startup trajectory duration).
+        during the startup trajectory duration of an active startup).
 
-        We first determine the relevant timepoints, namely the future timepoints
-        that are within startup_duration hours from timepoint tmp. If the unit
-        starts up in any of these timepoints (Start_Binary = 1), timepoint tmp
-        will be part of a startup trajectory.
+        If the unit starst in the next timepoint, this expression will always
+        return Pmin.
+
+        In all other cases we need to determine the relevant timepoints, namely
+        the future timepoints that are within startup_duration+1 hours from
+        timepoint tmp (excluding the next timepoint, since the output for that
+        timepoint is always set to Pmin anyway). If the unit starts up in any of
+        these timepoints (Start_Binary = 1), timepoint tmp will be part of a
+        startup trajectory.
 
         For each of these relevant timepoints, we then calculate what the
         startup power in timepoint tmp would be if the unit was starting up
-        in that relevant timepoint.
+        in that relevant timepoint, and activate it if the unit is in fact
+        starting in that relevant timepoint.
 
-        Example:
-        tmp = 5, timepoint_duration_hours = 1 hour, startup_duration = 4 hours
-        Pmin = 4 MW
-        --> relevant timepoints = [6, 7, 8, 9], i.e. a shutdown in any of these
-            timepoints would have an effect on the startup power in timepoint
-            5
-        --> Let's assume that the unit actually starts up in timepoint 7
-            (Start_Binary[7] = 0). That means that in tmp 5, the power output
-            will be 3 MW, which is what this function would return. (note: in
-            tmp 6, the unit will be at PMin at 4 MW, in tmp 4 it will at 2 MW,
-            and in tmp 3 it will be at 1 MW.
+        See constraint (37) in Morales-Espana et al. (2017).
 
-        Note: Start_Binary is 1 first timepoint after startup trajectory
-        (pmin at start of that timepoint, i.e. end of previous timeoint)
+        Example 1:
+            tmp = 5,
+            timepoint_duration_hours = 1 hour,
+            startup_duration = 4 hours,
+            Pmin = 4 MW
+
+            If unit starts in timepoint 6, startup power in tmp 5 will be Pmin.
+            If not, determine relevant timepoints:
+
+            relevant timepoints = [7, 8, 9, 10], i.e. a startup in any of these
+            timepoints would have an effect on the startup power in timepoint 5
+
+            relevant_startup_power in tmp 5 if unit starts in timepoint 7: 3 MW
+            relevant_startup_power in tmp 5 if unit starts in timepoint 8: 2 MW
+            relevant_startup_power in tmp 5 if unit starts in timepoint 9: 1 MW
+            relevant_startup_power in tmp 5 if unit starts in timepoint 7: 0 MW
+
+            Note: Start_Binary is 1 for the first timepoint after startup
+            trajectory (pmin at start of that timepoint, i.e. end of previous
+            timepoint).
+
+        Example 2:
+            tmp = 5,
+            timepoint_duration_hours = 1 hour,
+            startup_duration = 2.5 hours,
+            Pmin = 4 MW
+
+            If unit starts in timepoint 6, startup power in tmp 5 will be Pmin.
+            If not, determine relevant timepoints:
+
+            relevant timepoints = [7, 8], i.e. a startup in any of these
+            timepoints would have an effect on the startup power in timepoint 5
+
+            relevant_startup_power in tmp 5 if unit starts in tmp 7: 2.4 MW
+            relevant_startup_power in tmp 5 if unit starts in tmp 8: 0.8 MW
+
+        Example 3:
+            tmp = 5,
+            timepoint_duration_hours = 4 hours,
+            startup_duration = 3 hours,
+            Pmin = 4 MW
+
+            If unit starts in timepoint 6, startup power in tmp 5 will be Pmin.
+            If not, determine relevant timepoints:
+
+            relevant timepoints = [], the startup of the unit will be fully
+            contained in one timepoint. If the unit starts in timepoint 6, the
+            unit will have to reach Pmin at (the end of) timepoint 5, but that
+            power in governed by the provide_power_operations_rule expression.
+
+         TODO: adjust this when we change convention (I think it should be
+          take different timepoint's duration? We should also change the
+          adder for the "next_startup_timepoint"
 
         :param mod:
         :param g:
@@ -386,24 +529,56 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        relevant_startup_power = 0
+        balancing_type = mod.balancing_type_project[g]
+        horizon = mod.horizon[tmp, balancing_type]
+        boundary = mod.boundary[horizon]
+        first_timepoint = mod.first_horizon_timepoint[horizon]
+        last_timepoint = mod.last_horizon_timepoint[horizon]
+
+        if tmp == last_timepoint and boundary == "linear":
+            start_next_tmp = 0  # assume there's no start after end of horizon
+        else:
+            next_tmp = mod.next_timepoint[tmp, balancing_type]
+            start_next_tmp = mod.Start_Binary[g, next_tmp]
+        # If start in next tmp, startup power will always be Pmin
+        relevant_startup_power = \
+            mod.DispBinCommit_Pmin_MW[g, tmp] * start_next_tmp
+
         if g in mod.STARTUP_RAMP_PROJECTS:
-            for l in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]:
+            for s in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]:
+                startup_duration = mod.DispBinCommit_Startup_Length_Hours[g, s]
+
+                if startup_duration <= mod.number_of_hours_in_timepoint[tmp]:
+                    continue  # Quick-start units have no startup trajectory
+
                 relevant_tmps_startup = determine_relevant_timepoints_forward(
-                    mod, g, tmp,
-                    mod.DispBinCommit_Startup_Length_Hours[g, l]
-                )
-                # print(tmp, l, relevant_tmps_startup)
+                    mod, g, tmp, startup_duration)
+                # print('----- tmp', tmp, ', seg', s, '-------')
+                # print('relevant_tmps:', relevant_tmps_startup)
+
                 time_from_startup = 0
                 for t in relevant_tmps_startup:
-                    relevant_startup_power += mod.Start_Binary_Type[g, t, l] \
+                    # We are looking for starts 2 timepoints ahead of the
+                    # current tmp and further, but to see how far we are from
+                    # the *tmp*, we need to look at the next timepoint
+                    if t == first_timepoint and boundary == 'linear':
+                        prev_tmp = t  # assume it's the same duration
+                    else:
+                        prev_tmp = mod.previous_timepoint[t, balancing_type]
+
+                    time_from_startup += mod.number_of_hours_in_timepoint[
+                        prev_tmp]
+
+                    # print('relevant tmp', t,
+                    #       '--> time_from_startup', time_from_startup)
+
+                    relevant_startup_power += mod.Start_Binary_Type[g, t, s] \
                         * (mod.DispBinCommit_Pmin_MW[g, tmp]
                            - time_from_startup * 60
-                           * mod.startup_ramp[g, l]
+                           * mod.startup_ramp[g, s]
                            * mod.Capacity_MW[g, mod.period[t]]
                            * mod.Availability_Derate[g, t])
-                    time_from_startup += mod.number_of_hours_in_timepoint[t]
-                # print(tmp, relevant_startup_power)
+
         return relevant_startup_power
     m.StartUpPower_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -411,14 +586,54 @@ def add_module_specific_components(m, d):
     )
 
     def provide_power_operations_rule(mod, g, tmp):
+        """
+        See equation (37) in Morales-Espana et al. (2017).
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        # *start_next_tmp* equals the value of the binary start variable for the
+        # next timepoint. If the horizon boundary is linear and we're at the
+        # last timepoint in the horizon, there is no next timepoint, so we'll
+        # assume that the value equals zero.
+        # if tmp == mod.last_horizon_timepoint[
+        #     mod.horizon[tmp, mod.balancing_type_project[g]]] \
+        #         and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+        #         == "linear":
+        #     start_next_tmp = 0
+        # else:
+        #     start_next_tmp = mod.Start_Binary[
+        #         g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]]
         return mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp] \
             + mod.DispBinCommit_Pmin_MW[g, tmp] \
             * mod.Commit_Binary[g, tmp]
+            # Morales-Espana Version: replace "mod.Commit_Binary[g, tmp]" with
+            # "(mod.Commit_Binary[g, tmp] + start_next_tmp)"
+
     m.Provide_Power_Operations_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=provide_power_operations_rule)
 
     def provide_power_all_rule(mod, g, tmp):
+        """
+        Equation (37) in Morales-Espana et al. (2017). Note that we have put
+        "Pmin * start_next_tmp" into the startup trajectory power component
+        rather than the "output when being up" componennt is done in the paper.
+        We do this because the unit is technically not operating during the
+        timepoint before startup, so it is clearer to add it to the startup
+        trajectory. This means that if the unit is quick-start and starts up
+        to an output above Pmin, there will be a small chunk of power
+        "operations power" that reflects the amount the unit has started up
+        *above* pmin, and the fuel burn will be calculated for that without
+        using the intercept, assuming that the startup fuel already covers
+        that.
+        TODO: change this when we change convention
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
         return mod.Provide_Power_Operations_DispBinaryCommit_MW[g, tmp] \
             + mod.StartUpPower_DispBinaryCommit_MW[g, tmp] \
             + mod.ShutDownPower_DispBinaryCommit_MW[g, tmp]
@@ -480,31 +695,6 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_rate_rule)
 
-    # TODO: remove or adjust to be linked to new startup param
-    # Note: make sure to limit this to Pmax, otherwise max power rules break
-    # def startup_ramp_rate_rule(mod, g, tmp, l):
-    #     return mod.Capacity_MW[g, mod.period[tmp]] \
-    #         * mod.Availability_Derate[g, tmp] \
-    #         * min(mod.startup_ramp[g, l]
-    #               * mod.number_of_hours_in_timepoint[tmp]
-    #               * 60, 1)
-    # m.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint = Expression(
-    #     m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
-    #     rule=startup_ramp_rate_rule)
-
-    # TODO: remove or link back up to old ramp rate rule for non-quick start
-    #  units
-    # Note: make sure to limit this to Pmax, otherwise max power rules break
-    def shutdown_ramp_rate_rule(mod, g, tmp):
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            * min(mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
-                  * mod.number_of_hours_in_timepoint[tmp]
-                  * 60, 1)
-    m.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint = Expression(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=shutdown_ramp_rate_rule)
-
     def upwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, headroom_variables)[g])
@@ -529,7 +719,8 @@ def add_module_specific_components(m, d):
         unit is not committed after being online; it will not be able to
         provide power in that timepoint.
 
-        Constraint (8) in Morales-Espana et al. (2013)
+        See constraint (4) in Morales-Espana et al. (2017).
+
         :param mod:
         :param g:
         :param tmp:
@@ -554,56 +745,58 @@ def add_module_specific_components(m, d):
         rule=binary_logic_constraint_rule
     )
 
-    def startup_type_constraint_rule(mod, g, tmp, l):
+    def startup_type_constraint_rule(mod, g, tmp, s):
         """
-        Startup_type l can only be activated (startup_type ≤ 1) if the unit has
+        Startup_type s can only be activated (startup_type ≤ 1) if the unit has
         previously been down within the appropriate interval. The interval for
-        startup type l is defined by the user specified boundary parameters
-        mod.down_time_hours[l] and mod.down_time_hours[l+1].
+        startup type s is defined by the user specified boundary parameters
+        mod.down_time_hours[s] and mod.down_time_hours[s+1].
 
-        If we're at the coldest (last) startup type, there is no l+1 and the
+        If we're at the coldest (last) startup type, there is no s+1 and the
         constraint is skipped. This is okay because the model will select a
         hotter, cheaper startup type if it can and there can only be one
         startup_type active at once (see next constraint). This also means the
         constraint will be skipped if there is only one startup type.
 
+        See constraint (7) in Morales-Espana et al. (2017).
+
         :param mod:
         :param g:
         :param tmp:
-        :param l: startup_type
+        :param s: startup_type
         :return:
         """
 
         # Coldest startup type is un-constrained
-        if l == mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g][-1]:
+        if s == mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g][-1]:
             return Constraint.Skip
 
-        # Get the timepoints within [TSU,l; TSU,l+1) hours from *tmp*
+        # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
         relevant_tmps = determine_relevant_timepoints_startup(
             mod, g, tmp,
-            mod.down_time_hours[g, l],
-            mod.down_time_hours[g, l+1]
+            mod.down_time_hours[g, s],
+            mod.down_time_hours[g, s+1]
         )
 
-        # Skip constraint if we are within TSU,l+1 hours from the start of the
+        # Skip constraint if we are within TSU,s+1 hours from the start of the
         # horizon (linear horizon boundary) or from the current tmp (circular
         # horizon boundary).
         if len(relevant_tmps) == 0:
             return Constraint.Skip
 
-        # Equal to 1 if unit has been down within interval [TSU,l; TSU,l+1)
+        # Equal to 1 if unit has been down within interval [TSU,s; TSU,s+1)
         # before hour t. This "activates" this particular startup type
         shutdown_within_interval = \
             sum(mod.Stop_Binary[g, tp] for tp in relevant_tmps)
 
-        return mod.Start_Binary_Type[g, tmp, l] <= shutdown_within_interval
+        return mod.Start_Binary_Type[g, tmp, s] <= shutdown_within_interval
 
     m.DispBinCommit_Start_Binary_Type_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_STARTUP_TYPES_OPERATIONAL_TIMEPOINTS,
         rule=startup_type_constraint_rule
     )
 
-    def only_one_startup_type_constraint_rule(mod, g, tmp):
+    def unique_startup_type_constraint_rule(mod, g, tmp):
         """
         Ensure that just one startup type is selected when the unit starts up.
 
@@ -617,7 +810,9 @@ def add_module_specific_components(m, d):
         (monotonically increasing) characteristic of the exponential SU costs
         of thermal units"
 
-        Equation (2) in Morales-Espana 2013b
+        See constraint (8) in Morales-Espana et al. (2017) and constraint (2) in
+        Morales-Espana et al. (2013b).
+
         :param mod:
         :param g:
         :param tmp:
@@ -628,15 +823,15 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
         else:
             sum_startup_types = sum(
-                mod.Start_Binary_Type[g, tmp, l]
-                for l in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g]
+                mod.Start_Binary_Type[g, tmp, s]
+                for s in mod.STARTUP_TYPES_BY_STARTUP_PROJECT[g]
             )
 
             return sum_startup_types == mod.Start_Binary[g, tmp]
 
-    m.DispBinCommit_Only_One_Startup_Type_Constraint = Constraint(
+    m.DispBinCommit_Unique_Startup_Type_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=only_one_startup_type_constraint_rule
+        rule=unique_startup_type_constraint_rule
     )
 
     def min_power_constraint_rule(mod, g, tmp):
@@ -674,11 +869,6 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        # TODO: replace with constraint (31) Morales-Espana 2017 and see
-        #  whether this gets rid of
-        #  Note: will also have to take out startup/rampup trajectories if
-        #  the unit is quick-starting (might be okay cause it's zero?)
-
         # *stop_next_tmp* equals the value of the binary stop variable for the
         # next timepoint. If the horizon boundary is linear and we're at the
         # last timepoint in the horizon, there is no next timepoint, so we'll
@@ -689,8 +879,11 @@ def add_module_specific_components(m, d):
                 and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 == "linear":
             stop_next_tmp = 0
+            start_next_tmp = 0
         else:
             stop_next_tmp = mod.Stop_Binary[
+                g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]]
+            start_next_tmp = mod.Start_Binary[
                 g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]]
 
         # Power provision plus upward reserves shall not exceed maximum power.
@@ -699,8 +892,26 @@ def add_module_specific_components(m, d):
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
             <= \
             (mod.DispBinCommit_Pmax_MW[g, tmp]
-             - mod.DispBinCommit_Pmin_MW[g, tmp]) \
-            * (mod.Commit_Binary[g, tmp] - stop_next_tmp)
+             - mod.DispBinCommit_Pmin_MW[g, tmp]) * mod.Commit_Binary[g, tmp] \
+            - (mod.DispBinCommit_Pmax_MW[g, tmp]
+               - mod.DispBinCommit_Shutdown_Ramp_Fraction_Per_Timepoint[g, tmp]
+               * mod.Capacity_MW[g, mod.period[tmp]]
+               * mod.Availability_Derate[g, tmp]) * stop_next_tmp \
+            + (mod.DispBinCommit_Startup_Ramp_Fraction_Per_Timepoint[g, tmp]
+               * mod.Capacity_MW[g, mod.period[tmp]]
+               * mod.Availability_Derate[g, tmp]
+               - mod.DispBinCommit_Pmin_MW[g, tmp]) * start_next_tmp
+
+            # (mod.DispBinCommit_Pmax_MW[g, tmp]
+            #  - mod.DispBinCommit_Pmin_MW[g, tmp]) \
+            # * (mod.Commit_Binary[g, tmp] - stop_next_tmp)
+
+            # TODO: replace this + other stuff to switch convention of when
+            #  to reach power setpoint
+            # (mod.DispBinCommit_Pmax_MW[g, tmp]
+            #  - mod.DispBinCommit_Pmin_MW[g, tmp]) \
+            # * (mod.Commit_Binary[g, tmp] - stop_next_tmp)
+            # * (previous_commit - mod.Stop_Binary[g, tmp])
 
     m.DispBinCommit_Max_Power_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -948,11 +1159,25 @@ def add_module_specific_components(m, d):
         curve. This does not include fuel burn during startup/shutdown,
         which is calculated and reported separately.
 
-        Note: we assume that when projects are derated for availability, the
+        Note 1: we assume that when projects are derated for availability, the
         input/output curve is derated by the same amount. The implicit
         assumption is that when a generator is de-rated, some of its units
         are out rather than it being forced to run below minimum stable level
         at very inefficient operating points.
+
+        Note 2: when a unit starts up, it will reach a power setpoint that is
+        bigger than or equal to Pmin in the timepoint before the startup.
+        We assume the output below Pmin is considered in the startup fuel burn
+        calculations, while the power above Pmin will be subject to the fuel
+        burn constraints below. Since the unit is not committed in the timepoint
+        before a start, the intercept will not be active, and instead the
+        equations below will pick the largest slope to determine the fuel burn
+        for the portion above Pmin. It should be okay to ignore the intercept,
+        since the startup fuel burn should already take into account the lower
+        efficiencies at very low output levels.
+
+        TODO: change this when convention changes (the stopping timepoint will
+         become the issue
 
         :param mod:
         :param g:
@@ -1337,7 +1562,6 @@ def export_module_specific_results(mod, d,
                 if p in mod.STARTUP_PROJECTS
                 else None,
             ])
-
 
 def import_module_specific_results_to_database(
         scenario_id, subproblem, stage, c, db, results_directory
