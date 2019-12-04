@@ -338,7 +338,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_rule(mod, g, tmp):
+def startup_rule(mod, g, tmp, s):
     """
     :param mod:
     :param g:
@@ -368,7 +368,7 @@ def shutdown_rule(mod, g, tmp):
     )
 
 
-def power_delta_rule(mod, g, tmp, l):
+def power_delta_rule(mod, g, tmp):
     """
 
     :param mod:
