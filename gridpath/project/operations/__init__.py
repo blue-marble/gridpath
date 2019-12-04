@@ -134,6 +134,13 @@ def add_model_components(m, d):
                 if g in mod.STARTUP_COST_PROJECTS)
     )
 
+    m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
+        dimen=2,
+        rule=lambda mod:
+            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                if g in mod.STARTUP_FUEL_PROJECTS)
+    )
+
     m.STARTUP_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES = Set(
         dimen=3,
         rule=lambda mod:

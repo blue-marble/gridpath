@@ -120,9 +120,8 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        return (sum(mod.Startup_Cost_By_Type[g, tmp, l]
-                    for l in mod.STARTUP_TYPES_BY_STARTUP_COST_PROJECT[g])
-                if g in mod.STARTUP_COST_PROJECTS else 0)
+        return sum(mod.Startup_Cost_By_Type[g, tmp, s]
+                   for s in mod.STARTUP_TYPES_BY_STARTUP_COST_PROJECT[g])
 
     m.Startup_Cost = Expression(
         m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -130,7 +129,7 @@ def add_model_components(m, d):
     )
 
     # Constraints
-    def startup_cost_constraint_rule(mod, g, tmp, l):
+    def startup_cost_constraint_rule(mod, g, tmp, s):
         """
         Startup expression is positive when more units are on in the current
         timepoint that were on in the previous timepoint. Startup_Cost is
@@ -151,8 +150,8 @@ def add_model_components(m, d):
                 and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
-            return mod.Startup_Cost_By_Type[g, tmp, l] \
-                   >= mod.Startup_MW[g, tmp, l] * mod.startup_cost_per_mw[g, l]
+            return mod.Startup_Cost_By_Type[g, tmp, s] \
+                   >= mod.Startup_MW[g, tmp, s] * mod.startup_cost_per_mw[g, s]
 
     m.Startup_Cost_Constraint = \
         Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,

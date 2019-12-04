@@ -94,7 +94,7 @@ def add_model_components(m, d):
     # TODO: can we remove var construct and replace with expression or do we
     #  need this construct for capacity commit module to deal with start/stop
     #  distinction without binary variables
-    m.Startup_Fuel_Burn_MMBtu = Var(
+    m.Startup_Fuel_Burn_By_Type_MMBtu = Var(
         m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS_TYPES,
         within=NonNegativeReals
     )
@@ -103,9 +103,9 @@ def add_model_components(m, d):
         """
         Startup expression is positive when more units are on in the current
         timepoint that were on in the previous timepoint.
-        Startup_Fuel_Burn_MMBtu is defined to be non-negative, so if Startup_MW
-        is 0 or negative (i.e. no units started or units shut down since the
-        previous timepoint), Startup_Fuel will be 0.
+        Startup_Fuel_Burn_By_Type_MMBtu is defined to be non-negative, so if
+        Startup_MW is 0 or negative (i.e. no units started or units shut down
+        since the previous timepoint), Startup_Fuel will be 0.
         If horizon is circular, the last timepoint of the horizon is the
         previous_timepoint for the first timepoint if the horizon;
         if the horizon is linear, no previous_timepoint is defined for the first
@@ -122,7 +122,7 @@ def add_model_components(m, d):
                     tmp, mod.balancing_type_project[g]]] == "linear":
             return Constraint.Skip
         else:
-            return mod.Startup_Fuel_Burn_MMBtu[g, tmp, s] \
+            return mod.Startup_Fuel_Burn_By_Type_MMBtu[g, tmp, s] \
                    >= mod.Startup_MW[g, tmp, s] \
                    * mod.startup_fuel_mmbtu_per_mw[g, s]
 
@@ -132,7 +132,7 @@ def add_model_components(m, d):
     )
 
     # Calculate total startup fuel burn
-    def total_startup_fuel_burn_rule(mod, g, tmp):
+    def startup_fuel_burn_rule(mod, g, tmp):
         """
         Aggregate fuel burn across startup types (note: only one type can be
         active at the same time).
@@ -141,13 +141,12 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        return (sum(mod.Startup_Fuel_Burn_MMBtu[g, tmp, s]
-                    for s in mod.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
-                if g in mod.STARTUP_FUEL_PROJECTS else 0)
+        return sum(mod.Startup_Fuel_Burn_By_Type_MMBtu[g, tmp, s]
+                   for s in mod.STARTUP_TYPES_BY_STARTUP_FUEL_PROJECT[g])
 
-    m.Total_Startup_Fuel_Burn_MMBtu = Expression(
-        m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=total_startup_fuel_burn_rule
+    m.Startup_Fuel_Burn_MMBtu = Expression(
+        m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=startup_fuel_burn_rule
     )
 
     # Calculate total fuel burn
@@ -162,7 +161,8 @@ def add_model_components(m, d):
         return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
             + (mod.Shutdown_Fuel_Burn_MMBtu[g, tmp]
                if g in mod.SHUTDOWN_FUEL_PROJECTS else 0) \
-            + mod.Total_Startup_Fuel_Burn_MMBtu[g, tmp]
+            + (mod.Startup_Fuel_Burn_MMBtu[g, tmp]
+               if g in mod.STARTUP_FUEL_PROJECTS else 0)
 
     m.Total_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -207,7 +207,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Shutdown_Fuel_Burn_MMBtu[p, tmp])
                 if p in m.SHUTDOWN_FUEL_PROJECTS
                 else None,
-                value(m.Total_Startup_Fuel_Burn_MMBtu[p, tmp])
+                value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
                 if p in m.STARTUP_FUEL_PROJECTS
                 else None,
                 value(m.Total_Fuel_Burn_MMBtu[p, tmp])
