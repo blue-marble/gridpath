@@ -4,21 +4,26 @@
 """
 This module describes the operations of 'binary-commit' generators,
 i.e. generators with on/off commitment decisions.
-The formulation is based on "Tight and compact MILP formulation for the
-thermal unit commitment problem" (Morales-Espana et al. 2013), available
-online at https://ieeexplore.ieee.org/abstract/document/6485014
 
-TODO: add other papers
+The formulation is based on "Hidden power system inflexibilities imposed by
+traditional unit commitment formulations", Morales-Espana et al. (2017).
+A related, interesting paper with more background information is "Tight and
+compact MILP formulation for the thermal unit commitment problem",
+Morales-Espana et al. (2013).
+
 """
 
-# TODO: test when starts and stops overlap - will either have to be all on or all off
-#  not sure what is causing this
-
-# TODO: add lit sources at top of this document or in the add module components
+# TODO: test when starts and stops overlap
+#  --> will either have to be all on or all off; not sure what is causing this
 
 # TODO: ramp assumptions about setpoints are clashing with Morales-Espana
 #  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
 #  whereas Morales-Espana assume you reach it end of timepoint.
+
+# TODO: unittest modules
+#  redo dispatchable binary commit unittests and make sure it passes
+#  update common functions unittests
+#  add any other unittests that could help explain current structure
 
 # TODO validations:
 #  disallow binary commit with availability decsisions since non-linear?
@@ -35,11 +40,9 @@ TODO: add other papers
 #  check down time is large enough to include shutdown and startup duration
 
 # TODO: cleanup
-#  add testing to new functions (?)
 #  change naming of ramp up rates -> first see how we deal with this formulation
 #  vs. the previous one with startup_plus_rampup_rates, which are used in
-#  capacity commit as well. Seems weird to me that you can ramp higher than
-#  normal ramp rate when starting up.
+#  capacity commit as well.
 
 # Disclaimer: changing availabilty and timepoint duration not fully tested!
 #   - if availability changes during a startup process, things could get weird
@@ -797,7 +800,7 @@ def add_module_specific_components(m, d):
         """
         Ensure that just one startup type is selected when the unit starts up.
 
-        From Morales-Espana 2013b:
+        From Morales-Espana et al. (2013):
         "In the event that more than one SU type variable can be activated
         (delta-t,l ≤ 1) then (2) together with the objective function ensure
         that the hottest, which is the cheapest, possible option is always
@@ -807,8 +810,8 @@ def add_module_specific_components(m, d):
         (monotonically increasing) characteristic of the exponential SU costs
         of thermal units"
 
-        See constraint (8) in Morales-Espana et al. (2017) and constraint (2) in
-        Morales-Espana et al. (2013b).
+        See constraint (8) in Morales-Espana et al. (2017) and constraint (2)
+        in Morales-Espana et al. (2013).
 
         :param mod:
         :param g:
@@ -834,7 +837,7 @@ def add_module_specific_components(m, d):
     def min_power_constraint_rule(mod, g, tmp):
         """
         Power minus downward services cannot be below minimum stable level.
-        This constraint is not in Morales-Espana et al. (2013) because they
+        This constraint is not in Morales-Espana et al. (2017) because they
         don't look at downward reserves. In that case, enforcing
         provide_power_above_pmin to be within NonNegativeReals is sufficient.
         :param mod:
@@ -859,7 +862,7 @@ def add_module_specific_components(m, d):
         This also sets the power output to Pmin at the last timepoint of an
         up-period (last committed timeoint).
 
-        Constraint (6) in Morales-Espana et al. (2013b)
+        Constraint (31) in Morales-Espana et al. (2017)
         :param mod:
         :param g:
         :param tmp:
@@ -936,7 +939,7 @@ def add_module_specific_components(m, d):
         will sufficiently constrain the binary start variables of all the
         timepoints before it.
 
-        Constraint (6) in Morales-Espana et al. (2013a)
+        Constraint (5) in Morales-Espana et al. (2017)
 
         Example 1:
           min_up_time = 4; tmps = [0,1,2,3];
@@ -1022,7 +1025,7 @@ def add_module_specific_components(m, d):
         timepoint will sufficiently constrain the binary stop variables of all
         the timepoints before it.
 
-        Constraint (7) in Morales-Espana et al. (2013)
+        Constraint (6) in Morales-Espana et al. (2017)
         """
 
         relevant_tmps = determine_relevant_timepoints(
@@ -1069,7 +1072,9 @@ def add_module_specific_components(m, d):
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
         ramp rate is adjusted for the duration of the first timepoint.
-        Constraint (12) in Morales-Espana et al. (2013)
+
+        Constraint (32) in Morales-Espana et al. (2017).
+
         :param mod:
         :param g:
         :param tmp:
@@ -1114,7 +1119,8 @@ def add_module_specific_components(m, d):
         timepoint; as such, the ramping between 2 timepoints is assumed to
         take place during the duration of the first timepoint, and the
         ramp rate is adjusted for the duration of the first timepoint.
-        Constraint (13) in Morales-Espana et al. (2013)
+
+        Constraint (32) in Morales-Espana et al. (2017)
         :param mod:
         :param g:
         :param tmp:
