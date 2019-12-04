@@ -106,10 +106,10 @@ def add_model_components(m, d):
 
     # 2. Params
     m.shutdown_cost_per_mw = Param(
-        m.SHUTDOWN_COST_PROJECTS, within=PositiveReals
+        m.SHUTDOWN_COST_PROJECTS, within=NonNegativeReals
     )
     m.shutdown_fuel_mmbtu_per_mw = Param(
-        m.SHUTDOWN_FUEL_PROJECTS, within=PositiveReals
+        m.SHUTDOWN_FUEL_PROJECTS, within=NonNegativeReals
     )
 
     # ------------------------ STARTUP ---------------------- #
@@ -200,9 +200,9 @@ def add_model_components(m, d):
     m.startup_ramp_rate = Param(
         m.STARTUP_RAMP_PROJECTS_TYPES, within=PercentFraction)
     m.startup_cost_per_mw = Param(
-        m.STARTUP_COST_PROJECTS_TYPES, within=PositiveReals)
+        m.STARTUP_COST_PROJECTS_TYPES, within=NonNegativeReals)
     m.startup_fuel_mmbtu_per_mw = Param(
-        m.STARTUP_FUEL_PROJECTS_TYPES, within=PositiveReals)
+        m.STARTUP_FUEL_PROJECTS_TYPES, within=NonNegativeReals)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
