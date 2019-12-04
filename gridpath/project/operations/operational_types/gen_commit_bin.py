@@ -438,8 +438,7 @@ def add_module_specific_components(m, d):
                 * (mod.DispBinCommit_Pmin_MW[g, tmp]
                    - time_from_shutdown * 60
                    * mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
-                   * mod.Capacity_MW[g, mod.period[t]]
-                   * mod.Availability_Derate[g, t])
+                   * mod.DispBinCommit_Pmax_MW[g, t])
 
         return relevant_shutdown_power
     m.ShutDownPower_DispBinaryCommit_MW = Expression(
@@ -576,8 +575,7 @@ def add_module_specific_components(m, d):
                         * (mod.DispBinCommit_Pmin_MW[g, tmp]
                            - time_from_startup * 60
                            * mod.startup_ramp_rate[g, s]
-                           * mod.Capacity_MW[g, mod.period[t]]
-                           * mod.Availability_Derate[g, t])
+                           * mod.DispBinCommit_Pmax_MW[g, t])
 
         return relevant_startup_power
     m.StartUpPower_DispBinaryCommit_MW = Expression(
@@ -659,8 +657,7 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
+        return mod.DispBinCommit_Pmax_MW[g, tmp] \
             * mod.dispbincommit_ramp_up_when_on_rate[g] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * 60  # convert min to hours
@@ -686,8 +683,7 @@ def add_module_specific_components(m, d):
         :param tmp:
         :return:
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
+        return mod.DispBinCommit_Pmax_MW[g, tmp] \
             * mod.dispbincommit_ramp_down_when_on_rate[g] \
             * mod.number_of_hours_in_timepoint[tmp] \
             * 60  # convert min to hours
@@ -895,11 +891,9 @@ def add_module_specific_components(m, d):
              - mod.DispBinCommit_Pmin_MW[g, tmp]) * mod.Commit_Binary[g, tmp] \
             - (mod.DispBinCommit_Pmax_MW[g, tmp]
                - mod.DispBinCommit_Shutdown_Ramp_Fraction_Per_Timepoint[g, tmp]
-               * mod.Capacity_MW[g, mod.period[tmp]]
-               * mod.Availability_Derate[g, tmp]) * stop_next_tmp \
+               * mod.DispBinCommit_Pmax_MW[g, tmp]) * stop_next_tmp \
             + (mod.DispBinCommit_Startup_Ramp_Fraction_Per_Timepoint[g, tmp]
-               * mod.Capacity_MW[g, mod.period[tmp]]
-               * mod.Availability_Derate[g, tmp]
+               * mod.DispBinCommit_Pmax_MW[g, tmp]
                - mod.DispBinCommit_Pmin_MW[g, tmp]) * start_next_tmp
 
             # (mod.DispBinCommit_Pmax_MW[g, tmp]
@@ -1306,7 +1300,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_rule(mod, g, tmp, s):
     """
-    Returns the number of MWs that are started up for startup type *l*
+    Returns the number of MWs that are started up for startup type *s*
     If horizon is circular, the last timepoint of the horizon is the
     previous_timepoint for the first timepoint if the horizon;
     if the horizon is linear, no previous_timepoint is defined for the first
@@ -1324,7 +1318,6 @@ def startup_rule(mod, g, tmp, s):
     else:
         return mod.Start_Binary_Type[g, tmp, s] \
                * mod.DispBinCommit_Pmax_MW[g, tmp]
-        # TODO: should we multiply by availability here?
 
 
 def shutdown_rule(mod, g, tmp):

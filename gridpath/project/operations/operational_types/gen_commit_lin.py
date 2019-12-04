@@ -943,9 +943,31 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_rule(mod, g, tmp, s):
     """
-    Returns the number of MWs that are started up or shut down.
+    Returns the number of MWs that are started up for startup type *s*
+    If horizon is circular, the last timepoint of the horizon is the
+    previous_timepoint for the first timepoint if the horizon;
+    if the horizon is linear, no previous_timepoint is defined for the first
+    timepoint of the horizon, so return 'None' here
+    :param mod:
+    :param g:
+    :param tmp:
+    :return:
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return None
+    else:
+        return mod.Start_Continuous[g, tmp] \
+            * mod.DispContCommit_Pmax_MW[g, tmp]
+
+
+def shutdown_rule(mod, g, tmp):
+    """
+    Returns the number of MWs that are shut down.
     Will be positive when there are more generators committed in the current
     timepoint than there were in the previous timepoint.
     If horizon is circular, the last timepoint of the horizon is the
@@ -963,9 +985,7 @@ def startup_shutdown_rule(mod, g, tmp):
             == "linear":
         return None
     else:
-        return (mod.Commit_Continuous[g, tmp]
-                - mod.Commit_Continuous[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+        return mod.Stop_Continuous[g, tmp] \
             * mod.DispContCommit_Pmax_MW[g, tmp]
 
 
