@@ -24,7 +24,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.dispatchable_continuous_commit"
+    "project.operations.operational_types.gen_commit_lin"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

@@ -92,7 +92,7 @@ class TestProjectInit(unittest.TestCase):
             "dispatchable_capacity_commit", "hydro_curtailable",
             "hydro_noncurtailable", "must_run",
             "storage_generic", "variable", "gen_commit_bin",
-            "dispatchable_continuous_commit", "gen_simple",
+            "gen_commit_lin", "gen_simple",
             "variable_no_curtailment", "always_on", "shiftable_load_generic"
         ])
         actual_required_operational_modules = \

@@ -116,7 +116,7 @@ gen_commit_bin
 dispatchable_capacity_commit
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_continuous_commit
+gen_commit_lin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 gen_simple
