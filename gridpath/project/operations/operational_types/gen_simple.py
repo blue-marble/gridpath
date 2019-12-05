@@ -30,7 +30,7 @@ def add_module_specific_components(m, d):
     m.DISPATCHABLE_NO_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
-        generator_subset_init("operational_type", "dispatchable_no_commit")
+        generator_subset_init("operational_type", "gen_simple")
     )
 
     m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
@@ -370,7 +370,7 @@ def load_module_specific_data(mod, data_portal,
                        df["operational_type"],
                        df["ramp_up_when_on_rate"]
                        ):
-            if row[1] == "dispatchable_no_commit" and row[2] != ".":
+            if row[1] == "gen_simple" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -382,7 +382,7 @@ def load_module_specific_data(mod, data_portal,
                        df["operational_type"],
                        df["ramp_down_when_on_rate"]
                        ):
-            if row[1] == "dispatchable_no_commit" and row[2] != ".":
+            if row[1] == "gen_simple" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -436,7 +436,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         AND operational_type = '{}'""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "dispatchable_no_commit"
+            "gen_simple"
         )
     )
 
@@ -457,7 +457,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "dispatchable_no_commit",
+                   "gen_simple",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
                    )
     )

@@ -119,7 +119,7 @@ dispatchable_capacity_commit
 dispatchable_continuous_commit
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_no_commit
+gen_simple
     :members:
 .. automodule:: gridpath.project.operations.operational_types.hydro_curtailable
     :members:
