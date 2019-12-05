@@ -1,2 +1,3 @@
 project	startup_type_id	down_time_hours	startup_plus_ramp_up_rate	startup_cost_per_mw	startup_fuel_mmbtu_per_mw
-Gas_CCGT	1	6	0.012	5	10
+Gas_CCGT	1	6	0.003333	5	10
+Gas_CCGT	2	8	0.001667	5	10
