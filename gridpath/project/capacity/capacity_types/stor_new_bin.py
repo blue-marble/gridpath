@@ -457,7 +457,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # TODO: check that there are no minimum duration inputs for this type
     #   (duration is specified by specifying the build size in mw and mwh)
     #   Maybe also check all other required / not required inputs?
-    #   --> see example in must_run operational_type. Seems very verbose and
+    #   --> see example in gen_must_run operational_type. Seems very verbose and
     #   hard to maintain. Is there a way to generalize this?
 
     c = conn.cursor()

@@ -29,7 +29,7 @@ def add_module_specific_components(m, d):
     # TODO: do we need this set or can we remove it
     m.MUST_RUN_GENERATORS = Set(within=m.PROJECTS,
                                 initialize=generator_subset_init(
-                                    "operational_type", "must_run")
+                                    "operational_type", "gen_must_run")
                                 )
 
     # TODO: do we need this set or can we remove it?
@@ -40,11 +40,11 @@ def add_module_specific_components(m, d):
                 if g in mod.MUST_RUN_GENERATORS))
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'must_run' type
+    #  does not allow specifying a reserve_zone if 'gen_must_run' type
     def no_upwards_reserve_rule(mod, g, tmp):
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'must_run' operational type and should 
+                """project {} is of the 'gen_must_run' operational type and should 
                 not be assigned any upward reserve BAs since it cannot provide 
                 upward reserves. Please replace the upward reserve BA for 
                 project {} with '.' (no value) in projects.tab. Model will add  
@@ -60,11 +60,11 @@ def add_module_specific_components(m, d):
             rule=no_upwards_reserve_rule)
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'must_run' type
+    #  does not allow specifying a reserve_zone if 'gen_must_run' type
     def no_downwards_reserve_rule(mod, g, tmp):
         if getattr(d, footroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'must_run' operational type and should 
+                """project {} is of the 'gen_must_run' operational type and should 
                 not be assigned any downward reserve BAs since it cannot provide 
                 upwards reserves. Please replace the downward reserve BA for 
                 project {} with '.' (no value) in projects.tab. Model will add  
@@ -242,7 +242,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         AND operational_type = '{}'""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "must_run"
+            "gen_must_run"
         )
     )
 
@@ -263,7 +263,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         USING(project, heat_rate_curves_scenario_id)
         WHERE project_portfolio_scenario_id = {}
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "must_run",
+                   "gen_must_run",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
                    )
     )
@@ -323,7 +323,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check that the project does not show up in any of the
-    # inputs_project_reserve_bas tables since must_run can't provide any
+    # inputs_project_reserve_bas tables since gen_must_run can't provide any
     # reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
     for reserve, projects in projects_by_reserve.items():
@@ -332,7 +332,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         validation_errors = check_projects_for_reserves(
             projects_op_type=df["project"],
             projects_w_ba=projects,
-            operational_type="must_run",
+            operational_type="gen_must_run",
             reserve=reserve
         )
         for error in validation_errors:

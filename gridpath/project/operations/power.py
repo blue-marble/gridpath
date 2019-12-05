@@ -33,7 +33,7 @@ def add_model_components(m, d):
     operational timepoints. The exact formulation of the expression depends
     on the project's *operational_type*. For each project, we call its
     *capacity_type* module's *power_provision_rule* method in order to
-    formulate the expression. E.g. a project of the  *must_run*
+    formulate the expression. E.g. a project of the  *gen_must_run*
     operational_type will be producing power equal to its capacity while a
     dispatchable project will have a variable in its power provision
     expression. This expression will then be used by other modules.

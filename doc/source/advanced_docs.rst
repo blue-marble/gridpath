@@ -122,9 +122,9 @@ gridpath.project.operations.costs
 .. automodule:: gridpath.project.operations.costs
     :members: add_model_components
 
-gridpath.project.capacity.operational_types.must_run
+gridpath.project.capacity.operational_types.gen_must_run
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.must_run
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
     :members: power_provision_rule
 
 gridpath.project.capacity.operational_types.gen_always_on

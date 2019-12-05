@@ -24,7 +24,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.must_run"
+    "project.operations.operational_types.gen_must_run"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -86,18 +86,18 @@ class TestMustRunOperationalType(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: MUST_RUN_GENERATORS
-        expected_must_run_gen_set = sorted([
+        expected_gen_must_run_gen_set = sorted([
             "Nuclear", "Nuclear_z2"
         ])
-        actual_must_run_gen_set = sorted([
+        actual_gen_must_run_gen_set = sorted([
             prj for prj in instance.MUST_RUN_GENERATORS
             ])
-        self.assertListEqual(expected_must_run_gen_set,
-                             actual_must_run_gen_set)
+        self.assertListEqual(expected_gen_must_run_gen_set,
+                             actual_gen_must_run_gen_set)
 
         # Set: MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS
         expected_operational_timpoints_by_project = sorted(
-            get_project_operational_timepoints(expected_must_run_gen_set)
+            get_project_operational_timepoints(expected_gen_must_run_gen_set)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in

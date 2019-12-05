@@ -90,7 +90,7 @@ class TestProjectInit(unittest.TestCase):
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
             "gen_commit_cap", "hydro_curtailable",
-            "hydro_noncurtailable", "must_run",
+            "hydro_noncurtailable", "gen_must_run",
             "storage_generic", "variable", "gen_commit_bin",
             "gen_commit_lin", "gen_simple",
             "variable_no_curtailment", "gen_always_on", "shiftable_load_generic"

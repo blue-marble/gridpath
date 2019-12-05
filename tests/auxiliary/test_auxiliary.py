@@ -410,24 +410,24 @@ class TestAuxiliary(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"projects_op_type": ["project1", "project2"],
                 "projects_w_ba": ["project3", "project4"],
-                "operational_type": "must_run",
+                "operational_type": "gen_must_run",
                 "reserve": "regulation_up",
                 "result": []
                 },
             # Make sure invalid projects are flagged
             2: {"projects_op_type": ["project1", "project2"],
                 "projects_w_ba": ["project2", "project3"],
-                "operational_type": "must_run",
+                "operational_type": "gen_must_run",
                 "reserve": "regulation_up",
-                "result": ["Project(s) 'project2'; must_run cannot provide regulation_up"]
+                "result": ["Project(s) 'project2'; gen_must_run cannot provide regulation_up"]
                 },
             # Make sure multiple invalid projects are flagged correctly
             3: {"projects_op_type": ["project1", "project2"],
                 "projects_w_ba": ["project1", "project2", "project3"],
-                "operational_type": "must_run",
+                "operational_type": "gen_must_run",
                 "reserve": "regulation_up",
                 "result": [
-                    "Project(s) 'project1, project2'; must_run cannot provide regulation_up"]
+                    "Project(s) 'project1, project2'; gen_must_run cannot provide regulation_up"]
                 },
         }
 

@@ -126,7 +126,7 @@ gen_simple
 .. automodule:: gridpath.project.operations.operational_types.
 hydro_noncurtailable
     :members:
-.. automodule:: gridpath.project.operations.operational_types.must_run
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 shiftable_load_generic
