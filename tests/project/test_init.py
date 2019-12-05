@@ -91,7 +91,7 @@ class TestProjectInit(unittest.TestCase):
         expected_required_operational_modules = sorted([
             "dispatchable_capacity_commit", "hydro_curtailable",
             "hydro_noncurtailable", "must_run",
-            "storage_generic", "variable", "dispatchable_binary_commit",
+            "storage_generic", "variable", "gen_commit_bin",
             "dispatchable_continuous_commit", "gen_simple",
             "variable_no_curtailment", "always_on", "shiftable_load_generic"
         ])

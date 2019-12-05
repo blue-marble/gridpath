@@ -31,7 +31,7 @@ def add_module_specific_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
-    First, we determine the project subset with 'dispatchable_binary_commit'
+    First, we determine the project subset with 'gen_commit_bin'
     as operational type. This is the *DISPATCHABLE_BINARY_COMMIT_GENERATORS*
     set, which we also designate with :math:`BCG\subset R` and index
     :math:`bcg`.
@@ -59,7 +59,7 @@ def add_module_specific_components(m, d):
     *DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS* (
     :math:`BCG\_OT\subset RT`) is a two-dimensional set that
     defines all project-timepoint combinations when a
-    'dispatchable_binary_commit' project can be operational.
+    'gen_commit_bin' project can be operational.
 
     There are three binary decision variables, and one continuous decision
     variable, all defined over
@@ -89,7 +89,7 @@ def add_module_specific_components(m, d):
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=
-        generator_subset_init("operational_type", "dispatchable_binary_commit")
+        generator_subset_init("operational_type", "gen_commit_bin")
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
@@ -1037,7 +1037,7 @@ def load_module_specific_data(mod, data_portal,
     for row in zip(dynamic_components["project"],
                    dynamic_components["operational_type"],
                    dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "dispatchable_binary_commit":
+        if row[1] == "gen_commit_bin":
             min_stable_fraction[row[0]] = float(row[2])
         else:
             pass
@@ -1049,7 +1049,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["startup_plus_ramp_up_rate"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1061,7 +1061,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["shutdown_plus_ramp_down_rate"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1073,7 +1073,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_up_when_on_rate"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1085,7 +1085,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_down_when_on_rate"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1098,7 +1098,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["min_up_time_hours"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 min_up_time[row[0]] = float(row[2])
             else:
                 pass
@@ -1110,7 +1110,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
                        dynamic_components["min_down_time_hours"]):
-            if row[1] == "dispatchable_binary_commit" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 min_down_time[row[0]] = float(row[2])
             else:
                 pass

@@ -110,7 +110,7 @@ stor_spec
 .. automodule:: gridpath.project.operations.operational_types.always_on
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_binary_commit
+gen_commit_bin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 dispatchable_capacity_commit

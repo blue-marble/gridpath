@@ -90,7 +90,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
 
     if operational_type == "dispatchable_capacity_commit":
         table = "results_project_dispatch_capacity_commit"
-    elif operational_type == "dispatchable_binary_commit":
+    elif operational_type == "gen_commit_bin":
         table = "results_project_dispatch_binary_commit"
     elif operational_type == "dispatchable_continuous_commit":
         table = "results_project_dispatch_continuous_commit"
@@ -99,7 +99,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
             "Selected project does not have commitment decisions."
             "Please select a project of one of the operational types with "
             "commitment decisions: 'distpachable_capacity_commit', "
-            "'dispatchable_binary_commit' or 'dispatchable_continuous_commit'"
+            "'gen_commit_bin' or 'dispatchable_continuous_commit'"
         )
 
     # TODO: Could avoid SQL insertions by addding the WHERE clause anywhere

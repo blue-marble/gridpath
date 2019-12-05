@@ -8,7 +8,7 @@ commitment decision relaxed. The relaxation replaces the binary variables
 (commit, start, stop) with continuous variables within the range [0,1].
 
 Except for this relaxation, the formulation is exactly the same as
-*dispatchable_binary_commit*, which is based on
+*gen_commit_bin*, which is based on
 "Tight and compact MILP formulation for the thermal unit commitment problem"
 (Morales-Espana et al. 2013), available online at
 https://ieeexplore.ieee.org/abstract/document/6485014
