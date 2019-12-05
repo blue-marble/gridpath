@@ -1,3 +1,7 @@
 project	horizon	hydro_average_power_fraction	hydro_min_power_fraction	hydro_max_power_fraction
 Hydro	202001	0.5	0.15	1
-Hydro_NonCurtailable	202001	0.5	0.15	1
+Hydro	202002	0.5	0.15	1
+Hydro	203001	0.5	0.15	1
+Hydro	203002	0.5	0.15	1
+Hydro_NonCurtailable	2020	0.5	0.15	1
+Hydro_NonCurtailable	2030	0.5	0.15	1

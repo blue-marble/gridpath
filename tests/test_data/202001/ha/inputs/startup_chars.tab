@@ -1,0 +1,14 @@
+project	startup_type_id	down_time_hours	startup_plus_ramp_up_rate	startup_cost_per_mw	startup_fuel_mmbtu_per_mw
+Gas_CCGT	1	3	.	1	6
+Coal	1	2	.	1	6
+Gas_CT	1	5	.	0	0.5
+Gas_CCGT_New	1	8	.	1	6
+Gas_CCGT_New_Binary	1	8	.	1	6
+Gas_CT_New	1	5	.	0	0.5
+Gas_CCGT_z2	1	0	.	1	6
+Coal_z2	1	0	.	1	6
+Gas_CT_z2	1	0	.	0	.
+Disp_Binary_Commit	1	3	.	1	10
+Disp_Cont_Commit	1	3	.	1	10
+Clunky_Old_Gen	1	0	.	1	10
+Clunky_Old_Gen2	1	0	.	1	10
