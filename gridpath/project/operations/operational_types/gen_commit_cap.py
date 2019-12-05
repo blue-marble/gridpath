@@ -95,7 +95,7 @@ def add_module_specific_components(m, d):
         within=m.PROJECTS,
         initialize=
         generator_subset_init("operational_type",
-                              "dispatchable_capacity_commit")
+                              "gen_commit_cap")
     )
 
     m.DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
@@ -951,7 +951,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                    dynamic_components["operational_type"],
                    dynamic_components["unit_size_mw"],
                    dynamic_components["min_stable_level_fraction"]):
-        if row[1] == "dispatchable_capacity_commit":
+        if row[1] == "gen_commit_cap":
             unit_size_mw[row[0]] = float(row[2])
             min_stable_fraction[row[0]] = float(row[3])
         else:
@@ -967,7 +967,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components["operational_type"],
                        dynamic_components["startup_plus_ramp_up_rate"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 startup_plus_ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -980,7 +980,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components["operational_type"],
                        dynamic_components["shutdown_plus_ramp_down_rate"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 shutdown_plus_ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -993,7 +993,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_up_when_on_rate"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1006,7 +1006,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_down_when_on_rate"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1021,7 +1021,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components[
                            "min_up_time_hours"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 min_up_time[row[0]] = float(row[2])
             else:
                 pass
@@ -1035,7 +1035,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                        dynamic_components[
                            "min_down_time_hours"]
                        ):
-            if row[1] == "dispatchable_capacity_commit" and row[2] != ".":
+            if row[1] == "gen_commit_cap" and row[2] != ".":
                 min_down_time[row[0]] = float(row[2])
             else:
                 pass
@@ -1195,7 +1195,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         AND operational_type = '{}'""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "dispatchable_capacity_commit"
+            "gen_commit_cap"
         )
     )
 

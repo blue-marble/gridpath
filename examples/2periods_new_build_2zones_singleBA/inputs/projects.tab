@@ -4,12 +4,12 @@ Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_lin	day	BA	BA	BA	BA	0.4	1	2	Gas	.
 Coal	Zone1	gen_spec	exogenous	1	gen_commit_lin	day	.	BA	.	BA	0.4	1	0	Coal	.
 Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_lin	day	.	.	.	.	0.4	0	1	Gas	.
 Wind	Zone1	gen_spec	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.
-Gas_CCGT_New	Zone1	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	BA	BA	BA	BA	0.4	1	2	Gas	6
-Gas_CT_New	Zone1	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	.	.	.	.	0.4	0	1	Gas	6
+Gas_CCGT_New	Zone1	gen_new_lin	exogenous	2	gen_commit_cap	day	BA	BA	BA	BA	0.4	1	2	Gas	6
+Gas_CT_New	Zone1	gen_new_lin	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	0	1	Gas	6
 Nuclear_z2	Zone2	gen_spec	exogenous	1	must_run	day	.	.	.	.	.	.	.	Uranium	.
 Gas_CCGT_z2	Zone2	gen_spec	exogenous	2	gen_commit_lin	day	BA	BA	BA	BA	0.4	1	2	Gas	.
 Coal_z2	Zone2	gen_spec	exogenous	1	gen_commit_lin	day	.	BA	.	BA	0.4	1	0	Coal	.
 Gas_CT_z2	Zone2	gen_spec	exogenous	2	gen_commit_lin	day	.	.	.	.	0.4	0	1	Gas	.
 Wind_z2	Zone2	gen_spec	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.
-Gas_CCGT_New_z2	Zone2	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	BA	BA	BA	BA	0.4	1	2	Gas	6
-Gas_CT_New_z2	Zone2	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	.	.	.	.	0.4	0	1	Gas	6
+Gas_CCGT_New_z2	Zone2	gen_new_lin	exogenous	2	gen_commit_cap	day	BA	BA	BA	BA	0.4	1	2	Gas	6
+Gas_CT_New_z2	Zone2	gen_new_lin	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	0	1	Gas	6

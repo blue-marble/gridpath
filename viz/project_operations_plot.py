@@ -88,7 +88,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         ;"""
     operational_type = c.execute(sql, (scenario_id, project)).fetchone()[0]
 
-    if operational_type == "dispatchable_capacity_commit":
+    if operational_type == "gen_commit_cap":
         table = "results_project_dispatch_capacity_commit"
     elif operational_type == "gen_commit_bin":
         table = "results_project_dispatch_binary_commit"

@@ -89,7 +89,7 @@ class TestProjectInit(unittest.TestCase):
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
-            "dispatchable_capacity_commit", "hydro_curtailable",
+            "gen_commit_cap", "hydro_curtailable",
             "hydro_noncurtailable", "must_run",
             "storage_generic", "variable", "gen_commit_bin",
             "gen_commit_lin", "gen_simple",
@@ -263,7 +263,7 @@ class TestProjectInit(unittest.TestCase):
             1: {"df": pd.DataFrame(
                     columns=cols,
                     data=[["gas_ct", "gen_new_lin",
-                           "dispatchable_capacity_commit", 0.5]
+                           "gen_commit_cap", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "min_stable_level_error": [],

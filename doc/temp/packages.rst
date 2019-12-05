@@ -113,7 +113,7 @@ stor_spec
 gen_commit_bin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_capacity_commit
+gen_commit_cap
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 gen_commit_lin
