@@ -734,7 +734,7 @@ def add_module_specific_components(m, d):
 
         Note: The availability de-rate is already accounted for in
         Commit_Capacity_MW so we don't need to multiply the intercept
-        by the Availability_Derate like we do for always_on generators.
+        by the Availability_Derate like we do for gen_always_on generators.
         :param mod:
         :param g:
         :param tmp:

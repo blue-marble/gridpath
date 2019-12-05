@@ -107,7 +107,7 @@ stor_spec
     :members:
 .. automodule:: gridpath.project.operations.operational_types.__init__
     :members:
-.. automodule:: gridpath.project.operations.operational_types.always_on
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 gen_commit_bin
