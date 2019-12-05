@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **existing_gen_linear_economic_retirement** module describes the capacity
+The **gen_ret_lin** module describes the capacity
 of generators that are available to the optimization without having to incur an
 investment cost, but whose fixed O&M can be avoided if they are retired.
 """
@@ -195,10 +195,10 @@ def capacity_cost_rule(mod, g, p):
     :param g: the project
     :param p: the operational period
     :return: the total annualized fixed cost of
-        *existing_gen_linear_economic_retirement* project *g* in period *p*
+        *gen_ret_lin* project *g* in period *p*
 
     The capacity cost of projects of the
-    *existing_gen_linear_economic_retirement* capacity type is its net
+    *gen_ret_lin* capacity type is its net
     capacity (pre-specified capacity minus retired capacity) times the per-mw
     fixed cost for each of the project's operational periods. This method
     returns :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,
@@ -223,7 +223,7 @@ def load_module_specific_data(
     """
     def determine_existing_gen_linear_econ_ret_projects():
         """
-        Find the existing_gen_linear_economic_retirement capacity type projects
+        Find the gen_ret_lin capacity type projects
         :return:
         """
 
@@ -237,7 +237,7 @@ def load_module_specific_data(
             )
         for row in zip(dynamic_components["project"],
                        dynamic_components["capacity_type"]):
-            if row[1] == "existing_gen_linear_economic_retirement":
+            if row[1] == "gen_ret_lin":
                 ex_gen_lin_econ_ret_projects.append(row[0])
             else:
                 pass
@@ -302,7 +302,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_existing_gen_linear_economic_retirement"
+                           "capacity_gen_ret_lin"
                            ".csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
@@ -334,7 +334,7 @@ def summarize_module_specific_results(
     capacity_results_df = \
         pd.read_csv(os.path.join(
             scenario_directory, subproblem, stage, "results",
-            "capacity_existing_gen_linear_economic_retirement.csv"
+            "capacity_gen_ret_lin.csv"
         ))
 
     capacity_results_agg_df = \
@@ -375,7 +375,7 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    # Select generators of 'existing_gen_linear_economic_retirement' capacity
+    # Select generators of 'gen_ret_lin' capacity
     # type only
     ep_capacities = c.execute(
         """SELECT project, period, existing_capacity_mw,
@@ -399,7 +399,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 
-        'existing_gen_linear_economic_retirement';""".format(
+        'gen_ret_lin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,
@@ -504,7 +504,7 @@ def import_module_specific_results_into_database(
     results = []
     with open(os.path.join(
             results_directory,
-            "capacity_existing_gen_linear_economic_retirement.csv"), "r") as \
+            "capacity_gen_ret_lin.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
 

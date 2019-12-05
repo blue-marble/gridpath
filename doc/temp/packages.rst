@@ -84,7 +84,7 @@ storage and demand-side resources available to the model.
 .. automodule:: gridpath.project.capacity.capacity_types.common_methods
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-existing_gen_linear_economic_retirement
+gen_ret_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
 gen_spec

@@ -84,9 +84,9 @@ gridpath.project.capacity.capacity_types.new_build_generator
 .. automodule:: gridpath.project.capacity.capacity_types.new_build_generator
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
-gridpath.project.capacity.capacity_types.existing_gen_linear_economic_retirement
+gridpath.project.capacity.capacity_types.gen_ret_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.existing_gen_linear_economic_retirement
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.storage_specified_no_economic_retirement
