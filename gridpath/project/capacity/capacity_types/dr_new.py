@@ -218,7 +218,7 @@ def load_module_specific_data(
         for r in zip(dynamic["project"],
                      dynamic["capacity_type"],
                      dynamic["minimum_duration_hours"]):
-            if r[1] == "new_shiftable_load_supply_curve":
+            if r[1] == "dr_new":
                 projects.append(r[0])
                 max_fraction[r[0]] \
                     = float(r[2])
@@ -408,7 +408,7 @@ def write_module_specific_model_inputs(
                 raise ValueError("Only a single supply curve can be specified "
                                  "for project {} because no vintages have "
                                  "been implemented for "
-                                 "'new_shiftable_load_supply_curve' capacity "
+                                 "'dr_new' capacity "
                                  "type.".format(project))
             else:
 

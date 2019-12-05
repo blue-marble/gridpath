@@ -199,7 +199,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     new_build_types = {
         "gen_new_lin,",
         "stor_new_lin",
-        "new_shiftable_load_supply_curve"
+        "dr_new"
     }
     existing_build_types = {
         "gen_spec",
@@ -207,7 +207,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
         "gen_ret_lin"
     }
     load_shift_types = {
-        "new_shiftable_load_supply_curve"
+        "dr_new"
     }
 
     # Determine required subscenario_ids

@@ -94,7 +94,7 @@ gen_spec
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-new_shiftable_load_supply_curve
+dr_new
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
 stor_spec

@@ -71,7 +71,7 @@ class TestProjectInit(unittest.TestCase):
             "gen_spec",
             "gen_ret_lin",
             "gen_ret_bin",
-            "new_shiftable_load_supply_curve"
+            "dr_new"
         ])
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
