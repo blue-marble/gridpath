@@ -1,6 +1,6 @@
-project	load_zone	capacity_type	availability_type	variable_om_cost_per_mwh	operational_type	balancing_type_project	lf_reserves_up_ba	regulation_up_ba	lf_reserves_down_ba	regulation_down_ba	min_stable_level_fraction	startup_cost_per_mw	shutdown_cost_per_mw	fuel	unit_size_mw
-Nuclear	Zone1	gen_spec	exogenous	1	gen_must_run	day	.	.	.	.	.	.	.	Uranium	.
-Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	Zone1	Zone1	Zone1	Zone1	0.4	1	2	Gas	6
-Coal	Zone1	gen_spec	exogenous	1	gen_commit_cap	day	.	Zone1	.	Zone1	0.4	1	0	Coal	6
-Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	0	1	Gas	6
-Wind	Zone1	gen_spec	exogenous	0	gen_var	day	.	.	.	.	.	.	.	.	.
+project	load_zone	capacity_type	availability_type	variable_om_cost_per_mwh	operational_type	balancing_type_project	lf_reserves_up_ba	regulation_up_ba	lf_reserves_down_ba	regulation_down_ba	min_stable_level_fraction	shutdown_cost_per_mw	fuel	unit_size_mw
+Nuclear	Zone1	existing_gen_no_economic_retirement	exogenous	1	must_run	day	.	.	.	.	.	.	Uranium	.
+Gas_CCGT	Zone1	existing_gen_no_economic_retirement	exogenous	2	dispatchable_capacity_commit	day	Zone1	Zone1	Zone1	Zone1	0.4	2	Gas	6
+Coal	Zone1	existing_gen_no_economic_retirement	exogenous	1	dispatchable_capacity_commit	day	.	Zone1	.	Zone1	0.4	0	Coal	6
+Gas_CT	Zone1	existing_gen_no_economic_retirement	exogenous	2	dispatchable_capacity_commit	day	.	.	.	.	0.4	1	Gas	6
+Wind	Zone1	existing_gen_no_economic_retirement	exogenous	0	variable	day	.	.	.	.	.	.	.	.
