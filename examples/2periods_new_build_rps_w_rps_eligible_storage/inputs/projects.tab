@@ -7,4 +7,4 @@ Wind	Zone1	gen_spec	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.	RPSZone1	.	.
 Gas_CCGT_New	Zone1	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	Zone1	Zone1	Zone1	Zone1	1	0.4	1	2	Gas	.	.	.
 Gas_CT_New	Zone1	gen_new_lin	exogenous	2	dispatchable_capacity_commit	day	.	.	.	.	1	0.4	0	1	Gas	.	.	.
 Wind_New	Zone1	gen_new_lin	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.	RPSZone1	.	.
-Battery	Zone1	storage_specified_no_economic_retirement	exogenous	0	storage_generic	day	.	.	.	.	.	.	.	.	.	RPSZone1	0.9	0.9
+Battery	Zone1	stor_spec	exogenous	0	storage_generic	day	.	.	.	.	.	.	.	.	.	RPSZone1	0.9	0.9

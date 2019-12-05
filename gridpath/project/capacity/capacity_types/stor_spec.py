@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **storage_specified_no_economic_retirement** module describes the power
+The **stor_spec** module describes the power
 and energy capacity of storage projects that are available to the optimization
 without having to incur an investment cost. For example, this module can be
 applied to existing storage projects or to storage projects that we know
@@ -87,7 +87,7 @@ def capacity_rule(mod, g, p):
     :return: the power capacity of project *g* in period *p*
 
     The power capacity of projects of the
-    *storage_specified_no_economic_retirement* capacity type is a
+    *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
     return mod.storage_specified_power_capacity_mw[g, p]
@@ -101,7 +101,7 @@ def energy_capacity_rule(mod, g, p):
     :return: the energy capacity of project *g* in period *p*
 
     The energy capacity of projects of the
-    *storage_specified_no_economic_retirement* capacity type is a
+    *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
     return mod.storage_specified_energy_capacity_mwh[g, p]
@@ -113,9 +113,9 @@ def capacity_cost_rule(mod, g, p):
     :param g: the project
     :param p: the operational period
     :return: the total annualized fixed cost of
-        *storage_specified_no_economic_retirement* project *g* in period *p*
+        *stor_spec* project *g* in period *p*
 
-    The capacity cost of projects of the *storage_specified_no_economic_retirement*
+    The capacity cost of projects of the *stor_spec*
     capacity type is a pre-specified number equal to the power capacity
     times the per-mw fixed cost plus the energy capacity times the per-mwh
     fixed cost for each of the project's operational periods.
@@ -181,7 +181,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
         AND capacity_type = 
-        'storage_specified_no_economic_retirement';""".format(
+        'stor_spec';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,

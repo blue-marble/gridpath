@@ -21,7 +21,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.storage_specified_no_economic_retirement"
+    "project.capacity.capacity_types.stor_spec"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:

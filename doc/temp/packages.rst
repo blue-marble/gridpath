@@ -97,7 +97,7 @@ gen_spec
 new_shiftable_load_supply_curve
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-storage_specified_no_economic_retirement
+stor_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity
     :members:
