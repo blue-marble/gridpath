@@ -131,7 +131,7 @@ hydro_noncurtailable
 .. automodule:: gridpath.project.operations.operational_types.
 shiftable_load_generic
     :members:
-.. automodule:: gridpath.project.operations.operational_types.storage_generic
+.. automodule:: gridpath.project.operations.operational_types.stor
     :members:
 .. automodule:: gridpath.project.operations.operational_types.variable
     :members:

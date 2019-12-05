@@ -4,4 +4,4 @@ Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	Zone1	Zone1	Zone1	Zone1	0
 Coal	Zone1	gen_spec	exogenous	1	gen_commit_cap	day	.	Zone1	.	Zone1	0.4	1	0	Coal	6	.	.
 Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	0	1	Gas	6	.	.
 Wind	Zone1	gen_spec	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.	.	.
-Battery	Zone1	stor_spec	exogenous	0	storage_generic	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	0.8	0.8
+Battery	Zone1	stor_spec	exogenous	0	stor	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	0.8	0.8

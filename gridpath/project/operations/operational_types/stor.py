@@ -74,7 +74,7 @@ def add_module_specific_components(m, d):
         within=m.PROJECTS,
         initialize=
         generator_subset_init("operational_type",
-                              "storage_generic")
+                              "stor")
     )
 
     m.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS = \
@@ -483,7 +483,7 @@ def load_module_specific_data(mod, data_portal,
                        dynamic_components["operational_type"],
                        dynamic_components["charging_efficiency"],
                        dynamic_components["discharging_efficiency"]):
-            if row[1] == "storage_generic":
+            if row[1] == "stor":
                 storage_generic_charging_efficiency[row[0]] \
                     = float(row[2])
                 storage_generic_discharging_efficiency[row[0]] \
@@ -512,7 +512,7 @@ def export_module_specific_results(mod, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_storage_generic.csv"), "w", newline="") as f:
+                           "dispatch_stor.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project",
                          "horizon", "timepoint", "timepoint_weight",

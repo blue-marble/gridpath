@@ -152,9 +152,9 @@ gridpath.project.capacity.operational_types.variable
 .. automodule:: gridpath.project.operations.operational_types.variable
     :members: add_module_specific_components, power_provision_rule
 
-gridpath.project.capacity.operational_types.storage_generic
+gridpath.project.capacity.operational_types.stor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.storage_generic
+.. automodule:: gridpath.project.operations.operational_types.stor
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.shiftable_load_generic
