@@ -70,7 +70,7 @@ class TestProjectInit(unittest.TestCase):
             "storage_specified_no_economic_retirement",
             "gen_spec",
             "gen_ret_lin",
-            "existing_gen_binary_economic_retirement",
+            "gen_ret_bin",
             "new_shiftable_load_supply_curve"
         ])
         actual_required_capacity_modules = \
