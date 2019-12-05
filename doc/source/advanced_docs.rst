@@ -74,9 +74,9 @@ gridpath.project.capacity.capacity_types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.__init__
 
-gridpath.project.capacity.capacity_types.existing_gen_no_economic_retirement
+gridpath.project.capacity.capacity_types.gen_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.existing_gen_no_economic_retirement
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.new_build_generator

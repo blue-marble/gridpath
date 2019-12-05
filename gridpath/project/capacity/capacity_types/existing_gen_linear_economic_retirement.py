@@ -180,7 +180,7 @@ def capacity_rule(mod, g, p):
     :param p: the operational period
     :return: the capacity of project *g* in period *p*
 
-    The capacity of projects of the *existing_gen_no_economic_retirement*
+    The capacity of projects of the *gen_spec*
     capacity type is a pre-specified number for each of the project's
     operational periods minus any capacity that was retired. The expression
     returned is :math:`Existing\_Linear\_Econ\_Ret\_Capacity\_MW_{elr,

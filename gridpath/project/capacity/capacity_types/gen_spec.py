@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **existing_gen_no_economic_retirement** module describes the capacity of
+The **gen_spec** module describes the capacity of
 generators that are available to the optimization without having to incur an
 investment cost. For example, this module can be applied to existing
 generators or to generators that we know will be built in the future and
@@ -87,7 +87,7 @@ def capacity_cost_rule(mod, g, p):
     :param g: the project
     :param p: the operational period
     :return: the total annualized fixed cost of
-        *existing_gen_no_economic_retirement* project *g* in period *p*
+        *gen_spec* project *g* in period *p*
 
     The capacity cost of projects of the *existing_gen_no_econoimc_retirement*
     capacity type is a pre-specified number equal to the capacity times the
@@ -130,7 +130,7 @@ def load_module_specific_data(
 
         for row in zip(dynamic_components["project"],
                        dynamic_components["capacity_type"]):
-            if row[1] == "existing_gen_no_economic_retirement":
+            if row[1] == "gen_spec":
                 ex_gen_no_econ_ret_projects.append(row[0])
             else:
                 pass
@@ -195,7 +195,7 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    # Select generators of 'existing_gen_no_economic_retirement' capacity
+    # Select generators of 'gen_spec' capacity
     # type only
     ep_capacities = c.execute(
         """SELECT project, period, existing_capacity_mw,
@@ -218,7 +218,7 @@ def get_module_specific_inputs_from_database(
         WHERE project_existing_fixed_cost_scenario_id = {}) as fixed_om
         USING (project, period)
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'existing_gen_no_economic_retirement';""".format(
+        AND capacity_type = 'gen_spec';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_CAPACITY_SCENARIO_ID,
             subscenarios.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID,

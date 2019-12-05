@@ -202,7 +202,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
         "new_shiftable_load_supply_curve"
     }
     existing_build_types = {
-        "existing_gen_no_economic_retirement",
+        "gen_spec",
         "existing_gen_binary_economic_retirement",
         "existing_gen_linear_economic_retirement"
     }
