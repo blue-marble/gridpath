@@ -65,7 +65,7 @@ class TestProjectInit(unittest.TestCase):
         # if new types are added
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
-            "new_build_generator", "new_binary_build_generator",
+            "gen_new_lin", "new_binary_build_generator",
             "new_build_storage", "new_binary_build_storage",
             "storage_specified_no_economic_retirement",
             "gen_spec",
@@ -262,7 +262,7 @@ class TestProjectInit(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", "new_build_generator",
+                    data=[["gas_ct", "gen_new_lin",
                            "dispatchable_capacity_commit", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],

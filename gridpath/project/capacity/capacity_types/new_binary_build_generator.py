@@ -184,7 +184,7 @@ def capacity_cost_rule(mod, g, p):
     :param mod: the Pyomo abstract model
     :param g: the project
     :param p: the operational period
-    :return: the total annualized capacity cost of *new_build_generator*
+    :return: the total annualized capacity cost of *new_build_binary_generator*
         project *g* in period *p*
 
     The capacity cost for new-build generators in a given period is the

@@ -197,7 +197,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     req_cap_types = set(subscenarios.get_required_capacity_type_modules(c))
 
     new_build_types = {
-        "new_build_generator,",
+        "gen_new_lin,",
         "new_build_storage",
         "new_shiftable_load_supply_curve"
     }

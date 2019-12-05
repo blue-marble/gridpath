@@ -298,7 +298,7 @@ def process_results(db, c, subscenarios):
     # Update tables with carbon cap zone
     tables_to_update = [
         "results_project_capacity_all",
-        "results_project_capacity_new_build_generator",
+        "results_project_capacity_gen_new_lin",
         "results_project_capacity_new_binary_build_generator",
         "results_project_capacity_new_build_storage",
         "results_project_capacity_new_binary_build_storage",

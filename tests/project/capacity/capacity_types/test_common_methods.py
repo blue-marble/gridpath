@@ -8,7 +8,7 @@ import unittest
 
 
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.new_build_generator"
+    "project.capacity.capacity_types.gen_new_lin"
 # Import the module we'll test
 try:
     MODULE_BEING_TESTED = import_module("." + NAME_OF_MODULE_BEING_TESTED,
@@ -125,6 +125,7 @@ class TestCapacityTypeCommonMethods(unittest.TestCase):
             )
             self.assertListEqual(expected_project_vintages,
                                  actual_project_vintages)
+
 
 if __name__ == "__main__":
     unittest.main()

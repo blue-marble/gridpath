@@ -66,7 +66,7 @@ def add_model_components(m, d):
     *capacity_rule* method in order to formulate the expression. E.g. a
     project of the  *gen_spec* capacity_type will
     have a pre-specified capacity whereas a project of the
-    *new_build_generator* capacity_type will have a model variable (or sum of
+    *gen_new_lin* capacity_type will have a model variable (or sum of
     variables) as its *Capacity_MW*\ :sub:`r,p`\. This expression will then
     be used by other modules.
 

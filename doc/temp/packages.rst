@@ -89,7 +89,7 @@ gen_ret_lin
 .. automodule:: gridpath.project.capacity.capacity_types.
 gen_spec
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.new_build_generator
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.new_build_storage
     :members:

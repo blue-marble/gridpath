@@ -337,21 +337,21 @@ class TestAuxiliary(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["gas_ct", "new_build_generator"]
+                data=[["gas_ct", "gen_new_lin"]
                       ]),
                 "column": "capacity_type",
-                "valids": ["new_build_generator"],
+                "valids": ["gen_new_lin"],
                 "result": []
                 },
             # Make sure invalid column entry is flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["gas_ct1", "new_build_generator"],
+                data=[["gas_ct1", "gen_new_lin"],
                       ["gas_ct2", "invalid_cap_type"],
                       ["storage_plant", "new_build_storage"]
                       ]),
                 "column": "capacity_type",
-                "valids": ["new_build_generator", "new_build_storage"],
+                "valids": ["gen_new_lin", "new_build_storage"],
                 "result": ["Project(s) 'gas_ct2': Invalid entry for capacity_type"]
                 }
         }

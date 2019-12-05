@@ -2221,8 +2221,8 @@ energy_capacity_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_generator;
-CREATE TABLE results_project_capacity_new_build_generator (
+DROP TABLE IF EXISTS results_project_capacity_gen_new_lin;
+CREATE TABLE results_project_capacity_gen_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
