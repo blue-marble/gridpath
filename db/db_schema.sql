@@ -2268,8 +2268,8 @@ new_build_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_binary_build_storage;
-CREATE TABLE results_project_capacity_new_binary_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_bin;
+CREATE TABLE results_project_capacity_stor_new_bin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,

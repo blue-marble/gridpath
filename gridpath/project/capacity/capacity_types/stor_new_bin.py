@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.new_binary_build_storage**
+The **gridpath.project.capacity.capacity_types.stor_new_bin**
 module describes the capacity of storage projects that can be built by the
 optimization at a cost. The user provides the build capacity and energy, and
 the optimization determines whether to build it or not (binary decision).
@@ -227,11 +227,11 @@ def capacity_cost_rule(mod, g, p):
     :param mod: the Pyomo abstract model
     :param g: the project
     :param p: the operational period
-    :return: the total annualized capacity cost of *new_binary_build_storage*
+    :return: the total annualized capacity cost of *stor_new_bin*
         project *g* in period *p*
 
     This function retuns the total power and energy capacity cost for
-    new_binary_build_storage  projects in each period (sum over all vintages
+    stor_new_bin  projects in each period (sum over all vintages
     operational in current period).
     """
 
@@ -295,7 +295,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_new_binary_build_storage.csv"), "w", newline="") as f:
+                           "capacity_stor_new_bin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_binary", "new_build_mw", "new_build_mwh"])
@@ -351,7 +351,7 @@ def summarize_module_specific_results(
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
-                     "results", "capacity_new_binary_build_storage.csv")
+                     "results", "capacity_stor_new_bin.csv")
     )
 
     capacity_results_agg_df = capacity_results_df.groupby(
@@ -415,7 +415,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_storage'
+        AND capacity_type = 'stor_new_bin'
         ;""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
@@ -435,7 +435,7 @@ def get_module_specific_inputs_from_database(
         USING (project)
 
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_storage';""".format(
+        AND capacity_type = 'stor_new_bin';""".format(
             subscenarios.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -479,7 +479,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         WHERE temporal_scenario_id = {}) as relevant_periods
 
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_storage';""".format(
+        AND capacity_type = 'stor_new_bin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -684,14 +684,14 @@ def import_module_specific_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_project_capacity_new_binary_build_storage",
+        table="results_project_capacity_stor_new_bin",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "capacity_new_binary_build_storage.csv"), "r") as \
+                           "capacity_stor_new_bin.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
 
@@ -713,7 +713,7 @@ def import_module_specific_results_into_database(
 
     insert_temp_sql = """
         INSERT INTO 
-        temp_results_project_capacity_new_binary_build_storage{}
+        temp_results_project_capacity_stor_new_bin{}
         (scenario_id, project, period, subproblem_id, stage_id,
         technology, load_zone, new_build_binary, new_build_mw, new_build_mwh)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
@@ -721,13 +721,13 @@ def import_module_specific_results_into_database(
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_capacity_new_binary_build_storage
+        INSERT INTO results_project_capacity_stor_new_bin
         (scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_binary, new_build_mw, new_build_mwh)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_binary, new_build_mw, new_build_mwh
-        FROM temp_results_project_capacity_new_binary_build_storage{}
+        FROM temp_results_project_capacity_stor_new_bin{}
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)

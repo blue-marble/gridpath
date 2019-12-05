@@ -21,7 +21,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.new_binary_build_storage"
+    "project.capacity.capacity_types.stor_new_bin"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -83,12 +83,12 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: NEW_BINARY_BUILD_STORAGE_PROJECTS
-        expected_new_binary_build_storage_project_set = ["Battery_Binary"]
-        actual_new_binary_build_storage_project_set = sorted(
+        expected_stor_new_bin_project_set = ["Battery_Binary"]
+        actual_stor_new_bin_project_set = sorted(
             [prj for prj in instance.NEW_BINARY_BUILD_STORAGE_PROJECTS]
         )
-        self.assertListEqual(expected_new_binary_build_storage_project_set,
-                             actual_new_binary_build_storage_project_set)
+        self.assertListEqual(expected_stor_new_bin_project_set,
+                             actual_stor_new_bin_project_set)
 
         # Param: binary_build_size_storage_mw
         expected_binary_build_size_storage_mw = OrderedDict(
