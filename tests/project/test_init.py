@@ -65,7 +65,7 @@ class TestProjectInit(unittest.TestCase):
         # if new types are added
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
-            "gen_new_lin", "new_binary_build_generator",
+            "gen_new_lin", "gen_new_bin",
             "new_build_storage", "new_binary_build_storage",
             "storage_specified_no_economic_retirement",
             "gen_spec",

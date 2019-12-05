@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.new_binary_build_generator**
+The **gridpath.project.capacity.capacity_types.gen_new_bin**
 module describes the capacity of generators that can be built by the
 optimization at a cost. Once built, these generators remain available for
 the duration of their pre-specified lifetime. The decision to build is binary,
@@ -244,7 +244,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_new_binary_build_generator.csv"),
+                           "capacity_gen_new_bin.csv"),
               "w", newline="") as f:
 
         writer = csv.writer(f)
@@ -300,7 +300,7 @@ def summarize_module_specific_results(
     # Get the results CSV as dataframe
     capacity_results_df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
-                     "results", "capacity_new_binary_build_generator.csv")
+                     "results", "capacity_gen_new_bin.csv")
     )
 
     capacity_results_agg_df = \
@@ -362,7 +362,7 @@ def get_module_specific_inputs_from_database(
         USING (project, period)
         
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_generator';""".format(
+        AND capacity_type = 'gen_new_bin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_NEW_COST_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
@@ -381,7 +381,7 @@ def get_module_specific_inputs_from_database(
         USING (project)
         
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_generator';""".format(
+        AND capacity_type = 'gen_new_bin';""".format(
             subscenarios.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -418,7 +418,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         WHERE temporal_scenario_id = {}) as relevant_periods
 
         WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_binary_build_generator';""".format(
+        AND capacity_type = 'gen_new_bin';""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
@@ -619,14 +619,14 @@ def import_module_specific_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_project_capacity_new_binary_build_generator",
+        table="results_project_capacity_gen_new_bin",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "capacity_new_binary_build_generator.csv"), "r") as \
+                           "capacity_gen_new_bin.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
 
@@ -646,7 +646,7 @@ def import_module_specific_results_into_database(
 
     insert_temp_sql = """
         INSERT INTO 
-        temp_results_project_capacity_new_binary_build_generator{}
+        temp_results_project_capacity_gen_new_bin{}
         (scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_binary, new_build_mw)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
@@ -656,13 +656,13 @@ def import_module_specific_results_into_database(
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_capacity_new_binary_build_generator
+        INSERT INTO results_project_capacity_gen_new_bin
         (scenario_id, project, period, subproblem_id, stage_id,
         technology, load_zone, new_build_binary, new_build_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_binary, new_build_mw
-        FROM temp_results_project_capacity_new_binary_build_generator{}
+        FROM temp_results_project_capacity_gen_new_bin{}
         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
         """.format(scenario_id)
 
