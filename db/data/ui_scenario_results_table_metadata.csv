@@ -3,7 +3,7 @@ results_project_capacity_all,1,Project Capacity All
 results_project_capacity_binary_economic_retirement,1,Project Retirements: Binary Economic
 results_project_capacity_linear_economic_retirement,1,Project Retirements: Linear Economic
 results_project_capacity_gen_new_lin,1,Generator New Capacity
-results_project_capacity_new_build_storage,1,Generator New Storage Capacity
+results_project_capacity_stor_new_lin,1,Generator New Storage Capacity
 results_project_carbon_emissions,1,Project Carbon Emissions
 results_project_costs_capacity,1,Project Capacity Costs
 results_project_costs_operations_fuel,1,Project Fuel Costs

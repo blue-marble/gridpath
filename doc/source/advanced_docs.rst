@@ -94,9 +94,9 @@ gridpath.project.capacity.capacity_types.stor_spec
 .. automodule:: gridpath.project.capacity.capacity_types.stor_spec
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
-gridpath.project.capacity.capacity_types.new_build_storage
+gridpath.project.capacity.capacity_types.stor_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.new_build_storage
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.new_shiftable_load_supply_curve

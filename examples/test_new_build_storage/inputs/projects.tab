@@ -4,4 +4,4 @@ Gas_CCGT	Zone1	gen_spec	exogenous	2	dispatchable_capacity_commit	day	Zone1	Zone1
 Coal	Zone1	gen_spec	exogenous	1	dispatchable_capacity_commit	day	.	Zone1	.	Zone1	0.4	1	0	Coal	6	.	.	Coal	.
 Gas_CT	Zone1	gen_spec	exogenous	2	dispatchable_capacity_commit	day	.	.	.	.	0.4	0	1	Gas	6	.	.	Gas	.
 Wind	Zone1	gen_spec	exogenous	0	variable	day	.	.	.	.	.	.	.	.	.	.	.	Wind	.
-Battery	Zone1	new_build_storage	exogenous	0	storage_generic	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	0.8	0.8	Storage	1
+Battery	Zone1	stor_new_lin	exogenous	0	storage_generic	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.	0.8	0.8	Storage	1

@@ -348,10 +348,10 @@ class TestAuxiliary(unittest.TestCase):
                 columns=cols,
                 data=[["gas_ct1", "gen_new_lin"],
                       ["gas_ct2", "invalid_cap_type"],
-                      ["storage_plant", "new_build_storage"]
+                      ["storage_plant", "stor_new_lin"]
                       ]),
                 "column": "capacity_type",
-                "valids": ["gen_new_lin", "new_build_storage"],
+                "valids": ["gen_new_lin", "stor_new_lin"],
                 "result": ["Project(s) 'gas_ct2': Invalid entry for capacity_type"]
                 }
         }

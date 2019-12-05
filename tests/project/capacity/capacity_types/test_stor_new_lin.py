@@ -21,7 +21,7 @@ PREREQUISITE_MODULE_NAMES = [
     "temporal.operations.timepoints", "temporal.operations.horizons",
     "temporal.investment.periods", "geography.load_zones", "project"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.capacity.capacity_types.new_build_storage"
+    "project.capacity.capacity_types.stor_new_lin"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -83,12 +83,12 @@ class TestNewBuildStorage(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: NEW_BUILD_STORAGE_PROJECTS
-        expected_new_build_storage_project_set = ["Battery"]
-        actual_new_build_storage_project_set = sorted(
+        expected_stor_new_lin_project_set = ["Battery"]
+        actual_stor_new_lin_project_set = sorted(
             [prj for prj in instance.NEW_BUILD_STORAGE_PROJECTS]
         )
-        self.assertListEqual(expected_new_build_storage_project_set,
-                             actual_new_build_storage_project_set)
+        self.assertListEqual(expected_stor_new_lin_project_set,
+                             actual_stor_new_lin_project_set)
 
         # Param: minimum_duration_hours
         expected_min_duration = OrderedDict(
@@ -116,14 +116,14 @@ class TestNewBuildStorage(unittest.TestCase):
         self.assertListEqual(expected_storage_vintage_set,
                              actual_storage_vintage_set)
 
-        # Params: lifetime_yrs_by_new_build_storage_vintage
+        # Params: lifetime_yrs_by_stor_new_lin_vintage
         expected_lifetime = OrderedDict(
             sorted({("Battery", 2020): 10, ("Battery", 2030): 10}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.lifetime_yrs_by_new_build_storage_vintage[
+                    instance.lifetime_yrs_by_stor_new_lin_vintage[
                         prj, vintage]
                  for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
                  }.items()
@@ -131,14 +131,14 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
-        # Params: new_build_storage_annualized_real_cost_per_mw_yr
+        # Params: stor_new_lin_annualized_real_cost_per_mw_yr
         expected_mw_yr_cost = OrderedDict(
             sorted({("Battery", 2020): 1, ("Battery", 2030): 1}.items())
         )
         actual_mw_yr_cost = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.new_build_storage_annualized_real_cost_per_mw_yr[
+                    instance.stor_new_lin_annualized_real_cost_per_mw_yr[
                         prj, vintage]
                  for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
                  }.items()
@@ -146,14 +146,14 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         self.assertDictEqual(expected_mw_yr_cost, actual_mw_yr_cost)
 
-        # Params: new_build_storage_annualized_real_cost_per_mw_yr
+        # Params: stor_new_lin_annualized_real_cost_per_mw_yr
         expected_mwh_yr_cost = OrderedDict(
             sorted({("Battery", 2020): 1, ("Battery", 2030): 1}.items())
         )
         actual_mwh_yr_cost = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.new_build_storage_annualized_real_cost_per_mwh_yr[
+                    instance.stor_new_lin_annualized_real_cost_per_mwh_yr[
                         prj, vintage]
                  for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
                  }.items()

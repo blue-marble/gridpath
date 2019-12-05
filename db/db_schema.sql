@@ -2252,8 +2252,8 @@ new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_storage;
-CREATE TABLE results_project_capacity_new_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_lin;
+CREATE TABLE results_project_capacity_stor_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,

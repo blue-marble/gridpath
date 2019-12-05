@@ -2,7 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.new_build_storage**
+The **gridpath.project.capacity.capacity_types.stor_new_lin**
 module describes the capacity of storage projects that can be built by the
 optimization at a cost. The optimization determines both the power
 capacity of the storage project and its energy capacity (i.e. capacity and
@@ -42,19 +42,19 @@ def add_module_specific_components(m, d):
     built in the optimization: the *NEW_BUILD_STORAGE_VINTAGES* set,
     which we will also designate with :math:`NS\_V` and index with
     :math:`ns, v` where :math:`ns\in R` and :math:`v\in P`. For each :math:`ns,
-    v`, we load the *lifetime_yrs_by_new_build_storage vintage* parameter,
+    v`, we load the *lifetime_yrs_by_stor_new_lin vintage* parameter,
     which is the project's lifetime, i.e. how long project capacity of a
     particular vintage remains operational. We will then use this parameter to
     determine the operational periods :math:`p` for each :math:`ns, v`. For
     each :math:`ns, v`, we also declare the per-unit cost to build new power
-    and energy capacity: the *new_build_storage_annualized_real_cost_per_mw_yr*
-    and *new_build_storage_annualized_real_cost_per_mwh_yr* parameters.
+    and energy capacity: the *stor_new_lin_annualized_real_cost_per_mw_yr*
+    and *stor_new_lin_annualized_real_cost_per_mwh_yr* parameters.
 
     .. note:: The cost inputs to the model are annualized costs per unit
         capacity. The annualized costs are incurred in each period of the study
         (and multiplied by the number of years the period represents) for
         the duration of the project's lifetime. It is up to the user to
-        ensure that the *lifetime_yrs_by_new_build_storage* input to the model
+        ensure that the *lifetime_yrs_by_stor_new_lin* input to the model
         is consistent with the exogenous cost annualization.
 
     For each project vintage, the user can optionally specify a minimum
@@ -78,7 +78,7 @@ def add_module_specific_components(m, d):
     new-build storage project :math:`ns`.
 
     We use the *NEW_BUILD_STORAGE_VINTAGES* set and the
-    *lifetime_yrs_by_new_build_storage_vintage* parameter to determine the
+    *lifetime_yrs_by_stor_new_lin_vintage* parameter to determine the
     operational periods for capacity of each possible vintage: the
     *OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE* set indexed by
     :math:`ns,v`.
@@ -143,11 +143,11 @@ def add_module_specific_components(m, d):
         Param(m.NEW_BUILD_STORAGE_PROJECTS, within=NonNegativeReals)
     m.NEW_BUILD_STORAGE_VINTAGES = \
         Set(dimen=2, within=m.NEW_BUILD_STORAGE_PROJECTS*m.PERIODS)
-    m.lifetime_yrs_by_new_build_storage_vintage = \
+    m.lifetime_yrs_by_stor_new_lin_vintage = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.new_build_storage_annualized_real_cost_per_mw_yr = \
+    m.stor_new_lin_annualized_real_cost_per_mw_yr = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.new_build_storage_annualized_real_cost_per_mwh_yr = \
+    m.stor_new_lin_annualized_real_cost_per_mwh_yr = \
         Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
 
     # Min and max cumulative MW and MWh are optional params that will be
@@ -181,7 +181,7 @@ def add_module_specific_components(m, d):
             initialize=operational_periods_by_storage_vintage)
 
     m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS = \
-        Set(dimen=2, initialize=new_build_storage_operational_periods)
+        Set(dimen=2, initialize=stor_new_lin_operational_periods)
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
@@ -196,9 +196,9 @@ def add_module_specific_components(m, d):
 
     m.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD = \
         Set(m.PERIODS, dimen=2,
-            initialize=new_build_storage_vintages_operational_in_period)
+            initialize=stor_new_lin_vintages_operational_in_period)
 
-    def new_build_storage_power_capacity_rule(mod, g, p):
+    def stor_new_lin_power_capacity_rule(mod, g, p):
         """
         Sum all builds of vintages operational in the current period
         :param mod:
@@ -212,9 +212,9 @@ def add_module_specific_components(m, d):
 
     m.New_Build_Storage_Power_Capacity_MW = \
         Expression(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
-                   rule=new_build_storage_power_capacity_rule)
+                   rule=stor_new_lin_power_capacity_rule)
 
-    def new_build_storage_energy_capacity_rule(mod, g, p):
+    def stor_new_lin_energy_capacity_rule(mod, g, p):
         """
         Sum all builds of vintages operational in the current period
         :param mod:
@@ -228,7 +228,7 @@ def add_module_specific_components(m, d):
 
     m.New_Build_Storage_Energy_Capacity_MWh = \
         Expression(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
-                   rule=new_build_storage_energy_capacity_rule)
+                   rule=stor_new_lin_energy_capacity_rule)
 
     def minimum_duration_constraint_rule(mod, g, p):
         """
@@ -343,17 +343,17 @@ def capacity_cost_rule(mod, g, p):
     :param mod: the Pyomo abstract model
     :param g: the project
     :param p: the operational period
-    :return: the total annualized capacity cost of *new_build_storage*
+    :return: the total annualized capacity cost of *stor_new_lin*
         project *g* in period *p*
 
     This function retuns the total power and energy capacity cost for
-    new_build_storage  projects in each period (sum over all vintages
+    stor_new_lin  projects in each period (sum over all vintages
     operational in current period).
     """
     return sum((mod.Build_Storage_Power_MW[g, v]
-               * mod.new_build_storage_annualized_real_cost_per_mw_yr[g, v]
+               * mod.stor_new_lin_annualized_real_cost_per_mw_yr[g, v]
                + mod.Build_Storage_Energy_MWh[g, v]
-               * mod.new_build_storage_annualized_real_cost_per_mwh_yr[g, v])
+               * mod.stor_new_lin_annualized_real_cost_per_mwh_yr[g, v])
                for (gen, v)
                in mod.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
                if gen == g)
@@ -374,7 +374,7 @@ def load_module_specific_data(m, data_portal,
         """
         :return:
         """
-        new_build_storage_projects = list()
+        stor_new_lin_projects = list()
         storage_min_duration = dict()
 
         dynamic = pd.read_csv(
@@ -386,14 +386,14 @@ def load_module_specific_data(m, data_portal,
         for r in zip(dynamic["project"],
                      dynamic["capacity_type"],
                      dynamic["minimum_duration_hours"]):
-            if r[1] == "new_build_storage":
-                new_build_storage_projects.append(r[0])
+            if r[1] == "stor_new_lin":
+                stor_new_lin_projects.append(r[0])
                 storage_min_duration[r[0]] \
                     = float(r[2])
             else:
                 pass
 
-        return new_build_storage_projects, storage_min_duration
+        return stor_new_lin_projects, storage_min_duration
 
     data_portal.data()["NEW_BUILD_STORAGE_PROJECTS"] = {
         None: determine_minimum_duration()[0]
@@ -401,7 +401,7 @@ def load_module_specific_data(m, data_portal,
     data_portal.data()["minimum_duration_hours"] = \
         determine_minimum_duration()[1]
 
-    # TODO: throw an error when a generator of the 'new_build_storage' capacity
+    # TODO: throw an error when a generator of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
     data_portal.load(filename=
                      os.path.join(scenario_directory, subproblem, stage,
@@ -412,9 +412,9 @@ def load_module_specific_data(m, data_portal,
                      select=("project", "vintage",
                              "lifetime_yrs", "annualized_real_cost_per_mw_yr",
                              "annualized_real_cost_per_mwh_yr"),
-                     param=(m.lifetime_yrs_by_new_build_storage_vintage,
-                            m.new_build_storage_annualized_real_cost_per_mw_yr,
-                            m.new_build_storage_annualized_real_cost_per_mwh_yr
+                     param=(m.lifetime_yrs_by_stor_new_lin_vintage,
+                            m.stor_new_lin_annualized_real_cost_per_mw_yr,
+                            m.stor_new_lin_annualized_real_cost_per_mwh_yr
                             )
                      )
 
@@ -554,7 +554,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "capacity_new_build_storage.csv"), "w", newline="") as f:
+                           "capacity_stor_new_lin.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_mw", "new_build_mwh"])
@@ -572,10 +572,10 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
 def operational_periods_by_storage_vintage(mod, prj, v):
     return operational_periods_by_project_vintage(
         periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.lifetime_yrs_by_new_build_storage_vintage[prj, v])
+        lifetime=mod.lifetime_yrs_by_stor_new_lin_vintage[prj, v])
 
 
-def new_build_storage_operational_periods(mod):
+def stor_new_lin_operational_periods(mod):
     return project_operational_periods(
         project_vintages_set=mod.NEW_BUILD_STORAGE_VINTAGES,
         operational_periods_by_project_vintage_set=
@@ -583,7 +583,7 @@ def new_build_storage_operational_periods(mod):
     )
 
 
-def new_build_storage_vintages_operational_in_period(mod, p):
+def stor_new_lin_vintages_operational_in_period(mod, p):
     return project_vintages_operational_in_period(
         project_vintage_set=mod.NEW_BUILD_STORAGE_VINTAGES,
         operational_periods_by_project_vintage_set=
@@ -607,7 +607,7 @@ def summarize_module_specific_results(
     # Get the results CSV as dataframe
     capacity_results_df = \
         pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                 "results", "capacity_new_build_storage.csv")
+                                 "results", "capacity_stor_new_lin.csv")
                     )
 
     capacity_results_agg_df = \
@@ -687,7 +687,7 @@ def get_module_specific_inputs_from_database(
         )
         + get_potentials[1] +
         """WHERE project_portfolio_scenario_id = {}
-        AND capacity_type = 'new_build_storage';""".format(
+        AND capacity_type = 'stor_new_lin';""".format(
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
         )
     )
@@ -770,14 +770,14 @@ def import_module_specific_results_into_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="results_project_capacity_new_build_storage",
+        table="results_project_capacity_stor_new_lin",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "capacity_new_build_storage.csv"), "r") as \
+                           "capacity_stor_new_lin.csv"), "r") as \
             capacity_file:
         reader = csv.reader(capacity_file)
 
@@ -797,7 +797,7 @@ def import_module_specific_results_into_database(
 
     insert_temp_sql = """
         INSERT INTO 
-        temp_results_project_capacity_new_build_storage{}
+        temp_results_project_capacity_stor_new_lin{}
         (scenario_id, project, period, subproblem_id, stage_id,
         technology, load_zone, new_build_mw, new_build_mwh)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
@@ -805,13 +805,13 @@ def import_module_specific_results_into_database(
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_capacity_new_build_storage
+        INSERT INTO results_project_capacity_stor_new_lin
         (scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_mw, new_build_mwh)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         technology, load_zone, new_build_mw, new_build_mwh
-        FROM temp_results_project_capacity_new_build_storage{}
+        FROM temp_results_project_capacity_stor_new_lin{}
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
