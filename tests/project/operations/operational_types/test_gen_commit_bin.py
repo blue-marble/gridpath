@@ -118,15 +118,6 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
-        # Param: dispbincommit_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {"Disp_Binary_Commit": 0.6}
-        actual_startup_plus_ramp_up_rate = {
-            prj: instance.dispbincommit_startup_plus_ramp_up_rate[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
-        }
-        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
-                             actual_startup_plus_ramp_up_rate)
-
         # Param: dispbincommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Binary_Commit": 0.6}
         actual_shutdown_plus_ramp_down_rate = {

@@ -19,7 +19,9 @@ TEST_DATA_DIRECTORY = \
 PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
      "temporal.investment.periods", "geography.load_zones", "project",
-     "project.capacity.capacity", "project.operations.power"]
+     "project.fuels", "project.capacity.capacity",
+     "project.operations", "project.operations.power"
+]
 NAME_OF_MODULE_BEING_TESTED = "system.load_balance.aggregate_project_power"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
@@ -65,6 +67,7 @@ class TestOperations(unittest.TestCase):
                                      subproblem="",
                                      stage=""
                                      )
+
 
 if __name__ == "__main__":
     unittest.main()

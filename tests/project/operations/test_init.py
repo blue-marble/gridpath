@@ -106,62 +106,69 @@ class TestOperationsInit(unittest.TestCase):
         instance = m.create_instance(data)
 
         # Set: STARTUP_COST_PROJECTS
-        expected_startup_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
-            "Gas_CCGT_z2", "Coal_z2",
+        expected_startup_cost_projects = sorted([
+            "Gas_CCGT", "Coal", "Gas_CT",
+            "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CT_New",
+            "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
             "Disp_Binary_Commit", "Disp_Cont_Commit", "Clunky_Old_Gen",
             "Clunky_Old_Gen2"
         ])
-        actual_startup_projects = sorted([
+        actual_startup_cost_projects = sorted([
                                              prj for prj in
                                              instance.STARTUP_COST_PROJECTS
                                              ])
-        self.assertListEqual(expected_startup_projects,
-                             actual_startup_projects)
+        self.assertListEqual(expected_startup_cost_projects,
+                             actual_startup_cost_projects)
 
         # Param: startup_cost_per_mw
         expected_startup_costs = OrderedDict(sorted({
-            "Gas_CCGT": 1,
-            "Coal": 1,
-            "Gas_CCGT_New": 1,
-            "Gas_CCGT_New_Binary": 1,
-            "Gas_CCGT_z2": 1,
-            "Coal_z2": 1,
-            "Disp_Binary_Commit": 1,
-            "Disp_Cont_Commit": 1,
-            "Clunky_Old_Gen": 1,
-            "Clunky_Old_Gen2": 1
+            ("Gas_CCGT", 1): 1,
+            ("Coal", 1): 1,
+            ("Gas_CT", 1): 0,
+            ("Gas_CCGT_New", 1): 1,
+            ("Gas_CCGT_New_Binary", 1): 1,
+            ("Gas_CT_New", 1): 0,
+            ("Gas_CCGT_z2", 1): 1,
+            ("Coal_z2", 1): 1,
+            ("Gas_CT_z2", 1): 0,
+            ("Disp_Binary_Commit", 1): 1,
+            ("Disp_Cont_Commit", 1): 1,
+            ("Clunky_Old_Gen", 1): 1,
+            ("Clunky_Old_Gen2", 1): 1
                                                     }.items()
                                                     )
                                              )
         actual_startup_costs = OrderedDict(sorted(
-            {prj: instance.startup_cost_per_mw[prj]
-             for prj in instance.STARTUP_COST_PROJECTS}.items()
+            {(prj, s): instance.startup_cost_per_mw[(prj, s)]
+             for (prj, s) in instance.STARTUP_COST_PROJECTS_TYPES}.items()
                                                   )
                                            )
         self.assertDictEqual(expected_startup_costs,
                              actual_startup_costs)
 
         # Set: SHUTDOWN_COST_PROJECTS
-        expected_shutdown_projects = sorted([
-            "Gas_CCGT", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
-            "Gas_CT_New", "Gas_CCGT_z2",
-            "Gas_CT_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
+        expected_shutdown_cost_projects = sorted([
+            "Gas_CCGT", "Coal", "Gas_CT",
+            "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CT_New",
+            "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
+            "Disp_Binary_Commit", "Disp_Cont_Commit",
             "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
-        actual_shutdown_projects = sorted([
+        actual_shutdown_cost_projects = sorted([
             prj for prj in instance.SHUTDOWN_COST_PROJECTS])
-        self.assertListEqual(expected_shutdown_projects,
-                             actual_shutdown_projects)
+        self.assertListEqual(expected_shutdown_cost_projects,
+                             actual_shutdown_cost_projects)
 
         # Param: shutdown_cost_per_mw
         expected_shutdown_costs = OrderedDict(sorted({
             "Gas_CCGT": 2,
+            "Coal": 0,
             "Gas_CT": 1,
             "Gas_CCGT_New": 2,
             "Gas_CCGT_New_Binary": 2,
             "Gas_CT_New": 1,
             "Gas_CCGT_z2": 2,
+            "Coal_z2": 0,
             "Gas_CT_z2": 1,
             "Disp_Binary_Commit": 1,
             "Disp_Cont_Commit": 1,
@@ -336,7 +343,7 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps_by_startup_project = sorted(
-            get_project_operational_timepoints(expected_startup_projects)
+            get_project_operational_timepoints(expected_startup_cost_projects)
         )
         actual_tmps_by_startup_project = sorted([
             (prj, tmp) for (prj, tmp) in
@@ -347,7 +354,7 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS
         expected_tmps_by_shutdown_project = sorted(
-            get_project_operational_timepoints(expected_shutdown_projects)
+            get_project_operational_timepoints(expected_shutdown_cost_projects)
         )
         actual_tmps_by_shutdown_project = sorted([
             (prj, tmp) for (prj, tmp) in
@@ -358,10 +365,11 @@ class TestOperationsInit(unittest.TestCase):
 
         # Set: STARTUP_FUEL_PROJECTS
         expected_startup_fuel_projects = sorted([
-            "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
-            "Gas_CT_New",
-            "Gas_CCGT_z2", "Coal_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
-            "Disp_No_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
+            "Gas_CCGT", "Coal", "Gas_CT",
+            "Gas_CCGT_New", "Gas_CCGT_New_Binary", "Gas_CT_New",
+            "Gas_CCGT_z2", "Coal_z2",
+            "Disp_Binary_Commit", "Disp_Cont_Commit",
+            "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
         actual_startup_fuel_projects = sorted([
             prj for prj in instance.STARTUP_FUEL_PROJECTS
@@ -371,18 +379,24 @@ class TestOperationsInit(unittest.TestCase):
 
         # Param: startup_fuel_mmbtu_per_mw
         expected_startup_fuel_mmbtu_per_mw = OrderedDict(sorted({
-            "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 0.5, "Gas_CCGT_New": 6,
-            "Gas_CCGT_New_Binary": 6,
-            "Gas_CT_New": 0.5, "Gas_CCGT_z2": 6, "Coal_z2": 6,
-            "Disp_Binary_Commit": 10, "Disp_Cont_Commit": 10,
-            "Disp_No_Commit": 10,
-            "Clunky_Old_Gen": 10, "Clunky_Old_Gen2": 10
+            ("Gas_CCGT", 1): 6,
+            ("Coal", 1): 6,
+            ("Gas_CT", 1): 0.5,
+            ("Gas_CCGT_New", 1): 6,
+            ("Gas_CCGT_New_Binary", 1): 6,
+            ("Gas_CT_New", 1): 0.5,
+            ("Gas_CCGT_z2", 1): 6,
+            ("Coal_z2", 1): 6,
+            ("Disp_Binary_Commit", 1): 10,
+            ("Disp_Cont_Commit", 1): 10,
+            ("Clunky_Old_Gen", 1): 10,
+            ("Clunky_Old_Gen2", 1): 10
             }.items()
                 )
             )
         actual_startup_fuel_mmbtu_per_mw = OrderedDict(sorted(
-            {prj: instance.startup_fuel_mmbtu_per_mw[prj]
-             for prj in instance.STARTUP_FUEL_PROJECTS}.items()
+            {(prj, s): instance.startup_fuel_mmbtu_per_mw[prj, s]
+             for (prj, s) in instance.STARTUP_FUEL_PROJECTS_TYPES}.items()
             )
         )
         self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
@@ -493,6 +507,15 @@ class TestOperationsInit(unittest.TestCase):
                 hr_df=test_cases[test_case]["hr_df"]
             )
             self.assertListEqual(expected_list, actual_list)
+
+        # # Param: dispbincommit_startup_plus_ramp_up_rate
+        # expected_startup_plus_ramp_up_rate = {"Disp_Binary_Commit": 0.6}
+        # actual_startup_plus_ramp_up_rate = {
+        #     prj: instance.dispbincommit_startup_plus_ramp_up_rate[prj]
+        #     for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+        # }
+        # self.assertDictEqual(expected_startup_plus_ramp_up_rate,
+        #                      actual_startup_plus_ramp_up_rate)
 
 
 if __name__ == "__main__":
