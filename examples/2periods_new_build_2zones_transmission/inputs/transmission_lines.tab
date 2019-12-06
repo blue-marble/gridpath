@@ -1,2 +1,2 @@
 TRANSMISSION_LINES	tx_capacity_type	tx_operational_type	load_zone_from	load_zone_to
-Tx1	tx_spec	simple_transmission	Zone1	Zone2
+Tx1	tx_spec	tx_simple	Zone1	Zone2

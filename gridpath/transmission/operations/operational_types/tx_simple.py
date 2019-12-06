@@ -24,7 +24,7 @@ def add_module_specific_components(m, d):
         within=m.TRANSMISSION_LINES,
         rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
                              mod.tx_operational_type[l] ==
-                             "simple_transmission")
+                             "tx_simple")
     )
 
     # Set: Operational timepoints

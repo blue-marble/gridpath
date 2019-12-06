@@ -136,7 +136,7 @@ class TestTransmissionInit(unittest.TestCase):
             1: {"df": pd.DataFrame(
                     columns=cols,
                     data=[["tx1", "tx_spec",
-                           "simple_transmission", 0.5]
+                           "tx_simple", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "reactance_error": [],
@@ -146,7 +146,7 @@ class TestTransmissionInit(unittest.TestCase):
             2: {"df": pd.DataFrame(
                 columns=cols,
                 data=[["tx1", "new_build", "dc_opf_transmission", -0.5],
-                      ["tx2", "new_build", "simple_transmission", None]
+                      ["tx2", "new_build", "tx_simple", None]
                       ]),
                 "invalid_combos": [("new_build", "dc_opf_transmission")],
                 "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
