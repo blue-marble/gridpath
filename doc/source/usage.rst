@@ -1,242 +1,66 @@
-*****
-Usage
-*****
-
-================
-Using a Terminal
-================
-
-To install GridPath, you will need to use a command-line interface. Once
-installed, you will be able to interact with the platform through the user
-interface.
-
-On Windows, you can use cmd.exe, Windows PowerShell, or another command-line
-interface (we test using cmd.exe, so recommend using that). You can search
-for cmd.exe from the Start menu. On Mac, you can use the Terminal
-application. Search for it with Spotlight by clicking the magnifying glass
-icon in the upper-right corner of the menu bar, or by pressing
-Command-Space bar.
-
-
-==================
-GridPath Directory
-==================
-
-You first need to create a directory where to download GridPath's source
-code. We will refer to this directory as :code:`PATH/TO/GRIDPATH`.
-
-===========
-Source Code
-===========
-GridPath's source code is stored in a GitHub repository. You will need
-Git to download the source code.
-
---------------
-Installing Git
---------------
-Git installation instructions are `here <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
-
-On Windows, use the Git installer available `here <https://git-scm
-.com/download/win>`_.
-
-On MacOS, type :code:`git --version` on the command line; if you don't have
-Git installed already, you will be prompted to install it.
-
-On RPM-based Linux distributions (e.g Fedora), use :code:`sudo dnf install
-git-all`; on Debian-based Linux distributions (e.g. Ubuntu), use :code:`sudo
-apt install git-all`.
-
--------------------------------
-Cloning the GridPath Repository
--------------------------------
-
-Once you have Git installed, clone the repository with::
-
-    git clone https://github.com/anamileva/gridpath.git PATH/TO/GRIDPATH
-
-(You could also navigate to :code:`PATH/TO/GRIDPATH` with
-:code:`cd PATH/TO/GRIDPATH` and run
-:code:`git clone https://github.com/anamileva/gridpath.git .` to clone into
-the current directory.)
-
-For more info on cloning repositories, see `the instructions on GitHub
-<https://help.github.com/en/articles/cloning-a-repository>`_.
-
-We will eventually distribute GridPath through pypi and conda, so cloning the
-repository will not be required except for users who want to edit the source
-code.
-
-
-============
-Requirements
-============
-
-GridPath is written and tested in Python 3, uses an SQLite database to store
-input and output data, and requires a solver to produce results.
-
-------
-Python
-------
-
-Running GridPath's source requires a Python 3 installation and several
-Python packages. You can get the official CPython distribution `here
-<https://www.python.org/downloads/>`_, the Anaconda Python distribution
-`here <https://www.anaconda.com/distribution/>`_, or `another Python
-distribution <https://wiki.python.org/moin/PythonDistributions>`_.
-
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-Python Virtual Environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-We highly recommend that you set up a Python virtual
-environment for GridPath to ensure that the appropriate packages are
-installed and avoid interfering with the requirements of other Python
-programs you may be using. Below are instructions for how to set up a
-virtual environment using Python's *venv* module or with Anaconda. Make sure
-to keep track of where your virtual environment directory is located, as you
-will need to locate it if you are using the GridPath user interface. We will
-refer to the GridPath Python environment directory as
-:code:`PATH/TO/PYTHON/ENV`.
-
-venv
-****
-The `venv <https://docs.python.org/3/library/venv.html>`_ package is part of
-the Python 3 standard library and is a lightweight method for managing
-virtual environments. Once you have installed Python 3, you can create the
-virtual environment for GridPath by running::
-
-    python3 -m venv PATH/TO/PYTHON/ENV
-
-This will create the virtual environment in the :code:`PATH/TO/PYTHON/ENV`
-directory.
-
-On Windows, you can activate the virtual environment by running appropriate
-activation script from inside the Scripts directory of the virtual
-environment directory.
-
-From cmd.exe::
-
-    C:\> PATH\TO\PYTHON\ENV\Scripts\activate.bat
-
-On Linux-based systems including MacOS, use::
-
-    source PATH/TO/PYTHON/ENV/bin/activate
-
-Anaconda
-********
-Another way to set up a virtual environment is via the Anaconda Python
-distribution. `You can obtain Anaconda here <https://www.anaconda
-.com/distribution/>`_. Create the GridPath environment with::
-
-    conda env create --name gridpath
-
-By default, environments are installed into the `envs` directory in your
-conda directory. To activate the environment before running GridPath, enter
-the following::
-
-    source activate gridpath
-
-
-^^^^^^^^
-Packages
-^^^^^^^^
-
-You can install all needed Python packages, including those for the extra
-features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
-with :code:`cd PATH/TO/GRIDPATH` and running::
-
-    pip install .[all]
-
-Use the editable `-e` flag if you would like to edit the GridPath source code::
-
-    pip install -e .[all]
-
-Alternatively, if you don't want the extra features, you can install only the
-required packages with::
-
-    pip install .
-
-Read below for what the extra features are to determine whether you need them.
-
-Optional packages
-*****************
-
-The extra features are: 1) the GridPath user interface and 2) building/editing
-the documentation.
-
-GridPath's optional features can be installed individually as follows.
-
-For editing or building documentation from source, run::
-
-    pip install -e .[doc]
-
-For using the GridPath user interface, run::
-
-    pip install -e .[ui]
-
-If you would like to edit the user-interface code, you will need Node.js in
-addition to Python and will be required to install various node packages.
-See the User Interface section for more info.
-
-
---------
-Database
---------
-While not strictly required -- you can generate TAB-delimited scenario input
-files any way you like -- GridPath includes support for input and output
-data management via an SQLite database. We recommend that you store data in
-the database and use GridPath's built-in tools for loading input data into the
-database, creating scenarios and generating scenario input files, and
-importing scenario results into the database. We recommend `SQLite Studio
-<https://sqlitestudio.pl/index.rvt>`_ as an SQLite database GUI.
-
-------
-Solver
-------
-You will need a solver to get optimization results. GridPath assumes you
-will be using `Cbc (Coin-or branch and cut) <https://projects.coin-or
-.org/Cbc>`_ by default, but you can specify a different solver as long as it
-is `supported by Pyomo <https://pyomo.readthedocs
-.io/en/latest/solving_pyomo_models.html#supported-solvers>`_,
-e.g. GLPK, CPLEX, Gurobi, etc.
-
-You can find the latest instructions for installing Cbc `here
-<https://github.com/coin-or/Cbc#download>`_. On Windows, you can also
-download the Cbc executable from the `AMPL website <https://ampl
-.com/products/solvers/open-source/#cbc>`_. GridPath allows you to specify
-the location of the solver executable; to get it to be recognized,
-automatically, you can also add it to your PATH system variables (see
-instructions for Windows `here <https://www.java.com/en/download/help/path
-.xml>`_).
-
-
-====================
-Testing the Codebase
-====================
-
-To test the GridPath codebase, use the unittest module as follows::
-
-    python -m unittest discover tests
-
-Scenario directories are assumed to be located in ./scenarios/ by
-default. For example, the inputs, results, and logs for a scenario
-named 'test' would be in *./scenarios/test/*.
-
 =============================
-Running from the Command Line
+Running GridPath from the Command Line
 =============================
 
-You can run scenarios via the *run_scenario.py* script in the root
-directory. The scenario name should be specified with the *--scenario*
-argument. For example, to run a scenario named *test* from the GridPath
-root directory, run the following::
+The gridpath_run and gridpath_run_e2e commands
+----------------------------------------------
+
+If you install GridPath via the setup script following the instructions above,
+you can use the command :code:`gridpath_run` to run a scenario from any
+directory -- as long as your GridPath Python environment is enabled -- as
+follows::
+
+    gridpath_run --scenario SCENARIO_NAME --scenario_location
+    /PATH/TO/SCENARIO
+
+If you are using the database, you can use the command :code:`gridpath_run_e2e`
+to run GridPath end-to-end, i.e. get inputs for the scenario from the database,
+solve the scenario problem, import the results into the database, and
+process them::
+
+    gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location
+    /PATH/TO/SCENARIO
+
+To see usage and other optional arguments, e.g. how to specify a
+solver, check the help menu, e.g.::
+
+    gridpath_run --help
+
+
+The run_scenario.py and run_end_to_end.py scripts
+-------------------------------------------------
+
+You can also run scenarios via the :code:`run_scenario.py` script in the
+*./gridpath/* directory. The scenario name should be specified with the
+:code:`--scenario` argument. For example, to run a scenario named 'test' (located
+in the *./scenarios/* directory) navigate to the *./gridpath/* directory and
+run the following::
 
     python run_scenario.py --scenario test
+
+Scenario directories are assumed to be located in the *./scenarios/*
+directory by default. For example, the inputs, results, and logs for a
+scenario named 'test' would be in *./scenarios/test/*. You can also run
+scenarios located in directories other than *./scenarios* by specifying the
+path to that directory with (absolute path or path relative to *./gridpath/*).
+For example, to run the 'test' scenario in the examples directory, run the
+following (from the *./gridpath/* directory)::
+
+    python run_scenario.py --scenario test --scenario_location ../examples
+
+
+If you are using the database, you can use the :code:`run_end_to_end.py`
+script in the *./gridpath/* directory to run GridPath end-to-end, i.e. get
+inputs for the scenario from the database, solve the scenario problem,
+import the results into the database, and process them::
+
+    python run_end_to_end.py --scenario test
 
 To see usage and other optional arguments, e.g. how to specify a
 solver, check the help menu::
 
     python run_scenario.py --help
+
 
 ========
 Examples
