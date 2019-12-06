@@ -142,9 +142,9 @@ gridpath.project.capacity.operational_types.gen_commit_cap
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
     :members: add_module_specific_components, power_provision_rule
 
-gridpath.project.capacity.operational_types.hydro_noncurtailable
+gridpath.project.capacity.operational_types.gen_hydro_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.hydro_noncurtailable
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.variable

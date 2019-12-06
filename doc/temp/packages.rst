@@ -124,7 +124,7 @@ gen_simple
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-hydro_noncurtailable
+gen_hydro_must_take
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_must_run
     :members:

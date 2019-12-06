@@ -4,4 +4,4 @@ Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	Zone1	Zone1	Zone1	Zone1	0
 Coal	Zone1	gen_spec	exogenous	1	gen_commit_cap	day	.	Zone1	.	Zone1	0.4	1	0	Coal	6
 Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	0	1	Gas	6
 Wind	Zone1	gen_spec	exogenous	0	gen_var	day	.	.	.	.	.	.	.	.	.
-Hydro	Zone1	gen_spec	exogenous	0	hydro_noncurtailable	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.
+Hydro	Zone1	gen_spec	exogenous	0	gen_hydro_must_take	day	Zone1	Zone1	Zone1	Zone1	.	.	.	.	.

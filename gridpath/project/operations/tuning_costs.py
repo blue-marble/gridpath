@@ -4,7 +4,7 @@
 """
 Operational tuning costs that preven erratic dispatch in case of degeneracy.
 Tuning costs can be applied to hydro up and down ramps (gen_hydro
-and hydro_noncurtailable operational types) and to storage up-ramps (
+and gen_hydro_must_take operational types) and to storage up-ramps (
 stor operational type) in order to force smoother dispatch.
 """
 
@@ -68,7 +68,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
             mod.ramp_tuning_cost_per_mw if gen_op_type in [
-                "gen_hydro", "hydro_noncurtailable", "stor"
+                "gen_hydro", "gen_hydro_must_take", "stor"
             ] else 0
         if tmp == mod.first_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -97,7 +97,7 @@ def add_model_components(m, d):
         gen_op_type = mod.operational_type[g]
         tuning_cost = \
             mod.ramp_tuning_cost_per_mw \
-            if gen_op_type in ["gen_hydro", "hydro_noncurtailable"] \
+            if gen_op_type in ["gen_hydro", "gen_hydro_must_take"] \
             else 0
         if tmp == mod.first_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \

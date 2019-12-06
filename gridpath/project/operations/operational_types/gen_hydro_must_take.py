@@ -72,7 +72,7 @@ def add_module_specific_components(m, d):
         within=m.PROJECTS,
         initialize=
         generator_subset_init("operational_type",
-                              "hydro_noncurtailable")
+                              "gen_hydro_must_take")
     )
 
     m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = \
@@ -438,7 +438,7 @@ def load_module_specific_data(m, data_portal,
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
-        if row[1] == 'hydro_noncurtailable':
+        if row[1] == 'gen_hydro_must_take':
             projects.append(row[0])
         else:
             pass
@@ -506,7 +506,7 @@ def load_module_specific_data(m, data_portal,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_up_when_on_rate"]
                        ):
-            if row[1] == "hydro_noncurtailable" and row[2] != ".":
+            if row[1] == "gen_hydro_must_take" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -519,7 +519,7 @@ def load_module_specific_data(m, data_portal,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_down_when_on_rate"]
                        ):
-            if row[1] == "hydro_noncurtailable" and row[2] != ".":
+            if row[1] == "gen_hydro_must_take" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -554,7 +554,7 @@ def get_module_specific_inputs_from_database(
         (SELECT project, hydro_operational_chars_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'hydro_noncurtailable') AS op_char
+        AND operational_type = 'gen_hydro_must_take') AS op_char
         USING (project)
         CROSS JOIN
         (SELECT horizon
