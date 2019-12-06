@@ -361,7 +361,7 @@ def update_project_startup_chars(
                      )
                 )
     inputs_sql = """
-        INSERT INTO inputs_project_heat_rate_curves
+        INSERT INTO inputs_project_startup_chars
         (project, startup_chars_scenario_id, startup_type_id, 
         down_time_hours, startup_plus_ramp_up_rate,
         startup_cost_per_mw, startup_fuel_mmbtu_per_mw)
