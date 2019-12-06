@@ -351,9 +351,8 @@ def update_project_startup_chars(
     for p in list(proj_startup_chars.keys()):
         for scenario in list(proj_startup_chars[p].keys()):
             for startup_type_id in list(proj_startup_chars[p][scenario].keys()):
-                print(proj_startup_chars[p][scenario][startup_type_id])
                 inputs_data.append(
-                    (p, scenario,
+                    (p, scenario, startup_type_id,
                      proj_startup_chars[p][scenario][startup_type_id][0],
                      proj_startup_chars[p][scenario][startup_type_id][1],
                      proj_startup_chars[p][scenario][startup_type_id][2],
