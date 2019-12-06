@@ -18,7 +18,7 @@ to run GridPath end-to-end, i.e. get inputs for the scenario from the database,
 solve the scenario problem, import the results into the database, and
 process them::
 
-    run_gridpath_e2e --scenario SCENARIO_NAME --scenario_location
+    gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location
     /PATH/TO/SCENARIO
 
 To see usage and other optional arguments, e.g. how to specify a
