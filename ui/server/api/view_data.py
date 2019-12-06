@@ -22,19 +22,22 @@ class ViewDataAPI(Resource):
 
         return get_table_data(
             scenario_id=scenario_id,
+            other_scenarios=[],  # todo: does this break anything
             table=table,
             db_path=self.db_path
         )
 
 
-def get_table_data(scenario_id, table, db_path):
+def get_table_data(scenario_id, other_scenarios, table, db_path):
     """
 
     :param scenario_id:
+    :param other_scenarios:
     :param table:
     :param db_path:
     :return:
     """
+
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
@@ -43,6 +46,7 @@ def get_table_data(scenario_id, table, db_path):
     )
 
     column_names = [s[0] for s in query_for_column_names.description]
+
     for index, value in enumerate(column_names):
         if value == "scenario_id":
             column_names[index] = "scenario_name"
@@ -56,13 +60,18 @@ def get_table_data(scenario_id, table, db_path):
             columns_for_query += "{}".format(column)
         n += 1
 
+    other_scenarios_string = str()
+    if len(other_scenarios) > 0:
+        for scenario in other_scenarios:
+            other_scenarios_string += ", {}".format(scenario)
+
     table_data_query = c.execute("""
       SELECT {}
       FROM {}
       JOIN scenarios USING (scenario_id)
-      WHERE scenario_id = {};
+      WHERE scenario_id in ({}{});
       """.format(
-          columns_for_query, table, scenario_id
+          columns_for_query, table, scenario_id, other_scenarios_string
       )
     )
 

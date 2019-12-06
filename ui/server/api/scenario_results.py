@@ -325,13 +325,15 @@ def create_data_table_api(
     data_table_api['columns'] = get_table_data(
         db_path=db_path,
         table=table.replace("-", "_"),
-        scenario_id=scenario_id
+        scenario_id=scenario_id,
+        other_scenarios=[]
     )['columns']
 
     data_table_api['rowsData'] = get_table_data(
         db_path=db_path,
         table=table.replace("-", "_"),
-        scenario_id=scenario_id
+        scenario_id=scenario_id,
+        other_scenarios=[]
     )['rowsData']
 
     return data_table_api

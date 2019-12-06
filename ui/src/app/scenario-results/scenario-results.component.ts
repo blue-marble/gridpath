@@ -115,6 +115,30 @@ export class ScenarioResultsComponent implements OnInit {
       });
   }
 
+  downloadTableData(table): void {
+    electron.remote.dialog.showSaveDialog(
+        { title: 'untitled.csv', defaultPath: 'table.csv',
+          filters: [{extensions: ['csv']}]
+        }, (targetPath) => {
+          const socket = socketConnect();
+
+          const tableActual = table.replace(/-/g, '_');
+
+          socket.emit(
+              'save_table_data',
+              { downloadPath: targetPath,
+                tableName: tableActual,
+                scenarioID: this.scenarioID,
+                otherScenarios: [],
+                tableType: 'result',
+                uiTableNameInDB: null,
+                uiRowNameInDB: null
+              }
+          );
+        }
+      );
+  }
+
   // //// Plots //// //
   getFormOptions(scenarioID): void {
     this.scenarioResultsService.getOptions(scenarioID)
