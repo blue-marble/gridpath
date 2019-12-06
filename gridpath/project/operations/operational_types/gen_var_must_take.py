@@ -31,7 +31,7 @@ def add_module_specific_components(m, d):
     m.VARIABLE_NO_CURTAILMENT_GENERATORS = Set(
         within=m.PROJECTS,
         initialize=generator_subset_init(
-            "operational_type", "variable_no_curtailment"
+            "operational_type", "gen_var_must_take"
         )
     )
 
@@ -47,12 +47,12 @@ def add_module_specific_components(m, d):
                          within=NonNegativeReals)
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'variable_no_curtailment'
+    #  does not allow specifying a reserve_zone if 'gen_var_must_take'
     #  type
     def no_upwards_reserve_rule(mod, g, tmp):
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'variable_no_curtailment' operational 
+                """project {} is of the 'gen_var_must_take' operational 
                 type and should not be assigned any upward reserve BAs since it 
                 cannot provide  upward reserves. Please replace the upward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
@@ -69,12 +69,12 @@ def add_module_specific_components(m, d):
             rule=no_upwards_reserve_rule)
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'variable_no_curtailment'
+    #  does not allow specifying a reserve_zone if 'gen_var_must_take'
     #  type
     def no_downwards_reserve_rule(mod, g, tmp):
         if getattr(d, footroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'variable_no_curtailment' operational 
+                """project {} is of the 'gen_var_must_take' operational 
                 type and should not be assigned any downward reserve BAs since 
                 it cannot provide downward reserves. Please replace the downward 
                 reserve BA for project {} with '.' (no value) in projects.tab. 
@@ -264,7 +264,7 @@ def load_module_specific_data(mod, data_portal,
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
-        if row[1] == 'variable_no_curtailment':
+        if row[1] == 'gen_var_must_take':
             projects.append(row[0])
         elif row[1] == 'variable':
             var_proj.append(row[0])
@@ -291,7 +291,7 @@ def load_module_specific_data(mod, data_portal,
         elif row[0] in var_proj:
             pass
         # Throw warning if profile exists for a project not in projects.tab
-        # (as 'variable' or 'variable_no_curtailment')
+        # (as 'variable' or 'gen_var_must_take')
         else:
             warnings.warn(
                 """WARNING: Profiles are specified for '{}' in 
@@ -322,7 +322,7 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
     # Select only profiles of projects in the portfolio
-    # Select only profiles of projects with 'variable_no_curtailment'
+    # Select only profiles of projects with 'gen_var_must_take'
     # operational type
     # Select only profiles for timepoints from the correct timepoint
     # scenario
@@ -344,7 +344,7 @@ def get_module_specific_inputs_from_database(
         (SELECT project, variable_generator_profile_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'variable_no_curtailment'
+        AND operational_type = 'gen_var_must_take'
         ) AS op_char
         USING (project)
         -- Cross join to the timepoints in the relevant 
@@ -423,7 +423,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     # variable_profiles = get_module_specific_inputs_from_database(
     #     subscenarios, subproblem, stage, conn)
 
-    # Get list of variable_no_curtailment projects
+    # Get list of gen_var_must_take projects
     c = conn.cursor()
     var_projects = c.execute(
         """SELECT project
@@ -437,13 +437,13 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         AND operational_type = '{}'""".format(
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
-            "variable_no_curtailment"
+            "gen_var_must_take"
         )
     )
     var_projects = [p[0] for p in var_projects.fetchall()]
 
     # Check that the project does not show up in any of the
-    # inputs_project_reserve_bas tables since variable_no_curtailment can't
+    # inputs_project_reserve_bas tables since gen_var_must_take can't
     # provide any reserves
     projects_by_reserve = get_projects_by_reserve(subscenarios, conn)
     for reserve, projects in projects_by_reserve.items():
@@ -452,7 +452,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         validation_errors = check_projects_for_reserves(
             projects_op_type=var_projects,
             projects_w_ba=projects,
-            operational_type="variable_no_curtailment",
+            operational_type="gen_var_must_take",
             reserve=reserve
         )
         for error in validation_errors:

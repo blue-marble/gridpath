@@ -359,7 +359,7 @@ def load_module_specific_data(mod, data_portal,
     """
     # Determine list of 'variable' projects
     projects = list()
-    # Also get a list of the projects of the 'variable_no_curtailment'
+    # Also get a list of the projects of the 'gen_var_must_take'
     # operational_type, needed for the data check below
     # (to avoid throwing warning unnecessarily)
     var_no_curt_proj = list()
@@ -375,7 +375,7 @@ def load_module_specific_data(mod, data_portal,
                    prj_op_type_df["operational_type"]):
         if row[1] == 'variable':
             projects.append(row[0])
-        elif row[1] == 'variable_no_curtailment':
+        elif row[1] == 'gen_var_must_take':
             var_no_curt_proj.append(row[0])
         else:
             pass

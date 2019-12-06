@@ -93,7 +93,7 @@ class TestProjectInit(unittest.TestCase):
             "hydro_noncurtailable", "gen_must_run",
             "stor", "variable", "gen_commit_bin",
             "gen_commit_lin", "gen_simple",
-            "variable_no_curtailment", "gen_always_on", "shiftable_load_generic"
+            "gen_var_must_take", "gen_always_on", "shiftable_load_generic"
         ])
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))

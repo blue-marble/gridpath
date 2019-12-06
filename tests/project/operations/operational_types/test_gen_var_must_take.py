@@ -25,7 +25,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.variable_no_curtailment"
+    "project.operations.operational_types.gen_var_must_take"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -118,7 +118,7 @@ class TestVariableNoCurtailmentOperationalType(unittest.TestCase):
                 sep="\t"
             )
 
-        # We only want projects of the 'variable_no_curtailment' operational
+        # We only want projects of the 'gen_var_must_take' operational
         # type
         vnc_df = all_df[all_df["project"].isin(expected_gen_set)]
         expected_cap_factor = \

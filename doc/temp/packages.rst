@@ -136,7 +136,7 @@ shiftable_load_generic
 .. automodule:: gridpath.project.operations.operational_types.variable
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-variable_no_curtailment
+gen_var_must_take
     :members:
 .. automodule:: gridpath.project.operations.reserves.__init__
     :members:

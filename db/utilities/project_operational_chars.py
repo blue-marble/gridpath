@@ -84,7 +84,7 @@ def update_project_opchar_variable_gen_profile_scenario_id(
         variable_generator_profile_scenario_id
 ):
     """
-    Update all 'variable' and 'variable_no_curtailment' project under a given
+    Update all 'variable' and 'gen_var_must_take' project under a given
     project_operational_chars_scenario_id with a single
     variable_generator_profile_scenario_id
     :param io:
@@ -102,7 +102,7 @@ def update_project_opchar_variable_gen_profile_scenario_id(
         UPDATE inputs_project_operational_chars
         SET variable_generator_profile_scenario_id = ?
         WHERE (operational_type = 'variable' 
-        OR operational_type = 'variable_no_curtailment')
+        OR operational_type = 'gen_var_must_take')
         AND project_operational_chars_scenario_id = ?;
         """
     spin_on_database_lock(conn=io, cursor=c, sql=update_sql, data=update_data)
