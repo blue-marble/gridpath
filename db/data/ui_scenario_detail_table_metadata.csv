@@ -21,3 +21,4 @@ carbon_cap,1,Carbon Cap
 prm,1,Planning Reserve Margin (PRM)
 local_capacity,1,Local Capacity
 tuning,1,Tuning
+solver,1,Solver Options
