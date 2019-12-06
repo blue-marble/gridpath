@@ -320,8 +320,8 @@ def update_project_startup_chars(
     :param io:
     :param c:
     :param proj_opchar_names: nested dictionary; top level key is the
-    project, second key is the heat_rate_curves_scenario_id, the value is a
-    tuple with the name and description of heat rate curve scenario
+    project, second key is the startup_chars_scenario_id, the value is a
+    tuple with the name and description of startup_char scenario
     :param proj_startup_chars: nested dictionary; top level key is the project,
     second-level key is the startup_chars_scenario_id, the third-level
     key is the startup_type_id and the value is a tuple with the startup
