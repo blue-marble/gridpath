@@ -509,8 +509,6 @@ class TestOperationsInit(unittest.TestCase):
             for (prj, s) in instance.STARTUP_PROJECTS_TYPES}.items()
             )
         )
-        print('actual', actual_down_time_hours)
-        print('expected', expected_down_time_hours)
 
         self.assertDictEqual(expected_down_time_hours,
                              actual_down_time_hours)
