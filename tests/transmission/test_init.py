@@ -88,10 +88,10 @@ class TestTransmissionInit(unittest.TestCase):
 
         # Param: tx_capacity_type
         expected_cap_type = OrderedDict(sorted(
-            {"Tx1": "specified_transmission",
+            {"Tx1": "tx_spec",
              "Tx_New": "new_build_transmission",
-             "Tx2": "specified_transmission",
-             "Tx3": "specified_transmission"
+             "Tx2": "tx_spec",
+             "Tx3": "tx_spec"
              }.items()
                                         )
                                               )
@@ -135,7 +135,7 @@ class TestTransmissionInit(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["tx1", "specified_transmission",
+                    data=[["tx1", "tx_spec",
                            "simple_transmission", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],

@@ -209,7 +209,7 @@ infrastructure available to the model.
 .. automodule:: gridpath.transmission.capacity.capacity_types.__init__
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.
-specified_transmission
+tx_spec
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.
 new_build_transmission
