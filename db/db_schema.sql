@@ -775,7 +775,7 @@ project VARCHAR(64),
 startup_chars_scenario_id INTEGER,
 startup_type_id INTEGER, -- SET TO AUTOINCREMENT?
 down_time_hours FLOAT,
-startup_plus_ramp_up_rate FLOAT
+startup_plus_ramp_up_rate FLOAT,
 startup_cost_per_mw FLOAT,
 startup_fuel_mmbtu_per_mw FLOAT,
 PRIMARY KEY (project, startup_chars_scenario_id, startup_type_id),
