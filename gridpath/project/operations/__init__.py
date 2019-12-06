@@ -431,9 +431,11 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     )
 
     c2 = conn.cursor()
+    # TODO: might have to add startup_chars_scenario_id back to table for
+    #  input validations
     startup_chars = c2.execute(
         """
-        SELECT project, startup_chars_scenario_id, 
+        SELECT project, 
         startup_type_id, down_time_hours, startup_plus_ramp_up_rate, 
         startup_cost_per_mw, startup_fuel_mmbtu_per_mw
         FROM inputs_project_portfolios
