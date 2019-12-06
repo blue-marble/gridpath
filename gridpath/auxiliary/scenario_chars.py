@@ -637,28 +637,38 @@ class SolverOptions(object):
         """
 
         self.SCENARIO_ID = scenario_id
-        self.SOLVER_OPTIONS_ID = cursor.execute(
-            "SELECT solver_options_id "
-            "FROM scenarios "
-            "WHERE scenario_id = {}".format(scenario_id)
+        self.SOLVER_OPTIONS_ID = cursor.execute("""
+            SELECT solver_options_id 
+            FROM scenarios 
+            WHERE scenario_id = {}
+            """.format(scenario_id)
         ).fetchone()[0]
 
-        self.SOLVER = \
-            None if self.SOLVER_OPTIONS_ID is None \
-            else cursor.execute(
-                """SELECT solver 
-                FROM options_solver_descriptions 
+        if self.SOLVER_OPTIONS_ID is None:
+            self.SOLVER = None
+        else:
+            distinct_solvers = cursor.execute(
+                """SELECT DISTINCT solver 
+                FROM options_solver_values 
                 WHERE solver_options_id = {}""".format(self.SOLVER_OPTIONS_ID)
-            ).fetchone()[0]
+            ).fetchall()
+            if len(distinct_solvers) > 1:
+                raise ValueError("""
+                ERROR: Solver options include more than one solver! Only a 
+                single solver must be specified for solver_options_id in the 
+                options_solver_values table. See solver_options_id {}. 
+                """.format(self.SOLVER_OPTIONS_ID))
+            else:
+                self.SOLVER = distinct_solvers[0][0]
 
         self.SOLVER_OPTIONS = \
             None if self.SOLVER_OPTIONS_ID is None \
             else {
                 row[0]: row[1]
-                for row in cursor.execute(
-                    """SELECT solver_option_name, solver_option_value
-                       FROM options_solver_values
-                       WHERE solver_options_id = {};""".format(
-                        self.SOLVER_OPTIONS_ID)
-                ).fetchall()
+                for row in cursor.execute("""
+                    SELECT solver_option_name, solver_option_value
+                    FROM options_solver_values
+                    WHERE solver_options_id = {};
+                    """.format(self.SOLVER_OPTIONS_ID)
+                ).fetchall() if row[0] is not None and row[0] is not ""
             }

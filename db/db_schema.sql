@@ -1821,9 +1821,12 @@ CREATE TABLE inputs_system_rps_targets (
 rps_target_scenario_id INTEGER,
 rps_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 rps_target_mwh FLOAT,
 rps_zone_scenario_id INTEGER,
-PRIMARY KEY (rps_target_scenario_id, rps_zone, period),
+PRIMARY KEY (rps_target_scenario_id, rps_zone, period, subproblem_id,
+stage_id),
 FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
 inputs_geography_rps_zones (rps_zone_scenario_id, rps_zone)
 );
@@ -1844,8 +1847,11 @@ CREATE TABLE inputs_system_carbon_cap_targets (
 carbon_cap_target_scenario_id INTEGER,
 carbon_cap_zone VARCHAR(32),
 period INTEGER,
+subproblem_id INTEGER,
+stage_id INTEGER,
 carbon_cap_mmt FLOAT,
-PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period),
+PRIMARY KEY (carbon_cap_target_scenario_id, carbon_cap_zone, period,
+subproblem_id, stage_id),
 FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
 subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id)
 );
@@ -1899,6 +1905,18 @@ local_capacity_zone)
 );
 
 -- Case tuning
+-- We can apply additional costs in the model to prevent degeneracy
+-- Currently this includes:
+-- 1) Carbon Imports (see objective.transmission.carbon_imports_tuning_costs
+-- module; prevents the carbon imports expression from being set above actual
+-- flow x intensity in situations when the carbon cap is non-binding)
+-- 2) Ramps (see project.operations.tuning_costs module; applies to
+-- hydro and storage operational types only and prevents erratic-looking
+-- dispatch for these zero-variable-cost resources in case of degeneracy)
+-- 3) Dynamic ELCC (see objective.reliability.prm
+-- .dynamic_elcc_tuning_penalties module; ensures that the dynamic ELCC is set
+-- to the maximum available in
+-- case the PRM constraint is non-binding.
 DROP TABLE IF EXISTS subscenarios_tuning;
 CREATE TABLE subscenarios_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1909,9 +1927,9 @@ description VARCHAR(128)
 DROP TABLE IF EXISTS inputs_tuning;
 CREATE TABLE inputs_tuning (
 tuning_scenario_id INTEGER PRIMARY KEY,
-import_carbon_tuning_cost DOUBLE,
-ramp_tuning_cost DOUBLE,
-dynamic_elcc_tuning_cost DOUBLE,
+import_carbon_tuning_cost_per_ton DOUBLE,
+ramp_tuning_cost_per_mw DOUBLE,  -- applies to hydro and storage only
+dynamic_elcc_tuning_cost_per_mw DOUBLE,
 FOREIGN KEY (tuning_scenario_id) REFERENCES subscenarios_tuning
 (tuning_scenario_id)
 );
@@ -3413,7 +3431,7 @@ subscenarios_system_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
-options_solver_descriptions.solver as solver
+options_solver_descriptions.name as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3590,9 +3608,8 @@ project_form_control INTEGER
 DROP TABLE IF EXISTS options_solver_descriptions;
 CREATE TABLE options_solver_descriptions (
     solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    solver VARCHAR(32),
-    description VARCHAR(128),
-    UNIQUE (solver_options_id, solver)
+    name VARCHAR(32),
+    description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS options_solver_values;
@@ -3602,6 +3619,6 @@ CREATE TABLE options_solver_values (
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
     PRIMARY KEY (solver_options_id, solver, solver_option_name),
-    FOREIGN KEY (solver_options_id, solver)
-        REFERENCES options_solver_descriptions (solver_options_id, solver)
+    FOREIGN KEY (solver_options_id)
+        REFERENCES options_solver_descriptions (solver_options_id)
 );

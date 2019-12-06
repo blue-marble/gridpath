@@ -42,15 +42,20 @@ def insert_carbon_cap_targets(
     inputs_data = []
     for zone in list(zone_period_targets.keys()):
         for period in list(zone_period_targets[zone].keys()):
-            inputs_data.append(
-                (carbon_cap_target_scenario_id, zone, period,
-                 zone_period_targets[zone][period])
-            )
+            for subproblem in list(zone_period_targets[zone][period].keys()):
+                for stage in list(zone_period_targets[zone][period][subproblem]
+                                  .keys()):
+                    inputs_data.append(
+                        (carbon_cap_target_scenario_id, zone, period,
+                         subproblem, stage,
+                         zone_period_targets[zone][period][subproblem][stage])
+                    )
     inputs_sql = """
         INSERT INTO inputs_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, carbon_cap_zone, period,
+        subproblem_id, stage_id,
         carbon_cap_mmt)
-        VALUES (?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 

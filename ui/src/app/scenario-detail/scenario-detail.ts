@@ -96,4 +96,5 @@ export class StartingValues {
   local_capacity$projects: string;
   local_capacity$project_chars: string;
   tuning$tuning: string;
+  solver$solver: string;
 }
