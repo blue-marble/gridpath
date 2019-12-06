@@ -435,10 +435,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         """
         SELECT project, startup_chars_scenario_id, 
         startup_type_id, down_time_hours, startup_plus_ramp_up_rate, 
-        startup_cost_per_mw, startup_fuel_per_mw,
+        startup_cost_per_mw, startup_fuel_mmbtu_per_mw
         FROM inputs_project_portfolios
         INNER JOIN
-        (SELECT project, heat_rate_curves_scenario_id
+        (SELECT project, startup_chars_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}) AS op_char
         USING(project)
