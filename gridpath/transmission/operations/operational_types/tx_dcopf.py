@@ -8,7 +8,7 @@ constraints. The DC OPF constraints are based on the Kirchhoff approach laid
 out in Horsch et al. (2018).
 
 Note: transmission operational types can optionally be mixed and matched.
-If there are any non-dc_opf_transmission operational types, they will simply
+If there are any non-tx_dcopf operational types, they will simply
 not be considered when setting up the network constraints laid out in this
 module.
 
@@ -39,7 +39,7 @@ def add_module_specific_components(m, d):
         within=m.TRANSMISSION_LINES,
         rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
                              mod.tx_operational_type[l] ==
-                             "dc_opf_transmission")
+                             "tx_dcopf")
     )
 
     # DC OPF operational timepoints
@@ -306,9 +306,9 @@ def load_module_specific_data(m, data_portal, scenario_directory,
         usecols=["TRANSMISSION_LINES", "load_zone_from", "load_zone_to",
                  "tx_operational_type", "reactance_ohms"]
     )
-    df = df[df["tx_operational_type"] == "dc_opf_transmission"]
+    df = df[df["tx_operational_type"] == "tx_dcopf"]
 
-    # Dict of reactance by dc_opf_transmission line
+    # Dict of reactance by tx_dcopf line
     reactance_ohms = dict(zip(
         df["TRANSMISSION_LINES"],
         pd.to_numeric(df["reactance_ohms"])

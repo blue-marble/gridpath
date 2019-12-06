@@ -145,12 +145,12 @@ class TestTransmissionInit(unittest.TestCase):
             # Make sure invalid min_stable_level and invalid combo are flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["tx1", "new_build", "dc_opf_transmission", -0.5],
+                data=[["tx1", "new_build", "tx_dcopf", -0.5],
                       ["tx2", "new_build", "tx_simple", None]
                       ]),
-                "invalid_combos": [("new_build", "dc_opf_transmission")],
+                "invalid_combos": [("new_build", "tx_dcopf")],
                 "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                "combo_error": ["Line(s) 'tx1': 'new_build' and 'dc_opf_transmission'"],
+                "combo_error": ["Line(s) 'tx1': 'new_build' and 'tx_dcopf'"],
                 }
         }
 

@@ -23,7 +23,7 @@ PREREQUISITE_MODULE_NAMES = [
      "transmission.capacity",
      "transmission.capacity.capacity"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "transmission.operations.operational_types.dc_opf_transmission"
+    "transmission.operations.operational_types.tx_dcopf"
 
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
