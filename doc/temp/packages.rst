@@ -212,7 +212,7 @@ infrastructure available to the model.
 tx_spec
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.
-new_build_transmission
+tx_new_lin
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity
     :members:

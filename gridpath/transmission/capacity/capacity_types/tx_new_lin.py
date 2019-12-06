@@ -122,7 +122,7 @@ def tx_capacity_cost_rule(mod, g, p):
 def load_module_specific_data(m,
                               data_portal, scenario_directory, subproblem, stage):
 
-    # TODO: throw an error when a line of the 'new_build_transmission' capacity
+    # TODO: throw an error when a line of the 'tx_new_lin' capacity
     #   type is not found in new_build_transmission_vintage_costs.tab
     data_portal.load(filename=os.path.join(
                         scenario_directory, subproblem, stage, "inputs",

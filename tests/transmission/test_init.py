@@ -89,7 +89,7 @@ class TestTransmissionInit(unittest.TestCase):
         # Param: tx_capacity_type
         expected_cap_type = OrderedDict(sorted(
             {"Tx1": "tx_spec",
-             "Tx_New": "new_build_transmission",
+             "Tx_New": "tx_new_lin",
              "Tx2": "tx_spec",
              "Tx3": "tx_spec"
              }.items()
