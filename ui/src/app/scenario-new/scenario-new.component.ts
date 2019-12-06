@@ -123,7 +123,8 @@ export class ScenarioNewComponent implements OnInit {
     local_capacity$req: new FormControl(),
     local_capacity$projects: new FormControl(),
     local_capacity$project_chars: new FormControl(),
-    tuning$tuning: new FormControl()
+    tuning$tuning: new FormControl(),
+    solver$solver: new FormControl()
     });
 
   constructor(private scenarioNewService: ScenarioNewService,

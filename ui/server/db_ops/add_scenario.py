@@ -106,7 +106,9 @@ def get_subscenario_id_value(c, msg, key):
         setting_value = 1 if msg[key] else 0
     # Otherwise, figure out what subscenario_id the value corresponds to
     else:
-        if msg[key] is None:
+        # If None (user didn't touch the field) or empty string (user
+        # selected the blank field), set to None
+        if msg[key] is None or msg[key] == "":
             setting_value = None
         else:
             setting_value = c.execute(
