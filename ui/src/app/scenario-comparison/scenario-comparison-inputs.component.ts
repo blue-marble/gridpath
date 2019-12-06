@@ -8,10 +8,10 @@ import { NavigationExtras, Router } from '@angular/router';
 
 @Component({
   selector: 'app-scenario-comparison',
-  templateUrl: './scenario-comparison.component.html',
-  styleUrls: ['./scenario-comparison.component.css']
+  templateUrl: './scenario-comparison-inputs.component.html',
+  styleUrls: ['./scenario-comparison-inputs.component.css']
 })
-export class ScenarioComparisonComponent implements OnInit {
+export class ScenarioComparisonInputsComponent implements OnInit {
 
   baseScenarioID: number;
   scenariosIDsToCompare: number[];
@@ -97,8 +97,16 @@ export class ScenarioComparisonComponent implements OnInit {
     this.router.navigate(['/scenario-inputs', 0], navigationExtras);
   }
 
-
   goBack(): void {
-    this.location.back();
+    const navigationExtras: NavigationExtras = {
+      state: {
+        startingValues: {
+          baseScenarioStartingValue: this.baseScenarioID,
+          scenariosToCompareStartingValues: this.scenariosIDsToCompare
+        }
+      }
+    };
+
+    this.router.navigate(['scenario-comparison/select'], navigationExtras);
   }
 }
