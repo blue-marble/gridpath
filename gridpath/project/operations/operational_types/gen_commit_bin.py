@@ -27,17 +27,6 @@ Morales-Espana et al. (2013).
 
 # TODO validations:
 #  disallow binary commit with availability decsisions since non-linear?
-#  don't allow min down time < shutdown + startup (note: default is 0 min_down!)
-#   okay if startup ramp up rate is big enough for you to go straight to pmin
-#  make sure first point in startup ramp rate is equal to min down time
-#  make sure ID for startup type is unique and auto-increment! (we use +1)
-#  make sure down time for different startup types is different and increasing
-#  with increasing ID
-#  if startup ramp is defined, cost needs to be defined - ACTUALY NOT?
-#  can't allow both startup fuel and startup ramp because that will double count
-#  the fuel
-#  down time has to be always defined and equal to TD at first startup ramp type
-#  check down time is large enough to include shutdown and startup duration
 
 # TODO: cleanup
 #  change naming of ramp up rates -> first see how we deal with this formulation

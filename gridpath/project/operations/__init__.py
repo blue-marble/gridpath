@@ -31,10 +31,6 @@ from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
     write_validation_to_database
 
-# TODO validation:
-#  make sure that if one of the startup types entries for a project has "."
-#  inputs, that all startup types for that project have it
-
 
 # TODO: should we take this out of __init__.py
 #   can we create operations.py like we have capacity.py and put it there?
@@ -448,6 +444,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         inputs_project_startup_chars
         USING(project, startup_chars_scenario_id)
         WHERE project_portfolio_scenario_id = {}
+        AND startup_chars_scenario_id is not Null
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
@@ -475,6 +472,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
         columns=[s[0] for s in heat_rates.description]
+    )
+    su_df = pd.DataFrame(
+        data=startup_chars.fetchall(),
+        columns=[s[0] for s in startup_chars.description]
     )
 
     # Check data types heat_rates:
@@ -554,6 +555,28 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
+
+    # Check for consistent inputs: can't have inputs for on startup type
+    #  and no inputs for the other types
+
+
+def validate_consistent_startup_type_inputs(startup_df):
+    projects = startup_df["project"].unique()
+
+# TODO validation:
+#  make sure that if one of the startup types entries for a project has "."
+#  inputs, that all startup types for that project have it
+#  don't allow min down time < shutdown + startup (note: default is 0 min_down!)
+#   okay if startup ramp up rate is big enough for you to go straight to pmin
+#  make sure first point in startup ramp rate is equal to min down time
+#  make sure ID for startup type is unique and auto-increment! (we use +1)
+#  make sure down time for different startup types is different and increasing
+#  with increasing ID
+#  if startup ramp is defined, cost needs to be defined - ACTUALY NOT?
+#  can't allow both startup fuel and startup ramp because that will double count
+#  the fuel
+#  down time has to be always defined and equal to TD at first startup ramp type
+#  check down time is large enough to include shutdown and startup duration
 
 
 def validate_fuel_vs_heat_rates(hr_df):
