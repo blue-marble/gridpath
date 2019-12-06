@@ -25,7 +25,7 @@ PREREQUISITE_MODULE_NAMES = [
     "project.capacity.capacity", "project.availability.availability",
     "project.fuels", "project.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
-    "project.operations.operational_types.variable"
+    "project.operations.operational_types.gen_var"
 IMPORTED_PREREQ_MODULES = list()
 for mdl in PREREQUISITE_MODULE_NAMES:
     try:
@@ -118,7 +118,7 @@ class TestVariableOperationalType(unittest.TestCase):
                 sep="\t"
             )
 
-        # We only want projects of the 'variable' operational type
+        # We only want projects of the 'gen_var' operational type
         v_df = all_df[all_df["project"].isin(expected_variable_gen_set)]
         expected_cap_factor = \
             v_df.set_index(['project', 'timepoint']).to_dict()['cap_factor']

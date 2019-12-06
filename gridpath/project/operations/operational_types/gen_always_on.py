@@ -337,7 +337,7 @@ def rec_provision_rule(mod, g, tmp):
 
 # TODO: ignore curtailment for now, but might need to revisit if for example
 #  RPS-eligible technologies are modeled as always-on (e.g. geothermal) -- 
-# it may make more sense to model them as 'variable' with constant cap factor
+# it may make more sense to model them as 'gen_var' with constant cap factor
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     

@@ -91,7 +91,7 @@ class TestProjectInit(unittest.TestCase):
         expected_required_operational_modules = sorted([
             "gen_commit_cap", "hydro_curtailable",
             "hydro_noncurtailable", "gen_must_run",
-            "stor", "variable", "gen_commit_bin",
+            "stor", "gen_var", "gen_commit_bin",
             "gen_commit_lin", "gen_simple",
             "gen_var_must_take", "gen_always_on", "shiftable_load_generic"
         ])

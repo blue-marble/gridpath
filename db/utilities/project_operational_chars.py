@@ -84,7 +84,7 @@ def update_project_opchar_variable_gen_profile_scenario_id(
         variable_generator_profile_scenario_id
 ):
     """
-    Update all 'variable' and 'gen_var_must_take' project under a given
+    Update all 'gen_var' and 'gen_var_must_take' project under a given
     project_operational_chars_scenario_id with a single
     variable_generator_profile_scenario_id
     :param io:
@@ -101,7 +101,7 @@ def update_project_opchar_variable_gen_profile_scenario_id(
     update_sql = """
         UPDATE inputs_project_operational_chars
         SET variable_generator_profile_scenario_id = ?
-        WHERE (operational_type = 'variable' 
+        WHERE (operational_type = 'gen_var' 
         OR operational_type = 'gen_var_must_take')
         AND project_operational_chars_scenario_id = ?;
         """

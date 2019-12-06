@@ -62,7 +62,7 @@ def add_module_specific_components(m, d):
     # Sets and params
     m.VARIABLE_GENERATORS = Set(within=m.PROJECTS,
                                 initialize=generator_subset_init(
-                                    "operational_type", "variable")
+                                    "operational_type", "gen_var")
                                 )
 
     m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS = \
@@ -357,7 +357,7 @@ def load_module_specific_data(mod, data_portal,
     :param stage:
     :return:
     """
-    # Determine list of 'variable' projects
+    # Determine list of 'gen_var' projects
     projects = list()
     # Also get a list of the projects of the 'gen_var_must_take'
     # operational_type, needed for the data check below
@@ -373,7 +373,7 @@ def load_module_specific_data(mod, data_portal,
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
-        if row[1] == 'variable':
+        if row[1] == 'gen_var':
             projects.append(row[0])
         elif row[1] == 'gen_var_must_take':
             var_no_curt_proj.append(row[0])
@@ -396,7 +396,7 @@ def load_module_specific_data(mod, data_portal,
         if row[0] in projects:
             project_timepoints.append((row[0], row[1]))
             cap_factor[(row[0], row[1])] = float(row[2])
-        # Profile could be for a 'variable' project, in which case ignore
+        # Profile could be for a 'gen_var' project, in which case ignore
         elif row[0] in var_no_curt_proj:
             pass
         else:
@@ -473,7 +473,7 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
     # Select only profiles of projects in the portfolio
-    # Select only profiles of projects with 'variable'
+    # Select only profiles of projects with 'gen_var'
     # operational type
     # Select only profiles for timepoints from the correct temporal scenario
     # and the correct subproblem
@@ -489,13 +489,13 @@ def get_module_specific_inputs_from_database(
         WHERE project_portfolio_scenario_id = {}
         ) as portfolio_tbl
         -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'variable' as 
+        -- this project_operational_chars_scenario_id and have 'gen_var' as 
         -- their operational_type
         INNER JOIN
         (SELECT project, variable_generator_profile_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'variable'
+        AND operational_type = 'gen_var'
         ) AS op_char
         USING (project)
         -- Cross join to the timepoints in the relevant 

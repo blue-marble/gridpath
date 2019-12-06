@@ -250,7 +250,7 @@ def load_module_specific_data(mod, data_portal,
 
     # Determine list of projects
     projects = list()
-    # Also get a list of the projects of the 'variable' operational_type,
+    # Also get a list of the projects of the 'gen_var' operational_type,
     # needed for the data check below (to avoid throwing warning unnecessarily)
     var_proj = list()
 
@@ -266,7 +266,7 @@ def load_module_specific_data(mod, data_portal,
                    prj_op_type_df["operational_type"]):
         if row[1] == 'gen_var_must_take':
             projects.append(row[0])
-        elif row[1] == 'variable':
+        elif row[1] == 'gen_var':
             var_proj.append(row[0])
         else:
             pass
@@ -287,11 +287,11 @@ def load_module_specific_data(mod, data_portal,
         if row[0] in projects:
             project_timepoints.append((row[0], row[1]))
             cap_factor[(row[0], row[1])] = float(row[2])
-        # Profile could be for a 'variable' project, in which case ignore
+        # Profile could be for a 'gen_var' project, in which case ignore
         elif row[0] in var_proj:
             pass
         # Throw warning if profile exists for a project not in projects.tab
-        # (as 'variable' or 'gen_var_must_take')
+        # (as 'gen_var' or 'gen_var_must_take')
         else:
             warnings.warn(
                 """WARNING: Profiles are specified for '{}' in 
@@ -338,7 +338,7 @@ def get_module_specific_inputs_from_database(
         WHERE project_portfolio_scenario_id = {}
         ) as portfolio_tbl
         -- Of the projects in the portfolio, select only those that are in 
-        -- this project_operational_chars_scenario_id and have 'variable' as 
+        -- this project_operational_chars_scenario_id and have 'gen_var_must_take' as 
         -- their operational_type
         INNER JOIN
         (SELECT project, variable_generator_profile_scenario_id
