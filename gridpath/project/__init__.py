@@ -193,7 +193,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         load_zone, fuel, variable_cost_per_mwh,
         min_stable_level, unit_size_mw,
         shutdown_cost_per_mw,
-        shutdown_fuel_mmbtu_per_mw
+        shutdown_fuel_mmbtu_per_mw,
         shutdown_plus_ramp_down_rate,
         ramp_up_when_on_rate,
         ramp_down_when_on_rate,
