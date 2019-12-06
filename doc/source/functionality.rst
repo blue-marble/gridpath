@@ -22,77 +22,106 @@ The temporal units include:
 Timepoints
 ----------
 
-Timepoints are the finest resolution over which operational decisions are
+*Timepoints* are the finest resolution over which operational decisions are
 made (e.g. an hour). Generator commitment and dispatch decisions are made for
 each timepoint, with some constraints applied across timepoints (e.g. ramp
 constraints.) Most commonly, a timepoint is an hour, but the resolution is
 flexible: a timepoint could also be a 15-minute, 5-minute, 1-minute, or 4-hour
-segment. Different timepoint durations can also be mixed, so some can be
+segment. Different timepoint durations can also be mixed, e.g. some can be
 5-minute segments and some can be hours.
 
-Horizons
---------
+Timepoints can also be assigned weights in order to represent other
+timepoints that are not modeled explicitly (e.g. use a 24-hour period per month
+to represent the whole month using the number of days in that month for the
+weight of each of the 24 timepoints).
 
-Each timepoint belongs to a 'horizon' that describes how
-timepoints are grouped together when making operational decisions, with some
-operational constraints enforced over the 'horizon,' e.g. hydro budgets or
-storage energy balance. Horizons are modeled as independent from each other
-for operational purposes (i.e operational decisions made on one horizon do
-not affect those made on another horizon). A 'horizon' is most commonly a
-day -- e.g. we usually model a year of system operations a day at a time --
-but can be any other duration, e.g. we could model the year a week at a
-time, a month at a time, etc. Horizon durations can also be mixed. The
-horizon boundary condition can be 'circular' or 'linear.' With the
-'circular' approach, the last timepoint of the horizon is considered the
+Balancing Types and Horizons
+----------------------------
+
+GridPath organizes timepoints into *balancing types* and *horizons* that
+describe how *timepoints* are grouped together when making operational
+decisions, with some operational constraints enforced over the *horizon* for
+each *balancing type*, e.g. hydro budgets or storage energy balance. As a
+simple example, in the case of modeling a full year with 8760 timepoints, we
+could have three *balancing types*: a day, a month, and a year; there would
+then be 365 *horizons* of the *balancing type* 'day,' 12 *horizons* of the
+*balancing type* 'month,' and 1 *horizon* of the *balancing type* 'year.'
+Within each balancing types, horizons are modeled as independent from each
+other for operational purposes (i.e operational decisions made on one
+horizon do not affect those made on another horizon). Generator and storage
+resources in GridPath are also assigned *balancing types*: a hydro plant
+of the *balancing type* 'day' would have to meet an energy budget constraint
+on each of the 365 'day' *horizons* whereas one of the *balancing type*
+'year' would only have a single energy budget constraint grouping all 8760
+timepoints.
+
+Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
+the 'circular' approach, the last timepoint of the horizon is considered the
 previous timepoint for the first timepoint of the horizon (for the purposes
 of functionality such as ramp constraints or tracking storage state of
 charge). If the boundary is 'linear,' then we ignore constraints relating to
 the previous timepoint in the first timepoint of a horizon.
 
-In production simulation, we usually optimize a single horizon at a time (e.g.
-each of the year's 365 days is modeled individually) and sum the results. In
-a capacity-expansion model, we usually include multiple horizons in the same
-optimization (but they are independent from each other for operational
-purposes). In a capacity-expansion context, however, we usually do not model
-the full study period explicitly; instead, due to computational
-constraints, we use a sample of horizons and assign weights to them in order
-to represent the full set of horizons (e.g. use one day per month to
-represent the whole month using the number of day in that month for the
-horizon weight).
+
+Periods
+-------
+
+Each *timepoint* in a GridPath model also belong to a *period* (e.g. an year),
+which describes when decisions to build or retire infrastructure are made. A
+*period* must be specified in both capacity-expansion and production-cost
+model. In a production-cost simulation context, we can use the period to
+exogenously change the amount of available capacity, but the *period*
+temporal unit is mostly used in the capacity-expansion approach, as it
+defines when capacity decisions are made and new infrastructure becomes
+available (or is retired). That information in turn feeds into the horizon-
+and timepoint-level operational constraints, i.e. once a generator is build,
+the optimization is allowed to operate it in subsequent periods (usually for
+the duration of the generators's lifetime). The *period* duration is
+flexible: e.g. capacity decisions can be made every month, every year, every
+10 years, etc. A discount factor can also be applied to weight costs
+differently depending on when they are incurred.
+
+
+Subproblems
+-----------
+
+In production-cost simulation, we often model operations during a full
+year, e.g. at an hourly resolution (8760 *timepoints*). However, not all
+*timepoints* are optimized together. Usually, each day or week of the year
+is optimized separately. In GridPath, these separate optimizations are
+called *subproblems*. Each *subproblem* can then contain different balancing
+types and horizons. For example, if we are optimizing the year's operations
+a week at a time, we would have 52 *subproblems*. Each one of those
+*subproblems* could then have two *balancing types* -- a week and a day --
+meaning each *timepoint* in the *subproblem* would belong to one of seven
+'day' *horizons* and the single 'week' *horizon* (i.e. some resources would
+have to be balanced on each day of the week and some over the entire week).
+
+Unlike in production-cost simulation, in capacity-expansion mode, we usually
+have only a single subproblem.
+
+Stages
+------
 
 GridPath also has multi-stage commitment functionality, i.e. decisions made
-for a horizon can be fixed and the feed into a next stage with some updated
+for a subproblem can be fixed and then fed into a next stage with some updated
 parameters (e.g. an updated load and renewable output forecast). The number
 of stages is flexible and the timepoint resolution can change from stage to
 stage. The typical temporal setup for production cost simulation
 (multi-stage with horizons optimized one at a time) is shown below:
 
-.. image:: ../graphics/temporal_prod_cost.png
+Examples
+--------
 
-.. todo: don't remember if we can change the timepoint resolution from stage
-    to stage yet?
-
-Periods
--------
-
-Each timepoint and horizon belong to a 'period' (e.g. an year),
-which describes when decisions to build or retire infrastructure can be made.
-In a production-cost simulation context, we can use the period to
-exogenously change the amount of available capacity, but the 'period'
-temporal unit is mostly used i n the capacity-expansion approach, as it
-defines when capacity decisions are made and new infrastructure becomes
-available (or is retired). That information in turn feeds into the horizon-
-and timepoint-level operational constraints, i.e. once a generator is build,
-the optimization is allowed to operate in subsequent periods (usually for the
-duration of the generators's lifetime). The 'period' resolution is also
-flexible: e.g. capacity decisions can be made every month, every year, every
-10 years, etc. A discount factor can also be applied to weigh costs
-differently depending on when they are incurred.
-
-The typical temporal setup for capacity-expansion modeling
-(all timepoints/horizons/periods optimized simultaneously) is shown below:
+Typical temporal setup for capacity-expansion modeling is shown below:
 
 .. image:: ../graphics/temporal_cap_exp.png
+
+
+Typical temporal setup for production-cost modeling is shown below:
+
+.. image:: ../graphics/temporal_prod_cost.png
+
 
 
 Geographic Setup
