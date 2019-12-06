@@ -17,7 +17,7 @@ results_project_dispatch_binary_commit,1,Binary Commit Project Dispatch
 results_project_dispatch_by_technology,1,Dispatch by Technology
 results_project_dispatch_capacity_commit,1,Capacity Commit Project Dispatch
 results_project_dispatch_continuous_commit,1,Continuous Commit Project Dispatch
-results_project_dispatch_hydro_curtailable,1,Curtailable Hydro Project Dispatch
+results_project_dispatch_gen_hydro,1,Curtailable Hydro Project Dispatch
 results_project_dispatch_variable,1,Variable Project Dispatch
 results_project_elcc_simple,1,Project Simple ELCC
 results_project_elcc_surface,1,Project ELCC Surface

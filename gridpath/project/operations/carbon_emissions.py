@@ -307,7 +307,7 @@ def process_results(db, c, subscenarios):
         "results_project_dispatch_all",
         "results_project_dispatch_variable",
         "results_project_dispatch_capacity_commit",
-        "results_project_dispatch_hydro_curtailable",
+        "results_project_dispatch_gen_hydro",
         "results_project_fuel_burn",
         "results_project_frequency_response",
         "results_project_lf_reserves_up",

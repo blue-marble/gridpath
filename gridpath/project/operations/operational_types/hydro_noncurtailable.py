@@ -540,7 +540,7 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
     # Select only budgets/min/max of projects in the portfolio
-    # Select only budgets/min/max of projects with 'hydro_curtailable'
+    # Select only budgets/min/max of projects with 'gen_hydro'
     # Select only budgets/min/max for horizons from the correct temporal
     # scenario and subproblem
     # Select only horizons on periods when the project is operational

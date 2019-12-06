@@ -121,7 +121,7 @@ gen_commit_lin
 .. automodule:: gridpath.project.operations.operational_types.
 gen_simple
     :members:
-.. automodule:: gridpath.project.operations.operational_types.hydro_curtailable
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 hydro_noncurtailable

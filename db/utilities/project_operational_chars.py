@@ -114,7 +114,7 @@ def update_project_opchar_hydro_opchar_scenario_id(
         hydro_operational_chars_scenario_id
 ):
     """
-    Update all 'hydro_noncurtailable' and 'hydro_curtailable' projects under
+    Update all 'hydro_noncurtailable' and 'gen_hydro' projects under
     a given project_operational_chars_scenario_id with a single
     hydro_operational_chars_scenario_id
     :param io:
@@ -131,7 +131,7 @@ def update_project_opchar_hydro_opchar_scenario_id(
     update_sql = """
         UPDATE inputs_project_operational_chars
         SET hydro_operational_chars_scenario_id = ?
-        WHERE (operational_type = 'hydro_curtailable'
+        WHERE (operational_type = 'gen_hydro'
         OR operational_type ='hydro_noncurtailable')
         AND project_operational_chars_scenario_id = ?;
         """

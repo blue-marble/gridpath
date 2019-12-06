@@ -2398,8 +2398,8 @@ total_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_hydro_curtailable;
-CREATE TABLE results_project_dispatch_hydro_curtailable (
+DROP TABLE IF EXISTS results_project_dispatch_gen_hydro;
+CREATE TABLE results_project_dispatch_gen_hydro (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,

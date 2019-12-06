@@ -36,7 +36,7 @@ def add_module_specific_components(m, d):
     m.HYDRO_CURTAILABLE_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=
-        generator_subset_init("operational_type", "hydro_curtailable")
+        generator_subset_init("operational_type", "gen_hydro")
     )
 
     m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = Set(dimen=2)
@@ -401,7 +401,7 @@ def load_module_specific_data(m, data_portal,
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
-        if row[1] == 'hydro_curtailable':
+        if row[1] == 'gen_hydro':
             projects.append(row[0])
         else:
             pass
@@ -465,7 +465,7 @@ def load_module_specific_data(m, data_portal,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_up_when_on_rate"]
                        ):
-            if row[1] == "hydro_curtailable" and row[2] != ".":
+            if row[1] == "gen_hydro" and row[2] != ".":
                 ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -478,7 +478,7 @@ def load_module_specific_data(m, data_portal,
                        dynamic_components["operational_type"],
                        dynamic_components["ramp_down_when_on_rate"]
                        ):
-            if row[1] == "hydro_curtailable" and row[2] != ".":
+            if row[1] == "gen_hydro" and row[2] != ".":
                 ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -499,7 +499,7 @@ def export_module_specific_results(mod, d,
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "dispatch_hydro_curtailable.csv"),
+                           "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "balancing_type_project", "horizon",
@@ -537,7 +537,7 @@ def get_module_specific_inputs_from_database(
     """
     c = conn.cursor()
     # Select only budgets/min/max of projects in the portfolio
-    # Select only budgets/min/max of projects with 'hydro_curtailable'
+    # Select only budgets/min/max of projects with 'gen_hydro'
     # Select only budgets/min/max for horizons from the correct temporal
     # scenario and subproblem
     # Select only horizons on periods when the project is operational
@@ -553,7 +553,7 @@ def get_module_specific_inputs_from_database(
         (SELECT project, hydro_operational_chars_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = 'hydro_curtailable') AS op_char
+        AND operational_type = 'gen_hydro') AS op_char
         USING (project)
         CROSS JOIN
         (SELECT horizon
@@ -679,18 +679,18 @@ def import_module_specific_results_to_database(
     :return: 
     """
     print("project dispatch hydro curtailable")
-    # dispatch_hydro_curtailable.csv
+    # dispatch_gen_hydro.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="project_dispatch_hydro_curtailable",
+        table="project_dispatch_gen_hydro",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "dispatch_hydro_curtailable.csv"),
+                           "dispatch_gen_hydro.csv"),
               "r") as h_dispatch_file:
         reader = csv.reader(h_dispatch_file)
 
@@ -716,7 +716,7 @@ def import_module_specific_results_to_database(
             )
     insert_temp_sql = """
         INSERT INTO
-        temp_results_project_dispatch_hydro_curtailable{}
+        temp_results_project_dispatch_gen_hydro{}
             (scenario_id, project, period, subproblem_id, stage_id, 
             balancing_type_project, horizon, timepoint,
             timepoint_weight, number_of_hours_in_timepoint, 
@@ -727,7 +727,7 @@ def import_module_specific_results_to_database(
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_dispatch_hydro_curtailable
+        INSERT INTO results_project_dispatch_gen_hydro
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint,
@@ -737,7 +737,7 @@ def import_module_specific_results_to_database(
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint,
         load_zone, technology, power_mw, scheduled_curtailment_mw
-        FROM temp_results_project_dispatch_hydro_curtailable{}
+        FROM temp_results_project_dispatch_gen_hydro{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
@@ -779,7 +779,7 @@ def process_module_specific_results(db, c, subscenarios):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch_hydro_curtailable
+            FROM results_project_dispatch_gen_hydro
             GROUP BY subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl
         JOIN (
