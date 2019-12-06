@@ -1,6 +1,6 @@
-=============================
+======================================
 Running GridPath from the Command Line
-=============================
+======================================
 
 The gridpath_run and gridpath_run_e2e commands
 ----------------------------------------------
@@ -68,13 +68,13 @@ Examples
 To run any of the problems in the *examples* directory, you also need
 to specify a scenario location (as these are not in the default
 *scenarios* subdirectory). For example, to run the *test* scenario in
-the examples directory, run the following::
+the *examples* directory, run the following::
 
     python run_scenario.py --scenario test --scenario_location examples
 
 .. note:: Some of the examples require a non-linear solver such as ipopt. If
     you don't have a non-linear solver, you will not be able to solve these
-    examples and some of the unit tests will fail.
+    examples.
 
 ========
 Workflow

@@ -29,8 +29,7 @@ What is GridPath?
 
 GridPath is a comprehensive grid analytics platform that integrates several
 types of power system modeling approaches, including multi-stage
-production-cost simulation, long-term capacity expansion, and
-(eventually) price-based asset valuation.
+production-cost simulation and long-term capacity expansion.
 
 GridPath has a modular architecture that makes it possible to combine
 modules to create optimization problems with varying features and levels of
@@ -50,7 +49,7 @@ The main constraints include:
 #. Policy: meeting policy targets.
 
 The objective function is typically to minimize system costs, but other
-formulations are possible.
+formulations may be possible.
 
 GridPath can simulate the operations of the power system, capturing the
 capabilities of and constraints on generation, storage, and transmission

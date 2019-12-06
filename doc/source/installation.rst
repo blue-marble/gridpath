@@ -183,8 +183,14 @@ files any way you like -- GridPath includes support for input and output
 data management via an SQLite database. We recommend that you store data in
 the database and use GridPath's built-in tools for loading input data into the
 database, creating scenarios and generating scenario input files, and
-importing scenario results into the database. We recommend `SQLite Studio
-<https://sqlitestudio.pl/index.rvt>`_ as an SQLite database GUI.
+importing scenario results into the database. Using the GridPath user
+interface requires that data be stored in a database.
+
+We recommend `SQLite Studio<https://sqlitestudio.pl/index.rvt>`_ as an SQLite
+database GUI.
+
+We have implemented various tools to help you build your database. See the
+'Building the GridPath Database' section of the documentation.
 
 ------
 Solver
@@ -206,14 +212,15 @@ instructions for Windows `here <https://www.java.com/en/download/help/path
 .xml>`_).
 
 
-====================
-Testing the Codebase
-====================
+=========================
+Testing Your Installation
+=========================
 
-To test the GridPath codebase, use the unittest module as follows::
+To test the GridPath codebase, use the unittest module as follows from the
+:code:`PATH/TO/GRIDPATH` directory::
 
     python -m unittest discover tests
 
-Scenario directories are assumed to be located in ./scenarios/ by
-default. For example, the inputs, results, and logs for a scenario
-named 'test' would be in *./scenarios/test/*.
+.. note:: Some of the tests require a non-linear solver (ipopt). If you
+    don't have ipopt installed, you will not be able to solve these examples
+    and some of the unit tests will fail.
