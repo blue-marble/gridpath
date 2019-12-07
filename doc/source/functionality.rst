@@ -130,7 +130,7 @@ Geographic Setup
 Load Zones
 ----------
 
-The main geographic unit in GridPath is the **load zone**. The load zone is
+The main geographic unit in GridPath is the *load zone*. The load zone is
 the level at which the load-balance constraints are enforced. In GridPath,
 we can model a single load zone (copper plate) or multiple load zones, which
 can be connected with transmission. This flexibility makes it possible to
@@ -141,11 +141,11 @@ lower zonal resolution for the same region).
 Other Geographic Units
 ----------------------
 
-Optional levels of geographic resolution include **balancing areas** (BAs) for
-reserve requirements and **policy zones**. In GridPath, it is possible
-for generators in the same load zone to contribute to different reserve
-balancing areas and/or policy zones. Two possible configurations are shown
-below.
+Optional levels of geographic resolution include *balancing areas* (BAs) for
+operational and reliability reserve requirements and *policy zones* for
+policy requirements. In GridPath, it is possible for generators in the same
+load zone to contribute to different reserve balancing areas and/or policy
+zones. Two possible configurations are shown below.
 
 Geographic Configuration 1:
 
@@ -159,21 +159,20 @@ Projects
 ========
 
 Generation, storage, and load-side resources in GridPath are called
-**projects**. Each project is associated with a *load zone* whose load-balance
-constraint it contributes to. In addition, each project is assigned a
-*capacity type* and an *operational type*. These types are described in more
-detail below.
+*projects*. Each project is associated with a *load zone* whose load-balance
+constraint it contributes to. In addition, each project must be assigned a
+*capacity type*, an *availability type*, and an *operational type*. These
+types are described in more detail below.
 
-Project Capacity
-----------------
+Project Capacity Types
+----------------------
 Each project in GridPath must be assigned a *capacity type*. The *capacity
-type* determines the available capacity and the capacity-associated costs of
-generation, storage, and demand-side infrastructure 'projects' in the
+type* determines the capacity and the capacity-associated costs of
+generation, storage, and demand-side infrastructure *projects* in the
 optimization problem. The currently implemented capacity types include:
 
-Specified Generation
-^^^^^^^^^^^^^^^^^^^^
-
+Specified Generation (*gen_spec*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators that are available to the optimization
 without having to incur an investment cost, e.g. existing generators or
 generators that will be built in the future and whose capital costs we want
@@ -181,29 +180,34 @@ to ignore (in the objective function). A specified generator can be available
 in all periods, or in some periods only, with no restriction on the order
 and combination of periods. The user may specify a fixed O&M cost for these
 generators, but this cost will be a fixed number in the objective function
-and will therefore not affect any of the optmization decisions.
+and will therefore not affect any of the optimization decisions.
 
 
-Specified Generation with Linear Economic Retirement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
+Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators with the same characteristics as
-*specified generation*, but whose fixed O&M cost can be avoided by
-'retiring' them. The optimization can make the decision to retire generation
-in each study period. Once retired, the generator may not become operational
+*gen_ret_lin*, but whose fixed O&M cost can be avoided by 'retiring' them.
+The optimization can make the decision to retire generation in each study
+*period*. Once retired, the generator may not become operational
 again. Retirement decisions for this capacity type are 'linearized,' i.e.
 the optimization may retire generators partially (e.g. retire only 200 MW of
 a 500-MW generator). If retired, the annual fixed O&M cost of these projects
 is avoided in the objective function.
 
-Linear New-Build Generation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes generators with the same characteristics as
+*gen_ret_lin*. However, retirement decisions are binary, i.e. the generator
+is either fully retired or not retired at all.
+
+Linear New-Build Generation (*gen_new_lin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generation that can be built by the
 optimization at a cost. These investment decisions are linearized, i.e.
 the decision is not whether to build a unit of a specific size (e.g. a
 50-MW combustion turbine), but how much capacity to build at a particular
-project. Once built, the capacity remains available for the duration of the
-project's pre-specified lifetime. Minimum and maximum capacity constraints
+*project*. Once built, the capacity exists for the duration of the
+generator's pre-specified lifetime. Minimum and maximum capacity constraints
 can be optionally implemented. The cost input to the model is a annualized
 cost per unit capacity. If the optimization makes the decision to build
 new capacity, the total annualized cost is incurred in each period of the study
@@ -211,9 +215,15 @@ new capacity, the total annualized cost is incurred in each period of the study
 duration of the project's lifetime. Annual fixed O&M costs are also incurred
 by linear new-build generation.
 
-Specified Storage
-^^^^^^^^^^^^^^^^^
+Binary New-Build Generation (*gen_new_bin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes generation units of a pre-specified size, costs,
+and operational characteristics that can either be built by the optimization
+or not in all or some investment *periods*. Once built, the capacity remains
+available for the duration of the project's pre-specified lifetime.
 
+Specified Storage (*stor_spec*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes the power (i.e. charging and discharging
 capacity) and energy capacity (i.e. duration) of storage projects that are
 available to the optimization without having to incur an investment cost.
@@ -228,8 +238,8 @@ specified-storage projects, but this cost will be a fixed number in the
 objective function and will therefore not affect any of the optimization
 decisions.
 
-Linear New-Build Storage
-^^^^^^^^^^^^^^^^^^^^^^^^
+Linear New-Build Storage (*stor_new_lin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes storage projects that can be built by the
 optimization at a cost. Investment decisions made separately for the
 project's power capacity and its energy capacity, therefore endogenously
@@ -242,99 +252,62 @@ constraints can be optionally implemented. Like with new-build generation,
 capacity costs added to the objective function include the annualized
 capital cost and the annual fixed O&M cost.
 
-Shiftable Load Supply Curve
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Binary New-Build Storage (*stor_new_bin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This capacity type describes storage units of pre-specified size, costs, and
+operational characteristics that can either be built by the optimization or
+not in all or some investment *periods*.
+
+Shiftable Load Supply Curve (*dr_new*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes a supply curve for new shiftable load capacity.
 This type is a custom implementation for GridPath projects in the California
 Integrated Resource Planning proceeding.
 
-Capacity types to be implemented include:
 
-Binary New-Build Generation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes pre-specified generators (i.e. generators with
-a pre-specified capacity) that can be built by the optimization at a cost.
-These investment decisions are binary, i.e. the optimization decides whether
-or not to build the project. Once built, the capacity remains available for
-the duration of the project's pre-specified lifetime.
+Project Availability Types
+--------------------------
+Each *project* in GridPath must be assigned an *availability type* that
+determines how much of a project's capacity is available to operate in each
+*timepoint*. For example, some or all of a project's capacity may be
+unavailable due to maintenance and other planned or unplanned outages. The
+following *availability types* have been implemented.
+
+Exogenous
+^^^^^^^^^
+For each project assigned this *availability type*, the user may specify an
+(un)availability schedule, i.e. a capacity derate of 0 to 1 for each
+timepoint in which the project may be operated. If fully derated in a given
+timepoint, the available project capacity will be 0 in that timepoint and all
+operational decision variables will therefore also be constrained to 0 in the
+optimization.
+
+Binary
+^^^^^^
+*Projects* assigned this availability type have binary decision variables
+for their availability in each timepoint. This type can be useful in
+optimizing planned outage schedules. A *project* of this type is constrained
+to be unavailable for at least a pre-specified number of hours in each
+*period*. In addition, each unavailability event can be constrained to be
+within a minimum and maximum number of hours, and constraints can also be
+implemented on the minimum and maximum duration between unavailability events.
+
+Continuous
+^^^^^^^^^^
+This *availability type* is formulated like the *binary* type except that
+all binary decision variables are relaxed to be continuous with bounds
+between 0 and 1. This can be useful to address computational difficulties
+when modeling endogenous *project* availabilities.
 
 
-Binary New-Build Storage
-^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes pre-specified storage projects that can be built
-by the optimization at a cost. The decisions are binary (i.e. the
-model decides how whether or not to built a project of pre-defined power and
-energy capacity). Once built, these storage projects remain available for
-the duration of their pre-specified lifetime.
-
-Specified Generation with Binary Economic Retirement
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This capacity type describes generators with the same characteristics as
-*specified generation*, but whose fixed O&M cost can be avoided by
-'retiring' them. The optimization can make the decision to retire generation
-in each study period. Once retired, the generator may not become operational
-again. Retirement decisions for this capacity type are binary, i.e.
-'partial' retirements are not allowed.
-
-Other
-^^^^^
-TBD
-
-
-Project Operations
-------------------
+Project Operational Types
+-------------------------
 Each project in GridPath must be assigned an *operational type*. The
 *operational_type* determines the operational capabilities of a project. The
 currently implemented operational types include:
 
-Must-Run
-^^^^^^^^
-This operational type describes generators that produce constant power equal
-to their capacity in all timepoints when they are available. They cannot
-provide reserves. Costs for this operational type include fuel costs and
-variable O&M costs.
-
-Dispatchable Always-On
-^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that must produce power in all
-timepoints they are available; unlike the must-run generators, however, they
-can vary power output between a pre-specified minimum stable level (greater
-than 0) and their available capacity. Always-on generators cannot provide
-reserves. Ramp rate limits can be optionally specified. Costs for this
-operational type include fuel costs and variable O&M costs.
-
-Dispatchable Binary-Commit
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational types describes generators that can be turned on and off,
-i.e. that have binary commitment variables associated with them. If they are
-committed, these generators can vary power output between a pre-specified
-minimum stable level (greater than 0) and their available capacity. Heat
-rate degradation below full load is considered. If the generators are not
-committed, power output is 0. The optimization makes commitment and power
-output decisions in every timepoint. These generators can optionally be
-allowed to provide upward and/or downward reserves. Additional functionality
-will include ramp rate limits as well us minimum up and down time
-constraints. Starts and stops -- and the associated cost and emissions --
-can be tracked and constrained for these generators. Costs for this
-operational type include fuel costs, variable O&M costs, and startup and
-shutdown costs.
-
-Dispatchable Continuos-Commit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is the same as the 'dispatchable binary commit' type,
-but the commitment decision are declared as continuous (with bounds of 0 to
-1) instead of binary, so 'partial' generators can be committed. This
-treatment can be helpful in situations when mixed-integer problem runtimes
-are long and is similar to loosening the MIP gap (but can target specific
-generators). The 'continuous-commit' generators can vary power output
-between a minimum loading level (specified as a fraction of committed
-capacity) and the committed capacity in every timepoint. Costs for this
-operational type include fuel costs, variable O&M costs, and startup and
-shutdown costs.
-
-Dispatchable No-Commit
-^^^^^^^^^^^^^^^^^^^^^^
+Simple Generation (*gen_simple*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes generators that can vary their output
 between 0 and full capacity in every timepoint in which they are available
 (i.e. they have power output variable but no commitment variables associated
@@ -343,11 +316,51 @@ load and they can be allowed to provide upward and/or downward reserves.
 Costs for this operational type include fuel costs, variable O&M costs, and
 startup and shutdown costs.
 
-Dispatchable Capacity-Commit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Must-Run Generation (*gen_must_run*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type describes generators that produce constant power equal
+to their capacity in all timepoints when they are available. They cannot
+provide reserves. Costs for this operational type include fuel costs and
+variable O&M costs.
 
-This operational type is similar to the 'dispatchable continuous commit'
-operational type but is particularly well suited for application to 'fleets'
+Always-On Generation (*gen_always_on*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type describes generators that must produce power in all
+timepoints they are available; unlike the must-run generators, however, they
+can vary power output between a pre-specified minimum stable level (greater
+than 0) and their available capacity. Always-on generators cannot provide
+reserves. Ramp rate limits can be optionally specified. Costs for this
+operational type include fuel costs and variable O&M costs.
+
+Binary-Commit Generation (*gen_commit_bin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational types describes generators that can be turned on and off,
+i.e. that have binary commitment variables associated with them. The
+optimization makes commitment and power output decisions in every timepoint.
+If the generators are not committed, power output is 0. If they are
+committed, these generators can vary power output between a pre-specified
+minimum stable level (greater than 0) and their available capacity. Run-up
+and shut-down trajectories can be optionally modeled. Heat rate degradation
+below full load is considered. These generators can optionally be allowed to
+provide upward and/or downward reserves. Ramp rate limits as well us minimum
+up and down time constraints are implemented. Starts and stops -- and the
+associated cost and emissions -- can be tracked and constrained for these
+generators. Costs for this operational type include fuel costs, variable O&M
+costs, and startup and shutdown costs.
+
+Continuous-Commit Generation (*gen_commit_lin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type is the same as the *gen_commit_bin* operational type,
+but the commitment decisions are declared as continuous (with bounds of 0 to
+1) instead of binary, so 'partial' generators can be committed. This
+treatment can be helpful in situations when mixed-integer problem runtimes
+are long and is similar to loosening the MIP gap (but can target specific
+generators).
+
+Capacity-Commit Generation (*gen_commit_cap*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This operational type is particularly well suited for application to 'fleets'
 of generators with the same characteristics. For example, we could have a
 GridPath project with a total capacity of 2000 MW, which actually consists
 of four 500-MW units. The optimization decides how much total capacity to
@@ -374,8 +387,8 @@ Costs for this operational type include fuel costs, variable O&M costs, and
 startup and shutdown costs.
 
 
-Hydro Curtailable
-^^^^^^^^^^^^^^^^^
+Curtailable Hydro Generation (*gen_hydro*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation. These
 projects can vary power output between a minimum and maximum level specified
 for each horizon, and must produce a pre-specified amount of energy on each
@@ -384,31 +397,31 @@ curtailable hydro projects can be allowed to provide upward and/or downward
 reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
 Costs for this operational type include variable O&M costs.
 
-Hydro Non-Curtailable
-^^^^^^^^^^^^^^^^^^^^^
+Non-Curtailable Hydro Generation (*gen_hydro_must_take)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation and is
-like the 'hydro curtailable' operational type except that curtailment is not
+like the *gen_hydro* operational type except that curtailment is not
 allowed.
 
-Variable
-^^^^^^^^
+Curtailable Variable Generation (*gen_var*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes generators whose power output is equal to a
 pre-specified fraction of their available capacity (a capacity factor
 parameter) in every timepoint. Curtailment is allowed. GridPath includes
 experimental features to allow these generators to provide upward and/or
 downward reserves. Costs for this operational type include variable O&M costs.
 
-Variable Non-Curtailable
-^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is like the 'variable' type except that curtailment is
+Non-curtailable Variable Generation (*gen_var_must_take*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This operational type is like the *gen_var* type except that curtailment is
 not allowed.
 
-Storage Generic
-^^^^^^^^^^^^^^^
+Storage (*stor*)
+^^^^^^^^^^^^^^^^
 This operational type describes a generic storage resource. It can be
 applied to a battery, to a pumped-hydro project or another storage
 technology. The type is associated with three main variables in each
-timepont when the project is available: the charging level, the discharging
+timepoint when the project is available: the charging level, the discharging
 level, and the energy available in storage. The first two are constrained to
 be less than or equal to the project's power capacity. The third is
 constrained to be less than or equal to the project's energy capacity. The
@@ -418,8 +431,8 @@ charging and discharging efficiencies. Storage projects can be allowed to
 provide upward and/or downward reserves. Costs for this operational type
 include variable O&M costs.
 
-Shiftable Load Generic
-^^^^^^^^^^^^^^^^^^^^^^
+Shiftable Load (*dr_shift*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes a generic shiftable load resource. There are
 two opertional variables in each timepoint: one for shifting load up (adding
 load) and another for shifting load down (subtracting load). These cannot
@@ -430,11 +443,6 @@ down (subtract load). These cannot exceed the power capacity of the project
 and must meet an energy balance constraint on each horizon (no efficiency
 loss implemented).
 
-Other
-^^^^^
-Other operational types we could potentially implement include: a cascading
-hydro system, compressed air energy storage, other types of load response,
-etc.
 
 .. _load-balance-section-ref:
 
