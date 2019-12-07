@@ -13,7 +13,7 @@ desired objective (e.g. minimize cost).
 Temporal Setup
 ==============
 
-GridPath's temporal span and resolution is flexible: the user can decide on
+GridPath's temporal span and resolution are flexible: the user can decide on
 a temporal setup by assigning appropriate weights to and relationships among
 GridPath's temporal units.
 
@@ -532,14 +532,14 @@ transport model only. In the future, we may add DC and/or AC network
 capability.
 
 
-Transmission Capacity
----------------------
+Transmission Capacity Types
+---------------------------
 Each transmission line in GridPath must be assigned a *capacity type*. The
 line's *capacity type* determines the available transmission capacity and the
 capacity-associated costs. The currently implemented capacity types include:
 
-Specified Transmission
-^^^^^^^^^^^^^^^^^^^^^^
+Specified Transmission (*tx_spec*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes transmission lines that are available to the
 optimization without having to incur an investment cost, e.g. existing
 lines or lines that will be built in the future and whose capital costs
@@ -548,8 +548,8 @@ can be available in all periods, or in some periods only, with no
 restriction on the order and combination of periods. The two transmission
 line directions may have different specified capacites.
 
-Linear New-Build Transmission
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Linear New-Build Transmission (*tx_new_lin*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This capacity type describes transmission that can be built by the
 optimization at a cost. These investment decisions are linearized, i.e.
@@ -563,13 +563,48 @@ the number of years the period represents) for the duration of the project's
 lifetime. Annual fixed O&M costs are also incurred by linear new-build
 transmission lines.
 
-Transmission Operations
------------------------
-Transmission lines in GridPath will eventually be assigned an *operational
-type*. The *operational_type* determines the formulation of the operational
-capabilities of the transmission line. Currently, transmission line flows
-can be modeled only using a linear transport model only, i.e. transmission
-flow is constrained to be less than or equal to the line capacity.
+Transmission Operational Types
+------------------------------
+Transmission lines in GridPath must be assigned an *operational type*. The
+*operational type* determines the formulation of the operational
+capabilities of the transmission line. The *operational types* currently
+implemented include:
+
+Linear Transport Transmission (*tx_simple*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Transmission line flows are simulated using a linear transport model,
+i.e. transmission flow is constrained to be less than or equal to the line
+capacity.
+
+DC Power Flow (*tx_dcopf*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+GridPath can also model DC power flow on the transmission network by
+assigning the *tx_dcopf* operational type to the transmission lines modeled.
+DC power flow is a linearized approach to the AC Power Flow problem, which
+is a non-linear, non-convex set of equations describing the energy flow
+through each transmission line. The three main assumptions for the DC power
+flow approximation are: 1) line resistances are negligible compared to line
+reactances, so reactive power flows can be neglected; 2) voltage magnitudes at
+each bus are kept at their nominal value; and 3) voltage angle differences
+across branches are small enough such that the sine of the difference can be
+approximated by the difference, i.e. sin θ ∼ θ .
+
+Using these approximations, the power flow problem becomes linear and can be
+added to our capacity-expansion / unit commitment model using an additional
+set of constraints for flows on each *tx_dcopf* line.
+
+.. warning:: Transmission operational types can be optionally be mixed.
+    However, if there are any transmission lines that do not have the
+    *tx_dcopf* operational types, they will simply not be considered when
+    setting up the network constraints laid out in the *tx_dcopf* module, so
+    the network flows will be inaccurate.
+
+.. warning:: GridPath uses one user-specified reactance to characterize a
+    transmission line and this value doesn't change across time periods, even
+    when the planned transmission capacity changes or when the model selects to
+    build additional capacity (in the case of new build transmission). If
+    this is not a reasonable assumption for the transmission system of
+    interest, we recommended not to use the *tx_dcopf* operational type.
 
 Operating Reserves
 ==================
