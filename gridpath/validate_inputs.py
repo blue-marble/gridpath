@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This script iterates over all modules required for a GridPath scenario and
+calls their *validate_inputs()* method, which performs various validations
+of the input data and scenario setup.
+"""
+
+
 from __future__ import print_function
 
 from builtins import str

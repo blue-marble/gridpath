@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This script iterates over all modules required for a GridPath scenario and
+calls their *process_results()* method, which makes updates to database
+tables.
+
+The main() function of this script can also be called with the
+*gridpath_process_results* command when GridPath is installed.
+"""
+
+
 from __future__ import print_function
 
 from argparse import ArgumentParser
