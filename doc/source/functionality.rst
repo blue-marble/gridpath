@@ -507,9 +507,9 @@ Optional Functionality
 
 Transmission
 ============
-In GridPath, the user can include transmission lines and transmission
-topography by specifying the available transmission lines and which load
-zones they connect.
+In GridPath, the user can include transmission line flows and transmission
+topography by selecting the 'transimssion' feature and specifying the
+available transmission lines and which load zones they connect.
 
 For each load zone and timepoint, the net flow on all transmission lines
 connected to the load zone is aggregated and added as a production
@@ -614,13 +614,14 @@ frequency response. The implementation of each reserve type is standardized.
 The user must define the reserve balancing areas along with any penalties
 for violation of the reserve-balance constraints. For each balancing area,
 the reserve requirement for each timepoint must be specified. Only
-exogenously-specified reserves are implmented at this stage. Each project
+exogenously-specified reserves are implemented at this stage. Each project
 that can provide the reserve type must then be assigned a balancing area to
 whose reserve-balance constraint it can contribute. The project-level
 reserve-provision variables are dynamically added to the project's operating
 constraints if the project can provide each reserve type. Total reserve
 provision by projects in each balancing area is then aggregated and
-constrained to equal the BA's reserve requirement in each timepoint. Any
+constrained to equal the BA's reserve requirement in each timepoint. The
+user can optionally allow these constraints to be violated at a cost. Any
 reserve-balance constraint violation penalty costs are added to the
 objective function.
 
@@ -783,12 +784,6 @@ GridPath's architecture makes it possible for the same modules to be re-used
 in production-cost or capacity-expansion modeling settings, allowing for a
 seamless transition from one approach to the other, as datasets can be more
 easily reused.
-
-
-Other
-=====
-
-TBD
 
 Linear, Mixed-Integer, and Non-Linear Formulations
 ==================================================
