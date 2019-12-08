@@ -5,8 +5,6 @@
 Load project zones data
 """
 
-from collections import OrderedDict
-
 from db.utilities import project_zones
 
 def load_project_load_zones(io, c, subscenario_input, data_input):

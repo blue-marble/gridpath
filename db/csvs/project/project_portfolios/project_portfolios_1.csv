@@ -1,0 +1,8 @@
+project_portfolio_scenario_id,project,existing,new_build,capacity_type
+1,coal_existing,,,existing_gen_no_economic_retirement
+1,gas_existing,,,existing_gen_no_economic_retirement
+1,wind_existing,,,existing_gen_no_economic_retirement
+1,hydro_existing,,,existing_gen_no_economic_retirement
+1,gas_new,,,new_build_generator
+1,solar_new,,,new_build_generator
+1,battery_new,,,new_build_storage

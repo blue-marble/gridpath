@@ -1,3 +1,8 @@
 load_zone_scenario_id,project_load_zone_scenario_id,project,load_zone
-1,1,solar1,India
-1,1,coal1,India
+1,1,coal_existing,Isengard
+1,1,gas_existing,Isengard
+1,1,wind_existing,Rivendell
+1,1,hydro_existing,Isengard
+1,1,solar_new,Rivendell
+1,1,gas_new,Rivendell
+1,1,battery_new,Rivendell

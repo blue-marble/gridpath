@@ -1,0 +1,3 @@
+project,variable_generator_profile_scenario_id,name,description,filename
+wind_existing,1,project_variable_generator_profile_base,project variable generator profile base,project_variable_generator_profiles_1_wind
+solar_new,1,project_variable_generator_profile_base,project variable generator profile base,project_variable_generator_profiles_1_solar
