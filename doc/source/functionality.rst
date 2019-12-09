@@ -371,7 +371,7 @@ downward reserves. Costs for this operational type include variable O&M costs.
 
 Variable Non-Curtailable
 ^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is like the 'variable' type except that curtailment is
+This operational type is like the 'gen_var' type except that curtailment is
 not allowed.
 
 Storage Generic

@@ -197,17 +197,17 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     req_cap_types = set(subscenarios.get_required_capacity_type_modules(c))
 
     new_build_types = {
-        "new_build_generator,",
-        "new_build_storage",
-        "new_shiftable_load_supply_curve"
+        "gen_new_lin,",
+        "stor_new_lin",
+        "dr_new"
     }
     existing_build_types = {
-        "existing_gen_no_economic_retirement",
-        "existing_gen_binary_economic_retirement",
-        "existing_gen_linear_economic_retirement"
+        "gen_spec",
+        "gen_ret_bin",
+        "gen_ret_lin"
     }
     load_shift_types = {
-        "new_shiftable_load_supply_curve"
+        "dr_new"
     }
 
     # Determine required subscenario_ids

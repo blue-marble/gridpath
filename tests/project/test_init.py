@@ -65,13 +65,13 @@ class TestProjectInit(unittest.TestCase):
         # if new types are added
         # Check if capacity type modules are as expected
         expected_required_capacity_modules = sorted([
-            "new_build_generator", "new_binary_build_generator",
-            "new_build_storage", "new_binary_build_storage",
-            "storage_specified_no_economic_retirement",
-            "existing_gen_no_economic_retirement",
-            "existing_gen_linear_economic_retirement",
-            "existing_gen_binary_economic_retirement",
-            "new_shiftable_load_supply_curve"
+            "gen_new_lin", "gen_new_bin",
+            "stor_new_lin", "stor_new_bin",
+            "stor_spec",
+            "gen_spec",
+            "gen_ret_lin",
+            "gen_ret_bin",
+            "dr_new"
         ])
         actual_required_capacity_modules = \
             sorted(getattr(d, "required_capacity_modules"))
@@ -89,11 +89,11 @@ class TestProjectInit(unittest.TestCase):
 
         # Check if operational type modules are as expected
         expected_required_operational_modules = sorted([
-            "dispatchable_capacity_commit", "hydro_curtailable",
-            "hydro_noncurtailable", "must_run",
-            "storage_generic", "variable", "dispatchable_binary_commit",
-            "dispatchable_continuous_commit", "dispatchable_no_commit",
-            "variable_no_curtailment", "always_on", "shiftable_load_generic"
+            "gen_commit_cap", "gen_hydro",
+            "gen_hydro_must_take", "gen_must_run",
+            "stor", "gen_var", "gen_commit_bin",
+            "gen_commit_lin", "gen_simple",
+            "gen_var_must_take", "gen_always_on", "dr"
         ])
         actual_required_operational_modules = \
             sorted(getattr(d, "required_operational_modules"))
@@ -262,8 +262,8 @@ class TestProjectInit(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["gas_ct", "new_build_generator",
-                           "dispatchable_capacity_commit", 0.5]
+                    data=[["gas_ct", "gen_new_lin",
+                           "gen_commit_cap", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "min_stable_level_error": [],
