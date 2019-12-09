@@ -31,6 +31,7 @@ def add_module_specific_components(m, d):
     """
     :param m: the Pyomo abstract model object we are adding components to
     :param d: the DynamicComponents class object we will get components from
+
     First, we determine the project subset with 'gen_commit_bin'
     as operational type. This is the *DISPATCHABLE_BINARY_COMMIT_GENERATORS*
     set, which we also designate with :math:`BCG\subset R` and index
@@ -844,9 +845,11 @@ def power_provision_rule(mod, g, tmp):
     :param tmp: the operational timepoint
     :return: expression for power provision by dispatchable-binary-commit
      generators
+
     Power provision for dispatchable-binary-commit generators is a
     variable constrained to be between the generator's minimum stable level
     and its capacity if the generator is committed and 0 otherwise.
+
     """
     return mod.Provide_Power_DispBinaryCommit_MW[g, tmp]
 

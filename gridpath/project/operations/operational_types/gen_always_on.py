@@ -35,12 +35,12 @@ def add_module_specific_components(m, d):
     *always_on_min_stable_level_fraction* \ :sub:`aog`\ -- the minimum stable
     level of the always on generator, defined as a fraction of its capacity \n
     *always_on_unit_size_mw* \ :sub:`aog`\ -- the unit size for the
-    project, which is needed to calculate fuel burn if the project
-    represents a fleet \n
-    *always_on_ramp_down_rate* \ :sub:`aog`\ -- the project's upward ramp rate
-    limit, defined as a fraction of its capacity per minute \n
-    *always_on_ramp_up_rate* \ :sub:`aog`\ -- the project's downward ramp rate
-    limit, defined as a fraction of its capacity per minute \n
+    project, which is needed to calculate fuel burn if the project represents
+    a fleet. \n
+    *always_on_ramp_down_rate* \ :sub:`aog`\ -- the project's upward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
+    *always_on_ramp_up_rate* \ :sub:`aog`\ -- the project's downward
+    ramp rate limit, defined as a fraction of its capacity per minute \n
 
     The power provision variable for always-on generators,
     Provide_Power_AlwaysOn_MW, is defined over
@@ -57,6 +57,7 @@ def add_module_specific_components(m, d):
     To be added
         - ramp constraint formulation
         - add reserves to pmax / pmin constraint
+
     """
     m.ALWAYS_ON_GENERATORS = Set(
         within=m.PROJECTS,

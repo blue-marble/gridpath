@@ -49,7 +49,7 @@ Projects
 ========
 
 gridpath.project.__init__
-^^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 .. automodule:: gridpath.project.__init__
     :members: determine_dynamic_components, add_model_components
 
@@ -75,32 +75,32 @@ gridpath.project.capacity.capacity_types
 .. automodule:: gridpath.project.capacity.capacity_types.__init__
 
 gridpath.project.capacity.capacity_types.gen_spec
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.gen_spec
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.gen_new_lin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.gen_ret_lin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
     :members: add_module_specific_components, capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.stor_spec
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.stor_spec
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.stor_new_lin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
 gridpath.project.capacity.capacity_types.dr_new
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
@@ -123,42 +123,42 @@ gridpath.project.operations.costs
     :members: add_model_components
 
 gridpath.project.capacity.operational_types.gen_must_run
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_must_run
     :members: power_provision_rule
 
 gridpath.project.capacity.operational_types.gen_always_on
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_always_on
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.gen_commit_bin
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.gen_commit_cap
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.gen_hydro_must_take
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take
     :members: add_module_specific_components, power_provision_rule
 
-gridpath.project.capacity.operational_types.variable
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.variable
+gridpath.project.capacity.operational_types.gen_var
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_var
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.stor
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.stor
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.dr
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.dr
 
 
@@ -281,7 +281,7 @@ other GridPath modules. The standard methods are included in the following
 modules:
 
 gridpath.project.operations.reserves.reserve_provision
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------------------
 
 .. automodule:: gridpath.project.operations.reserves.reserve_provision
     :members: generic_determine_dynamic_components
