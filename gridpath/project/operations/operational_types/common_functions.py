@@ -103,7 +103,8 @@ def determine_relevant_timepoints_forward(mod, g, tmp, startup_time):
     Get the list of future timepoints for which a start in that timepoint would
     lead to startup power in timepoint *tmp*. The longer the startup duration,
     the longer the lists of relevant timepoints, since the startup trajectory
-    stretches many timepoints.
+    stretches many timepoints. This list is used when calculating the startup
+    power expression in the dispatchable_binary_commit module.
 
     The returned list doesn't include the timepoint right after timepoint *tmp*,
     even though a start in the next timepoint would certainly lead to some type

@@ -440,7 +440,7 @@ def add_module_specific_components(m, d):
         Get the startup power (only applicable if timepoint tmp takes place
         during the startup trajectory duration of an active startup).
 
-        If the unit starst in the next timepoint, this expression will always
+        If the unit starts in the next timepoint, this expression will always
         return Pmin.
 
         In all other cases we need to determine the relevant timepoints, namely
@@ -455,7 +455,7 @@ def add_module_specific_components(m, d):
         in that relevant timepoint, and activate it if the unit is in fact
         starting in that relevant timepoint.
 
-        See constraint (37) in Morales-Espana et al. (2017).
+        See equation (37) in Morales-Espana et al. (2017).
 
         Example 1:
             tmp = 5,
