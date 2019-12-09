@@ -670,6 +670,141 @@ class TestOperationsInit(unittest.TestCase):
             )
             self.assertListEqual(expected_list, actual_list)
 
+    def test_startup_chars_validations(self):
+        columns = ["project", "startup_type_id", "down_time_hours",
+                   "startup_plus_ramp_up_rate", "startup_cost_per_mw",
+                   "startup_fuel_mmbtu_per_mw"]
+        columns_prj = ["project", "operational_type", "min_stable_level",
+                       "min_down_time_hours",
+                       "shutdown_plus_ramp_down_rate"]
+        test_cases = {
+            # Make sure correct inputs don't throw error
+            1: {"startup_df": pd.DataFrame(
+                    columns=columns,
+                    data=[["gas_ccgt", 1, 4, 0.003, 10, 5],
+                          ["gas_ccgt", 2, 6, 0.002, 20, 10],
+                          ["gas_ct", 1, 1, 0.01, 5, 2]
+                          ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4, 4, 1],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 1, 1]
+                          ]),
+                "error": [],
+                },
+            # Make sure we can deal with all empty inputs
+            2: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 0, None, None, None],
+                      ["gas_ct", 1, 0, None, None, None]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=["project", "operational_type", "min_stable_level"],
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2]
+                          ]),
+                "error": [],
+                },
+            # Make sure we can deal with some empty inputs
+            3: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 4, 0.003, 10, None],
+                      ["gas_ccgt", 2, 6, 0.002, 20, None],
+                      ["gas_ct", 1, 1, 0.01, 5, None]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4, 4, 1],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 1, None]
+                          ]),
+                "error": [],
+                },
+            # Make sure we spot:
+            #  - startup and shutdown durations that are too long
+            #  - invalid operational types with multiple startup types
+            #  - startup_type_id should be auto-increment
+            #  - missing down_time_hours in startup_chars
+            4: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 4, 0.003, 10, 5],
+                      ["gas_ccgt", 4, 6, 0.002, 20, 10],
+                      ["gas_ct", 1, None, 1, 5, 2]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_capacity_commit", 0.4, 4, 0.003],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 1, None]
+                          ]),
+                "error": ["Project 'gas_ccgt': Startup ramp duration of coldest start + "
+                          "shutdown ramp duration should be less than the minimum "
+                          "down time",
+                          "Project 'gas_ccgt': Only binary and continuous commitment operational"
+                          "types can have multiple startup types!",
+                          "Project 'gas_ccgt': Startup_type_id should be auto-increment "
+                          "(unique and incrementing by 1)",
+                          "Project 'gas_ct': startup_type_id and down_time_hours should "
+                          "be defined for each startup type."
+                          ],
+                },
+            # Make sure we spot:
+            #  - down time not increasing with startup_type_id
+            #  - no inputs for some of the startup types only
+            #  - mismatching down times between startup chars and opchars
+            5: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 8, 0.003, 10, 5],
+                      ["gas_ccgt", 2, 6, 0.002, None, 10],
+                      ["gas_ct", 1, 1, 0.01, 5, 2]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4, 8, 1],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 2, 1]
+                          ]),
+                "error": ["Project 'gas_ccgt': down_time_hours should increase with "
+                          "startup_type_id",
+                          "Project 'gas_ccgt': startup_cost_per_mw has has no inputs for some of the "
+                          "startup types; should either have inputs for all "
+                          "startup types, or none at all",
+                          "Project 'gas_ct': down_time_hours for hottest startup type "
+                          "should be equal to project's minimum down time"],
+                },
+            # Make sure we spot:
+            #  - ramp rate not decreasing with startup_type_id
+            #  - startup cost not increasing with startup_type_id
+            #  - startup fuel not increasing with startup_type_id
+            6: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 4, 0.003, 10, 5],
+                      ["gas_ccgt", 2, 6, 0.005, 5, 2],
+                      ["gas_ct", 1, 1, 0.01, 5, 2]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4, 4, 1],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 1, 1]
+                          ]),
+                "error": ["Project 'gas_ccgt': startup_plus_ramp_up_rate should decrease with increasing "
+                          "startup_type_id (colder starts are slower)",
+                          "Project 'gas_ccgt': startup_cost_per_mw should increase with increasing "
+                          "startup_type_id (colder starts are more costly / "
+                          "use more fuel)",
+                          "Project 'gas_ccgt': startup_fuel_mmbtu_per_mw should increase with increasing "
+                          "startup_type_id (colder starts are more costly / "
+                          "use more fuel)"
+                          ],
+                },
+
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["error"]
+            actual_list = MODULE_BEING_TESTED.validate_startup_type_inputs(
+                startup_df=test_cases[test_case]["startup_df"],
+                project_df=test_cases[test_case]["project_df"]
+            )
+            self.assertListEqual(expected_list, actual_list)
+
 
 if __name__ == "__main__":
     unittest.main()

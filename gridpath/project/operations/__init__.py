@@ -468,6 +468,36 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     heat_rates, startup_chars = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
+    # Get project operational input data
+    c1 = conn.cursor()
+    projects = c1.execute(
+        """SELECT 
+            project, operational_type,
+            min_stable_level,
+            shutdown_cost_per_mw,
+            shutdown_fuel_mmbtu_per_mw,
+            shutdown_plus_ramp_down_rate,
+            min_down_time_hours
+        FROM inputs_project_portfolios
+        INNER JOIN
+            (SELECT 
+                project, operational_type,
+                min_stable_level,
+                shutdown_cost_per_mw,
+                shutdown_fuel_mmbtu_per_mw,
+                shutdown_plus_ramp_down_rate,
+                min_down_time_hours
+            FROM inputs_project_operational_chars
+            WHERE project_operational_chars_scenario_id = {}
+            ) as prj_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        """.format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID
+        )
+    )
+
     # Convert input data into DataFrame
     hr_df = pd.DataFrame(
         data=heat_rates.fetchall(),
@@ -476,6 +506,10 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     su_df = pd.DataFrame(
         data=startup_chars.fetchall(),
         columns=[s[0] for s in startup_chars.description]
+    )
+    prj_df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
     )
 
     # Check data types heat_rates:
@@ -553,30 +587,175 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
+    # Check startup_chars inputs
+    validation_errors = validate_startup_type_inputs(su_df, prj_df)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS_SCENARIO_ID",
+             "inputs_project_startup_chars",
+             "Invalid/Missing startup characteristics inputs",
+             error
+             )
+        )
+
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
 
-    # Check for consistent inputs: can't have inputs for on startup type
-    #  and no inputs for the other types
 
+def validate_startup_type_inputs(startup_df, project_df):
+    """
 
-def validate_consistent_startup_type_inputs(startup_df):
+    Note: we assume the startup types are entered in order; could order the
+    dataframe first if needed
+
+    Note: this doesn't check for excessively slow startup ramps which would
+    wrap around the horizon and disallow any startups
+
+    :param startup_df: dataframe with startup_chars (see startup_chars.tab)
+    :param project_df: dataframe with project_chars (see projects.tab)
+    :return:
+    """
+
+    results = []
+
     projects = startup_df["project"].unique()
+    for project in projects:
+        startups = startup_df[startup_df['project'] == project]
+        prj_chars = project_df[project_df['project'] == project]
+        min_stable_level = prj_chars["min_stable_level"].iloc[0]
 
-# TODO validation:
-#  make sure that if one of the startup types entries for a project has "."
-#  inputs, that all startup types for that project have it
-#  don't allow min down time < shutdown + startup (note: default is 0 min_down!)
-#   okay if startup ramp up rate is big enough for you to go straight to pmin
-#  make sure first point in startup ramp rate is equal to min down time
-#  make sure ID for startup type is unique and auto-increment! (we use +1)
-#  make sure down time for different startup types is different and increasing
-#  with increasing ID
-#  if startup ramp is defined, cost needs to be defined - ACTUALY NOT?
-#  can't allow both startup fuel and startup ramp because that will double count
-#  the fuel
-#  down time has to be always defined and equal to TD at first startup ramp type
-#  check down time is large enough to include shutdown and startup duration
+        if "min_down_time_hours" not in project_df.columns:
+            min_down_time = 0  # default is 0 hour down time
+        elif pd.isna(prj_chars["min_down_time_hours"].iloc[0]):
+            min_down_time = 0
+        else:
+            min_down_time = prj_chars["min_down_time_hours"].iloc[0]
+
+        if "shutdown_plus_ramp_down_rate" not in project_df.columns:
+            shutdown_ramp = 1
+        elif pd.isna(prj_chars["shutdown_plus_ramp_down_rate"].iloc[0]):
+            shutdown_ramp = 1
+        else:
+            shutdown_ramp = prj_chars["shutdown_plus_ramp_down_rate"].iloc[0]
+
+        # Note: take the slowest start here
+        if pd.isna(startups["startup_plus_ramp_up_rate"].iloc[-1]):
+            startup_ramp = 1
+        else:
+            startup_ramp = startups["startup_plus_ramp_up_rate"].iloc[-1]
+
+        # TODO: hacky fix; should be more elegant way to deal with this,
+        #  and something that doesn't break down when modeling subhourly tmps
+        if shutdown_ramp == 1:
+            shutdown_duration = 0
+        else:
+            shutdown_duration = min_stable_level / shutdown_ramp / 60
+
+        if startup_ramp == 1:
+            startup_duration = 0
+        else:
+            startup_duration = min_stable_level / startup_ramp / 60
+
+        startup_plus_shutdown_duration = shutdown_duration + startup_duration
+
+        # Check that startup and shutdown fit within min down time (to avoid
+        # overlap of startup and shutdown trajectory)
+        # print('project', project, 'duration', startup_plus_shutdown_duration, 'min_down', min_down_time)
+        if startup_plus_shutdown_duration > min_down_time:
+            # might be okay if startup ramp up rate is big enough for you to
+            # go straight to pmin?
+            results.append(
+                "Project '{}': Startup ramp duration of coldest start + "
+                "shutdown ramp duration should be less than the minimum "
+                "down time"
+                .format(project)
+            )
+
+        if (len(startups) > 1 and prj_chars["operational_type"].iloc[0] not in
+                ["dispatchable_binary_commit", "dispatchable_continuous_commit"]
+        ):
+            results.append(
+                "Project '{}': Only binary and continuous commitment operational"
+                "types can have multiple startup types!"
+                .format(project)
+            )
+
+        # TODO: could also add type checking here (resp. int and float?)
+        startup_id_mask = pd.isna(startups["startup_type_id"])
+        down_time_mask = pd.isna(startups["down_time_hours"])
+        invalids = startup_id_mask | down_time_mask
+        if invalids.any():
+            results.append(
+                "Project '{}': startup_type_id and down_time_hours should "
+                "be defined for each startup type."
+                .format(project)
+            )
+        else:
+            #  make sure ID for startup type is unique and auto-increment
+            id_diff = np.diff(startups["startup_type_id"])
+            if sum(id_diff) != len(id_diff):
+                results.append(
+                    "Project '{}': Startup_type_id should be auto-increment "
+                    "(unique and incrementing by 1)"
+                    .format(project)
+                )
+
+            # check that down time is equal to project opchars min down time
+            if startups["down_time_hours"].iloc[0] != min_down_time:
+                results.append(
+                    "Project '{}': down_time_hours for hottest startup type "
+                    "should be equal to project's minimum down time"
+                    .format(project)
+                )
+
+            # check that down time increases with startup_type_id
+            dt_diff = np.diff(startups["down_time_hours"])
+            if np.any(dt_diff <= 0):
+                results.append(
+                    "Project '{}': down_time_hours should increase with "
+                    "startup_type_id"
+                    .format(project)
+                )
+
+        for column in ["startup_plus_ramp_up_rate",
+                       "startup_cost_per_mw", "startup_fuel_mmbtu_per_mw"]:
+            # Either all values are "." or none at all
+            nas = pd.isna(startups[column])
+            if nas.any() and len(startups[column].unique()) > 1:
+                results.append(
+                    "Project '{}': {} has has no inputs for some of the "
+                    "startup types; should either have inputs for all "
+                    "startup types, or none at all"
+                    .format(project, column)
+                )
+            elif nas.all():
+                pass
+            # Startup rate should decrease for colder starts
+            elif (column == "startup_plus_ramp_up_rate"
+                  and ~nas.any()
+                  and np.any(np.diff(startups[column]) >= 0)):
+                results.append(
+                    "Project '{}': {} should decrease with increasing "
+                    "startup_type_id (colder starts are slower)"
+                    .format(project, column)
+                )
+
+            # Startup cost and fuel cost should increase for colder starts
+            elif (column in ["startup_cost_per_mw", "startup_fuel_mmbtu_per_mw"]
+                  and ~nas.any()
+                  and np.any(np.diff(startups[column]) <= 0)):
+                results.append(
+                    "Project '{}': {} should increase with increasing "
+                    "startup_type_id (colder starts are more costly / "
+                    "use more fuel)"
+                    .format(project, column)
+                )
+
+    return results
 
 
 def validate_fuel_vs_heat_rates(hr_df):
