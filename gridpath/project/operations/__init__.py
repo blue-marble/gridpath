@@ -679,8 +679,8 @@ def validate_startup_type_inputs(startup_df, project_df):
                 ["dispatchable_binary_commit", "dispatchable_continuous_commit"]
         ):
             results.append(
-                "Project '{}': Only binary and continuous commitment operational"
-                "types can have multiple startup types!"
+                "Project '{}': Only binary and continuous commitment "
+                "operational types can have multiple startup types!"
                 .format(project)
             )
 

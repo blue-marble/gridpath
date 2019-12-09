@@ -738,8 +738,8 @@ class TestOperationsInit(unittest.TestCase):
                 "error": ["Project 'gas_ccgt': Startup ramp duration of coldest start + "
                           "shutdown ramp duration should be less than the minimum "
                           "down time",
-                          "Project 'gas_ccgt': Only binary and continuous commitment operational"
-                          "types can have multiple startup types!",
+                          "Project 'gas_ccgt': Only binary and continuous commitment "
+                          "operational types can have multiple startup types!",
                           "Project 'gas_ccgt': Startup_type_id should be auto-increment "
                           "(unique and incrementing by 1)",
                           "Project 'gas_ct': startup_type_id and down_time_hours should "
