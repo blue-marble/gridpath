@@ -2221,8 +2221,8 @@ energy_capacity_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_generator;
-CREATE TABLE results_project_capacity_new_build_generator (
+DROP TABLE IF EXISTS results_project_capacity_gen_new_lin;
+CREATE TABLE results_project_capacity_gen_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2236,8 +2236,8 @@ new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_binary_build_generator;
-CREATE TABLE results_project_capacity_new_binary_build_generator (
+DROP TABLE IF EXISTS results_project_capacity_gen_new_bin;
+CREATE TABLE results_project_capacity_gen_new_bin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2252,8 +2252,8 @@ new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_storage;
-CREATE TABLE results_project_capacity_new_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_lin;
+CREATE TABLE results_project_capacity_stor_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2268,8 +2268,8 @@ new_build_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_binary_build_storage;
-CREATE TABLE results_project_capacity_new_binary_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_bin;
+CREATE TABLE results_project_capacity_stor_new_bin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2398,8 +2398,8 @@ total_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_hydro_curtailable;
-CREATE TABLE results_project_dispatch_hydro_curtailable (
+DROP TABLE IF EXISTS results_project_dispatch_gen_hydro;
+CREATE TABLE results_project_dispatch_gen_hydro (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
