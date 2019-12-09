@@ -12,7 +12,8 @@ import unittest
 from tests.common_functions import add_components_and_load_data
 
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints, determine_relevant_timepoints_startup
+    determine_relevant_timepoints, determine_relevant_timepoints_forward, \
+    determine_relevant_timepoints_startup
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
@@ -103,6 +104,54 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
 
             self.assertListEqual(expected_list, actual_list)
 
+    def test_determine_relevant_timepoint_forward(self):
+        """
+        Check that the list of relevant timepoints is as expected based on
+        the current timepoint and the the startup_time (and, on the data
+        side, the duration of other timepoints). Add any other cases to
+        check that the 'determine_relevant_timepoints_startup' function gives
+        the expected results.
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=None,  # No need to name since not adding components
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        # TODO: make sure this aligns with convention of entering timepoint at
+        #  setpoint. Gets confusing with some timepoitns being >1hr
+
+        test_cases = {
+            1: {"startup_time": 4, "g": "Gas_CCGT", "tmp": 20200107,
+                "relevant_timepoints": [20200109, 20200110, 20200111]},
+            # Test longer timepoint duration in 20200103
+            2: {"startup_time": 2, "g": "Gas_CCGT", "tmp": 20200101,
+                "relevant_timepoints": [20200103]},
+            # Test min times of longer duration than the horizon in a
+            # 'circular' horizon setting: all tmps will be added except for the
+            # one right after *tmp*
+            3: {"startup_time": 100, "g": "Gas_CCGT", "tmp": 20200101,
+                "relevant_timepoints": list(range(20200103, 20200125))
+                                       + [20200101]},
+            # Test that we stop at the last timepoint of a linear horizon
+            4: {"startup_time": 4, "g": "Gas_CCGT", "tmp": 20200221,
+                "relevant_timepoints": [20200223, 20200224]}
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["relevant_timepoints"]
+            actual_list = determine_relevant_timepoints_forward(
+                mod=instance,
+                g=test_cases[test_case]["g"],
+                tmp=test_cases[test_case]["tmp"],
+                startup_time=test_cases[test_case]["startup_time"],
+            )
+
+            self.assertListEqual(expected_list, actual_list)
+
     def test_determine_relevant_timepoint_startup(self):
         """
         Check that the list of relevant timepoints is as expected based on
@@ -135,11 +184,11 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
                 "relevant_timepoints": []},
             # If we're in the first timepoint of a linear horizon, test that
             # we don't add any relevan  t timepoints
-            8: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200201,
+            4: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200201,
                 "relevant_timepoints": []},
             # Test that we break out of the loop with t2 that reach the
             # first horizon timepoint in a 'linear' horizon setting
-            9: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200202,
+            5: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200202,
                 "relevant_timepoints": []}
         }
 
