@@ -280,9 +280,4 @@ def determine_relevant_timepoints_startup(mod, g, tmp, t1, t2):
                 relevant_tmp, mod.balancing_type_project[g]]
             hours_from_tmp += mod.number_of_hours_in_timepoint[relevant_tmp]
 
-    # TODO: in timepoints.py, for each timepoint calculate number of hours from
-    #  start of horizon (if there is a start, doesn't apply if circular)
-    #  Having this info could be very helpful when calculating the relevant
-    #  startup power
-
     return relevant_tmps
