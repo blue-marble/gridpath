@@ -157,9 +157,9 @@ gridpath.project.capacity.operational_types.stor
 .. automodule:: gridpath.project.operations.operational_types.stor
     :members: add_module_specific_components, power_provision_rule
 
-gridpath.project.capacity.operational_types.shiftable_load_generic
+gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.shiftable_load_generic
+.. automodule:: gridpath.project.operations.operational_types.dr
 
 
 Load Balance

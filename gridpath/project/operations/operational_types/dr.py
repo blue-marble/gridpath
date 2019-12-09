@@ -27,7 +27,7 @@ def add_module_specific_components(m, d):
     m.SHIFTABLE_LOAD_GENERIC_PROJECTS = Set(
         within=m.PROJECTS,
         initialize=generator_subset_init("operational_type",
-                                         "shiftable_load_generic")
+                                         "dr")
     )
 
     m.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS = \
