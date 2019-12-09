@@ -190,7 +190,7 @@ We recommend `SQLite Studio<https://sqlitestudio.pl/index.rvt>`_ as an SQLite
 database GUI.
 
 We have implemented various tools to help you build your database. See the
-'Building the GridPath Database' section of the documentation.
+'The GridPath Database' section of the documentation.
 
 ------
 Solver

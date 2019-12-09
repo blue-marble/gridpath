@@ -44,6 +44,16 @@ GridPath Functionality
    functionality
 
 
+#####################
+The GridPath Database
+#####################
+
+.. toctree::
+   :maxdepth: 4
+
+   database
+
+
 ######################
 Advanced Documentation
 ######################
