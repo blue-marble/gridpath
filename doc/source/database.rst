@@ -96,6 +96,9 @@ Building the Database
 
 Temporal Inputs
 ***************
+
+Relevant tables:
+
 +-------------------------------+----------------------------------------------+
 |:code:`scenarios` table column |:code:`temporal_scenario_id`                  |
 +-------------------------------+----------------------------------------------+
@@ -113,6 +116,9 @@ Temporal Inputs
 
 Load Zone Inputs
 ****************
+
+Relevant tables:
+
 +-------------------------------+----------------------------------------------+
 |:code:`scenarios` table column |:code:`load_zone_scenario_id`                 |
 +-------------------------------+----------------------------------------------+
@@ -125,6 +131,9 @@ Load Zone Inputs
 
 System Load
 ***********
+
+Relevant tables:
+
 +-------------------------------+---------------------------------+
 |:code:`scenarios` table column |:code:`load_scenario_id`         |
 +-------------------------------+---------------------------------+
@@ -142,6 +151,9 @@ Project Inputs
 =================
 Project Portfolio
 =================
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_portfolio_scenario_id`         |
 +--------------------------------+----------------------------------------------+
@@ -158,6 +170,9 @@ Specified Projects
 
 Capacity
 ========
+
+Relevant tables:
+
 +--------------------------------+-----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_existing_capacity_scenario_id`  |
 +--------------------------------+-----------------------------------------------+
@@ -170,6 +185,9 @@ Capacity
 
 Fixed Costs
 ===========
+
+Relevant tables:
+
 +--------------------------------+-------------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_existing_fixed_cost_scenario_id`  |
 +--------------------------------+-------------------------------------------------+
@@ -187,6 +205,9 @@ New Projects
 
 Potential
 =========
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_new_potential_scenario_id`     |
 +--------------------------------+----------------------------------------------+
@@ -199,6 +220,9 @@ Potential
 
 Capital Costs
 =============
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_new_cost_scenario_id`          |
 +--------------------------------+----------------------------------------------+
@@ -212,6 +236,9 @@ Capital Costs
 ====================
 Project Availability
 ====================
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_availability_scenario_id`      |
 +--------------------------------+----------------------------------------------+
@@ -224,6 +251,9 @@ Project Availability
 
 Endogenous
 ==========
+
+Relevant tables:
+
 +---------------------------+-----------------------------------------------------+
 |:code:`subscenario_` table |:code:`subscenarios_project_availability_endogenous` |
 +---------------------------+-----------------------------------------------------+
@@ -232,6 +262,9 @@ Endogenous
 
 Exogenous
 =========
+
+Relevant tables:
+
 +---------------------------+----------------------------------------------------+
 |:code:`subscenario_` table |:code:`subscenarios_project_availability_exogenous` |
 +---------------------------+----------------------------------------------------+
@@ -241,6 +274,8 @@ Exogenous
 ===================================
 Project Operational Characteristics
 ===================================
+
+Relevant tables:
 
 +--------------------------------+-----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_operational_chars_scenario_id`  |
@@ -254,18 +289,27 @@ Project Operational Characteristics
 
 Heat Rates (OPTIONAL)
 =====================
+
+Relevant tables:
+
 +---------------------+----------------------------------------------+
 |:code:`input_` table |:code:`inputs_project_heat_rate_curves`       |
 +---------------------+----------------------------------------------+
 
 Variable Generator Profiles (OPTIONAL)
 ======================================
+
+Relevant tables:
+
 +---------------------+---------------------------------------------------+
 |:code:`input_` table |:code:`inputs_project_variable_generator_profiles` |
 +---------------------+---------------------------------------------------+
 
 Hydro Operating Characteristics (OPTIONAL)
 ==========================================
+
+Relevant tables:
+
 +---------------------+---------------------------------------------------+
 |:code:`input_` table |:code:`inputs_project_hydro_operational_chars`     |
 +---------------------+---------------------------------------------------+
@@ -279,6 +323,9 @@ Optional inputs needed if transmission feature is enabled for a scenario.
 ======================
 Transmission Portfolio
 ======================
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_portfolio_scenario_id`         |
 +--------------------------------+----------------------------------------------+
@@ -292,6 +339,9 @@ Transmission Portfolio
 =======================
 Transmission Topography
 =======================
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`transmission_load_zones_scenario_id`   |
 +--------------------------------+----------------------------------------------+
@@ -308,6 +358,9 @@ Specified Transmission
 
 Capacity
 ========
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------------+
 |:code:`scenarios` table column  |:code:`transmission_existing_capacity_scenario_id`  |
 +--------------------------------+----------------------------------------------------+
@@ -325,6 +378,9 @@ New Transmission
 
 Capital Costs
 =============
+
+Relevant tables:
+
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`transmission_new_cost_scenario_id`     |
 +--------------------------------+----------------------------------------------+
@@ -357,6 +413,8 @@ Fuel Inputs (OPTIONAL)
 Fuel Characteristics
 ====================
 
+Relevant tables:
+
 +--------------------------------+-----------------------------------+
 |:code:`scenarios` table column  |:code:`fuel_scenario_id`           |
 +--------------------------------+-----------------------------------+
@@ -370,6 +428,8 @@ Fuel Characteristics
 ===========
 Fuel Prices
 ===========
+
+Relevant tables:
 
 +--------------------------------+-----------------------------------------+
 |:code:`scenarios` table column  |:code:`fuel_price_scenario_id`           |
@@ -392,6 +452,8 @@ Regulation Up
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+-------------------------------------------------+
 |:code:`scenarios` table column |:code:`regulation_up_ba_scenario_id`             |
 +-------------------------------+-------------------------------------------------+
@@ -405,6 +467,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+-----------------------------------------------+
 |:code:`scenarios` table column |:code:`project_regulation_up_ba_scenario_id`   |
 +-------------------------------+-----------------------------------------------+
@@ -417,6 +481,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+------------------------------------------+
 |:code:`scenarios` table column |:code:`regulation_up_scenario_id`         |
@@ -435,6 +501,8 @@ Regulation Down
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+---------------------------------------------------+
 |:code:`scenarios` table column |:code:`regulation_down_ba_scenario_id`             |
 +-------------------------------+---------------------------------------------------+
@@ -448,6 +516,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+-------------------------------------------------+
 |:code:`scenarios` table column |:code:`project_regulation_down_ba_scenario_id`   |
 +-------------------------------+-------------------------------------------------+
@@ -460,6 +530,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+--------------------------------------------+
 |:code:`scenarios` table column |:code:`regulation_down_scenario_id`         |
@@ -478,6 +550,8 @@ Spinning Reserves
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+-----------------------------------------------------+
 |:code:`scenarios` table column |:code:`spinning_reserves_ba_scenario_id`             |
 +-------------------------------+-----------------------------------------------------+
@@ -491,6 +565,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+---------------------------------------------------+
 |:code:`scenarios` table column |:code:`project_spinning_reserves_ba_scenario_id`   |
 +-------------------------------+---------------------------------------------------+
@@ -503,6 +579,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+----------------------------------------------+
 |:code:`scenarios` table column |:code:`spinning_reserves_scenario_id`         |
@@ -521,6 +599,8 @@ Load-Following Reserves Up
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+--------------------------------------------------+
 |:code:`scenarios` table column |:code:`lf_reserves_up_ba_scenario_id`             |
 +-------------------------------+--------------------------------------------------+
@@ -534,6 +614,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+------------------------------------------------+
 |:code:`scenarios` table column |:code:`project_lf_reserves_up_ba_scenario_id`   |
 +-------------------------------+------------------------------------------------+
@@ -546,6 +628,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+-------------------------------------------+
 |:code:`scenarios` table column |:code:`lf_reserves_up_scenario_id`         |
@@ -564,6 +648,8 @@ Load-Following Reserves Down
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+----------------------------------------------------+
 |:code:`scenarios` table column |:code:`lf_reserves_down_ba_scenario_id`             |
 +-------------------------------+----------------------------------------------------+
@@ -577,6 +663,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+--------------------------------------------------+
 |:code:`scenarios` table column |:code:`project_lf_reserves_down_ba_scenario_id`   |
 +-------------------------------+--------------------------------------------------+
@@ -589,6 +677,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+---------------------------------------------+
 |:code:`scenarios` table column |:code:`lf_reserves_down_scenario_id`         |
@@ -607,6 +697,8 @@ Frequency Response Reserves
 Balancing Areas
 ===============
 
+Relevant tables:
+
 +-------------------------------+------------------------------------------------------+
 |:code:`scenarios` table column |:code:`frequency_response_ba_scenario_id`             |
 +-------------------------------+------------------------------------------------------+
@@ -620,6 +712,8 @@ Balancing Areas
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+----------------------------------------------------+
 |:code:`scenarios` table column |:code:`project_frequency_response_ba_scenario_id`   |
 +-------------------------------+----------------------------------------------------+
@@ -632,6 +726,8 @@ Contributing Projects
 
 Requirement
 ===========
+
+Relevant tables:
 
 +-------------------------------+-----------------------------------------------+
 |:code:`scenarios` table column |:code:`frequency_response_scenario_id`         |
@@ -653,6 +749,8 @@ Renewables Portfolio Standard (RPS)
 Policy Zones
 ============
 
+Relevant tables:
+
 +-------------------------------+-----------------------------------------+
 |:code:`scenarios` table column |:code:`rps_zone_scenario_id`             |
 +-------------------------------+-----------------------------------------+
@@ -666,6 +764,8 @@ Policy Zones
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+---------------------------------------+
 |:code:`scenarios` table column |:code:`project_rps_zone_scenario_id`   |
 +-------------------------------+---------------------------------------+
@@ -678,6 +778,8 @@ Contributing Projects
 
 Target
 ======
+
+Relevant tables:
 
 +-------------------------------+--------------------------------+
 |:code:`scenarios` table column |:code:`rps_scenario_id`         |
@@ -693,6 +795,8 @@ Target
 Carbon Cap
 ==========
 
+Relevant tables:
+
 +-------------------------------+------------------------------------------------+
 |:code:`scenarios` table column |:code:`carbon_cap_zone_scenario_id`             |
 +-------------------------------+------------------------------------------------+
@@ -706,6 +810,8 @@ Carbon Cap
 Contributing Projects
 =====================
 
+Relevant tables:
+
 +-------------------------------+----------------------------------------------+
 |:code:`scenarios` table column |:code:`project_carbon_cap_zone_scenario_id`   |
 +-------------------------------+----------------------------------------------+
@@ -718,6 +824,8 @@ Contributing Projects
 
 Target
 ======
+
+Relevant tables:
 
 +-------------------------------+---------------------------------------+
 |:code:`scenarios` table column |:code:`carbon_cap_scenario_id`         |

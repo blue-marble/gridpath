@@ -186,7 +186,7 @@ database, creating scenarios and generating scenario input files, and
 importing scenario results into the database. Using the GridPath user
 interface requires that data be stored in a database.
 
-We recommend `SQLite Studio<https://sqlitestudio.pl/index.rvt>`_ as an SQLite
+We recommend `SQLite Studio <https://sqlitestudio.pl/index.rvt>`_ as an SQLite
 database GUI.
 
 We have implemented various tools to help you build your database. See the

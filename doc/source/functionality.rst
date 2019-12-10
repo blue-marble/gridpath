@@ -587,7 +587,7 @@ flow approximation are: 1) line resistances are negligible compared to line
 reactances, so reactive power flows can be neglected; 2) voltage magnitudes at
 each bus are kept at their nominal value; and 3) voltage angle differences
 across branches are small enough such that the sine of the difference can be
-approximated by the difference, i.e. sin θ ∼ θ .
+approximated by the difference, i.e. :math:`\sin(\theta) \approx \theta`.
 
 Using these approximations, the power flow problem becomes linear and can be
 added to our capacity-expansion / unit commitment model using an additional
