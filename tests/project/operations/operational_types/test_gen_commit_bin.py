@@ -129,12 +129,12 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
 
         # Param: dispbincommit_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Binary_Commit": 0.3}
-        actual_ramp_down_when_on_rate = {
+        actual_ramp_up_when_on_rate = {
             prj: instance.dispbincommit_ramp_up_when_on_rate[prj]
             for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
-                             actual_ramp_down_when_on_rate)
+                             actual_ramp_up_when_on_rate)
 
         # Param: dispbincommit_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {"Disp_Binary_Commit": 0.5}
