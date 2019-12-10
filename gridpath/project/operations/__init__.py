@@ -663,8 +663,14 @@ def validate_startup_type_inputs(startup_df, project_df):
     Note: we assume the startup types are entered in order; could order the
     dataframe first if needed
 
-    Note: this doesn't check for excessively slow startup ramps which would
-    wrap around the horizon and disallow any startups
+    TODO: check for excessively slow startup ramps which would wrap around the
+     horizon and disallow any startups
+
+    TODO: check that you don't have quick-start for one startup type and
+     slow start for the other type. This would allow you to have startup power
+     above pmin, even if you are a slow-start unit. In general you can't have
+     multiple startup types / ramps for quick-start units due to the min/max
+     formulation in the shutdown_ramp_fraction_per_timepoint_rule
 
     :param startup_df: dataframe with startup_chars (see startup_chars.tab)
     :param project_df: dataframe with project_chars (see projects.tab)
@@ -802,6 +808,19 @@ def validate_startup_type_inputs(startup_df, project_df):
                     "use more fuel)"
                     .format(project, column)
                 )
+
+        # If there is a startup ramp provided, you should provide a fuel
+        # consumption with that startup. Otherwise the model can abuse
+        # startups to get "free" power generation
+        nas_ramp = pd.isna(startups["startup_plus_ramp_up_rate"])
+        nas_fuel = pd.isna(startups["startup_fuel_mmbtu_per_mw"])
+        if nas_fuel.all() and ~nas_ramp.all():
+            results.append(
+                "Project '{}': Can not have startup ramps (even if quick-start) "
+                "without startup fuel. Model could abuse this by startup power "
+                "without any fuel consumption."
+                .format(project)
+            )
 
     return results
 

@@ -708,9 +708,9 @@ class TestOperationsInit(unittest.TestCase):
             # Make sure we can deal with some empty inputs
             3: {"startup_df": pd.DataFrame(
                 columns=columns,
-                data=[["gas_ccgt", 1, 4, 0.003, 10, None],
-                      ["gas_ccgt", 2, 6, 0.002, 20, None],
-                      ["gas_ct", 1, 1, 0.01, 5, None]
+                data=[["gas_ccgt", 1, 4, 0.003, None, 5],
+                      ["gas_ccgt", 2, 6, 0.002, None, 10],
+                      ["gas_ct", 1, 1, 0.01, None, 2]
                       ]),
                 "project_df": pd.DataFrame(
                     columns=columns_prj,
@@ -794,7 +794,23 @@ class TestOperationsInit(unittest.TestCase):
                           "use more fuel)"
                           ],
                 },
-
+            # Make sure we spot startup ramps without startup fuel
+            7: {"startup_df": pd.DataFrame(
+                columns=columns,
+                data=[["gas_ccgt", 1, 4, 0.003, 10, None],
+                      ["gas_ccgt", 2, 6, 0.002, 20, None],
+                      ["gas_ct", 1, 1, 0.01, 5, 2]
+                      ]),
+                "project_df": pd.DataFrame(
+                    columns=columns_prj,
+                    data=[["gas_ccgt", "dispatchable_binary_commit", 0.4, 4, 1],
+                          ["gas_ct", "dispatchable_binary_commit", 0.2, 1, 1]
+                          ]),
+                "error": ["Project 'gas_ccgt': Can not have startup ramps (even if quick-start) "
+                          "without startup fuel. Model could abuse this by startup power "
+                          "without any fuel consumption."
+                          ],
+                },
         }
 
         for test_case in test_cases.keys():
