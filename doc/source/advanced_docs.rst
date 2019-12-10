@@ -99,11 +99,34 @@ gridpath.project.capacity.capacity_types.stor_new_lin
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
+gridpath.project.capacity.capacity_types.stor_new_bin
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
+    :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
+
 gridpath.project.capacity.capacity_types.dr_new
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new
     :members: add_module_specific_components, capacity_rule, energy_capacity_rule, capacity_cost_rule
 
+Project Availability
+--------------------
+
+gridpath.project.availability.availability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.availability.availability
+
+gridpath.project.availability.availability_types.exogenous
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.availability.availability_types.exogenous
+
+gridpath.project.availability.availability_types.binary
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.availability.availability_types.binary
+
+gridpath.project.availability.availability_types.continuous
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.availability.availability_types.continuous
 
 Project Operations
 ------------------
@@ -142,6 +165,11 @@ gridpath.project.capacity.operational_types.gen_commit_cap
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
     :members: add_module_specific_components, power_provision_rule
 
+gridpath.project.capacity.operational_types.gen_hydro
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro
+    :members: add_module_specific_components, power_provision_rule
+
 gridpath.project.capacity.operational_types.gen_hydro_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take
@@ -150,6 +178,11 @@ gridpath.project.capacity.operational_types.gen_hydro_must_take
 gridpath.project.capacity.operational_types.gen_var
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_var
+    :members: add_module_specific_components, power_provision_rule
+
+gridpath.project.capacity.operational_types.gen_var_must_take
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
     :members: add_module_specific_components, power_provision_rule
 
 gridpath.project.capacity.operational_types.stor
@@ -233,9 +266,33 @@ gridpath.transmission.capacity.capacity_types
 ---------------------------------------------
 .. automodule:: gridpath.transmission.capacity.capacity_types
 
+gridpath.transmission.capacity.capacity_types.tx_new_lin
+---------------------------------------------------------
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin
+    :members: add_module_specific_components
+
+gridpath.transmission.capacity.capacity_types.tx_spec
+-----------------------------------------------------
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec
+    :members: add_module_specific_components
+
 gridpath.transmission.capacity.capacity
 ---------------------------------------
 .. automodule:: gridpath.transmission.capacity.capacity
+
+gridpath.transmission.operations.operational_types
+--------------------------------------------------
+.. automodule:: gridpath.transmission.operations.operational_types
+
+gridpath.transmission.operations.operational_types.tx_simple
+------------------------------------------------------------
+.. automodule:: gridpath.transmission.operations.operational_types.tx_simple
+    :members: add_module_specific_components
+
+gridpath.transmission.operations.operational_types.tx_dcopf
+-----------------------------------------------------------
+.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf
+    :members: add_module_specific_components
 
 gridpath.transmission.operations.operations
 -------------------------------------------
