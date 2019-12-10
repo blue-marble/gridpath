@@ -120,17 +120,6 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
-        # Param: dispcontcommit_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {"Disp_Cont_Commit": 0.6,
-                                              "Clunky_Old_Gen": 1,
-                                              "Clunky_Old_Gen2": 1}
-        actual_startup_plus_ramp_up_rate = {
-            prj: instance.dispcontcommit_startup_plus_ramp_up_rate[prj]
-            for prj in instance.DISPATCHABLE_CONTINUOUS_COMMIT_GENERATORS
-        }
-        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
-                             actual_startup_plus_ramp_up_rate)
-
         # Param: dispcontcommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Cont_Commit": 0.6,
                                                  "Clunky_Old_Gen": 1,

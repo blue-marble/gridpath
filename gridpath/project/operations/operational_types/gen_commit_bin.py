@@ -1415,18 +1415,6 @@ def load_module_specific_data(mod, data_portal,
         min_stable_fraction
 
     # Ramp rate limits are optional, will default to 1 if not specified
-    if "startup_plus_ramp_up_rate" in used_columns:
-        for row in zip(df["project"],
-                       df["operational_type"],
-                       df["startup_plus_ramp_up_rate"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
-                startup_plus_ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()[
-            "dispbincommit_startup_plus_ramp_up_rate"] = \
-            startup_plus_ramp_up_rate
-
     if "shutdown_plus_ramp_down_rate" in used_columns:
         for row in zip(df["project"],
                        df["operational_type"],
@@ -1444,7 +1432,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(df["project"],
                        df["operational_type"],
                        df["ramp_up_when_on_rate"]):
-            if row[1] == "gen_commmit_bin" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 ramp_up_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1455,7 +1443,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(df["project"],
                        df["operational_type"],
                        df["ramp_down_when_on_rate"]):
-            if row[1] == "gen_commmit_bin" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 ramp_down_when_on_rate[row[0]] = float(row[2])
             else:
                 pass
@@ -1467,7 +1455,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(df["project"],
                        df["operational_type"],
                        df["min_up_time_hours"]):
-            if row[1] == "gen_commmit_bin" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 min_up_time[row[0]] = float(row[2])
             else:
                 pass
@@ -1478,7 +1466,7 @@ def load_module_specific_data(mod, data_portal,
         for row in zip(df["project"],
                        df["operational_type"],
                        df["min_down_time_hours"]):
-            if row[1] == "gen_commmit_bin" and row[2] != ".":
+            if row[1] == "gen_commit_bin" and row[2] != ".":
                 min_down_time[row[0]] = float(row[2])
             else:
                 pass

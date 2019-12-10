@@ -140,22 +140,6 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_min_stable_fraction
                              )
 
-        # Param: dispcapcommit_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {
-            "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
-            "Gas_CCGT_New_Binary": 0.6,
-            "Gas_CT_New": 0.6, "Gas_CCGT_z2": 1, "Coal_z2": 1,
-            "Gas_CT_z2": 1
-        }
-        actual_startup_plus_ramp_up_rate = {
-            prj: instance.dispcapcommit_startup_plus_ramp_up_rate[
-                prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
-        }
-        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
-                             actual_startup_plus_ramp_up_rate
-                             )
-
         # Param: dispcapcommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {
             "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
