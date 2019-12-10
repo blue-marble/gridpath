@@ -6,17 +6,68 @@ The **gridpath.project.operations** package contains modules to describe the
 operational capabilities, constraints, and costs of generation, storage,
 and demand-side infrastructure 'projects' in the optimization problem.
 
-*startup_ramp* \ :sub:`g, l`\ -- the project's upward ramp rate limit during
-startup of type l, defined as a fraction of its capacity per minute. If this
-param, adjusted for timepoint duration, is smaller than
+We also define the following parameters and their associated sets:
+
+*shutdown_cost_per_mw* \ :sub:`g`\ -- the project's shutdown cost, defined as
+the cost in $ per MW of capacity that is shut down. Note that these costs should
+NOT include the shutdown fuel costs, as these are already included in
+*shutdown_fuel_cost_mmbtu_per_mw*, but rather they should be any other costs
+that are incurred when shutting down the unit. If the parameter is not
+specified, it is assumed there are no shutdown costs. Unlike the startup costs,
+shutdown costs cannot be dependent on the length of time the unit has been up or
+down. \n
+
+*shutdown_fuel_mmbtu_per_mw* \ :sub:`g, s`\ -- the project's shutdown fuel use,
+defined as the fuel consumption in MMBtu per MW of capacity that is shut down.
+The fuel consumption is passed to the fuel module to calculate emissions and
+fuel costs. For slow-start units that start up over multiple timepoints,
+the startup fuel includes the fuel consumptions for the power output during
+those timepoints. Therefore, colder, slower starts should use more fuel.
+\n
+
+*down_time_hours* \ :sub:`g, s`\ -- the lower limit of down time (in hours) to
+activate a certain startup type s. "With a down time of this many hours or more,
+the startup ramp/cost/fuel will be ... ". Different down_time_hours values
+specify different startup types for a unit, with high values indicating colder
+starts (the unit has been down longer). The *down_time_hours* value for the
+first startup type should be equal to the project's minimum down time. If the
+project has no minimum down time, this param should be zero. \n
+
+*startup_ramp_rate* \ :sub:`g, s`\ -- the project's upward ramp rate limit
+during startup of type s, defined as a fraction of its capacity per minute. If
+this param, adjusted for timepoint duration, is smaller than
 *min_stable_level_fraction*, the unit will have a startup trajectory spanning
-multiple timepoints. \n
+multiple timepoints (slow-start unit). For slow-start units, this parameter
+can depend on the unit's down time, i.e. if a unit has been down longer, the
+start can take longer (cold start). For quick-start units (unit that can reach
+Pmin within one timepoint), there can only be one startup ramp rate (but there
+could still be multiple startup costs or fuels). If the parameter is not
+specified, it is assumed the unit can start up to any output level within one
+timepoint. \n
+
+*startup_cost_per_mw* \ :sub:`g, s`\ -- the project's startup cost for startup
+type s, defined as the cost in $ per MW of capacity that is started up. Note
+that these costs should NOT include the startup fuel costs, as these are
+already included in *startup_fuel_cost_mmbtu_per_mw*, but rather they should
+be any other costs that are incurred when starting up the unit. If the parameter
+is not specified, it is assumed there are no startup costs. \n
+
+*startup_fuel_mmbtu_per_mw* \ :sub:`g, s`\ -- the project's startup fuel use for
+startup type s, defined as the fuel consumption in MMBtu per MW of capacity that
+is started up. The fuel consumption is passed to the fuel module to calculate
+emissions and fuel costs. For slow-start units that start up over multiple
+timepoints, the startup fuel includes the fuel consumptions for the power output
+during those timepoints. Therefore, colder, slower starts should use more fuel.
+It also includes fuel consumption in the timepoint before a startup, when the
+unit is ramping up to Pmin and the unit is technically not "on".
+Since the unit will be providing some power during those times that it is
+technically not on yet, it is important for users to include startup_fuel inputs
+when there is a startup trajectory. If not, the model could abuse this and use
+it to generate power without incurring emissions or fuel costs.
+TODO: adjust this when convention changes - move to shutdown fuel?
+\n
 
 """
-
-# changes made:
-# 1. split out start and stop expression since there can now be multiple
-# starts
 
 from builtins import next
 from builtins import zip
