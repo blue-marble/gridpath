@@ -2848,8 +2848,7 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 startup_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint,
-startup_type_id)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_costs_operations_shutdown;
