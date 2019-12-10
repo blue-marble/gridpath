@@ -11,31 +11,15 @@ A related, interesting paper with more background information is "Tight and
 compact MILP formulation for the thermal unit commitment problem",
 Morales-Espana et al. (2013).
 
+Disclaimer: changing availabilty and timepoint duration not fully tested!
+  - if availability changes during a startup process, things could get weird
+  - varying timepoint durations are likely not entirely bug free
+
+TODO: ramp assumptions about setpoints are clashing with Morales-Espana
+  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
+  whereas Morales-Espana assume you reach it end of timepoint.
+
 """
-
-# TODO: test when starts and stops overlap
-#  --> will either have to be all on or all off; not sure what is causing this
-
-# TODO: ramp assumptions about setpoints are clashing with Morales-Espana
-#  assumptions. Ramp assumptions assume you reach setpoint at START of timepoint
-#  whereas Morales-Espana assume you reach it end of timepoint.
-
-# TODO: unittest modules
-#  redo dispatchable binary commit unittests and make sure it passes
-#  update common functions unittests
-#  add any other unittests that could help explain current structure
-
-# TODO validations:
-#  disallow binary commit with availability decsisions since non-linear?
-
-# TODO: cleanup
-#  change naming of ramp up rates -> first see how we deal with this formulation
-#  vs. the previous one with startup_plus_rampup_rates, which are used in
-#  capacity commit as well.
-
-# Disclaimer: changing availabilty and timepoint duration not fully tested!
-#   - if availability changes during a startup process, things could get weird
-#   - varying timepoint durations are likely not entirely bug free
 
 from __future__ import division
 
@@ -844,8 +828,11 @@ def add_module_specific_components(m, d):
         Power provision adjusted for upward reserves can't exceed generator's
         maximum power output.
 
-        This also sets the power output to Pmin at the last timepoint of an
-        up-period (last committed timeoint).
+        For slow-shutdown units, this also sets the power output to Pmin at the
+        last timepoint of an up-period (last committed timeopint). For
+        quick-shutdown units, it limits the power output at the last timepoint
+        of an up-period to a value between Pmin and Pmax, depending on the
+        shutdown ramp rate.
 
         Constraint (31) in Morales-Espana et al. (2017)
         :param mod:
