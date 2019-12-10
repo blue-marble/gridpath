@@ -715,7 +715,6 @@ def validate_startup_type_inputs(startup_df, project_df):
 
         # Check that startup and shutdown fit within min down time (to avoid
         # overlap of startup and shutdown trajectory)
-        # print('project', project, 'duration', startup_plus_shutdown_duration, 'min_down', min_down_time)
         if startup_plus_shutdown_duration > min_down_time:
             # might be okay if startup ramp up rate is big enough for you to
             # go straight to pmin?
@@ -774,7 +773,7 @@ def validate_startup_type_inputs(startup_df, project_df):
 
         for column in ["startup_plus_ramp_up_rate",
                        "startup_cost_per_mw", "startup_fuel_mmbtu_per_mw"]:
-            # Either all values are "." or none at all
+            # Either all values are None or none at all
             nas = pd.isna(startups[column])
             if nas.any() and len(startups[column].unique()) > 1:
                 results.append(
@@ -787,7 +786,6 @@ def validate_startup_type_inputs(startup_df, project_df):
                 pass
             # Startup rate should decrease for colder starts
             elif (column == "startup_plus_ramp_up_rate"
-                  and ~nas.any()
                   and np.any(np.diff(startups[column]) >= 0)):
                 results.append(
                     "Project '{}': {} should decrease with increasing "
@@ -797,7 +795,6 @@ def validate_startup_type_inputs(startup_df, project_df):
 
             # Startup cost and fuel cost should increase for colder starts
             elif (column in ["startup_cost_per_mw", "startup_fuel_mmbtu_per_mw"]
-                  and ~nas.any()
                   and np.any(np.diff(startups[column]) <= 0)):
                 results.append(
                     "Project '{}': {} should increase with increasing "
