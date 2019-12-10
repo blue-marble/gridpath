@@ -3,6 +3,6 @@ Nuclear	Zone1	gen_spec	exogenous	1	gen_must_run	day	.	.	.	.	.	.	Uranium	.	.
 Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	Zone1	Zone1	Zone1	Zone1	0.4	2	Gas	6	Zone1
 Coal	Zone1	gen_spec	exogenous	1	gen_commit_cap	day	.	Zone1	.	Zone1	0.4	0	Coal	6	Zone1
 Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_cap	day	.	.	.	.	0.4	1	Gas	6	Zone1
-Wind	Zone1	gen_spec	exogenous	0	gen_var 	day	.	.	.	.	.	.	.	.	.
-Solar	Zone1	gen_new_lin	exogenous	0	gen_var 	day	.	.	.	.	.	.	.	.	.
+Wind	Zone1	gen_spec	exogenous	0	gen_var	day	.	.	.	.	.	.	.	.	.
+Solar	Zone1	gen_new_lin	exogenous	0	gen_var	day	.	.	.	.	.	.	.	.	.
 Gas_CCGT_z2	Zone2	gen_spec	exogenous	2	gen_commit_cap	day	.	.	.	.	0	2	Gas	6	.
