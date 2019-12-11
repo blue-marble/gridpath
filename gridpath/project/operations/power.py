@@ -158,10 +158,14 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # Calculate the percent of total power for each tech (by load zone
     # and period)
     for indx, row in operational_results_agg_df.iterrows():
-        operational_results_agg_df.percent_total_power[indx] = \
-            operational_results_agg_df.weighted_power_mwh[indx] \
-            / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
-            * 100.0
+        if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
+            pct = 0
+        else:
+            pct = \
+                operational_results_agg_df.weighted_power_mwh[indx] \
+                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
+                * 100.0
+        operational_results_agg_df.percent_total_power[indx] = pct
 
     # Rename the columns for the final table
     operational_results_agg_df.columns = (["Annual Energy (MWh)",
