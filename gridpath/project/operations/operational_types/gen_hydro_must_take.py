@@ -22,7 +22,7 @@ def add_module_specific_components(m, d):
     :param m: the Pyomo abstract model object we are adding the components to
     :param d: the DynamicComponents class object we are adding components to
 
-    Here, we define the set of non-curtailable hydro projects:
+    Here, we define the set of must-take hydro projects:
     *HYDRO_NONCURTAILABLE_PROJECTS*
     (:math:`NCHG`, index :math:`nchg`) and use this set to get the subset of
     *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in NCHG` -- the
@@ -32,15 +32,18 @@ def add_module_specific_components(m, d):
     (:math:`NCHG\_OH`) over which we will define hydro's main operational
     parameters including:
     *hydro_noncurtailable_average_power_fraction* \ :sub:`nchg, oh`\ -- the
-    average power on a given horizon *oh* (multiply by the capacity and the
-    timepoint number of hours represented and sum across all timepoints on the
-    horizon to get the horizon energy budget) \n
+    average power fraction on a given horizon *oh*, i.e. the average capacity
+    factor. Multiply by the capacity, the timepoint's number of hours
+    represented, and the availability, and sum across all timepoints on the
+    horizon to get the horizon energy budget. Note that the effective energy
+    budget will be lower than what the average power fraction suggests if there
+    are any availability derates! \n
     *hydro_noncurtailable_min_power_fraction* \ :sub:`nchg, oh`\ -- the minimum
     power output on each timepoint on horizon *oh* as a fraction of capacity \n
     *hydro_noncurtailable_max_power_fraction* \ :sub:`nchg, oh`\ -- the maximum
     power output on each timepoint on horizon *oh* as a fraction of capacity \n
-    *hydro_noncurtailable_ramp_up_rate* \ :sub:`nchg`\ -- the project's upward
-    ramp rate limit, defined as a fraction of its capacity per minute \n
+    *hydro_noncurtailable_ramp_up_rate* \ :sub:`nchg`\ -- the project's
+    upward ramp rate limit, defined as a fraction of its capacity per minute \n
     *hydro_noncurtailable_ramp_down_rate* \ :sub:`nchg`\ -- the project's
     downward ramp rate limit, defined as a fraction of its capacity per minute\n
 
@@ -56,13 +59,17 @@ def add_module_specific_components(m, d):
     :math:`\sum_{{tmp}\in T_h}{Hydro\_Noncurtailable\_Provide\_Power\_MW_{
     nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp} = \sum_{{
     tmp}\in T_h}{hydro\_noncurtailable\_average\_power\_fraction_{
-    nchg, tmp}} \\times number\_of\_hours\_in\_timepoint_{tmp}`
+    nchg, tmp}} \\times Capacity\_MW_{tmp}
+    \\times number\_of\_hours\_in\_timepoint_{tmp}
+    \\times availability\_derate_{tmp}`
 
     For :math:`(nchg, tmp) \in NCHG\_OT`: \n
     :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \geq
-    hydro\_noncurtailable\_min\_power\_fraction_{nchg, tmp}`
+    hydro\_noncurtailable\_min\_power\_fraction_{nchg, tmp}
+    \\times Capacity\_MW_{tmp} \\times availability\_derate_{tmp}`
     :math:`Hydro\_Noncurtailable\_Provide\_Power\_MW_{nchg, tmp} \leq
-    hydro\_noncurtailable\_max\_power\_fraction_{nchg, tmp}`
+    hydro\_noncurtailable\_max\_power\_fraction_{nchg, tmp}
+    \\times Capacity\_MW_{tmp} \\times availability\_derate_{tmp}`
 
     Hydro ramps can be constrained: documentation to be added.
 
@@ -130,10 +137,29 @@ def add_module_specific_components(m, d):
         m.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=downwards_reserve_rule)
 
-
     # Operational constraints
     def hydro_energy_budget_rule(mod, g, h):
         """
+        The sum of hydro energy output within a horizon must match the horizon's
+        hydro energy budget. The budget is calculated by multiplying the
+        user-specified average power fraction (i.e. the average capacity factor)
+        for that horizon with the product of the matching period's installed
+        capacity (which can be a user input or a decision variable, depending on
+        the capacity type), the number of hours in that horizon, and any
+        availability derates if applicable.
+
+        WARNING: If there are any availability derates, this means the effective
+        average power fraction (and associated energy budget) will be lower than
+        the user-specified input!
+
+        Example: The average power fraction is 50% of the installed capacity in
+        horizon 1, which represents a winter week. If the installed capacity
+        during the period of interest is 1,000 MW, there are 168 hours in
+        the horizon (1 week), and the unit is fully available, the hydro budget
+        for this horizon is 0.5 * 1,000 MW * 168 h = 84,000 MWh.
+        If the unit were unavailable for half of the timepoints in that horizon,
+        the budget would be half, i.e. 42,000 MWh, even though the average power
+        fraction is the same!
 
         :param mod:
         :param g:
@@ -146,6 +172,7 @@ def add_module_specific_components(m, d):
             == \
             sum(mod.hydro_noncurtailable_average_power_fraction[g, h]
                 * mod.Capacity_MW[g, mod.period[tmp]]
+                * mod.Availability_Derate[g, tmp]
                 * mod.number_of_hours_in_timepoint[tmp]
                 for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
 
@@ -155,7 +182,15 @@ def add_module_specific_components(m, d):
 
     def max_power_rule(mod, g, tmp):
         """
+        Power plus upward reserves shall not exceed the maximum power output.
+        The maximum power output (fraction) is a user input that is specified
+        by horizon. If the unit is unavailable, it will be further de-rated.
 
+        Example: The maximum power is 90% of the installed capacity in horizon
+        1, which represents a winter week. If the installed capacity during the
+        timepoint (period) of interest (which can be a user input or a decision
+        variable, depending on the capacity type) is 1,000 MW and the project is
+        fully available, the project's maximum power output is 900 MW.
         :param mod:
         :param g:
         :param tmp:
@@ -165,7 +200,8 @@ def add_module_specific_components(m, d):
             + mod.Hydro_Noncurtailable_Upwards_Reserves_MW[g, tmp] \
             <= mod.hydro_noncurtailable_max_power_fraction[
                    g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp]
 
     m.Hydro_Noncurtailable_Max_Power_Constraint = \
         Constraint(
@@ -175,7 +211,15 @@ def add_module_specific_components(m, d):
 
     def min_power_rule(mod, g, tmp):
         """
+        Power minus downward reserves must exceed the minimum power output.
+        The minimum power output (fraction) is a user input that is specified
+        by horizon. If the unit is unavailable, it will be further de-rated.
 
+        Example: The minimum power is 30% of the installed capacity in horizon
+        1, which represents a winter week. If the installed capacity during the
+        timepoint (period) of interest (which can be a user input or a decision
+        variable, depending on the capacity type) is 1,000 MW and the project is
+        fully available, the project's minimum power output is 300 MW.
         :param mod:
         :param g:
         :param tmp:
@@ -185,7 +229,8 @@ def add_module_specific_components(m, d):
             - mod.Hydro_Noncurtailable_Downwards_Reserves_MW[g, tmp] \
             >= mod.hydro_noncurtailable_min_power_fraction[
                    g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]]
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp]
 
     m.Hydro_Noncurtailable_Min_Power_Constraint = \
         Constraint(
