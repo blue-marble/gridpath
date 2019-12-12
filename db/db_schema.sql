@@ -62,6 +62,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented prm types
+DROP TABLE IF EXISTS mod_prm_types;
+CREATE TABLE mod_prm_types (
+prm_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Invalid combinations of capacity type and operational type
 DROP TABLE IF EXISTS mod_capacity_and_operational_type_invalid_combos;
 CREATE TABLE mod_capacity_and_operational_type_invalid_combos (
@@ -1236,6 +1243,7 @@ contributes_to_elcc_surface INTEGER,
 min_duration_for_full_capacity_credit_hours FLOAT,
 deliverability_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
+FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
 );

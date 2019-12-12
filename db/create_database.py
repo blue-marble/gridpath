@@ -105,6 +105,7 @@ def load_data(db, omit_data):
         load_mod_reserve_types(db=db, c=c)
         load_mod_tx_capacity_types(db=db, c=c)
         load_mod_tx_operational_types(db=db, c=c)
+        load_mod_prm_types(db=db, c=c)
         load_mod_capacity_and_operational_type_invalid_combos(db=db, c=c)
         load_mod_tx_capacity_and_tx_operational_type_invalid_combos(db=db, c=c)
         load_mod_horizon_boundary_types(db=db, c=c)
@@ -181,6 +182,15 @@ def load_mod_tx_operational_types(db, c):
         (operational_type, description)
         VALUES (?, ?);"""
     load_aux_data(conn=db, cursor=c, filename="mod_tx_operational_types.csv",
+                  sql=sql)
+
+
+def load_mod_prm_types(db, c):
+    sql = """
+        INSERT INTO mod_prm_types
+        (prm_type, description)
+        VALUES (?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="mod_prm_types.csv",
                   sql=sql)
 
 
