@@ -165,10 +165,15 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
     pd.options.mode.chained_assignment = None  # default='warn'
     for indx, row in results_df.iterrows():
-        results_df.percent_curtailed[indx] = \
-            results_df.curtailed_rps_energy_mwh[indx] \
-            / (results_df.delivered_rps_energy_mwh[indx] +
-               results_df.curtailed_rps_energy_mwh[indx]) * 100
+        if (results_df.delivered_rps_energy_mwh[indx] +
+                results_df.curtailed_rps_energy_mwh[indx]) == 0:
+            pct = 0
+        else:
+            pct = results_df.curtailed_rps_energy_mwh[indx] \
+                / (results_df.delivered_rps_energy_mwh[indx] +
+                   results_df.curtailed_rps_energy_mwh[indx]) * 100
+        results_df.percent_curtailed[indx] = pct
+
         results_df.rps_marginal_cost_per_mwh[indx] = \
             results_df.dual[indx] \
             / (results_df.discount_factor[indx] *
