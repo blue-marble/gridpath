@@ -4,6 +4,9 @@
 """
 This script runs a GridPath scenario. It assumes that scenario inputs have
 already been written.
+
+The main() function of this script can also be called with the
+*gridpath_run* command when GridPath is installed.
 """
 from __future__ import print_function
 
@@ -249,15 +252,15 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     :param stage: if there are stage subproblems, the stage
     :param parsed_arguments: the parsed script arguments
     :return: return the objective function value (Total_Cost); only used in
-    testing
+        testing
 
     Log each run in the (sub)problem directory if requested by the user.
 
     Create and solve the (sub)problem. See *create_and_solve_problem* method.
 
-    Save results. See *save_results* method.
+    Save results. See *save_results()* method.
 
-    Summarize results. See *summarize_results* method.
+    Summarize results. See *summarize_results()* method.
 
     Return the objective function (Total_Cost) value; only used in testing mode
 

@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This script iterates over all modules required for a GridPath scenario and
+calls their *import_results_into_database()* method, which loads the
+scenario results files into their respective database table.
+
+The main()_ function of this script can also be called with the
+*gridpath_import_results* command when GridPath is installed.
+"""
+
 from __future__ import print_function
 
 from builtins import str
