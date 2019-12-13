@@ -220,7 +220,3 @@ To test the GridPath codebase, use the unittest module as follows from the
 :code:`PATH/TO/GRIDPATH` directory::
 
     python -m unittest discover tests
-
-.. note:: Some of the tests require a non-linear solver (ipopt). If you
-    don't have ipopt installed, you will not be able to solve these examples
-    and some of the unit tests will fail.

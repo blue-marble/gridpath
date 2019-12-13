@@ -70,11 +70,8 @@ to specify a scenario location (as these are not in the default
 *scenarios* subdirectory). For example, to run the *test* scenario in
 the *examples* directory, run the following::
 
-    python run_scenario.py --scenario test --scenario_location examples
+    python run_scenario.py --scenario test --scenario_location ../examples
 
-.. note:: Some of the examples require a non-linear solver such as ipopt. If
-    you don't have a non-linear solver, you will not be able to solve these
-    examples.
 
 ========
 Workflow
