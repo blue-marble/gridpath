@@ -198,15 +198,18 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
 
     new_build_types = {
         "gen_new_lin,",
+        "gen_new_bin",
         "stor_new_lin",
+        "stor_new_bin",
         "dr_new"
     }
     existing_build_types = {
         "gen_spec",
         "gen_ret_bin",
-        "gen_ret_lin"
+        "gen_ret_lin",
+        "stor_spec",
     }
-    load_shift_types = {
+    dr_types = {
         "dr_new"
     }
 
@@ -220,9 +223,9 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
                            "Existing"))
         sc_id_type.append(("PROJECT_EXISTING_FIXED_COST_SCENARIO_ID",
                            "Existing"))
-    if bool(req_cap_types & load_shift_types):
+    if bool(req_cap_types & dr_types):
         sc_id_type.append(("PROJECT_NEW_POTENTIAL_SCENARIO_ID",
-                           "New Shiftable Load Supply Curve"))
+                           "Demand Response (DR)"))
 
     # Check whether required subscenario_ids are present
     validation_results = []
