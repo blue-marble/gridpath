@@ -170,7 +170,7 @@ def add_module_specific_components(m, d):
     def startup_length_hours_rule(mod, g, s):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.startup_ramp_rate[g, s] / 60
-    m.DispBinCommit_Startup_Length_Hours = Param(
+    m.dispbincommit_startup_length_hours = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATORS_STARTUP_RAMP_TYPES,
         rule=startup_length_hours_rule
     )
@@ -178,7 +178,7 @@ def add_module_specific_components(m, d):
     def shutdown_length_hours_rule(mod, g):
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.dispbincommit_shutdown_plus_ramp_down_rate[g] / 60
-    m.DispBinCommit_Shutdown_Length_Hours = Param(
+    m.dispbincommit_shutdown_length_hours = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
         rule=shutdown_length_hours_rule
     )
@@ -390,7 +390,7 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        shutdown_duration = mod.DispBinCommit_Shutdown_Length_Hours[g]
+        shutdown_duration = mod.dispbincommit_shutdown_length_hours[g]
         relevant_shutdown_power = 0
         time_from_shutdown = 0
 
@@ -518,7 +518,7 @@ def add_module_specific_components(m, d):
 
         if g in mod.STARTUP_RAMP_PROJECTS:
             for s in mod.STARTUP_TYPES_BY_STARTUP_RAMP_PROJECT[g]:
-                startup_duration = mod.DispBinCommit_Startup_Length_Hours[g, s]
+                startup_duration = mod.dispbincommit_startup_length_hours[g, s]
 
                 if startup_duration <= mod.number_of_hours_in_timepoint[tmp]:
                     continue  # Quick-start units have no startup trajectory
