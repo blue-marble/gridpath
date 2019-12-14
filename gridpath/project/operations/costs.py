@@ -143,7 +143,7 @@ def add_model_components(m, d):
         :param mod:
         :param g:
         :param tmp:
-        :param l:
+        :param s:
         :return:
         """
         if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
