@@ -152,58 +152,6 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
 
             self.assertListEqual(expected_list, actual_list)
 
-    def test_determine_relevant_timepoint_startup(self):
-        """
-        Check that the list of relevant timepoints is as expected based on
-        the current timepoint and the cutoff hours t1 and t2 (and, on the data
-        side, the duration of other timepoints). Add any other cases to
-        check that the 'determine_relevant_timepoints_startup' function gives
-        the expected results.
-        """
-        m, data = add_components_and_load_data(
-            prereq_modules=IMPORTED_PREREQ_MODULES,
-            module_to_test=None,  # No need to name since not adding components
-            test_data_dir=TEST_DATA_DIRECTORY,
-            subproblem="",
-            stage=""
-        )
-        instance = m.create_instance(data)
-
-        # TODO: make sure this aligns with convention of entering timepoint at
-        #  setpoint. Gets confusing with some timepoitns being >1hr
-
-        test_cases = {
-            1: {"t1": 2, "t2": 4, "g": "Gas_CCGT", "tmp": 20200107,
-                "relevant_timepoints": [20200105, 20200104]},
-            # Test longer timepoint duration in 20200103
-            2: {"t1": 2, "t2": 4, "g": "Gas_CCGT", "tmp": 20200105,
-                "relevant_timepoints": [20200103]},
-            # Test min times of longer duration than the horizon in a
-            # 'circular' horizon setting
-            3: {"t1": 100, "t2": 120, "g": "Gas_CCGT", "tmp": 20200101,
-                "relevant_timepoints": []},
-            # If we're in the first timepoint of a linear horizon, test that
-            # we don't add any relevan  t timepoints
-            4: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200201,
-                "relevant_timepoints": []},
-            # Test that we break out of the loop with t2 that reach the
-            # first horizon timepoint in a 'linear' horizon setting
-            5: {"t1": 4, "t2": 6, "g": "Gas_CCGT", "tmp": 20200202,
-                "relevant_timepoints": []}
-        }
-
-        for test_case in test_cases.keys():
-            expected_list = test_cases[test_case]["relevant_timepoints"]
-            actual_list = determine_relevant_timepoints_startup(
-                mod=instance,
-                g=test_cases[test_case]["g"],
-                tmp=test_cases[test_case]["tmp"],
-                t1=test_cases[test_case]["t1"],
-                t2=test_cases[test_case]["t2"]
-            )
-
-            self.assertListEqual(expected_list, actual_list)
-
 
 if __name__ == "__main__":
     unittest.main()

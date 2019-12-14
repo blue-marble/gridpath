@@ -727,6 +727,18 @@ def add_module_specific_components(m, d):
         startup_type active at once (see next constraint). This also means the
         constraint will be skipped if there is only one startup type.
 
+        The constraint works by first determining the relevant timepoints, i.e.
+        the timepoints within [TSU,s ; TSU,s+1) hours from *tmp*. If the unit
+        has been down in any of these timepoints, we can activate the startup
+        variable of the associated startup type for timepoint *tmp* (but only if
+        the unit is actually starting in timepoint *tmp*)
+
+        Example: we are in timepoint 7 (hourly resolution) and the down time
+        interval is 2-4 hours for a hot start and >4 hours for a cold start.
+        This means timepoints 4 and 5 will be the relevant timepoints. A
+        shutdown in any of those timepoints means that a start in timepoint 7
+        would be a hot start.
+
         See constraint (7) in Morales-Espana et al. (2017).
 
         :param mod:
@@ -741,15 +753,17 @@ def add_module_specific_components(m, d):
             return Constraint.Skip
 
         # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
-        relevant_tmps = determine_relevant_timepoints_startup(
-            mod, g, tmp,
-            mod.down_time_hours[g, s],
-            mod.down_time_hours[g, s+1]
-        )
+        relevant_tmps1 = determine_relevant_timepoints(
+            mod, g, tmp, mod.down_time_hours[g, s])
+        relevant_tmps2 = determine_relevant_timepoints(
+            mod, g, tmp, mod.down_time_hours[g, s+1])
+        relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
 
-        # Skip constraint if we are within TSU,s+1 hours from the start of the
+        # Skip constraint if we are within TSU,s hours from the start of the
         # horizon (linear horizon boundary) or from the current tmp (circular
-        # horizon boundary).
+        # horizon boundary). We have no way to know whether unit was down
+        # [TSU,s; TSU,s+1) hours ago so we can't know if this start type could
+        # be active.
         if len(relevant_tmps) == 0:
             return Constraint.Skip
 
