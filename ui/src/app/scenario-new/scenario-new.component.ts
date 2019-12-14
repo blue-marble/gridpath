@@ -282,6 +282,10 @@ export class ScenarioNewComponent implements OnInit {
   saveNewScenario() {
     const socket = socketConnect();
 
+    // Re-enable scenarioName form control (it's disabled when editing a
+    // scenario)
+    this.newScenarioForm.controls.scenarioName.enable();
+
     socket.emit('add_new_scenario', this.newScenarioForm.value);
 
     socket.on('return_new_scenario_id', (newScenarioID) => {
