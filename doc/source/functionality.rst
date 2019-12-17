@@ -10,6 +10,8 @@ availability and operating characteristics of the generation infrastructure
 (e.g. an existing 500-MW coal plant with a specified heat rate), and the
 desired objective (e.g. minimize cost).
 
+.. _temporal-setup-section-ref:
+
 Temporal Setup
 ==============
 
