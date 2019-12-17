@@ -40,7 +40,7 @@ from db.utilities import temporal, geography, project_list, project_zones, \
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
-    load_system_carbon_cap, load_system_prm, load_system_rps
+    load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps
 
 
 ## INPUTS
@@ -186,6 +186,26 @@ if csv_data_master.loc[csv_data_master['table'] == 'project_availability_exogeno
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_project_availability.load_project_availability_exogenous(io, c2, csv_subscenario_input, csv_data_input)
 
+#### FUELS ####
+
+## FUEL CHARS ##
+if csv_data_master.loc[csv_data_master['table'] == 'project_fuels', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'project_fuels', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_fuels.load_fuels(io, c2, csv_subscenario_input, csv_data_input)
+
+## FUEL PRICES ##
+if csv_data_master.loc[csv_data_master['table'] == 'project_fuel_prices', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'project_fuel_prices', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_fuels.load_fuel_prices(io, c2, csv_subscenario_input, csv_data_input)
+
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+
+
 #### LOAD POLICY DATA ####
 
 ## GEOGRAPHY CARBON CAP ZONES ##
@@ -248,10 +268,6 @@ if csv_data_master.loc[csv_data_master['table'] == 'system_rps_targets', 'includ
         csv_data_master['table'] == 'system_rps_targets', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_system_rps.load_system_rps_targets(io, c2, csv_subscenario_input, csv_data_input)
-
-
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
 
 #### LOAD RESERVES DATA ####
 
