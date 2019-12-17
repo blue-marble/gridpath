@@ -37,7 +37,7 @@ from db.utilities import temporal, geography, project_list, project_zones, \
     simultaneous_flows, transmission_hurdle_rates, carbon_cap, system_load, \
     system_reserves, system_prm, rps, scenario
 
-from db.csvs_to_db_utilities import csvs_read, load_geography, load_system_load, load_system_reserves, \
+from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials
 
@@ -68,9 +68,21 @@ c2 = io.cursor()
 folder_path = os.path.join(os.getcwd(),'db', 'csvs')
 csv_data_master = pd.read_csv(os.path.join(folder_path, 'csv_data_master.csv'))
 
-#### LOAD GEORGRAPHY DATA ####
+#### LOAD TEMPORAL DATA ####
+if csv_data_master.loc[csv_data_master['table'] == 'temporal', 'include'].iloc[0] != 1:
+    print("ERROR: temporal tables are required")
+else:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'temporal', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_temporal_data(data_folder_path)
+    load_temporal.load_temporal(io, c2, csv_subscenario_input, csv_data_input)
 
-#### LOAD LOAD DATA ####
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+
+
+
+#### LOAD LOAD (DEMAND) DATA ####
 
 ## GEOGRAPHY ##
 if csv_data_master.loc[csv_data_master['table'] == 'geography_load_zones', 'include'].iloc[0] != 1:
@@ -161,9 +173,6 @@ if csv_data_master.loc[csv_data_master['table'] == 'project_new_cost', 'include'
         csv_data_master['table'] == 'project_new_cost', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_project_new_costs.load_project_new_costs(io, c2, csv_subscenario_input, csv_data_input)
-
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
 
 #### LOAD PROJECT AVAILABILITY DATA ####
 
