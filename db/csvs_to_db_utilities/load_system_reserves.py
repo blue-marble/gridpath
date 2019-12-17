@@ -12,7 +12,7 @@ from db.utilities import system_reserves
 def load_system_reserves(io, c, subscenario_input, data_input, reserve_type_input):
     """
     System reserves dictionary has reserves_ba, stage_id, and then timepoints and data
-    {load_zone: {stage_id: {tmp: load_mw}}}
+    {reserves_ba: {stage_id: {tmp: load_mw}}}
     :param io:
     :param c:
     :param subscenario_input:

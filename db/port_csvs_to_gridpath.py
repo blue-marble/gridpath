@@ -39,7 +39,8 @@ from db.utilities import temporal, geography, project_list, project_zones, \
 
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
-    load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials
+    load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
+    load_system_carbon_cap, load_system_prm, load_system_rps
 
 
 ## INPUTS
@@ -76,11 +77,6 @@ else:
         csv_data_master['table'] == 'temporal', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_temporal_data(data_folder_path)
     load_temporal.load_temporal(io, c2, csv_subscenario_input, csv_data_input)
-
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-
-
 
 #### LOAD LOAD (DEMAND) DATA ####
 
@@ -228,6 +224,34 @@ for policy_type in policy_list:
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_zones.load_project_policy_zones(io, c2, csv_subscenario_input, csv_data_input, policy_type)
 
+## SYSTEM CARBON CAP TARGETS ##
+if csv_data_master.loc[csv_data_master['table'] == 'system_carbon_cap_targets', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'system_carbon_cap_targets', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_system_carbon_cap.load_system_carbon_cap_targets(io, c2, csv_subscenario_input, csv_data_input)
+
+## SYSTEM LOCAL CAPACITY TARGETS ##
+
+
+
+## SYSTEM PRM TARGETS ##
+if csv_data_master.loc[csv_data_master['table'] == 'system_prm_requirement', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'system_prm_requirement', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_system_prm.load_system_prm_requirement(io, c2, csv_subscenario_input, csv_data_input)
+
+## SYSTEM RPS TARGETS ##
+if csv_data_master.loc[csv_data_master['table'] == 'system_rps_targets', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'system_rps_targets', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_system_rps.load_system_rps_targets(io, c2, csv_subscenario_input, csv_data_input)
+
+
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
 
 #### LOAD RESERVES DATA ####
 
