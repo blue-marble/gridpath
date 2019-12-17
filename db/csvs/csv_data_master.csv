@@ -1,10 +1,10 @@
 feature,subscenario_id,table,required,include,path,notes
-core,temporal_scenario_id,temporal_horizon_timepoints,1,1,,no scenario name or description in header
-core,temporal_scenario_id,temporal_horizons,1,1,,no scenario name or description in header
-core,temporal_scenario_id,temporal_periods,1,1,,no scenario name or description in header
-core,temporal_scenario_id,temporal_subproblems,1,1,,no scenario name or description in header
-core,temporal_scenario_id,temporal_subproblems_stages,1,1,,no scenario name or description in header
-core,temporal_scenario_id,temporal_timepoints,1,1,,add scenario name and description to header
+core,temporal_scenario_id,temporal_horizon_timepoints,1,0,,no scenario name or description in header
+core,temporal_scenario_id,temporal_horizons,1,0,,no scenario name or description in header
+core,temporal_scenario_id,temporal_periods,1,0,,no scenario name or description in header
+core,temporal_scenario_id,temporal_subproblems,1,0,,no scenario name or description in header
+core,temporal_scenario_id,temporal_subproblems_stages,1,0,,no scenario name or description in header
+core,temporal_scenario_id,temporal,1,1,temporal,"Tables include temporal_timepoints, temporal_periods, temporal_horizons, temporal_horizon_timepoints, temporal_subproblems, temporal_subproblems_stages"
 core,project_portfolio_scenario_id,project_portfolios,1,1,project/project_portfolios,
 core,project_operational_chars_scenario_id,project_operational_chars,1,1,project/project_operational_chars,
 core,load_scenario_id,system_load,1,1,system/system_load,
@@ -14,9 +14,13 @@ data_dependent,project_existing_capacity_scenario_id,project_existing_capacity,0
 data_dependent,project_existing_fixed_cost_scenario_id,project_existing_fixed_cost,0,1,project/project_existing_fixed_cost,
 data_dependent,project_new_cost_scenario_id,project_new_cost,0,1,project/project_new_cost,
 data_dependent,project_new_potential_scenario_id,project_new_potential,0,1,project/project_new_potential,
-optional,project_availability_scenario_id,project_availability_types,0,1,project/project_availability/project_availability_types,
-optional,endogenous_availability_scenario_id,project_availability_endogenous,0,0,project/project_availability/project_availability_endogenous,
-optional,exogenous_availability_scenario_id,project_availability_exogenous,0,1,project/project_availability/project_availability_exogenous,
+data_dependent,heat_rate_curves_scenario_id,project_heat_rate_curves,0,1,project/project_heat_rate_curves,
+data_dependent,hydro_operational_chars_scenario_id,project_hydro_operational_chars,0,1,project/project_hydro_operational_chars,
+data_dependent,variable_generator_profile_scenario_id,project_variable_generator_profiles,0,1,project/project_variable_generator_profiles,
+data_dependent,supply_curve_scenario_id,project_shiftable_load_supply_curve,0,0,,
+data_dependent,project_availability_scenario_id,project_availability_types,0,1,project/project_availability/project_availability_types,
+data_dependent,endogenous_availability_scenario_id,project_availability_endogenous,0,0,project/project_availability/project_availability_endogenous,
+data_dependent,exogenous_availability_scenario_id,project_availability_exogenous,0,1,project/project_availability/project_availability_exogenous,
 fuels,fuel_scenario_id,project_fuels,0,1,project/project_fuels,
 fuels,fuel_price_scenario_id,project_fuel_prices,0,1,project/project_fuel_prices,
 transmission,transmission_portfolio_scenario_id,transmission_portfolios,0,0,feature/transmission/transmission_portfolios,
@@ -56,6 +60,7 @@ prm,prm_zone_scenario_id,geography_prm_zones,0,1,feature/prm/geography_prm_zones
 prm,project_prm_zone_scenario_id,project_prm_zones,0,0,feature/prm/project_prm_zones,
 prm,prm_energy_only_scenario_id,project_prm_energy_only,0,0,feature/prm/project_prm_energy_only,
 prm,prm_requirement_scenario_id,system_prm_requirement,0,0,feature/prm/system_prm_requirement,
+prm,,system_prm_zone_elcc_surface,0,0,,
 elcc_surface,project_elcc_chars_scenario_id,project_elcc_chars,0,0,feature/elcc_surface/project_elcc_chars,
 elcc_surface,elcc_surface_scenario_id,project_elcc_surface,0,0,feature/elcc_surface/project_elcc_surface,
 local_capacity,local_capacity_zone_scenario_id,geography_local_capacity_zones,0,1,feature/local_capacity/geography_local_capacity_zones,
@@ -63,8 +68,3 @@ local_capacity,project_local_capacity_zone_scenario_id,project_local_capacity_zo
 local_capacity,project_local_capacity_chars_scenario_id,project_local_capacity_chars,0,0,feature/local_capacity/project_local_capacity_chars,
 local_capacity,local_capacity_requirement_scenario_id,system_local_capacity_requirement,0,0,feature/local_capacity/system_local_capacity_requirement,
 tuning,tuning_scenario_id,tuning,0,0,feature/tuning,
-data_dependent?,heat_rate_curves_scenario_id,project_heat_rate_curves,0,1,project/project_heat_rate_curves,
-data_dependent?,hydro_operational_chars_scenario_id,project_hydro_operational_chars,0,1,project/project_hydro_operational_chars,
-data_dependent?,variable_generator_profile_scenario_id,project_variable_generator_profiles,0,1,project/project_variable_generator_profiles,
-data_dependent?,supply_curve_scenario_id,project_shiftable_load_supply_curve,0,0,,
-prm,,system_prm_zone_elcc_surface,0,0,,

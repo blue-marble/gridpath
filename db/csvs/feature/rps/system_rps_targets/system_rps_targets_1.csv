@@ -1,0 +1,5 @@
+rps_target_scenario_id,rps_zone,period,subproblem_id,stage_id,rps_target_mwh,rps_zone_scenario_id
+1,Isengard,2020,1,1,1125,1
+1,Isengard,2025,1,1,1525,1
+1,Rivendell,2020,1,1,525,1
+1,Rivendell,2025,1,1,525,1

@@ -1,0 +1,9 @@
+fuel_price_scenario_id,fuel,period,month,fuel_price_per_mmbtu
+1,coal,2020,1,2.5
+1,coal,2020,2,2.5
+1,coal,2025,1,2.5
+1,coal,2025,2,2.5
+1,gas,2020,1,5
+1,gas,2020,2,5
+1,gas,2025,1,5
+1,gas,2025,2,5

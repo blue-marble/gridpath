@@ -1,0 +1,3 @@
+fuel_scenario_id,fuel,co2_intensity_tons_per_mmbtu
+1,coal,0.1
+1,gas,0.05
