@@ -273,11 +273,31 @@ table.
 Project Inputs
 **************
 
+Generator and storage resources in GridPath are called *projects*. Each
+project can be assigned different characteristics depending on the scenario,
+whether its geographic location, ability to contribute to reserve or policy
+requirements, its capacity and operating characteristics. You can optionally
+import all projects that may be part of a scenario in the
+:code:`inputs_project_all` table of the GridPath database.
+
 .. _project-geography-section-ref:
 
 =================
 Project Geography
 =================
+
++-------------------------------+----------------------------------------+
+|:code:`scenarios` table column |:code:`project_load_zone_scenario_id`   |
++-------------------------------+----------------------------------------+
+|:code:`scenario` table feature |N/A                                     |
++-------------------------------+----------------------------------------+
+|:code:`subscenario_` table     |:code:`subscenarios_project_load_zones` |
++-------------------------------+----------------------------------------+
+|:code:`input_` tables          |:code:`inputs_project_load_zones`       |
++-------------------------------+----------------------------------------+
+
+Each *project* in a GridPath scenario must be assigned a load zone to whose
+load-balance constraint it will contribute to.
 
 =================
 Project Portfolio
