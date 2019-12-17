@@ -192,11 +192,14 @@ from the previous stage that this timepoint maps to (if any), whether this
 timepoint is part of a spinup or lookahead, the month of this timepoint, and
 the hour of day of this timepoint.
 
-The :code:`inputs_temporal_horizon_timepoints` table describes how timeponts are
-organized into horizons for each temporal_scenario_id, subproblem_id, and
+The :code:`inputs_temporal_horizon_timepoints` table describes how timeponts
+are organized into horizons for each temporal_scenario_id, subproblem_id, and
 stage_id. A timepoint can belong to more than one horizon if those horizons
 are of different balancing types (e.g. the same horizon can belong to a
 'day' horizon, a 'week' horizon, a 'month' horizons, and a 'year' horizon).
+
+A scenario's temporal setup is selected via the :code:`temporal_scenario_id`
+column of the :code:`scenarios` table.
 
 
 
@@ -240,10 +243,13 @@ load zone to whose load-balance constraint it can contribute
 GridPath also includes other geographic layers, including those for
 operating reserves, reliability reserves, and policy requirements.
 
+A scenario's load zone geographic setup is selected via the
+:code:`load_zone_scenario_id` column of the :code:`scenarios` table.
+
 System Load
 ***********
 
-Relevant tables:
+**Relevant tables:**
 
 +-------------------------------+---------------------------------+
 |:code:`scenarios` table column |:code:`load_scenario_id`         |
@@ -255,6 +261,14 @@ Relevant tables:
 |:code:`input_` tables          |:code:`inputs_system_load`       |
 +-------------------------------+---------------------------------+
 
+The load for each load zone must be specified the :code:`inputs_system_load`
+table under a :code:`load_scenario_id` key. If the load for one load zone
+changes but not for others, all must be included again under a different
+:code:`load_scenario_id`. The :code:`inputs_system_load` table can contain
+data for timepoints not included in a scenario. GridPath will only select
+the load for the relevant timepoints based on the
+:code:`temporal_scenario_id` selected by the user in the :code:`scenarios`
+table.
 
 Project Inputs
 **************
