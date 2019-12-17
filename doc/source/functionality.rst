@@ -166,6 +166,8 @@ constraint it contributes to. In addition, each project must be assigned a
 *capacity type*, an *availability type*, and an *operational type*. These
 types are described in more detail below.
 
+.. _project-capacity-type-section-ref:
+
 Project Capacity Types
 ----------------------
 Each project in GridPath must be assigned a *capacity type*. The *capacity
