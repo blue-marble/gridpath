@@ -247,8 +247,6 @@ def deliverability_groups(
 
 def elcc_surface(
     io, c,
-    prm_zone_scenario_id,
-    project_prm_zone_scenario_id,
     elcc_surface_scenario_id,
     scenario_name,
     scenario_description,
@@ -259,8 +257,6 @@ def elcc_surface(
 
     :param io:
     :param c:
-    :param prm_zone_scenario_id:
-    :param project_prm_zone_scenario_id:
     :param elcc_surface_scenario_id:
     :param scenario_name:
     :param scenario_description:
@@ -271,12 +267,12 @@ def elcc_surface(
     print("elcc surface")
 
     # Subscenarios
-    subs_data = [(prm_zone_scenario_id, elcc_surface_scenario_id,
+    subs_data = [(elcc_surface_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
         INSERT INTO subscenarios_system_elcc_surface
-        (prm_zone_scenario_id, elcc_surface_scenario_id, name, description)
-        VALUES (?, ?, ?, ?);
+        (elcc_surface_scenario_id, name, description)
+        VALUES (?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
@@ -288,15 +284,15 @@ def elcc_surface(
                     zone_period_facet_intercepts[zone][period].keys()
             ):
                 ints_data.append(
-                    (prm_zone_scenario_id, elcc_surface_scenario_id,
+                    (elcc_surface_scenario_id,
                      zone, period, facet,
                      zone_period_facet_intercepts[zone][period][facet])
                 )
     inputs_sql = """
         INSERT INTO inputs_system_prm_zone_elcc_surface
-        (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone,
+        (elcc_surface_scenario_id, prm_zone,
          period, facet, elcc_surface_intercept)
-        VALUES (?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=ints_data)
 
@@ -306,16 +302,13 @@ def elcc_surface(
         for period in list(proj_period_facet_coeff[proj].keys()):
             for facet in list(proj_period_facet_coeff[proj][period].keys()):
                 coef_data.append(
-                    (prm_zone_scenario_id, project_prm_zone_scenario_id,
-                     elcc_surface_scenario_id, proj, period, facet,
+                    (elcc_surface_scenario_id, proj, period, facet,
                      proj_period_facet_coeff[proj][period][facet])
                 )
     coef_sql = """
         INSERT INTO inputs_project_elcc_surface 
-        (prm_zone_scenario_id, 
-        project_prm_zone_scenario_id,
-        elcc_surface_scenario_id, 
+        (elcc_surface_scenario_id, 
         project, period, facet, elcc_surface_coefficient)
-        VALUES (?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=coef_sql, data=coef_data)
