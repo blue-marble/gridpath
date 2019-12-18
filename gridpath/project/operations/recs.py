@@ -206,9 +206,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_zones = c.execute(
         """SELECT project, rps_zone
         FROM inputs_project_rps_zones
-            WHERE rps_zone_scenario_id = {}
-            AND project_rps_zone_scenario_id = {}""".format(
-            subscenarios.RPS_ZONE_SCENARIO_ID,
+            WHERE project_rps_zone_scenario_id = {}""".format(
             subscenarios.PROJECT_RPS_ZONE_SCENARIO_ID
         )
     )

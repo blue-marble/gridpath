@@ -213,9 +213,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_bas = c1.execute(
         """SELECT project, frequency_response_ba, contribute_to_partial
         FROM inputs_project_frequency_response_bas
-            WHERE frequency_response_ba_scenario_id = {}
-            AND project_frequency_response_ba_scenario_id = {}""".format(
-            subscenarios.FREQUENCY_RESPONSE_BA_SCENARIO_ID,
+            WHERE project_frequency_response_ba_scenario_id = {}""".format(
             subscenarios.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID
         )
     )
