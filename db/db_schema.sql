@@ -897,30 +897,19 @@ FOREIGN KEY (project, endogenous_availability_scenario_id)
 -- zone if modeling several zones, etc.)
 DROP TABLE IF EXISTS subscenarios_project_load_zones;
 CREATE TABLE subscenarios_project_load_zones (
-load_zone_scenario_id INTEGER,
-project_load_zone_scenario_id INTEGER,
+project_load_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (load_zone_scenario_id, project_load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones (load_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_load_zones;
 CREATE TABLE inputs_project_load_zones (
-load_zone_scenario_id INTEGER,
 project_load_zone_scenario_id INTEGER,
 project VARCHAR(64),
 load_zone VARCHAR(32),
-PRIMARY KEY (load_zone_scenario_id, project_load_zone_scenario_id, project),
-FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
- subscenarios_project_load_zones
- (load_zone_scenario_id, project_load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones (load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id, load_zone) REFERENCES
- inputs_geography_load_zones
- (load_zone_scenario_id, load_zone)
+PRIMARY KEY (project_load_zone_scenario_id, project),
+FOREIGN KEY (project_load_zone_scenario_id) REFERENCES
+ subscenarios_project_load_zones (project_load_zone_scenario_id)
 );
 
 -- Project BAs
@@ -930,192 +919,112 @@ FOREIGN KEY (load_zone_scenario_id, load_zone) REFERENCES
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_lf_reserves_up_bas;
 CREATE TABLE subscenarios_project_lf_reserves_up_bas (
-lf_reserves_up_ba_scenario_id INTEGER,
-project_lf_reserves_up_ba_scenario_id INTEGER,
+project_lf_reserves_up_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (lf_reserves_up_ba_scenario_id,
-project_lf_reserves_up_ba_scenario_id),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_lf_reserves_up_bas;
 CREATE TABLE inputs_project_lf_reserves_up_bas (
-lf_reserves_up_ba_scenario_id INTEGER,
 project_lf_reserves_up_ba_scenario_id INTEGER,
 project VARCHAR(64),
 lf_reserves_up_ba VARCHAR(32),
-PRIMARY KEY (lf_reserves_up_ba_scenario_id,
-project_lf_reserves_up_ba_scenario_id, project),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id,
-project_lf_reserves_up_ba_scenario_id)
+PRIMARY KEY (project_lf_reserves_up_ba_scenario_id, project),
+FOREIGN KEY (project_lf_reserves_up_ba_scenario_id)
 REFERENCES subscenarios_project_lf_reserves_up_bas
- (lf_reserves_up_ba_scenario_id, project_lf_reserves_up_ba_scenario_id),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_up_bas (lf_reserves_up_ba_scenario_id),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba)
-REFERENCES inputs_geography_lf_reserves_up_bas
-(lf_reserves_up_ba_scenario_id, lf_reserves_up_ba)
+ (project_lf_reserves_up_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_lf_reserves_down_bas;
 CREATE TABLE subscenarios_project_lf_reserves_down_bas (
-lf_reserves_down_ba_scenario_id INTEGER,
-project_lf_reserves_down_ba_scenario_id INTEGER,
+project_lf_reserves_down_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (lf_reserves_down_ba_scenario_id,
-project_lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_lf_reserves_down_bas;
 CREATE TABLE inputs_project_lf_reserves_down_bas (
-lf_reserves_down_ba_scenario_id INTEGER,
 project_lf_reserves_down_ba_scenario_id INTEGER,
 project VARCHAR(64),
 lf_reserves_down_ba VARCHAR(32),
-PRIMARY KEY (lf_reserves_down_ba_scenario_id,
-project_lf_reserves_down_ba_scenario_id, project),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id,
-project_lf_reserves_down_ba_scenario_id)
+PRIMARY KEY (project_lf_reserves_down_ba_scenario_id, project),
+FOREIGN KEY (project_lf_reserves_down_ba_scenario_id)
 REFERENCES subscenarios_project_lf_reserves_down_bas
- (lf_reserves_down_ba_scenario_id, project_lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id) REFERENCES
-subscenarios_geography_lf_reserves_down_bas (lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba)
-REFERENCES inputs_geography_lf_reserves_down_bas
-(lf_reserves_down_ba_scenario_id, lf_reserves_down_ba)
+ (project_lf_reserves_down_ba_scenario_id)
 );
 
 
 DROP TABLE IF EXISTS subscenarios_project_regulation_up_bas;
 CREATE TABLE subscenarios_project_regulation_up_bas (
-regulation_up_ba_scenario_id INTEGER,
-project_regulation_up_ba_scenario_id INTEGER,
+project_regulation_up_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (regulation_up_ba_scenario_id,
-project_regulation_up_ba_scenario_id),
-FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_regulation_up_bas;
 CREATE TABLE inputs_project_regulation_up_bas (
-regulation_up_ba_scenario_id INTEGER,
 project_regulation_up_ba_scenario_id INTEGER,
 project VARCHAR(64),
 regulation_up_ba VARCHAR(32),
-PRIMARY KEY (regulation_up_ba_scenario_id,
-project_regulation_up_ba_scenario_id, project),
-FOREIGN KEY (regulation_up_ba_scenario_id,
-project_regulation_up_ba_scenario_id)
+PRIMARY KEY (project_regulation_up_ba_scenario_id, project),
+FOREIGN KEY (project_regulation_up_ba_scenario_id)
 REFERENCES subscenarios_project_regulation_up_bas
- (regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id),
-FOREIGN KEY (regulation_up_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_up_bas (regulation_up_ba_scenario_id),
-FOREIGN KEY (regulation_up_ba_scenario_id, regulation_up_ba)
-REFERENCES inputs_geography_regulation_up_bas
-(regulation_up_ba_scenario_id, regulation_up_ba)
+ (project_regulation_up_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_regulation_down_bas;
 CREATE TABLE subscenarios_project_regulation_down_bas (
-regulation_down_ba_scenario_id INTEGER,
-project_regulation_down_ba_scenario_id INTEGER,
+project_regulation_down_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (regulation_down_ba_scenario_id,
-project_regulation_down_ba_scenario_id),
-FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_regulation_down_bas;
 CREATE TABLE inputs_project_regulation_down_bas (
-regulation_down_ba_scenario_id INTEGER,
 project_regulation_down_ba_scenario_id INTEGER,
 project VARCHAR(64),
 regulation_down_ba VARCHAR(32),
-PRIMARY KEY (regulation_down_ba_scenario_id,
-project_regulation_down_ba_scenario_id, project),
-FOREIGN KEY (regulation_down_ba_scenario_id,
-project_regulation_down_ba_scenario_id)
+PRIMARY KEY (project_regulation_down_ba_scenario_id, project),
+FOREIGN KEY (project_regulation_down_ba_scenario_id)
 REFERENCES subscenarios_project_regulation_down_bas
- (regulation_down_ba_scenario_id, project_regulation_down_ba_scenario_id),
-FOREIGN KEY (regulation_down_ba_scenario_id) REFERENCES
-subscenarios_geography_regulation_down_bas (regulation_down_ba_scenario_id),
-FOREIGN KEY (regulation_down_ba_scenario_id, regulation_down_ba)
-REFERENCES inputs_geography_regulation_down_bas
-(regulation_down_ba_scenario_id, regulation_down_ba)
+ (project_regulation_down_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_frequency_response_bas;
 CREATE TABLE subscenarios_project_frequency_response_bas (
-frequency_response_ba_scenario_id INTEGER,
-project_frequency_response_ba_scenario_id INTEGER,
+project_frequency_response_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (frequency_response_ba_scenario_id,
-project_frequency_response_ba_scenario_id),
-FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
-subscenarios_geography_frequency_response_bas
-(frequency_response_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_frequency_response_bas;
 CREATE TABLE inputs_project_frequency_response_bas (
-frequency_response_ba_scenario_id INTEGER,
 project_frequency_response_ba_scenario_id INTEGER,
 project VARCHAR(64),
 frequency_response_ba VARCHAR(32),
 contribute_to_partial INTEGER,
-PRIMARY KEY (frequency_response_ba_scenario_id,
-project_frequency_response_ba_scenario_id, project),
-FOREIGN KEY (frequency_response_ba_scenario_id,
-project_frequency_response_ba_scenario_id)
+PRIMARY KEY (project_frequency_response_ba_scenario_id, project),
+FOREIGN KEY (project_frequency_response_ba_scenario_id)
 REFERENCES subscenarios_project_frequency_response_bas
- (frequency_response_ba_scenario_id, project_frequency_response_ba_scenario_id),
-FOREIGN KEY (frequency_response_ba_scenario_id) REFERENCES
-subscenarios_geography_frequency_response_bas
-(frequency_response_ba_scenario_id),
-FOREIGN KEY (frequency_response_ba_scenario_id, frequency_response_ba)
-REFERENCES inputs_geography_frequency_response_bas
-(frequency_response_ba_scenario_id, frequency_response_ba)
+ (project_frequency_response_ba_scenario_id)
 );
 
 DROP TABLE IF EXISTS subscenarios_project_spinning_reserves_bas;
 CREATE TABLE subscenarios_project_spinning_reserves_bas (
-spinning_reserves_ba_scenario_id INTEGER,
-project_spinning_reserves_ba_scenario_id INTEGER,
+project_spinning_reserves_ba_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (spinning_reserves_ba_scenario_id,
-project_spinning_reserves_ba_scenario_id),
-FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
-subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_spinning_reserves_bas;
 CREATE TABLE inputs_project_spinning_reserves_bas (
-spinning_reserves_ba_scenario_id INTEGER,
 project_spinning_reserves_ba_scenario_id INTEGER,
 project VARCHAR(64),
 spinning_reserves_ba VARCHAR(32),
-PRIMARY KEY (spinning_reserves_ba_scenario_id,
-project_spinning_reserves_ba_scenario_id, project),
-FOREIGN KEY (spinning_reserves_ba_scenario_id,
-project_spinning_reserves_ba_scenario_id)
+PRIMARY KEY (project_spinning_reserves_ba_scenario_id, project),
+FOREIGN KEY (project_spinning_reserves_ba_scenario_id)
 REFERENCES subscenarios_project_spinning_reserves_bas
- (spinning_reserves_ba_scenario_id, project_spinning_reserves_ba_scenario_id),
-FOREIGN KEY (spinning_reserves_ba_scenario_id) REFERENCES
-subscenarios_geography_spinning_reserves_bas (spinning_reserves_ba_scenario_id),
-FOREIGN KEY (spinning_reserves_ba_scenario_id, spinning_reserves_ba)
-REFERENCES inputs_geography_spinning_reserves_bas
-(spinning_reserves_ba_scenario_id, spinning_reserves_ba)
+ (project_spinning_reserves_ba_scenario_id)
 );
 
 -- Project RPS zones
@@ -1125,31 +1034,19 @@ REFERENCES inputs_geography_spinning_reserves_bas
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_rps_zones;
 CREATE TABLE subscenarios_project_rps_zones (
-rps_zone_scenario_id INTEGER,
-project_rps_zone_scenario_id INTEGER,
+project_rps_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (rps_zone_scenario_id,
-project_rps_zone_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-subscenarios_geography_rps_zones (rps_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_rps_zones;
 CREATE TABLE inputs_project_rps_zones (
-rps_zone_scenario_id INTEGER,
 project_rps_zone_scenario_id INTEGER,
 project VARCHAR(64),
 rps_zone VARCHAR(32),
-PRIMARY KEY (rps_zone_scenario_id, project_rps_zone_scenario_id, project),
-FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
- subscenarios_project_rps_zones
- (rps_zone_scenario_id, project_rps_zone_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id) REFERENCES
-subscenarios_geography_rps_zones (rps_zone_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
- inputs_geography_rps_zones
- (rps_zone_scenario_id, rps_zone)
+PRIMARY KEY (project_rps_zone_scenario_id, project),
+FOREIGN KEY (project_rps_zone_scenario_id) REFERENCES
+ subscenarios_project_rps_zones (project_rps_zone_scenario_id)
 );
 
 -- Project carbon cap zones
@@ -1159,33 +1056,19 @@ FOREIGN KEY (rps_zone_scenario_id, rps_zone) REFERENCES
 -- contributing or just the contributing projects
 DROP TABLE IF EXISTS subscenarios_project_carbon_cap_zones;
 CREATE TABLE subscenarios_project_carbon_cap_zones (
-carbon_cap_zone_scenario_id INTEGER,
-project_carbon_cap_zone_scenario_id INTEGER,
+project_carbon_cap_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (carbon_cap_zone_scenario_id,
-project_carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_carbon_cap_zones;
 CREATE TABLE inputs_project_carbon_cap_zones (
-carbon_cap_zone_scenario_id INTEGER,
 project_carbon_cap_zone_scenario_id INTEGER,
 project VARCHAR(64),
 carbon_cap_zone VARCHAR(32),
-PRIMARY KEY (carbon_cap_zone_scenario_id,
-project_carbon_cap_zone_scenario_id, project),
-FOREIGN KEY (carbon_cap_zone_scenario_id,
-project_carbon_cap_zone_scenario_id) REFERENCES
- subscenarios_project_carbon_cap_zones
- (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id, carbon_cap_zone) REFERENCES
- inputs_geography_carbon_cap_zones
- (carbon_cap_zone_scenario_id, carbon_cap_zone)
+PRIMARY KEY (project_carbon_cap_zone_scenario_id, project),
+FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
+ subscenarios_project_carbon_cap_zones (project_carbon_cap_zone_scenario_id)
 );
 
 
@@ -1197,31 +1080,19 @@ FOREIGN KEY (carbon_cap_zone_scenario_id, carbon_cap_zone) REFERENCES
 
 DROP TABLE IF EXISTS subscenarios_project_prm_zones;
 CREATE TABLE subscenarios_project_prm_zones (
-prm_zone_scenario_id INTEGER,
-project_prm_zone_scenario_id INTEGER,
+project_prm_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (prm_zone_scenario_id,
-project_prm_zone_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id) REFERENCES
-subscenarios_geography_prm_zones (prm_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_prm_zones;
 CREATE TABLE inputs_project_prm_zones (
-prm_zone_scenario_id INTEGER,
 project_prm_zone_scenario_id INTEGER,
 project VARCHAR(64),
 prm_zone VARCHAR(32),
-PRIMARY KEY (prm_zone_scenario_id, project_prm_zone_scenario_id, project),
-FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
- subscenarios_project_prm_zones
- (prm_zone_scenario_id, project_prm_zone_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id) REFERENCES
-subscenarios_geography_prm_zones (prm_zone_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
- inputs_geography_prm_zones
- (prm_zone_scenario_id, prm_zone)
+PRIMARY KEY (project_prm_zone_scenario_id, project),
+FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
+ subscenarios_project_prm_zones (project_prm_zone_scenario_id)
 );
 
 -- Project capacity contribution characteristics (simple ELCC treatment or
@@ -1252,47 +1123,32 @@ subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
 -- Depends on how PRM zones are defined
 DROP TABLE IF EXISTS subscenarios_system_elcc_surface;
 CREATE TABLE subscenarios_system_elcc_surface (
-prm_zone_scenario_id INTEGER,
-elcc_surface_scenario_id INTEGER,
+elcc_surface_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (prm_zone_scenario_id, elcc_surface_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id) REFERENCES
-subscenarios_geography_prm_zones (prm_zone_scenario_id)
+description VARCHAR(128)
 );
 
 -- ELCC surface intercept by PRM zone
 DROP TABLE IF EXISTS inputs_system_prm_zone_elcc_surface;
 CREATE TABLE inputs_system_prm_zone_elcc_surface (
-prm_zone_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 prm_zone VARCHAR(32),
 period INTEGER,
 facet INTEGER,
 elcc_surface_intercept FLOAT,
-PRIMARY KEY (prm_zone_scenario_id, elcc_surface_scenario_id, prm_zone, period,
-facet),
-FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
-subscenarios_system_elcc_surface (prm_zone_scenario_id,
-elcc_surface_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id, prm_zone) REFERENCES
-inputs_geography_prm_zones (prm_zone_scenario_id, prm_zone)
+PRIMARY KEY (elcc_surface_scenario_id, prm_zone, period, facet),
+FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
+    subscenarios_system_elcc_surface (elcc_surface_scenario_id)
 );
 
 DROP TABLE IF EXISTS inputs_project_elcc_surface;
 CREATE TABLE inputs_project_elcc_surface (
-prm_zone_scenario_id INTEGER,
-project_prm_zone_scenario_id INTEGER,
 elcc_surface_scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 facet INTEGER,
 elcc_surface_coefficient FLOAT,
-PRIMARY KEY (project_prm_zone_scenario_id, elcc_surface_scenario_id,
-project, period, facet),
-FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
-subscenarios_project_prm_zones
-(prm_zone_scenario_id, project_prm_zone_scenario_id)
+PRIMARY KEY (elcc_surface_scenario_id, project, period, facet)
 );
 
 -- Energy-only parameters
@@ -1326,33 +1182,20 @@ subscenarios_project_prm_energy_only
 
 DROP TABLE IF EXISTS subscenarios_project_local_capacity_zones;
 CREATE TABLE subscenarios_project_local_capacity_zones (
-local_capacity_zone_scenario_id INTEGER,
-project_local_capacity_zone_scenario_id INTEGER,
+project_local_capacity_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (local_capacity_zone_scenario_id,
-project_local_capacity_zone_scenario_id),
-FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
-subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_project_local_capacity_zones;
 CREATE TABLE inputs_project_local_capacity_zones (
-local_capacity_zone_scenario_id INTEGER,
 project_local_capacity_zone_scenario_id INTEGER,
 project VARCHAR(64),
 local_capacity_zone VARCHAR(32),
-PRIMARY KEY (local_capacity_zone_scenario_id,
-project_local_capacity_zone_scenario_id, project),
-FOREIGN KEY (local_capacity_zone_scenario_id,
-project_local_capacity_zone_scenario_id) REFERENCES
+PRIMARY KEY (project_local_capacity_zone_scenario_id, project),
+FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
  subscenarios_project_local_capacity_zones
- (local_capacity_zone_scenario_id, project_local_capacity_zone_scenario_id),
-FOREIGN KEY (local_capacity_zone_scenario_id) REFERENCES
-subscenarios_geography_local_capacity_zones (local_capacity_zone_scenario_id),
-FOREIGN KEY (local_capacity_zone_scenario_id, local_capacity_zone) REFERENCES
- inputs_geography_local_capacity_zones
- (local_capacity_zone_scenario_id, local_capacity_zone)
+ (project_local_capacity_zone_scenario_id)
 );
 
 -- Project capacity contribution characteristics
@@ -1443,30 +1286,20 @@ FOREIGN KEY (capacity_type) REFERENCES mod_tx_capacity_types
 -- Load zones
 DROP TABLE IF EXISTS subscenarios_transmission_load_zones;
 CREATE TABLE subscenarios_transmission_load_zones (
-load_zone_scenario_id INTEGER,
-transmission_load_zone_scenario_id INTEGER,
+transmission_load_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (load_zone_scenario_id, transmission_load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones (load_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_load_zones;
 CREATE TABLE inputs_transmission_load_zones (
-load_zone_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 load_zone_from VARCHAR(32),
 load_zone_to VARCHAR(32),
-PRIMARY KEY (load_zone_scenario_id, transmission_load_zone_scenario_id,
-transmission_line),
-FOREIGN KEY (load_zone_scenario_id, transmission_load_zone_scenario_id)
-REFERENCES subscenarios_transmission_load_zones (load_zone_scenario_id,
-transmission_load_zone_scenario_id),
-FOREIGN KEY (load_zone_scenario_id) REFERENCES
-subscenarios_geography_load_zones
-(load_zone_scenario_id)
+PRIMARY KEY (transmission_load_zone_scenario_id, transmission_line),
+FOREIGN KEY (transmission_load_zone_scenario_id) REFERENCES
+    subscenarios_transmission_load_zones (transmission_load_zone_scenario_id)
 );
 
 -- Carbon cap zones
@@ -1474,34 +1307,22 @@ subscenarios_geography_load_zones
 -- emission imports
 DROP TABLE IF EXISTS subscenarios_transmission_carbon_cap_zones;
 CREATE TABLE subscenarios_transmission_carbon_cap_zones (
-carbon_cap_zone_scenario_id INTEGER,
-transmission_carbon_cap_zone_scenario_id INTEGER,
+transmission_carbon_cap_zone_scenario_id INTEGER PRIMARY KEY,
 name VARCHAR(32),
-description VARCHAR(128),
-PRIMARY KEY (carbon_cap_zone_scenario_id,
-transmission_carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones (carbon_cap_zone_scenario_id)
+description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS inputs_transmission_carbon_cap_zones;
 CREATE TABLE inputs_transmission_carbon_cap_zones (
-carbon_cap_zone_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 carbon_cap_zone VARCHAR(32),
 import_direction VARCHAR(8),
 tx_co2_intensity_tons_per_mwh FLOAT,
-PRIMARY KEY (carbon_cap_zone_scenario_id,
-transmission_carbon_cap_zone_scenario_id,
-transmission_line),
-FOREIGN KEY (carbon_cap_zone_scenario_id,
-transmission_carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_transmission_carbon_cap_zones (carbon_cap_zone_scenario_id,
-transmission_carbon_cap_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id) REFERENCES
-subscenarios_geography_carbon_cap_zones
-(carbon_cap_zone_scenario_id)
+PRIMARY KEY (transmission_carbon_cap_zone_scenario_id, transmission_line),
+FOREIGN KEY (transmission_carbon_cap_zone_scenario_id) REFERENCES
+    subscenarios_transmission_carbon_cap_zones
+        (transmission_carbon_cap_zone_scenario_id)
 );
 
 -- Existing transmission capacity
@@ -2066,58 +1887,41 @@ FOREIGN KEY (fuel_scenario_id) REFERENCES
     subscenarios_project_fuels (fuel_scenario_id),
 FOREIGN KEY (fuel_price_scenario_id) REFERENCES
     subscenarios_project_fuel_prices (fuel_price_scenario_id),
-FOREIGN KEY (load_zone_scenario_id, project_load_zone_scenario_id) REFERENCES
-    subscenarios_project_load_zones
-        (load_zone_scenario_id, project_load_zone_scenario_id),
-FOREIGN KEY (lf_reserves_up_ba_scenario_id,
-    project_lf_reserves_up_ba_scenario_id) REFERENCES
-        subscenarios_project_lf_reserves_up_bas
-            (lf_reserves_up_ba_scenario_id,
-             project_lf_reserves_up_ba_scenario_id),
-FOREIGN KEY (lf_reserves_down_ba_scenario_id,
-    project_lf_reserves_down_ba_scenario_id) REFERENCES
-        subscenarios_project_lf_reserves_down_bas
-            (lf_reserves_down_ba_scenario_id,
-             project_lf_reserves_down_ba_scenario_id),
-FOREIGN KEY (regulation_up_ba_scenario_id,
-             project_regulation_up_ba_scenario_id) REFERENCES
-                 subscenarios_project_regulation_up_bas
-                    (regulation_up_ba_scenario_id,
-                     project_regulation_up_ba_scenario_id),
-FOREIGN KEY (regulation_down_ba_scenario_id,
-    project_regulation_down_ba_scenario_id) REFERENCES
-        subscenarios_project_regulation_down_bas
-            (regulation_down_ba_scenario_id,
-             project_regulation_down_ba_scenario_id),
-FOREIGN KEY (frequency_response_ba_scenario_id,
-    project_frequency_response_ba_scenario_id) REFERENCES
-        subscenarios_project_frequency_response_bas
-            (frequency_response_ba_scenario_id,
-             project_frequency_response_ba_scenario_id),
-FOREIGN KEY (spinning_reserves_ba_scenario_id,
-    project_spinning_reserves_ba_scenario_id) REFERENCES
-        subscenarios_project_spinning_reserves_bas
-            (spinning_reserves_ba_scenario_id,
-             project_spinning_reserves_ba_scenario_id),
-FOREIGN KEY (rps_zone_scenario_id, project_rps_zone_scenario_id) REFERENCES
+FOREIGN KEY (project_load_zone_scenario_id) REFERENCES
+    subscenarios_project_load_zones (project_load_zone_scenario_id),
+FOREIGN KEY (project_lf_reserves_up_ba_scenario_id) REFERENCES
+    subscenarios_project_lf_reserves_up_bas
+        (project_lf_reserves_up_ba_scenario_id),
+FOREIGN KEY (project_lf_reserves_down_ba_scenario_id) REFERENCES
+    subscenarios_project_lf_reserves_down_bas
+        (project_lf_reserves_down_ba_scenario_id),
+FOREIGN KEY (project_regulation_up_ba_scenario_id) REFERENCES
+     subscenarios_project_regulation_up_bas
+        (project_regulation_up_ba_scenario_id),
+FOREIGN KEY (project_regulation_down_ba_scenario_id) REFERENCES
+    subscenarios_project_regulation_down_bas
+        (project_regulation_down_ba_scenario_id),
+FOREIGN KEY (project_frequency_response_ba_scenario_id) REFERENCES
+    subscenarios_project_frequency_response_bas
+        (project_frequency_response_ba_scenario_id),
+FOREIGN KEY (project_spinning_reserves_ba_scenario_id) REFERENCES
+    subscenarios_project_spinning_reserves_bas
+        (project_spinning_reserves_ba_scenario_id),
+FOREIGN KEY (project_rps_zone_scenario_id) REFERENCES
     subscenarios_project_rps_zones
-        (rps_zone_scenario_id, project_rps_zone_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id,
-    project_carbon_cap_zone_scenario_id) REFERENCES
-        subscenarios_project_carbon_cap_zones
-            (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id, project_prm_zone_scenario_id) REFERENCES
-    subscenarios_project_prm_zones
-        (prm_zone_scenario_id, project_prm_zone_scenario_id),
+        (project_rps_zone_scenario_id),
+FOREIGN KEY (project_carbon_cap_zone_scenario_id) REFERENCES
+    subscenarios_project_carbon_cap_zones
+        (project_carbon_cap_zone_scenario_id),
+FOREIGN KEY (project_prm_zone_scenario_id) REFERENCES
+    subscenarios_project_prm_zones (project_prm_zone_scenario_id),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
     subscenarios_project_elcc_chars (project_elcc_chars_scenario_id),
 FOREIGN KEY (prm_energy_only_scenario_id) REFERENCES
     subscenarios_project_prm_energy_only (prm_energy_only_scenario_id),
-FOREIGN KEY (local_capacity_zone_scenario_id,
-    project_local_capacity_zone_scenario_id) REFERENCES
-        subscenarios_project_local_capacity_zones
-            (local_capacity_zone_scenario_id,
-             project_local_capacity_zone_scenario_id),
+FOREIGN KEY (project_local_capacity_zone_scenario_id) REFERENCES
+    subscenarios_project_local_capacity_zones
+        (project_local_capacity_zone_scenario_id),
 FOREIGN KEY (project_local_capacity_chars_scenario_id) REFERENCES
     subscenarios_project_local_capacity_chars
         (project_local_capacity_chars_scenario_id),
@@ -2136,9 +1940,9 @@ FOREIGN KEY (project_new_binary_build_size_scenario_id) REFERENCES
     (project_new_binary_build_size_scenario_id),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
     subscenarios_transmission_portfolios (transmission_portfolio_scenario_id),
-FOREIGN KEY (load_zone_scenario_id, transmission_load_zone_scenario_id)
+FOREIGN KEY (transmission_load_zone_scenario_id)
     REFERENCES subscenarios_transmission_load_zones
-        (load_zone_scenario_id, transmission_load_zone_scenario_id),
+        (transmission_load_zone_scenario_id),
 FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
     subscenarios_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id),
@@ -2148,11 +1952,9 @@ FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 FOREIGN KEY (transmission_hurdle_rate_scenario_id) REFERENCES
     subscenarios_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id),
-FOREIGN KEY (carbon_cap_zone_scenario_id,
-             transmission_carbon_cap_zone_scenario_id)
+FOREIGN KEY (transmission_carbon_cap_zone_scenario_id)
     REFERENCES subscenarios_transmission_carbon_cap_zones
-        (carbon_cap_zone_scenario_id,
-         transmission_carbon_cap_zone_scenario_id),
+        (transmission_carbon_cap_zone_scenario_id),
 FOREIGN KEY (transmission_simultaneous_flow_limit_scenario_id)
     REFERENCES subscenarios_transmission_simultaneous_flow_limits
         (transmission_simultaneous_flow_limit_scenario_id),
@@ -2179,9 +1981,8 @@ FOREIGN KEY (carbon_cap_target_scenario_id) REFERENCES
     subscenarios_system_carbon_cap_targets (carbon_cap_target_scenario_id),
 FOREIGN KEY (prm_requirement_scenario_id) REFERENCES
     subscenarios_system_prm_requirement (prm_requirement_scenario_id),
-FOREIGN KEY (prm_zone_scenario_id, elcc_surface_scenario_id) REFERENCES
-    subscenarios_system_elcc_surface
-        (prm_zone_scenario_id, elcc_surface_scenario_id),
+FOREIGN KEY (elcc_surface_scenario_id) REFERENCES
+    subscenarios_system_elcc_surface (elcc_surface_scenario_id),
 FOREIGN KEY (local_capacity_requirement_scenario_id) REFERENCES
     subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id),
@@ -3471,37 +3272,31 @@ LEFT JOIN subscenarios_project_availability
 LEFT JOIN subscenarios_project_fuels USING (fuel_scenario_id)
 LEFT JOIN subscenarios_project_fuel_prices USING (fuel_price_scenario_id)
 LEFT JOIN subscenarios_project_load_zones
-    USING (load_zone_scenario_id, project_load_zone_scenario_id)
+    USING (project_load_zone_scenario_id)
 LEFT JOIN subscenarios_project_lf_reserves_up_bas
-    USING (lf_reserves_up_ba_scenario_id,
-           project_lf_reserves_up_ba_scenario_id)
+    USING (project_lf_reserves_up_ba_scenario_id)
 LEFT JOIN subscenarios_project_lf_reserves_down_bas
-    USING (lf_reserves_down_ba_scenario_id,
-           project_lf_reserves_down_ba_scenario_id)
+    USING (project_lf_reserves_down_ba_scenario_id)
 LEFT JOIN subscenarios_project_regulation_up_bas
-    USING (regulation_up_ba_scenario_id, project_regulation_up_ba_scenario_id)
+    USING (project_regulation_up_ba_scenario_id)
 LEFT JOIN subscenarios_project_regulation_down_bas
-    USING (regulation_down_ba_scenario_id,
-           project_regulation_down_ba_scenario_id)
+    USING (project_regulation_down_ba_scenario_id)
 LEFT JOIN subscenarios_project_spinning_reserves_bas
-    USING (spinning_reserves_ba_scenario_id,
-           project_spinning_reserves_ba_scenario_id)
+    USING (project_spinning_reserves_ba_scenario_id)
 LEFT JOIN subscenarios_project_frequency_response_bas
-    USING (frequency_response_ba_scenario_id,
-           project_frequency_response_ba_scenario_id)
+    USING (project_frequency_response_ba_scenario_id)
 LEFT JOIN subscenarios_project_rps_zones
-    USING (rps_zone_scenario_id, project_rps_zone_scenario_id)
+    USING (project_rps_zone_scenario_id)
 LEFT JOIN subscenarios_project_carbon_cap_zones
-    USING (carbon_cap_zone_scenario_id, project_carbon_cap_zone_scenario_id)
+    USING (project_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_project_prm_zones
-    USING (prm_zone_scenario_id, project_prm_zone_scenario_id)
+    USING (project_prm_zone_scenario_id)
 LEFT JOIN subscenarios_project_elcc_chars
     USING (project_elcc_chars_scenario_id)
 LEFT JOIN subscenarios_project_prm_energy_only
     USING (prm_energy_only_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_zones
-    USING (local_capacity_zone_scenario_id,
-           project_local_capacity_zone_scenario_id)
+    USING (project_local_capacity_zone_scenario_id)
 LEFT JOIN subscenarios_project_local_capacity_chars
     USING (project_local_capacity_chars_scenario_id)
 LEFT JOIN subscenarios_project_existing_capacity
@@ -3516,7 +3311,7 @@ LEFT JOIN subscenarios_project_new_binary_build_size
 LEFT JOIN subscenarios_transmission_portfolios
     USING (transmission_portfolio_scenario_id)
 LEFT JOIN subscenarios_transmission_load_zones
-    USING (load_zone_scenario_id, transmission_load_zone_scenario_id)
+    USING (transmission_load_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_existing_capacity
     USING (transmission_existing_capacity_scenario_id)
 LEFT JOIN subscenarios_transmission_operational_chars
@@ -3524,8 +3319,7 @@ LEFT JOIN subscenarios_transmission_operational_chars
 LEFT JOIN subscenarios_transmission_hurdle_rates
     USING (transmission_hurdle_rate_scenario_id)
 LEFT JOIN subscenarios_transmission_carbon_cap_zones
-    USING (carbon_cap_zone_scenario_id,
-          transmission_carbon_cap_zone_scenario_id)
+    USING (transmission_carbon_cap_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limits
     USING (transmission_simultaneous_flow_limit_scenario_id)
 LEFT JOIN subscenarios_transmission_simultaneous_flow_limit_line_groups
@@ -3549,7 +3343,7 @@ LEFT JOIN subscenarios_system_carbon_cap_targets
 LEFT JOIN subscenarios_system_prm_requirement
     USING (prm_requirement_scenario_id)
 LEFT JOIN subscenarios_system_elcc_surface
-    USING (prm_zone_scenario_id, elcc_surface_scenario_id)
+    USING (elcc_surface_scenario_id)
 LEFT JOIN subscenarios_system_local_capacity_requirement
     USING (local_capacity_requirement_scenario_id)
 LEFT JOIN subscenarios_tuning USING (tuning_scenario_id)
