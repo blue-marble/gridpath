@@ -1,0 +1,4 @@
+project,heat_rate_curves_scenario_id,name,description,filename
+coal_existing,1,project_heat_rate_curves_base,project heat rate curves base scenario,project_heat_rate_curves_1
+gas_existing,1,project_heat_rate_curves_base,project heat rate curves base scenario,project_heat_rate_curves_1
+gas_new,1,project_heat_rate_curves_base,project heat rate curves base scenario,project_heat_rate_curves_1

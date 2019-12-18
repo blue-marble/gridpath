@@ -186,7 +186,19 @@ if csv_data_master.loc[csv_data_master['table'] == 'project_availability_exogeno
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_project_availability.load_project_availability_exogenous(io, c2, csv_subscenario_input, csv_data_input)
 
-#### FUELS ####
+#### LOAD PROJECT HEAT RATE DATA ####
+
+## PROJCT HEAT RATES ##
+if csv_data_master.loc[csv_data_master['table'] == 'project_heat_rate_curves', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'project_heat_rate_curves', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_project_operational_chars.load_project_hr_curves(io, c2, csv_subscenario_input, csv_data_input)
+
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+
+#### LOAD FUELS DATA ####
 
 ## FUEL CHARS ##
 if csv_data_master.loc[csv_data_master['table'] == 'project_fuels', 'include'].iloc[0] == 1:
@@ -201,10 +213,6 @@ if csv_data_master.loc[csv_data_master['table'] == 'project_fuel_prices', 'inclu
         csv_data_master['table'] == 'project_fuel_prices', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_fuels.load_fuel_prices(io, c2, csv_subscenario_input, csv_data_input)
-
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-
 
 #### LOAD POLICY DATA ####
 

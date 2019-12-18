@@ -1,7 +1,7 @@
-project,heat_rate_curves_scenario_id,load_point_mw,average_heat_rate_mmbtu_per_mwh
-coal_existing,1,150,8
-coal_existing,1,250,10
-gas_existing,1,50,7
-gas_existing,1,100,8
-gas_new,1,50,7
-gas_new,1,100,8
+project,heat_rate_curves_scenario_id,hr_curve_point,load_point_mw,average_heat_rate_mmbtu_per_mwh
+coal_existing,1,1,150,8
+coal_existing,1,2,250,10
+gas_existing,1,1,50,7
+gas_existing,1,2,100,8
+gas_new,1,1,50,7
+gas_new,1,2,100,8
