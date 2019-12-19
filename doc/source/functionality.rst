@@ -188,7 +188,7 @@ and will therefore not affect any of the optimization decisions.
 
 
 Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators with the same characteristics as
 *gen_ret_lin*, but whose fixed O&M cost can be avoided by 'retiring' them.
 The optimization can make the decision to retire generation in each study
@@ -199,7 +199,7 @@ a 500-MW generator). If retired, the annual fixed O&M cost of these projects
 is avoided in the objective function.
 
 Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators with the same characteristics as
 *gen_ret_lin*. However, retirement decisions are binary, i.e. the generator
 is either fully retired or not retired at all.
@@ -394,7 +394,7 @@ startup and shutdown costs.
 
 
 Curtailable Hydro Generation (*gen_hydro*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation. These
 projects can vary power output between a minimum and maximum level specified
 for each horizon, and must produce a pre-specified amount of energy on each
@@ -404,7 +404,7 @@ reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
 Costs for this operational type include variable O&M costs.
 
 Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation and is
 like the *gen_hydro* operational type except that curtailment is not
 allowed.
