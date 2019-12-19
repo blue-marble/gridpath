@@ -514,7 +514,10 @@ Project Availability
 
 All projects in a GridPath scenario must be a assigned an *availability
 type*, which determines whether their capacity is operational in each
-timepoint in which the capacity exists. Availability types are listed in the
+timepoint in which the capacity exists. All implemented availability types are
+listed in the :code:`mod_availability_types` table.
+
+Each project's availability type are given in the
 :code:`inputs_project_availability_types`. The availability types currently
 implemented include :code:`exogenous` (availability is determined outside of
 a GridPath model via the data fed into it) and two endogenous types:
@@ -538,7 +541,7 @@ capacity derate is applied by GridPath. For projects of a :code:`binary` of
 Exogenous
 =========
 
-Relevant tables:
+**Relevant tables:**
 
 +---------------------------+----------------------------------------------------+
 |:code:`subscenario_` table |:code:`subscenarios_project_availability_exogenous` |
@@ -546,10 +549,20 @@ Relevant tables:
 |:code:`input_` table       |:code:`inputs_project_availability_exogenous`       |
 +---------------------------+----------------------------------------------------+
 
+Within each :code:`project_availability_scenario_id`, a project of the
+:code:`exogenous` *availability type* can point to a particular
+:code:`exogenous_availability_scenario_id`, the data for which is contained
+in the :code:`inputs_project_availability_exogenous` table. The names and
+descriptions of each :code:`project` and
+:code:`exogenous_availability_scenario_id` combination are in the
+:code:`subscenarios_project_availability_exogenous` table. The availability
+derate for each combination is defined by stage and timepoint, and must be
+between 0 (full derate) and 1 (no derate).
+
 Endogenous
 ==========
 
-Relevant tables:
+**Relevant tables:**
 
 +---------------------------+-----------------------------------------------------+
 |:code:`subscenario_` table |:code:`subscenarios_project_availability_endogenous` |
@@ -557,12 +570,24 @@ Relevant tables:
 |:code:`input_` table       |:code:`inputs_project_availability_endogenous`       |
 +---------------------------+-----------------------------------------------------+
 
+Within each :code:`project_availability_scenario_id`, a project of the
+:code:`binary` or :code:`continuous` *availability type* must point to a
+particular :code:`endogenous_availability_scenario_id`, the data for which
+is contained in the :code:`inputs_project_availability_endogenous` table. The
+names and descriptions of each :code:`project` and
+:code:`endogenous_availability_scenario_id` combination are in the
+:code:`subscenarios_project_availability_endogenous` table. For each
+combination, the user must define to the total number of hours that a
+project will be unavailable per period, the minimum and maximum length of
+each unavailability event in hours, and the minimum and maximum number of
+hours between unavailability events. Based on these inputs, GridPath determines
+the exact availability schedule endogenously.
 
 ===================================
 Project Operational Characteristics
 ===================================
 
-Relevant tables:
+**Relevant tables:**
 
 +--------------------------------+-----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_operational_chars_scenario_id`  |
@@ -573,6 +598,36 @@ Relevant tables:
 +--------------------------------+-----------------------------------------------+
 |:code:`input_` tables           |:code:`inputs_project_operational_chars`       |
 +--------------------------------+-----------------------------------------------+
+
+The user must decide how to model the operations of *projects*, e.g. is this
+a fuel-based dispatchable (CCGT) or baseload project (nuclear), is it an
+intermittent plant, is it a battery, etc. In GridPath, this is called the
+project’s *operational type*. All implemented operational types are listed
+in the :code:`mod_operational_types` table.
+
+Each *operational type* has an associated set of characteristics, which must
+be included in the :code:`inputs_project_operational_chars` table. The primary
+key of this table is the :code:`project_operational_chars_scenario_id`,
+which is also the column that determines project operational characteristics
+for a scenario via the :code:`scenarios` table, and the project. If a
+project’s operational type changes (e.g. the user decides to model a coal
+plant as, say, :code:`gen_always_on` instead of :code:`gen_commit_bin`) or the
+user wants to modify one of its operating characteristics (e.g. its minimum
+loading level), then a new :code:`project_operational_chars_scenario_id` must
+be created and all projects listed again, even if the rest of the projects'
+operating types and characteristics do not change.
+
+The ability to provide each type of reserve is currently an 'operating
+characteristic' determined via the :code:`inputs_project_operational_chars`
+table.
+
+Not all operational types have all the characteristics in
+the :code:`inputs_project_operational_chars`. GridPath's validation suite
+does check whether certain required characteristic for an operational type are
+populated and warns the user if some characteristics that have been filled
+are actually not used by the respective operational type. We will list
+required and optional characteristics for each operational type in this
+section soon.
 
 Heat Rates (OPTIONAL)
 =====================
