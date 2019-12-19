@@ -500,7 +500,7 @@ omitted from this table completely.
 Project Availability
 ====================
 
-Relevant tables:
+**Relevant tables:**
 
 +--------------------------------+----------------------------------------------+
 |:code:`scenarios` table column  |:code:`project_availability_scenario_id`      |
@@ -511,6 +511,40 @@ Relevant tables:
 +--------------------------------+----------------------------------------------+
 |:code:`input_` tables           |:code:`inputs_project_availability_types`     |
 +--------------------------------+----------------------------------------------+
+
+All projects in a GridPath scenario must be a assigned an *availability
+type*, which determines whether their capacity is operational in each
+timepoint in which the capacity exists. Availability types are listed in the
+:code:`inputs_project_availability_types`. The availability types currently
+implemented include :code:`exogenous` (availability is determined outside of
+a GridPath model via the data fed into it) and two endogenous types:
+:code:`binary` and :code:`continuous` that require certain inputs that
+determine how availability is constrained in the GridPath model. See the
+:ref:`project-availability-type-section-ref` section for more info. In
+addition to the project availability types, the
+:code:`inputs_project_availability_types` table contains the information for
+how to find any additional data needed to determine project availability with
+the :code:`exogenous_availability_scenario_id` and
+:code:`endogenous_availability_scenario` columns for the endogenous and
+exogenous types respectively. The IDs in the former column are linked to the
+data in the :code:`inputs_project_availability_exogenous` table and in the
+latter column to the :code:`inputs_project_availability_endogenous` table.
+For projects of the :code:`exogenous` availability type, if the value is in the
+:code:`exogenous_availability_scenario_id` column is NULL, no availability
+capacity derate is applied by GridPath. For projects of a :code:`binary` of
+:code:`continuous` availability type, a value in the
+:code:`endogenous_availability_scenario_id` is required.
+
+Exogenous
+=========
+
+Relevant tables:
+
++---------------------------+----------------------------------------------------+
+|:code:`subscenario_` table |:code:`subscenarios_project_availability_exogenous` |
++---------------------------+----------------------------------------------------+
+|:code:`input_` table       |:code:`inputs_project_availability_exogenous`       |
++---------------------------+----------------------------------------------------+
 
 Endogenous
 ==========
@@ -523,16 +557,6 @@ Relevant tables:
 |:code:`input_` table       |:code:`inputs_project_availability_endogenous`       |
 +---------------------------+-----------------------------------------------------+
 
-Exogenous
-=========
-
-Relevant tables:
-
-+---------------------------+----------------------------------------------------+
-|:code:`subscenario_` table |:code:`subscenarios_project_availability_exogenous` |
-+---------------------------+----------------------------------------------------+
-|:code:`input_` table       |:code:`inputs_project_availability_exogenous`       |
-+---------------------------+----------------------------------------------------+
 
 ===================================
 Project Operational Characteristics

@@ -269,6 +269,8 @@ This type is a custom implementation for GridPath projects in the California
 Integrated Resource Planning proceeding.
 
 
+.. _project-availability-type-section-ref:
+
 Project Availability Types
 --------------------------
 Each *project* in GridPath must be assigned an *availability type* that
