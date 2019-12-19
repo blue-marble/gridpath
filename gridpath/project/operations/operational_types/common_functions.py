@@ -4,6 +4,10 @@
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
     """
+
+    TODO: update documentation for other uses of this function. Perhaps
+     move min down time docs to the min down time functions
+
     :param mod:
     :param g:
     :param tmp:
@@ -96,3 +100,51 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                     relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps
+
+
+def determine_startup_elapsed_time(mod, g, tmp1, tmp2, startup_duration):
+    """
+    Given that the unit is starting in timepoint tmp2 with a specified startup
+    duration, get the elapsed time into that startup during timepoint tmp1. We
+    obtain this taking the startup druation, and subtracting the the time
+    elapsed between tmp1 and tmp2.
+
+    Example:
+        1. tmp1 = 10, tmp2 = 14, startup_duration = 5hr (hourly tmp resolution)
+        --> elapsed time between tmp1 and tmp2 is 4 hrs (10, 11, 12, 13)
+        --> elapsed time into startup during tmp1 is 5 - 4 = 1 hr
+        2. tmp1 = 14, tmp2 = 14, startup_duration = 5hr (hourly tmp resolution)
+        --> elapsed time between tmp1 and tmp2 is 0 hrs
+        --> elapsed time into startup during tmp1 (= tmp2) is 5 hours, i.e. we
+            just finished the startup!
+
+    Note: this uses the convention that a unit enters the timepoint at its
+    setpoint so if you "start" in tmp2 the power is set to Pmin (if you have a
+    startup trajectory, otherwise it is optionally limited to a value between
+    Pmin and Pmax depending on the startup ramp rate). If there is a startup
+    trajectory there will be power output in the timepoints before the start
+    but the unit won't be techically "on" (committed). When calculating elapsed
+    time, the duration of the start timepoint (tmp2) does not matter since that
+    takes place *after* the start.
+
+    :param mod:
+    :param tmp1:
+    :param tmp2:
+    :param startup_duration:
+    :return:
+    """
+
+    current_tmp = tmp1
+    time_elapsed = 0
+    while current_tmp != tmp2:
+        time_elapsed += mod.number_of_hours_in_timepoint[current_tmp]
+
+        try:
+            current_tmp = mod.next_timepoint[current_tmp,
+                                             mod.balancing_type_project[g]]
+        except ValueError:
+            # If the horizon is linear and tmp2 < tmp1
+            print("Given timepoints are not valid for calculating elapsed time "
+                  "into a startup")
+
+    return max(startup_duration - time_elapsed, 0)

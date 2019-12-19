@@ -770,6 +770,22 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
 
+    def test_startup_shutdown_rates(self):
+        """
+        Check objective function value of "test_startup_shutdown_rates"
+        example
+        :return:
+        """
+        actual_objective = \
+            run_scenario.main(["--scenario",
+                               "test_startup_shutdown_rates",
+                               "--scenario_location", EXAMPLES_DIRECTORY,
+                               "--quiet", "--mute_solver_output", "--testing"])
+
+        expected_objective = 1600364716.8
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=0)
 
 if __name__ == "__main__":
     unittest.main()
