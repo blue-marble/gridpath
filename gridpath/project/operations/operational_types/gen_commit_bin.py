@@ -542,7 +542,6 @@ def add_module_specific_components(m, d):
         *tmp* and add the appropriate startup power for *tmp* (will only count
         when unit actually starts in stmp).
 
-        TODO: remove print statement
         :param mod:
         :param g:
         :param tmp:
@@ -556,9 +555,6 @@ def add_module_specific_components(m, d):
                 for stmp in mod.tmps_by_prj_reltmp_stype[g, tmp, s]:
                     startup_elapsed_time = determine_startup_elapsed_time(
                         mod, g, tmp, stmp, su_duration)
-                    # print('tmp', tmp, 'stmp', stmp, 'su_time', su_duration, 'startup_elasped', startup_elapsed_time,
-                    #       'startup_power', value(startup_elapsed_time * 60 * mod.dispbincommit_startup_plus_ramp_up_rate[g, s] \
-                    #       * mod.DispBinCommit_Pmax_MW[g, tmp]))
 
                     startup_power += mod.Start_Binary_Type[g, stmp, s] \
                         * startup_elapsed_time * 60 \
@@ -566,18 +562,19 @@ def add_module_specific_components(m, d):
                         * mod.DispBinCommit_Pmax_MW[g, tmp]
 
         return startup_power
-
     m.StartUpPower_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=startup_power_rule
     )
 
-    def provide_power_operations_rule(mod, g, tmp):
+    def provide_power_rule(mod, g, tmp):
         """
-        See equation (37) in Morales-Espana et al. (2017). Because GridPath
-        assumes you enter the timepoint at your setpoint (vs. Morales-Espana who
-        assumes you end the the timepoint at your setpoint), we replace y_t+1
-        with z_t.
+        Equation (37) in Morales-Espana et al. (2017).
+
+        Note: because GridPath assumes you enter the timepoint at your setpoint
+        (vs. Morales-Espana who assumes you end the the timepoint at your
+        setpoint), we replace y_t+1 with z_t.
+
         :param mod:
         :param g:
         :param tmp:
@@ -585,29 +582,12 @@ def add_module_specific_components(m, d):
         """
         return mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp] \
             + mod.DispBinCommit_Pmin_MW[g, tmp] \
-            * (mod.Commit_Binary[g, tmp] + mod.Stop_Binary[g, tmp])
-
-    m.Provide_Power_Operations_DispBinaryCommit_MW = Expression(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=provide_power_operations_rule)
-
-    def provide_power_all_rule(mod, g, tmp):
-        """
-        Equation (37) in Morales-Espana et al. (2017).
-
-        TODO: could go back to one simple provide power rule since we no longer
-         need to break out the fuel rule?
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Power_Operations_DispBinaryCommit_MW[g, tmp] \
+            * (mod.Commit_Binary[g, tmp] + mod.Stop_Binary[g, tmp]) \
             + mod.StartUpPower_DispBinaryCommit_MW[g, tmp] \
             + mod.ShutDownPower_DispBinaryCommit_MW[g, tmp]
     m.Provide_Power_DispBinaryCommit_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=provide_power_all_rule)
+        rule=provide_power_rule)
 
     def ramp_up_rate_rule(mod, g, tmp):
         """
@@ -1631,9 +1611,7 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
-                         "power_operations_mw", "power_startup_mw",
-                         "power_shutdown_mw", "power_total_mw",
-                         "committed_mw",
+                         "power_mw", "committed_mw",
                          "committed_units", "started_units", "stopped_units",
                          "units_online", "startup_type_id"
                          ])
@@ -1650,9 +1628,6 @@ def export_module_specific_results(mod, d,
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.Provide_Power_Operations_DispBinaryCommit_MW[p, tmp]),
-                value(mod.StartUpPower_DispBinaryCommit_MW[p, tmp]),
-                value(mod.ShutDownPower_DispBinaryCommit_MW[p, tmp]),
                 value(mod.Provide_Power_DispBinaryCommit_MW[p, tmp]),
                 value(mod.DispBinCommit_Pmax_MW[p, tmp])
                 * value(mod.Commit_Binary[p, tmp]),
@@ -1705,22 +1680,18 @@ def import_module_specific_results_to_database(
             number_of_hours_in_timepoint = row[6]
             load_zone = row[8]
             technology = row[7]
-            power_operations_mw = row[9]
-            power_startup_mw = row[10]
-            power_shutdown_mw = row[11]
-            power_total_mw = row[12]
-            committed_mw = row[13]
-            committed_units = row[14]
-            started_units = row[15]
-            stopped_units = row[16]
-            startup_type_id = row[17]
+            power_mw = row[9]
+            committed_mw = row[10]
+            committed_units = row[11]
+            started_units = row[12]
+            stopped_units = row[13]
+            startup_type_id = row[14]
             
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     balancing_type_project, horizon, timepoint,
                     timepoint_weight, number_of_hours_in_timepoint,
-                    load_zone, technology, power_operations_mw,
-                    power_startup_mw, power_shutdown_mw, power_total_mw,
+                    load_zone, technology, power_mw,
                     committed_mw, committed_units, started_units, stopped_units,
                     startup_type_id)
             )
@@ -1729,8 +1700,7 @@ def import_module_specific_results_to_database(
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint,
         timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_operations_mw, power_startup_mw, 
-        power_shutdown_mw, power_total_mw,
+        load_zone, technology, power_mw,
         committed_mw, committed_units, started_units, stopped_units,
         startup_type_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
@@ -1744,16 +1714,14 @@ def import_module_specific_results_to_database(
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_operations_mw, power_startup_mw, 
-        power_shutdown_mw, power_total_mw,
+        load_zone, technology, power_mw,
         committed_mw, committed_units, started_units, stopped_units,
         startup_type_id)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         balancing_type_project, horizon, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_operations_mw, power_startup_mw, 
-        power_shutdown_mw, power_total_mw,
+        load_zone, technology, power_mw,
         committed_mw, committed_units, started_units, stopped_units,
         startup_type_id
         FROM temp_results_project_dispatch_binary_commit{}
@@ -1761,6 +1729,7 @@ def import_module_specific_results_to_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
 
 def validate_startup_type_inputs(startup_df, project_df):
     """
