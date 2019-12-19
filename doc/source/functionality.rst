@@ -401,7 +401,7 @@ curtailable hydro projects can be allowed to provide upward and/or downward
 reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
 Costs for this operational type include variable O&M costs.
 
-Non-Curtailable Hydro Generation (*gen_hydro_must_take)
+Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation and is
 like the *gen_hydro* operational type except that curtailment is not
