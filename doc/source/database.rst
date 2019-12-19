@@ -629,33 +629,90 @@ are actually not used by the respective operational type. We will list
 required and optional characteristics for each operational type in this
 section soon.
 
+Several types of operational characteristics vary by dimensions are other
+than project, so they are input in separate tables and linked to the
+:code:`inputs_project_operational_chars` via an ID column. These include
+heat rates, variable generator profiles, and hydro characteristics.
+
 Heat Rates (OPTIONAL)
 =====================
 
-Relevant tables:
+**Relevant tables:**
 
-+---------------------+----------------------------------------------+
-|:code:`input_` table |:code:`inputs_project_heat_rate_curves`       |
-+---------------------+----------------------------------------------+
++---------------------------+----------------------------------------------+
+|key column                 |:code:`heat_rate_curves_scenario_id`          |
++---------------------------+----------------------------------------------+
+|:code:`subscenario_` table |:code:`subscenarios_project_heat_rate_curves` |
++---------------------------+----------------------------------------------+
+|:code:`input_` table       |:code:`inputs_project_heat_rate_curves`       |
++---------------------------+----------------------------------------------+
+
+Fuel-based generators in GridPath require a heat-rate curve to be specified
+for the project. Heat rate curves are modeled via piecewise linear
+constraints and must be input in terms of an average heat rate for a load
+point. These data are in the :code:`inputs_project_heat_rate_curves` for
+each project that requires a heat rate, while the names and descriptions of
+the heat rate curves each project can be assigned are in the
+:code:`subscenarios_project_heat_rate_curves`. These two tables are linked
+to each other and to the :code:`inputs_project_operational_chars` via the
+:code:`heat_rate_curves_scenario_id` key column. The inputs table can contain
+data for projects that are not included in a GridPath scenario, as the
+relevant projects for a scenario will be pulled based on the scenario's
+project portfolio subscenario.
 
 Variable Generator Profiles (OPTIONAL)
 ======================================
 
-Relevant tables:
+**Relevant tables:**
 
-+---------------------+---------------------------------------------------+
-|:code:`input_` table |:code:`inputs_project_variable_generator_profiles` |
-+---------------------+---------------------------------------------------+
++---------------------------+---------------------------------------------------------+
+|key column                 |:code:`variable_generator_profile_scenario_id`           |
++---------------------------+---------------------------------------------------------+
+|:code:`subscenario_` table |:code:`subscenarios_project_variable_generator_profiles` |
++---------------------------+---------------------------------------------------------+
+|:code:`input_` table       |:code:`inputs_project_variable_generator_profiles`       |
++---------------------------+---------------------------------------------------------+
 
-Hydro Operating Characteristics (OPTIONAL)
-==========================================
+Variable generators in GridPath require a profile (power output as a fraction
+of capacity) to be specified for the project for each *timepoint* in which
+it can exist in a GridPath model. Profiles are in the
+:code:`inputs_project_variable_generator_profiles`
+for each variable project and timepoint, while the names and descriptions of
+the profiles each project can be assigned are in the
+:code:`subscenarios_project_variable_generator_profiles`. These two tables
+are linked to each other and to the :code:`inputs_project_operational_chars`
+via the :code:`variable_generator_profile_scenario_id` key column. The
+:code:`inputs_project_variable_generator_profiles` table can contain data
+for projects and timepoints that are not included in a particular GridPath
+scenario: GridPath will select the subset of projects and timepoints based
+on the scenarios project portfolio and temporal subscenarios.
 
-Relevant tables:
+Hydro Operational Characteristics (OPTIONAL)
+============================================
 
-+---------------------+---------------------------------------------------+
-|:code:`input_` table |:code:`inputs_project_hydro_operational_chars`     |
-+---------------------+---------------------------------------------------+
+**Relevant tables:**
 
++---------------------------+-----------------------------------------------------+
+|key column                 |:code:`hydro_operational_chars_scenario_id`          |
++---------------------------+-----------------------------------------------------+
+|:code:`subscenario_` table |:code:`subscenarios_project_hydro_operational_chars` |
++---------------------------+-----------------------------------------------------+
+|:code:`input_` table       |:code:`inputs_project_hydro_operational_chars`       |
++---------------------------+-----------------------------------------------------+
+
+Hydro generators in GridPath require that average power, minimum power, and
+maximum power be specified for the project for each *balancing
+type*/*horizon* in which it can exist in a GridPath model. These inputs are in
+the :code:`inputs_project_hydro_operational_chars`
+for each project, balancing type, and horizon, while the names and
+descriptions of the characteristis each project can be assigned are in the
+:code:`subscenarios_project_hydro_operational_chars`. These two tables
+are linked to each other and to the :code:`inputs_project_operational_chars`
+via the :code:`hydro_operational_chars_scenario_id` key column. The
+:code:`inputs_project_hydro_operational_chars` table can contain data
+for projects and horizons that are not included in a particular GridPath
+scenario: GridPath will select the subset of projects and horizons based
+on the scenarios project portfolio and temporal subscenarios.
 
 Transmission Inputs (OPTIONAL)
 ******************************
