@@ -455,11 +455,12 @@ the user wanted the change the cost of just a single project for a single
 period, all other project-period combinations would have to be re-inserted in
 the database along with the new project_new_cost_scenario_id. Also note that
 the :code:`inputs_project_new_cost` table can include projects that are not
-in a particular scenario’s portfolio: each :code:`capacity_type` module has
-utilities that pull the scenario data and only look at the portfolio selected
-by the user, pull the projects with the 'new' *capacity types* from that list,
-and then get the cost for only those projects (and for the periods selected in
-the temporal settings).
+in a particular scenario’s portfolio and periods that are not in the
+scenario's temporal setup: each :code:`capacity_type` module has utilities
+that pull the scenario data and only look at the portfolio selected by the
+user, pull the projects with the 'new' *capacity types* from that list, and
+then get the cost for only those projects and for the periods selected in
+the temporal settings.
 
 Note that capital costs must be annualized outside of GridPath and input as
 $/kW-yr in the :code:`inputs_project_new_cost` table. For storage projects,
@@ -485,6 +486,15 @@ Potential
 |:code:`input_` tables           |:code:`inputs_project_new_potential`          |
 +--------------------------------+----------------------------------------------+
 
+If the project portfolio includes projects of a 'new' capacity type
+(:code:`gen_new_bin`, :code:`gen_new_lin`, :code:`stor_new_bin`, or
+:code:`stor_new_lin`), the user may specify the minimum and maximum
+cumulative new capacity to be built in each period in the
+:code:`inputs_project_new_potential` table. For storage project, the minimum
+and maximum energy capacity may also be specified. All columns are optional
+and NULL values are interpreted by GridPath as no constraint. Projects that
+don't either a minimum or maximum cumulative new capacity constraints can be
+omitted from this table completely.
 
 ====================
 Project Availability
