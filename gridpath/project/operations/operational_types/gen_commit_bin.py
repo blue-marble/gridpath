@@ -98,8 +98,7 @@ def add_module_specific_components(m, d):
     # ------------------------ Sets ------------------------ #
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
         within=m.PROJECTS,
-        initialize=
-        generator_subset_init("operational_type", "gen_commit_bin")
+        initialize=generator_subset_init("operational_type", "gen_commit_bin")
     )
 
     m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = Set(
@@ -136,7 +135,6 @@ def add_module_specific_components(m, d):
         types = [s for (_g, s) in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS if g == _g]
         return types
 
-    # TODO: change 'initalize' to 'rule' to be consistent?
     m.GEN_COMMIT_BIN_STR_TPS_BY_STR_RMP_PRJ = Set(
         m.GEN_COMMIT_BIN_STR_RMP_PRJS,
         initialize=get_startup_types_by_project,
@@ -361,21 +359,19 @@ def add_module_specific_components(m, d):
 
     # ------------------ Variables - Continuous ------------------ #
 
-    # Start_Binary is 1 for the first timepoint the unit is committed after
-    # being offline; it will be able to provide power and reserves in that
-    # timepoint. The timepoint before that, the unit will have to have reached
-    # Pmin at the end of that timepoint as part of the startup process.
-    # Due to the binary logic constraint, this variable will be forced to take
-    # on binary values, even though it is a continuous variable.
+    # Start_Binary is 1 for the first timepoint the unit is committed after not
+    # being committed; it will be able to provide power and reserves in that
+    # timepoint. Due to the binary logic constraint, this variable will be
+    # forced to take on binary values, even though it is a continuous variable.
     m.Start_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction
     )
-    # Stop_Binary is 1 for the first timepoint the unit is offline after
-    # being committed; it will not be able to provide power in that timepoint,
-    # except for some residual power as part of the shutdown process.
-    # Due to the binary logic constraint, this variable will be forced to take
-    # on binary values, even though it is a continuous variable.
+    # Stop_Binary is 1 for the first timepoint the unit is no longer committed
+    # after being committed; As part of the shutdown process, the unit can still
+    # provide power (and possibly reserves) in this timepoint. Due to the binary
+    # logic constraint, this variable will be forced to take on binary values,
+    # even though it is a continuous variable.
     m.Stop_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         within=PercentFraction
@@ -465,7 +461,7 @@ def add_module_specific_components(m, d):
 
     def shutdown_power_rule(mod, g, tmp):
         """
-        Get the shutdown power (only applicable of timepoint tmp takes place
+        Get the shutdown power (only applicable if timepoint tmp takes place
         during the shutdown trajectory duration of an active shutdown).
 
         We first determine the relevant timepoints, namely the current timepoint
@@ -573,7 +569,10 @@ def add_module_specific_components(m, d):
 
         Note: because GridPath assumes you enter the timepoint at your setpoint
         (vs. Morales-Espana who assumes you end the the timepoint at your
-        setpoint), we replace y_t+1 with z_t.
+        setpoint), we replace y_t+1 with z_t. This means the unit can still
+        provide power above Pmin in the shutdown timepoint (when it is
+        technically no longer committed). See the *max_power_constraint_rule*
+        for how the power above Pmin is constrained.
 
         :param mod:
         :param g:
@@ -820,12 +819,16 @@ def add_module_specific_components(m, d):
         Power provision adjusted for upward reserves can't exceed generator's
         maximum power output.
 
-        If the unit has a startup and shutdown trajectory, it will also set
-        the total power output to Pmin in the timepoint of the startup and
-        the timepoint of the shutdown.
-        If the unit is quick-start  can start up and  shut down within the
-        timepoint, it will limit the total power output in the startup timepoint
-        and the shutdown timepoint subject to the startup ramp rate and the
+        If the startup or shutdown takes longer than one timepoint (i.e. there
+        is a trajectory) this constraint, in combination with the
+        *provide_power_rule*, will set the total power output to Pmin in the
+        startup timepoint (Start_Binary[tmp]=1) and shutdown timepoint
+        (Stop_Binary[tmp]=1).
+
+        If the startup or shutdown occurs within one timepoint (quick-start),
+        this constraint, in combination with the *provide_power_rule*, will
+        limit the total power output in the startup and shutdown timepoint to a
+        value between Pmin and Pmax, depending on the startup ramp rate and the
         shutdown ramp rate.
 
         Constraint (31) in Morales-Espana et al. (2017)
