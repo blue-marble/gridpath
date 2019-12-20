@@ -12,7 +12,7 @@ import unittest
 from tests.common_functions import add_components_and_load_data
 
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints
+    determine_relevant_timepoints, determine_startup_elapsed_time
 
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
@@ -102,3 +102,51 @@ class TestOperationalTypeCommonFunctions(unittest.TestCase):
             )
 
             self.assertListEqual(expected_list, actual_list)
+
+    def test_determine_startup_elapsed_time(self):
+        """
+        Check that the calculated of the elapsed time into the startup is
+        as expected
+        """
+        m, data = add_components_and_load_data(
+            prereq_modules=IMPORTED_PREREQ_MODULES,
+            module_to_test=None,  # No need to name since not adding components
+            test_data_dir=TEST_DATA_DIRECTORY,
+            subproblem="",
+            stage=""
+        )
+        instance = m.create_instance(data)
+
+        test_cases = {
+            1: {"startup_duration": 4, "g": "Gas_CCGT",
+                "tmp1": 20200103, "tmp2": 20200105, "elapsed_time": 2},
+            # Test tmp1 = tmp2
+            2: {"startup_duration": 4, "g": "Gas_CCGT",
+                "tmp1": 20200103, "tmp2": 20200103, "elapsed_time": 4},
+            # Test variable timepoint duration
+            3: {"startup_duration": 4, "g": "Gas_CCGT",
+                "tmp1": 20200102, "tmp2": 20200103, "elapsed_time": 1},
+            # Test variable timepoint duration
+            4: {"startup_duration": 4, "g": "Gas_CCGT",
+                "tmp1": 20200113, "tmp2": 20200115, "elapsed_time": 1.61},
+            # Test that zero is returned when time between tmps is larger than
+            # the startup_duration.
+            5: {"startup_duration": 4, "g": "Gas_CCGT",
+                "tmp1": 20200101, "tmp2": 20200110, "elapsed_time": 0}
+        }
+
+        for test_case in test_cases.keys():
+            expected = test_cases[test_case]["elapsed_time"]
+            actual = determine_startup_elapsed_time(
+                mod=instance,
+                g=test_cases[test_case]["g"],
+                tmp1=test_cases[test_case]["tmp1"],
+                tmp2=test_cases[test_case]["tmp2"],
+                startup_duration=test_cases[test_case]["startup_duration"]
+            )
+
+            self.assertAlmostEqual(expected, actual, 3)
+
+
+if __name__ == "__main__":
+    unittest.main()
