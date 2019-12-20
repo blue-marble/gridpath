@@ -1,2 +1,6 @@
 lf_reserves_up_ba_scenario_id,project_lf_reserves_up_ba_scenario_id,project,lf_reserves_up_ba
-1,1,coal1,India
+1,1,coal_existing,LOTR
+1,1,gas_existing,LOTR
+1,1,hydro_existing,LOTR
+1,1,gas_new,LOTR
+1,1,battery_new,LOTR

@@ -1,0 +1,2 @@
+load_zone_scenario_id,transmission_load_zone_scenario_id,name,description,filename
+1,1,transmission_load_zones_default,transmission load zones default,transmission_load_zones_1

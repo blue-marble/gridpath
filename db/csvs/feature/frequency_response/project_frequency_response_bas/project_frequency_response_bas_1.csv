@@ -1,2 +1,6 @@
 frequency_response_ba_scenario_id,project_frequency_response_ba_scenario_id,project,frequency_response_ba
-1,1,coal1,India
+1,1,coal_existing,LOTR
+1,1,gas_existing,LOTR
+1,1,hydro_existing,LOTR
+1,1,gas_new,LOTR
+1,1,battery_new,LOTR

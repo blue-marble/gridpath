@@ -1,0 +1,2 @@
+load_zone_scenario_id,transmission_load_zone_scenario_id,transmission_line,load_zone_from,load_zone_to
+1,1,name_of_transmission_line,transmission_line_start,transmission_line_end
