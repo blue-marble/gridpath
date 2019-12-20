@@ -1455,14 +1455,13 @@ def get_module_specific_inputs_from_database(
     startup_chars = c.execute(
         """
         SELECT project, 
-        startup_type_id, down_time_cutoff_hours, startup_plus_ramp_up_rate, 
-        startup_cost_per_mw, startup_fuel_mmbtu_per_mw
+        startup_type_id, down_time_cutoff_hours, startup_plus_ramp_up_rate
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, startup_chars_scenario_id
         FROM inputs_project_operational_chars
         WHERE project_operational_chars_scenario_id = {}
-        AND operational_type = {}) AS op_char
+        AND operational_type = '{}') AS op_char
         USING(project)
         LEFT OUTER JOIN
         inputs_project_startup_chars
@@ -1470,7 +1469,7 @@ def get_module_specific_inputs_from_database(
         WHERE project_portfolio_scenario_id = {}
         AND startup_chars_scenario_id is not Null
         """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
-                   "gen_commmit_bin",
+                   "gen_commit_bin",
                    subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
     )
 
@@ -1510,7 +1509,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                 min_down_time_hours
             FROM inputs_project_operational_chars
             WHERE project_operational_chars_scenario_id = {}
-            AND operational_type = {}
+            AND operational_type = '{}'
             ) as prj_chars
         USING (project)
         WHERE project_portfolio_scenario_id = {}
