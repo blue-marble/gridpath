@@ -310,5 +310,62 @@ def update_project_hr_curves(
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
+def update_project_startup_chars(
+        io, c,
+        proj_opchar_names,
+        proj_startup_chars
+):
+    """
+
+    :param io:
+    :param c:
+    :param proj_opchar_names: nested dictionary; top level key is the
+    project, second key is the startup_chars_scenario_id, the value is a
+    tuple with the name and description of startup_char scenario
+    :param proj_startup_chars: nested dictionary; top level key is the project,
+    second-level key is the startup_chars_scenario_id, the third-level
+    key is the startup_type_id and the value is a tuple with the startup
+    characteristics (down_time_hours, startup_plus_ramp_up_rate)
+    :return:
+    """
+    print("project startup chars")
+
+    # Subscenarios
+    subs_data = []
+    for prj in proj_opchar_names.keys():
+        for scenario_id in proj_opchar_names[prj].keys():
+            subs_data.append(
+                (prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
+                 proj_opchar_names[prj][scenario_id][1])
+            )
+    subs_sql = """
+        INSERT INTO subscenarios_project_startup_chars
+        (project, startup_chars_scenario_id, name, description)
+        VALUES (?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
+
+    # Insert data
+    inputs_data = []
+    for p in list(proj_startup_chars.keys()):
+        for scenario in list(proj_startup_chars[p].keys()):
+            for startup_type_id in list(proj_startup_chars[p][scenario].keys()):
+                inputs_data.append(
+                    (p, scenario, startup_type_id,
+                     proj_startup_chars[p][scenario][startup_type_id][0],
+                     proj_startup_chars[p][scenario][startup_type_id][1],
+                     proj_startup_chars[p][scenario][startup_type_id][2],
+                     proj_startup_chars[p][scenario][startup_type_id][3],
+                     )
+                )
+    inputs_sql = """
+        INSERT INTO inputs_project_startup_chars
+        (project, startup_chars_scenario_id, startup_type_id, 
+        down_time_hours, startup_plus_ramp_up_rate)
+        VALUES (?, ?, ?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
+
+
 if __name__ == "__main__":
     pass
