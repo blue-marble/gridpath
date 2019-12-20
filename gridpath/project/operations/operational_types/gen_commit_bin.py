@@ -1452,7 +1452,6 @@ def get_module_specific_inputs_from_database(
     c = conn.cursor()
     # TODO: might have to add startup_chars_scenario_id back to table for
     #  input validations
-    # TODO: add operational type here!
     startup_chars = c.execute(
         """
         SELECT project, 
@@ -1500,8 +1499,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         """SELECT 
             project, operational_type,
             min_stable_level,
-            shutdown_cost_per_mw,
-            shutdown_fuel_mmbtu_per_mw,
             shutdown_plus_ramp_down_rate,
             min_down_time_hours
         FROM inputs_project_portfolios
@@ -1509,8 +1506,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
             (SELECT 
                 project, operational_type,
                 min_stable_level,
-                shutdown_cost_per_mw,
-                shutdown_fuel_mmbtu_per_mw,
                 shutdown_plus_ramp_down_rate,
                 min_down_time_hours
             FROM inputs_project_operational_chars
@@ -1586,7 +1581,8 @@ def write_module_specific_model_inputs(
             writer = csv.writer(startup_chars_file, delimiter="\t")
 
             # Write header
-            writer.writerow(["project", "startup_type_id", "down_time_cutoff_hours",
+            writer.writerow(["project", "startup_type_id",
+                             "down_time_cutoff_hours",
                              "startup_plus_ramp_up_rate"])
 
             for row in startup_chars:
@@ -1704,7 +1700,7 @@ def import_module_specific_results_to_database(
         committed_mw, committed_units, started_units, stopped_units,
         startup_type_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -1737,14 +1733,12 @@ def validate_startup_type_inputs(startup_df, project_df):
     Note: we assume the startup types are entered in order; could order the
     dataframe first if needed
 
-    TODO: check for excessively slow startup ramps which would wrap around the
-     horizon and disallow any startups
-
-    TODO: check that you don't have quick-start for one startup type and
-     slow start for the other type. This would allow you to have startup power
-     above pmin, even if you are a slow-start unit. In general you can't have
-     multiple startup types / ramps for quick-start units due to the min/max
-     formulation in the shutdown_ramp_fraction_per_timepoint_rule
+    TODO: additional checks:
+     - check for excessively slow startup ramps which would wrap around the
+       horizon and disallow any startups
+     - could also add type checking here (resp. int and float?)
+     - check for startup fuel and disallow combination of startup
+       ramps and startup fuels (double counts it)
 
     :param startup_df: dataframe with startup_chars (see startup_chars.tab)
     :param project_df: dataframe with project_chars (see projects.tab)
@@ -1806,22 +1800,20 @@ def validate_startup_type_inputs(startup_df, project_df):
             )
 
         if (len(startups) > 1 and prj_chars["operational_type"].iloc[0] not in
-                ["dispatchable_binary_commit", "dispatchable_continuous_commit"]
-        ):
+                ["gen_commit_bin", "gen_commit_lin"]):
             results.append(
-                "Project '{}': Only binary and continuous commitment "
+                "Project '{}': Only gen_commit_bin and gen_commit_lin "
                 "operational types can have multiple startup types!"
                 .format(project)
             )
 
-        # TODO: could also add type checking here (resp. int and float?)
         startup_id_mask = pd.isna(startups["startup_type_id"])
         down_time_mask = pd.isna(startups["down_time_cutoff_hours"])
         invalids = startup_id_mask | down_time_mask
         if invalids.any():
             results.append(
-                "Project '{}': startup_type_id and down_time_cutoff_hours should "
-                "be defined for each startup type."
+                "Project '{}': startup_type_id and down_time_cutoff_hours "
+                "should be defined for each startup type."
                 .format(project)
             )
         else:
@@ -1874,6 +1866,4 @@ def validate_startup_type_inputs(startup_df, project_df):
                 .format(project, column)
             )
 
-        # TODO: check for startup fuel and disallow combination of startup
-        #  ramps and startup fuels (double counts it)
     return results
