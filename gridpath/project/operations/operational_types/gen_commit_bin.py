@@ -424,9 +424,11 @@ def add_module_specific_components(m, d):
         rule=active_startup_rule
     )
 
-    def units_online_rule(mod, g, tmp):
+    def synced_units_rule(mod, g, tmp):
         """
-
+        Returns 1 if the unit is synchronized to the system and providing power
+        (could be fully committed with controllable output, or during a startup
+        or shutdown trajectory), and 0 if not.
         :param mod:
         :param g:
         :param tmp:
@@ -436,7 +438,7 @@ def add_module_specific_components(m, d):
         starting = 0
         stopping = 0
 
-        # Calculate whether unit is starting
+        # Calculate whether unit is starting up
         if g in mod.GEN_COMMIT_BIN_STR_RMP_PRJS:
             for s in mod.GEN_COMMIT_BIN_STR_TPS_BY_STR_RMP_PRJ[g]:
                 for stmp in mod.tmps_by_prj_reltmp_stype[g, tmp, s]:
@@ -454,9 +456,9 @@ def add_module_specific_components(m, d):
                 stopping += mod.Stop_Binary[g, t]
 
         return committed + starting + stopping
-    m.DispBinCommit_Units_Online = Expression(
+    m.DispBinCommit_Synced_Units = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=units_online_rule
+        rule=synced_units_rule
     )
 
     def shutdown_power_rule(mod, g, tmp):
@@ -1118,7 +1120,7 @@ def add_module_specific_components(m, d):
             * mod.Provide_Power_DispBinaryCommit_MW[g, tmp] \
             + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
             * mod.Availability_Derate[g, tmp] \
-            * mod.DispBinCommit_Units_Online[g, tmp]
+            * mod.DispBinCommit_Synced_Units[g, tmp]
     m.Fuel_Burn_DispBinCommit_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
         rule=fuel_burn_constraint_rule
@@ -1616,7 +1618,7 @@ def export_module_specific_results(mod, d,
                          "technology", "load_zone",
                          "power_mw", "committed_mw",
                          "committed_units", "started_units", "stopped_units",
-                         "units_online", "startup_type_id"
+                         "synced_units", "startup_type_id"
                          ])
 
         for (p, tmp) in mod.\
@@ -1637,7 +1639,7 @@ def export_module_specific_results(mod, d,
                 value(mod.Commit_Binary[p, tmp]),
                 value(mod.Start_Binary[p, tmp]),
                 value(mod.Stop_Binary[p, tmp]),
-                value(mod.DispBinCommit_Units_Online[p, tmp]),
+                value(mod.DispBinCommit_Synced_Units[p, tmp]),
                 value(mod.DispBinCommit_Active_Startup_Type[p, tmp])
                 if p in mod.GEN_COMMIT_BIN_STR_RMP_PRJS
                 else None
