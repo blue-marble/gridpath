@@ -1,0 +1,2 @@
+project	startup_type_id	down_time_cutoff_hours	startup_plus_ramp_up_rate
+Disp_Binary_Commit	1	7	0.3
