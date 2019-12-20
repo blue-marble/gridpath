@@ -40,7 +40,7 @@ from db.utilities import temporal, geography, project_list, project_zones, \
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
-    load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps
+    load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps, load_scenarios, load_solver_options
 
 
 ## INPUTS
@@ -195,9 +195,6 @@ if csv_data_master.loc[csv_data_master['table'] == 'project_heat_rate_curves', '
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_project_operational_chars.load_project_hr_curves(io, c2, csv_subscenario_input, csv_data_input)
 
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-
 #### LOAD FUELS DATA ####
 
 ## FUEL CHARS ##
@@ -301,3 +298,43 @@ if csv_data_master.loc[csv_data_master['table'] == 'system_' + reserve_type, 'in
         csv_data_master['table'] == 'system_' + reserve_type, 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_system_reserves.load_system_reserves(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+
+#### LOAD SCENARIOS DATA ####
+if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:
+    print("ERROR: scenarios table is required")
+else:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'scenarios', 'path'].iloc[0])
+
+    f_number = 0
+    for f in os.listdir(data_folder_path):
+        if f.endswith(".csv") and 'template' not in f and 'scenario' in f:
+            print(f)
+            f_number = f_number + 1
+            csv_data_input = pd.read_csv(os.path.join(data_folder_path, f))
+            if f_number > 1:
+                print('Error: More than one scenario csv input files')
+
+    load_scenarios.load_scenarios(io, c2, csv_data_input)
+
+#### LOAD SOLVER OPTIONS ####
+if csv_data_master.loc[csv_data_master['table'] == 'solver', 'include'].iloc[0] != 1:
+    print("ERROR: solver tables are required")
+else:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'solver', 'path'].iloc[0])
+
+    for f in os.listdir(data_folder_path):
+        if f.endswith(".csv") and 'template' not in f and 'options' in f:
+            print(f)
+            csv_solver_options = pd.read_csv(os.path.join(data_folder_path, f))
+        if f.endswith(".csv") and 'template' not in f and 'descriptions' in f:
+            print(f)
+            csv_solver_descriptions = pd.read_csv(os.path.join(data_folder_path, f))
+
+    load_solver_options.load_solver_options(io, c2, csv_solver_options, csv_solver_descriptions)
+
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+# solver_options_input = csv_solver_options
+# solver_descriptions_input = csv_solver_descriptions
