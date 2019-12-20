@@ -449,10 +449,8 @@ def add_module_specific_components(m, d):
         if shutdown_duration <= mod.number_of_hours_in_timepoint[tmp]:
             stopping += mod.Stop_Binary[g, tmp]
         else:
-            relevant_tmps_shutdown = determine_relevant_timepoints(
-                mod, g, tmp, shutdown_duration)
-            # Skip last tmp (unit will be at zero)
-            for t in relevant_tmps_shutdown[:-1]:
+            for t in determine_relevant_timepoints(mod, g, tmp,
+                                                   shutdown_duration):
                 stopping += mod.Stop_Binary[g, t]
 
         return committed + starting + stopping
@@ -463,18 +461,18 @@ def add_module_specific_components(m, d):
 
     def shutdown_power_rule(mod, g, tmp):
         """
-        Get the shutdown power (only applicable if timepoint tmp takes place
-        during the shutdown trajectory duration of an active shutdown).
+        Get the shutdown trajectory power output (if any) for each timepoint.
 
-        We first determine the relevant timepoints, namely the current timepoint
-        and the previous timepoints that are within shutdown_duration hours from
-        timepoint tmp. If the unit shuts down in any of these timepoints
-        (Stop_Binary = 1), timepoint tmp will be part of a shutdown trajectory.
+        Go through the relevant timepoints in which a shutdown would affect
+        *tmp* and add the appropriate shutdown power for *tmp* (will only count
+        when unit actually shuts down in the relevant timepoint).
 
-        For each of these relevant timepoints, we then calculate what the
-        shutdown power in timepoint tmp would be if the unit was shutting down
-        in that relevant timepoint, and activate it if the unit is in fact
-        shutting down in that relevant timepoint.
+        The relevant timepoints are *tmp* itself and  all previous timepoints
+        within shutdown_duration hours *tmp*. If the unit shuts down in any of
+        these relevant timepoints (Stop_Binary[relevant_tmp] = 1), *tmp* will
+        be part of a shutdown trajectory. The shutdown trajectory power depends
+        on the shutdown ramp rate and the number of hours we are into the
+        shutdown process.
 
         See constraint (37) in Morales-Espana et al. (2017), namely the
         summation in the shutdown trajectory from i=2 to i=SD+1.
@@ -486,16 +484,14 @@ def add_module_specific_components(m, d):
             Pmin = 4 MW
 
             relevant timepoints = [5, 4, 3, 2], i.e. a shutdown in any of these
-            timepoints would have an effect on the shutdown power in timepoint 5
+            timepoints would mean tmp 5 is part of a shutdown trajectory.
 
             relevant_shutdown_power in tmp 5 if unit stops in timepoint 5: 4 MW
-                Note: this will already be set in another constraint!
+                Note: this will already be set in the max_power_constraint_rule
+                      so we skip this relevant timepoint@
             relevant_shutdown_power in tmp 5 if unit stops in timepoint 4: 3 MW
             relevant_shutdown_power in tmp 5 if unit stops in timepoint 3: 2 MW
             relevant_shutdown_power in tmp 5 if unit stops in timepoint 2: 1 MW
-
-            Note:  Stop_Binary is 1 first timepoint of shutdown trajectory and
-            the unit will be at Pmin at the start of that timepoint.
 
         :param mod:
         :param g:
@@ -505,7 +501,7 @@ def add_module_specific_components(m, d):
 
         shutdown_duration = mod.dispbincommit_shutdown_length_hours[g]
         relevant_shutdown_power = 0
-        time_from_shutdown = 0
+        time_into_shutdown = 0
 
         # Quick-start units don't have a shutdown trajectory
         if shutdown_duration <= mod.number_of_hours_in_timepoint[tmp]:
@@ -515,16 +511,15 @@ def add_module_specific_components(m, d):
             mod, g, tmp, shutdown_duration)
         for i, t in enumerate(relevant_tmps_shutdown):
             # Skip the first relevant timepoint (t == tmp) since the unit will
-            # be already set to Pmin at the start of the shutdown in another
-            # constraint. We also don't need the last relevant timepoint since
-            # that will be the end of the shutdown where shutdown power is zero.
-            if i != 0 and i != len(relevant_tmps_shutdown)-1:
+            # be already set to Pmin at the start of the shutdown in the
+            # *max_power_constraint_rule*
+            if i > 0:
                 relevant_shutdown_power += mod.Stop_Binary[g, t] \
                     * (mod.DispBinCommit_Pmin_MW[g, tmp]
-                       - time_from_shutdown * 60
+                       - time_into_shutdown * 60
                        * mod.dispbincommit_shutdown_plus_ramp_down_rate[g]
                        * mod.DispBinCommit_Pmax_MW[g, t])
-            time_from_shutdown += mod.number_of_hours_in_timepoint[t]
+            time_into_shutdown += mod.number_of_hours_in_timepoint[t]
 
         return relevant_shutdown_power
     m.ShutDownPower_DispBinaryCommit_MW = Expression(
