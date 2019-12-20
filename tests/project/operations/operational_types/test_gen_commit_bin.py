@@ -109,6 +109,53 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
+        # Set: GEN_COMMIT_BIN_STR_RMP_PRJS
+        expected_startup_ramp_projects = sorted([
+            "Disp_Binary_Commit"
+        ])
+        actual_startup_ramp_projects = sorted([
+            prj for prj in instance.GEN_COMMIT_BIN_STR_RMP_PRJS
+            ])
+        self.assertListEqual(expected_startup_ramp_projects,
+                             actual_startup_ramp_projects)
+
+        # Set: GEN_COMMIT_BIN_STR_RMP_PRJS_TPS
+        # (test data has only one startup type)
+        expected_startup_ramp_projects_types = sorted([
+            ("Disp_Binary_Commit", 1)
+        ])
+        actual_startup_ramp_projects_types = sorted([
+            prj for prj in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS
+            ])
+        self.assertListEqual(expected_startup_ramp_projects_types,
+                             actual_startup_ramp_projects_types)
+
+        # Set: GEN_COMMIT_BIN_STR_TPS_BY_STR_RMP_PRJ
+        expected_startup_types_by_project = {
+            "Disp_Binary_Commit": [1]
+        }
+        actual_startup_types_by_project = {
+            prj: [tp for tp in instance.\
+                  GEN_COMMIT_BIN_STR_TPS_BY_STR_RMP_PRJ[prj]]
+            for prj in instance.GEN_COMMIT_BIN_STR_RMP_PRJS
+        }
+        self.assertDictEqual(expected_startup_types_by_project,
+                             actual_startup_types_by_project)
+
+        # Set: GEN_COMMIT_BIN_PRJS_OPR_TMPS_STR_TPS
+        expected_projects_operational_timepoints_startup_types = sorted(
+            [(g, tmp, 1) for (g, tmp) in get_project_operational_timepoints(
+                expected_startup_ramp_projects)]
+        )
+        actual_projects_operational_timepoints_startup_types = sorted(
+            [(g, tmp, s) for (g, tmp, s) in
+             instance.GEN_COMMIT_BIN_PRJS_OPR_TMPS_STR_TPS]
+        )
+        self.assertListEqual(
+            expected_projects_operational_timepoints_startup_types,
+            actual_projects_operational_timepoints_startup_types
+        )
+
         # Param: disp_binary_commit_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
         actual_min_stable_fraction = {
@@ -118,15 +165,30 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
+        # Param: dispbincommit_down_time_cutoff_hours
+        expected_down_time_cutoff_hours = {
+            ("Disp_Binary_Commit", 1): 7
+        }
+        actual_down_time_cutoff_hours = {
+            (prj, s): instance.dispbincommit_down_time_cutoff_hours[prj, s]
+            for (prj, s) in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS
+        }
+
+        self.assertDictEqual(expected_down_time_cutoff_hours,
+                             actual_down_time_cutoff_hours)
+
         # Param: dispbincommit_startup_plus_ramp_up_rate
-        # TODO: add new params and sets here!
-        # expected_startup_plus_ramp_up_rate = {"Disp_Binary_Commit": 0.6}
-        # actual_startup_plus_ramp_up_rate = {
-        #     prj: instance.dispbincommit_startup_plus_ramp_up_rate[prj]
-        #     for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
-        # }
-        # self.assertDictEqual(expected_startup_plus_ramp_up_rate,
-        #                      actual_startup_plus_ramp_up_rate)
+        expected_startup_plus_ramp_up_rate = {
+            ("Disp_Binary_Commit", 1): 0.6
+        }
+        actual_startup_plus_ramp_up_rate = {
+            (prj, s): instance.dispbincommit_startup_plus_ramp_up_rate[prj, s]
+            for (prj, s) in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS
+        }
+
+        self.assertDictEqual(expected_startup_plus_ramp_up_rate,
+                             actual_startup_plus_ramp_up_rate)
+
 
         # Param: dispbincommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Binary_Commit": 0.6}
