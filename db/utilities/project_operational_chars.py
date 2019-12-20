@@ -361,7 +361,7 @@ def update_project_startup_chars(
     inputs_sql = """
         INSERT INTO inputs_project_startup_chars
         (project, startup_chars_scenario_id, startup_type_id, 
-        down_time_hours, startup_plus_ramp_up_rate)
+        down_time_cutoff_hours, startup_plus_ramp_up_rate)
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
