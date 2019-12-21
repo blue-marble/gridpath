@@ -40,6 +40,8 @@ from db.utilities import temporal, geography, project_list, project_zones, \
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
+    load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
+    load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
     load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps, load_scenarios, load_solver_options
 
 
@@ -299,6 +301,54 @@ if csv_data_master.loc[csv_data_master['table'] == 'system_' + reserve_type, 'in
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_system_reserves.load_system_reserves(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
 
+#### LOAD TRANSMISSION DATA ####
+
+## LOAD TANSMISSION EXISTING CAPACITIES ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_existing_capacity', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_existing_capacity', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_capacities.load_transmission_capacities(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD TRANSMISSION PORTFOLIOS ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_portfolios', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_portfolios', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_portfolios.load_transmission_portfolios(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD TRANSMISSION ZONES ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_load_zones', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_load_zones', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_zones.load_transmission_zones(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD TRANSMISSION OPERATIONAL CHARS ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_operational_chars', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_operational_chars', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_operational_chars.load_transmission_operational_chars(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD TRANSMISSION NEW COST ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_new_cost', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_new_cost', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_new_cost.load_transmission_new_cost(io, c2, csv_subscenario_input, csv_data_input)
+
+## LOAD TRANSMISSION HURDLE RATES ##
+if csv_data_master.loc[csv_data_master['table'] == 'transmission_hurdle_rates', 'include'].iloc[0] == 1:
+    data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+        csv_data_master['table'] == 'transmission_hurdle_rates', 'path'].iloc[0])
+    (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+    load_transmission_hurdle_rates.load_transmission_hurdle_rates(io, c2, csv_subscenario_input, csv_data_input)
+
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+
+
 #### LOAD SCENARIOS DATA ####
 if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:
     print("ERROR: scenarios table is required")
@@ -334,7 +384,3 @@ else:
 
     load_solver_options.load_solver_options(io, c2, csv_solver_options, csv_solver_descriptions)
 
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-# solver_options_input = csv_solver_options
-# solver_descriptions_input = csv_solver_descriptions

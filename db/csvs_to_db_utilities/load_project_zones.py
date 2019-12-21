@@ -11,8 +11,8 @@ def load_project_load_zones(io, c, subscenario_input, data_input):
     """
     Input subscenario dictionary and data in pandas dataframe
     Load data in sql database for all load subscenarios
-    project load zones dictionary has load_zone, stage_id, and then timepoints and data
-    {load_zone: {stage_id: {tmp: load_mw}}}
+    project load zones dictionary has project and load_zone
+    {project: load_zone}
     :param io:
     :param c:
     :param subscenario_input:
@@ -26,7 +26,8 @@ def load_project_load_zones(io, c, subscenario_input, data_input):
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['load_zone_scenario_id'] == sc_id) & (data_input['project_load_zone_scenario_id'] == prj_sc_id)]
+        data_input_subscenario = data_input.loc[
+            (data_input['load_zone_scenario_id'] == sc_id) & (data_input['project_load_zone_scenario_id'] == prj_sc_id)]
 
         # Get projects and zones from input data and convert to dictionary with projects as key
         project_load_zones_input = dict()
