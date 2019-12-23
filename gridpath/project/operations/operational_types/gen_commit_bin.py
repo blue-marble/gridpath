@@ -261,7 +261,7 @@ def add_module_specific_components(m, d):
         clipped = max(mod.disp_binary_commit_min_stable_level_fraction[g],
                       min(shutdown_fraction, 1))
         return clipped
-    m.DispBinCommit_Shutdown_Ramp_Fraction_Per_Timepoint = Param(
+    m.dispbincommit_shutdown_ramp_fraction_per_timepoint = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=shutdown_ramp_fraction_per_timepoint_rule
     )
@@ -320,7 +320,7 @@ def add_module_specific_components(m, d):
             return clipped
         else:
             return 1
-    m.DispBinCommit_Startup_Ramp_Fraction_Per_Timepoint = Param(
+    m.dispbincommit_startup_ramp_fraction_per_timepoint = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=startup_ramp_fraction_per_timepoint_rule
     )
@@ -858,9 +858,9 @@ def add_module_specific_components(m, d):
             (mod.DispBinCommit_Pmax_MW[g, tmp]
              - mod.DispBinCommit_Pmin_MW[g, tmp]) * mod.Commit_Binary[g, tmp] \
             - (mod.DispBinCommit_Pmax_MW[g, tmp]
-               - mod.DispBinCommit_Startup_Ramp_Fraction_Per_Timepoint[g, tmp]
+               - mod.dispbincommit_startup_ramp_fraction_per_timepoint[g, tmp]
                * mod.DispBinCommit_Pmax_MW[g, tmp]) * mod.Start_Binary[g, tmp] \
-            + (mod.DispBinCommit_Shutdown_Ramp_Fraction_Per_Timepoint[g, tmp]
+            + (mod.dispbincommit_shutdown_ramp_fraction_per_timepoint[g, tmp]
                * mod.DispBinCommit_Pmax_MW[g, tmp]
                - mod.DispBinCommit_Pmin_MW[g, tmp]) * mod.Stop_Binary[g, tmp]
 
