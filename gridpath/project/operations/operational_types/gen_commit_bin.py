@@ -2,14 +2,65 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This module describes the operations of 'binary-commit' generators,
-i.e. generators with on/off commitment decisions.
+This module describes the operations of 'binary-commit' generators, i.e.
+generators with on/off commitment decisions. It also includes ramp rate limits,
+minimum up/down times, and optional startup and shutdown trajectories where the
+startup trajectory can depend on the down time (hot/cold starts).
 
 The formulation is based on "Hidden power system inflexibilities imposed by
 traditional unit commitment formulations", Morales-Espana et al. (2017).
 A related, interesting paper with more background information is "Tight and
 compact MILP formulation for the thermal unit commitment problem",
 Morales-Espana et al. (2013).
+
+In the following paragraphs, we briefly describe the key variables, constraints,
+and their interactions.
+
+There are 4 binary decision variables governing the unit's state:
+ - Commit_Binary specifies whether the unit is committed
+ - Start_Binary specifies whether the unit is starting up
+ - Stop_Binary specifies whether the unit is shutting down
+ - Start_Binary_Type specifies whether the unit is starting with startup type s
+
+There are 2 continuous decision variables governing the unit's power output
+and fuel burn:
+ - Provide_Power_Above_Pmin_DispBinaryCommit_MW specifies the unit's power
+   output above the minimum stable level (P_above_pmin)
+ - Fuel_Burn_DispBinCommit_MMBTU specifies the unit's fuel burn
+
+The binary_logic_constraint_rule sets up the relationship between the binary
+startup, shutdown, and commitment state variables.
+
+The startup_type_constraint_rule and the unique_startup_type_constraint_rule
+ensure that the correct startup type is selected and that only one startup type
+can be active at once.
+
+The min_up_time_constraint_rule (min_down_time_constraint_rule) ensures that
+minimum up (down) times are respected when choosing an operating state.
+
+The max_power_constraint rule sets limits to P_above_pmin based on whether the
+unit is committed, with adjustments when the unit is starting up or shutting
+down to make sure that startup/shutdown ramps are respected (for quick-start
+units) or that the unit ends (starts) the startup (shutdown) trajectory at Pmin.
+
+The ramp_up_constraint_rule (ramp_down_constraint_rule) ensures that ramping of
+the power output between timepoints respects the ramp rate limits.
+
+The startup_power_rule (shutdown_power_rule) calculates the startup power
+(shutdown power) if applicable, based on when the startup (shutdown) takes place
+, the startup (shutdown) ramp rate, and the elapsed time between the timepoint
+of interest and the beginning of the startup (shutdown). If the timepoint does
+not fall within a startup (shutdown) trajectory or the unit is a quick-start
+unit, it will be zero. The last (first) timepoint of a startup (shutdown) is not
+included in the trajectory.
+
+The provide_power_rule expression calculates the total power output from
+P_above_pmin, the unit's operating state and Pmin (if the unit is committed or
+shutting down, Pmin will be included), and the startup and shutdown trajectory
+power.
+
+Lastly, the fuel_burn_constraint_rule calculates the fuel burn based on
+piecewise linear heat rate curves.
 
 Disclaimer: changing availabilty and timepoint duration not fully tested!
   - if availability changes during a startup process, things could get weird
