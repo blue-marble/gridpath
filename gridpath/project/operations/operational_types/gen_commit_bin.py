@@ -201,20 +201,35 @@ def add_module_specific_components(m, d):
     )
 
     # ------------------ Derived Params ------------------------ #
-    def startup_length_hours_rule(mod, g, s):
+    def startup_duration_hours_rule(mod, g, s):
+        """
+        The startup duration in hours for each startup type (hot/cold).
+        Calculated from the startup ramp rate and the minimum stable level.
+        :param mod:
+        :param g:
+        :param s:
+        :return:
+        """
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.dispbincommit_startup_plus_ramp_up_rate[g, s] / 60
-    m.dispbincommit_startup_length_hours = Param(
+    m.dispbincommit_startup_duration_hours = Param(
         m.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS,
-        rule=startup_length_hours_rule
+        rule=startup_duration_hours_rule
     )
 
-    def shutdown_length_hours_rule(mod, g):
+    def shutdown_duration_hours_rule(mod, g):
+        """
+        The shutdown duration in hours. Calculated from the startup ramp rate
+        and the minimum stable level.
+        :param mod:
+        :param g:
+        :return:
+        """
         return mod.disp_binary_commit_min_stable_level_fraction[g] \
             / mod.dispbincommit_shutdown_plus_ramp_down_rate[g] / 60
-    m.dispbincommit_shutdown_length_hours = Param(
+    m.dispbincommit_shutdown_duration_hours = Param(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
-        rule=shutdown_length_hours_rule
+        rule=shutdown_duration_hours_rule
     )
 
     def shutdown_ramp_fraction_per_timepoint_rule(mod, g, tmp):
@@ -336,7 +351,7 @@ def add_module_specific_components(m, d):
 
             # Skip first relevant timepoint which is *tmp* itself
             for relevant_tmp in determine_relevant_timepoints(mod, g, tmp,
-                    mod.dispbincommit_startup_length_hours[g, s])[1:]:
+                    mod.dispbincommit_startup_duration_hours[g, s])[1:]:
                 # If we haven't run into this timepoint and startup type yet,
                 # this is the first possible startup timepoint
                 if (g, relevant_tmp, s) not in result.keys():
@@ -445,7 +460,7 @@ def add_module_specific_components(m, d):
                     starting += mod.Start_Binary_Type[g, stmp, s] \
 
         # Calculate whether unit is shutting down
-        shutdown_duration = mod.dispbincommit_shutdown_length_hours[g]
+        shutdown_duration = mod.dispbincommit_shutdown_duration_hours[g]
         if shutdown_duration <= mod.number_of_hours_in_timepoint[tmp]:
             stopping += mod.Stop_Binary[g, tmp]
         else:
@@ -499,7 +514,7 @@ def add_module_specific_components(m, d):
         :return:
         """
 
-        shutdown_duration = mod.dispbincommit_shutdown_length_hours[g]
+        shutdown_duration = mod.dispbincommit_shutdown_duration_hours[g]
         relevant_shutdown_power = 0
         time_into_shutdown = 0
 
@@ -544,7 +559,7 @@ def add_module_specific_components(m, d):
         startup_power = 0
         if g in mod.GEN_COMMIT_BIN_STR_RMP_PRJS:
             for s in mod.GEN_COMMIT_BIN_STR_TPS_BY_STR_RMP_PRJ[g]:
-                su_duration = mod.dispbincommit_startup_length_hours[g, s]
+                su_duration = mod.dispbincommit_startup_duration_hours[g, s]
                 for stmp in mod.tmps_by_prj_reltmp_stype[g, tmp, s]:
                     startup_elapsed_time = determine_startup_elapsed_time(
                         mod, g, tmp, stmp, su_duration)
