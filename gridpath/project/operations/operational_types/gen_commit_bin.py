@@ -673,8 +673,9 @@ def add_module_specific_components(m, d):
         The *Start_Binary* variable is 1 for the first timepoint the unit is
         committed after being offline; it will be able to provide power in that
         timepoint. The *Stop_Binary* variable is 1 for the first timepoint the
-        unit is not committed after being online; it will not be able to
-        provide power in that timepoint.
+        unit is not committed after being online; it will be able to provide
+        power in that timepoint (at least at the start of the timepoint, which
+        is when we assume you enter your setpoint)
 
         See constraint (4) in Morales-Espana et al. (2017).
 
@@ -828,29 +829,76 @@ def add_module_specific_components(m, d):
 
     def max_power_constraint_rule(mod, g, tmp):
         """
-        Power provision adjusted for upward reserves can't exceed generator's
-        maximum power output.
+        Power provision above Pmin plus upward reserves shall not exceed Pmax
+        minus Pmin if the unit is committed, and zero otherwise, with exceptions
+        during startup and shutdown timepoints.
 
-        If the startup or shutdown takes longer than one timepoint (i.e. there
-        is a trajectory) this constraint, in combination with the
-        *provide_power_rule*, will set the total power output to Pmin in the
-        startup timepoint (Start_Binary[tmp]=1) and shutdown timepoint
-        (Stop_Binary[tmp]=1).
+        If tmp is a startup timepoint, the unit is committed, but the RHS is
+        tightened using the startup ramp rates. If the startup ramp rates don't
+        allow the unit to ramp to Pmin within one timepoint,
+        dispbincommit_startup_ramp_fraction_per_timepoint will be equal to the
+        minimum stable level, and RHS will be tightened to zero. If the startup
+        ramp rates allow the unit to ramp to Pmin or higher within one timepoint
+        dispbincommit_startup_ramp_fraction_per_timepoint will be between the
+        the minimum stable level and 1, and the RHS will be tightened to
+        somewhere between resp. 0 and Pmax minus Pmin.
 
-        If the startup or shutdown occurs within one timepoint (quick-start),
-        this constraint, in combination with the *provide_power_rule*, will
-        limit the total power output in the startup and shutdown timepoint to a
-        value between Pmin and Pmax, depending on the startup ramp rate and the
-        shutdown ramp rate.
+        If tmp is a shutdown timepoint, the unit is not committed, but the RHS
+        will be relaxed using the shutdown ramp rates. If the shutdown ramp
+        rates don't allow the unit to ramp down to zero within one timepoint,
+        dispbincommit_shutdown_ramp_fraction_per_timepoint will be equal to the
+        minimum stable level and there will be no relaxation. If the shutdown
+        ramp rates allow the unit to ramp down to zero from Pmin or higher
+        within one timepoint, dispbincommit_shutdown_ramp_fraction_per_timepoint
+        will be between the minimum stable level and 1, and the RHS will be
+        relaxed to somewhere between resp. 0 and Pmax minus Pmin.
 
-        Constraint (31) in Morales-Espana et al. (2017)
+        Note: The way startup and shutdown are defined, the unit will always be
+        committed (Commit_Binary[tmp]=1) in the startup timepoint
+        (Start_Binary[tmp]=1) and will never be committed (Commit_Binary[tmp]=0)
+        in the shutdown timepoint (Stop_Binary[tmp]=1).
+        See binary_logic_constraint_rule.
+
+        See constraint (31) in Morales-Espana et al. (2017)
+
+        Example 1:
+            Unit data:
+                ramp_rate_fraction = 0.4 (same for startup and shutdown)
+                Pmax = 10
+                Pmin = 4
+            Case 1: unit is committed, and not starting up or shutting down
+            --> P_above_pmin + reserves <= Pmax - Pmin
+            --> P_above_pmin + reserves <= 10 - 4 = 6
+            Case 2: unit is committed, and starting up
+            --> P_above_pmin + reserves <= Pmax - Pmin
+                                           - (Pmax - ramp_rate_fraction * Pmax)
+            --> P_above_pmin  + reserves <= 10 - 4 - (10 - 0.4 * 10) = 0
+            Case 3: unit is not committed and shutting down
+            --> P_above_pmin + reserves <= (ramp_rate_fraction * Pmax - Pmin)
+            --> P_above_pmin + reserves <= (0.4 * 10 - 4) = 0
+
+        Example 2:
+            Unit data:
+                ramp_rate_fraction = 0.6 (i.e. quick-start/shutdown)
+                Pmax = 10
+                Pmin = 4
+            Case 1: unit is committed, and not starting up or shutting down
+            --> P_above_pmin + reserves <= Pmax - Pmin
+            --> P_above_pmin + reserves <= 10 - 4 = 6
+            Case 2: unit is committed, and starting up
+            --> P_above_pmin + reserves <= Pmax - Pmin
+                                           - (Pmax - ramp_rate_fraction * Pmax)
+            --> P_above_pmin  + reserves <= 10 - 4 - (10 - 0.6 * 10) = 2
+            Case 3: unit is not committed and shutting down
+            --> P_above_pmin + reserves <= (ramp_rate_fraction * Pmax - Pmin)
+            --> P_above_pmin + reserves <= (0.6 * 10 - 4) = 2
+
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
 
-        # Power provision plus upward reserves shall not exceed maximum power.
         return \
             (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
