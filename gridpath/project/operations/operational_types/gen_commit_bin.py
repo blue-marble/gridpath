@@ -577,7 +577,17 @@ def add_module_specific_components(m, d):
 
     def provide_power_rule(mod, g, tmp):
         """
-        Equation (37) in Morales-Espana et al. (2017).
+        The total power output is the power output above Pmin plus Pmin if the
+        unit is committed or shutting down and zero otherwise, plus any
+        power arising from a startup or shutdown trajectory.
+
+        The startup and shutdown trajectory power does not include the last
+        point of the startup trajectory and the first point of the shutdown
+        trajecotry when the unit's power output is set to Pmin and the startup
+        or shutdown binaray variable is one. Instead, this is covered by the
+        first term in this expression (see examples below).
+
+        Based on equation (37) in Morales-Espana et al. (2017).
 
         Note: because GridPath assumes you enter the timepoint at your setpoint
         (vs. Morales-Espana who assumes you end the the timepoint at your
@@ -585,6 +595,28 @@ def add_module_specific_components(m, d):
         provide power above Pmin in the shutdown timepoint (when it is
         technically no longer committed). See the *max_power_constraint_rule*
         for how the power above Pmin is constrained.
+
+        Example:
+            Unit Data:
+                Pmax = 10 MW
+                Pmin = 4 MW
+            Case 1: unit is committed and providing 3 MW above Pmin
+                P = (P_above_pmin + Pmin) * (commit + stop) + P_start + P_stop
+                  = (3 + 4) * (1 + 0) + 0 + 0
+                  = 7
+            Case 2: unit is committed and starting up, providing 0 MW above Pmin
+                  = (0 + 4) * (1 + 0) + 0 + 0
+                  = 4
+            Case 3: unit is not committed but in a startup trajectory at 3 MW
+                P = (0 + 4) * (0 + 0) + 3 + 0
+                  = 3
+            Case 4: unit is not committed and shutting down, providing 2 MW
+                    above Pmin (unit is quick-shutdown)
+                P = (0 + 4) * (0 + 1) + 0 + 0
+                  = 6
+            Case 5: unit is not committed but in a shutdown trajectory at 2 MW
+                P = (0 + 4) * (0 + 0) + 0 + 2
+                  = 2
 
         :param mod:
         :param g:
