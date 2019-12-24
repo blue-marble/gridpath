@@ -189,7 +189,6 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         self.assertDictEqual(expected_startup_plus_ramp_up_rate,
                              actual_startup_plus_ramp_up_rate)
 
-
         # Param: dispbincommit_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Binary_Commit": 0.6}
         actual_shutdown_plus_ramp_down_rate = {
@@ -235,6 +234,66 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         }
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
+
+        # Derived Param: dispbincommit_startup_duration_hours
+        expected_su_duration = {("Disp_Binary_Commit", 1): 0.4/0.60/60}
+        actual_su_duration = {
+            (prj, s): instance.dispbincommit_startup_duration_hours[prj, s]
+            for (prj, s) in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TPS
+        }
+        self.assertDictEqual(expected_su_duration,
+                             actual_su_duration)
+
+        # Derived Param: dispbincommit_shutdown_duration_hours
+        expected_sd_duration = {"Disp_Binary_Commit": 0.4/0.60/60}
+        actual_sd_duration = {
+            prj: instance.dispbincommit_shutdown_duration_hours[prj]
+            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+        }
+        self.assertDictEqual(expected_sd_duration,
+                             actual_sd_duration)
+
+        # Derived Param: dispbincommit_startup_ramp_fraction_per_timepoint
+        expected_ramp_fractions = {
+            (prj, tmp): 1
+            for (prj, tmp) in
+            instance.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        }
+        actual_ramp_fractions = {
+            (prj, tmp): instance.\
+                dispbincommit_startup_ramp_fraction_per_timepoint[prj, tmp]
+            for (prj, tmp) in
+            instance.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        }
+        self.assertDictEqual(expected_ramp_fractions,
+                             actual_ramp_fractions)
+
+        # Derived Param: dispbincommit_shutdown_ramp_fraction_per_timepoint
+        expected_ramp_fractions = {
+            (prj, tmp): 1
+            for (prj, tmp) in
+            instance.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        }
+        actual_ramp_fractions = {
+            (prj, tmp): instance.\
+                dispbincommit_shutdown_ramp_fraction_per_timepoint[prj, tmp]
+            for (prj, tmp) in
+            instance.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        }
+        self.assertDictEqual(expected_ramp_fractions,
+                             actual_ramp_fractions)
+
+        # Derived Param: tmps_by_prj_reltmp_stype
+        expected_tmps = {
+            (prj, tmp, s): []
+            for (prj, tmp, s) in instance.GEN_COMMIT_BIN_PRJS_OPR_TMPS_STR_TPS
+        }
+        actual_tmps = {
+            (prj, tmp, s): instance.tmps_by_prj_reltmp_stype[prj, tmp, s]
+            for (prj, tmp, s) in instance.GEN_COMMIT_BIN_PRJS_OPR_TMPS_STR_TPS
+        }
+        self.assertDictEqual(expected_tmps,
+                             actual_tmps)
 
 
 if __name__ == "__main__":
