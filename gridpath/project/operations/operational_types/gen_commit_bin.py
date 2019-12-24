@@ -1884,6 +1884,11 @@ def validate_startup_type_inputs(startup_df, project_df):
      - could also add type checking here (resp. int and float?)
      - check for startup fuel and disallow combination of startup
        ramps and startup fuels (double counts it)
+     - Check that non lin/bin commit types have no shutdown trajectories
+       --> ramp should be large enough (but check shouldn't be here!)
+     - Check that there are only gen_lin and gen_bin types in startup_chars
+       (depends on what happens to cap commit module); would have to check
+       this in cross module validation
 
     :param startup_df: dataframe with startup_chars (see startup_chars.tab)
     :param project_df: dataframe with project_chars (see projects.tab)
@@ -1944,6 +1949,8 @@ def validate_startup_type_inputs(startup_df, project_df):
                 .format(project)
             )
 
+        # TODO: kind of redundant because prj_df only inlucdes generators of
+        #  type gen_commit_bin
         if (len(startups) > 1 and prj_chars["operational_type"].iloc[0] not in
                 ["gen_commit_bin", "gen_commit_lin"]):
             results.append(
@@ -1971,7 +1978,7 @@ def validate_startup_type_inputs(startup_df, project_df):
                     .format(project)
                 )
 
-            # check that down time is equal to project opchars min down time
+            # check that down time cutoff is equal to min down time
             if startups["down_time_cutoff_hours"].iloc[0] != min_down_time:
                 results.append(
                     "Project '{}': down_time_cutoff_hours for hottest startup "
@@ -1990,8 +1997,6 @@ def validate_startup_type_inputs(startup_df, project_df):
 
         # Check startup ramp inputs
         column = "startup_plus_ramp_up_rate"
-
-        # TODO: remove since can't be empty now?
         # Either all values are None or none at all
         nas = pd.isna(startups[column])
         if nas.any() and len(startups[column].unique()) > 1:
