@@ -358,7 +358,7 @@ else:
 
     f_number = 0
     for f in os.listdir(data_folder_path):
-        if f.endswith(".csv") and 'template' not in f and 'scenario' in f:
+        if f.endswith(".csv") and 'template' not in f and 'scenario' in f and 'ignore' not in f:
             print(f)
             f_number = f_number + 1
             csv_data_input = pd.read_csv(os.path.join(data_folder_path, f))

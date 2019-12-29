@@ -25,7 +25,7 @@ def csv_read_data(folder_path):
     data_starting_from_row = 1  # Notes rows start from 0. So this is the 6th row in the csv.
 
     for f in os.listdir(folder_path):
-        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f:
+        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f and 'ignore' not in f:
             print(f)
             csv_subscenario = pd.read_csv(os.path.join(folder_path, f))
 
@@ -54,7 +54,7 @@ def csv_read_temporal_data(folder_path):
     data_starting_from_row = 1  # Notes rows start from 0. So this is the 6th row in the csv.
 
     for f in os.listdir(folder_path):
-        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f:
+        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f and 'ignore' not in f:
             print(f)
             csv_subscenario = pd.read_csv(os.path.join(folder_path, f))
 
