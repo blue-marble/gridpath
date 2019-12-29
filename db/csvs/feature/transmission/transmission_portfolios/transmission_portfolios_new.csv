@@ -1,2 +1,3 @@
 transmission_portfolio_scenario_id,transmission_line,capacity_type
-1,Rivendell_Isengard,tx_spec
+2,Tx_1,tx_spec
+2,Tx_new,tx_new_lin

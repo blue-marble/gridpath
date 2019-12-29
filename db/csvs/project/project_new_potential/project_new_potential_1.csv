@@ -1,7 +1,9 @@
 project_new_potential_scenario_id,project,period,minimum_cumulative_new_build_mw,maximum_cumulative_new_build_mw,minimum_cumulative_new_build_mwh,maximum_cumulative_new_build_mwh
-1,gas_new,2020,0,200,,
-1,gas_new,2025,0,200,,
-1,solar_new,2020,0,500,,
-1,solar_new,2025,0,500,,
-1,battery_new,2020,0,50,0,200
-1,battery_new,2025,0,50,0,200
+1,Gas_CCGT_new_z1,2020,0,200,,
+1,Gas_CCGT_new_z1,2025,0,200,,
+1,Solar_new_z1,2020,0,500,,
+1,Solar_new_z1,2025,0,500,,
+1,Gas_CT_new_z2,2020,0,200,,
+1,Gas_CT_new_z2,2025,0,200,,
+1,Solar_new_z2,2020,0,500,,
+1,Solar_new_z2,2025,0,500,,

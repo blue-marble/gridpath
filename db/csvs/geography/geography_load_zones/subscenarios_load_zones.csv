@@ -1,2 +1,3 @@
 load_zone_scenario_id,name,description,filename
-1,default_1_zone,1 zone India,geography_load_zones_1
+1,1_zone,1 zone,geography_load_zones_1
+2,2_zones,2 zones,geography_load_zones_2

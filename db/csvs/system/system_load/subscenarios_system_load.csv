@@ -1,2 +1,3 @@
 load_scenario_id,name,description,filename
-1,base_profile,Base profile,system_load_1
+1,base_profile_1_zone,Base profile 1 zone,system_load_1zone
+2,base_profile_2_zones,Base profile 2 zones,system_load_2zones

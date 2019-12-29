@@ -1,5 +1,5 @@
 project,hydro_operational_chars_scenario_id,balancing_type_project,horizon,period,avg,min,max
-hydro_existing,1,day,202001,2020,0.4,0.1,1
-hydro_existing,1,day,202002,2020,0.7,0.2,1
-hydro_existing,1,day,202501,2025,0.4,0.1,1
-hydro_existing,1,day,202502,2025,0.7,0.2,1
+Hydro_z1,1,day,202001,2020,0.4,0.1,1
+Hydro_z1,1,day,202002,2020,0.7,0.2,1
+Hydro_z1,1,day,202501,2025,0.4,0.1,1
+Hydro_z1,1,day,202502,2025,0.7,0.2,1

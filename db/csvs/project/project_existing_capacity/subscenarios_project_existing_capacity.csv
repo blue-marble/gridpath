@@ -1,2 +1,3 @@
 project_existing_capacity_scenario_id,name,description,filename
-1,project_existing_capacity_default,project existing capacity base scenario,project_existing_capacity_1
+1,project_existing_capacity_1zone,project existing capacity 1 zone,project_existing_capacity_1zone
+2,project_existing_capacity_2zones,project existing capacity 2 zones,project_existing_capacity_2zones
