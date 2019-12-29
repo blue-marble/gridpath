@@ -17,6 +17,15 @@ Introduction
    introduction
 
 ##############
+Installing GridPath
+##############
+
+.. toctree::
+   :maxdepth: 3
+
+   installation
+
+##############
 Using GridPath
 ##############
 
@@ -33,6 +42,16 @@ GridPath Functionality
    :maxdepth: 4
 
    functionality
+
+
+#####################
+The GridPath Database
+#####################
+
+.. toctree::
+   :maxdepth: 4
+
+   database
 
 
 ######################

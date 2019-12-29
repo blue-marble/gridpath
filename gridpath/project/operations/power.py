@@ -33,7 +33,7 @@ def add_model_components(m, d):
     operational timepoints. The exact formulation of the expression depends
     on the project's *operational_type*. For each project, we call its
     *capacity_type* module's *power_provision_rule* method in order to
-    formulate the expression. E.g. a project of the  *must_run*
+    formulate the expression. E.g. a project of the  *gen_must_run*
     operational_type will be producing power equal to its capacity while a
     dispatchable project will have a variable in its power provision
     expression. This expression will then be used by other modules.
@@ -158,10 +158,14 @@ def summarize_results(d, scenario_directory, subproblem, stage):
     # Calculate the percent of total power for each tech (by load zone
     # and period)
     for indx, row in operational_results_agg_df.iterrows():
-        operational_results_agg_df.percent_total_power[indx] = \
-            operational_results_agg_df.weighted_power_mwh[indx] \
-            / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
-            * 100.0
+        if lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] == 0:
+            pct = 0
+        else:
+            pct = \
+                operational_results_agg_df.weighted_power_mwh[indx] \
+                / lz_period_power_df.weighted_power_mwh[indx[0], indx[1]] \
+                * 100.0
+        operational_results_agg_df.percent_total_power[indx] = pct
 
     # Rename the columns for the final table
     operational_results_agg_df.columns = (["Annual Energy (MWh)",

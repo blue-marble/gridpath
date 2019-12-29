@@ -88,6 +88,8 @@ def create_input_data_table_api(
     return data_table_api
 
 
+# TODO: this can probably be refactored to consolidate with the
+#  get_table_data function from view-data
 def get_table_data(c, input_table, subscenario_id_column, subscenario_id):
     """
     :param c:

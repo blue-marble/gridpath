@@ -607,13 +607,13 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
     """
     Check that a list of projects of a given operational_type does not show up
     in a a list of projects that can provide a given type of reserve. This is
-    used when checking that a certain operational type (e.g. must_run) is not
+    used when checking that a certain operational type (e.g. gen_must_run) is not
     providing a certain type of reserve (e..g regulation_up) which it shouldn't
     be able to provide.
 
     :param projects_op_type: list of projects with specified operational type
     :param projects_w_ba: list of projects with specified reserve ba
-    :param operational_type: string, specified operational_type (e.g. must_run)
+    :param operational_type: string, specified operational_type (e.g. gen_must_run)
         that is not able to provide the specified reserve
     :param reserve: string, specified reserve product (e.g. regulation_up)
     :return:

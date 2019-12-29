@@ -123,7 +123,8 @@ export class ScenarioNewComponent implements OnInit {
     local_capacity$req: new FormControl(),
     local_capacity$projects: new FormControl(),
     local_capacity$project_chars: new FormControl(),
-    tuning$tuning: new FormControl()
+    tuning$tuning: new FormControl(),
+    solver$solver: new FormControl()
     });
 
   constructor(private scenarioNewService: ScenarioNewService,
@@ -280,6 +281,10 @@ export class ScenarioNewComponent implements OnInit {
 
   saveNewScenario() {
     const socket = socketConnect();
+
+    // Re-enable scenarioName form control (it's disabled when editing a
+    // scenario)
+    this.newScenarioForm.controls.scenarioName.enable();
 
     socket.emit('add_new_scenario', this.newScenarioForm.value);
 

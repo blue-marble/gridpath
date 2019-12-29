@@ -2,7 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Get inputs, run scenario, and import results.
+This script calls the __main__ functions of get_scenario_inputs.py,
+run scenario.py, import_scenario_results.py, and process_results.py to run a
+scenario end-to-end, i.e. get the scenario inputs from the database,
+solve the scenario problem, import the results the database and perform any
+necessary results-processing.
+
+The main() function of this script can also be called with the
+*gridpath_process_results* command when GridPath is installed.
 """
 
 from argparse import ArgumentParser

@@ -98,7 +98,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     :return:
     """
 
-    # TODO: we might want to get the reactance in the dc_opf_transmission
+    # TODO: we might want to get the reactance in the tx_dcopf
     #  tx_operational_type rather than here (similar comment as in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
@@ -216,13 +216,13 @@ def validate_op_cap_combos(df, invalid_combos):
 
 def validate_reactance(df):
     """
-    Check reactance > 1 for dc_opf_transmission lines
+    Check reactance > 1 for tx_dcopf lines
     :param df:
     :return:
     """
     results = []
 
-    # df = df[df["operational_type"] == "dc_opf_transmission"]
+    # df = df[df["operational_type"] == "tx_dcopf"]
     invalids = (df["reactance_ohms"] <= 0)
     if invalids.any():
         bad_lines = df["transmission_line"][invalids].values

@@ -2,9 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 
+const electron = ( window as any ).require('electron');
+
 import { ScenarioInputsService } from './scenario-inputs.service';
 import { ScenarioInputsTable } from './scenario-inputs';
 import { ScenarioDetailService } from '../scenario-detail/scenario-detail.service';
+import { socketConnect } from '../app.component';
 
 @Component({
   selector: 'app-view-data',
@@ -71,6 +74,29 @@ export class ScenarioInputsComponent implements OnInit {
       .subscribe(scenarioDetailAPI => {
         this.scenarioName = scenarioDetailAPI.scenarioName;
       });
+  }
+
+  downloadTableData(): void {
+    electron.remote.dialog.showSaveDialog(
+      { title: 'untitled.csv', defaultPath: 'table.csv',
+        filters: [{extensions: ['csv']}]
+      }, (targetPath) => {
+        const socket = socketConnect();
+
+        socket.emit(
+            'save_table_data',
+            { downloadPath: targetPath,
+              tableName: null,  // not needed for inputs
+              scenarioID: this.scenarioID,
+              otherScenarios: [],
+              tableType: this.type,
+              uiTableNameInDB: this.table,
+              uiRowNameInDB: this.row
+
+            }
+        );
+      }
+    );
   }
 
   goBack(): void {

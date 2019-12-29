@@ -4,9 +4,53 @@
 Functions to save data from the UI to CSVs.
 """
 
+import csv
 from importlib import import_module
 
 from db.common_functions import connect_to_database
+from ui.server.api.view_data import get_table_data as get_results_table_data
+from ui.server.api.scenario_inputs import create_input_data_table_api as \
+  get_inputs_table_data
+
+
+def save_table_data_to_csv(db_path, download_path, scenario_id,
+                           other_scenarios, table, table_type,
+                           ui_table_name_in_db, ui_row_name_in_db):
+    """
+
+    :param db_path:
+    :param download_path:
+    :param scenario_id:
+    :param other_scenarios:
+    :param table:
+    :return:
+    """
+    print(table)
+
+    print(table_type)
+
+    if table_type in ["subscenario", "input"]:
+        table_data = get_inputs_table_data(
+            scenario_id=scenario_id,
+            db_path=db_path,
+            table_type=table_type,
+            ui_table_name_in_db=ui_table_name_in_db,
+            ui_row_name_in_db=ui_row_name_in_db
+        )
+    else:
+        table_data = get_results_table_data(
+            scenario_id=scenario_id,
+            other_scenarios=other_scenarios,
+            table=table,
+            db_path=db_path
+        )
+
+    with open(download_path, "w", newline="") as f:
+        writer = csv.writer(f, delimiter=",")
+        writer.writerow(table_data["columns"])
+        for row in table_data["rowsData"]:
+            values = [row[column] for column in table_data["columns"]]
+            writer.writerow(values)
 
 
 def save_plot_data_to_csv(db_path, download_path, scenario_id, plot_type,

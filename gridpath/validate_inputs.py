@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+This script iterates over all modules required for a GridPath scenario and
+calls their *validate_inputs()* method, which performs various validations
+of the input data and scenario setup.
+"""
+
+
 from __future__ import print_function
 
 from builtins import str
@@ -197,17 +204,20 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     req_cap_types = set(subscenarios.get_required_capacity_type_modules(c))
 
     new_build_types = {
-        "new_build_generator,",
-        "new_build_storage",
-        "new_shiftable_load_supply_curve"
+        "gen_new_lin,",
+        "gen_new_bin",
+        "stor_new_lin",
+        "stor_new_bin",
+        "dr_new"
     }
     existing_build_types = {
-        "existing_gen_no_economic_retirement",
-        "existing_gen_binary_economic_retirement",
-        "existing_gen_linear_economic_retirement"
+        "gen_spec",
+        "gen_ret_bin",
+        "gen_ret_lin",
+        "stor_spec",
     }
-    load_shift_types = {
-        "new_shiftable_load_supply_curve"
+    dr_types = {
+        "dr_new"
     }
 
     # Determine required subscenario_ids
@@ -220,9 +230,9 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
                            "Existing"))
         sc_id_type.append(("PROJECT_EXISTING_FIXED_COST_SCENARIO_ID",
                            "Existing"))
-    if bool(req_cap_types & load_shift_types):
+    if bool(req_cap_types & dr_types):
         sc_id_type.append(("PROJECT_NEW_POTENTIAL_SCENARIO_ID",
-                           "New Shiftable Load Supply Curve"))
+                           "Demand Response (DR)"))
 
     # Check whether required subscenario_ids are present
     validation_results = []
@@ -247,6 +257,55 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
 
     # Return True if all required subscenario_ids are valid (list is empty)
     return not bool(validation_results)
+
+
+def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
+                                  conn):
+    """
+
+    :param optional_features:
+    :param subscenarios:
+    :param subproblems:
+    :param conn:
+    :return:
+    """
+
+    multi_stage = optional_features.OPTIONAL_FEATURE_MULTI_STAGE
+
+    # Check whether multi_stage setting is consistent with actual inputs
+    max_stages = max([len(stages) for subproblem, stages in
+                      subproblems.SUBPROBLEM_STAGE_DICT.items()])
+    if max_stages > 1 and not multi_stage:
+        validation_results = [(
+            subscenarios.SCENARIO_ID,
+            "N/A",
+            "N/A",
+            "N/A",
+            "temporal_scenario_id",
+            "scenarios and inputs_temporal_subproblems_stages",
+            "Invalid multi-stage settings",
+            "The inputs contain multiple dispatch stages while the multi-stage "
+            "optional feature is not selected. Please select the multi-stage "
+            "feature or remove the extra stages."
+        )]
+    elif max_stages <= 1 and multi_stage:
+        validation_results = [(
+            subscenarios.SCENARIO_ID,
+            "N/A",
+            "N/A",
+            "N/A",
+            "temporal_scenario_id",
+            "scenarios and inputs_temporal_subproblems_stages",
+            "Invalid multi-stage settings",
+            "The inputs contain only a single dispatch stage so the multi-stage"
+            " optional feature should not be selected. Please turn off the "
+            "multi-stage feature or add additional stages."
+        )]
+    else:
+        validation_results = []
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
 
 
 def reset_input_validation(conn, scenario_id):
@@ -355,6 +414,10 @@ def main(args=None):
     optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
     subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
     subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
+
+    # Validate multi-stage settings
+    validate_multi_stage_settings(optional_features, subscenarios, subproblems,
+                                  conn)
 
     # Check whether subscenario_ids are valid
     is_valid = validate_subscenario_ids(subscenarios, optional_features, conn)

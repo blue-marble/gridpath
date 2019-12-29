@@ -88,10 +88,10 @@ class TestTransmissionInit(unittest.TestCase):
 
         # Param: tx_capacity_type
         expected_cap_type = OrderedDict(sorted(
-            {"Tx1": "specified_transmission",
-             "Tx_New": "new_build_transmission",
-             "Tx2": "specified_transmission",
-             "Tx3": "specified_transmission"
+            {"Tx1": "tx_spec",
+             "Tx_New": "tx_new_lin",
+             "Tx2": "tx_spec",
+             "Tx3": "tx_spec"
              }.items()
                                         )
                                               )
@@ -135,8 +135,8 @@ class TestTransmissionInit(unittest.TestCase):
             # Make sure correct inputs don't throw error
             1: {"df": pd.DataFrame(
                     columns=cols,
-                    data=[["tx1", "specified_transmission",
-                           "simple_transmission", 0.5]
+                    data=[["tx1", "tx_spec",
+                           "tx_simple", 0.5]
                           ]),
                 "invalid_combos": [("invalid1", "invalid2")],
                 "reactance_error": [],
@@ -145,12 +145,12 @@ class TestTransmissionInit(unittest.TestCase):
             # Make sure invalid min_stable_level and invalid combo are flagged
             2: {"df": pd.DataFrame(
                 columns=cols,
-                data=[["tx1", "new_build", "dc_opf_transmission", -0.5],
-                      ["tx2", "new_build", "simple_transmission", None]
+                data=[["tx1", "new_build", "tx_dcopf", -0.5],
+                      ["tx2", "new_build", "tx_simple", None]
                       ]),
-                "invalid_combos": [("new_build", "dc_opf_transmission")],
+                "invalid_combos": [("new_build", "tx_dcopf")],
                 "reactance_error": ["Line(s) 'tx1': expected reactance_ohms > 0"],
-                "combo_error": ["Line(s) 'tx1': 'new_build' and 'dc_opf_transmission'"],
+                "combo_error": ["Line(s) 'tx1': 'new_build' and 'tx_dcopf'"],
                 }
         }
 

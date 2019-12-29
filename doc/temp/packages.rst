@@ -84,20 +84,20 @@ storage and demand-side resources available to the model.
 .. automodule:: gridpath.project.capacity.capacity_types.common_methods
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-existing_gen_linear_economic_retirement
+gen_ret_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-existing_gen_no_economic_retirement
+gen_spec
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.new_build_generator
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.new_build_storage
-    :members:
-.. automodule:: gridpath.project.capacity.capacity_types.
-new_shiftable_load_supply_curve
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.
-storage_specified_no_economic_retirement
+dr_new
+    :members:
+.. automodule:: gridpath.project.capacity.capacity_types.
+stor_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity
     :members:
@@ -107,36 +107,36 @@ storage_specified_no_economic_retirement
     :members:
 .. automodule:: gridpath.project.operations.operational_types.__init__
     :members:
-.. automodule:: gridpath.project.operations.operational_types.always_on
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_binary_commit
+gen_commit_bin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_capacity_commit
+gen_commit_cap
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_continuous_commit
+gen_commit_lin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-dispatchable_no_commit
+gen_simple
     :members:
-.. automodule:: gridpath.project.operations.operational_types.hydro_curtailable
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.
-hydro_noncurtailable
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.must_run
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-shiftable_load_generic
+gen_hydro_must_take
     :members:
-.. automodule:: gridpath.project.operations.operational_types.storage_generic
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.
+dr
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.stor
     :members:
 .. automodule:: gridpath.project.operations.operational_types.variable
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
-variable_no_curtailment
+gen_var_must_take
     :members:
 .. automodule:: gridpath.project.operations.reserves.__init__
     :members:
@@ -209,10 +209,10 @@ infrastructure available to the model.
 .. automodule:: gridpath.transmission.capacity.capacity_types.__init__
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.
-specified_transmission
+tx_spec
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.
-new_build_transmission
+tx_new_lin
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity
     :members:

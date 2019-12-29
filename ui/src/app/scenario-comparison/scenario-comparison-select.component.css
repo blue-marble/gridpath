@@ -1,5 +1,25 @@
 /* scenarioDetailComponent's private CSS styles */
 
+#goBackButtonTop {
+  padding-top: 10px;
+}
+
+#resetButtonTop {
+  padding-top: 10px;
+}
+
+#scenario-detail-heading {
+  padding-top: 20px
+}
+
+#tables-title {
+  padding-top: 20px
+}
+
+#plots-title {
+  padding-top: 20px
+}
+
 .scenario-detail th {
   background-color: midnightblue;
   color: white;
@@ -26,6 +46,72 @@
   margin-bottom: 1px;
 }
 
-#scenario-detail-heading {
-  padding-top: 20px
+#plots-title {
+  color: midnightblue;
+}
+
+.navbar-results-button {
+  font-size: small;
+  background: aliceblue;
+  color: midnightblue;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.navbar-results-button:hover {
+  background-color: darkblue;
+  color: white
+}
+
+.form-group-list-item, #tableBox {
+  padding-left: 1px;
+  background: aliceblue;
+  list-style-position: inside;
+  border: 1px solid darkgrey;
+  border-radius: 5px
+
+}
+
+.custom-select {
+  width: auto;
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue
+}
+
+#yMaxLabel {
+  font-size: small;
+  font-weight: lighter;
+  background: aliceblue;
+  color: midnightblue;
+}
+
+.nav-item {
+  width: 150px;
+}
+
+#plotFormCaption, #tableBox {
+  font-size: small;
+  font-weight: 500;
+  background: aliceblue;
+  color: midnightblue;
+  padding-bottom: 5px;
+  text-align: center
+}
+
+#compareInputs {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+#compareResults {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.btn-group {
+  padding-top: 10px;
+  display: block;
+  text-align: left;
 }

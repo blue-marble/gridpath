@@ -62,6 +62,13 @@ capacity_type VARCHAR(32) PRIMARY KEY,
 description VARCHAR(128)
 );
 
+-- Implemented prm types
+DROP TABLE IF EXISTS mod_prm_types;
+CREATE TABLE mod_prm_types (
+prm_type VARCHAR(32) PRIMARY KEY,
+description VARCHAR(128)
+);
+
 -- Invalid combinations of capacity type and operational type
 DROP TABLE IF EXISTS mod_capacity_and_operational_type_invalid_combos;
 CREATE TABLE mod_capacity_and_operational_type_invalid_combos (
@@ -1236,6 +1243,7 @@ contributes_to_elcc_surface INTEGER,
 min_duration_for_full_capacity_credit_hours FLOAT,
 deliverability_group VARCHAR(64),  --optional
 PRIMARY KEY (project_elcc_chars_scenario_id, project),
+FOREIGN KEY (prm_type) REFERENCES mod_prm_types (prm_type),
 FOREIGN KEY (project_elcc_chars_scenario_id) REFERENCES
 subscenarios_project_elcc_chars (project_elcc_chars_scenario_id)
 );
@@ -2221,8 +2229,8 @@ energy_capacity_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_generator;
-CREATE TABLE results_project_capacity_new_build_generator (
+DROP TABLE IF EXISTS results_project_capacity_gen_new_lin;
+CREATE TABLE results_project_capacity_gen_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2236,8 +2244,8 @@ new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_binary_build_generator;
-CREATE TABLE results_project_capacity_new_binary_build_generator (
+DROP TABLE IF EXISTS results_project_capacity_gen_new_bin;
+CREATE TABLE results_project_capacity_gen_new_bin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2252,8 +2260,8 @@ new_build_mw FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_build_storage;
-CREATE TABLE results_project_capacity_new_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_lin;
+CREATE TABLE results_project_capacity_stor_new_lin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2268,8 +2276,8 @@ new_build_mwh FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_capacity_new_binary_build_storage;
-CREATE TABLE results_project_capacity_new_binary_build_storage (
+DROP TABLE IF EXISTS results_project_capacity_stor_new_bin;
+CREATE TABLE results_project_capacity_stor_new_bin (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2398,8 +2406,8 @@ total_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_hydro_curtailable;
-CREATE TABLE results_project_dispatch_hydro_curtailable (
+DROP TABLE IF EXISTS results_project_dispatch_gen_hydro;
+CREATE TABLE results_project_dispatch_gen_hydro (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -3431,7 +3439,7 @@ subscenarios_system_elcc_surface.name AS elcc_surface,
 subscenarios_system_local_capacity_requirement.name
     AS local_capacity_requirement,
 subscenarios_tuning.name AS tuning,
-options_solver_descriptions.solver as solver
+options_solver_descriptions.name as solver
 FROM scenarios
 LEFT JOIN mod_validation_status_types USING (validation_status_id)
 LEFT JOIN mod_run_status_types USING (run_status_id)
@@ -3608,9 +3616,8 @@ project_form_control INTEGER
 DROP TABLE IF EXISTS options_solver_descriptions;
 CREATE TABLE options_solver_descriptions (
     solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    solver VARCHAR(32),
-    description VARCHAR(128),
-    UNIQUE (solver_options_id, solver)
+    name VARCHAR(32),
+    description VARCHAR(128)
 );
 
 DROP TABLE IF EXISTS options_solver_values;
@@ -3620,6 +3627,6 @@ CREATE TABLE options_solver_values (
     solver_option_name VARCHAR(32),
     solver_option_value FLOAT,
     PRIMARY KEY (solver_options_id, solver, solver_option_name),
-    FOREIGN KEY (solver_options_id, solver)
-        REFERENCES options_solver_descriptions (solver_options_id, solver)
+    FOREIGN KEY (solver_options_id)
+        REFERENCES options_solver_descriptions (solver_options_id)
 );

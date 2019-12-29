@@ -5,6 +5,9 @@
 
   <h5 id="heading">{{scenarioName}} Input Data</h5>
 
+  <button id="downloadTableDataButtonTop" class="button-secondary"
+          (click)="downloadTableData()">Download Table Data</button>
+
   <table class="view-data-table">
     <caption>{{tableToShow.caption}}</caption>
   <tr>
@@ -22,7 +25,14 @@
   </ng-container>
   </table>
 
-  <button id="goBackButtonBottom" class="button-primary"
-        (click)="goBack()">Back</button>
+  <div class="text-left">
+    <button id="downloadTableDataButtonBottom" class="button-secondary"
+          (click)="downloadTableData()">Download Table Data</button>
+  </div>
+
+  <div class="text-left">
+    <button id="goBackButtonBottom" class="button-primary"
+          (click)="goBack()">Back</button>
+  </div>
 
 </div>
