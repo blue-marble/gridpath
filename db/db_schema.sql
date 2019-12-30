@@ -698,7 +698,7 @@ operational_type VARCHAR(32),
 balancing_type_project VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
-heat_rate_curves_scenario_id VARCHAR(64),  -- determined heat rate curve
+heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
 startup_cost_per_mw FLOAT,
@@ -749,7 +749,7 @@ FOREIGN KEY (operational_type) REFERENCES mod_operational_types
 DROP TABLE IF EXISTS subscenarios_project_heat_rate_curves;
 CREATE TABLE subscenarios_project_heat_rate_curves (
 project VARCHAR(32),
-heat_rate_curves_scenario_id,
+heat_rate_curves_scenario_id INTEGER,
 name VARCHAR(32),
 description VARCHAR(128),
 PRIMARY KEY (project, heat_rate_curves_scenario_id)
