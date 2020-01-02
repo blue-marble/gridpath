@@ -1,0 +1,9 @@
+temporal_scenario_id,subproblem_id,stage_id,timepoint,horizon,balancing_type_horizon
+3,1,1,20200101,202001,day
+3,1,1,20200102,202001,day
+3,1,1,20200103,202001,day
+3,1,1,20200104,202001,day
+3,1,1,20200201,202002,day
+3,1,1,20200202,202002,day
+3,1,1,20200203,202002,day
+3,1,1,20200204,202002,day
