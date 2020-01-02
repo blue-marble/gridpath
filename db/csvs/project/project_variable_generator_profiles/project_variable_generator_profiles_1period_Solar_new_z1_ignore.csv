@@ -1,0 +1,9 @@
+project,variable_generator_profile_scenario_id,stage_id,timepoint,cap_factor
+Solar_new_z1,1,1,20200101,0
+Solar_new_z1,1,1,20200102,0.4
+Solar_new_z1,1,1,20200103,0.4
+Solar_new_z1,1,1,20200104,0
+Solar_new_z1,1,1,20200201,0
+Solar_new_z1,1,1,20200202,0.45
+Solar_new_z1,1,1,20200203,0.45
+Solar_new_z1,1,1,20200204,0

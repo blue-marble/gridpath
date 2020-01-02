@@ -1,2 +1,2 @@
-solver_options_id,solver,description
+solver_options_id,name,description
 1,cplex,"cplex, barrier, 4 threads"

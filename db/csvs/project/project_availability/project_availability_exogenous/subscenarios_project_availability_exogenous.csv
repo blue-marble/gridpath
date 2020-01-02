@@ -1,2 +1,2 @@
 project,exogenous_availability_scenario_id,name,description,filename
-coal_existing,1,coal_exogenous_availability,coal exogenous availability,project_availability_exogenous_1
+Coal_z1,1,coal_exogenous_availability_2periods,coal exogenous availability 2 periods,project_availability_exogenous_2periods

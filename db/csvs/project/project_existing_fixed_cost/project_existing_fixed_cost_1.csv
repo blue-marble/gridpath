@@ -13,5 +13,5 @@ project_existing_fixed_cost_scenario_id,project,period,annual_fixed_cost_per_kw_
 1,Gas_CCGT_z2,2025,160,
 1,Nuclear_z2,2020,300,
 1,Nuclear_z2,2025,300,
-1,Battery_z2,2020,,100
-1,Battery_z2,2025,,100
+1,Battery_z2,2020,0,100
+1,Battery_z2,2025,0,100

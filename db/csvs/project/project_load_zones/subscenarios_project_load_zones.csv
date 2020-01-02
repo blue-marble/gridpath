@@ -1,3 +1,2 @@
 load_zone_scenario_id,project_load_zone_scenario_id,name,description,filename
-1,1,project_load_zones_1zone,Project load zones 1 zone,project_load_zones_1zone
-2,2,project_load_zones_2zones,Project load zones 2 zones,project_load_zones_2zones
+1,1,project_load_zones_2zones,Project load zones 2 zones,project_load_zones_2zones

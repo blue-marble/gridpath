@@ -324,6 +324,9 @@ if csv_data_master.loc[csv_data_master['table'] == 'transmission_load_zones', 'i
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_transmission_zones.load_transmission_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+# subscenario_input = csv_subscenario_input
+# data_input = csv_data_input
+
 ## LOAD TRANSMISSION OPERATIONAL CHARS ##
 if csv_data_master.loc[csv_data_master['table'] == 'transmission_operational_chars', 'include'].iloc[0] == 1:
     data_folder_path = os.path.join(folder_path, csv_data_master.loc[
@@ -344,10 +347,6 @@ if csv_data_master.loc[csv_data_master['table'] == 'transmission_hurdle_rates', 
         csv_data_master['table'] == 'transmission_hurdle_rates', 'path'].iloc[0])
     (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
     load_transmission_hurdle_rates.load_transmission_hurdle_rates(io, c2, csv_subscenario_input, csv_data_input)
-
-# subscenario_input = csv_subscenario_input
-# data_input = csv_data_input
-
 
 #### LOAD SCENARIOS DATA ####
 if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:

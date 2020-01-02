@@ -91,10 +91,14 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
 
-        project_tmp_profiles_scenarios[prj] = dict()
+        # Check whether project key exists. This situation arises for project + subscenario id keys
+        if prj not in project_tmp_profiles_scenarios:
+            project_tmp_profiles_scenarios[prj] = dict()
         project_tmp_profiles_scenarios[prj][sc_id] = (sc_name, sc_description)
 
-        project_tmp_profiles[prj] = dict()
+        # Check whether project key exists. This situation arises for project + subscenario id keys
+        if prj not in project_tmp_profiles:
+            project_tmp_profiles[prj] = dict()
         project_tmp_profiles[prj][sc_id] = dict()
 
         project_tmp_profiles_by_project = data_input.loc[
@@ -133,10 +137,14 @@ def load_project_hydro_opchar(io, c, subscenario_input, data_input):
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
 
-        project_horizon_chars_scenarios[prj] = dict()
+        # Check whether project key exists. This situation arises for project + subscenario id keys
+        if prj not in project_horizon_chars_scenarios:
+            project_horizon_chars_scenarios[prj] = dict()
         project_horizon_chars_scenarios[prj][sc_id] = (sc_name, sc_description)
 
-        project_horizon_chars[prj] = dict()
+        # Check whether project key exists. This situation arises for project + subscenario id keys
+        if prj not in project_horizon_chars:
+            project_horizon_chars[prj] = dict()
         project_horizon_chars[prj][sc_id] = dict()
 
         project_horizon_chars_by_project = data_input.loc[

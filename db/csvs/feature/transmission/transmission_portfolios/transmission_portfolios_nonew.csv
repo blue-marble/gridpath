@@ -1,3 +1,2 @@
 transmission_portfolio_scenario_id,transmission_line,capacity_type
-2,Tx_1,tx_spec
-2,Tx_new,tx_new_lin
+1,Tx_1,tx_spec

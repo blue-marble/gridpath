@@ -1,0 +1,9 @@
+project,exogenous_availability_scenario_id,stage_id,timepoint,availability_derate
+Coal_z1,1,1,20200101,0.95
+Coal_z1,1,1,20200102,0.95
+Coal_z1,1,1,20200103,0.95
+Coal_z1,1,1,20200104,0.95
+Coal_z1,1,1,20200201,0.95
+Coal_z1,1,1,20200202,0.95
+Coal_z1,1,1,20200203,0.95
+Coal_z1,1,1,20200204,0.95
