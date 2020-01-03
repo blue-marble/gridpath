@@ -10,6 +10,8 @@ availability and operating characteristics of the generation infrastructure
 (e.g. an existing 500-MW coal plant with a specified heat rate), and the
 desired objective (e.g. minimize cost).
 
+.. _temporal-setup-section-ref:
+
 Temporal Setup
 ==============
 
@@ -164,6 +166,8 @@ constraint it contributes to. In addition, each project must be assigned a
 *capacity type*, an *availability type*, and an *operational type*. These
 types are described in more detail below.
 
+.. _project-capacity-type-section-ref:
+
 Project Capacity Types
 ----------------------
 Each project in GridPath must be assigned a *capacity type*. The *capacity
@@ -184,7 +188,7 @@ and will therefore not affect any of the optimization decisions.
 
 
 Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators with the same characteristics as
 *gen_ret_lin*, but whose fixed O&M cost can be avoided by 'retiring' them.
 The optimization can make the decision to retire generation in each study
@@ -195,7 +199,7 @@ a 500-MW generator). If retired, the annual fixed O&M cost of these projects
 is avoided in the objective function.
 
 Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This capacity type describes generators with the same characteristics as
 *gen_ret_lin*. However, retirement decisions are binary, i.e. the generator
 is either fully retired or not retired at all.
@@ -264,6 +268,8 @@ This capacity type describes a supply curve for new shiftable load capacity.
 This type is a custom implementation for GridPath projects in the California
 Integrated Resource Planning proceeding.
 
+
+.. _project-availability-type-section-ref:
 
 Project Availability Types
 --------------------------
@@ -388,7 +394,7 @@ startup and shutdown costs.
 
 
 Curtailable Hydro Generation (*gen_hydro*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation. These
 projects can vary power output between a minimum and maximum level specified
 for each horizon, and must produce a pre-specified amount of energy on each
@@ -397,8 +403,8 @@ curtailable hydro projects can be allowed to provide upward and/or downward
 reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
 Costs for this operational type include variable O&M costs.
 
-Non-Curtailable Hydro Generation (*gen_hydro_must_take)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation and is
 like the *gen_hydro* operational type except that curtailment is not
 allowed.
