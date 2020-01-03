@@ -9,7 +9,7 @@
     <div class="col-md-auto">
       <table class="status-table">
         <tr>
-        <th>Name</th>
+        <th>UI Status</th>
         <th>Status</th>
         </tr>
         <tr>
@@ -47,5 +47,37 @@
 
       </table>
     </div>
+
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
+        <th>Run Status</th>
+        <th>Number of Scenarios</th>
+        </tr>
+        <ng-container *ngFor="let status of scenarioRunStatus">
+          <tr>
+            <td>{{status[0]}}</td>
+            <td>{{status[1]}}</td>
+          </tr>
+        </ng-container>
+      </table>
+    </div>
+
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
+        <th>Validation Status</th>
+        <th>Number of Scenarios</th>
+        </tr>
+        <ng-container *ngFor="let status of scenarioValidationStatus">
+          <tr>
+            <td>{{status[0]}}</td>
+            <td>{{status[1]}}</td>
+          </tr>
+        </ng-container>
+      </table>
+    </div>
+
   </div>
+
 </div>

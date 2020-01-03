@@ -1,7 +1,8 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 # RESTful API api
-from ui.server.api.home import ServerStatus
+from ui.server.api.home import ServerStatus, ScenarioRunStatus, \
+  ScenarioValidationStatus
 from ui.server.api.scenario_detail import ScenarioDetailAPI
 from ui.server.api.scenario_results import \
   ScenarioResultsOptions, ScenarioResultsTable, \
@@ -26,7 +27,7 @@ def add_api_resources(api, db_path):
     add_scenario_results_resources(api=api, db_path=db_path)
     add_scenario_new_resources(api=api, db_path=db_path)
     add_scenario_inputs_resources(api=api, db_path=db_path)
-    add_home_resource(api=api)
+    add_home_resource(api=api, db_path=db_path)
     add_view_data_resources(api=api, db_path=db_path)
 
 
@@ -86,14 +87,29 @@ def add_scenario_inputs_resources(api, db_path):
     )
 
 
-def add_home_resource(api):
+def add_home_resource(api, db_path):
     """
     :param api:
+    :param db_path:
 
     Add API for the Angular 'home' component.
     """
     # Server status
     api.add_resource(ServerStatus, '/server-status')
+
+    # Scenario run status
+    api.add_resource(
+        ScenarioRunStatus,
+        '/run-status',
+        resource_class_kwargs={'db_path': db_path}
+    )
+
+    # Scenario validation status
+    api.add_resource(
+        ScenarioValidationStatus,
+        '/validation-status',
+        resource_class_kwargs={'db_path': db_path}
+    )
 
 
 def add_scenario_results_resources(api, db_path):

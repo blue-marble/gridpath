@@ -19,6 +19,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   databaseStatus: string;
   pythonStatus: string;
 
+  scenarioRunStatus: [][];
+  refreshRunStatus: any;
+
+  scenarioValidationStatus: [][];
+  refreshValidationStatus: any;
+
   constructor(
     private homeService: HomeService,
     private settingsService: SettingsService,
@@ -55,12 +61,25 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       }
     );
+
+    // Scenario run status
+    this.getScenarioRunStatus();
+    this.refreshRunStatus = setInterval(() => {
+        this.getScenarioRunStatus();
+    }, 5000);
+
+    // Scenario validation status
+    this.getScenarioValidationStatus();
+    this.refreshRunStatus = setInterval(() => {
+        this.getScenarioValidationStatus();
+    }, 5000);
   }
 
   ngOnDestroy() {
-    // Clear server status refresh interval (stop refreshing) on component
-    // destroy
+    // Clear status refresh intervals (stop refreshing) on component destroy
     clearInterval(this.refreshServerStatus);
+    clearInterval(this.refreshRunStatus);
+    clearInterval(this.refreshValidationStatus);
   }
 
   getServerStatus(): void {
@@ -96,5 +115,19 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.pythonStatus = settingsStatus;
       }
     );
+  }
+
+  getScenarioRunStatus(): void {
+    this.homeService.getRunStatus()
+      .subscribe(
+        status => this.scenarioRunStatus = status
+      );
+  }
+
+  getScenarioValidationStatus(): void {
+    this.homeService.getValidationStatus()
+      .subscribe(
+        status => this.scenarioValidationStatus = status
+      );
   }
 }
