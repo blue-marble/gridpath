@@ -26,9 +26,9 @@
         <ng-container *ngFor="let scenario of scenarios">
            <tr>
              <td>
-               <button class="button-primary">
-                  <a [routerLink]="['/scenario', scenario.id]">{{ scenario.name }}
-                  </a>
+               <button class="button-primary"
+                       (click)="navigateToScenario(scenario.id)">
+                  {{ scenario.name }}
                 </button>
              </td>
              <td [ngClass]="{
