@@ -159,14 +159,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM 
         (SELECT project
         FROM inputs_project_prm_zones
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}) as prj_tbl
+        WHERE project_prm_zone_scenario_id = {}) as prj_tbl
         LEFT OUTER JOIN 
         (SELECT project, contributes_to_elcc_surface
         FROM inputs_project_elcc_chars
         WHERE project_elcc_chars_scenario_id = {}) as contr_tbl
         USING (project);""".format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
@@ -181,13 +179,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (project)
         INNER JOIN inputs_temporal_periods
         USING (period)
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}
-        AND elcc_surface_scenario_id = {}
+        WHERE elcc_surface_scenario_id = {}
         AND project_portfolio_scenario_id = {}
         AND temporal_scenario_id = {};""".format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
-            subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
             subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID

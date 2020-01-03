@@ -109,8 +109,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         LEFT OUTER JOIN
             (SELECT transmission_line, load_zone_from, load_zone_to
             FROM inputs_transmission_load_zones
-            WHERE load_zone_scenario_id = {}
-            AND transmission_load_zone_scenario_id = {}) as tx_load_zones
+            WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
         USING (transmission_line)
         
         INNER JOIN
@@ -120,7 +119,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (transmission_line)
         
         WHERE transmission_portfolio_scenario_id = {};""".format(
-            subscenarios.LOAD_ZONE_SCENARIO_ID,
             subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
             subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID

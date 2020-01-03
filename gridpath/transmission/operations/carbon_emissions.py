@@ -186,9 +186,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         """SELECT transmission_line, carbon_cap_zone, import_direction,
         tx_co2_intensity_tons_per_mwh
         FROM inputs_transmission_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {}
-            AND transmission_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            WHERE transmission_carbon_cap_zone_scenario_id = {}""".format(
             subscenarios.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID
         )
     )

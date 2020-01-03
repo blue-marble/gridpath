@@ -128,9 +128,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_zones = c.execute(
         """SELECT project, carbon_cap_zone
         FROM inputs_project_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {}
-            AND project_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            WHERE project_carbon_cap_zone_scenario_id = {}""".format(
             subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
         )
     )
@@ -288,9 +286,7 @@ def process_results(db, c, subscenarios):
     project_zones = c.execute(
         """SELECT project, carbon_cap_zone
         FROM inputs_project_carbon_cap_zones
-            WHERE carbon_cap_zone_scenario_id = {}
-            AND project_carbon_cap_zone_scenario_id = {}""".format(
-            subscenarios.CARBON_CAP_ZONE_SCENARIO_ID,
+            WHERE project_carbon_cap_zone_scenario_id = {}""".format(
             subscenarios.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID
         )
     ).fetchall()

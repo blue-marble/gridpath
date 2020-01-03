@@ -139,10 +139,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM inputs_system_prm_zone_elcc_surface
         INNER JOIN inputs_temporal_periods
         USING (period)
-        WHERE prm_zone_scenario_id = {}
-        AND elcc_surface_scenario_id = {}
+        WHERE elcc_surface_scenario_id = {}
         AND temporal_scenario_id = {}""".format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.ELCC_SURFACE_SCENARIO_ID,
             subscenarios.TEMPORAL_SCENARIO_ID
         )

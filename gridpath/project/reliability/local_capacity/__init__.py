@@ -74,9 +74,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_zones = c.execute(
         """SELECT project, local_capacity_zone
         FROM inputs_project_local_capacity_zones
-        WHERE local_capacity_zone_scenario_id = {}
-        AND project_local_capacity_zone_scenario_id = {};""".format(
-            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
+        WHERE project_local_capacity_zone_scenario_id = {};""".format(
             subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID
         )
     )

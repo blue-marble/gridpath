@@ -110,14 +110,12 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM 
         (SELECT project
         FROM inputs_project_local_capacity_zones
-        WHERE local_capacity_zone_scenario_id = {}
-        AND project_local_capacity_zone_scenario_id = {}) as proj_tbl
+        WHERE project_local_capacity_zone_scenario_id = {}) as proj_tbl
         LEFT OUTER JOIN 
         (SELECT project, local_capacity_fraction
         FROM inputs_project_local_capacity_chars
         WHERE project_local_capacity_chars_scenario_id = {}) as frac_tbl
         USING (project);""".format(
-            subscenarios.LOCAL_CAPACITY_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID
         )
