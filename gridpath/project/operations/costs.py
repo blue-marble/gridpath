@@ -151,9 +151,6 @@ def add_model_components(m, d):
         Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
                    rule=startup_cost_rule)
 
-    # TODO: this looks like a bug -- this constraint is missing a negative
-    #  Needs to be:
-    #  Shutdown_Cost >= - Startup_Shutdown_Expression X shutdown_cost
     def shutdown_cost_rule(mod, g, tmp):
         """
         Shutdown expression is positive when more units were on in the previous
@@ -176,7 +173,7 @@ def add_model_components(m, d):
             return Constraint.Skip
         else:
             return mod.Shutdown_Cost[g, tmp] \
-                   >= mod.Startup_Shutdown_Expression[g, tmp] \
+                   >= - mod.Startup_Shutdown_Expression[g, tmp] \
                    * mod.shutdown_cost_per_mw[g]
 
     m.Shutdown_Cost_Constraint = Constraint(
