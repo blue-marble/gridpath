@@ -771,7 +771,7 @@ def import_module_specific_results_to_database(
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
-        table="project_dispatch_gen_hydro",
+        table="results_project_dispatch_gen_hydro",
         scenario_id=scenario_id, subproblem=subproblem, stage=stage
     )
 
