@@ -17,9 +17,8 @@
           <td [ngClass]="{
               'red' : serverStatus == 'down',
               'green' : serverStatus == 'running'
-           }">{{serverStatus}}</td>
-          <td><button id="checkServerStatusClick" class="button-secondary"
-              (click)="updateServerStatus()">Update server status</button></td>
+           }">{{serverStatus}}
+          </td>
         </tr>
         <tr>
           <td>GridPath Directory</td>

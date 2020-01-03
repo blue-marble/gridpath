@@ -12,8 +12,7 @@ export class HomeService {
 
   private statusURL = 'http://127.0.0.1:8080/server-status';
 
-  getScenarios(): Observable<string> {
-    console.log(this.http.get<string>(this.statusURL));
-    return(this.http.get<string>(this.statusURL))
+  getServerStatus(): Observable<string> {
+    return(this.http.get<string>(this.statusURL));
   }
 }
