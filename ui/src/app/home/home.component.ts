@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import {Component, OnInit, NgZone, OnDestroy} from '@angular/core';
 import { HomeService} from './home.service';
 import { SettingsService } from '../settings/settings.service';
 
@@ -10,9 +10,11 @@ const electron = ( window as any ).require('electron');
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
 
   serverStatus: string;
+  refreshServerStatus: any;
+
   directoryStatus: string;
   databaseStatus: string;
   pythonStatus: string;
@@ -24,8 +26,13 @@ export class HomeComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    // Get the server status
+    // Get the server status and refresh every 5 seconds
     this.getServerStatus();
+    this.refreshServerStatus = setInterval(() => {
+        this.getServerStatus();
+    }, 5000);
+
+    // Get setting status
     this.getDirectoryStatus();
     this.getDatabaseStatus();
     this.getPythonStatus();
@@ -50,9 +57,14 @@ export class HomeComponent implements OnInit {
     );
   }
 
+  ngOnDestroy() {
+    // Clear server status refresh interval (stop refreshing) on component
+    // destroy
+    clearInterval(this.refreshServerStatus);
+  }
+
   getServerStatus(): void {
-    console.log('Getting server status...');
-    this.homeService.getScenarios()
+    this.homeService.getServerStatus()
       .subscribe(
         status => this.serverStatus = status,
         error => {
@@ -60,11 +72,6 @@ export class HomeComponent implements OnInit {
           this.serverStatus = 'down';
         }
       );
-  }
-
-  updateServerStatus(): void {
-    console.log('Updating server status...');
-    this.getServerStatus();
   }
 
   getDirectoryStatus(): void {
