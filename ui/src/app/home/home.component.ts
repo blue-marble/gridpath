@@ -70,7 +70,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     // Scenario validation status
     this.getScenarioValidationStatus();
-    this.refreshRunStatus = setInterval(() => {
+    this.refreshValidationStatus = setInterval(() => {
         this.getScenarioValidationStatus();
     }, 5000);
   }
