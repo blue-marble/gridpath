@@ -1,4 +1,4 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import {Component, OnInit, NgZone, OnDestroy} from '@angular/core';
 import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
 
@@ -15,9 +15,10 @@ import {socketConnect} from '../app.component';
   styleUrls: ['./scenario-detail.component.css']
 })
 
-export class ScenarioDetailComponent implements OnInit {
+export class ScenarioDetailComponent implements OnInit, OnDestroy {
 
   scenarioDetail: ScenarioDetailAPI;
+  refreshScenarioDetail: any;
 
   // To disable runScenarioButton on click
   runScenarioClicked: boolean;
@@ -44,8 +45,17 @@ export class ScenarioDetailComponent implements OnInit {
     });
 
     this.scenarioDetail = {} as ScenarioDetailAPI;
-    // Get the scenario detail data
+    // Get the scenario detail data and refresh every 5 seconds
     this.getScenarioDetailAPI(this.scenarioID);
+    this.refreshScenarioDetail = setInterval(() => {
+        this.getScenarioDetailAPI(this.scenarioID);
+    }, 5000);
+  }
+
+  ngOnDestroy() {
+    // Clear scenario detail refresh intervals (stop refreshing) on component
+    // destroy
+    clearInterval(this.refreshScenarioDetail);
   }
 
   getScenarioDetailAPI(scenarioID): void {
