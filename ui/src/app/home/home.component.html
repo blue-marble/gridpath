@@ -23,7 +23,7 @@
         <tr>
           <td>GridPath Directory</td>
           <td [ngClass]="{
-              'orange' : directoryStatus == 'restart required',
+              'orangered' : directoryStatus == 'restart required',
               'red' : directoryStatus == 'not set',
               'green' : directoryStatus == 'set'
            }">{{directoryStatus}}</td>
@@ -31,7 +31,7 @@
         <tr>
           <td>GridPath Database</td>
           <td [ngClass]="{
-              'orange' : databaseStatus == 'restart required',
+              'orangered' : databaseStatus == 'restart required',
               'red' : databaseStatus == 'not set',
               'green' : databaseStatus == 'set'
            }">{{databaseStatus}}</td>
@@ -39,7 +39,7 @@
         <tr>
           <td>Python Directory</td>
           <td [ngClass]="{
-              'orange' : pythonStatus == 'restart required',
+              'orangered' : pythonStatus == 'restart required',
               'red' : pythonStatus == 'not set',
               'green' : pythonStatus == 'set'
            }">{{pythonStatus}}</td>
@@ -57,7 +57,11 @@
         <ng-container *ngFor="let status of scenarioRunStatus">
           <tr>
             <td>{{status[0]}}</td>
-            <td>{{status[1]}}</td>
+            <td [ngClass]="{
+              'orange' : status[0] == 'running',
+              'green' : status[0] == 'complete',
+              'red' : status[0] == 'run_error'
+           }">{{status[1]}}</td>
           </tr>
         </ng-container>
       </table>
@@ -72,7 +76,10 @@
         <ng-container *ngFor="let status of scenarioValidationStatus">
           <tr>
             <td>{{status[0]}}</td>
-            <td>{{status[1]}}</td>
+            <td [ngClass]="{
+              'green' : status[0] == 'valid',
+              'red' : status[0] == 'invalid'
+           }">{{status[1]}}</td>
           </tr>
         </ng-container>
       </table>
