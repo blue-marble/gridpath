@@ -23,7 +23,12 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     baseScenarioStartingValue: number,
     scenariosToCompareStartingValues: number[]
   };
-  allScenarios: {id: number, name: string}[];
+  allScenarios: {
+    id: number,
+    name: string,
+    validationStatus: string,
+    runStatus: string
+  }[];
 
   // Will be used to decide which plot options to show
   baseScenario: number;
@@ -94,7 +99,10 @@ export class ScenarioComparisonSelectComponent implements OnInit {
         // Get the scenarios
         for (const scenario of scenarios) {
           this.allScenarios.push(
-            {id: scenario.id, name: scenario.name}
+            { id: scenario.id,
+              name: scenario.name,
+              validationStatus: scenario.validationStatus,
+              runStatus: scenario.runStatus }
           );
         }
 
