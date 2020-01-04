@@ -16,21 +16,17 @@
   </div>
   <div class="row" id="table-row">
     <div class="col-md-auto">
-      <table class="scenarios-table">
+      <table class="scenario-detail">
       <tr>
-      <th>Scenario Name</th>
-      <th>Validation Status</th>
-      <th>Run Status</th>
-      <th>Results</th>
+        <th>Scenario</th>
+        <th>Validation Status</th>
+        <th>Run Status</th>
+        <th>Detail</th>
+        <th>Results</th>
       </tr>
         <ng-container *ngFor="let scenario of scenarios">
            <tr>
-             <td>
-               <button class="button-primary"
-                       (click)="navigateToScenario(scenario.id)">
-                  {{ scenario.name }}
-                </button>
-             </td>
+             <td>{{scenario.name}}</td>
              <td [ngClass]="{
               'green' : scenario.validationStatus == 'valid',
               'red' : scenario.validationStatus == 'invalid'
@@ -41,7 +37,13 @@
               'red' : scenario.runStatus == 'run_error'
            }">{{scenario.runStatus}}</td>
              <td>
-               <button class="button-primary"
+               <button class="button-secondary"
+                       (click)="navigateToScenario(scenario.id)">
+                  View Detail
+                </button>
+             </td>
+             <td>
+               <button class="button-secondary"
                        *ngIf="scenario.runStatus=='complete'">
                   <a [routerLink]="['/scenario', scenario.id, 'results']">View
                     Results
