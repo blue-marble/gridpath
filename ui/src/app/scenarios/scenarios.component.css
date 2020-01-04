@@ -1,20 +1,23 @@
 /* scenariosComponent's private CSS styles */
-.scenarios-table th {
+.scenario-detail th {
   background-color: midnightblue;
   color: white;
 }
 
-.scenarios-table th, td {
-  padding:5px;
-  text-align: left;
-  font-size: medium;
+.scenario-detail th, td {
+    padding: 5px;
+    text-align: left;
 }
 
-.scenarios-table tr:nth-child(odd) {
+.scenario-detail tr:nth-child(odd) {
   background-color: #f2f2f2;
 }
 
-.scenarios-table caption {
+.scenario-detail td:first-child {
+  background-color: lightsteelblue;
+}
+
+.scenario-detail caption {
   caption-side: top;
   font-weight: bold;
   text-align: left;
