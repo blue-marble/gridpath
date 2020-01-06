@@ -435,7 +435,7 @@ def add_module_specific_components(m, d):
                     tmp, mod.balancing_type_project[g]]]) \
                 * mod.DispBinCommit_Pmax_MW[
                     g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
-                + mod.Start_Binary[
+                + mod.Stop_Binary[
                     g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
                 * mod.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint[
                     g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]]
