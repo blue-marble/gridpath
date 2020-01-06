@@ -1,0 +1,10 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_startup_shutdown_rates3* #####
+
+### CAPACITY RESULTS ###
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                              Annual Energy (MWh)  % Total Power
+load_zone period technology                                     
+Zone1     2020   unspecified                136.0          100.0
