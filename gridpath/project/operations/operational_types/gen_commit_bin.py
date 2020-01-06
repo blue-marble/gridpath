@@ -293,6 +293,7 @@ def add_module_specific_components(m, d):
 
     # Constraints
 
+    # Startup power
     def max_startup_power_constraint_rule(mod, g, tmp):
         """
         Starting power is 0 when the unit is committed and must be less than or
@@ -310,6 +311,106 @@ def add_module_specific_components(m, d):
         rule=max_startup_power_constraint_rule
     )
 
+    def ramp_during_startup_constraint_rule(mod, g, tmp):
+        """
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        else:
+            return \
+                mod.Pstarting[g, tmp] - \
+                mod.Pstarting[g,
+                              mod.previous_timepoint[tmp,
+                                                     mod
+                                                     .balancing_type_project[g]
+                                                     ]
+                              ] \
+                <= mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g,
+                                                                        tmp]
+    m.DispBinCommit_Ramp_During_Startup_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_during_startup_constraint_rule
+    )
+
+    def increasing_startup_power_constraint_rule(mod, g, tmp):
+        """
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+
+        Pstarting[t] can only be less than Pstarting[t-1] in the starting
+        timepoint (when Pstarting is back at 0). This prevents situations in
+        which the model can abuse Pstarting by providing starting power in
+        some timepoints and then reducing power back to 0 without ever
+        committing the unit.
+        """
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        else:
+            return \
+                mod.Pstarting[g, tmp] - \
+                mod.Pstarting[g,
+                              mod.previous_timepoint[tmp,
+                                                     mod
+                                                     .balancing_type_project[g]
+                                                     ]
+                              ] \
+                >= - mod.Start_Binary[g, tmp] \
+                * mod.DispBinCommit_Pmin_MW[g, tmp]
+
+    m.DispBinCommit_Increasing_Startup_Power_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=increasing_startup_power_constraint_rule
+    )
+
+    def power_during_startup_constraint_rule(mod, g, tmp):
+        """
+        Pcommitted[t] - Pstarting[t - 1] <= (1 - Start[t]) x capacity \
+        + Start[t] x start_ramp_rate x capacity
+
+        with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        else:
+            return (mod.Commit_Binary[g, tmp]
+                    * mod.DispBinCommit_Pmin_MW[g, tmp]
+                    + mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
+                    ) \
+                + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp] \
+                - mod.Pstarting[g, mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]] \
+                <= \
+                (1 - mod.Start_Binary[g, tmp]) \
+                * mod.DispBinCommit_Pmax_MW[g, tmp] \
+                + mod.Start_Binary[g, tmp] \
+                * mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
+    m.DispBinCommit_Power_During_Startup_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=power_during_startup_constraint_rule
+    )
+
+    # Shutdown power
     def max_shutdown_power_constraint_rule(mod, g, tmp):
         """
         Shutdown power is 0 when the unit is committed and must be less than or
@@ -325,28 +426,6 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Max_Shutdown_Power_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=max_shutdown_power_constraint_rule
-    )
-
-    def ramp_during_startup_constraint_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        else:
-            return mod.Pstarting[g, tmp] - mod.Pstarting[g,
-                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                <= mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
-    m.DispBinCommit_Ramp_During_Startup_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_during_startup_constraint_rule
     )
 
     def ramp_during_shutdown_constraint_rule(mod, g, tmp):
@@ -372,43 +451,51 @@ def add_module_specific_components(m, d):
         rule=ramp_during_shutdown_constraint_rule
     )
 
-    def power_during_startup_constraint_rule(mod, g, tmp):
+    def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
         """
-        Pcommitted[t] - Pstarting[t - 1] <= (1 - Start[t]) x capacity \
-        + Start[t] x start_ramp_rate x capacity
 
-        with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
         :param mod:
         :param g:
         :param tmp:
         :return:
-        """
 
+        Pstopping[t] can only be less than Pstopping[t+1] if the unit stops
+        in t+1 (when Pstopping is back above 0). This prevents
+        situations in which the model can abuse Pstopping by providing
+        stopping power in some timepoints without previously having
+        committed the unit.
+        """
         if tmp == mod.first_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 == "linear":
             return Constraint.Skip
         else:
-            return (mod.Commit_Binary[g, tmp]
-                    * mod.DispBinCommit_Pmin_MW[g, tmp]
-                    + mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp])\
-                + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp] \
-                - mod.Pstarting[g, mod.previous_timepoint[
-                    tmp, mod.balancing_type_project[g]]] \
-                <= \
-                (1 - mod.Start_Binary[g, tmp]) \
-                * mod.DispBinCommit_Pmax_MW[g, tmp] \
-                + mod.Start_Binary[g, tmp] \
-                * mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
-    m.DispBinCommit_Power_During_Startup_Constraint = Constraint(
+            return \
+                mod.Pstopping[g, tmp] - \
+                mod.Pstopping[g,
+                              mod.next_timepoint[tmp,
+                                                 mod
+                                                 .balancing_type_project[g]
+                                                 ]
+                              ] \
+                >= \
+                - mod.Stop_Binary[g,
+                                  mod.next_timepoint[tmp,
+                                                     mod
+                                                     .balancing_type_project[g]
+                                                     ]
+                                  ] * \
+                mod.DispBinCommit_Pmin_MW[g, tmp]
+
+    m.DispBinCommit_Decreasing_Shutdown_Power_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=power_during_startup_constraint_rule
+        rule=decreasing_shutdown_power_constraint_rule
     )
 
     def power_during_shutdown_constraint_rule(mod, g, tmp):
         """
-        Pcommitted[t] - Pstopping[t + 1] <= (1 - Stop[t+1]) x capacity \
+        Pcommitted[t] - Pstopping[t+1] <= (1 - Stop[t+1]) x capacity \
         + Stop[t+1] x start_ramp_rate x capacity
 
         with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
@@ -426,7 +513,8 @@ def add_module_specific_components(m, d):
         else:
             return (mod.Commit_Binary[g, tmp]
                     * mod.DispBinCommit_Pmin_MW[g, tmp]
-                    + mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp])\
+                    + mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g,
+                                                                       tmp]) \
                 + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp] \
                 - mod.Pstopping[g, mod.next_timepoint[
                     tmp, mod.balancing_type_project[g]]] \
