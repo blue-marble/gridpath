@@ -348,10 +348,11 @@ def add_module_specific_components(m, d):
         :return:
 
         Pstarting[t] can only be less than Pstarting[t-1] in the starting
-        timepoint (when Pstarting is back at 0). This prevents situations in
-        which the model can abuse Pstarting by providing starting power in
-        some timepoints and then reducing power back to 0 without ever
-        committing the unit.
+        timepoint (when Pstarting is back at 0). In other words, Pstarting can
+        only decrease in the starting timepoint; in all other timepoints it
+        should increase or stay constant. This prevents situations in which the
+        model can abuse Pstarting by providing starting power in some timepoints
+        and then reducing power back to 0 without ever committing the unit.
         """
         if tmp == mod.first_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -377,7 +378,7 @@ def add_module_specific_components(m, d):
 
     def power_during_startup_constraint_rule(mod, g, tmp):
         """
-        Pcommitted[t] - Pstarting[t - 1] <= (1 - Start[t]) x capacity \
+        Pcommitted[t] - Pstarting[t-1] <= (1 - Start[t]) x capacity \
         + Start[t] x start_ramp_rate x capacity
 
         with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
@@ -460,10 +461,11 @@ def add_module_specific_components(m, d):
         :return:
 
         Pstopping[t] can only be less than Pstopping[t+1] if the unit stops
-        in t+1 (when Pstopping is back above 0). This prevents
-        situations in which the model can abuse Pstopping by providing
-        stopping power in some timepoints without previously having
-        committed the unit.
+        in t+1 (when Pstopping is back above 0). In other words, Pstopping can
+        only increase in the stopping timepoint; in all other timepoints it
+        should decrease or stay constant. This prevents situations in which the
+        model can abuse Pstopping by providing stopping power in some timepoints
+        without previously having committed the unit.
         """
         if tmp == mod.last_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
