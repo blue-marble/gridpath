@@ -844,8 +844,6 @@ def add_module_specific_components(m, d):
         rule=ramp_down_constraint_rule
     )
 
-    # TODO: don't allow new build or retirement of binary commit generators
-    #  or adjust fuel burn rule intercept to account for change in capacity
     def fuel_burn_constraint_rule(mod, g, tmp, s):
         """
         Fuel burn is set by piecewise linear representation of input/output
