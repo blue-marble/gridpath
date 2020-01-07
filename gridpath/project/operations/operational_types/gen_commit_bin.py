@@ -333,8 +333,10 @@ def add_module_specific_components(m, d):
                                                      .balancing_type_project[g]
                                                      ]
                               ] \
-                <= mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g,
-                                                                        tmp]
+                <= mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
+                    g, mod.previous_timepoint[tmp,
+                                              mod.balancing_type_project[g]]
+                ]
     m.DispBinCommit_Ramp_During_Startup_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_during_startup_constraint_rule
@@ -405,7 +407,10 @@ def add_module_specific_components(m, d):
                 (1 - mod.Start_Binary[g, tmp]) \
                 * mod.DispBinCommit_Pmax_MW[g, tmp] \
                 + mod.Start_Binary[g, tmp] \
-                * mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[g, tmp]
+                * mod.DispBinCommit_Startup_Ramp_Rate_MW_Per_Timepoint[
+                    g, mod.previous_timepoint[tmp,
+                                              mod.balancing_type_project[g]]
+                ]
     m.DispBinCommit_Power_During_Startup_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=power_during_startup_constraint_rule
@@ -446,7 +451,10 @@ def add_module_specific_components(m, d):
             return mod.Pstopping[g, mod.previous_timepoint[
                 tmp, mod.balancing_type_project[g]]] \
                 - mod.Pstopping[g, tmp] \
-                <= mod.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint[g, tmp]
+                <= mod.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint[
+                    g, mod.previous_timepoint[tmp,
+                                              mod.balancing_type_project[g]]
+                ]
     m.DispBinCommit_Ramp_During_Shutdown_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_during_shutdown_constraint_rule
@@ -527,8 +535,7 @@ def add_module_specific_components(m, d):
                     g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
                 + mod.Stop_Binary[
                     g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
-                * mod.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint[
-                    g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]]
+                * mod.DispBinCommit_Shutdown_Ramp_Rate_MW_Per_Timepoint[g, tmp]
     m.DispBinCommit_Power_During_Shutdown_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=power_during_shutdown_constraint_rule
