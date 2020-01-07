@@ -465,7 +465,7 @@ def add_module_specific_components(m, d):
         stopping power in some timepoints without previously having
         committed the unit.
         """
-        if tmp == mod.first_horizon_timepoint[
+        if tmp == mod.last_horizon_timepoint[
             mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
                 == "linear":
