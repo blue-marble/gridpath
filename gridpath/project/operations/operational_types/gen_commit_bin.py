@@ -590,12 +590,12 @@ def add_module_specific_components(m, d):
 
     def max_power_constraint_rule(mod, g, tmp):
         """
+        Power provision plus upward reserves shall not exceed maximum power.
         :param mod:
         :param g:
         :param tmp:
         :return:
         """
-        # Power provision plus upward reserves shall not exceed maximum power.
         return \
             (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
              + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
