@@ -1175,8 +1175,7 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
                          "load_zone", "power_mw", "committed_mw",
-                         "committed_units", "started_units", "stopped_units",
-                         "startup_power", "shutdown_power"
+                         "committed_units", "started_units", "stopped_units"
                          ])
 
         for (p, tmp) \
@@ -1197,14 +1196,10 @@ def export_module_specific_results(mod, d,
                 * value(mod.Commit_Binary[p, tmp]),
                 value(mod.Commit_Binary[p, tmp]),
                 value(mod.Start_Binary[p, tmp]),
-                value(mod.Stop_Binary[p, tmp]),
-                value(mod.Pstarting[p, tmp]),
-                value(mod.Pstopping[p, tmp])
-
+                value(mod.Stop_Binary[p, tmp])
             ])
 
 
-# TODO: add Pstarting and Pstopping
 def import_module_specific_results_to_database(
         scenario_id, subproblem, stage, c, db, results_directory
 ):
