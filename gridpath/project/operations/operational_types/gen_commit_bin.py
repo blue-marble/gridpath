@@ -255,7 +255,6 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=ramp_down_rate_rule)
 
-    # Note: make sure to limit this to Pmax, otherwise max power rules break
     def startup_ramp_rate_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp] \
@@ -266,7 +265,6 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=startup_ramp_rate_rule)
 
-    # Note: make sure to limit this to Pmax, otherwise max power rules break
     def shutdown_ramp_rate_rule(mod, g, tmp):
         return mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp] \
@@ -296,8 +294,8 @@ def add_module_specific_components(m, d):
     # Startup power
     def max_startup_power_constraint_rule(mod, g, tmp):
         """
-        Starting power is 0 when the unit is committed and must be less than or
-        equal to pmin when not committed
+        Startup power is 0 when the unit is committed and must be less than or
+        equal to the minimum stable level when not committed.
         :param mod:
         :param g:
         :param tmp:
@@ -314,6 +312,13 @@ def add_module_specific_components(m, d):
 
     def ramp_during_startup_constraint_rule(mod, g, tmp):
         """
+        The difference between startup power of consecutive timepoints has to
+        obey startup ramp up rates.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -381,10 +386,26 @@ def add_module_specific_components(m, d):
 
     def power_during_startup_constraint_rule(mod, g, tmp):
         """
-        Pcommitted[t] - DispBinCommit_Pstarting_MW[t-1] <= (1 - Start[t]) x capacity \
-        + Start[t] x start_ramp_rate x capacity
+        Power provision in the start timepoint (i.e. the timepoint when the unit
+        is first committed) is constrained by the startup ramp rate (adjusted
+        for timepoint duration).
 
-        with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
+        In other words, to provide 'committed' power in the start timepoint, we
+        need to have provided startup power in the previous timepoint, which
+        will in turn set the whole startup trajectory based on the previous
+        constraints.
+
+        When we are not in the start timepoint, simply constrain power provision
+        by the capacity, which may not bind. To elaborate, when we are not in a
+        start timepoint, t-1 could have had:
+        1) the unit committed, meaning Pstarting[t-1]=0, resulting in
+        power provision <= capacity, or
+        2) the unit not committed, meaning that we are also not committed in t,
+        i.e. power provision[t]=0, resulting in -Pstarting[t-1] <= capacity
+
+        (Commit[t] x Pmin + P_above_Pmin[t]) - Pstarting[t-1]
+        <=
+        (1 - Start[t]) x Pmax + Start[t] x Startup_Ramp_Rate x Pmax
         :param mod:
         :param g:
         :param tmp:
@@ -421,7 +442,7 @@ def add_module_specific_components(m, d):
     def max_shutdown_power_constraint_rule(mod, g, tmp):
         """
         Shutdown power is 0 when the unit is committed and must be less than or
-        equal to pmin when not committed
+        equal to the minimum stable level when not committed
         :param mod:
         :param g:
         :param tmp:
@@ -438,6 +459,13 @@ def add_module_specific_components(m, d):
 
     def ramp_during_shutdown_constraint_rule(mod, g, tmp):
         """
+        The difference between shutdown power of consecutive timepoints has to
+        obey shutdown ramp up rates.
+
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
         :param mod:
         :param g:
         :param tmp:
@@ -506,10 +534,25 @@ def add_module_specific_components(m, d):
 
     def power_during_shutdown_constraint_rule(mod, g, tmp):
         """
-        Pcommitted[t] - DispBinCommit_Pstopping_MW[t+1] <= (1 - Stop[t+1]) x capacity \
-        + Stop[t+1] x start_ramp_rate x capacity
+        Power provision in the stop timepoint (i.e. the first timepoint the unit
+        is not committed after having been committed) is constrained by the
+        shutdown ramp rate (adjusted for timepoint duration).
 
-        with Pcommitted = Commit[t] x pmin + Pabovepmin[t]
+        In other words, to provide 'committed' power in the stop timepoint, we
+        need to provide shutdown power in the next timepoint, which will in turn
+        set the whole shutdown trajectory based on the previous constraints.
+
+        When we are not in the stop timepoint, simply constrain power provision
+        by the capacity, which may not bind. To elaborate, when we are not in a
+        stop timepoint, t+1 could have:
+        1) the unit committed, meaning Pstopping[t+1]=0, resulting in
+        power provision <= capacity, or
+        2) the unit not committed, meaning that we are also not committed in t
+        i.e. power provision[t]=0, resulting in -Pstopping[t+1] <= capacity
+
+        (Commit[t] x Pmin + P_above_Pmin[t]) - Pstopping[t+1]
+        <=
+        (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
         :param mod:
         :param g:
         :param tmp:
