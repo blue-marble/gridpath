@@ -1,3 +1,11 @@
+#################################
+GridPath Functionality - Advanced
+#################################
+
+This section contains the advanced documentation that is automatically generated
+from the documentation within each GridPath module.
+
+
 *******************
 Basic Functionality
 *******************

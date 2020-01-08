@@ -1,4 +1,8 @@
-======================================
+**************
+Using GridPath
+**************
+
+
 Running GridPath from the Command Line
 ======================================
 
@@ -62,7 +66,7 @@ solver, check the help menu::
     python run_scenario.py --help
 
 
-========
+
 Examples
 ========
 To run any of the problems in the *examples* directory, you also need
@@ -73,7 +77,6 @@ the *examples* directory, run the following::
     python run_scenario.py --scenario test --scenario_location ../examples
 
 
-========
 Workflow
 ========
 
