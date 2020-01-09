@@ -21,7 +21,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import get_db_parser, get_solve_parser, \
-    get_scenario_location_parser
+    get_scenario_location_parser, create_logs_directory_if_not_exists,\
+    Logging, determine_scenario_directory
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
 
@@ -104,6 +105,10 @@ def main(args=None):
     :param args:
     :return:
     """
+
+    # Get process ID
+    process_id = os.getpid()
+
     # Signal-handling directives
     signal.signal(signal.SIGTERM, sigterm_handler)
     signal.signal(signal.SIGINT, sigint_handler)
@@ -113,10 +118,34 @@ def main(args=None):
 
     parsed_args = parse_arguments(args)
 
+    # Log the run if requested
+    # If directed to do so, log e2e run
+    scenario_directory = determine_scenario_directory(
+        scenario_location=parsed_args.scenario_location,
+        scenario_name=parsed_args.scenario
+    )
+    if parsed_args.log:
+        logs_directory = create_logs_directory_if_not_exists(
+            scenario_directory=scenario_directory,
+            subproblem="", stage="")
+
+        # Save sys.stdout so we can return to it later
+        stdout_original = sys.stdout
+
+        # The print statement will call the write() method of any object
+        # you assign to sys.stdout (in this case the Logging object). The
+        # write method of Logging writes both to sys.stdout and a log file
+        # (see auxiliary/auxiliary.py)
+        sys.stdout = Logging(
+            logs_dir=logs_directory, e2e=True, process_id=process_id
+        )
+
+    print("Running scenario {} end to end".format(parsed_args.scenario))
+
     # Update run status to 'running'
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
-    # Get and record process ID
-    process_id = os.getpid()
+
+    # Record process ID in database
     print("Process ID is {}".format(process_id))
     record_process_id(parsed_args.database, parsed_args.scenario, process_id)
 
@@ -158,6 +187,13 @@ def main(args=None):
     # If we make it here, mark run as complete
     update_run_status(parsed_args.database, parsed_args.scenario, 2)
     # TODO: should the process ID be set back to NULL?
+
+    print("Done.")
+
+    # If logging, we need to return sys.stdout to original (i.e. stop writing
+    # to log file)
+    if parsed_args.log:
+        sys.stdout = stdout_original
 
 
 # TODO: need to make sure that the database can be closed properly, pending

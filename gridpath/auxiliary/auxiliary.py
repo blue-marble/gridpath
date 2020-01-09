@@ -8,11 +8,8 @@ from __future__ import print_function
 
 
 from builtins import str
-from builtins import object
 import datetime
 from importlib import import_module
-import os.path
-import sys
 import pandas as pd
 
 from db.common_functions import spin_on_database_lock
@@ -221,57 +218,6 @@ def is_number(s):
         return True
     except ValueError:
         return False
-
-
-class Logging(object):
-    """
-    Log output to both standard output and a log file. This will be 
-    accomplished by assigning this class to sys.stdout.
-    """
-
-    def __init__(self, logs_dir):
-        """
-        Assign sys.stdout and a log file as output destinations
-
-        :param logs_dir: 
-        """
-        self.terminal = sys.stdout
-        self.log_file_path = \
-            os.path.join(
-                logs_dir, datetime.datetime.now().strftime(
-                                              '%Y-%m-%d_%H-%M-%S') + ".log"
-            )
-        self.log_file = open(self.log_file_path, "w", buffering=1)
-
-    def __getattr__(self, attr):
-        """
-        Default to sys.stdout when calling attributes for this class
-
-        :param attr: 
-        :return: 
-        """
-        return getattr(self.terminal, attr)
-
-    def write(self, message):
-        """
-        Output to both terminal and a log file. The print statement will
-        call the write() method of any object you assign to sys.stdout
-        (in this case the Logging object)
-
-        :param message: 
-        :return: 
-        """
-        self.terminal.write(message)
-        self.log_file.write(message)
-
-    def flush(self):
-        """
-        Flush both the terminal and the log file
-
-        :return: 
-        """
-        self.terminal.flush()
-        self.log_file.flush()
 
 
 # TODO: handle non-existing scenarios/scenario_ids

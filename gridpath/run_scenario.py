@@ -23,8 +23,8 @@ import sys
 import traceback
 
 from gridpath.common_functions import determine_scenario_directory, \
-    get_scenario_name_parser, get_scenario_location_parser, get_solve_parser
-from gridpath.auxiliary.auxiliary import Logging
+    get_scenario_name_parser, get_scenario_location_parser, get_solve_parser, \
+    create_logs_directory_if_not_exists, Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 
@@ -278,7 +278,9 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
         # you assign to sys.stdout (in this case the Logging object). The
         # write method of Logging writes both to sys.stdout and a log file
         # (see auxiliary/auxiliary.py)
-        sys.stdout = Logging(logs_dir=logs_directory)
+        sys.stdout = Logging(
+            logs_dir=logs_directory, e2e=False, process_id=None
+        )
 
     # If directed, set temporary file directory to be the logs directory
     # In conjunction with --keepfiles, this will write the solver solution
@@ -590,59 +592,6 @@ def solve(instance, parsed_arguments):
     # positives due to rounding errors larger than the default tolerance
     # of 1E-6.
     # log_infeasible_constraints(instance)
-
-
-def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
-    """
-    Create a logs directory if it doesn't exist already
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :return:
-    """
-    logs_directory = os.path.join(scenario_directory, subproblem, stage, "logs")
-    if not os.path.exists(logs_directory):
-        os.makedirs(logs_directory)
-    return logs_directory
-
-#
-# def log_run(scenario_directory, subproblem, stage, parsed_arguments):
-#     """
-#     :param scenario_directory:
-#     :param subproblem:
-#     :param stage:
-#     :param parsed_arguments:
-#     :return:
-#
-#     Log run output to a logs file and/or write temporary files in logs dir
-#     """
-#     logs_directory = os.path.join(scenario_directory, subproblem, stage,
-#                                   "logs")
-#
-#     if (not os.path.exists(logs_directory)) and \
-#             (parsed_arguments.write_solver_files_to_logs_dir or
-#              parsed_arguments.log):
-#         os.makedirs(logs_directory)
-#
-#     # Set temporary file directory to be the logs directory
-#     # In conjunction with --keepfiles, this will write the solver solution
-#     # files into the log directory (rather than a hidden temp folder).
-#     # Use the --symbolic argument as well for best debugging results
-#     if parsed_arguments.write_solver_files_to_logs_dir:
-#         TempfileManager.tempdir = logs_directory
-#     else:
-#         pass
-#
-#     # Log output to assigned destinations (terminal and a log file in the
-#     # logs directory) if directed to do so
-#     if parsed_arguments.log:
-#         sys.stdout = Logging(logs_dir=logs_directory)
-#         # The print statement will call the write() method of any object
-#         # you assign to sys.stdout (in this case the Logging object). The
-#         # write method of Logging writes both to sys.stdout and a log file
-#         # see auxiliary/axiliary.py
-#     else:
-#         pass
 
 
 def export_results(scenario_directory, subproblem, stage, instance,
