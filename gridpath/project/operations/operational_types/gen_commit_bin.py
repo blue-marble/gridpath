@@ -20,7 +20,7 @@ from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    setup_results_import
+    setup_results_import, check_req_prj_columns, write_validation_to_database
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
@@ -1362,3 +1362,221 @@ def import_module_specific_results_to_database(
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
 
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+
+    TODO: could add data type checking here
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    validation_results = []
+
+    # Get project inputs
+    c1 = conn.cursor()
+    projects = c1.execute(
+        """SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, operational_type,
+        min_stable_level, unit_size_mw,
+        startup_cost_per_mw, shutdown_cost_per_mw,
+        startup_fuel_mmbtu_per_mw,
+        startup_plus_ramp_up_rate,
+        shutdown_plus_ramp_down_rate,
+        min_up_time_hours, min_down_time_hours,
+        charging_efficiency, discharging_efficiency,
+        minimum_duration_hours
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}) as prj_chars
+        USING (project)
+        WHERE project_portfolio_scenario_id = {}
+        AND operational_type = '{}'""".format(
+            subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+            subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID,
+            "gen_commit_bin"
+        )
+    )
+
+    df = pd.DataFrame(
+        data=projects.fetchall(),
+        columns=[s[0] for s in projects.description]
+    )
+
+    # Get the number of hours in the timepoint (take min if it varies)
+    c2 = conn.cursor()
+    tmp_durations = c2.execute(
+        """SELECT number_of_hours_in_timepoint
+           FROM inputs_temporal_timepoints
+           WHERE temporal_scenario_id = {}
+           AND subproblem_id = {}
+           AND stage_id = {};""".format(
+            subscenarios.TEMPORAL_SCENARIO_ID,
+            subproblem,
+            stage
+        )
+    ).fetchall()
+    hrs_in_tmp = min(tmp_durations)
+
+    # Check that min stable level is specified
+    # (not all operational types require this input)
+    req_columns = [
+        "min_stable_level",
+    ]
+    validation_errors = check_req_prj_columns(df, req_columns, True,
+                                              "gen_commit_bin")
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Missing inputs",
+             error
+             )
+        )
+
+    # Check that there are no unexpected operational inputs
+    expected_na_columns = [
+        "unit_size_mw",
+        "charging_efficiency", "discharging_efficiency",
+        "minimum_duration_hours"
+    ]
+    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
+                                              "gen_commit_bin")
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Unexpected inputs",
+             error
+             )
+        )
+
+    # Check startup shutdown rate inputs
+    validation_errors = validate_startup_shutdown_rate_inputs(df, hrs_in_tmp)
+    for error in validation_errors:
+        validation_results.append(
+            (subscenarios.SCENARIO_ID,
+             subproblem,
+             stage,
+             __name__,
+             "PROJECT_OPERATIONAL_CHARS",
+             "inputs_project_operational_chars",
+             "Invalid startup/shutdown ramp inputs",
+             error
+             )
+        )
+
+    # Write all input validation errors to database
+    write_validation_to_database(validation_results, conn)
+
+
+def validate_startup_shutdown_rate_inputs(df, hrs_in_tmp):
+    """
+    TODO: add unittests for this function
+
+    TODO: additional checks:
+     - check for excessively slow startup ramps which would wrap around the
+       horizon and disallow any startups
+     - Check that non lin/bin commit types have no shutdown trajectories
+       --> ramp should be large enough (but check shouldn't be here!)
+
+    :param df: DataFrame with project_chars (see projects.tab)
+    :param hrs_in_tmp:
+    :return:
+    """
+
+    results = []
+
+    # 0. Prepare data frame
+
+    # Add missing columns and populate with defaults
+    if "min_down_time_hours" not in df.columns:
+        df["min_down_time_hours"] = 0
+    if "startup_plus_ramp_up_rate" not in df.columns:
+        df["startup_plus_ramp_up_rate"] = 1
+    if "shutdown_plus_ramp_down_rate" not in df.columns:
+        df["shutdown_plus_ramp_down_rate"] = 1
+    if "startup_fuel_mmbtu_per_mw" not in df.columns:
+        df["startup_fuel_mmbtu_per_mw"] = 0
+
+    # Replace any NA/None with defaults
+    df["min_down_time_hours"] = \
+        df["min_down_time_hours"].fillna(0)
+    df["startup_plus_ramp_up_rate"] = \
+        df["startup_plus_ramp_up_rate"].fillna(1)
+    df["shutdown_plus_ramp_down_rate"] = \
+        df["shutdown_plus_ramp_down_rate"].fillna(1)
+    df["startup_fuel_mmbtu_per_mw"] = \
+        df["startup_fuel_mmbtu_per_mw"].fillna(0)
+
+    # Calculate startup and shutdown duration
+    df["startup_duration"] = df["min_stable_level"] \
+        / df["startup_plus_ramp_up_rate"] / 60
+    df["shutdown_duration"] = df["min_stable_level"] \
+        / df["shutdown_plus_ramp_down_rate"] / 60
+    df["startup_plus_shutdown_duration"] = \
+        df["startup_duration"] + df["shutdown_duration"]
+
+    # 1. Calculate Masks (True/False Arrays)
+    trajectories_fit_mask = (df["startup_plus_shutdown_duration"]
+                             > df["min_down_time_hours"])
+    down_time_mask = df["min_down_time_hours"] > 0
+    ramp_rate_mask = ((df["startup_plus_ramp_up_rate"] < 1) |
+                      (df["shutdown_plus_ramp_down_rate"] < 1))
+    startup_fuel_mask = df["startup_fuel_mmbtu_per_mw"] > 0
+    startup_trajectory_mask = df["startup_duration"] > hrs_in_tmp
+    shutdown_trajectory_mask = df["shutdown_duration"] > hrs_in_tmp
+
+    # 2. Check startup and shutdown ramp duration fit within min down time
+    # (to avoid overlap of startup and shutdown trajectory)
+    # Invalid projects are projects with a non-fitting trajectory, with a
+    # specified down time and/or a specified startup or shutdown rate
+    # and at least a startup or shutdown trajectory (i.e. across multiple tmps)
+    invalids = (trajectories_fit_mask
+                & (down_time_mask | ramp_rate_mask)
+                & (startup_trajectory_mask | shutdown_trajectory_mask))
+    if invalids.any():
+        bad_projects = df[invalids]["project"]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Startup ramp duration plus shutdown ramp duration"
+            " should be less than the minimum down time. Make sure the minimum"
+            " down time is long enough to fit the trajectories!"
+            .format(print_bad_projects)
+        )
+
+    # 2. Check that startup fuel and startup trajectories are not combined
+    invalids = startup_fuel_mask & startup_trajectory_mask
+    if invalids.any():
+        bad_projects = df[invalids]["project"]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Cannot have both startup_fuel inputs and a startup "
+            "trajectory that takes multiple timepoints as this will double "
+            "count startup fuel consumption. Please adjust startup ramp rate or"
+            " startup fuel consumption inputs"
+            .format(print_bad_projects)
+        )
+
+    return results
