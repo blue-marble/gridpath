@@ -139,6 +139,52 @@ def add_module_specific_components(m, d):
         Param(m.DISPATCHABLE_BINARY_COMMIT_GENERATORS,
               within=NonNegativeReals, default=0)
 
+    def get_tmps_by_project_relevant_tmp(mod):
+        """
+        Get list of the possible startup timepoints indexed by project and
+        timepoint. For each (project and) timepoint, we list the startup
+        timepoint in which a startup would mean that the former timepoint is
+        part of a startup trajectory.
+
+        The tmp in the key is the "relevant timepoint" and the startup
+        timepoints in the list are the timepoints in which a start would mean
+        the relevant timepoint is part of a startup trajectory, and will
+        therefore have some starting power output and will be "synced" to the
+        system (the latter is used in the fuel burn intercept calculation)
+
+        Note: When determining relevant timepoints, the first relevant tmp is
+        the tmp itself. However, the unit is already committed during the
+        startup timepoint and will be counted as "synced" already, so we don't
+        need to include it in here.
+        """
+        result = {}
+
+        for (g, tmp) in mod.\
+                DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS:
+            startup_duration = \
+                mod.disp_binary_commit_min_stable_level_fraction[g] \
+                / mod.dispbincommit_startup_plus_ramp_up_rate[g] / 60
+            # Make sure there is a dict entry for each (g, tmp)
+            if (g, tmp) not in result.keys():
+                result[g, tmp] = []
+
+            # Skip first relevant timepoint which is *tmp* itself
+            for relevant_tmp in determine_relevant_timepoints(mod, g, tmp,
+                    startup_duration)[1:]:
+                # If we haven't run into this timepoint yet,
+                # this is the first possible startup timepoint
+                if (g, relevant_tmp) not in result.keys():
+                    result[g, relevant_tmp] = [tmp]
+                # If we've seen this relevant timepoint and before,
+                # append to our list of possible startup timepoints
+                else:
+                    result[g, relevant_tmp].append(tmp)
+        return result
+    m.tmps_by_prj_reltmp = Param(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        initialize=get_tmps_by_project_relevant_tmp,
+    )
+
     # Variables - Binary
     m.Commit_Binary = Var(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
@@ -288,6 +334,48 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Downwards_Reserves_MW = Expression(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=downwards_reserve_rule)
+
+    def synced_units_rule(mod, g, tmp):
+        """
+        Returns 1 if the unit is synchronized to the system and providing power
+        (could be fully committed with controllable output, or during a startup
+        or shutdown trajectory), and 0 if not.
+
+        TODO: what if startup or shutdown takes longer (it could in theory)?
+         This rule assumes that we will only do startup or shutdown in the
+         shortest amount of time which you generally would. However, if it
+         does take longer, the unit won't be considered "synced" and the
+         intercept in the fuel burn rule won't be counted which could be an
+         incentive for it to take longer!
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        committed = mod.Commit_Binary[g, tmp]
+        starting = 0
+        stopping = 0
+
+        # Calculate whether unit is starting up
+        for stmp in mod.tmps_by_prj_reltmp[g, tmp]:
+            starting += mod.Start_Binary[g, stmp] \
+
+        # Calculate whether unit is shutting down
+        shutdown_duration = mod.disp_binary_commit_min_stable_level_fraction[g]\
+            / mod.dispbincommit_shutdown_plus_ramp_down_rate[g] / 60
+        # If unit is quick-shutdown, there won't be any tmps where unit is not
+        # committed but still providing shutdown power (i.e. a trajectory)
+        # Don't include last relevant tmp since unit is at zero at that point
+        if shutdown_duration > mod.number_of_hours_in_timepoint[tmp]:
+            for t in determine_relevant_timepoints(mod, g, tmp,
+                                                   shutdown_duration)[:-1]:
+                stopping += mod.Stop_Binary[g, t]
+
+        return committed + starting + stopping
+    m.DispBinCommit_Synced_Units = Expression(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=synced_units_rule
+    )
 
     # Constraints
 
@@ -918,7 +1006,7 @@ def add_module_specific_components(m, d):
             * mod.Provide_Power_DispBinaryCommit_MW[g, tmp] \
             + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
             * mod.Availability_Derate[g, tmp] \
-            * mod.Commit_Binary[g, tmp]
+            * mod.DispBinCommit_Synced_Units[g, tmp]
     m.Fuel_Burn_DispBinCommit_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
         rule=fuel_burn_constraint_rule
@@ -1226,7 +1314,8 @@ def export_module_specific_results(mod, d,
                          "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint", "technology",
                          "load_zone", "power_mw", "committed_mw",
-                         "committed_units", "started_units", "stopped_units"
+                         "committed_units", "started_units", "stopped_units",
+                         "synced_units"
                          ])
 
         for (p, tmp) \
@@ -1247,7 +1336,8 @@ def export_module_specific_results(mod, d,
                 * value(mod.Commit_Binary[p, tmp]),
                 value(mod.Commit_Binary[p, tmp]),
                 value(mod.Start_Binary[p, tmp]),
-                value(mod.Stop_Binary[p, tmp])
+                value(mod.Stop_Binary[p, tmp]),
+                value(mod.DispBinCommit_Synced_Units[p, tmp])
             ])
 
 
@@ -1295,13 +1385,15 @@ def import_module_specific_results_to_database(
             committed_units = row[11]
             started_units = row[12]
             stopped_units = row[13]
+            synced_units = row[14]
             
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                     balancing_type_project, horizon, timepoint,
                     timepoint_weight, number_of_hours_in_timepoint,
                     load_zone, technology, power_mw, committed_mw,
-                    committed_units, started_units, stopped_units)
+                    committed_units, started_units, stopped_units,
+                    synced_units)
             )
     insert_temp_sql ="""
         INSERT INTO temp_results_project_dispatch_binary_commit{}
@@ -1309,9 +1401,9 @@ def import_module_specific_results_to_database(
         balancing_type_project, horizon, timepoint,
         timepoint_weight, number_of_hours_in_timepoint, 
         load_zone, technology, power_mw, committed_mw, 
-        committed_units, started_units, stopped_units)
+        committed_units, started_units, stopped_units, synced_units)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?);
+        ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -1321,12 +1413,14 @@ def import_module_specific_results_to_database(
         (scenario_id, project, period, subproblem_id, stage_id, 
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units)
+        committed_mw, committed_units, started_units, stopped_units,
+        synced_units)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id,
         balancing_type_project, horizon, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units
+        committed_mw, committed_units, started_units, stopped_units,
+        synced_units
         FROM temp_results_project_dispatch_binary_commit{}
          ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)
