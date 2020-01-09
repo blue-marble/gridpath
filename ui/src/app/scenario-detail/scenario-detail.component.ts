@@ -8,8 +8,6 @@ import { ScenarioInputsService } from '../scenario-inputs/scenario-inputs.servic
 
 import {socketConnect} from '../app.component';
 
-const fs = ( window as any ).require('fs');
-
 
 @Component({
   selector: 'app-scenario-detail',
@@ -190,8 +188,7 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRunLog(): void {
-    const file = fs.readFileSync('/Users/ana/dev/gridpath_dev/scenarios/blah/test_log.log', 'utf8')
-    this.scenarioLog = file;
+    this.router.navigate(['/scenario', this.scenarioID, 'log']);
   }
 
   viewResults(): void {
