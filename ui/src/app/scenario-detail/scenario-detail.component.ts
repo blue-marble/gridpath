@@ -8,6 +8,8 @@ import { ScenarioInputsService } from '../scenario-inputs/scenario-inputs.servic
 
 import {socketConnect} from '../app.component';
 
+const fs = ( window as any ).require('fs');
+
 
 @Component({
   selector: 'app-scenario-detail',
@@ -19,6 +21,8 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
 
   scenarioDetail: ScenarioDetailAPI;
   refreshScenarioDetail: any;
+
+  scenarioLog: string;
 
   // To disable runScenarioButton on click
   runScenarioClicked: boolean;
@@ -183,6 +187,11 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     };
     this.router.navigate(['/view-data', this.scenarioID],
       navigationExtras);
+  }
+
+  viewRunLog(): void {
+    const file = fs.readFileSync('/Users/ana/dev/gridpath_dev/scenarios/blah/test_log.log', 'utf8')
+    this.scenarioLog = file;
   }
 
   viewResults(): void {

@@ -27,6 +27,7 @@
     </div>
   </div>
 
+  <div class="with-newlines">{{scenarioLog}}</div>
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
@@ -89,6 +90,12 @@
             </button>
           </td>
           <td>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='running'"
+              (click)="viewRunLog()">
+              View Run Log
+            </button>
             <button
               class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='complete'"

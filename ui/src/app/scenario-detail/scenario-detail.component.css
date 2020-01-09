@@ -49,3 +49,7 @@
 .red {
   color: red;
 }
+
+.with-newlines {
+    white-space: pre-wrap;
+}
