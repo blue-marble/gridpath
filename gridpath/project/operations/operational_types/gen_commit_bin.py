@@ -154,8 +154,7 @@ def add_module_specific_components(m, d):
     :math:`Provide\_Power\_DispBinaryCommit\_MW_{bcg, tmp} \leq
     Commit\_MW_{bcg, tmp} \\times Capacity\_MW_{bcg,p}`
 
-    TODO: add documentation on all constraints
-
+    TODO: clean up or remove? --> wait for gen_commit_cap template
     """
     # Sets
     m.DISPATCHABLE_BINARY_COMMIT_GENERATORS = Set(
@@ -366,6 +365,40 @@ def add_module_specific_components(m, d):
         rule=downwards_reserve_rule)
 
     # Constraints
+    def binary_logic_constraint_rule(mod, g, tmp):
+        """
+        If commit status changes, unit is turning on or shutting down.
+        The *Start_Binary* variable is 1 for the first timepoint the unit is
+        committed after being offline; it will be able to provide power in that
+        timepoint. The *Stop_Binary* variable is 1 for the first timepoint the
+        unit is not committed after being online; it will not be able to
+        provide power in that timepoint.
+
+        Constraint (8) in Morales-Espana et al. (2013)
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+
+        # TODO: if we can link horizons, input commit from previous horizon's
+        #  last timepoint rather than skipping the constraint
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        else:
+           return mod.Commit_Binary[g, tmp] \
+                  - mod.Commit_Binary[
+                      g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                  == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
+
+    m.DispBinCommit_Binary_Logic_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=binary_logic_constraint_rule
+    )
+
     def synced_units_constraint_rule(mod, g, tmp):
         """
         Synced Units is 1 if the unit is committed, starting, or stopping and
@@ -384,6 +417,283 @@ def add_module_specific_components(m, d):
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=synced_units_constraint_rule
     )
+
+    def min_power_constraint_rule(mod, g, tmp):
+        """
+        Power minus downward services cannot be below minimum stable level.
+        This constraint is not in Morales-Espana et al. (2013) because they
+        don't look at downward reserves. In that case, enforcing
+        provide_power_above_pmin to be within NonNegativeReals is sufficient.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp] - \
+            mod.DispBinCommit_Downwards_Reserves_MW[g, tmp] \
+            >= 0
+
+    m.DispBinCommit_Min_Power_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_power_constraint_rule
+    )
+
+    def max_power_constraint_rule(mod, g, tmp):
+        """
+        Power provision plus upward reserves shall not exceed maximum power.
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        return \
+            (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
+             + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
+            <= \
+            (mod.DispBinCommit_Pmax_MW[g, tmp]
+             - mod.DispBinCommit_Pmin_MW[g, tmp]) \
+            * mod.Commit_Binary[g, tmp] \
+
+    m.DispBinCommit_Max_Power_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=max_power_constraint_rule
+    )
+
+    def min_up_time_constraint_rule(mod, g, tmp):
+        """
+        When units are started, they have to stay on for a minimum number
+        of hours described by the dispbincommit_min_up_time_hours parameter.
+        The constraint is enforced by ensuring that the binary commitment
+        is at least as large as the number of unit starts within min up time
+        hours.
+
+        We ensure a unit turned on less than the minimum up time ago is
+        still on in the current timepoint *tmp* by checking how much units
+        were turned on in each 'relevant' timepoint (i.e. a timepoint that
+        begins more than or equal to dispbincommit_min_up_time_hours ago
+        relative to the start of timepoint *tmp*) and then summing those
+        starts.
+
+        If using linear horizon boundaries, the constraint is skipped for all
+        timepoints less than min up time hours from the start of the timepoint's
+        horizon because the constraint for the first included timepoint
+        will sufficiently constrain the binary start variables of all the
+        timepoints before it.
+
+        Constraint (6) in Morales-Espana et al. (2013)
+
+        Example 1:
+          min_up_time = 4; tmps = [0,1,2,3];
+          hours_in_tmps = [1,3,1,1];
+          tmp = 2; relevant_tmps = [1,2]
+          --> if there is a start in tmp 1, you have to be committed in tmp 2
+          --> starts in all other tmps (incl. tmp 0) don't affect tmp 2
+        Example 2:
+          min_up_time = 4; tmps = [0,1,2,3];
+          hours_in_tmps = [1,4,1,1];
+          tmp = 2; relevant_tmps = [2]
+          --> start in t1 does not affect state of t2; tmp 1 is 4 hrs long
+          --> so even if you start in tmp 1 you can stop again in tmp 2
+          --> The constraint simply ensures that the unit is committed if
+          --> it is turned on.
+        Example 3:
+          min_up_time = 4; tmps = [0,1,2,3];
+          hours_in_tmps = [1,1,1,1];
+          tmp = 2; relevant_tmps = [0,1,2,3]
+          --> if there is a start in tmp 0, 1, 2, or 3, you have to be committed
+          --> in tmp 2. The unit either has to be on for all timepoints, or off
+          --> for all timepoints
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+
+        relevant_tmps = determine_relevant_timepoints(
+            mod, g, tmp, mod.dispbincommit_min_up_time_hours[g]
+        )
+
+        number_of_starts_min_up_time_or_less_hours_ago = \
+            sum(mod.Start_Binary[g, tp] for tp in relevant_tmps)
+
+        # If we've reached the first timepoint in linear boundary mode and
+        # the total duration of the relevant timepoints (which includes *tmp*)
+        # is less than the minimum up time, skip the constraint since the next
+        # timepoint's constraint will already cover these same timepoints.
+        # Don't skip if this timepoint is the last timepoint of the horizon
+        # (since there will be no next timepoint).
+        if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
+                and
+                relevant_tmps[-1]
+                == mod.first_horizon_timepoint[
+                    mod.horizon[tmp, mod.balancing_type_project[g]]]
+                and
+                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
+                < mod.dispbincommit_min_up_time_hours[g]
+                and
+                tmp != mod.last_horizon_timepoint[
+                    mod.horizon[tmp, mod.balancing_type_project[g]]]):
+            return Constraint.Skip
+        # Otherwise, if there was a start min_up_time or less ago, the unit has
+        # to remain committed.
+        else:
+            return mod.Commit_Binary[g, tmp] \
+                >= number_of_starts_min_up_time_or_less_hours_ago
+
+    m.DispBinCommit_Min_Up_Time_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_up_time_constraint_rule
+    )
+
+    def min_down_time_constraint_rule(mod, g, tmp):
+        """
+        When units are shut down, they have to stay off for a minimum number
+        of hours described by the dispbincommit_min_down_time_hours parameter.
+        The constraint is enforced by ensuring that (1-binary commitment)
+        is at least as large as the number of unit shutdowns within min down
+        time hours.
+
+        We ensure a unit shut down less than the minimum up time ago is
+        still off in the current timepoint *tmp* by checking how much units
+        were shut down in each 'relevant' timepoint (i.e. a timepoint that
+        begins more than or equal to dispbincommit_min_down_time_hours ago
+        relative to the start of timepoint *tmp*) and then summing those
+        shutdowns.
+
+        If using linear horizon boundaries, the constraint is skipped for all
+        timepoints less than min down time hours from the start of the
+        timepoint's horizon because the constraint for the first included
+        timepoint will sufficiently constrain the binary stop variables of all
+        the timepoints before it.
+
+        Constraint (7) in Morales-Espana et al. (2013)
+        """
+
+        relevant_tmps = determine_relevant_timepoints(
+            mod, g, tmp, mod.dispbincommit_min_down_time_hours[g]
+        )
+
+        number_of_stops_min_down_time_or_less_hours_ago = \
+            sum(mod.Stop_Binary[g, tp] for tp in relevant_tmps)
+
+        # If we've reached the first timepoint in linear boundary mode and
+        # the total duration of the relevant timepoints (which includes *tmp*)
+        # is less than the minimum down time, skip the constraint since the
+        # next timepoint's constraint will already cover these same timepoints.
+        # Don't skip if this timepoint is the last timepoint of the horizon
+        # (since there will be no next timepoint).
+        if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
+                and
+                relevant_tmps[-1]
+                == mod.first_horizon_timepoint[
+                    mod.horizon[tmp, mod.balancing_type_project[g]]]
+                and
+                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
+                < mod.dispbincommit_min_down_time_hours[g]
+                and
+                tmp != mod.last_horizon_timepoint[
+                    mod.horizon[tmp, mod.balancing_type_project[g]]]):
+            return Constraint.Skip
+        # Otherwise, if there was a shutdown min_down_time or less ago, the unit
+        # has to remain shut down.
+        else:
+            return 1 - mod.Commit_Binary[g, tmp] \
+                >= number_of_stops_min_down_time_or_less_hours_ago
+
+    m.DispBinCommit_Min_Down_Time_Constraint = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=min_down_time_constraint_rule
+    )
+
+    def ramp_up_constraint_rule(mod, g, tmp):
+        """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp up rates.
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
+        Constraint (12) in Morales-Espana et al. (2013)
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp up the full operable range between timepoints, constraint
+        # won't bind, so skip
+        elif (mod.dispbincommit_ramp_up_when_on_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+              >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
+                 + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
+                - \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                 - mod.DispBinCommit_Downwards_Reserves_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+                <= \
+                mod.DispBinCommit_Ramp_Up_Rate_MW_Per_Timepoint[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+
+    m.Ramp_Up_Constraint_DispBinaryCommit = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_up_constraint_rule
+    )
+
+    def ramp_down_constraint_rule(mod, g, tmp):
+        """
+        Difference between power generation of consecutive timepoints has to
+        obey ramp down rates.
+        We assume that a unit has to reach its setpoint at the start of the
+        timepoint; as such, the ramping between 2 timepoints is assumed to
+        take place during the duration of the first timepoint, and the
+        ramp rate is adjusted for the duration of the first timepoint.
+        Constraint (13) in Morales-Espana et al. (2013)
+        :param mod:
+        :param g:
+        :param tmp:
+        :return:
+        """
+        if tmp == mod.first_horizon_timepoint[
+            mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+                == "linear":
+            return Constraint.Skip
+        # If ramp rate limits, adjusted for timepoint duration, allow you to
+        # ramp down the full operable range between timepoints, constraint
+        # won't bind, so skip
+        elif (mod.dispbincommit_ramp_down_when_on_rate[g] * 60
+              * mod.number_of_hours_in_timepoint[
+                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+              >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
+            return Constraint.Skip
+        else:
+            return \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                 + mod.DispBinCommit_Upwards_Reserves_MW[
+                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+                - \
+                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
+                 - mod.DispBinCommit_Downwards_Reserves_MW[g, tmp]) \
+                <= mod.DispBinCommit_Ramp_Down_Rate_MW_Per_Timepoint[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+
+    m.Ramp_Down_Constraint_DispBinaryCommit = Constraint(
+        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+        rule=ramp_down_constraint_rule
+    )
+
 
     # Startup power
     def max_startup_power_constraint_rule(mod, g, tmp):
@@ -677,316 +987,6 @@ def add_module_specific_components(m, d):
     m.DispBinCommit_Power_During_Shutdown_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
         rule=power_during_shutdown_constraint_rule
-    )
-
-    def binary_logic_constraint_rule(mod, g, tmp):
-        """
-        If commit status changes, unit is turning on or shutting down.
-        The *Start_Binary* variable is 1 for the first timepoint the unit is
-        committed after being offline; it will be able to provide power in that
-        timepoint. The *Stop_Binary* variable is 1 for the first timepoint the
-        unit is not committed after being online; it will not be able to
-        provide power in that timepoint.
-
-        Constraint (8) in Morales-Espana et al. (2013)
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-
-        # TODO: if we can link horizons, input commit from previous horizon's
-        #  last timepoint rather than skipping the constraint
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        else:
-           return mod.Commit_Binary[g, tmp] \
-                  - mod.Commit_Binary[
-                      g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                  == mod.Start_Binary[g, tmp] - mod.Stop_Binary[g, tmp]
-
-    m.DispBinCommit_Binary_Logic_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=binary_logic_constraint_rule
-    )
-
-    def min_power_constraint_rule(mod, g, tmp):
-        """
-        Power minus downward services cannot be below minimum stable level.
-        This constraint is not in Morales-Espana et al. (2013) because they
-        don't look at downward reserves. In that case, enforcing
-        provide_power_above_pmin to be within NonNegativeReals is sufficient.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp] - \
-            mod.DispBinCommit_Downwards_Reserves_MW[g, tmp] \
-            >= 0
-
-    m.DispBinCommit_Min_Power_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=min_power_constraint_rule
-    )
-
-    def max_power_constraint_rule(mod, g, tmp):
-        """
-        Power provision plus upward reserves shall not exceed maximum power.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return \
-            (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
-             + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
-            <= \
-            (mod.DispBinCommit_Pmax_MW[g, tmp]
-             - mod.DispBinCommit_Pmin_MW[g, tmp]) \
-            * mod.Commit_Binary[g, tmp] \
-
-    m.DispBinCommit_Max_Power_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=max_power_constraint_rule
-    )
-
-    def min_up_time_constraint_rule(mod, g, tmp):
-        """
-        When units are started, they have to stay on for a minimum number
-        of hours described by the dispbincommit_min_up_time_hours parameter.
-        The constraint is enforced by ensuring that the binary commitment
-        is at least as large as the number of unit starts within min up time
-        hours.
-
-        We ensure a unit turned on less than the minimum up time ago is
-        still on in the current timepoint *tmp* by checking how much units
-        were turned on in each 'relevant' timepoint (i.e. a timepoint that
-        begins more than or equal to dispbincommit_min_up_time_hours ago
-        relative to the start of timepoint *tmp*) and then summing those
-        starts.
-
-        If using linear horizon boundaries, the constraint is skipped for all
-        timepoints less than min up time hours from the start of the timepoint's
-        horizon because the constraint for the first included timepoint
-        will sufficiently constrain the binary start variables of all the
-        timepoints before it.
-
-        Constraint (6) in Morales-Espana et al. (2013)
-
-        Example 1:
-          min_up_time = 4; tmps = [0,1,2,3];
-          hours_in_tmps = [1,3,1,1];
-          tmp = 2; relevant_tmps = [1,2]
-          --> if there is a start in tmp 1, you have to be committed in tmp 2
-          --> starts in all other tmps (incl. tmp 0) don't affect tmp 2
-        Example 2:
-          min_up_time = 4; tmps = [0,1,2,3];
-          hours_in_tmps = [1,4,1,1];
-          tmp = 2; relevant_tmps = [2]
-          --> start in t1 does not affect state of t2; tmp 1 is 4 hrs long
-          --> so even if you start in tmp 1 you can stop again in tmp 2
-          --> The constraint simply ensures that the unit is committed if
-          --> it is turned on.
-        Example 3:
-          min_up_time = 4; tmps = [0,1,2,3];
-          hours_in_tmps = [1,1,1,1];
-          tmp = 2; relevant_tmps = [0,1,2,3]
-          --> if there is a start in tmp 0, 1, 2, or 3, you have to be committed
-          --> in tmp 2. The unit either has to be on for all timepoints, or off
-          --> for all timepoints
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.dispbincommit_min_up_time_hours[g]
-        )
-
-        number_of_starts_min_up_time_or_less_hours_ago = \
-            sum(mod.Start_Binary[g, tp] for tp in relevant_tmps)
-
-        # If we've reached the first timepoint in linear boundary mode and
-        # the total duration of the relevant timepoints (which includes *tmp*)
-        # is less than the minimum up time, skip the constraint since the next
-        # timepoint's constraint will already cover these same timepoints.
-        # Don't skip if this timepoint is the last timepoint of the horizon
-        # (since there will be no next timepoint).
-        if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
-                and
-                relevant_tmps[-1]
-                == mod.first_horizon_timepoint[
-                    mod.horizon[tmp, mod.balancing_type_project[g]]]
-                and
-                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
-                < mod.dispbincommit_min_up_time_hours[g]
-                and
-                tmp != mod.last_horizon_timepoint[
-                    mod.horizon[tmp, mod.balancing_type_project[g]]]):
-            return Constraint.Skip
-        # Otherwise, if there was a start min_up_time or less ago, the unit has
-        # to remain committed.
-        else:
-            return mod.Commit_Binary[g, tmp] \
-                >= number_of_starts_min_up_time_or_less_hours_ago
-
-    m.DispBinCommit_Min_Up_Time_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=min_up_time_constraint_rule
-    )
-
-    def min_down_time_constraint_rule(mod, g, tmp):
-        """
-        When units are shut down, they have to stay off for a minimum number
-        of hours described by the dispbincommit_min_down_time_hours parameter.
-        The constraint is enforced by ensuring that (1-binary commitment)
-        is at least as large as the number of unit shutdowns within min down
-        time hours.
-
-        We ensure a unit shut down less than the minimum up time ago is
-        still off in the current timepoint *tmp* by checking how much units
-        were shut down in each 'relevant' timepoint (i.e. a timepoint that
-        begins more than or equal to dispbincommit_min_down_time_hours ago
-        relative to the start of timepoint *tmp*) and then summing those
-        shutdowns.
-
-        If using linear horizon boundaries, the constraint is skipped for all
-        timepoints less than min down time hours from the start of the
-        timepoint's horizon because the constraint for the first included
-        timepoint will sufficiently constrain the binary stop variables of all
-        the timepoints before it.
-
-        Constraint (7) in Morales-Espana et al. (2013)
-        """
-
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.dispbincommit_min_down_time_hours[g]
-        )
-
-        number_of_stops_min_down_time_or_less_hours_ago = \
-            sum(mod.Stop_Binary[g, tp] for tp in relevant_tmps)
-
-        # If we've reached the first timepoint in linear boundary mode and
-        # the total duration of the relevant timepoints (which includes *tmp*)
-        # is less than the minimum down time, skip the constraint since the
-        # next timepoint's constraint will already cover these same timepoints.
-        # Don't skip if this timepoint is the last timepoint of the horizon
-        # (since there will be no next timepoint).
-        if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
-                and
-                relevant_tmps[-1]
-                == mod.first_horizon_timepoint[
-                    mod.horizon[tmp, mod.balancing_type_project[g]]]
-                and
-                sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
-                < mod.dispbincommit_min_down_time_hours[g]
-                and
-                tmp != mod.last_horizon_timepoint[
-                    mod.horizon[tmp, mod.balancing_type_project[g]]]):
-            return Constraint.Skip
-        # Otherwise, if there was a shutdown min_down_time or less ago, the unit
-        # has to remain shut down.
-        else:
-            return 1 - mod.Commit_Binary[g, tmp] \
-                >= number_of_stops_min_down_time_or_less_hours_ago
-
-    m.DispBinCommit_Min_Down_Time_Constraint = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=min_down_time_constraint_rule
-    )
-
-    def ramp_up_constraint_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp up rates.
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
-        Constraint (12) in Morales-Espana et al. (2013)
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp up the full operable range between timepoints, constraint
-        # won't bind, so skip
-        elif (mod.dispbincommit_ramp_up_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-              >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
-            return Constraint.Skip
-        else:
-            return \
-                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
-                 + mod.DispBinCommit_Upwards_Reserves_MW[g, tmp]) \
-                - \
-                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
-                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                 - mod.DispBinCommit_Downwards_Reserves_MW[
-                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
-                <= \
-                mod.DispBinCommit_Ramp_Up_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-
-    m.Ramp_Up_Constraint_DispBinaryCommit = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_up_constraint_rule
-    )
-
-    def ramp_down_constraint_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints has to
-        obey ramp down rates.
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate is adjusted for the duration of the first timepoint.
-        Constraint (13) in Morales-Espana et al. (2013)
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp down the full operable range between timepoints, constraint
-        # won't bind, so skip
-        elif (mod.dispbincommit_ramp_down_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-              >= (1 - mod.disp_binary_commit_min_stable_level_fraction[g])):
-            return Constraint.Skip
-        else:
-            return \
-                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[
-                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                 + mod.DispBinCommit_Upwards_Reserves_MW[
-                     g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
-                - \
-                (mod.Provide_Power_Above_Pmin_DispBinaryCommit_MW[g, tmp]
-                 - mod.DispBinCommit_Downwards_Reserves_MW[g, tmp]) \
-                <= mod.DispBinCommit_Ramp_Down_Rate_MW_Per_Timepoint[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-
-    m.Ramp_Down_Constraint_DispBinaryCommit = Constraint(
-        m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=ramp_down_constraint_rule
     )
 
     def fuel_burn_constraint_rule(mod, g, tmp, s):
