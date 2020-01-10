@@ -14,6 +14,7 @@ from builtins import str
 from builtins import object
 import argparse
 from csv import reader, writer
+import datetime
 import os.path
 import pandas as pd
 from pyomo.environ import AbstractModel, Suffix, DataPortal, SolverFactory
@@ -279,7 +280,8 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
         # write method of Logging writes both to sys.stdout and a log file
         # (see auxiliary/auxiliary.py)
         sys.stdout = Logging(
-            logs_dir=logs_directory, e2e=False, process_id=None
+            logs_dir=logs_directory,
+            start_time=datetime.datetime.now(), e2e=False, process_id=None
         )
 
     # If directed, set temporary file directory to be the logs directory

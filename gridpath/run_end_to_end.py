@@ -143,7 +143,10 @@ def main(args=None):
         # write method of Logging writes both to sys.stdout and a log file
         # (see auxiliary/auxiliary.py)
         sys.stdout = Logging(
-            logs_dir=logs_directory, e2e=True, process_id=process_id
+            logs_dir=logs_directory,
+            start_time=start_time,
+            e2e=True,
+            process_id=process_id
         )
 
     print("Running scenario {} end to end".format(parsed_args.scenario))
@@ -153,6 +156,7 @@ def main(args=None):
 
     # Record process ID and process start time in database
     print("Process ID is {}".format(process_id))
+    print("End-to-end run started on {}".format(start_time))
     record_process_id_and_start_time(
         parsed_args.database, parsed_args.scenario, process_id, start_time
     )

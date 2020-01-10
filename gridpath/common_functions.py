@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
-import datetime
+
 import os.path
 import sys
 
@@ -182,7 +182,7 @@ class Logging(object):
     accomplished by assigning this class to sys.stdout.
     """
 
-    def __init__(self, logs_dir, e2e, process_id):
+    def __init__(self, logs_dir, start_time, e2e, process_id):
         """
         Assign sys.stdout and a log file as output destinations
 
@@ -199,7 +199,7 @@ class Logging(object):
                 os.path.join(
                     logs_dir,
                     "opt_{}.log".format(
-                        datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                        start_time.strftime('%Y-%m-%d_%H-%M-%S')
                     )
                 )
         else:
@@ -207,7 +207,7 @@ class Logging(object):
                 os.path.join(
                     logs_dir,
                     "e2e_{}_pid_{}.log".format(
-                        datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S'),
+                        start_time.strftime('%Y-%m-%d_%H-%M-%S'),
                         str(process_id)
                     )
                 )
