@@ -199,7 +199,7 @@ class Logging(object):
                 os.path.join(
                     logs_dir,
                     "opt_{}.log".format(
-                        start_time.strftime('%Y-%m-%d_%H-%M-%S')
+                        string_from_time(start_time)
                     )
                 )
         else:
@@ -207,7 +207,7 @@ class Logging(object):
                 os.path.join(
                     logs_dir,
                     "e2e_{}_pid_{}.log".format(
-                        start_time.strftime('%Y-%m-%d_%H-%M-%S'),
+                        string_from_time(start_time),
                         str(process_id)
                     )
                 )
@@ -243,3 +243,11 @@ class Logging(object):
         """
         self.terminal.flush()
         self.log_file.flush()
+
+
+def string_from_time(datetime_string):
+    """
+    :param datetime_string: datetime string
+    :return: formatted time string
+    """
+    return datetime_string.strftime('%Y-%m-%d_%H-%M-%S')

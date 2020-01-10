@@ -12,6 +12,7 @@ const fs = ( window as any ).require('fs');
 
 export class ScenarioRunLogComponent implements OnInit, OnDestroy {
 
+  logFilePath: string;
   scenarioLog: string;
   refreshLog: any;
 
@@ -20,10 +21,17 @@ export class ScenarioRunLogComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.scenarioLog = fs.readFileSync('/Users/ana/dev/gridpath_dev/scenarios/blah/test_log.log', 'utf8');
+    // Need to get the navigation extras from history (as the state is only
+    // available during navigation); we'll use these to change the behavior
+    // of the scenario name field
+    this.logFilePath = history.state.pathToLogFile;
 
+    console.log(this.logFilePath);
+
+    this.scenarioLog = fs.readFileSync(this.logFilePath, 'utf8');
     this.refreshLog = setInterval(() => {
-        this.scenarioLog = fs.readFileSync('/Users/ana/dev/gridpath_dev/scenarios/blah/test_log.log', 'utf8');;
+        this.scenarioLog = fs.readFileSync(
+          this.logFilePath, 'utf8');
     }, 5000);
   }
 

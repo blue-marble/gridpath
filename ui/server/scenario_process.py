@@ -55,21 +55,16 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
         run_gridpath_e2e_executable = \
             sys.executable[:-chars_to_remove] + "gridpath_run_e2e"
 
-        # TODO: consolidate with run_scenario.py logging
-        process_log_file = os.path.join(scenarios_directory, scenario_name, "test_log.log")
-        with open(process_log_file, "a") as f_out:
-          p = subprocess.Popen(
-              [run_gridpath_e2e_executable,
-               "--log",
-               "--database", db_path,
-               "--scenario", scenario_name,
-               "--scenario_location", scenarios_directory,
-               "--solver", solver["name"],
-               "--solver_executable", solver["executable"]],
-              shell=False,
-              stdout=f_out,
-              stderr=subprocess.STDOUT
-          )
+        p = subprocess.Popen(
+            [run_gridpath_e2e_executable,
+             "--log",
+             "--database", db_path,
+             "--scenario", scenario_name,
+             "--scenario_location", scenarios_directory,
+             "--solver", solver["name"],
+             "--solver_executable", solver["executable"]],
+            shell=False
+        )
 
         return p, scenario_id, scenario_name
 

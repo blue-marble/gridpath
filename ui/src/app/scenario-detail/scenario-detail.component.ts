@@ -2,6 +2,9 @@ import {Component, OnInit, NgZone, OnDestroy} from '@angular/core';
 import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
 
+const electron = ( window as any ).require('electron');
+const path = ( window as any ).require('path');
+
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
 import { ScenarioInputsService } from '../scenario-inputs/scenario-inputs.service';
@@ -188,7 +191,34 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRunLog(): void {
-    this.router.navigate(['/scenario', this.scenarioID, 'log']);
+
+    const logFile = `e2e_${this.scenarioDetail.runStartTime}_pid_${this.scenarioDetail.runPID}.log`;
+
+    // Ask Electron for any the current scenarios setting
+    electron.ipcRenderer.send('requestStoredSettings');
+    electron.ipcRenderer.on('sendStoredSettings',
+      (event, data) => {
+        const logFilePath = path.join(
+          data.currentScenariosDirectory.value,
+          this.scenarioDetail.scenarioName, 'logs', logFile
+        );
+
+        console.log(logFilePath);
+
+        const navigationExtras: NavigationExtras = {
+          state: {pathToLogFile: logFilePath}
+        };
+
+        this.zone.run(
+          () => {
+            this.router.navigate(
+              ['/scenario', this.scenarioID, 'log'],
+              navigationExtras
+              );
+          }
+        );
+        }
+    );
   }
 
   viewResults(): void {
