@@ -1493,8 +1493,6 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
 def validate_startup_shutdown_rate_inputs(df, hrs_in_tmp):
     """
-    TODO: add unittests for this function
-
     TODO: additional checks:
      - check for excessively slow startup ramps which would wrap around the
        horizon and disallow any startups

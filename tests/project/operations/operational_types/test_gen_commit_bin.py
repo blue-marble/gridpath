@@ -6,6 +6,7 @@ from __future__ import print_function
 from builtins import str
 from importlib import import_module
 import os.path
+import pandas as pd
 import sys
 import unittest
 
@@ -172,6 +173,91 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         }
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
+
+    def test_validate_startup_shutdown_rate_inputs(self):
+        """
+        Test input validation for startup and shutdown rates
+        :return:
+        """
+
+        df_columns = ["project", "min_stable_level"]
+        test_cases = {
+            # Make sure a case with only basic inputs doesn't throw errors
+            1: {"df": pd.DataFrame(
+                    columns=df_columns,
+                    data=[["ccgt", 0.6]]),
+                "result": []
+                },
+            # Make sure correct inputs don't throw errors
+            2: {"df": pd.DataFrame(
+                columns=df_columns + ["min_down_time_hours",
+                                      "startup_plus_ramp_up_rate",
+                                      "shutdown_plus_ramp_down_rate",
+                                      "startup_fuel_mmbtu_per_mw"],
+                data=[["ccgt", 0.6, 8, 0.00334, 0.00334, 0]]),
+                "result": []
+                },
+            # Make sure too short min down time is flagged
+            3: {"df": pd.DataFrame(
+                columns=df_columns + ["min_down_time_hours",
+                                      "startup_plus_ramp_up_rate",
+                                      "shutdown_plus_ramp_down_rate",
+                                      "startup_fuel_mmbtu_per_mw"],
+                data=[["ccgt", 0.6, 4, 0.00334, 0.00334, 0]]),
+                "result": ["Project(s) 'ccgt': Startup ramp duration plus shutdown ramp duration "
+                           "should be less than the minimum down time. Make sure the minimum "
+                           "down time is long enough to fit the trajectories!"]
+                },
+            # Make sure multiple projects get flagged correctly
+            4: {"df": pd.DataFrame(
+                columns=df_columns + ["min_down_time_hours",
+                                      "startup_plus_ramp_up_rate",
+                                      "shutdown_plus_ramp_down_rate",
+                                      "startup_fuel_mmbtu_per_mw"],
+                data=[["ccgt", 0.6, 4, 0.00334, 0.00334, 0],
+                      ["ccgt2", 0.6, 3, 0.003344, 0.003344, 0]]),
+                "result": ["Project(s) 'ccgt, ccgt2': Startup ramp duration plus shutdown ramp duration"
+                           " should be less than the minimum down time. Make sure the minimum"
+                           " down time is long enough to fit the trajectories!"]
+                },
+            # Make sure a startup trajectory without min down time gets flagged
+            5: {"df": pd.DataFrame(
+                columns=df_columns + ["startup_plus_ramp_up_rate"],
+                data=[["ccgt", 0.6, 0.00334]]),
+                "result": [
+                    "Project(s) 'ccgt': Startup ramp duration plus shutdown ramp duration "
+                    "should be less than the minimum down time. Make sure the minimum "
+                    "down time is long enough to fit the trajectories!"]
+                },
+            # Make sure quick-start units don't get flagged even if no min down
+            # time provided (defaults to zero)
+            6: {"df": pd.DataFrame(
+                columns=df_columns + ["startup_plus_ramp_up_rate"],
+                data=[["ccgt", 0.6, 0.012]]),
+                "result": []
+                },
+            # Make sure startup fuel + trajectory combination is flagged
+            7: {"df": pd.DataFrame(
+                columns=df_columns + ["min_down_time_hours",
+                                      "startup_plus_ramp_up_rate",
+                                      "shutdown_plus_ramp_down_rate",
+                                      "startup_fuel_mmbtu_per_mw"],
+                data=[["ccgt", 0.6, 8, 0.00334, 0.00334, 1]]),
+                "result": ["Project(s) 'ccgt': Cannot have both startup_fuel inputs and a startup "
+                           "trajectory that takes multiple timepoints as this will double "
+                           "count startup fuel consumption. Please adjust startup ramp rate or"
+                           " startup fuel consumption inputs"]
+                },
+        }
+
+        for test_case in test_cases.keys():
+            expected_list = test_cases[test_case]["result"]
+            actual_list = MODULE_BEING_TESTED.\
+                validate_startup_shutdown_rate_inputs(
+                    df=test_cases[test_case]["df"],
+                    hrs_in_tmp=1
+                )
+            self.assertListEqual(expected_list, actual_list)
 
 
 if __name__ == "__main__":
