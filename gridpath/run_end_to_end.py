@@ -13,6 +13,7 @@ The main() function of this script can also be called with the
 """
 
 from argparse import ArgumentParser
+import datetime
 import logging
 import os
 import signal
@@ -70,7 +71,7 @@ def update_run_status(db_path, scenario, status_id):
                           data=(status_id, scenario), many=False)
 
 
-def record_process_id(db_path, scenario, process_id):
+def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
     """
     :param db_path:
     :param scenario:
@@ -84,12 +85,16 @@ def record_process_id(db_path, scenario, process_id):
 
     sql = """
         UPDATE scenarios
-        SET run_process_id = ?
+        SET run_process_id = ?,
+        run_start_datetime = ?
         WHERE scenario_name = ?;
         """
 
-    spin_on_database_lock(conn=conn, cursor=c, sql=sql,
-                          data=(process_id, scenario), many=False)
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=sql,
+        data=(process_id, start_time, scenario),
+        many=False
+    )
 
 
 # TODO: add more run status types?
@@ -106,8 +111,9 @@ def main(args=None):
     :return:
     """
 
-    # Get process ID
+    # Get process ID and start_time
     process_id = os.getpid()
+    start_time = datetime.datetime.now()
 
     # Signal-handling directives
     signal.signal(signal.SIGTERM, sigterm_handler)
@@ -145,9 +151,11 @@ def main(args=None):
     # Update run status to 'running'
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
 
-    # Record process ID in database
+    # Record process ID and process start time in database
     print("Process ID is {}".format(process_id))
-    record_process_id(parsed_args.database, parsed_args.scenario, process_id)
+    record_process_id_and_start_time(
+        parsed_args.database, parsed_args.scenario, process_id, start_time
+    )
 
     try:
         get_scenario_inputs.main(args=args)
