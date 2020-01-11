@@ -1,4 +1,11 @@
-import {Component, OnInit, OnDestroy} from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ElementRef,
+  AfterViewInit
+} from '@angular/core';
 import {Location} from '@angular/common';
 
 const fs = ( window as any ).require('fs');
@@ -10,11 +17,13 @@ const fs = ( window as any ).require('fs');
 })
 
 
-export class ScenarioRunLogComponent implements OnInit, OnDestroy {
+export class ScenarioRunLogComponent implements OnInit, AfterViewInit, OnDestroy {
 
   logFilePath: string;
   scenarioLog: string;
   refreshLog: any;
+
+  @ViewChild('logDiv') logDiv: ElementRef;
 
   constructor(
     private location: Location
@@ -30,9 +39,29 @@ export class ScenarioRunLogComponent implements OnInit, OnDestroy {
 
     this.scenarioLog = fs.readFileSync(this.logFilePath, 'utf8');
     this.refreshLog = setInterval(() => {
+        const logDiv = document.getElementById('logDiv');
+        const isScrolledToBottom = logDiv.scrollHeight - logDiv.clientHeight <= logDiv.scrollTop + 1;
+        console.log(logDiv.scrollHeight - logDiv.clientHeight,  logDiv.scrollTop + 1);
         this.scenarioLog = fs.readFileSync(
-          this.logFilePath, 'utf8');
-    }, 5000);
+          this.logFilePath, 'utf8'
+        );
+        if (!isScrolledToBottom) {
+          logDiv.scrollTop = logDiv.scrollHeight - logDiv.clientHeight;
+        }
+        // const logDiv = document.getElementById('logDiv');
+        // logDiv.scrollTop = logDiv.scrollHeight;
+        // setTimeout(() => {
+        //   const logDiv = document.getElementById('main-div');
+        //   logDiv.scrollTop = logDiv.scrollHeight;
+        // }, 0);
+    }, 200);
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.logDiv.nativeElement.scrollTop = 9999999999;
+      }, 0
+    );
   }
 
   ngOnDestroy() {
