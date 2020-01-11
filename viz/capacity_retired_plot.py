@@ -23,7 +23,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser
+    get_parent_parser, get_tech_color_mapper
 
 
 def parse_arguments(arguments):
@@ -111,6 +111,8 @@ def main(args=None):
         script="capacity_retired_plot"
     )
 
+    color_mapper = get_tech_color_mapper(c)
+
     plot_title = \
         "Retired Capacity by Period - {} - Subproblem {} - Stage {}".format(
             parsed_args.load_zone,
@@ -140,6 +142,7 @@ def main(args=None):
         column_mapper={"capacity_mw": "Retired Capacity (MW)",
                        "period": "Period",
                        "technology": "Technology"},
+        color_mapper=color_mapper,
         ylimit=parsed_args.ylimit
     )
 

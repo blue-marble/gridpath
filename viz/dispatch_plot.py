@@ -25,7 +25,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_tech_color_mapper
 
 
 def parse_arguments(arguments):
@@ -383,6 +384,10 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     # Create data df
     # NOTE: can also do pd.DataFrame(power_by_tech)
     # NOTE: column order in this df sets the order for the chart/legend!
+    # TODO: get rid of hard-coding here and let tech order depend on specified
+    #  order in database table.
+    #  Storage might be tricky because we manipulate it! Simply remove negatives
+    #  for all teech?
     # Has to match tech color tech names at top of file
     df = pd.DataFrame(
         data={
@@ -452,11 +457,13 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, color_mapper={}, ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param color_mapper: optional dict that maps column names to colors. Colors
+        without specified color map will use default COLORS palette
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -473,7 +480,13 @@ def create_plot(df, title, ylimit=None):
     stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
 
     # Stacked Area Colors
-    colors = [COLORS[c] for c in stacked_cols]
+    colors = []
+    for tech in stacked_cols:
+        if tech in color_mapper:
+            colors.append(color_mapper[tech])
+        else:
+            colors.append(COLORS[tech])
+
     # Example using palettes
     #   from bokeh.palettes import d3
     #   colors = d3['Category20b'][len(stacked_cols)]
@@ -624,6 +637,8 @@ def main(args=None):
         script="dispatch_plot"
     )
 
+    color_mapper = get_tech_color_mapper(c)
+
     plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
         parsed_args.load_zone, parsed_args.horizon, parsed_args.stage)
     plot_name = "dispatchPlot-{}-{}".format(
@@ -640,7 +655,8 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
-        ylimit=parsed_args.ylimit
+        color_mapper=color_mapper,
+        ylimit=parsed_args.ylimit,
     )
 
     # Show plot in HTML browser file if requested

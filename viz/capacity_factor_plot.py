@@ -19,7 +19,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_tech_color_mapper
 
 
 def parse_arguments(arguments):
@@ -113,20 +114,30 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     return df
 
 
-def create_plot(df, title):
+def create_plot(df, title, color_mapper={}):
     """
 
     :param df:
     :param title: string, plot title
+    :param color_mapper: optional dict that maps column names to colors. Colors
+        without specified color map will use default palette
     :return:
     """
     # TODO: handle empty dataframe (will give bokeh warning)
 
     technologies = df["technology"].unique()
 
-    # Create a map between factor/technology and color.
-    colors = cividis(len(technologies))
-    colormap = {t: colors[i] for i, t in enumerate(technologies)}
+    # Create a map between factor (technology) and color.
+    techs_wo_colors = [t for t in technologies
+                       if t not in color_mapper.keys()]
+    default_cmap = dict(zip(techs_wo_colors,
+                            cividis(len(techs_wo_colors))))
+    colormap = {}
+    for t in technologies:
+        if t in color_mapper:
+            colormap[t] = color_mapper[t]
+        else:
+            colormap[t] = default_cmap[t]
 
     # Set up the figure
     plot = figure(
@@ -242,6 +253,8 @@ def main(args=None):
         script="capacity_factor_plot"
     )
 
+    color_mapper = get_tech_color_mapper(c)
+
     plot_title = "Capacity Factors by Period - {} - Stage {}".format(
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "CapFactorPlot-{}-{}".format(
@@ -257,6 +270,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        color_mapper=color_mapper
     )
 
     # Show plot in HTML browser file if requested

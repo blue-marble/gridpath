@@ -95,6 +95,28 @@ def get_parent_parser():
     return parser
 
 
+def get_tech_color_mapper(c):
+    """
+    Get the colors by technology as specified in the viz_tech_colors db table.
+
+    Note: by default this table will contain all technologies but won't have
+    any colors specified. Users can populate it through the User Interface.
+
+    TODO: do we want to only select active tech for scenario (not necessary?)
+    :param c:
+    :return:
+    """
+    colors = c.execute(
+        """
+        SELECT technology, color
+        FROM mod_viz_tech_colors
+        WHERE color is not NULL
+        """
+    ).fetchall()
+
+    return dict(colors)
+
+
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
                             group_column, column_mapper={}, color_mapper={},
                             ylimit=None):
@@ -165,7 +187,6 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     stacked_cols = list(df.columns)
 
     # Set up color scheme. Use cividis palette for unspecified colors
-    # colors = cividis(len(stacked_cols))
     unspecified_columns = [c for c in stacked_cols
                            if c not in color_mapper.keys()]
     unspecified_cmap = dict(zip(unspecified_columns,
