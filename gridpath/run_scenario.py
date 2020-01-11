@@ -749,6 +749,12 @@ def parse_arguments(args):
                  get_solve_parser()]
     )
 
+    # Flip order of argument groups so "required arguments" show first
+    # https://stackoverflow.com/questions/39047075/reorder-python-argparse-argument-groups
+    # Note: hacky fix; preferred answer of creating an explicit optional group
+    # doesn't work because we combine parsers here with the parents keyword
+    parser._action_groups.reverse()
+
     # Parse arguments
     # TODO: should we throw warning for unknown arguments (here and in the
     #  other scripts)? run_start_to_end does pass unknown arguments (e.g.

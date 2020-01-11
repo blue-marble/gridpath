@@ -77,8 +77,9 @@ def get_scenario_name_parser():
     """
 
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--scenario", required=True, type=str,
-                        help="Name of the scenario problem to solve.")
+    required = parser.add_argument_group('required arguments')
+    required.add_argument("--scenario", required=True, type=str,
+                          help="Name of the scenario problem to solve.")
 
     return parser
 
@@ -146,7 +147,7 @@ def get_solve_parser():
                              "for which you are providing an executable.")
     parser.add_argument("--mute_solver_output", default=False,
                         action="store_true",
-                        help="Don't print solver output if set to true.")
+                        help="Don't print solver output.")
     parser.add_argument("--write_solver_files_to_logs_dir", default=False,
                         action="store_true", help="Write the temporary "
                                                   "solver files to the logs "
