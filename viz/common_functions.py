@@ -96,7 +96,8 @@ def get_parent_parser():
 
 
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
-                            group_column, column_mapper={}, ylimit=None):
+                            group_column, column_mapper={}, color_mapper={},
+                            ylimit=None):
     """
     Create a stacked bar chart based on a DataFrame and the desired x-axis,
     y-axis, and group (category). Different groups/categories will be stacked.
@@ -123,9 +124,20 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     :param group_column:
     :param column_mapper: optional dict that maps columns names to cleaner
         labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
+    :param color_mapper: optional dict that maps column names to colors. Colors
+        without specified color map will use default palette
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
+
+    # for testing only
+    # color_mapper = {
+    #     "Battery": "#c9d9d3",
+    #     "Biomass": "#718dbf",
+    #     "Wind": 'red',
+    #     "Nuclear": 'green'
+    # }
+    # TODO: column_order = {}
 
     # Rename axis/group labels using mapper (if specified)
     for k, v in column_mapper.items():
@@ -152,8 +164,18 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     # Order of stacked_cols will define order of stacked areas in chart
     stacked_cols = list(df.columns)
 
-    # Stacked Area Colors
-    colors = cividis(len(stacked_cols))
+    # Set up color scheme. Use cividis palette for unspecified colors
+    # colors = cividis(len(stacked_cols))
+    unspecified_columns = [c for c in stacked_cols
+                           if c not in color_mapper.keys()]
+    unspecified_cmap = dict(zip(unspecified_columns,
+                                cividis(len(unspecified_columns))))
+    colors = []
+    for column in stacked_cols:
+        if column in color_mapper:
+            colors.append(color_mapper[column])
+        else:
+            colors.append(unspecified_cmap[column])
 
     # Set up the figure
     plot = figure(
