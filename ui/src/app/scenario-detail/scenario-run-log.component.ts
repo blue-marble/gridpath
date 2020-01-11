@@ -1,11 +1,4 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ViewChild,
-  ElementRef,
-  AfterViewInit
-} from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import {Location} from '@angular/common';
 
 const fs = ( window as any ).require('fs');
@@ -17,13 +10,14 @@ const fs = ( window as any ).require('fs');
 })
 
 
-export class ScenarioRunLogComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ScenarioRunLogComponent implements OnInit, OnDestroy {
 
   logFilePath: string;
   scenarioLog: string;
   refreshLog: any;
 
-  @ViewChild('logDiv') logDiv: ElementRef;
+  scrolling: boolean;
+  timeout: number;
 
   constructor(
     private location: Location
@@ -37,31 +31,28 @@ export class ScenarioRunLogComponent implements OnInit, AfterViewInit, OnDestroy
 
     console.log(this.logFilePath);
 
+    this.scrolling = false;
+    const logDiv = document.getElementById('logDiv');
+
     this.scenarioLog = fs.readFileSync(this.logFilePath, 'utf8');
     this.refreshLog = setInterval(() => {
-        const logDiv = document.getElementById('logDiv');
-        const isScrolledToBottom = logDiv.scrollHeight - logDiv.clientHeight <= logDiv.scrollTop + 1;
-        console.log(logDiv.scrollHeight - logDiv.clientHeight,  logDiv.scrollTop + 1);
-        this.scenarioLog = fs.readFileSync(
-          this.logFilePath, 'utf8'
-        );
-        if (!isScrolledToBottom) {
-          logDiv.scrollTop = logDiv.scrollHeight - logDiv.clientHeight;
-        }
-        // const logDiv = document.getElementById('logDiv');
-        // logDiv.scrollTop = logDiv.scrollHeight;
-        // setTimeout(() => {
-        //   const logDiv = document.getElementById('main-div');
-        //   logDiv.scrollTop = logDiv.scrollHeight;
-        // }, 0);
-    }, 200);
-  }
+      // Scroll to bottom
+      // https://stackoverflow.com/questions/18614301/keep-overflow-div-scrolled-to-bottom-unless-user-scrolls-up
 
-  ngAfterViewInit() {
-    setTimeout(() => {
-      this.logDiv.nativeElement.scrollTop = 9999999999;
-      }, 0
-    );
+      const isScrolledToBottom = logDiv.scrollHeight - logDiv.clientHeight > logDiv.scrollTop;
+      console.log(logDiv.scrollHeight - logDiv.clientHeight,  logDiv.scrollTop);
+
+      // Update data
+      this.scenarioLog = fs.readFileSync(
+        this.logFilePath, 'utf8'
+      );
+
+      // Scroll to bottom if the user is not currently scrolling
+      if (isScrolledToBottom && !this.scrolling) {
+        logDiv.scrollTop = logDiv.scrollHeight - logDiv.clientHeight;
+        this.scrolling = false;
+      }
+    }, 200);
   }
 
   ngOnDestroy() {
@@ -74,4 +65,11 @@ export class ScenarioRunLogComponent implements OnInit, AfterViewInit, OnDestroy
     this.location.back();
   }
 
+  onScroll(): void {
+    this.scrolling = true;
+    clearTimeout(this.timeout);
+    this.timeout = setTimeout( () => {
+      this.scrolling = false;
+    }, 10000);
+  }
 }

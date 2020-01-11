@@ -7,7 +7,10 @@
   </div>
   <div class="row">
     <div class="col-md-auto">
-      <div id="logDiv" class="white-space" style="overflow:auto">{{scenarioLog}}</div>
+      <div id="logDiv" class="white-space" style="overflow:auto"
+           (scroll)="onScroll()">
+        {{scenarioLog}}
+      </div>
     </div>
   </div>
 </div>
