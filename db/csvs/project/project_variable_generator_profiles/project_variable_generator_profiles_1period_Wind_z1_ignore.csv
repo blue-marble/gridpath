@@ -1,9 +1,0 @@
-project,variable_generator_profile_scenario_id,stage_id,timepoint,cap_factor
-Wind_z1,1,1,20200101,0.2
-Wind_z1,1,1,20200102,0.4
-Wind_z1,1,1,20200103,0.8
-Wind_z1,1,1,20200104,0.1
-Wind_z1,1,1,20200201,0.3
-Wind_z1,1,1,20200202,0.4
-Wind_z1,1,1,20200203,0.1
-Wind_z1,1,1,20200204,0.2

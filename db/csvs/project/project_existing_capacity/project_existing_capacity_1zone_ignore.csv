@@ -1,9 +1,0 @@
-project_existing_capacity_scenario_id,project,period,existing_capacity_mw,existing_capacity_mwh
-1,Coal_z1,2020,500,
-1,Gas_CCGT_z1,2020,200,
-1,Gas_CT_z1,2020,50,
-1,Wind_z1,2020,300,
-1,Hydro_z1,2020,100,
-1,Gas_CCGT_z2,2020,100,
-1,Nuclear_z2,2020,200,
-1,Battery_z2,2020,50,200
