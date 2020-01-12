@@ -9,7 +9,7 @@
     <div class="col-md-auto">
       <table class="status-table">
         <tr>
-        <th>Name</th>
+        <th>UI Status</th>
         <th>Status</th>
         </tr>
         <tr>
@@ -17,14 +17,13 @@
           <td [ngClass]="{
               'red' : serverStatus == 'down',
               'green' : serverStatus == 'running'
-           }">{{serverStatus}}</td>
-          <td><button id="checkServerStatusClick" class="button-secondary"
-              (click)="updateServerStatus()">Update server status</button></td>
+           }">{{serverStatus}}
+          </td>
         </tr>
         <tr>
           <td>GridPath Directory</td>
           <td [ngClass]="{
-              'orange' : directoryStatus == 'restart required',
+              'orangered' : directoryStatus == 'restart required',
               'red' : directoryStatus == 'not set',
               'green' : directoryStatus == 'set'
            }">{{directoryStatus}}</td>
@@ -32,7 +31,7 @@
         <tr>
           <td>GridPath Database</td>
           <td [ngClass]="{
-              'orange' : databaseStatus == 'restart required',
+              'orangered' : databaseStatus == 'restart required',
               'red' : databaseStatus == 'not set',
               'green' : databaseStatus == 'set'
            }">{{databaseStatus}}</td>
@@ -40,7 +39,7 @@
         <tr>
           <td>Python Directory</td>
           <td [ngClass]="{
-              'orange' : pythonStatus == 'restart required',
+              'orangered' : pythonStatus == 'restart required',
               'red' : pythonStatus == 'not set',
               'green' : pythonStatus == 'set'
            }">{{pythonStatus}}</td>
@@ -48,5 +47,44 @@
 
       </table>
     </div>
+
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
+        <th>Run Status</th>
+        <th>Number of Scenarios</th>
+        </tr>
+        <ng-container *ngFor="let status of scenarioRunStatus">
+          <tr>
+            <td>{{status[0]}}</td>
+            <td [ngClass]="{
+              'orange' : status[0] == 'running',
+              'green' : status[0] == 'complete',
+              'red' : status[0] == 'run_error'
+           }">{{status[1]}}</td>
+          </tr>
+        </ng-container>
+      </table>
+    </div>
+
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
+        <th>Validation Status</th>
+        <th>Number of Scenarios</th>
+        </tr>
+        <ng-container *ngFor="let status of scenarioValidationStatus">
+          <tr>
+            <td>{{status[0]}}</td>
+            <td [ngClass]="{
+              'green' : status[0] == 'valid',
+              'red' : status[0] == 'invalid'
+           }">{{status[1]}}</td>
+          </tr>
+        </ng-container>
+      </table>
+    </div>
+
   </div>
+
 </div>

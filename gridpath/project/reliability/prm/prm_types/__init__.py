@@ -138,15 +138,13 @@ def get_required_prm_type_modules(subscenarios, c):
             FROM 
             (SELECT project
             FROM inputs_project_prm_zones
-            WHERE prm_zone_scenario_id = {}
-            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
             LEFT OUTER JOIN 
             (SELECT project, prm_type
             FROM inputs_project_elcc_chars
             WHERE project_elcc_chars_scenario_id = {}
             AND prm_type IS NOT NULL) as prm_type_tbl
             USING (project);""".format(
-                subscenarios.PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
             )
@@ -222,10 +220,8 @@ def import_results_into_database(
     :return:
     """
 
-    (prm_zone_scenario_id, project_prm_zone_scenario_id,
-     project_elcc_chars_scenario_id) = c.execute(
-        """SELECT prm_zone_scenario_id, project_prm_zone_scenario_id, 
-        project_elcc_chars_scenario_id
+    (project_prm_zone_scenario_id, project_elcc_chars_scenario_id) = c.execute(
+        """SELECT project_prm_zone_scenario_id, project_elcc_chars_scenario_id
         FROM scenarios
         WHERE scenario_id = {}
         """.format(scenario_id)
@@ -240,15 +236,13 @@ def import_results_into_database(
             FROM 
             (SELECT project
             FROM inputs_project_prm_zones
-            WHERE prm_zone_scenario_id = {}
-            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
             LEFT OUTER JOIN 
             (SELECT project, prm_type
             FROM inputs_project_elcc_chars
             WHERE project_elcc_chars_scenario_id = {}
             AND prm_type IS NOT NULL) as prm_type_tbl
             USING (project);""".format(
-                prm_zone_scenario_id,
                 project_prm_zone_scenario_id,
                 project_elcc_chars_scenario_id
             )
@@ -288,15 +282,13 @@ def process_results(db, c, subscenarios):
             FROM 
             (SELECT project
             FROM inputs_project_prm_zones
-            WHERE prm_zone_scenario_id = {}
-            AND project_prm_zone_scenario_id = {}) as proj_tbl
+            WHERE project_prm_zone_scenario_id = {}) as proj_tbl
             LEFT OUTER JOIN 
             (SELECT project, prm_type
             FROM inputs_project_elcc_chars
             WHERE project_elcc_chars_scenario_id = {}
             AND prm_type IS NOT NULL) as prm_type_tbl
             USING (project);""".format(
-                subscenarios.PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
                 subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
             )

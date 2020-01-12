@@ -12,12 +12,14 @@ import { ViewDataComponent } from './view-data/view-data.component';
 import { ScenarioComparisonSelectComponent } from './scenario-comparison/scenario-comparison-select.component';
 import { ScenarioComparisonInputsComponent } from './scenario-comparison/scenario-comparison-inputs.component';
 import { ScenarioComparisonResultsComponent } from './scenario-comparison/scenario-comparison-results.component';
+import {ScenarioRunLogComponent} from './scenario-detail/scenario-run-log.component';
 
 const appRoutes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'scenarios', component: ScenariosComponent },
   { path: 'scenario/:id', component: ScenarioDetailComponent },
   { path: 'scenario/:id/results', component: ScenarioResultsComponent },
+  { path: 'scenario/:id/log', component: ScenarioRunLogComponent },
   { path: 'scenario-inputs/:id', component: ScenarioInputsComponent },
   { path: 'scenario-comparison/select', component: ScenarioComparisonSelectComponent },
   { path: 'scenario-comparison/inputs', component: ScenarioComparisonInputsComponent },

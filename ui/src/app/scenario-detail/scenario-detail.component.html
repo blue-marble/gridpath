@@ -84,11 +84,17 @@
             <button
               class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='complete'"
-              (click)="clearScenario(); runScenarioClicked = true">
+              (click)="clearScenario(); runScenarioClicked = false">
               Clear Scenario Results
             </button>
           </td>
           <td>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='running'"
+              (click)="viewRunLog()">
+              View Run Log
+            </button>
             <button
               class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='complete'"

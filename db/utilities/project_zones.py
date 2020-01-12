@@ -8,9 +8,9 @@ from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
+
 def project_load_zones(
         io, c,
-        load_zone_scenario_id,
         project_load_zone_scenario_id,
         scenario_name,
         scenario_description,
@@ -19,8 +19,7 @@ def project_load_zones(
     """
     Assign load zones to all projects
     :param io: 
-    :param c: 
-    :param load_zone_scenario_id: 
+    :param c:
     :param project_load_zone_scenario_id: 
     :param scenario_name: 
     :param scenario_description: 
@@ -31,13 +30,12 @@ def project_load_zones(
     print("project load zones")
 
     # Subscenarios
-    subs_data = [(load_zone_scenario_id, project_load_zone_scenario_id,
+    subs_data = [(project_load_zone_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
         INSERT INTO subscenarios_project_load_zones
-        (load_zone_scenario_id, project_load_zone_scenario_id, name,
-        description)
-        VALUES (?, ?, ?, ?);
+        (project_load_zone_scenario_id, name, description)
+        VALUES (?, ?, ?);
         """.format(
 
         )
@@ -47,15 +45,14 @@ def project_load_zones(
     inputs_data = []
     for p in list(project_load_zones.keys()):
         inputs_data.append(
-            (load_zone_scenario_id, project_load_zone_scenario_id,
+            (project_load_zone_scenario_id,
              p, project_load_zones[p])
         )
 
     inputs_sql = """
         INSERT INTO inputs_project_load_zones
-        (load_zone_scenario_id, project_load_zone_scenario_id, project, 
-        load_zone)
-        VALUES (?, ?, ?, ?);
+        (project_load_zone_scenario_id, project, load_zone)
+        VALUES (?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
@@ -70,11 +67,10 @@ def project_load_zones(
         lz = c.execute(
             """SELECT load_zone
             FROM inputs_project_load_zones
-            WHERE load_zone_scenario_id = ?
-            AND project_load_zone_scenario_id = ?
+            WHERE project_load_zone_scenario_id = ?
             AND project = ?;
         """,
-            (load_zone_scenario_id, project_load_zone_scenario_id, prj)
+            (project_load_zone_scenario_id, prj)
         ).fetchall()
 
         if lz is None:
@@ -85,7 +81,6 @@ def project_load_zones(
 def project_reserve_bas(
         io, c,
         reserve_type,
-        reserve_ba_scenario_id,
         project_reserve_scenario_id,
         scenario_name,
         scenario_description,
@@ -95,35 +90,31 @@ def project_reserve_bas(
     print("project " + reserve_type + " bas")
 
     # Subscenarios
-    subs_data = [(reserve_ba_scenario_id, project_reserve_scenario_id,
+    subs_data = [(project_reserve_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
         INSERT INTO subscenarios_project_{}_bas
-        ({}_ba_scenario_id, project_{}_ba_scenario_id, 
-        name, description)
-        VALUES (?, ?, ?, ?);
-        """.format(reserve_type, reserve_type, reserve_type)
+        (project_{}_ba_scenario_id, name, description)
+        VALUES (?, ?, ?);
+        """.format(reserve_type, reserve_type)
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Insert projects with BAs
     inputs_data = []
     for project in list(project_bas.keys()):
         inputs_data.append(
-            (reserve_ba_scenario_id, project_reserve_scenario_id,
-                project, project_bas[project])
+            (project_reserve_scenario_id, project, project_bas[project])
         )
     inputs_sql = """
         INSERT INTO inputs_project_{}_bas
-        ({}_ba_scenario_id, 
-        project_{}_ba_scenario_id, project, {}_ba)
-        VALUES (?, ?, ?, ?);
-        """.format(reserve_type, reserve_type, reserve_type, reserve_type)
+        (project_{}_ba_scenario_id, project, {}_ba)
+        VALUES (?, ?, ?);
+        """.format(reserve_type, reserve_type, reserve_type)
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 
 def project_policy_zones(
         io, c,
-        policy_zone_scenario_id,
         project_policy_zone_scenario_id,
         scenario_name,
         scenario_description,
@@ -134,8 +125,7 @@ def project_policy_zones(
     Can be used for RPS (rps), PRM (prm) and carbon cap (carbon_cap) policy 
     types.
     :param io: 
-    :param c: 
-    :param policy_zone_scenario_id: 
+    :param c:
     :param project_policy_zone_scenario_id: 
     :param scenario_name: 
     :param scenario_description: 
@@ -146,29 +136,26 @@ def project_policy_zones(
     print("project " + policy_type + " zones")
     
     # Subscenarios
-    subs_data = [(policy_zone_scenario_id, project_policy_zone_scenario_id,
+    subs_data = [(project_policy_zone_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
         INSERT INTO subscenarios_project_{}_zones
-        ({}_zone_scenario_id, project_{}_zone_scenario_id, name,
-        description)
-        VALUES (?, ?, ?, ?);
-        """.format(policy_type, policy_type, policy_type)
+        (project_{}_zone_scenario_id, name, description)
+        VALUES (?, ?, ?);
+        """.format(policy_type, policy_type)
     spin_on_database_lock(conn=io, cursor=c, sql=subs_sql, data=subs_data)
 
     # Project zones data
     inputs_data = []
     for project in list(project_zones.keys()):
         inputs_data.append(
-            (policy_zone_scenario_id, project_policy_zone_scenario_id,
-             project, project_zones[project])
+            (project_policy_zone_scenario_id, project, project_zones[project])
         )
     inputs_sql = """
         INSERT INTO inputs_project_{}_zones
-        ({}_zone_scenario_id, project_{}_zone_scenario_id, project, 
-        {}_zone)
-        VALUES (?, ?, ?, ?);
-        """.format(policy_type, policy_type, policy_type, policy_type)
+        (project_{}_zone_scenario_id, project, {}_zone)
+        VALUES (?, ?, ?);
+        """.format(policy_type, policy_type, policy_type)
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 
 

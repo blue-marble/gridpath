@@ -22,6 +22,8 @@
     <table class="scenario-detail">
     <tr>
       <th>Scenario</th>
+      <th>Validation Status</th>
+      <th>Run Status</th>
       <th>Choose Base Scenario</th>
       <th>Select Scenarios to Compare</th>
     </tr>
@@ -29,6 +31,15 @@
         *ngFor="let scenario of allScenarios; let i=index">
         <tr>
           <td>{{allScenarios[i].name}}</td>
+          <td [ngClass]="{
+              'green' : scenario.validationStatus == 'valid',
+              'red' : scenario.validationStatus == 'invalid'
+           }">{{scenario.validationStatus}}</td>
+          <td [ngClass]="{
+              'orange' : scenario.runStatus == 'running',
+              'green' : scenario.runStatus == 'complete',
+              'red' : scenario.runStatus == 'run_error'
+           }">{{scenario.runStatus}}</td>
           <td>
             <label>
               <input type="radio" formControlName="baseScenario"

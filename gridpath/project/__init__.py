@@ -205,8 +205,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         LEFT OUTER JOIN
         (SELECT project, load_zone
         FROM inputs_project_load_zones
-        WHERE load_zone_scenario_id = {}
-        AND project_load_zone_scenario_id = {}) as prj_load_zones
+        WHERE project_load_zone_scenario_id = {}) as prj_load_zones
         USING (project)
         LEFT OUTER JOIN
         (SELECT project, availability_type
@@ -230,7 +229,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         WHERE project_operational_chars_scenario_id = {}) as prj_chars
         USING (project)
         WHERE project_portfolio_scenario_id = {}""".format(
-            subscenarios.LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_LOAD_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_AVAILABILITY_SCENARIO_ID,
             subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,

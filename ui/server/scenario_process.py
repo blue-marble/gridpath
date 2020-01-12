@@ -54,6 +54,7 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
 
         run_gridpath_e2e_executable = \
             sys.executable[:-chars_to_remove] + "gridpath_run_e2e"
+
         p = subprocess.Popen(
             [run_gridpath_e2e_executable,
              "--log",
@@ -62,7 +63,8 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
              "--scenario_location", scenarios_directory,
              "--solver", solver["name"],
              "--solver_executable", solver["executable"]],
-            shell=False)
+            shell=False
+        )
 
         return p, scenario_id, scenario_name
 

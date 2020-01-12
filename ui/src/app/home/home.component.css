@@ -4,8 +4,12 @@
 .green {
   color: green
 }
-.orange {
+.orangered {
   color: orangered;
+}
+
+.orange {
+  color: orange;
 }
 
 .status-table th {

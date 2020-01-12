@@ -40,8 +40,7 @@ def get_required_capacity_type_modules(subscenarios, conn):
             LEFT OUTER JOIN
             (SELECT transmission_line, load_zone_from, load_zone_to
             FROM inputs_transmission_load_zones
-            WHERE load_zone_scenario_id = {}
-            AND transmission_load_zone_scenario_id = {}) as tx_load_zones
+            WHERE transmission_load_zone_scenario_id = {}) as tx_load_zones
             USING (transmission_line)
             INNER JOIN
             (SELECT transmission_line

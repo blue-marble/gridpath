@@ -1,6 +1,9 @@
-import { Component, OnInit, NgZone } from '@angular/core';
+import {Component, OnInit, NgZone, OnDestroy} from '@angular/core';
 import { Router, ActivatedRoute, NavigationExtras } from '@angular/router';
 import { Location } from '@angular/common';
+
+const electron = ( window as any ).require('electron');
+const path = ( window as any ).require('path');
 
 import { ScenarioDetailAPI } from './scenario-detail';
 import { ScenarioDetailService } from './scenario-detail.service';
@@ -15,9 +18,12 @@ import {socketConnect} from '../app.component';
   styleUrls: ['./scenario-detail.component.css']
 })
 
-export class ScenarioDetailComponent implements OnInit {
+export class ScenarioDetailComponent implements OnInit, OnDestroy {
 
   scenarioDetail: ScenarioDetailAPI;
+  refreshScenarioDetail: any;
+
+  scenarioLog: string;
 
   // To disable runScenarioButton on click
   runScenarioClicked: boolean;
@@ -44,8 +50,17 @@ export class ScenarioDetailComponent implements OnInit {
     });
 
     this.scenarioDetail = {} as ScenarioDetailAPI;
-    // Get the scenario detail data
+    // Get the scenario detail data and refresh every 5 seconds
     this.getScenarioDetailAPI(this.scenarioID);
+    this.refreshScenarioDetail = setInterval(() => {
+        this.getScenarioDetailAPI(this.scenarioID);
+    }, 5000);
+  }
+
+  ngOnDestroy() {
+    // Clear scenario detail refresh intervals (stop refreshing) on component
+    // destroy
+    clearInterval(this.refreshScenarioDetail);
   }
 
   getScenarioDetailAPI(scenarioID): void {
@@ -173,6 +188,37 @@ export class ScenarioDetailComponent implements OnInit {
     };
     this.router.navigate(['/view-data', this.scenarioID],
       navigationExtras);
+  }
+
+  viewRunLog(): void {
+
+    const logFile = `e2e_${this.scenarioDetail.runStartTime}_pid_${this.scenarioDetail.runPID}.log`;
+
+    // Ask Electron for any the current scenarios setting
+    electron.ipcRenderer.send('requestStoredSettings');
+    electron.ipcRenderer.on('sendStoredSettings',
+      (event, data) => {
+        const logFilePath = path.join(
+          data.currentScenariosDirectory.value,
+          this.scenarioDetail.scenarioName, 'logs', logFile
+        );
+
+        console.log(logFilePath);
+
+        const navigationExtras: NavigationExtras = {
+          state: {pathToLogFile: logFilePath}
+        };
+
+        this.zone.run(
+          () => {
+            this.router.navigate(
+              ['/scenario', this.scenarioID, 'log'],
+              navigationExtras
+              );
+          }
+        );
+        }
+    );
   }
 
   viewResults(): void {

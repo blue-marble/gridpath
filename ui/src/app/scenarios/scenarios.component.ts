@@ -1,5 +1,6 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy} from '@angular/core';
 import {ScenariosService} from './scenarios.service';
+import {Router} from '@angular/router';
 
 
 export class Scenario {
@@ -15,12 +16,14 @@ export class Scenario {
   styleUrls: ['./scenarios.component.css']
 })
 
-export class ScenariosComponent implements OnInit {
+export class ScenariosComponent implements OnInit, OnDestroy {
 
   scenarios: Scenario[];
+  refreshScenarios: any;
 
   constructor(
     private scenariosService: ScenariosService,
+    private router: Router
   ) {
     console.log('Constructing scenarios...');
   }
@@ -28,6 +31,14 @@ export class ScenariosComponent implements OnInit {
   ngOnInit() {
     console.log('Initializing scenarios...');
     this.getScenarios();
+    this.refreshScenarios = setInterval(() => {
+        this.getScenarios();
+    }, 5000);
+  }
+
+  ngOnDestroy() {
+    // Clear view refresh intervals (stop refreshing) on component destroy
+    clearInterval(this.refreshScenarios);
   }
 
   getScenarios(): void {
@@ -36,9 +47,13 @@ export class ScenariosComponent implements OnInit {
       .subscribe(scenarios => this.scenarios = scenarios);
   }
 
-  updateScenarios(event): void {
+  updateScenarios(): void {
     console.log('Updating scenarios...');
     this.getScenarios();
+  }
+
+  navigateToScenario(scenario): void {
+    this.router.navigate(['/scenario/', scenario]);
   }
 
 }

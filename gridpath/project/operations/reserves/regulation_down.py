@@ -157,9 +157,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     project_bas = c1.execute(
         """SELECT project, regulation_down_ba
         FROM inputs_project_regulation_down_bas
-            WHERE regulation_down_ba_scenario_id = {}
-            AND project_regulation_down_ba_scenario_id = {}""".format(
-            subscenarios.REGULATION_DOWN_BA_SCENARIO_ID,
+            WHERE project_regulation_down_ba_scenario_id = {}""".format(
             subscenarios.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID
         )
     )

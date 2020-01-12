@@ -76,15 +76,13 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM 
         (SELECT project, prm_zone
         FROM inputs_project_prm_zones
-        WHERE prm_zone_scenario_id = {}
-        AND project_prm_zone_scenario_id = {}) as prm_zone_tbl
+        WHERE project_prm_zone_scenario_id = {}) as prm_zone_tbl
         LEFT OUTER JOIN
         (SELECT project, prm_type
         FROM inputs_project_elcc_chars
         WHERE project_elcc_chars_scenario_id = {}) as prm_type_tbl
         USING (project)
         """.format(
-            subscenarios.PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_PRM_ZONE_SCENARIO_ID,
             subscenarios.PROJECT_ELCC_CHARS_SCENARIO_ID
         )
