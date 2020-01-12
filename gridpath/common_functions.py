@@ -2,6 +2,7 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 import os.path
+import sys
 
 from argparse import ArgumentParser
 
@@ -160,3 +161,94 @@ def get_solve_parser():
                         help="Flag for test suite runs. Results not saved.")
 
     return parser
+
+
+def create_logs_directory_if_not_exists(scenario_directory, subproblem, stage):
+    """
+    Create a logs directory if it doesn't exist already
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+    logs_directory = os.path.join(scenario_directory, subproblem, stage, "logs")
+    if not os.path.exists(logs_directory):
+        os.makedirs(logs_directory)
+    return logs_directory
+
+
+class Logging(object):
+    """
+    Log output to both standard output and a log file. This will be
+    accomplished by assigning this class to sys.stdout.
+    """
+
+    def __init__(self, logs_dir, start_time, e2e, process_id):
+        """
+        Assign sys.stdout and a log file as output destinations
+
+        :param logs_dir:
+        """
+        self.terminal = sys.stdout
+
+        # If logging only run_scenario, print to a file starting with opt_
+        # and the datetime
+        # If logging run_e2e, print to a file starting with e2e_, with the
+        # datetime, and the process ID
+        if not e2e:
+            self.log_file_path = \
+                os.path.join(
+                    logs_dir,
+                    "opt_{}.log".format(
+                        string_from_time(start_time)
+                    )
+                )
+        else:
+            self.log_file_path = \
+                os.path.join(
+                    logs_dir,
+                    "e2e_{}_pid_{}.log".format(
+                        string_from_time(start_time),
+                        str(process_id)
+                    )
+                )
+
+        self.log_file = open(self.log_file_path, "w", buffering=1)
+
+    def __getattr__(self, attr):
+        """
+        Default to sys.stdout when calling attributes for this class
+
+        :param attr:
+        :return:
+        """
+        return getattr(self.terminal, attr)
+
+    def write(self, message):
+        """
+        Output to both terminal and a log file. The print statement will
+        call the write() method of any object you assign to sys.stdout
+        (in this case the Logging object)
+
+        :param message:
+        :return:
+        """
+        self.terminal.write(message)
+        self.log_file.write(message)
+
+    def flush(self):
+        """
+        Flush both the terminal and the log file
+
+        :return:
+        """
+        self.terminal.flush()
+        self.log_file.flush()
+
+
+def string_from_time(datetime_string):
+    """
+    :param datetime_string: datetime string
+    :return: formatted time string
+    """
+    return datetime_string.strftime('%Y-%m-%d_%H-%M-%S')

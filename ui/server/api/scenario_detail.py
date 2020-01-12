@@ -1,8 +1,10 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
+import datetime
 from flask_restful import Resource
 
 from db.common_functions import connect_to_database
+from gridpath.common_functions import string_from_time
 from gridpath.auxiliary.scenario_chars import SolverOptions
 
 
@@ -22,9 +24,16 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api = dict()
 
         # Get the scenario name
-        [scenario_name, validation_status, run_status] = c.execute("""
-          SELECT scenario_name, validation_status, run_status
-          FROM scenarios_view 
+        [scenario_name, validation_status, run_status, run_process_id,
+         run_start_datetime] = c.execute("""
+          SELECT scenarios.scenario_name,
+            scenarios_view.validation_status,
+            scenarios_view.run_status,
+            scenarios.run_process_id, 
+            scenarios.run_start_datetime
+          FROM scenarios
+          JOIN scenarios_view
+            USING (scenario_id) 
           WHERE scenario_id = {}
           """.format(scenario_id)
         ).fetchone()
@@ -32,6 +41,14 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api["scenarioName"] = scenario_name
         scenario_detail_api["validationStatus"] = validation_status
         scenario_detail_api["runStatus"] = run_status
+        scenario_detail_api["scenarioName"] = scenario_name
+        scenario_detail_api["runPID"] = run_process_id
+        scenario_detail_api["runStartTime"] = \
+            string_from_time(
+                datetime.datetime.strptime(
+                  run_start_datetime, '%Y-%m-%d %H:%M:%S.%f'
+                )
+            )
 
         # TODO: should probably specify the default solver somewhere in the
         #  code and use that parameter here
