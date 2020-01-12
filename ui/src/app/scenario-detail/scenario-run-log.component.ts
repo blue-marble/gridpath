@@ -16,8 +16,12 @@ export class ScenarioRunLogComponent implements OnInit, OnDestroy {
   scenarioLog: string;
   refreshLog: any;
 
-  scrolling: boolean;
-  timeout: number;
+  // Will temporarily pause go-to-bottom-of-log functionality when scrolling
+  scrollingFlag: boolean;
+  scrollingFlagTimeout: number;
+
+  // User can enable/disable go-to-bottom-of-log functionality
+  goToBottomEnabled: boolean;
 
   constructor(
     private location: Location
@@ -29,35 +33,36 @@ export class ScenarioRunLogComponent implements OnInit, OnDestroy {
     // of the scenario name field
     this.logFilePath = history.state.pathToLogFile;
 
-    console.log(this.logFilePath);
+    this.goToBottomEnabled = true;
 
-    this.scrolling = false;
+    this.scrollingFlag = false;
     const logDiv = document.getElementById('logDiv');
 
     this.scenarioLog = fs.readFileSync(this.logFilePath, 'utf8');
     this.refreshLog = setInterval(() => {
-      // Scroll to bottom
+      // Automatic scroll to bottom based on:
       // https://stackoverflow.com/questions/18614301/keep-overflow-div-scrolled-to-bottom-unless-user-scrolls-up
 
       const isScrolledToBottom = logDiv.scrollHeight - logDiv.clientHeight > logDiv.scrollTop;
       console.log(logDiv.scrollHeight - logDiv.clientHeight,  logDiv.scrollTop);
 
-      // Update data
+      // Update log data
       this.scenarioLog = fs.readFileSync(
         this.logFilePath, 'utf8'
       );
 
-      // Scroll to bottom if the user is not currently scrolling
-      if (isScrolledToBottom && !this.scrolling) {
+      // Scroll to bottom if not currently scrolling (scrolling flag times out
+      // after a certain time (whether due to user scroll or programmatic
+      // scroll)
+      if (isScrolledToBottom && !this.scrollingFlag && this.goToBottomEnabled) {
         logDiv.scrollTop = logDiv.scrollHeight - logDiv.clientHeight;
-        this.scrolling = false;
+        this.scrollingFlag = false;
       }
     }, 200);
   }
 
   ngOnDestroy() {
-    // Clear scenario detail refresh intervals (stop refreshing) on component
-    // destroy
+    // Clear log file refresh intervals (stop refreshing) on componen destroy
     clearInterval(this.refreshLog);
   }
 
@@ -65,11 +70,17 @@ export class ScenarioRunLogComponent implements OnInit, OnDestroy {
     this.location.back();
   }
 
+  // Temporarily set the scrollingFlag to true while scrolling
   onScroll(): void {
-    this.scrolling = true;
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout( () => {
-      this.scrolling = false;
-    }, 10000);
+    this.scrollingFlag = true;
+    clearTimeout(this.scrollingFlagTimeout);
+    this.scrollingFlagTimeout = setTimeout( () => {
+      this.scrollingFlag = false;
+    }, 200);
+  }
+
+  // User can enable/disable to auto-go-to-bottom-of-log functionality
+  enableGoToBottom(flag): void {
+    this.goToBottomEnabled = flag;
   }
 }

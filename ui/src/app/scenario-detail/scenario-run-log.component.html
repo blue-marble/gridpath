@@ -13,4 +13,18 @@
       </div>
     </div>
   </div>
+  <div class="row">
+    <div class="col-md-auto">
+      <button id="goBackButtonBottom" class="button-primary"
+            (click)="goBack()">Back</button>
+    </div>
+    <div class="col-md-auto">
+      <button id="disableGoToBottom" class="button-primary"
+            (click)="enableGoToBottom(false)">Disable Go-to-Bottom-of-Log</button>
+    </div>
+    <div class="col-md-auto">
+      <button id="enableGoToBottom" class="button-primary"
+            (click)="enableGoToBottom(true)">Enable Go-to-Bottom-of-Log</button>
+    </div>
+  </div>
 </div>
