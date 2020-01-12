@@ -1,2 +1,2 @@
-load_zone_scenario_id,project_load_zone_scenario_id,project,load_zone
-1,1,solar1,name_of_zone
+project_load_zone_scenario_id,project,load_zone
+1,solar1,name_of_zone

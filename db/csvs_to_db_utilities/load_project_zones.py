@@ -21,13 +21,11 @@ def load_project_load_zones(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['load_zone_scenario_id'][i])
         prj_sc_id = int(subscenario_input['project_load_zone_scenario_id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[
-            (data_input['load_zone_scenario_id'] == sc_id) & (data_input['project_load_zone_scenario_id'] == prj_sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['project_load_zone_scenario_id'] == prj_sc_id)]
 
         # Get projects and zones from input data and convert to dictionary with projects as key
         project_load_zones_input = dict()
@@ -36,7 +34,6 @@ def load_project_load_zones(io, c, subscenario_input, data_input):
 
         project_zones.project_load_zones(
             io=io, c=c,
-            load_zone_scenario_id=sc_id,
             project_load_zone_scenario_id=prj_sc_id,
             scenario_name=sc_name,
             scenario_description=sc_description,
@@ -57,13 +54,11 @@ def load_project_reserve_bas(io, c, subscenario_input, data_input, reserve_type_
     #TODO: Include "contribute_to_partial" column for inputs_project_frequency_response_bas table
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input[reserve_type_input + '_ba_scenario_id'][i])
         prj_sc_id = int(subscenario_input['project_' + reserve_type_input + '_ba_scenario_id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            (data_input[reserve_type_input + '_ba_scenario_id'] == sc_id) & 
             (data_input['project_' + reserve_type_input + '_ba_scenario_id'] == prj_sc_id)]
 
         # Get projects and bas from input data and convert to dictionary with projects as key
@@ -74,7 +69,6 @@ def load_project_reserve_bas(io, c, subscenario_input, data_input, reserve_type_
         project_zones.project_reserve_bas(
             io=io, c=c,
             reserve_type=reserve_type_input,
-            reserve_ba_scenario_id=sc_id,
             project_reserve_scenario_id=prj_sc_id,
             scenario_name=sc_name,
             scenario_description=sc_description,
@@ -93,13 +87,11 @@ def load_project_policy_zones(io, c, subscenario_input, data_input, policy_type_
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input[policy_type_input + '_zone_scenario_id'][i])
         prj_sc_id = int(subscenario_input['project_' + policy_type_input + '_zone_scenario_id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            (data_input[policy_type_input + '_zone_scenario_id'] == sc_id) &
             (data_input['project_' + policy_type_input + '_zone_scenario_id'] == prj_sc_id)]
 
         # Get projects and zones from input data and convert to dictionary with projects as key
@@ -110,7 +102,6 @@ def load_project_policy_zones(io, c, subscenario_input, data_input, policy_type_
         project_zones.project_policy_zones(
             io=io, c=c,
             policy_type=policy_type_input,
-            policy_zone_scenario_id=sc_id,
             project_policy_zone_scenario_id=prj_sc_id,
             scenario_name=sc_name,
             scenario_description=sc_description,

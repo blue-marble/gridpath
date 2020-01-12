@@ -1,6 +1,9 @@
-spinning_reserves_ba_scenario_id,project_spinning_reserves_ba_scenario_id,project,spinning_reserves_ba
-1,1,coal_existing,LOTR
-1,1,gas_existing,LOTR
-1,1,hydro_existing,LOTR
-1,1,gas_new,LOTR
-1,1,battery_new,LOTR
+project_spinning_reserves_ba_scenario_id,project,spinning_reserves_ba
+1,Coal_z1,BA_spinning_reserves_1
+1,Gas_CCGT_z1,BA_spinning_reserves_1
+1,Gas_CT_z1,BA_spinning_reserves_1
+1,Hydro_z1,BA_spinning_reserves_1
+1,Gas_CCGT_new_z1,BA_spinning_reserves_1
+1,Gas_CCGT_z2,BA_spinning_reserves_1
+1,Battery_z2,BA_spinning_reserves_1
+1,Gas_CT_new_z2,BA_spinning_reserves_1

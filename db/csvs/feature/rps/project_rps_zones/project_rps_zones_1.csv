@@ -1,4 +1,4 @@
-rps_zone_scenario_id,project_rps_zone_scenario_id,project,rps_zone
-1,1,Wind_z1,Zone_rps_1
-1,1,Solar_new_z1,Zone_rps_1
-1,1,Solar_new_z2,Zone_rps_2
+project_rps_zone_scenario_id,project,rps_zone
+1,Wind_z1,Zone_rps_1
+1,Solar_new_z1,Zone_rps_1
+1,Solar_new_z2,Zone_rps_2
