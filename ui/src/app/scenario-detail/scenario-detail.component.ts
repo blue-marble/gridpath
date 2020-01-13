@@ -81,6 +81,10 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
       `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
     );
 
+    // Change the run status to blank
+    this.scenarioDetail.runStatus = 'launching';
+
+    // Connect to the server and launch the scenario process
     const socket = socketConnect();
 
     socket.emit(
