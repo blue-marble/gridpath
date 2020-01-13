@@ -115,6 +115,15 @@ function createMainWindow () {
         // when you should delete the corresponding element.
         mainWindow = null
     });
+
+    // Open external links in default browser
+    // Source: https://stackoverflow.com/questions/32402327/how-can-i-force-external-links-from-browser-window-to-open-in-a-default-browser
+    mainWindow.webContents.on(
+      'new-window', function(e, url
+      ) {
+      e.preventDefault();
+      require('electron').shell.openExternal(url);
+    });
 }
 
 
