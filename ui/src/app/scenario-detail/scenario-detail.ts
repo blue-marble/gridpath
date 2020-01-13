@@ -1,5 +1,6 @@
 export class ScenarioDetailAPI {
   scenarioName: string;
+  scenarioDescription: string;
   validationStatus: string;
   runStatus: string;
   runPID: number;
