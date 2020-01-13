@@ -96,7 +96,9 @@ class ScenarioDetailAPI(Resource):
 
         # We'll need scenario ID and name, which we add separately as they
         # are not in the ui_scenario_detail_table_row_metadata table
-        for base_column in ["scenario_id", "scenario_name"]:
+        for base_column in [
+          "scenario_id", "scenario_name", "scenario_description"
+        ]:
             scenario_edit_api[base_column] = scenario_edit_api_all[base_column]
 
         # Add only columns requested by the UI to the final scenario-edit API
