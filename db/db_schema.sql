@@ -1775,6 +1775,7 @@ validation_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_process_id INTEGER DEFAULT NULL,
 run_start_time TIME,
+run_end_time TIME,
 of_fuels INTEGER,
 of_multi_stage INTEGER,
 of_transmission INTEGER,

@@ -76,6 +76,7 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
     :param db_path:
     :param scenario:
     :param process_id:
+    :param start_time:
     :return:
 
     Record the scenario run's process ID.
@@ -86,13 +87,40 @@ def record_process_id_and_start_time(db_path, scenario, process_id, start_time):
     sql = """
         UPDATE scenarios
         SET run_process_id = ?,
-        run_start_datetime = ?
+        run_start_time = ?
         WHERE scenario_name = ?;
         """
 
     spin_on_database_lock(
         conn=conn, cursor=c, sql=sql,
         data=(process_id, start_time, scenario),
+        many=False
+    )
+
+
+def record_end_time(db_path, scenario, process_id, end_time):
+    """
+    :param db_path:
+    :param scenario:
+    :param process_id:
+    :param end_time:
+    :return:
+
+    Record the scenario run's process ID.
+    """
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    sql = """
+        UPDATE scenarios
+        SET run_end_time = ?
+        WHERE scenario_name = ?
+        AND run_process_id = ?;
+        """
+
+    spin_on_database_lock(
+        conn=conn, cursor=c, sql=sql,
+        data=(end_time, scenario, process_id),
         many=False
     )
 
@@ -196,11 +224,16 @@ def main(args=None):
               'scenario {}.'.format(parsed_args.scenario))
         sys.exit(1)
 
-    # If we make it here, mark run as complete
+    # If we make it here, mark run as complete and update run end time
+    end_time = datetime.datetime.now()
     update_run_status(parsed_args.database, parsed_args.scenario, 2)
+    record_end_time(
+        db_path=parsed_args.database, scenario=parsed_args.scenario,
+        process_id=process_id, end_time=end_time
+    )
     # TODO: should the process ID be set back to NULL?
 
-    print("Done.")
+    print("Done. Run finished on {}.".format(end_time))
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
     # to log file)
