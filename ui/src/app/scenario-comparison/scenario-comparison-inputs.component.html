@@ -6,6 +6,29 @@
     </div>
   </div>
 
+  <div class="row">
+    <div class="col-md-auto">
+      <table class="scenario-detail">
+        <caption>Descriptions</caption>
+        <tr>
+          <th>Scenario</th>
+          <th>{{baseScenarioValues.scenario_name}}</th>
+          <ng-container
+              *ngFor="let scenarioToCompareValues of scenariosToCompareValues">
+              <th>{{scenarioToCompareValues.scenario_name}}</th>
+          </ng-container>
+        </tr>
+        <tr>
+          <td>Description</td>
+          <td>{{baseScenarioValues.scenario_description}}</td>
+          <ng-container
+              *ngFor="let scenarioToCompareValues of scenariosToCompareValues">
+              <td>{{scenarioToCompareValues.scenario_description}}</td>
+          </ng-container>
+        </tr>
+      </table>
+    </div>
+  </div>
 
   <div class="row">
     <div class="col-md-auto">

@@ -76,8 +76,11 @@ def make_column_values_dict(db_path, msg):
     column_values_dict["scenario_name"] = msg["scenarioName"]
 
     for key in msg.keys():
-        if key in ["scenarioName", "scenarioDescription"]:
+        if key == "scenarioName":
             pass
+        elif key == "scenarioDescription":
+            column_values_dict["scenario_description"] = \
+                msg["scenarioDescription"]
         else:
             id_column, column_value = \
                 get_subscenario_id_value(c=c, msg=msg, key=key)

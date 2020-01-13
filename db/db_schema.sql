@@ -1770,6 +1770,7 @@ DROP TABLE IF EXISTS scenarios;
 CREATE TABLE scenarios (
 scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 scenario_name VARCHAR(64) UNIQUE,
+scenario_description VARCHAR(256),
 validation_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_process_id INTEGER DEFAULT NULL,
@@ -3061,6 +3062,7 @@ DROP VIEW IF EXISTS scenarios_view;
 CREATE VIEW scenarios_view (
 scenario_id,
 scenario_name,
+scenario_description,
 validation_status,
 run_status,
 feature_fuels,
@@ -3144,6 +3146,7 @@ AS
 SELECT
 scenario_id,
 scenario_name,
+scenario_description,
 mod_validation_status_types.validation_status_name as validation_status,
 mod_run_status_types.run_status_name as run_status,
 CASE WHEN (of_fuels=1) THEN 'yes' ELSE 'no' END AS feature_fuels,

@@ -1,5 +1,6 @@
 export class ScenarioDetailAPI {
   scenarioName: string;
+  scenarioDescription: string;
   validationStatus: string;
   runStatus: string;
   runPID: number;
@@ -26,6 +27,7 @@ export class StartingValues {
   // tslint:disable:variable-name
   scenario_id: number;
   scenario_name: string;
+  scenario_description: string;
   features$fuels: boolean;
   features$transmission: boolean;
   features$transmission_hurdle_rates: boolean;
