@@ -534,11 +534,9 @@ def get_projects_by_reserve(subscenarios, conn):
                 FROM {}
                 WHERE {} IS NOT NULL
                 AND {} = {}
-                AND {} = {}
                 """.format(
                     table,
                     ba_column,
-                    ba_id, getattr(subscenarios, ba_id.upper()),
                     project_ba_id, getattr(subscenarios, project_ba_id.upper())
                 )
             )
