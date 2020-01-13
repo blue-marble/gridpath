@@ -5,6 +5,8 @@ export class ScenarioDetailAPI {
   runStatus: string;
   runPID: number;
   runStartTime: string;
+  runEndTime: string;
+  runElapsedTime: string;
   solver: string;
   editScenarioValues: StartingValues;
   scenarioDetailTables: ScenarioDetailTable[];
