@@ -480,6 +480,9 @@ def create_plot(df, title, color_mapper={}, ylimit=None):
     stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
 
     # Stacked Area Colors
+    # TODO: use generic color scheme rather than COLORS hard-coded dict?
+    #  should be part of bigger update that gets rid of hard-coding most
+    #  technologies
     colors = []
     for tech in stacked_cols:
         if tech in color_mapper:
