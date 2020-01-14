@@ -136,6 +136,14 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
             this.getScenarioDetailAPI(this.scenarioID);
           });
     });
+
+    // If the process ID does not exist, warn the user that we'll clean up
+    // this scenario as a previous process run likely did not exit correctly
+    socket.on('process_id_not_found', () => {
+      alert('The process ID for this scenario was not found. This is likely ' +
+        'the result of a previous system error. Any scenario results will be ' +
+        'cleared.');
+    });
   }
 
   editScenario(): void {
