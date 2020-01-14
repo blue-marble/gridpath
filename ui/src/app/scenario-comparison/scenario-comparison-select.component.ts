@@ -21,7 +21,8 @@ export class ScenarioComparisonSelectComponent implements OnInit {
   scenariosToCompareForm: FormGroup;
   startingValues: {
     baseScenarioStartingValue: number,
-    scenariosToCompareStartingValues: number[]
+    scenariosToCompareStartingValues: number[],
+    showResultsButtonsStartingValue: boolean
   };
   allScenarios: {
     id: number,
@@ -60,31 +61,30 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     });
 
     // Get starting values for scenario selection from history
-    const navigation = this.router.getCurrentNavigation();
-    const state = navigation.extras.state as {
-      startingValues: {
-        baseScenarioStartingValue: null,
-        scenariosToCompareStartingValues: []
-      }
-    };
-    // Set to history, only if history is not 'undefined'
+    // Set to history, only if history starting values state is not 'undefined'
+    // Otherwise, assume no base scenario and scenarios to compare are selected
+    // and show the 'selection' view (no results buttons)
     if (history.state.startingValues) {
       this.startingValues = history.state.startingValues;
     } else {
       this.startingValues = {
         baseScenarioStartingValue: null,
-        scenariosToCompareStartingValues: []
+        scenariosToCompareStartingValues: [],
+        showResultsButtonsStartingValue: false
       };
     }
+    // Set component params to starting values we determined based on history
+    this.baseScenario = this.startingValues.baseScenarioStartingValue;
+    this.scenariosToCompare = this.startingValues.scenariosToCompareStartingValues;
+    this.showResultsButtons = this.startingValues.showResultsButtonsStartingValue;
 
     // Make the scenarios table (and selection form)
     this.allScenarios = [];
     this.getScenarios();
-
-    this.showResultsButtons = false;
   }
 
   ngOnInit() {
+    console.log('Starting values: ', this.startingValues);
     this.allTableButtons = [];
     this.makeResultsTableButtons();
     this.getFormOptions(this.baseScenario);
