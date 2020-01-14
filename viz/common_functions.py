@@ -189,14 +189,14 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
                            if c not in color_mapper.keys()]
-    unspecified_cmap = dict(zip(unspecified_columns,
-                                cividis(len(unspecified_columns))))
+    unspecified_color_mapper = dict(zip(unspecified_columns,
+                                        cividis(len(unspecified_columns))))
     colors = []
     for column in stacked_cols:
         if column in color_mapper:
             colors.append(color_mapper[column])
         else:
-            colors.append(unspecified_cmap[column])
+            colors.append(unspecified_color_mapper[column])
 
     # Set up the figure
     plot = figure(
