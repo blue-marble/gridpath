@@ -1,6 +1,8 @@
-************
-Architecture
-************
+
+
+*********************
+GridPath Architecture
+*********************
 
 This section describes GridPath's modular architecture, i.e. how the modules
 are linked and work together (as opposed to their formulation or the
