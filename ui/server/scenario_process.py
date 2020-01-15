@@ -15,12 +15,15 @@ from gridpath.run_end_to_end import update_run_status
 from ui.server.db_ops.delete_scenario import clear as clear_scenario
 
 
-def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
+def launch_scenario_process(
+    db_path, scenarios_directory, scenario_id, solver, solver_executable
+    ):
     """
     :param db_path:
     :param scenarios_directory:
     :param scenario_id: integer, the scenario_id from the database
-    :param solver: dictionary with keys "name" and "executable" for the solver
+    :param solver: string, the solver name
+    :param solver: string, the solver executable
     :return:
 
     Launch a process to run the scenario.
@@ -62,8 +65,8 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
              "--database", db_path,
              "--scenario", scenario_name,
              "--scenario_location", scenarios_directory,
-             "--solver", solver["name"],
-             "--solver_executable", solver["executable"]],
+             "--solver", solver,
+             "--solver_executable", solver_executable],
             shell=False
         )
 

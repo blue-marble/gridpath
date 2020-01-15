@@ -59,9 +59,9 @@ CBC_EXECUTABLE = os.environ['CBC_EXECUTABLE']
 CPLEX_EXECUTABLE = os.environ['CPLEX_EXECUTABLE']
 GUROBI_EXECUTABLE = os.environ['GUROBI_EXECUTABLE']
 SOLVER_EXECUTABLES = {
-  "cbc": {"name": "cbc", "executable": CBC_EXECUTABLE},
-  "cplex": {"name": "cplex", "executable": CPLEX_EXECUTABLE},
-  "gurobi": {"name": "gurobi", "executable": GUROBI_EXECUTABLE}
+  "cbc": CBC_EXECUTABLE,
+  "cplex": CPLEX_EXECUTABLE,
+  "gurobi": GUROBI_EXECUTABLE
 }
 
 
@@ -110,8 +110,10 @@ def socket_launch_scenario_process(client_message):
     Launch and manage a scenario run process.
     """
     print(client_message)
+
     scenario_id = client_message["scenario"]
-    solver = SOLVER_EXECUTABLES[client_message["solver"]]
+    solver = client_message["solver"]
+    solver_executable = SOLVER_EXECUTABLES[solver]
     # TODO: implement functionality to skip warnings if the user has
     #  confirmed they want to re-run scenario
     skip_warnings = client_message["skipWarnings"]
@@ -128,7 +130,8 @@ def socket_launch_scenario_process(client_message):
           db_path=DATABASE_PATH,
           scenarios_directory=SCENARIOS_DIRECTORY,
           scenario_id=scenario_id,
-          solver=solver
+          solver=solver,
+          solver_executable=solver_executable
         )
         # Needed to ensure child processes are terminated when server exits
         atexit.register(p.terminate)
