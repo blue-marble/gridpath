@@ -91,17 +91,6 @@ FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
 (operational_type)
 );
 
--- Technology colors for plotting
--- TODO: populate with fixed values like capacity_types and link other tables
--- with foreign keys?
-DROP TABLE IF EXISTS mod_viz_tech_colors;
-CREATE TABLE mod_viz_tech_colors (
-technology VARCHAR(32),
-color VARCHAR(32),
-plotting_order INTEGER UNIQUE,
-PRIMARY KEY (technology)
-);
-
 DROP TABLE IF EXISTS mod_feature_subscenarios;
 CREATE TABLE mod_feature_subscenarios (
 feature VARCHAR(32),
@@ -3413,6 +3402,18 @@ stage_form_control INTEGER,
 project_form_control INTEGER
 );
 
+---------------------
+--- VISUALIZATION ---
+---------------------
+
+-- Technology colors and plotting order
+DROP TABLE IF EXISTS viz_technologies;
+CREATE TABLE viz_technologies (
+technology VARCHAR(32),
+color VARCHAR(32),
+plotting_order INTEGER UNIQUE,
+PRIMARY KEY (technology)
+);
 
 ---------------
 --- OPTIONS ---

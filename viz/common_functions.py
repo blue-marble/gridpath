@@ -97,19 +97,16 @@ def get_parent_parser():
 
 def get_tech_color_mapper(c):
     """
-    Get the colors by technology as specified in the viz_tech_colors db table.
+    Get the colors by technology as specified in the viz_technologies db
+    table.
 
-    Note: by default this table will contain all technologies but won't have
-    any colors specified. Users can populate it through the User Interface.
-
-    TODO: do we want to only select active tech for scenario (not necessary?)
     :param c:
     :return:
     """
     colors = c.execute(
         """
         SELECT technology, color
-        FROM mod_viz_tech_colors
+        FROM viz_technologies
         WHERE color is not NULL
         """
     ).fetchall()
@@ -120,10 +117,8 @@ def get_tech_color_mapper(c):
 def get_tech_plotting_order(c):
     """
     Get the plotting order of each technology as specified in the
-    viz_tech_colors db table.
+    viz_technologies db table.
 
-    Note: by default this table will contain all technologies but won't have
-    any order specified. Users can populate it through the User Interface.
     :param c:
     :return:
     """
@@ -131,7 +126,7 @@ def get_tech_plotting_order(c):
     order = c.execute(
         """
         SELECT technology, plotting_order
-        FROM mod_viz_tech_colors
+        FROM viz_technologies
         WHERE plotting_order is not NULL
         """
     ).fetchall()
