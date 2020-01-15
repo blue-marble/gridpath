@@ -27,7 +27,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_color_mapper, get_tech_plotting_order
+    get_parent_parser, get_tech_colors, get_tech_plotting_order
 
 
 def parse_arguments(arguments):
@@ -338,15 +338,15 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, color_mapper={}, tech_plotting_order={},
+def create_plot(df, title, tech_colors={}, tech_plotting_order={},
                 ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
-    :param color_mapper: optional dict that maps column names to colors. Colors
-        without specified color map will use default cividis palette
-    :param tech_plotting_order: optional dict that maps column name to their
+    :param tech_colors: optional dict that maps technologies to colors.
+        Technologies without a specified color map will use a default palette
+    :param tech_plotting_order: optional dict that maps technologies to their
         plotting order in the stacked bar/area chart.
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
@@ -372,15 +372,15 @@ def create_plot(df, title, color_mapper={}, tech_plotting_order={},
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
-                           if c not in color_mapper.keys()]
-    unspecified_color_mapper = dict(zip(unspecified_columns,
+                           if c not in tech_colors.keys()]
+    unspecified_tech_colors = dict(zip(unspecified_columns,
                                         cividis(len(unspecified_columns))))
     colors = []
     for tech in stacked_cols:
-        if tech in color_mapper:
-            colors.append(color_mapper[tech])
+        if tech in tech_colors:
+            colors.append(tech_colors[tech])
         else:
-            colors.append(unspecified_color_mapper[tech])
+            colors.append(unspecified_tech_colors[tech])
 
     # TODO: include horizon in title? (would need to add function arg)
     # Set up the figure
@@ -516,7 +516,7 @@ def main(args=None):
         script="dispatch_plot"
     )
 
-    color_mapper = get_tech_color_mapper(c)
+    tech_colors = get_tech_colors(c)
     tech_plotting_order = get_tech_plotting_order(c)
 
     plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
@@ -535,7 +535,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
-        color_mapper=color_mapper,
+        tech_colors=tech_colors,
         tech_plotting_order=tech_plotting_order,
         ylimit=parsed_args.ylimit,
     )

@@ -95,7 +95,7 @@ def get_parent_parser():
     return parser
 
 
-def get_tech_color_mapper(c):
+def get_tech_colors(c):
     """
     Get the colors by technology as specified in the viz_technologies db
     table.
@@ -135,7 +135,7 @@ def get_tech_plotting_order(c):
 
 
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
-                            group_column, column_mapper={}, color_mapper={},
+                            group_column, column_mapper={}, group_colors={},
                             group_order={}, ylimit=None):
     """
     Create a stacked bar chart based on a DataFrame and the desired x-axis,
@@ -163,22 +163,13 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     :param group_column:
     :param column_mapper: optional dict that maps columns names to cleaner
         labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
-    :param group_order: optional dict that maps groups to their order in
-        the stacked bar chart (lower = bottom)
-    :param color_mapper: optional dict that maps column names to colors. Colors
-        without specified color map will use default palette
+    :param group_colors: optional dict that maps groups to colors. Groups
+        without a specified color will use a default palette
+    :param group_order: optional dict that maps groups to their plotting order
+        in the stacked bar chart (lower = bottom)
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
-
-    # for testing only
-    # color_mapper = {
-    #     "Battery": "#c9d9d3",
-    #     "Biomass": "#718dbf",
-    #     "Wind": 'red',
-    #     "Nuclear": 'green'
-    # }
-    # TODO: column_order = {}
 
     # Rename axis/group labels using mapper (if specified)
     for k, v in column_mapper.items():
@@ -210,15 +201,15 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
-                           if c not in color_mapper.keys()]
-    unspecified_color_mapper = dict(zip(unspecified_columns,
+                           if c not in group_colors.keys()]
+    unspecified_group_colors = dict(zip(unspecified_columns,
                                         cividis(len(unspecified_columns))))
     colors = []
     for column in stacked_cols:
-        if column in color_mapper:
-            colors.append(color_mapper[column])
+        if column in group_colors:
+            colors.append(group_colors[column])
         else:
-            colors.append(unspecified_color_mapper[column])
+            colors.append(unspecified_group_colors[column])
 
     # Set up the figure
     plot = figure(

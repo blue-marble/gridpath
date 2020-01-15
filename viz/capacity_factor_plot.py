@@ -20,7 +20,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_color_mapper
+    get_parent_parser, get_tech_colors
 
 
 def parse_arguments(arguments):
@@ -114,13 +114,13 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, color_mapper={}):
+def create_plot(df, title, tech_colors={}):
     """
 
     :param df:
     :param title: string, plot title
-    :param color_mapper: optional dict that maps column names to colors. Colors
-        without specified color map will use default palette
+    :param tech_colors: optional dict that maps technologies to colors.
+        Technologies without a specified color will use a default palette
     :return:
     """
     # TODO: handle empty dataframe (will give bokeh warning)
@@ -129,13 +129,13 @@ def create_plot(df, title, color_mapper={}):
 
     # Create a map between factor (technology) and color.
     techs_wo_colors = [t for t in technologies
-                       if t not in color_mapper.keys()]
+                       if t not in tech_colors.keys()]
     default_cmap = dict(zip(techs_wo_colors,
                             cividis(len(techs_wo_colors))))
     colormap = {}
     for t in technologies:
-        if t in color_mapper:
-            colormap[t] = color_mapper[t]
+        if t in tech_colors:
+            colormap[t] = tech_colors[t]
         else:
             colormap[t] = default_cmap[t]
 
@@ -253,7 +253,7 @@ def main(args=None):
         script="capacity_factor_plot"
     )
 
-    color_mapper = get_tech_color_mapper(c)
+    tech_colors = get_tech_colors(c)
 
     plot_title = "Capacity Factors by Period - {} - Stage {}".format(
         parsed_args.load_zone, parsed_args.stage)
@@ -270,7 +270,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
-        color_mapper=color_mapper
+        tech_colors=tech_colors
     )
 
     # Show plot in HTML browser file if requested
