@@ -231,7 +231,7 @@ export class ScenarioResultsComponent implements OnInit {
     socket.emit(
             'save_plot_data',
             { downloadPath: targetPath,
-              scenarioID: this.scenarioID,
+              scenarioIDList: [this.scenarioID],
               plotType: formValues.plotType,
               loadZone: formValues.loadZone,
               carbonCapZone: formValues.carbonCapZone,

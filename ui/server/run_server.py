@@ -251,7 +251,7 @@ def socket_save_plot_data(client_message):
     save_plot_data_to_csv(
       db_path=DATABASE_PATH,
       download_path=client_message["downloadPath"],
-      scenario_id=client_message["scenarioID"],
+      scenario_id_list=client_message["scenarioIDList"],
       plot_type=client_message["plotType"],
       load_zone=client_message["loadZone"],
       carbon_cap_zone=client_message["carbonCapZone"],

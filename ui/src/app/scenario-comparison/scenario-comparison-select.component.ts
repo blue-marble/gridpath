@@ -209,9 +209,9 @@ export class ScenarioComparisonSelectComponent implements OnInit {
     };
   }
 
-  showResultsPlots(formGroup): void {
+  showResultsPlots(formValues): void {
     // Get selected plot options
-    const formValues = getFormGroupValues(formGroup);
+    // const formValues = getFormGroupValues(formGroup);
     console.log('Form values: ', formValues);
 
     // Switch to the scenario-comparison-inputs view with the given base
@@ -267,6 +267,50 @@ export class ScenarioComparisonSelectComponent implements OnInit {
           );
         }
       );
+  }
+
+  downloadPlotData(targetPath, formValues): void {
+    const socket = socketConnect();
+
+    socket.emit(
+            'save_plot_data',
+            { downloadPath: targetPath,
+              scenarioIDList: [this.baseScenario].concat(this.scenariosToCompare),
+              plotType: formValues.plotType,
+              loadZone: formValues.loadZone,
+              carbonCapZone: formValues.carbonCapZone,
+              rpsZone: formValues.rpsZone,
+              period: formValues.period,
+              horizon: formValues.horizon,
+              subproblem: formValues.subproblem,
+              stage: formValues.stage,
+              project: formValues.project,
+              yMax: formValues.yMax}
+        );
+  }
+
+  showPlotOrDownloadData(formGroup): void {
+
+    // Figure out which button was pressed
+    const buttonName = document.activeElement.getAttribute('Name');
+    console.log(buttonName);
+
+    const formValues = getFormGroupValues(formGroup);
+
+    if (buttonName === 'showPlot') {
+      this.showResultsPlots(formValues);
+    }
+
+    if (buttonName === 'downloadData') {
+      electron.remote.dialog.showSaveDialog(
+        { title: 'untitled.csv', defaultPath: 'plot.csv',
+          filters: [{extensions: ['csv']}]
+        }, (targetPath) => {
+          this.downloadPlotData(targetPath, formValues);
+        }
+      );
+    }
+
   }
 
   goBack(): void {
