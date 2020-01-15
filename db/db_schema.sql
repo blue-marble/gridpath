@@ -97,7 +97,8 @@ FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
 DROP TABLE IF EXISTS mod_viz_tech_colors;
 CREATE TABLE mod_viz_tech_colors (
 technology VARCHAR(32),
-color VARCHAR(32)
+color VARCHAR(32),
+plotting_order INTEGER UNIQUE,
 PRIMARY KEY (technology)
 );
 

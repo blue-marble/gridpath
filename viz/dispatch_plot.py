@@ -27,7 +27,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, \
-    get_parent_parser, get_tech_color_mapper
+    get_parent_parser, get_tech_color_mapper, get_tech_plotting_order
 
 
 def parse_arguments(arguments):
@@ -51,30 +51,6 @@ def parse_arguments(arguments):
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
-
-
-# Assign colors to each technology (+ curtailment/imports)
-# COLORS = dict([
-#     ("unspecified", "ghostwhite"),
-#     ("Nuclear", "purple"),
-#     ("Coal", "dimgrey"),
-#     ("CHP", "darkkhaki"),
-#     ("Geothermal", "yellowgreen"),
-#     ("Biomass", "olivedrab"),
-#     ("Small_Hydro", "mediumaquamarine"),
-#     ("Steam", "whitesmoke"),
-#     ("CCGT", "lightgrey"),
-#     ("Hydro", "darkblue"),
-#     ("Imports", "darkgrey"),
-#     ("Peaker", "grey"),
-#     ("Wind", "deepskyblue"),
-#     ("Solar_BTM", "orange"),
-#     ("Solar", "gold"),
-#     ("Pumped_Storage", "darkslategrey"),
-#     ("Battery", "teal"),
-#     ("Curtailment_Variable", "indianred"),
-#     ("Curtailment_Hydro", "firebrick")
-# ])
 
 
 def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
@@ -263,8 +239,7 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
 
     # Get dispatch by technology
     # TODO: Let tech order depend on specified order in database table.
-    #  Storage might be tricky because we manipulate it! Simply remove negatives
-    #  for all teech?
+    #  Storage might be tricky because we manipulate it!
     df = get_power_by_tech_results(
         conn=conn,
         scenario_id=scenario_id,
@@ -363,16 +338,26 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, color_mapper={}, ylimit=None):
+def create_plot(df, title, color_mapper={}, tech_plotting_order={},
+                ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
     :param color_mapper: optional dict that maps column names to colors. Colors
         without specified color map will use default cividis palette
+    :param tech_plotting_order: optional dict that maps column name to their
+        plotting order in the stacked bar/area chart.
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
+
+    # Re-arrange df according to plotting order
+    for col in df.columns:
+        if col not in tech_plotting_order:
+            tech_plotting_order[col] = max(tech_plotting_order.values()) + 1
+    df = df.reindex(sorted(df.columns, key=lambda x: tech_plotting_order[x]),
+                    axis=1)
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -532,6 +517,7 @@ def main(args=None):
     )
 
     color_mapper = get_tech_color_mapper(c)
+    tech_plotting_order = get_tech_plotting_order(c)
 
     plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
         parsed_args.load_zone, parsed_args.stage, parsed_args.horizon)
@@ -550,6 +536,7 @@ def main(args=None):
         df=df,
         title=plot_title,
         color_mapper=color_mapper,
+        tech_plotting_order=tech_plotting_order,
         ylimit=parsed_args.ylimit,
     )
 

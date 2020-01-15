@@ -117,9 +117,31 @@ def get_tech_color_mapper(c):
     return dict(colors)
 
 
+def get_tech_plotting_order(c):
+    """
+    Get the plotting order of each technology as specified in the
+    viz_tech_colors db table.
+
+    Note: by default this table will contain all technologies but won't have
+    any order specified. Users can populate it through the User Interface.
+    :param c:
+    :return:
+    """
+
+    order = c.execute(
+        """
+        SELECT technology, plotting_order
+        FROM mod_viz_tech_colors
+        WHERE plotting_order is not NULL
+        """
+    ).fetchall()
+
+    return dict(order)
+
+
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
                             group_column, column_mapper={}, color_mapper={},
-                            ylimit=None):
+                            group_order={}, ylimit=None):
     """
     Create a stacked bar chart based on a DataFrame and the desired x-axis,
     y-axis, and group (category). Different groups/categories will be stacked.
@@ -146,6 +168,8 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     :param group_column:
     :param column_mapper: optional dict that maps columns names to cleaner
         labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
+    :param group_order: optional dict that maps groups to their order in
+        the stacked bar chart (lower = bottom)
     :param color_mapper: optional dict that maps column names to colors. Colors
         without specified color map will use default palette
     :param ylimit: float/int, upper limit of y-axis; optional
@@ -184,7 +208,10 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
 
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
-    stacked_cols = list(df.columns)
+    for col in df.columns:
+        if col not in group_order:
+            group_order[col] = max(group_order.values(), default=0) + 1
+    stacked_cols = sorted(df.columns, key=lambda x: group_order[x])
 
     # Set up color scheme. Use cividis palette for unspecified colors
     unspecified_columns = [c for c in stacked_cols
