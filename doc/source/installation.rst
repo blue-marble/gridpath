@@ -215,3 +215,12 @@ To test the GridPath codebase, use the unittest module as follows from the
 :code:`PATH/TO/GRIDPATH` directory::
 
     python -m unittest discover tests
+
+This command will use the python `unittest  <https://docs.python.org/3/library/
+unittest.html>`_ module to test all functions in the :code:`./tests` folder.
+Testing includes both simple unittests as well as integration tests that run
+small example problems (for which you will need a solver).
+
+Note: the -m switch allows modules to be located using the Python module name
+space for execution as scripts, so it can be located just as if its filename was
+provided in the command line.
