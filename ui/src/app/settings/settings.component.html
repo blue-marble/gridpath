@@ -119,7 +119,7 @@
                    placeholder="Cbc solver executable" type="text"
                    [(ngModel)]="requestedSolver1Executable">
             <button id="browseCbcExecutable" class="button-primary"
-                    (click)="browseCbcExecutable()">Browse
+                    (click)="browseSolver1Executable()">Browse
             </button>
           </td>
         </tr>
@@ -144,7 +144,7 @@
         <tr>
           <td>Requested</td>
           <td>
-            <select [(ngModel)]="requestedSolver2Name" (change)="changeCPLEXNameStatus()">
+            <select [(ngModel)]="requestedSolver2Name" (change)="changeSolver2NameStatus()">
               <option value="Cbc">Cbc</option>
               <option value="CPLEX">CPLEX</option>
               <option value="Gurobi">Gurobi</option>
@@ -155,7 +155,7 @@
                    placeholder="CPLEX solver executable" type="text"
                    [(ngModel)]="requestedSolver2Executable">
             <button id="browseCPLEXExecutable" class="button-primary"
-            (click)="browseCPLEXExecutable()">Browse
+            (click)="browseSolver2Executable()">Browse
             </button>
           </td>
         </tr>
@@ -164,7 +164,7 @@
           <td [ngClass]="{
               'orange' : currentSolver2Name !== requestedSolver2Name,
               'green' : currentSolver2Name == requestedSolver2Name
-           }">{{cplexStatus}}</td>
+           }">{{solver2Status}}</td>
           <td>Executable status</td>
         </tr>
       </table>
@@ -187,7 +187,7 @@
                    placeholder="Gurobi solver executable" type="text"
                    [(ngModel)]="requestedSolver3Executable">
             <button id="browseGurobiExecutable" class="button-primary"
-                    (click)="browseGurobiExecutable()">Browse
+                    (click)="browseSolver3Executable()">Browse
             </button>
           </td>
         </tr>
