@@ -76,8 +76,8 @@ gridpath_run --help
 ```
 
 NOTE: To activate your gridpath environment, use the following command (
-assuming your environment is called "env" and is stored in the GridPath root
-folder):
+assuming your environment is called "env", is created with `venv`, and is stored 
+in the GridPath root folder):
 ```bash
 source env/bin/activate
 ```
