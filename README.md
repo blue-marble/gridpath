@@ -118,9 +118,6 @@ root directory:
 python -m unittest discover tests
 ```
 
-Some of the examples require a non-linear solver such as ipopt. If you 
-don't have a non-linear solver, you will not be able to solve these examples 
-and some of the unit tests will fail.
 
 # Help
 In general, you can check usage of GridPath's scripts by calling the `--help` 
