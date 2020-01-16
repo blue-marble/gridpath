@@ -136,11 +136,14 @@ Packages
 ^^^^^^^^
 
 GridPath uses the following Python packages (not exhaustive):
- - sqlite3 for database interface (comes with Python's standard library)
- - pandas for storing data and array manipulations
- - numpy for calculations
- - networkx for network calculations
- - pyomo for creating optimization problems
+
+* `sqlite3 <https://docs.python.org/3/library/sqlite3.html>`_ for database
+  interface (comes with Python's standard library)
+* `pandas <https://pandas.pydata.org/>`_ for storing data and array
+  manipulations
+* `numpy <https://numpy.org/>`_ for calculations
+* `networkx <https://networkx.github.io/>`_ for network calculations
+* `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
 
 You can install all needed Python packages, including those for the extra
 features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
