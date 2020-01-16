@@ -16,21 +16,25 @@ export class SettingsComponent implements OnInit {
   currentScenariosDirectory: string;
   currentGridPathDB: string;
   currentPythonDirectory: string;
-  currentCbcExecutable: string;
-  currentCPLEXExecutable: string;
-  currentGurobiExecutable: string;
+  currentSolver1Executable: string;
+  currentSolver2Name: string;
+  currentSolver2Executable: string;
+  currentSolver3Executable: string;
 
   requestedScenariosDirectory: string;
   requestedGridPathDB: string;
   requestedPythonDirectory: string;
-  requestedCbcExecutable: string;
-  requestedCPLEXExecutable: string;
-  requestedGurobiExecutable: string;
+  requestedSolver1Executable: string;
+  requestedSolver2Name: string;
+  requestedSolver2Executable: string;
+  requestedSolver3Executable: string;
 
   // TODO: add solver status
   directoryStatus: string;
   databaseStatus: string;
   pythonStatus: string;
+
+  solver2Status: string;
 
   constructor(
     private zone: NgZone,
@@ -53,6 +57,8 @@ export class SettingsComponent implements OnInit {
         this.getSettingsFromElectron(data);
       }
     );
+
+    this.currentSolver2Name = 'CPLEX';
   }
 
   getSettingsFromElectron(data) {
@@ -63,15 +69,15 @@ export class SettingsComponent implements OnInit {
       this.currentScenariosDirectory = data.currentScenariosDirectory.value;
       this.currentGridPathDB = data.currentGridPathDatabase.value;
       this.currentPythonDirectory = data.currentPythonEnvironment.value;
-      this.currentCbcExecutable = data.currentCbcExecutable.value;
-      this.currentCPLEXExecutable = data.currentCPLEXExecutable.value;
-      this.currentGurobiExecutable = data.currentGurobiExecutable.value;
+      this.currentSolver1Executable = data.currentSolver1Executable.value;
+      this.currentSolver2Executable = data.currentSolver2Executable.value;
+      this.currentSolver3Executable = data.currentSolver3Executable.value;
       this.requestedScenariosDirectory = data.requestedScenariosDirectory.value;
       this.requestedGridPathDB = data.requestedGridPathDatabase.value;
       this.requestedPythonDirectory = data.requestedPythonEnvironment.value;
-      this.requestedCbcExecutable = data.requestedCbcExecutable.value;
-      this.requestedCPLEXExecutable = data.requestedCPLEXExecutable.value;
-      this.requestedGurobiExecutable = data.requestedGurobiExecutable.value;
+      this.requestedSolver1Executable = data.requestedSolver1Executable.value;
+      this.requestedSolver2Executable = data.requestedSolver2Executable.value;
+      this.requestedSolver3Executable = data.requestedSolver3Executable.value;
     });
   }
 
@@ -164,10 +170,10 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  browseCbcExecutable() {
+  browseSolver1Executable() {
     // Open an Electron dialog to select the file
     electron.remote.dialog.showOpenDialog(
-      {title: 'Select a the Cbc executable',
+      {title: 'Select the Solver1 executable',
         properties: ['openFile']},
       (filePath) => {
       // Don't do anything if no file selected
@@ -175,20 +181,20 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setCbcExecutableSetting', filePath[0]);
+        electron.ipcRenderer.send('setSolver1ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.requestedCbcExecutable = filePath[0];
+          this.requestedSolver1Executable = filePath[0];
         // TODO: add status
         });
       }
     });
   }
 
-  browseCPLEXExecutable() {
+  browseSolver2Executable() {
     // Open an Electron dialog to select the file
     electron.remote.dialog.showOpenDialog(
-      {title: 'Select a the CPLEX executable',
+      {title: 'Select the Solver2 executable',
         properties: ['openFile']},
       (filePath) => {
       // Don't do anything if no file selected
@@ -196,20 +202,20 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setCPLEXExecutableSetting', filePath[0]);
+        electron.ipcRenderer.send('setSolver2ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.requestedCPLEXExecutable = filePath[0];
+          this.requestedSolver2Executable = filePath[0];
         // TODO: add status
         });
       }
     });
   }
 
-  browseGurobiExecutable() {
+  browseSolver3Executable() {
     // Open an Electron dialog to select the file
     electron.remote.dialog.showOpenDialog(
-      {title: 'Select a the Gurobi executable',
+      {title: 'Select the Solver3 executable',
         properties: ['openFile']},
       (filePath) => {
       // Don't do anything if no file selected
@@ -217,10 +223,10 @@ export class SettingsComponent implements OnInit {
           return;
       } else {
         // Send Electron the selected folder
-        electron.ipcRenderer.send('setGurobiExecutableSetting', filePath[0]);
+        electron.ipcRenderer.send('setSolver3ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
-          this.requestedGurobiExecutable = filePath[0];
+          this.requestedSolver3Executable = filePath[0];
         // TODO: add status
         });
       }
@@ -237,5 +243,10 @@ export class SettingsComponent implements OnInit {
 
   changePythonStatus() {
     this.settingsService.changePythonStatus(this.pythonStatus);
+  }
+
+  changeSolver2NameStatus() {
+    console.log(this.requestedSolver2Name);
+    this.solver2Status = 'name status';
   }
 }

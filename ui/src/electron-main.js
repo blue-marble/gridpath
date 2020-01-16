@@ -34,12 +34,12 @@ function createMainWindow () {
         // TODO: should a solver be required; currently not (user can
         //  browse without running scenarios)
         const optionalKeys = [
-          'currentCbcExecutable',
-          'currentCPLEXExecutable',
-          'currentGurobiExecutable',
-          'requestedCbcExecutable',
-          'requestedCPLEXExecutable',
-          'requestedGurobiExecutable'
+          'currentSolver1Executable',
+          'currentSolver2Executable',
+          'currentSolver3Executable',
+          'requestedSolver1Executable',
+          'requestedSolver2Executable',
+          'requestedSolver3Executable'
         ];
 
         requiredKeys.forEach(function(requiredKey) {
@@ -218,43 +218,43 @@ ipcMain.on('setPythonEnvironmentSetting', (event, pythonenvironment) => {
   );
 });
 
-// Set the Cbc executable setting based on Angular input
+// Set the Solver1 executable setting based on Angular input
 // Get setting from renderer, store it, and send it to the server
-ipcMain.on('setCbcExecutableSetting', (event, msg) => {
-	console.log(`Cbc executable set to ${msg}`);
+ipcMain.on('setSolver1ExecutableSetting', (event, msg) => {
+	console.log(`Solver1 executable set to ${msg}`);
 
 	// TODO: do we need to keep in storage?
   // Set the database file path in Electron JSON storage
   storage.set(
-      'requestedCbcExecutable',
+      'requestedSolver1Executable',
       { 'value': msg },
       (error) => {if (error) throw error;}
   );
 });
 
-// Set the CPLEX executable setting based on Angular input
+// Set the Solver2 executable setting based on Angular input
 // Get setting from renderer, store it, and send it to the server
-ipcMain.on('setCPLEXExecutableSetting', (event, msg) => {
-	console.log(`CPLEX executable set to ${msg}`);
+ipcMain.on('setSolver2ExecutableSetting', (event, msg) => {
+	console.log(`Solver2 executable set to ${msg}`);
 
 	// TODO: do we need to keep in storage?
   // Set the database file path in Electron JSON storage
   storage.set(
-      'requestedCPLEXExecutable',
+      'requestedSolver2Executable',
       { 'value': msg },
       (error) => {if (error) throw error;}
   );
 });
 
-// Set the Gurobi executable setting based on Angular input
+// Set the Solver3 executable setting based on Angular input
 // Get setting from renderer, store it, and send it to the server
-ipcMain.on('setGurobiExecutableSetting', (event, msg) => {
-	console.log(`Gurobi executable set to ${msg}`);
+ipcMain.on('setSolver3ExecutableSetting', (event, msg) => {
+	console.log(`Solver3 executable set to ${msg}`);
 
 	// TODO: do we need to keep in storage?
   // Set the database file path in Electron JSON storage
   storage.set(
-      'requestedGurobiExecutable',
+      'requestedSolver3Executable',
       { 'value': msg },
       (error) => {if (error) throw error;}
   );
@@ -267,18 +267,20 @@ function startServer () {
       'currentGridPathDatabase',
       'currentScenariosDirectory',
       'currentPythonEnvironment',
-      'currentCbcExecutable',
-      'currentCPLEXExecutable',
-      'currentGurobiExecutable',
+      'currentSolver1Executable',
+      'currentSolver2Executable',
+      'currentSolver3Executable',
       'requestedGridPathDatabase',
       'requestedScenariosDirectory',
       'requestedPythonEnvironment',
-      'requestedCbcExecutable',
-      'requestedCPLEXExecutable',
-      'requestedGurobiExecutable'
+      'requestedSolver1Executable',
+      'requestedSolver2Executable',
+      'requestedSolver3Executable'
     ],
     (error, data) => {
       if (error) throw error;
+
+      console.log(data);
 
       // When we first start the server, we will set the 'current' settings
       // the last-requested settings; we will then use the 'current'
@@ -319,37 +321,37 @@ function startServer () {
           }
         );
       }
-      if (data['currentCbcExecutable']['value']
-        === data['requestedCbcExecutable']['value']) {
-        console.log("Current and requested Cbc executables match.")
+      if (data['currentSolver1Executable']['value']
+        === data['requestedSolver1Executable']['value']) {
+        console.log("Current and requested Solver1 executables match.")
       } else {
         storage.set(
-          'currentCbcExecutable',
-          { 'value': data['requestedCbcExecutable']['value'] },
+          'currentSolver1Executable',
+          { 'value': data['requestedSolver1Executable']['value'] },
           (error) => {
             if (error) throw error;
           }
         );
       }
-      if (data['currentCPLEXExecutable']['value']
-        === data['requestedCPLEXExecutable']['value']) {
-        console.log("Current and requested CPLEX executables match.")
+      if (data['currentSolver2Executable']['value']
+        === data['requestedSolver2Executable']['value']) {
+        console.log("Current and requested Solver2 executables match.")
       } else {
         storage.set(
-          'currentCPLEXExecutable',
-          { 'value': data['requestedCPLEXExecutable']['value'] },
+          'currentSolver2Executable',
+          { 'value': data['requestedSolver2Executable']['value'] },
           (error) => {
             if (error) throw error;
           }
         );
       }
-      if (data['currentGurobiExecutable']['value']
-        === data['requestedGurobiExecutable']['value']) {
-        console.log("Current and requested Gurobi executables match.")
+      if (data['currentSolver3Executable']['value']
+        === data['requestedSolver3Executable']['value']) {
+        console.log("Current and requested Solver3 executables match.")
       } else {
         storage.set(
-          'currentGurobiExecutable',
-          { 'value': data['requestedGurobiExecutable']['value'] },
+          'currentSolver3Executable',
+          { 'value': data['requestedSolver3Executable']['value'] },
           (error) => {
             if (error) throw error;
           }
@@ -360,9 +362,9 @@ function startServer () {
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
       const pyDir = data['requestedPythonEnvironment']['value'];
-      const cbcExec = data['requestedCbcExecutable']['value'];
-      const cplexExec = data['requestedCPLEXExecutable']['value'];
-      const gurobiExec = data['requestedGurobiExecutable']['value'];
+      const solver1Exec = data['requestedSolver1Executable']['value'];
+      const solver2Exec = data['requestedSolver2Executable']['value'];
+      const solver3Exec = data['requestedSolver3Executable']['value'];
 
       // The server entry point based on the Python directory and the
       // executables directory ('Scripts' on Windows, 'bin' otherwise)
@@ -404,9 +406,9 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
-                CBC_EXECUTABLE: cbcExec,
-                CPLEX_EXECUTABLE: cplexExec,
-                GUROBI_EXECUTABLE: gurobiExec
+                SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_EXECUTABLE: solver3Exec
               }
             },
             );
@@ -420,9 +422,9 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
-                CBC_EXECUTABLE: cbcExec,
-                CPLEX_EXECUTABLE: cplexExec,
-                GUROBI_EXECUTABLE: gurobiExec
+                SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_EXECUTABLE: solver3Exec
               }
             }
           );
@@ -457,9 +459,9 @@ ipcMain.on('requestStoredSettings', (event) => {
       ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
         'currentPythonEnvironment', 'requestedPythonEnvironment',
-        'currentCbcExecutable', 'requestedCbcExecutable',
-        'currentCPLEXExecutable', 'requestedCPLEXExecutable',
-        'currentGurobiExecutable', 'requestedGurobiExecutable'
+        'currentSolver1Executable', 'requestedSolver1Executable',
+        'currentSolver2Executable', 'requestedSolver2Executable',
+        'currentSolver3Executable', 'requestedSolver3Executable'
 
       ],
       (error, data) => {

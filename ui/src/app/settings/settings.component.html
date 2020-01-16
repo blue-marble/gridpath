@@ -3,14 +3,15 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>Scenarios Directory</caption>
         <tr>
-          <th>Current</th>
-          <th>Last Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">Scenarios Directory</th>
         </tr>
         <tr>
+          <td>Current</td>
           <td>{{currentScenariosDirectory}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="Scenarios directory"
@@ -20,6 +21,9 @@
                     (click)="browseScenariosDirectory()">Browse
             </button>
           </td>
+        </tr>
+        <tr>
+          <td>Status</td>
           <td [ngClass]="{
               'orange' : directoryStatus == 'restart required',
               'green' : directoryStatus == 'set'
@@ -32,14 +36,15 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>GridPath Database</caption>
         <tr>
-          <th>Current</th>
-          <th>Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">GridPath Database</th>
         </tr>
         <tr>
+          <td>Current</td>
           <td>{{currentGridPathDB}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="GridPath database file"
@@ -48,6 +53,9 @@
             <button id="browseGPDatabase" class="button-primary"
                     (click)="browseGPDatabase()">Browse</button>
           </td>
+        </tr>
+        <tr>
+          <td>Status</td>
           <td [ngClass]="{
               'orange' : databaseStatus == 'restart required',
               'green' : databaseStatus == 'set'
@@ -60,14 +68,15 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>GridPath Python Environment Directory</caption>
         <tr>
-          <th>Current</th>
-          <th>Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">GridPath Python Environment Directory</th>
         </tr>
         <tr>
-          <td>{{requestedPythonDirectory}}</td>
+          <td>Current</td>
+          <td>{{currentPythonDirectory}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="GridPath Python environment directory"
@@ -76,7 +85,10 @@
             <button id="browsePythonEnvironment" class="button-primary"
                     (click)="browsePythonEnvironment()">Browse</button>
           </td>
-          <td  [ngClass]="{
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td [ngClass]="{
               'orange' : pythonStatus == 'restart required',
               'green' : pythonStatus == 'set'
            }">{{pythonStatus}}</td>
@@ -90,49 +102,99 @@
       <table class="scenario-detail">
         <caption>Solvers</caption>
         <tr>
-          <th>Solver</th>
-          <th>Current Executable</th>
-          <th>Last Requested Executable</th>
-          <th>Request Status</th>
+          <th>Solver 1</th>
+          <th>Name</th>
+          <th>Executable</th>
         </tr>
         <tr>
+          <td>Current</td>
           <td>Cbc</td>
-          <td>{{currentCbcExecutable}}</td>
+          <td>{{currentSolver1Executable}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
+          <td>Cbc</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="Cbc solver executable" type="text"
-                   [(ngModel)]="requestedCbcExecutable">
+                   [(ngModel)]="requestedSolver1Executable">
             <button id="browseCbcExecutable" class="button-primary"
                     (click)="browseCbcExecutable()">Browse
             </button>
           </td>
-          <td></td>
         </tr>
         <tr>
-          <td>CPLEX</td>
-          <td>{{currentCPLEXExecutable}}</td>
+          <td>Status</td>
+          <td>Name status</td>
+          <td>Executable status</td>
+        </tr>
+      </table>
+
+      <table class="scenario-detail">
+        <tr>
+          <th>Solver 2</th>
+          <th>Name</th>
+          <th>Executable</th>
+        </tr>
+        <tr>
+          <td>Current</td>
+          <td>{{currentSolver2Name}}</td>
+          <td>{{currentSolver2Executable}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
+          <td>
+            <select [(ngModel)]="requestedSolver2Name" (change)="changeCPLEXNameStatus()">
+              <option value="Cbc">Cbc</option>
+              <option value="CPLEX">CPLEX</option>
+              <option value="Gurobi">Gurobi</option>
+            </select>
+          </td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="CPLEX solver executable" type="text"
-                   [(ngModel)]="requestedCPLEXExecutable">
+                   [(ngModel)]="requestedSolver2Executable">
             <button id="browseCPLEXExecutable" class="button-primary"
             (click)="browseCPLEXExecutable()">Browse
             </button>
           </td>
-          <td></td>
         </tr>
         <tr>
+          <td>Status</td>
+          <td [ngClass]="{
+              'orange' : currentSolver2Name !== requestedSolver2Name,
+              'green' : currentSolver2Name == requestedSolver2Name
+           }">{{cplexStatus}}</td>
+          <td>Executable status</td>
+        </tr>
+      </table>
+      <table class="scenario-detail">
+        <tr>
+          <th>Solver 3</th>
+          <th>Name</th>
+          <th>Executable</th>
+        </tr>
+        <tr>
+          <td>Current</td>
           <td>Gurobi</td>
-          <td>{{currentGurobiExecutable}}</td>
+          <td>{{currentSolver3Executable}}</td>
+        </tr>
+        <tr>
+          <td>Requested</td>
+          <td>Gurobi</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="Gurobi solver executable" type="text"
-                   [(ngModel)]="requestedGurobiExecutable">
+                   [(ngModel)]="requestedSolver3Executable">
             <button id="browseGurobiExecutable" class="button-primary"
                     (click)="browseGurobiExecutable()">Browse
             </button>
           </td>
-          <td></td>
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td>Name status</td>
+          <td>Executable status</td>
         </tr>
       </table>
     </div>
