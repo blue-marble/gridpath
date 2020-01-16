@@ -1,4 +1,8 @@
-================
+************
+Installation
+************
+
+
 Using a Terminal
 ================
 
@@ -14,20 +18,17 @@ icon in the upper-right corner of the menu bar, or by pressing
 Command-Space bar.
 
 
-==================
 GridPath Directory
 ==================
 
 You first need to create a directory where to download GridPath's source
 code. We will refer to this directory as :code:`PATH/TO/GRIDPATH`.
 
-===========
 Source Code
 ===========
 GridPath's source code is stored in a GitHub repository. You will need
 Git to download the source code.
 
---------------
 Installing Git
 --------------
 Git installation instructions are `here <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
@@ -42,7 +43,6 @@ On RPM-based Linux distributions (e.g Fedora), use :code:`sudo dnf install
 git-all`; on Debian-based Linux distributions (e.g. Ubuntu), use :code:`sudo
 apt install git-all`.
 
--------------------------------
 Cloning the GridPath Repository
 -------------------------------
 
@@ -63,14 +63,12 @@ repository will not be required except for users who want to edit the source
 code.
 
 
-============
 Requirements
 ============
 
 GridPath is written and tested in Python 3, uses an SQLite database to store
 input and output data, and requires a solver to produce results.
 
-------
 Python
 ------
 
@@ -175,7 +173,6 @@ addition to Python and will be required to install various node packages.
 See the User Interface section for more info.
 
 
---------
 Database
 --------
 While not strictly required -- you can generate TAB-delimited scenario input
@@ -192,7 +189,6 @@ database GUI.
 We have implemented various tools to help you build your database. See the
 'The GridPath Database' section of the documentation.
 
-------
 Solver
 ------
 You will need a solver to get optimization results. GridPath assumes you
@@ -212,7 +208,6 @@ instructions for Windows `here <https://www.java.com/en/download/help/path
 .xml>`_).
 
 
-=========================
 Testing Your Installation
 =========================
 

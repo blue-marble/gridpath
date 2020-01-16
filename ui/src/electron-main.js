@@ -470,3 +470,13 @@ ipcMain.on('requestStoredSettings', (event) => {
       }
     );
 });
+
+ipcMain.on('requestStoredScenarioDirectoryForLog', (event) => {
+    storage.getMany(
+      ['currentScenariosDirectory'],
+      (error, data) => {
+        if (error) throw error;
+        event.sender.send('sendStoredScenarioDirectoryForLog', data)
+      }
+    );
+});

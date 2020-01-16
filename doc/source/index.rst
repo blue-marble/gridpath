@@ -7,59 +7,20 @@
    ^, for subsubsections
    ", for paragraphs
 
-############
-Introduction
-############
+######################
+GridPath Documentation
+######################
+
+Welcome to the GridPath Documentation.
 
 .. toctree::
-   :maxdepth: 3
+   :numbered:
+   :maxdepth: 2
 
    introduction
-
-###################
-Installing GridPath
-###################
-
-.. toctree::
-   :maxdepth: 3
-
    installation
-
-##############
-Using GridPath
-##############
-
-.. toctree::
-   :maxdepth: 3
-
    usage
-
-######################
-GridPath Functionality
-######################
-
-.. toctree::
-   :maxdepth: 4
-
    functionality
-
-
-#####################
-The GridPath Database
-#####################
-
-.. toctree::
-   :maxdepth: 4
-
    database
-
-
-######################
-Advanced Documentation
-######################
-
-.. toctree::
-   :maxdepth: 4
-
    architecture
    advanced_docs
