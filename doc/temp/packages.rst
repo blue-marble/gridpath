@@ -83,23 +83,23 @@ storage and demand-side resources available to the model.
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.common_methods
     :members:
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
+    :members:
 .. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
-    :members:
 .. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin
+    :members:
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.dr_new
-    :members:
-.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity
     :members:
@@ -109,30 +109,30 @@ storage and demand-side resources available to the model.
     :members:
 .. automodule:: gridpath.project.operations.operational_types.__init__
     :members:
+.. automodule:: gridpath.project.operations.operational_types.gen_simple
+    :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_always_on
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.gen_simple
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro
     :members:
 .. automodule:: gridpath.project.operations.operational_types.
 gen_hydro_must_take
     :members:
-.. automodule:: gridpath.project.operations.operational_types.gen_must_run
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.dr
-    :members:
-.. automodule:: gridpath.project.operations.operational_types.stor
-    :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_var
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.stor
+    :members:
+.. automodule:: gridpath.project.operations.operational_types.dr
     :members:
 .. automodule:: gridpath.project.operations.reserves.__init__
     :members:
