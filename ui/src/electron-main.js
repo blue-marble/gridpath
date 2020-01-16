@@ -224,10 +224,16 @@ function startServer () {
           'requested': 'requestedScenariosDirectory'},
         {'current': 'currentPythonEnvironment',
           'requested': 'requestedPythonEnvironment'},
+        {'current': 'currentSolver1Name',
+          'requested': 'requestedSolver1Name'},
         {'current': 'currentSolver1Executable',
           'requested': 'requestedSolver1Executable'},
+        {'current': 'currentSolver2Name',
+          'requested': 'requestedSolver2Name'},
         {'current': 'currentSolver2Executable',
           'requested': 'requestedSolver1Executable'},
+        {'current': 'currentSolver3Name',
+          'requested': 'requestedSolver3Name'},
         {'current': 'currentSolver3Executable',
           'requested': 'requestedSolver3Executable'},
       ];
@@ -350,37 +356,40 @@ function check_and_set_setting(
 // Settings
 
 // Set the scenarios directory setting based on Angular input
-// Get setting from renderer and store it
 ipcMain.on('setScenariosDirectorySetting', (event, msg) => {
   save_setting_in_electron_storage('requestedScenariosDirectory', msg);
 });
 
 // Set the GridPath database setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
 ipcMain.on('setGridPathDatabaseSetting', (event, msg) => {
   save_setting_in_electron_storage('requestedGridPathDatabase', msg);
 });
 
 // Set the Python environment setting based on Angular input
-// Get setting from renderer and store it
 ipcMain.on('setPythonEnvironmentSetting', (event, msg) => {
   save_setting_in_electron_storage('requestedPythonEnvironment', msg);
 });
 
-// Set the Solver1 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
+// Set the Solver1 name and executable settings based on Angular input
+ipcMain.on('setSolver1NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver1Name', msg);
+});
 ipcMain.on('setSolver1ExecutableSetting', (event, msg) => {
   save_setting_in_electron_storage('requestedSolver1Executable', msg);
 });
 
 // Set the Solver2 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setSolver2NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver2Name', msg);
+});
 ipcMain.on('setSolver2ExecutableSetting', (event, msg) => {
   save_setting_in_electron_storage('requestedSolver2Executable', msg);
 });
 
 // Set the Solver3 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setSolver3NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver3Name', msg);
+});
 ipcMain.on('setSolver3ExecutableSetting', (event, msg) => {
   save_setting_in_electron_storage('requestedSolver3Executable', msg);
 });

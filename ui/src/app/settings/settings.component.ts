@@ -243,6 +243,11 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  requestSolverName(channel, requestedName) {
+    // Send Electron the selected folder
+    electron.ipcRenderer.send(channel, requestedName);
+  }
+
   changeDirectoryStatus() {
     this.settingsService.changeDirectoryStatus(this.directoryStatus);
   }
