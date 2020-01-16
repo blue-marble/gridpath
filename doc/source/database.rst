@@ -93,6 +93,13 @@ The :code:`ui_` Tables
 The :code:`ui_` tables are used to include and exclude components of the
 GridPath user interface.
 
+The :code:`viz_` Tables
+**********************
+The :code:`viz_` tables are used in the GridPath visualization suite, for
+instance when determining in which color and order to plot the technologies in
+the dispatch plot.
+
+
 *********************
 Building the Database
 *********************
