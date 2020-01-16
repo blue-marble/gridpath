@@ -1,7 +1,7 @@
 Packages
 ========
 
-GridPath consists of several high-level 'packages,' each containing multiple
+GridPath consists of several high-level 'packages', each containing multiple
 modules.
 
 gridpath.auxiliary
