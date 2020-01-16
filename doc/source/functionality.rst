@@ -787,7 +787,7 @@ objective function.
 
 Reliability
 ===========
-GridPath can optionally model a planning-reserve capacity requirement (PRM).
+GridPath can optionally model a planning-reserve margin requirement (PRM).
 The user must the define the zones with a PRM requirement and the
 requirement level for each PRM zone and period. Each project that can
 contribute capacity (i.e. expected load-carrying capability -- ELCC --
