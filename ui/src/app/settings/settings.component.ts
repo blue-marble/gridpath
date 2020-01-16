@@ -16,17 +16,21 @@ export class SettingsComponent implements OnInit {
   currentScenariosDirectory: string;
   currentGridPathDB: string;
   currentPythonDirectory: string;
+  currentSolver1Name: string;
   currentSolver1Executable: string;
   currentSolver2Name: string;
   currentSolver2Executable: string;
+  currentSolver3Name: string;
   currentSolver3Executable: string;
 
   requestedScenariosDirectory: string;
   requestedGridPathDB: string;
   requestedPythonDirectory: string;
+  requestedSolver1Name: string;
   requestedSolver1Executable: string;
   requestedSolver2Name: string;
   requestedSolver2Executable: string;
+  requestedSolver3Name: string;
   requestedSolver3Executable: string;
 
   // TODO: add solver status
@@ -34,7 +38,9 @@ export class SettingsComponent implements OnInit {
   databaseStatus: string;
   pythonStatus: string;
 
+  solver1Status: string;
   solver2Status: string;
+  solver3Status: string;
 
   constructor(
     private zone: NgZone,
@@ -57,8 +63,6 @@ export class SettingsComponent implements OnInit {
         this.getSettingsFromElectron(data);
       }
     );
-
-    this.currentSolver2Name = 'CPLEX';
   }
 
   getSettingsFromElectron(data) {
@@ -69,14 +73,20 @@ export class SettingsComponent implements OnInit {
       this.currentScenariosDirectory = data.currentScenariosDirectory.value;
       this.currentGridPathDB = data.currentGridPathDatabase.value;
       this.currentPythonDirectory = data.currentPythonEnvironment.value;
+      this.currentSolver1Name = data.currentSolver1Name.value;
       this.currentSolver1Executable = data.currentSolver1Executable.value;
+      this.currentSolver2Name = data.currentSolver2Name.value;
       this.currentSolver2Executable = data.currentSolver2Executable.value;
+      this.currentSolver3Name = data.currentSolver3Name.value;
       this.currentSolver3Executable = data.currentSolver3Executable.value;
       this.requestedScenariosDirectory = data.requestedScenariosDirectory.value;
       this.requestedGridPathDB = data.requestedGridPathDatabase.value;
       this.requestedPythonDirectory = data.requestedPythonEnvironment.value;
+      this.requestedSolver1Name = data.requestedSolver1Name.value;
       this.requestedSolver1Executable = data.requestedSolver1Executable.value;
+      this.requestedSolver2Name = data.requestedSolver2Name.value;
       this.requestedSolver2Executable = data.requestedSolver2Executable.value;
+      this.requestedSolver3Name = data.requestedSolver3Name.value;
       this.requestedSolver3Executable = data.requestedSolver3Executable.value;
     });
   }

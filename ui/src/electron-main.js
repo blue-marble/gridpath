@@ -34,11 +34,17 @@ function createMainWindow () {
         // TODO: should a solver be required; currently not (user can
         //  browse without running scenarios)
         const optionalKeys = [
+          'currentSolver1Name',
           'currentSolver1Executable',
+          'currentSolver2Name',
           'currentSolver2Executable',
+          'currentSolver3Name',
           'currentSolver3Executable',
+          'requestedSolver1Name',
           'requestedSolver1Executable',
+          'requestedSolver2Name',
           'requestedSolver2Executable',
+          'requestedSolver3Name',
           'requestedSolver3Executable'
         ];
 
@@ -267,14 +273,20 @@ function startServer () {
       'currentGridPathDatabase',
       'currentScenariosDirectory',
       'currentPythonEnvironment',
+      'currentSolver1Name',
       'currentSolver1Executable',
+      'currentSolver2Name',
       'currentSolver2Executable',
+      'currentSolver3Name',
       'currentSolver3Executable',
       'requestedGridPathDatabase',
       'requestedScenariosDirectory',
       'requestedPythonEnvironment',
+      'requestedSolver1Name',
       'requestedSolver1Executable',
+      'requestedSolver2Name',
       'requestedSolver2Executable',
+      'requestedSolver3Name',
       'requestedSolver3Executable'
     ],
     (error, data) => {
@@ -459,8 +471,11 @@ ipcMain.on('requestStoredSettings', (event) => {
       ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
         'currentPythonEnvironment', 'requestedPythonEnvironment',
+        'currentSolver1Name', 'requestedSolver1Name',
         'currentSolver1Executable', 'requestedSolver1Executable',
+        'currentSolver2Name', 'requestedSolver2Name',
         'currentSolver2Executable', 'requestedSolver2Executable',
+        'currentSolver3Name', 'requestedSolver3Name',
         'currentSolver3Executable', 'requestedSolver3Executable'
 
       ],
