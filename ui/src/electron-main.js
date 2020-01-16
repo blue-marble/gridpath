@@ -245,8 +245,11 @@ function startServer () {
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
       const pyDir = data['requestedPythonEnvironment']['value'];
+      const solver1Name = data['requestedSolver1Name']['value'];
       const solver1Exec = data['requestedSolver1Executable']['value'];
+      const solver2Name = data['requestedSolver2Name']['value'];
       const solver2Exec = data['requestedSolver2Executable']['value'];
+      const solver3Name = data['requestedSolver3Name']['value'];
       const solver3Exec = data['requestedSolver3Executable']['value'];
 
       // The server entry point based on the Python directory and the
@@ -289,8 +292,11 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
+                SOLVER1_NAME: solver1Name,
                 SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_NAME: solver2Name,
                 SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_NAME: solver3Name,
                 SOLVER3_EXECUTABLE: solver3Exec
               }
             },
@@ -305,8 +311,11 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
+                SOLVER1_NAME: solver1Name,
                 SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_NAME: solver2Name,
                 SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_NAME: solver3Name,
                 SOLVER3_EXECUTABLE: solver3Exec
               }
             }

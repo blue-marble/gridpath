@@ -55,13 +55,16 @@ signal.signal(signal.SIGINT, sigint_handler)
 SCENARIOS_DIRECTORY = os.environ['SCENARIOS_DIRECTORY']
 # DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
 DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
+SOLVER1_NAME = os.environ['SOLVER1_NAME']
 SOLVER1_EXECUTABLE = os.environ['SOLVER1_EXECUTABLE']
+SOLVER2_NAME = os.environ['SOLVER2_NAME']
 SOLVER2_EXECUTABLE = os.environ['SOLVER2_EXECUTABLE']
+SOLVER3_NAME = os.environ['SOLVER3_NAME']
 SOLVER3_EXECUTABLE = os.environ['SOLVER3_EXECUTABLE']
-SOLVER_EXECUTABLES = {
-  "cbc": SOLVER1_EXECUTABLE,
-  "cplex": SOLVER2_EXECUTABLE,
-  "gurobi": SOLVER3_EXECUTABLE
+SOLVERS = {
+  SOLVER1_NAME: SOLVER1_EXECUTABLE,
+  SOLVER2_NAME: SOLVER2_EXECUTABLE,
+  SOLVER3_NAME: SOLVER3_EXECUTABLE
 }
 
 
@@ -113,7 +116,9 @@ def socket_launch_scenario_process(client_message):
 
     scenario_id = client_message["scenario"]
     solver = client_message["solver"]
-    solver_executable = SOLVER_EXECUTABLES[solver]
+
+    # TODO: add error if solver is not in the keys of the SOLVERS
+    solver_executable = SOLVERS[solver]
     # TODO: implement functionality to skip warnings if the user has
     #  confirmed they want to re-run scenario
     skip_warnings = client_message["skipWarnings"]
