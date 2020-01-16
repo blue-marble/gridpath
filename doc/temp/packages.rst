@@ -83,21 +83,17 @@ storage and demand-side resources available to the model.
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.common_methods
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.
-gen_ret_lin
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.
-gen_spec
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
     :members:
 .. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.
-dr_new
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new
     :members:
-.. automodule:: gridpath.project.capacity.capacity_types.
-stor_spec
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
     :members:
 .. automodule:: gridpath.project.capacity.capacity
     :members:
@@ -109,17 +105,13 @@ stor_spec
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_always_on
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-gen_commit_bin
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-gen_commit_cap
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-gen_commit_lin
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-gen_simple
+.. automodule:: gridpath.project.operations.operational_types.gen_simple
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_hydro
     :members:
@@ -128,15 +120,13 @@ gen_hydro_must_take
     :members:
 .. automodule:: gridpath.project.operations.operational_types.gen_must_run
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-dr
+.. automodule:: gridpath.project.operations.operational_types.dr
     :members:
 .. automodule:: gridpath.project.operations.operational_types.stor
     :members:
 .. automodule:: gridpath.project.operations.operational_types.variable
     :members:
-.. automodule:: gridpath.project.operations.operational_types.
-gen_var_must_take
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
     :members:
 .. automodule:: gridpath.project.operations.reserves.__init__
     :members:
@@ -154,8 +144,7 @@ gen_var_must_take
     :members:
 .. automodule:: gridpath.project.operations.reserves.spinning_reserves
     :members:
-.. automodule:: gridpath.project.operations.reserves.
-subhourly_energy_adjustment
+.. automodule:: gridpath.project.operations.reserves.subhourly_energy_adjustment
     :members:
 .. automodule:: gridpath.project.operations.fix_commitment
     :members:
@@ -208,11 +197,9 @@ infrastructure available to the model.
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity_types.__init__
     :members:
-.. automodule:: gridpath.transmission.capacity.capacity_types.
-tx_spec
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec
     :members:
-.. automodule:: gridpath.transmission.capacity.capacity_types.
-tx_new_lin
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin
     :members:
 .. automodule:: gridpath.transmission.capacity.capacity
     :members:
