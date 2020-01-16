@@ -182,90 +182,6 @@ app.on('activate', () => {
 });
 
 
-// Settings
-
-// Set the scenarios directory setting based on Angular input
-// Get setting from renderer and store it
-ipcMain.on('setScenariosDirectorySetting', (event, scenariosDir) => {
-	console.log(`Scenarios folder set to ${scenariosDir}`);
-	// TODO: do we need to keep in storage?
-  // Set the scenarios directory path in Electron JSON storage
-  storage.set(
-      'requestedScenariosDirectory',
-      { 'value': scenariosDir },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the GridPath database setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
-	console.log(`GridPath database set to ${gpDB}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedGridPathDatabase',
-      { 'value': gpDB },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Python environment setting based on Angular input
-// Get setting from renderer and store it
-ipcMain.on('setPythonEnvironmentSetting', (event, pythonenvironment) => {
-	console.log(`Python environment directory set to ${pythonenvironment}`);
-	// TODO: do we need to keep in storage?
-  // Set the Python environment path in Electron JSON storage
-  storage.set(
-      'requestedPythonEnvironment',
-      { 'value': pythonenvironment },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Solver1 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setSolver1ExecutableSetting', (event, msg) => {
-	console.log(`Solver1 executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedSolver1Executable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Solver2 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setSolver2ExecutableSetting', (event, msg) => {
-	console.log(`Solver2 executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedSolver2Executable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Solver3 executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setSolver3ExecutableSetting', (event, msg) => {
-	console.log(`Solver3 executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedSolver3Executable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
 // Flask server
 function startServer () {
   storage.getMany(
@@ -313,7 +229,7 @@ function startServer () {
         {'current': 'currentSolver2Executable',
           'requested': 'requestedSolver1Executable'},
         {'current': 'currentSolver3Executable',
-          'requested': 'requestedSolver1Executable'},
+          'requested': 'requestedSolver3Executable'},
       ];
 
       for (let pair of settingPairs) {
@@ -431,6 +347,44 @@ function check_and_set_setting(
 
 // //// IPC Communication //// //
 
+// Settings
+
+// Set the scenarios directory setting based on Angular input
+// Get setting from renderer and store it
+ipcMain.on('setScenariosDirectorySetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedScenariosDirectory', msg);
+});
+
+// Set the GridPath database setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setGridPathDatabaseSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedGridPathDatabase', msg);
+});
+
+// Set the Python environment setting based on Angular input
+// Get setting from renderer and store it
+ipcMain.on('setPythonEnvironmentSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedPythonEnvironment', msg);
+});
+
+// Set the Solver1 executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setSolver1ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver1Executable', msg);
+});
+
+// Set the Solver2 executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setSolver2ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver2Executable', msg);
+});
+
+// Set the Solver3 executable setting based on Angular input
+// Get setting from renderer, store it, and send it to the server
+ipcMain.on('setSolver3ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver3Executable', msg);
+});
+
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
     storage.getMany(
@@ -461,3 +415,13 @@ ipcMain.on('requestStoredScenarioDirectoryForLog', (event) => {
       }
     );
 });
+
+function save_setting_in_electron_storage(setting_name, ipc_message) {
+  console.log(`${setting_name} set to ${ipc_message}`);
+  // Set the solver 3 executable path in Electron JSON storage
+  storage.set(
+      setting_name,
+      { 'value': ipc_message },
+      (error) => {if (error) throw error;}
+  );
+}
