@@ -125,6 +125,22 @@ option , e.g.:
 ```bash
 python get_scenario_inputs.py --help
 ```
+
+
 # Documentation
 
-Coming soon...
+To build the documentation from source, navigate to the ./docs folder in
+your terminal and type the following command:
+```bash
+make html
+```
+
+This will build the documentation in HTML format in the the ./docs/build/html 
+folder. You can view the documentation by double clicking any of the .html
+files (we recommend starting at index.html). 
+
+Note that you will first need to install 
+[Sphinx](http://www.sphinx-doc.org/en/master/) on your computer (see the 
+Installation section above). In the future, the latest documentation build will
+be hosted online so you don't have to build it from source yourself. 
+
