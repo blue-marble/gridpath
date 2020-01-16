@@ -13,6 +13,7 @@ import { SettingsService } from './settings.service';
 
 export class SettingsComponent implements OnInit {
 
+  // Current settings
   currentScenariosDirectory: string;
   currentGridPathDB: string;
   currentPythonDirectory: string;
@@ -23,6 +24,7 @@ export class SettingsComponent implements OnInit {
   currentSolver3Name: string;
   currentSolver3Executable: string;
 
+  // Requested settings
   requestedScenariosDirectory: string;
   requestedGridPathDB: string;
   requestedPythonDirectory: string;
@@ -33,14 +35,16 @@ export class SettingsComponent implements OnInit {
   requestedSolver3Name: string;
   requestedSolver3Executable: string;
 
-  // TODO: add solver status
+  // Status
   directoryStatus: string;
   databaseStatus: string;
   pythonStatus: string;
-
-  solver1Status: string;
-  solver2Status: string;
-  solver3Status: string;
+  solver1NameStatus: string;
+  solver1ExecutableStatus: string;
+  solver2NameStatus: string;
+  solver2ExecutableStatus: string;
+  solver3NameStatus: string;
+  solver3ExecutableStatus: string;
 
   constructor(
     private zone: NgZone,
@@ -55,6 +59,12 @@ export class SettingsComponent implements OnInit {
     this.directoryStatus = '';
     this.databaseStatus = '';
     this.pythonStatus = '';
+    this.solver1NameStatus = '';
+    this.solver1ExecutableStatus = '';
+    this.solver2NameStatus = '';
+    this.solver2ExecutableStatus = '';
+    this.solver3NameStatus = '';
+    this.solver3ExecutableStatus = '';
 
     // Ask Electron for any current settings
     electron.ipcRenderer.send('requestStoredSettings');
@@ -262,6 +272,6 @@ export class SettingsComponent implements OnInit {
 
   changeSolver2NameStatus() {
     console.log(this.requestedSolver2Name);
-    this.solver2Status = 'name status';
+    this.solver2NameStatus = 'name status';
   }
 }
