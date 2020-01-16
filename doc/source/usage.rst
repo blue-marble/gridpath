@@ -102,7 +102,7 @@ future, we may support other file formats, including CSVs. We may also skip
 the writing of files altogether, although keeping an additional record of what
 goes into a scenario is often useful.
 
-The next step is of the Python model (consisting of various modules that
+The next step is for the Python model (consisting of various modules that
 create the model formulation) to read in the TAB-delimited input files and
 create the optimization problem. The compiled model file is then sent to the
 solver. GridPath is solver-agnostic and supports a wide range of solvers.
