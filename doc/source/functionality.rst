@@ -538,8 +538,8 @@ capacity type, which determines their capacity availability and costs, and an
 operational type, which determines their operational characteristics and costs.
 
 The transmission network in GridPath can currently be modeled using a linear
-transport model only. In the future, we may add DC and/or AC network
-capability.
+transport model or using DC power flow (see Transmission Operational Types). In
+either approach, resistive losses are assumed to be negligible.
 
 
 Transmission Capacity Types
