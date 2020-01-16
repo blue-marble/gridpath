@@ -207,8 +207,8 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     const logFile = `e2e_${this.scenarioDetail.runStartTime}_pid_${this.scenarioDetail.runPID}.log`;
 
     // Ask Electron for any the current scenarios setting
-    electron.ipcRenderer.send('requestStoredSettings');
-    electron.ipcRenderer.on('sendStoredSettings',
+    electron.ipcRenderer.send('requestStoredScenarioDirectoryForLog');
+    electron.ipcRenderer.on('sendStoredScenarioDirectoryForLog',
       (event, data) => {
         const logFilePath = path.join(
           data.currentScenariosDirectory.value,
