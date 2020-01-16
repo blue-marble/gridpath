@@ -300,76 +300,25 @@ function startServer () {
       // variables. New settings will therefore require a server restart to
       // take effect. The user will see both the 'current' and 'requested'
       // settings and will be informed of the need to restart.
-      // TODO: refactor
-      if (data['currentGridPathDatabase']['value']
-        === data['requestedGridPathDatabase']['value']) {
-        console.log("Current and requested GP databases match.")
-      } else {
-        storage.set(
-          'currentGridPathDatabase',
-          { 'value': data['requestedGridPathDatabase']['value'] },
-          (error) => {if (error) throw error;}
-        );
-      }
-      if (data['currentScenariosDirectory']['value']
-        === data['requestedScenariosDirectory']['value']) {
-        console.log("Current and requested GP directories match.");
-      } else {
-        storage.set(
-          'currentScenariosDirectory',
-          { 'value': data['requestedScenariosDirectory']['value'] },
-          (error) => {if (error) throw error;}
-        );
-      }
-      if (data['currentPythonEnvironment']['value']
-        === data['requestedPythonEnvironment']['value']) {
-        console.log("Current and requested Python directories match.")
-      } else {
-        storage.set(
-          'currentPythonEnvironment',
-          { 'value': data['requestedPythonEnvironment']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentSolver1Executable']['value']
-        === data['requestedSolver1Executable']['value']) {
-        console.log("Current and requested Solver1 executables match.")
-      } else {
-        storage.set(
-          'currentSolver1Executable',
-          { 'value': data['requestedSolver1Executable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentSolver2Executable']['value']
-        === data['requestedSolver2Executable']['value']) {
-        console.log("Current and requested Solver2 executables match.")
-      } else {
-        storage.set(
-          'currentSolver2Executable',
-          { 'value': data['requestedSolver2Executable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentSolver3Executable']['value']
-        === data['requestedSolver3Executable']['value']) {
-        console.log("Current and requested Solver3 executables match.")
-      } else {
-        storage.set(
-          'currentSolver3Executable',
-          { 'value': data['requestedSolver3Executable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
 
+      const settingPairs = [
+        {'current': 'currentGridPathDatabase',
+          'requested': 'requestedGridPathDatabase'},
+        {'current': 'currentScenariosDirectory',
+          'requested': 'requestedScenariosDirectory'},
+        {'current': 'currentPythonEnvironment',
+          'requested': 'requestedPythonEnvironment'},
+        {'current': 'currentSolver1Executable',
+          'requested': 'requestedSolver1Executable'},
+        {'current': 'currentSolver2Executable',
+          'requested': 'requestedSolver1Executable'},
+        {'current': 'currentSolver3Executable',
+          'requested': 'requestedSolver1Executable'},
+      ];
+
+      for (let pair of settingPairs) {
+        check_and_set_setting(data, pair['current'], pair['requested']);
+      }
 
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
@@ -464,6 +413,23 @@ function startServer () {
   );
 }
 
+function check_and_set_setting(
+  settings_data, setting_name_current, setting_name_requested
+) {
+  if (settings_data[setting_name_current]['value']
+    === settings_data[setting_name_requested]['value']) {
+  } else {
+    storage.set(
+      setting_name_current,
+      { 'value': settings_data[setting_name_requested]['value'] },
+      (error) => {
+        if (error) throw error;
+      }
+    );
+  }
+}
+
+// //// IPC Communication //// //
 
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
