@@ -55,13 +55,16 @@ signal.signal(signal.SIGINT, sigint_handler)
 SCENARIOS_DIRECTORY = os.environ['SCENARIOS_DIRECTORY']
 # DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
 DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
-CBC_EXECUTABLE = os.environ['CBC_EXECUTABLE']
-CPLEX_EXECUTABLE = os.environ['CPLEX_EXECUTABLE']
-GUROBI_EXECUTABLE = os.environ['GUROBI_EXECUTABLE']
-SOLVER_EXECUTABLES = {
-  "cbc": {"name": "cbc", "executable": CBC_EXECUTABLE},
-  "cplex": {"name": "cplex", "executable": CPLEX_EXECUTABLE},
-  "gurobi": {"name": "gurobi", "executable": GUROBI_EXECUTABLE}
+SOLVER1_NAME = os.environ['SOLVER1_NAME']
+SOLVER1_EXECUTABLE = os.environ['SOLVER1_EXECUTABLE']
+SOLVER2_NAME = os.environ['SOLVER2_NAME']
+SOLVER2_EXECUTABLE = os.environ['SOLVER2_EXECUTABLE']
+SOLVER3_NAME = os.environ['SOLVER3_NAME']
+SOLVER3_EXECUTABLE = os.environ['SOLVER3_EXECUTABLE']
+SOLVERS = {
+  SOLVER1_NAME: SOLVER1_EXECUTABLE,
+  SOLVER2_NAME: SOLVER2_EXECUTABLE,
+  SOLVER3_NAME: SOLVER3_EXECUTABLE
 }
 
 
@@ -110,8 +113,12 @@ def socket_launch_scenario_process(client_message):
     Launch and manage a scenario run process.
     """
     print(client_message)
+
     scenario_id = client_message["scenario"]
-    solver = SOLVER_EXECUTABLES[client_message["solver"]]
+    solver = client_message["solver"]
+
+    # TODO: add error if solver is not in the keys of the SOLVERS
+    solver_executable = SOLVERS[solver]
     # TODO: implement functionality to skip warnings if the user has
     #  confirmed they want to re-run scenario
     skip_warnings = client_message["skipWarnings"]
@@ -128,7 +135,8 @@ def socket_launch_scenario_process(client_message):
           db_path=DATABASE_PATH,
           scenarios_directory=SCENARIOS_DIRECTORY,
           scenario_id=scenario_id,
-          solver=solver
+          solver=solver,
+          solver_executable=solver_executable
         )
         # Needed to ensure child processes are terminated when server exits
         atexit.register(p.terminate)
