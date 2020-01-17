@@ -452,7 +452,7 @@ def add_module_specific_components(m, d):
             <= \
             (mod.DispBinCommit_Pmax_MW[g, tmp]
              - mod.DispBinCommit_Pmin_MW[g, tmp]) \
-            * mod.Commit_Binary[g, tmp] \
+            * mod.Commit_Binary[g, tmp]
 
     m.DispBinCommit_Max_Power_Constraint = Constraint(
         m.DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
