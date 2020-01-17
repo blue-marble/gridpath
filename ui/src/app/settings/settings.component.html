@@ -117,9 +117,10 @@
           <td>
             <select [(ngModel)]="requestedSolver1Name"
                     (change)="changeSolver1NameStatus()">
-              <option value="cbc">cbc</option>
-              <option value="cplex">cplex</option>
-              <option value="gurobi">gurobi</option>
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
             </select>
           </td>
           <td>
@@ -160,9 +161,10 @@
           <td>
             <select [(ngModel)]="requestedSolver2Name"
                     (change)="changeSolver2NameStatus()">
-              <option value="cbc">cbc</option>
-              <option value="cplex">cplex</option>
-              <option value="gurobi">gurobi</option>
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
             </select>
           </td>
           <td>
@@ -202,9 +204,10 @@
           <td>
             <select [(ngModel)]="requestedSolver3Name"
                     (change)="changeSolver3NameStatus()">
-              <option value="cbc">cbc</option>
-              <option value="cplex">cplex</option>
-              <option value="gurobi">gurobi</option>
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
             </select>
           </td>
           <td>
