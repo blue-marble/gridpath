@@ -3407,6 +3407,18 @@ stage_form_control INTEGER,
 project_form_control INTEGER
 );
 
+---------------------
+--- VISUALIZATION ---
+---------------------
+
+-- Technology colors and plotting order
+DROP TABLE IF EXISTS viz_technologies;
+CREATE TABLE viz_technologies (
+technology VARCHAR(32),
+color VARCHAR(32),
+plotting_order INTEGER UNIQUE,
+PRIMARY KEY (technology)
+);
 
 ---------------
 --- OPTIONS ---

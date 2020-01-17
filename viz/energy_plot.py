@@ -15,7 +15,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import create_stacked_bar_plot, show_plot, \
-    get_parent_parser
+    get_parent_parser, get_tech_colors, get_tech_plotting_order
 
 
 def parse_arguments(arguments):
@@ -105,6 +105,10 @@ def main(args=None):
         c=c,
         script="energy_plot"
     )
+
+    tech_colors = get_tech_colors(c)
+    tech_plotting_order = get_tech_plotting_order(c)
+
     plot_title = "Energy by Period - {} - Stage {}".format(
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "EnergyPlot-{}-{}".format(
@@ -126,6 +130,8 @@ def main(args=None):
         column_mapper={"energy_twh": "Energy (TWh)",
                        "period": "Period",
                        "technology": "Technology"},
+        group_colors=tech_colors,
+        group_order=tech_plotting_order,
         ylimit=parsed_args.ylimit
     )
 

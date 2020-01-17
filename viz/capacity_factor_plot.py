@@ -19,7 +19,8 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_tech_colors
 
 
 def parse_arguments(arguments):
@@ -113,20 +114,30 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     return df
 
 
-def create_plot(df, title):
+def create_plot(df, title, tech_colors={}):
     """
 
     :param df:
     :param title: string, plot title
+    :param tech_colors: optional dict that maps technologies to colors.
+        Technologies without a specified color will use a default palette
     :return:
     """
     # TODO: handle empty dataframe (will give bokeh warning)
 
     technologies = df["technology"].unique()
 
-    # Create a map between factor/technology and color.
-    colors = cividis(len(technologies))
-    colormap = {t: colors[i] for i, t in enumerate(technologies)}
+    # Create a map between factor (technology) and color.
+    techs_wo_colors = [t for t in technologies
+                       if t not in tech_colors.keys()]
+    default_cmap = dict(zip(techs_wo_colors,
+                            cividis(len(techs_wo_colors))))
+    colormap = {}
+    for t in technologies:
+        if t in tech_colors:
+            colormap[t] = tech_colors[t]
+        else:
+            colormap[t] = default_cmap[t]
 
     # Set up the figure
     plot = figure(
@@ -242,6 +253,8 @@ def main(args=None):
         script="capacity_factor_plot"
     )
 
+    tech_colors = get_tech_colors(c)
+
     plot_title = "Capacity Factors by Period - {} - Stage {}".format(
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "CapFactorPlot-{}-{}".format(
@@ -257,6 +270,7 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
+        tech_colors=tech_colors
     )
 
     # Show plot in HTML browser file if requested
