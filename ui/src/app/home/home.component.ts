@@ -57,7 +57,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.determineSolver2Status();
     this.determineSolver3Status();
 
-    // TODO: is this necessary now that we check this in Settings
+    // The SettingsService behavior subjects start with 'set' and we need to
+    // make sure we do not show 'set' before the Settings view has had a
+    // chance to update the behavior subjects (e.g. the user hasn't visited
+    // and updated the settings yet)
     // If any of the settings are null, we'll overwrite the status from
     // the settings service with 'not set'
     // For the solvers, we'll overwrite if either the name or the executable
