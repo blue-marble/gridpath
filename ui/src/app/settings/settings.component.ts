@@ -205,7 +205,15 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver1Executable = filePath[0];
-        // TODO: add status
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          if (this.requestedSolver1Executable !== this.currentSolver1Executable) {
+            this.solver1ExecutableStatus = 'restart required';
+            this.changeSolver1ExecutableStatus();
+          } else {
+            this.solver1ExecutableStatus = 'set';
+            this.changeSolver1ExecutableStatus();
+          }
         });
       }
     });
@@ -226,7 +234,15 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver2Executable = filePath[0];
-        // TODO: add status
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          if (this.requestedSolver2Executable !== this.currentSolver2Executable) {
+            this.solver2ExecutableStatus = 'restart required';
+            this.changeSolver2ExecutableStatus();
+          } else {
+            this.solver2ExecutableStatus = 'set';
+            this.changeSolver2ExecutableStatus();
+          }
         });
       }
     });
@@ -247,7 +263,15 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver3Executable = filePath[0];
-        // TODO: add status
+          // If the requested directory differs from the current directory, alert
+          // the user by setting the setting status to 'restart required'
+          if (this.requestedSolver3Executable !== this.currentSolver3Executable) {
+            this.solver3ExecutableStatus = 'restart required';
+            this.changeSolver3ExecutableStatus();
+          } else {
+            this.solver3ExecutableStatus = 'set';
+            this.changeSolver3ExecutableStatus();
+          }
         });
       }
     });
@@ -270,8 +294,27 @@ export class SettingsComponent implements OnInit {
     this.settingsService.changePythonStatus(this.pythonStatus);
   }
 
+  changeSolver1NameStatus() {
+    this.settingsService.changeSolver1NameStatus(this.solver1NameStatus);
+  }
+
+  changeSolver1ExecutableStatus() {
+    this.settingsService.changeSolver1ExecutableStatus(this.solver1ExecutableStatus);
+  }
+
   changeSolver2NameStatus() {
-    console.log(this.requestedSolver2Name);
-    this.solver2NameStatus = 'name status';
+    this.settingsService.changeSolver2NameStatus(this.solver2NameStatus);
+  }
+
+  changeSolver2ExecutableStatus() {
+    this.settingsService.changeSolver2ExecutableStatus(this.solver2ExecutableStatus);
+  }
+
+  changeSolver3NameStatus() {
+    this.settingsService.changeSolver3NameStatus(this.solver3NameStatus);
+  }
+
+  changeSolver3ExecutableStatus() {
+    this.settingsService.changeSolver3ExecutableStatus(this.solver3ExecutableStatus);
   }
 }

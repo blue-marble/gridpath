@@ -231,7 +231,7 @@ function startServer () {
         {'current': 'currentSolver2Name',
           'requested': 'requestedSolver2Name'},
         {'current': 'currentSolver2Executable',
-          'requested': 'requestedSolver1Executable'},
+          'requested': 'requestedSolver2Executable'},
         {'current': 'currentSolver3Name',
           'requested': 'requestedSolver3Name'},
         {'current': 'currentSolver3Executable',

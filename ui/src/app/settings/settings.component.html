@@ -136,7 +136,10 @@
         <tr>
           <td>Status</td>
           <td>Name status</td>
-          <td>Executable status</td>
+          <td [ngClass]="{
+              'orange' : solver1ExecutableStatus == 'restart required',
+              'green' : solver1ExecutableStatus == 'set'
+           }">{{solver1ExecutableStatus}}</td>
         </tr>
       </table>
 
@@ -178,7 +181,10 @@
               'orange' : currentSolver2Name !== requestedSolver2Name,
               'green' : currentSolver2Name == requestedSolver2Name
            }">{{solver2NameStatus}}</td>
-          <td>Executable status</td>
+          <td [ngClass]="{
+              'orange' : solver2ExecutableStatus == 'restart required',
+              'green' : solver2ExecutableStatus == 'set'
+           }">{{solver2ExecutableStatus}}<td>
         </tr>
       </table>
       <table class="scenario-detail">
@@ -216,7 +222,10 @@
         <tr>
           <td>Status</td>
           <td>Name status</td>
-          <td>Executable status</td>
+          <td [ngClass]="{
+              'orange' : solver3ExecutableStatus == 'restart required',
+              'green' : solver3ExecutableStatus == 'set'
+           }">{{solver3ExecutableStatus}}</td>
         </tr>
       </table>
     </div>
