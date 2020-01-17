@@ -138,8 +138,6 @@ export class SettingsComponent implements OnInit {
       if (folderPath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setScenariosDirectorySetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedScenariosDirectory = folderPath[0];
@@ -159,8 +157,6 @@ export class SettingsComponent implements OnInit {
       if (dbFilePath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setGridPathDatabaseSetting', dbFilePath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedGridPathDB = dbFilePath[0];
@@ -180,8 +176,6 @@ export class SettingsComponent implements OnInit {
       if (folderPath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setPythonEnvironmentSetting', folderPath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedPythonDirectory = folderPath[0];
@@ -201,8 +195,6 @@ export class SettingsComponent implements OnInit {
       if (filePath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setSolver1ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver1Executable = filePath[0];
@@ -222,8 +214,6 @@ export class SettingsComponent implements OnInit {
       if (filePath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setSolver2ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver2Executable = filePath[0];
@@ -243,8 +233,6 @@ export class SettingsComponent implements OnInit {
       if (filePath === undefined) {
           return;
       } else {
-        // Send Electron the selected folder
-        electron.ipcRenderer.send('setSolver3ExecutableSetting', filePath[0]);
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver3Executable = filePath[0];
@@ -254,21 +242,24 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  // Changes status functions
+  // Change-status functions
+  // Send request to Electron
   // If the requested setting differs from the current setting, alert
   // the user by setting the setting status to 'restart required'
-
   changeDirectoryStatus() {
+    electron.ipcRenderer.send('setScenariosDirectorySetting', this.requestedScenariosDirectory);
     this.directoryStatus = (this.requestedScenariosDirectory !== this.currentScenariosDirectory) ? 'restart required' : 'set';
     this.settingsService.changeDirectoryStatus(this.directoryStatus);
   }
 
   changeDatabaseStatus() {
+    electron.ipcRenderer.send('setGridPathDatabaseSetting', this.requestedGridPathDB);
     this.databaseStatus = (this.requestedGridPathDB !== this.currentGridPathDB) ? 'restart required' : 'set';
     this.settingsService.changeDatabaseStatus(this.databaseStatus);
   }
 
   changePythonStatus() {
+    electron.ipcRenderer.send('setPythonEnvironmentSetting', this.requestedPythonDirectory);
     this.pythonStatus = (this.requestedPythonDirectory !== this.currentPythonDirectory) ? 'restart required' : 'set';
     this.settingsService.changePythonStatus(this.pythonStatus);
   }
@@ -280,6 +271,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver1ExecutableStatus() {
+    electron.ipcRenderer.send('setSolver1ExecutableSetting', this.requestedSolver1Executable);
     this.solver1ExecutableStatus = (this.requestedSolver1Executable !== this.currentSolver1Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver1ExecutableStatus(this.solver1ExecutableStatus);
   }
@@ -291,6 +283,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver2ExecutableStatus() {
+    electron.ipcRenderer.send('setSolver2ExecutableSetting', this.requestedSolver2Executable);
     this.solver2ExecutableStatus = (this.requestedSolver2Executable !== this.currentSolver2Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver2ExecutableStatus(this.solver2ExecutableStatus);
   }
@@ -302,6 +295,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver3ExecutableStatus() {
+    electron.ipcRenderer.send('setSolver3ExecutableSetting', this.requestedSolver3Executable);
     this.solver3ExecutableStatus = (this.requestedSolver3Executable !== this.currentSolver3Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver3ExecutableStatus(this.solver3ExecutableStatus);
   }
