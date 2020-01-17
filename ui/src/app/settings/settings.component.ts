@@ -274,6 +274,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver1NameStatus() {
+    electron.ipcRenderer.send('setSolver1NameSetting', this.requestedSolver1Name);
     this.solver1NameStatus = (this.requestedSolver1Name !== this.currentSolver1Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver1NameStatus(this.solver1NameStatus);
   }
@@ -284,6 +285,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver2NameStatus() {
+    electron.ipcRenderer.send('setSolver2NameSetting', this.requestedSolver2Name);
     this.solver2NameStatus = (this.requestedSolver2Name !== this.currentSolver2Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver2NameStatus(this.solver2NameStatus);
   }
@@ -294,6 +296,7 @@ export class SettingsComponent implements OnInit {
   }
 
   changeSolver3NameStatus() {
+    electron.ipcRenderer.send('setSolver3NameSetting', this.requestedSolver3Name);
     this.solver3NameStatus = (this.requestedSolver3Name !== this.currentSolver3Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver3NameStatus(this.solver3NameStatus);
   }
