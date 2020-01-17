@@ -135,6 +135,16 @@ the following::
 Packages
 ^^^^^^^^
 
+GridPath uses the following Python packages (not exhaustive):
+
+* `sqlite3 <https://docs.python.org/3/library/sqlite3.html>`_ for database
+  interface (comes with Python's standard library)
+* `pandas <https://pandas.pydata.org/>`_ for storing data and array
+  manipulations
+* `numpy <https://numpy.org/>`_ for calculations
+* `networkx <https://networkx.github.io/>`_ for network calculations
+* `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
+
 You can install all needed Python packages, including those for the extra
 features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
 with :code:`cd PATH/TO/GRIDPATH` and running::
@@ -215,3 +225,12 @@ To test the GridPath codebase, use the unittest module as follows from the
 :code:`PATH/TO/GRIDPATH` directory::
 
     python -m unittest discover tests
+
+This command will use the python `unittest  <https://docs.python.org/3/library/
+unittest.html>`_ module to test all functions in the :code:`./tests` folder.
+Testing includes both simple unittests as well as integration tests that run
+small example problems (for which you will need a solver).
+
+Note: the -m switch allows modules to be located using the Python module name
+space for execution as scripts, so it can be located just as if its filename was
+provided in the command line.

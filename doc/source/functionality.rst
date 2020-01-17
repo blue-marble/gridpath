@@ -2,17 +2,128 @@
 GridPath Functionality - High Level
 ###################################
 
+In this chapter, we discuss Gridpath's functionality at a high level. It is
+subdivided into three sections:
+
+1. :ref:`approaches-section-ref`
+2. :ref:`basic-functionality-section-ref`
+3. :ref:`optional-functionality-section-ref`
+
+.. _approaches-section-ref:
+
+**********
+Approaches
+**********
+
+GridPath can be used in production-cost simulation or capacity-expansion mode
+depending on whether "projects" of the "new" capacity types are included
+in the model. To be implemented is functionality to change the objective
+function in order to be able to take an asset-valuation approach (i.e. profit-
+maximization instead of cost-minimization) or optimize for something other
+than cost (e.g. minimize CO2 emissions).
+
+Production-Cost Simulation
+==========================
+
+Production-cost simulation models, also called unit-commitment and dispatch
+models, simulate the operations of a specified power system with a high
+level fidelity -- at a high temporal resolution (e.g. hours to 5-minute
+segments) and considering the detailed operating characteristics of
+generators -- but generally over a fairly short period of time (e.g.
+optimizing a year one day at a time). These models are adept at optimizing
+the day-to-day operations of a fixed electric power system, provide
+information on system reliability, assess transmission congestion, and
+produce simulated locational marginal prices. They can also be used to
+evaluate the impact of additions or retirements of capacity. As the number
+of resources under considerations increases, however, so does the
+number of possible combinations we need to simulate, making analysis using
+production-cost simulation increasingly intensive and cumbersome. Answering
+questions about how to develop the grid in the future as demand,
+technologies, and policies change therefore requires additional types of
+modeling capability.
+
+Capacity-Expansion
+==================
+
+While production cost simulation models seek to optimize the operations of a
+power system with a fixed set of resources specified by the user,
+capacity-expansion models are designed to understand how the system should
+evolve over time: they try to answer the question of what resources to
+invest in among many options in order to meet system goals over time, i.e.
+what grid infrastructure is most cost-effective while ensuring that the
+system operates reliably and meeting policy targets.
+
+The capacity expansion model minimizes the overall system cost over some
+planning horizon, considering both capital costs (generators, transmission,
+storage, any asset) and variable or operating costs subject to various
+technical (e.g. generator limits, wind and solar availability, transmission
+limits across corridors, hydro limits) and policy constraints (e.g.
+renewable energy mandates, GHG targets).
+
+Because capacity-expansion models have to optimize over several years or
+decades, selecting generation, and transmission assets from many different
+available options, the problem can get large quickly. In order to have
+reasonable runtime, these models often simplify aspects of the electricity
+grid, both in space and time. Spatially, most models will consider only
+balancing areas or states as nodes (so all substations with the BA are
+clubbed together). Temporally, only representative days and hours may be
+used, and then given weights to represent a whole year e.g. one day per
+month, and either 24 hours, or 6 time blocks (each representing 4 hours).
+This simplification makes the linear optimization problem tractable. If the
+spatial resolution is small, the temporal resolution may be increased, and
+vice versa. An advantage of GridPath is that, unlike other similar
+platforms, it leaves the decision for where to simplify and where to add
+resolution is left up to the user, making it possible to tailor the problem
+formulation to the question at hand, the available computational resources,
+and the available time.
+
+After the system is “built” by a capacity-expansion problem, the system should
+be simulated for the entire year (or years) using a production-cost model to
+ensure that the decisions made using representative time slices produce a
+system that can operate reliably at every time point of the year. The
+production cost model takes a given electric system (similar to the
+Greening-the-Grid study that used the CEA plans) and solves the model to
+ensure demand equals supply, and all constraints like generator limits,
+transmission flows, ramp rates, and policy constraints are all met.
+
+Capacity-expansion and production cost models are therefore complementary.
+The former allows us to quickly explore many options for how the power
+system ought to evolve over time and find the optimal solution; the latter
+can help us ensure that the system we design does in fact perform as we
+intended (e.g. that it serves load reliably and meets policy targets).
+
+GridPath's architecture makes it possible for the same modules to be re-used
+in production-cost or capacity-expansion modeling settings, allowing for a
+seamless transition from one approach to the other, as datasets can be more
+easily reused.
+
+Linear, Mixed-Integer, and Non-Linear Formulations
+==================================================
+
+Depending on how modules are combined, linear, mixed-integer, and non-linear
+problem formulations are possible in GridPath. Some modules are
+interchangeable, with the variable domain (e.g. binary vs. continuous with 0
+to 1 bounds) the only difference in the final formulation.
+
+.. _basic-functionality-section-ref:
+
 *******************
 Basic Functionality
 *******************
 
 GridPath can be used to create optimization problems with different features
 and varying levels of complexity. For the basic model, the user must
-define the model's temporal setup (e.g. 365 individual days at an hourly
-resolution), the geographic setup (e.g. a single load zone), the
-availability and operating characteristics of the generation infrastructure
-(e.g. an existing 500-MW coal plant with a specified heat rate), and the
-desired objective (e.g. minimize cost).
+define:
+
+* :ref:`temporal-setup-section-ref` : The model's temporal setup (e.g. 365
+  individual days at an hourly resolution),
+* :ref:`geographic-setup-section-ref` : The geographic setup (e.g. a single
+  load zone),
+* :ref:`project-setup-section-ref` : The availability and operating
+  characteristics of the generation infrastructure (e.g. an existing 500-MW coal
+  plant with a specified heat rate),
+* :ref:`objective-section-ref` : The desired objective (e.g. minimize
+  cost).
 
 .. _temporal-setup-section-ref:
 
@@ -24,6 +135,8 @@ a temporal setup by assigning appropriate weights to and relationships among
 GridPath's temporal units.
 
 The temporal units include:
+
+.. _timepoints-sub-section-ref:
 
 Timepoints
 ----------
@@ -40,6 +153,15 @@ Timepoints can also be assigned weights in order to represent other
 timepoints that are not modeled explicitly (e.g. use a 24-hour period per month
 to represent the whole month using the number of days in that month for the
 weight of each of the 24 timepoints).
+
+To support multi-stage production simulation timepoints can also be assigned a
+mapping to the previous stage (e.g. timepoints 1-12 in the 5-minute real-time
+stage map to timepoint 1 in the hour-ahead stage) and a flag whether the
+timepoint is part of a spinup or lookahead segment.
+Timepoints that are part of a spinup or lookahead segment are included in the
+optimization but are generally discarded when calculating result metrics such as
+annual emissions, energy, or cost. See :ref:`subproblems-sub-section-ref` and
+:ref:`stages-sub-section-ref` for more information.
 
 Balancing Types and Horizons
 ----------------------------
@@ -68,11 +190,10 @@ of functionality such as ramp constraints or tracking storage state of
 charge). If the boundary is 'linear,' then we ignore constraints relating to
 the previous timepoint in the first timepoint of a horizon.
 
-
 Periods
 -------
 
-Each *timepoint* in a GridPath model also belong to a *period* (e.g. an year),
+Each *timepoint* in a GridPath model also belongs to a *period* (e.g. a year),
 which describes when decisions to build or retire infrastructure are made. A
 *period* must be specified in both capacity-expansion and production-cost
 model. In a production-cost simulation context, we can use the period to
@@ -87,6 +208,7 @@ flexible: e.g. capacity decisions can be made every month, every year, every
 10 years, etc. A discount factor can also be applied to weight costs
 differently depending on when they are incurred.
 
+.. _subproblems-sub-section-ref:
 
 Subproblems
 -----------
@@ -103,32 +225,59 @@ meaning each *timepoint* in the *subproblem* would belong to one of seven
 'day' *horizons* and the single 'week' *horizon* (i.e. some resources would
 have to be balanced on each day of the week and some over the entire week).
 
+Within a production-cost simulation subproblem, some timepoints can be part
+of a spin-up or look-ahead segment. These are additional timepoints that are
+added to the subproblem's start and end but are ultimately discarded when
+calculating result metrics. They are there to more faithfully model the
+beginning and start of the subproblem. For example, if we had weekly subproblems
+we could add 24 hourly spinup timepoins (1 day) before the week, and 24
+hourly lookahead timepoints (1 day) after the week, resulting in 52 subproblems
+of 9 days. After solving each subproblem independently, the 2 edge days in each
+subproblem are discarded .
+
 Unlike in production-cost simulation, in capacity-expansion mode, we usually
-have only a single subproblem.
+have only a single subproblem (and no spinup or lookahead timepoints).
+
+.. _stages-sub-section-ref:
 
 Stages
 ------
 
-GridPath also has multi-stage commitment functionality, i.e. decisions made
-for a subproblem can be fixed and then fed into a next stage with some updated
-parameters (e.g. an updated load and renewable output forecast). The number
-of stages is flexible and the timepoint resolution can change from stage to
-stage. The typical temporal setup for production cost simulation
-(multi-stage with horizons optimized one at a time) is shown below:
+GridPath also has multi-stage commitment functionality, i.e. commitment
+decisions made for a subproblem can be fixed and then fed into a next stage with
+some updated parameters (e.g. an updated load and renewable output forecast).
+The number of stages is flexible and the timepoint resolution can change from
+stage to stage.
+
+For instance, the same day (subproblem) could first be modeled using a day-ahead
+hourly forecast ("DA stage"), then with an hour-ahead hourly forecast ("HA
+stage"), and finally with a real-time 5-minute forecast ("RT stage"). Commitment
+decisions for e.g. coal generators could be fixed in the DA stage, whereas
+commitment for e.g. gas turbines could be changed until the final RT stage.
+
+In practice, this is achieved by assigning a stage to each timepoint and
+specifying a map between timepoints in each stage (see
+:ref:`timepoints-sub-section-ref`). Load and renewable forecast inputs are
+indexed by timepoint and stage, allowing for different forecasts (and,
+optionally, timepoint resolutions) in each stage.
 
 Examples
 --------
 
-Typical temporal setup for capacity-expansion modeling is shown below:
+A typical temporal setup for capacity-expansion modeling is shown below. Note
+the presence op multiple investment periods, and a single subproblem and stage
+(i.e. a single optimization).
 
 .. image:: ../graphics/temporal_cap_exp.png
 
 
-Typical temporal setup for production-cost modeling is shown below:
+A typical temporal setup for production-cost modeling is shown below. Note the
+presence of a single period, and multiple subproblems and stages (i.e. an
+optimization will be solved for every subproblem-stage combination).
 
 .. image:: ../graphics/temporal_prod_cost.png
 
-
+.. _geographic-setup-section-ref:
 
 Geographic Setup
 ================
@@ -160,6 +309,8 @@ Geographic Configuration 1:
 Geographic Configuration 2:
 
 .. image:: ../graphics/lz_ba_rel2.png
+
+.. _project-setup-section-ref:
 
 Projects
 ========
@@ -272,7 +423,6 @@ This capacity type describes a supply curve for new shiftable load capacity.
 This type is a custom implementation for GridPath projects in the California
 Integrated Resource Planning proceeding.
 
-
 .. _project-availability-type-section-ref:
 
 Project Availability Types
@@ -308,7 +458,6 @@ This *availability type* is formulated like the *binary* type except that
 all binary decision variables are relaxed to be continuous with bounds
 between 0 and 1. This can be useful to address computational difficulties
 when modeling endogenous *project* availabilities.
-
 
 Project Operational Types
 -------------------------
@@ -396,7 +545,6 @@ this operational type.
 Costs for this operational type include fuel costs, variable O&M costs, and
 startup and shutdown costs.
 
-
 Curtailable Hydro Generation (*gen_hydro*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 This operational type describes the operations of hydro generation. These
@@ -453,7 +601,6 @@ down (subtract load). These cannot exceed the power capacity of the project
 and must meet an energy balance constraint on each horizon (no efficiency
 loss implemented).
 
-
 .. _load-balance-section-ref:
 
 Load Balance
@@ -474,7 +621,7 @@ load zone and timepoint.
     component.
 
 Net transmission into/out of the load zone is another possible production
-component (see 'Transmission' section under 'Optional Functionality' below).
+component (see :ref:`transmission-section-ref`).
 
 The user may also optionally allow unserved energy and/or overgeneration to be
 incurred by adding the respective variables to the production and
@@ -510,10 +657,13 @@ be standard for all systems. Examples currently include:
 All costs are net present value costs, with a user-specified discount factor
 applied to call costs depending on the period in which they are incurred.
 
+.. _optional-functionality-section-ref:
 
 **********************
 Optional Functionality
 **********************
+
+.. _transmission-section-ref:
 
 Transmission
 ============
@@ -538,8 +688,8 @@ capacity type, which determines their capacity availability and costs, and an
 operational type, which determines their operational characteristics and costs.
 
 The transmission network in GridPath can currently be modeled using a linear
-transport model only. In the future, we may add DC and/or AC network
-capability.
+transport model or using DC power flow (see Transmission Operational Types). In
+either approach, resistive losses are assumed to be negligible.
 
 
 Transmission Capacity Types
@@ -637,7 +787,7 @@ objective function.
 
 Reliability
 ===========
-GridPath can optionally model a planning-reserve capacity requirement (PRM).
+GridPath can optionally model a planning-reserve margin requirement (PRM).
 The user must the define the zones with a PRM requirement and the
 requirement level for each PRM zone and period. Each project that can
 contribute capacity (i.e. expected load-carrying capability -- ELCC --
@@ -708,97 +858,3 @@ functionality such as:
 
 Similar custom functionality can be added for other systems and easily
 excluded when not needed.
-
-**********
-Approaches
-**********
-
-GridPath can be used in production-cost simulation or capacity-expansion mode
-depending on whether "projects" of the "new_build" capacity types are included
-in the model. To be implemented is functionality to change the objective
-function in order to be able to take an asset-valuation approach (i.e. profit-
-maximization instead of cost-minimization) or optimize for something other
-than cost (e.g. minimize CO2 emissions).
-
-Production-Cost Simulation
-==========================
-
-Production-cost simulation models, also called unit-commitment and dispatch
-models, simulate the operations of a specified power system with a high
-level fidelity -- at a high temporal resolution (e.g. hours to 5-minute
-segments) and considering the detailed operating characteristics of
-generators -- but generally over a fairly short period of time (e.g.
-optimizing a year one day at a time). These models are adept at optimizing
-the day-to-day operations of a fixed electric power system, provide
-information on system reliability, assess transmission congestion, and
-produce simulated locational marginal prices. They can also be used to
-evaluate the impact of additions or retirements of capacity. As the number
-of resources under considerations increases, however, so does the
-number of possible combinations we need to simulate, making analysis using
-production-cost simulation increasingly intensive and cumbersome. Answering
-questions about how to develop the grid in the future as demand,
-technologies, and policies change therefore requires additional types of
-modeling capability.
-
-Capacity-Expansion
-==================
-
-While production cost simulation models seek to optimize the operations of a
-power system with a fixed set of resources specified by the user,
-capacity-expansion models are designed to understand how the system should
-evolve over time: they try to answer the question of what resources to
-invest in among many options in order to meet system goals over time, i.e.
-what grid infrastructure is most cost-effective while ensuring that the
-system operates reliably and meeting policy targets.
-
-The capacity expansion model minimizes the overall system cost over some
-planning horizon, considering both capital costs (generators, transmission,
-storage, any asset) and variable or operating costs subject to various
-technical (e.g. generator limits, wind and solar availability, transmission
-limits across corridors, hydro limits) and policy constraints (e.g.
-renewable energy mandates, GHG targets).
-
-Because capacity-expansion models have to optimize over several years or
-decades, selecting generation, and transmission assets from many different
-available options, the problem can get large quickly. In order to have
-reasonable runtime, these models often simplify aspects of the electricity
-grid, both in space and time. Spatially, most models will consider only
-balancing areas or states as nodes (so all substations with the BA are
-clubbed together). Temporally, only representative days and hours may be
-used, and then given weights to represent a whole year e.g. one day per
-month, and either 24 hours, or 6 time blocks (each representing 4 hours).
-This simplification makes the linear optimization problem tractable. If the
-spatial resolution is small, the temporal resolution may be increased, and
-vice versa. An advantage of GridPath is that, unlike other similar
-platforms, it leaves the decision for where to simplify and where to add
-resolution is left up to the user, making it possible to tailor the problem
-formulation to the question at hand, the available computational resources,
-and the available time.
-
-After the system is “built” by a capacity-expansion problem, the system should
-be simulated for the entire year (or years) using a production-cost model to
-ensure that the decisions made using representative time slices produce a
-system that can operate reliably at every time point of the year. The
-production cost model takes a given electric system (similar to the
-Greening-the-Grid study that used the CEA plans) and solves the model to
-ensure demand equals supply, and all constraints like generator limits,
-transmission flows, ramp rates, and policy constraints are all met.
-
-Capacity-expansion and production cost models are therefore complementary.
-The former allows us to quickly explore many options for how the power
-system ought to evolve over time and find the optimal solution; the latter
-can help us ensure that the system we design does in fact perform as we
-intended (e.g. that it serves load reliably and meets policy targets).
-
-GridPath's architecture makes it possible for the same modules to be re-used
-in production-cost or capacity-expansion modeling settings, allowing for a
-seamless transition from one approach to the other, as datasets can be more
-easily reused.
-
-Linear, Mixed-Integer, and Non-Linear Formulations
-==================================================
-
-Depending on how modules are combined, linear, mixed-integer, and non-linear
-problem formulations are possible in GridPath. Some modules are
-interchangeable, with the variable domain (e.g. binary vs. continuous with 0
-to 1 bounds) the only difference in the final formulation.
