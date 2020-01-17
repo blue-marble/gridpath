@@ -116,9 +116,7 @@
           <td>Requested</td>
           <td>
             <select [(ngModel)]="requestedSolver1Name"
-                    (change)="requestSolverName(
-                    'setSolver1NameSetting', this.requestedSolver1Name
-                    )">
+                    (change)="changeSolver1NameStatus()">
               <option value="cbc">cbc</option>
               <option value="cplex">cplex</option>
               <option value="gurobi">gurobi</option>
@@ -135,7 +133,10 @@
         </tr>
         <tr>
           <td>Status</td>
-          <td>Name status</td>
+          <td [ngClass]="{
+              'orange' : solver1NameStatus == 'restart required',
+              'green' : solver1NameStatus == 'set'
+           }">{{solver1NameStatus}}</td>
           <td [ngClass]="{
               'orange' : solver1ExecutableStatus == 'restart required',
               'green' : solver1ExecutableStatus == 'set'
@@ -158,9 +159,7 @@
           <td>Requested</td>
           <td>
             <select [(ngModel)]="requestedSolver2Name"
-                    (change)="requestSolverName(
-                    'setSolver2NameSetting', this.requestedSolver2Name
-                    )">
+                    (change)="changeSolver2NameStatus()">
               <option value="cbc">cbc</option>
               <option value="cplex">cplex</option>
               <option value="gurobi">gurobi</option>
@@ -178,8 +177,8 @@
         <tr>
           <td>Status</td>
           <td [ngClass]="{
-              'orange' : currentSolver2Name !== requestedSolver2Name,
-              'green' : currentSolver2Name == requestedSolver2Name
+              'orange' : solver2NameStatus == 'restart required',
+              'green' : solver2NameStatus == 'set'
            }">{{solver2NameStatus}}</td>
           <td [ngClass]="{
               'orange' : solver2ExecutableStatus == 'restart required',
@@ -202,9 +201,7 @@
           <td>Requested</td>
           <td>
             <select [(ngModel)]="requestedSolver3Name"
-                    (change)="requestSolverName(
-                    'setSolver3NameSetting', this.requestedSolver3Name
-                    )">
+                    (change)="changeSolver3NameStatus()">
               <option value="cbc">cbc</option>
               <option value="cplex">cplex</option>
               <option value="gurobi">gurobi</option>
@@ -221,7 +218,10 @@
         </tr>
         <tr>
           <td>Status</td>
-          <td>Name status</td>
+          <td [ngClass]="{
+              'orange' : solver3NameStatus == 'restart required',
+              'green' : solver3NameStatus == 'set'
+           }">{{solver3NameStatus}}</td>
           <td [ngClass]="{
               'orange' : solver3ExecutableStatus == 'restart required',
               'green' : solver3ExecutableStatus == 'set'

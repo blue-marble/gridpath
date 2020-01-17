@@ -116,17 +116,7 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedScenariosDirectory = folderPath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          console.log('Requested: ', this.requestedScenariosDirectory);
-          console.log('Current: ', this.currentScenariosDirectory);
-          if (this.requestedScenariosDirectory !== this.currentScenariosDirectory) {
-            this.directoryStatus = 'restart required';
-            this.changeDirectoryStatus();
-          } else {
-            this.directoryStatus = 'set';
-            this.changeDirectoryStatus();
-          }
+          this.changeDirectoryStatus();
         });
       }
     });
@@ -147,15 +137,7 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedGridPathDB = dbFilePath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          if (this.requestedGridPathDB !== this.currentGridPathDB) {
-            this.databaseStatus = 'restart required';
-            this.changeDatabaseStatus();
-          } else {
-            this.databaseStatus = 'set';
-            this.changeDatabaseStatus();
-          }
+          this.changeDatabaseStatus();
         });
       }
     });
@@ -176,15 +158,7 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedPythonDirectory = folderPath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          if (this.requestedPythonDirectory !== this.currentPythonDirectory) {
-            this.pythonStatus = 'restart required';
-            this.changePythonStatus();
-          } else {
-            this.pythonStatus = 'set';
-            this.changePythonStatus();
-          }
+          this.changePythonStatus();
         });
       }
     });
@@ -205,15 +179,7 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver1Executable = filePath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          if (this.requestedSolver1Executable !== this.currentSolver1Executable) {
-            this.solver1ExecutableStatus = 'restart required';
-            this.changeSolver1ExecutableStatus();
-          } else {
-            this.solver1ExecutableStatus = 'set';
-            this.changeSolver1ExecutableStatus();
-          }
+          this.changeSolver1ExecutableStatus();
         });
       }
     });
@@ -234,15 +200,7 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver2Executable = filePath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          if (this.requestedSolver2Executable !== this.currentSolver2Executable) {
-            this.solver2ExecutableStatus = 'restart required';
-            this.changeSolver2ExecutableStatus();
-          } else {
-            this.solver2ExecutableStatus = 'set';
-            this.changeSolver2ExecutableStatus();
-          }
+          this.changeSolver2ExecutableStatus();
         });
       }
     });
@@ -263,58 +221,58 @@ export class SettingsComponent implements OnInit {
         // Update the Angular component
         this.zone.run( () => {
           this.requestedSolver3Executable = filePath[0];
-          // If the requested directory differs from the current directory, alert
-          // the user by setting the setting status to 'restart required'
-          if (this.requestedSolver3Executable !== this.currentSolver3Executable) {
-            this.solver3ExecutableStatus = 'restart required';
-            this.changeSolver3ExecutableStatus();
-          } else {
-            this.solver3ExecutableStatus = 'set';
-            this.changeSolver3ExecutableStatus();
-          }
+          this.changeSolver3ExecutableStatus();
         });
       }
     });
   }
 
-  requestSolverName(channel, requestedName) {
-    // Send Electron the selected folder
-    electron.ipcRenderer.send(channel, requestedName);
-  }
+  // Changes status functions
+  // If the requested setting differs from the current setting, alert
+  // the user by setting the setting status to 'restart required'
 
   changeDirectoryStatus() {
+    this.directoryStatus = (this.requestedScenariosDirectory !== this.currentScenariosDirectory) ? 'restart required' : 'set';
     this.settingsService.changeDirectoryStatus(this.directoryStatus);
   }
 
   changeDatabaseStatus() {
+    this.databaseStatus = (this.requestedGridPathDB !== this.currentGridPathDB) ? 'restart required' : 'set';
     this.settingsService.changeDatabaseStatus(this.databaseStatus);
   }
 
   changePythonStatus() {
+    this.pythonStatus = (this.requestedPythonDirectory !== this.currentPythonDirectory) ? 'restart required' : 'set';
     this.settingsService.changePythonStatus(this.pythonStatus);
   }
 
   changeSolver1NameStatus() {
+    this.solver1NameStatus = (this.requestedSolver1Name !== this.currentSolver1Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver1NameStatus(this.solver1NameStatus);
   }
 
   changeSolver1ExecutableStatus() {
+    this.solver1ExecutableStatus = (this.requestedSolver1Executable !== this.currentSolver1Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver1ExecutableStatus(this.solver1ExecutableStatus);
   }
 
   changeSolver2NameStatus() {
+    this.solver2NameStatus = (this.requestedSolver2Name !== this.currentSolver2Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver2NameStatus(this.solver2NameStatus);
   }
 
   changeSolver2ExecutableStatus() {
+    this.solver2ExecutableStatus = (this.requestedSolver2Executable !== this.currentSolver2Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver2ExecutableStatus(this.solver2ExecutableStatus);
   }
 
   changeSolver3NameStatus() {
+    this.solver3NameStatus = (this.requestedSolver3Name !== this.currentSolver3Name) ? 'restart required' : 'set';
     this.settingsService.changeSolver3NameStatus(this.solver3NameStatus);
   }
 
   changeSolver3ExecutableStatus() {
+    this.solver3ExecutableStatus = (this.requestedSolver3Executable !== this.currentSolver3Executable) ? 'restart required' : 'set';
     this.settingsService.changeSolver3ExecutableStatus(this.solver3ExecutableStatus);
   }
 }
