@@ -11,9 +11,8 @@ GridPath is developed and tested on Python 3.7. Get Python
 
 ## Packages
 You can install all needed Python packages, including those for the extra 
-features, by navigating to the the 
-GridPath root directory (which is where this `README.md` file is located) and 
-running:
+features, by navigating to the GridPath root directory (which is where this 
+`README.md` file is located) and running:
 ```bash
 pip install -e .[all]
 ```
@@ -114,7 +113,7 @@ python run_end_to_end.py --scenario test
 ```
 
 To see usage and other optional arguments, e.g. how to specify a 
-solver, check the help menu:
+solver, check the help menu, e.g.:
 ```bash
 python run_scenario.py --help
 ```
@@ -130,7 +129,7 @@ python -m unittest discover tests
 
 # Help
 In general, you can check usage of GridPath's scripts by calling the `--help` 
-option , e.g.:
+option, e.g.:
 ```bash
 python get_scenario_inputs.py --help
 ```
@@ -144,12 +143,12 @@ your terminal and type the following command:
 make html
 ```
 
-This will build the documentation in HTML format in the the `./doc/build/html`
+This will build the documentation in HTML format in the `./doc/build/html`
 folder. You can view the documentation by double clicking any of the .html
 files (we recommend starting at `index.html`). 
 
 Note that you will first need to install 
-    [Sphinx](http://www.sphinx-doc.org/en/master/) on your computer (see the 
+[Sphinx](http://www.sphinx-doc.org/en/master/) on your computer (see the 
 Installation section above). In the future, the latest documentation build will
 be hosted online so you don't have to build it from source yourself. 
 
