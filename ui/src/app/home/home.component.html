@@ -51,6 +51,40 @@
     <div class="col-md-auto">
       <table class="status-table">
         <tr>
+        <th>Solver Status</th>
+        <th>Status</th>
+        </tr>
+        <tr>
+          <td>Solver 1</td>
+          <td [ngClass]="{
+              'orangered' : solver1Status == 'restart required',
+              'red' : solver1Status == 'not set',
+              'green' : solver1Status == 'set'
+           }">{{solver1Status}}</td>
+        </tr>
+        <tr>
+          <td>Solver 2</td>
+          <td [ngClass]="{
+              'orangered' : solver2Status == 'restart required',
+              'red' : solver2Status == 'not set',
+              'green' : solver2Status == 'set'
+           }">{{solver2Status}}</td>
+        </tr>
+        <tr>
+          <td>Solver 3</td>
+          <td [ngClass]="{
+              'orangered' : solver3Status == 'restart required',
+              'red' : solver3Status == 'not set',
+              'green' : solver3Status == 'set'
+           }">{{solver3Status}}</td>
+        </tr>
+
+      </table>
+    </div>
+
+    <div class="col-md-auto">
+      <table class="status-table">
+        <tr>
         <th>Run Status</th>
         <th>Number of Scenarios</th>
         </tr>
@@ -85,8 +119,6 @@
       </table>
     </div>
 
-    <div><span>Solver 1 </span>{{solver1Status}}</div>
-    <div><span>Solver 3 </span>{{solver3Status}}</div>
   </div>
 
 </div>

@@ -53,12 +53,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.getDirectoryStatus();
     this.getDatabaseStatus();
     this.getPythonStatus();
-    this.getSolver1NameStatus();
-    this.getSolver1ExecutableStatus();
-    this.getSolver2NameStatus();
-    this.getSolver2ExecutableStatus();
-    this.getSolver3NameStatus();
-    this.getSolver3ExecutableStatus();
+    this.determineSolver1Status();
+    this.determineSolver2Status();
+    this.determineSolver3Status();
 
     // TODO: is this necessary now that we check this in Settings
     // If any of the settings are null, we'll overwrite the status from
@@ -93,9 +90,6 @@ export class HomeComponent implements OnInit, OnDestroy {
         }
       }
     );
-
-    this.determineSolver1Status();
-    this.determineSolver3Status();
 
     // Scenario run status
     this.getScenarioRunStatus();
@@ -160,63 +154,37 @@ export class HomeComponent implements OnInit, OnDestroy {
     );
   }
 
-  getSolver1ExecutableStatus(): void {
-    this.settingsService.solver1ExecutableStatusSubject
-      .subscribe((settingsStatus: string) => {
-        this.solver1ExecutableStatus = settingsStatus;
-      }
-    );
-  }
-
-  getSolver2NameStatus(): void {
-    this.settingsService.solver2NameStatusSubject
-      .subscribe((settingsStatus: string) => {
-        this.solver2NameStatus = settingsStatus;
-      }
-    );
-  }
-
-  getSolver2ExecutableStatus(): void {
-    this.settingsService.solver2ExecutableStatusSubject
-      .subscribe((settingsStatus: string) => {
-        this.solver2ExecutableStatus = settingsStatus;
-      }
-    );
-  }
-
-  getSolver3NameStatus(): void {
-    this.settingsService.solver3NameStatusSubject
-      .subscribe((settingsStatus: string) => {
-        this.solver3NameStatus = settingsStatus;
-      }
-    );
-  }
-
-  getSolver3ExecutableStatus(): void {
-    this.settingsService.solver3ExecutableStatusSubject
-      .subscribe((settingsStatus: string) => {
-        this.solver3ExecutableStatus = settingsStatus;
-      }
-    );
-  }
-
   determineSolver1Status(): void {
     this.settingsService.solver1NameStatusSubject.subscribe((nameStatus: string) => {
       this.solver1NameStatus = nameStatus;
       this.settingsService.solver1ExecutableStatusSubject.subscribe((executableStatus: string) => {
         this.solver1ExecutableStatus = executableStatus;
-        console.log(this.solver1NameStatus);
-        console.log(this.solver1ExecutableStatus);
         if (this.solver1NameStatus === 'not set' || this.solver1ExecutableStatus === 'not set') {
           this.solver1Status = 'not set';
-          console.log("in not_set")
         } else {
           if (this.solver1NameStatus === 'restart required' || this.solver1ExecutableStatus === 'restart required') {
             this.solver1Status = 'restart required';
-            console.log("in restart_required")
           } else {
             this.solver1Status = 'set';
-            console.log("in set")
+          }
+        }
+      });
+      }
+    );
+  }
+
+  determineSolver2Status(): void {
+    this.settingsService.solver2NameStatusSubject.subscribe((nameStatus: string) => {
+      this.solver2NameStatus = nameStatus;
+      this.settingsService.solver2ExecutableStatusSubject.subscribe((executableStatus: string) => {
+        this.solver2ExecutableStatus = executableStatus;
+        if (this.solver2NameStatus === 'not set' || this.solver2ExecutableStatus === 'not set') {
+          this.solver2Status = 'not set';
+        } else {
+          if (this.solver2NameStatus === 'restart required' || this.solver2ExecutableStatus === 'restart required') {
+            this.solver2Status = 'restart required';
+          } else {
+            this.solver2Status = 'set';
           }
         }
       });
@@ -225,15 +193,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   determineSolver3Status(): void {
-    if (this.solver3NameStatus === 'not_set' || this.solver3ExecutableStatus === 'not_set') {
-      this.solver3Status = 'not_set';
-    } else {
-      if (this.solver3NameStatus === 'restart_required' || this.solver3ExecutableStatus === 'restart_required') {
-        this.solver3Status = 'restart_required';
-      } else {
-        this.solver3Status = 'set';
+    this.settingsService.solver3NameStatusSubject.subscribe((nameStatus: string) => {
+      this.solver3NameStatus = nameStatus;
+      this.settingsService.solver3ExecutableStatusSubject.subscribe((executableStatus: string) => {
+        this.solver3ExecutableStatus = executableStatus;
+        if (this.solver3NameStatus === 'not set' || this.solver3ExecutableStatus === 'not set') {
+          this.solver3Status = 'not set';
+        } else {
+          if (this.solver3NameStatus === 'restart required' || this.solver3ExecutableStatus === 'restart required') {
+            this.solver3Status = 'restart required';
+          } else {
+            this.solver3Status = 'set';
+          }
+        }
+      });
       }
-    }
+    );
   }
 
   getScenarioRunStatus(): void {
