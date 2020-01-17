@@ -56,21 +56,48 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     console.log('Initializing settings...');
 
-    this.directoryStatus = '';
-    this.databaseStatus = '';
-    this.pythonStatus = '';
-    this.solver1NameStatus = '';
-    this.solver1ExecutableStatus = '';
-    this.solver2NameStatus = '';
-    this.solver2ExecutableStatus = '';
-    this.solver3NameStatus = '';
-    this.solver3ExecutableStatus = '';
-
     // Ask Electron for any current settings
     electron.ipcRenderer.send('requestStoredSettings');
     electron.ipcRenderer.on('sendStoredSettings',
       (event, data) => {
         this.getSettingsFromElectron(data);
+
+        this.directoryStatus = (
+          this.requestedScenariosDirectory !== this.currentScenariosDirectory)
+          ? 'restart required'
+          :  ((this.currentScenariosDirectory === null) ? 'not set' : 'set');
+        this.databaseStatus = (
+          this.requestedGridPathDB !== this.currentGridPathDB)
+          ? 'restart required'
+          : (this.currentGridPathDB === null) ? 'not set' : 'set';
+        this.pythonStatus = (
+          this.requestedPythonDirectory !== this.currentPythonDirectory)
+          ? 'restart required'
+          : (this.currentPythonDirectory === null) ? 'not set' : 'set';
+        this.solver1NameStatus = (
+          this.requestedSolver1Name !== this.currentSolver1Name)
+          ? 'restart required'
+          : (this.currentSolver1Name === null) ? 'not set' : 'set';
+        this.solver1ExecutableStatus = (
+          this.requestedSolver1Executable !== this.currentSolver1Executable)
+          ? 'restart required' :
+          (this.currentSolver1Executable === null) ? 'not set' : 'set';
+        this.solver2NameStatus = (
+          this.requestedSolver2Name !== this.currentSolver2Name)
+          ? 'restart required' :
+          (this.currentSolver2Name === null) ? 'not set' : 'set';
+        this.solver2ExecutableStatus = (
+          this.requestedSolver2Executable !== this.currentSolver2Executable)
+          ? 'restart required' :
+          (this.currentSolver2Executable === null) ? 'not set' : 'set';
+        this.solver3NameStatus = (
+          this.requestedSolver3Name !== this.currentSolver3Name)
+          ? 'restart required' :
+          (this.currentSolver3Name === null) ? 'not set' : 'set';
+        this.solver3ExecutableStatus = (
+          this.requestedSolver3Executable !== this.currentSolver3Executable)
+          ? 'restart required' :
+          (this.currentSolver3Executable === null) ? 'not set' : 'set';
       }
     );
   }
