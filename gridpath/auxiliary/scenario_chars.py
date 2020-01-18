@@ -174,8 +174,8 @@ class OptionalFeatures(object):
 
 class SubScenarios(object):
     """
-    The subscenario IDs will be used to format queries, so they'll be "NULL"
-    if an ID is not specified for the scenario.
+    The subscenario IDs will be used to format SQL queries, so we set them to
+    "NULL" (not None) if an ID is not specified for the scenario.
     """
     def __init__(self, cursor, scenario_id):
         """
