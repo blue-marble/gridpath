@@ -163,13 +163,13 @@ required packages with::
 
 Read below for what the extra features are to determine whether you need them.
 
-Optional packages
-*****************
+Optional packages for extra features
+************************************
 
 The extra features are: 1) the GridPath user interface and 2) building/editing
 the documentation.
 
-GridPath's optional features can be installed individually as follows.
+GridPath's extra features can be installed individually as follows.
 
 For editing or building documentation from source, run::
 
