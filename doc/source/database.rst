@@ -1,3 +1,5 @@
+.. _database-section-ref:
+
 ########
 Database
 ########
