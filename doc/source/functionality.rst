@@ -663,6 +663,19 @@ applied to call costs depending on the period in which they are incurred.
 Optional Functionality
 **********************
 
+GridPath contains a number of modules that are optional. These modules are:
+
+* :ref:`transmission-section-ref` : to model tranmission flows between multiple
+  load zones,
+* :ref:`operating-reserves-section-ref` : to model reserves such as frequency
+  regulation or spinning reserves,
+* :ref:`policy-section-ref` : to model policy measures such as a Renewable
+  Portfolio Standard (RPS) or a carbon cap,
+* :ref:`reliability-section-ref`: to model system reliability through a planning
+  reserve marging (PRM) constraint, and
+* :ref:`custom-modules-section-ref` : GridPath's modularity allows for easy
+  addition of custom constraints specific to a power grid.
+
 .. _transmission-section-ref:
 
 Transmission
@@ -766,6 +779,8 @@ set of constraints for flows on each *tx_dcopf* line.
     this is not a reasonable assumption for the transmission system of
     interest, we recommended not to use the *tx_dcopf* operational type.
 
+.. _operating-reserves-section-ref:
+
 Operating Reserves
 ==================
 GridPath can optionally model a range of operating reserve types, including
@@ -785,6 +800,8 @@ user can optionally allow these constraints to be violated at a cost. Any
 reserve-balance constraint violation penalty costs are added to the
 objective function.
 
+.. _reliability-section-ref:
+
 Reliability
 ===========
 GridPath can optionally model a planning-reserve margin requirement (PRM).
@@ -797,6 +814,7 @@ period-level constraint. Projects can contribute a fraction of their
 capacity as their ELCC via the *prm_simple* module. See
 :ref:`custom-modules-section-ref`) for some advanced reliability functionality.
 
+.. _policy-section-ref:
 
 Policy
 ======
