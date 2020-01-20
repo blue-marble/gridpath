@@ -143,6 +143,7 @@ GridPath uses the following Python packages (not exhaustive):
   manipulations
 * `numpy <https://numpy.org/>`_ for calculations
 * `networkx <https://networkx.github.io/>`_ for network calculations
+* `bokeh <https://bokeh.org/>`_ for interactive plotting
 * `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
 
 You can install all needed Python packages, including those for the extra
