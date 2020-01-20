@@ -518,32 +518,8 @@ generators).
 
 Capacity-Commit Generation (*gen_commit_cap*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
 
-This operational type is particularly well suited for application to 'fleets'
-of generators with the same characteristics. For example, we could have a
-GridPath project with a total capacity of 2000 MW, which actually consists
-of four 500-MW units. The optimization decides how much total capacity to
-commit (i.e. turn on), e.g. if 2000 MW are committed, then four generators (x
-500 MW) are on and if 500 MW are committed, then one generator is on, etc.
-The capacity commitment decision variables are continuous. This approach
-makes it possible to reduce problem size by grouping similar generators
-together and linearizing the commitment decisions.
-
-The optimization makes the capacity-commitment and dispatch decisions in
-every timepoint. Project power output can vary between a minimum loading level
-(specified as a fraction of committed capacity) and the committed capacity
-in each timepoint when the project is available. Heat rate degradation below
-full load is considered. These projects can be allowed to provide upward
-and/or downward reserves.
-
-No standard approach exists for applying ramp rate and minimum up and down
-time constraints to this operational type. GridPath does include
-experimental functionality for doing so. Starts and stops -- and the
-associated cost and emissions -- can also be tracked and constrained for
-this operational type.
-
-Costs for this operational type include fuel costs, variable O&M costs, and
-startup and shutdown costs.
 
 Curtailable Hydro Generation (*gen_hydro*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

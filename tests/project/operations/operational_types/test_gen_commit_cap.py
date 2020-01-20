@@ -87,18 +87,18 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+        # Set: GEN_COMMIT_CAP
         expected_disp_cap_commit_gen_set = sorted([
             "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
             "Gas_CT_New", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2"
         ])
         actual_disp_cap_commit_gen_set = sorted([
-            prj for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            prj for prj in instance.GEN_COMMIT_CAP
         ])
         self.assertListEqual(expected_disp_cap_commit_gen_set,
                              actual_disp_cap_commit_gen_set)
 
-        # Set: DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_COMMIT_CAP_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(
                 expected_disp_cap_commit_gen_set
@@ -106,8 +106,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.
-                 DISPATCHABLE_CAPACITY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             instance.GEN_COMMIT_CAP_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
@@ -120,12 +119,12 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         }
         actual_unit_size = {
             prj: instance.unit_size_mw[prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_unit_size,
                              actual_unit_size)
 
-        # Param: disp_cap_commit_min_stable_level_fraction
+        # Param: gen_commit_cap_min_stable_level_fraction
         expected_min_stable_fraction = {
             "Gas_CCGT": 0.4, "Coal": 0.4, "Gas_CT": 0.4, "Gas_CCGT_New": 0.4,
             "Gas_CCGT_New_Binary": 0.4,
@@ -133,14 +132,14 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 0.4
         }
         actual_min_stable_fraction = {
-            prj: instance.disp_cap_commit_min_stable_level_fraction[prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            prj: instance.gen_commit_cap_min_stable_level_fraction[prj]
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction
                              )
 
-        # Param: dispcapcommit_startup_plus_ramp_up_rate
+        # Param: gen_commit_cap_startup_plus_ramp_up_rate
         expected_startup_plus_ramp_up_rate = {
             "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
             "Gas_CCGT_New_Binary": 0.6,
@@ -148,15 +147,15 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 1
         }
         actual_startup_plus_ramp_up_rate = {
-            prj: instance.dispcapcommit_startup_plus_ramp_up_rate[
+            prj: instance.gen_commit_cap_startup_plus_ramp_up_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_startup_plus_ramp_up_rate,
                              actual_startup_plus_ramp_up_rate
                              )
 
-        # Param: dispcapcommit_shutdown_plus_ramp_down_rate
+        # Param: gen_commit_cap_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {
             "Gas_CCGT": 0.6, "Coal": 0.6, "Gas_CT": 0.6, "Gas_CCGT_New": 0.6,
             "Gas_CCGT_New_Binary": 0.6,
@@ -164,15 +163,15 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 1
         }
         actual_shutdown_plus_ramp_down_rate = {
-            prj: instance.dispcapcommit_shutdown_plus_ramp_down_rate[
+            prj: instance.gen_commit_cap_shutdown_plus_ramp_down_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate
                              )
 
-        # Param: dispcapcommit_ramp_up_when_on_rate
+        # Param: gen_commit_cap_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {
             "Gas_CCGT": 0.3, "Coal": 0.2, "Gas_CT": 0.5, "Gas_CCGT_New": 0.5,
             "Gas_CCGT_New_Binary": 0.5,
@@ -180,15 +179,15 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 1
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispcapcommit_ramp_up_when_on_rate[
+            prj: instance.gen_commit_cap_ramp_up_when_on_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: dispcapcommit_ramp_down_when_on_rate
+        # Param: gen_commit_cap_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {
             "Gas_CCGT": 0.5, "Coal": 0.3, "Gas_CT": 0.2, "Gas_CCGT_New": 0.8,
             "Gas_CCGT_New_Binary": 0.8,
@@ -196,15 +195,15 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
             "Gas_CT_z2": 1
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispcapcommit_ramp_down_when_on_rate[
+            prj: instance.gen_commit_cap_ramp_down_when_on_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+            for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: dispcapcommit_min_up_time_hours
+        # Param: gen_commit_cap_min_up_time_hours
         expected_min_up_time = OrderedDict(
             sorted({"Gas_CCGT": 3, "Coal": 2, "Gas_CT": 5, "Gas_CCGT_New": 8,
                     "Gas_CCGT_New_Binary": 8,
@@ -214,8 +213,8 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         )
         actual_min_up_time = OrderedDict(
             sorted(
-                {prj: instance.dispcapcommit_min_up_time_hours[prj]
-                 for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+                {prj: instance.gen_commit_cap_min_up_time_hours[prj]
+                 for prj in instance.GEN_COMMIT_CAP
                  }.items()
             )
         )
@@ -223,7 +222,7 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
                              actual_min_up_time
                              )
 
-        # Param: dispcapcommit_min_down_time_hours
+        # Param: gen_commit_cap_min_down_time_hours
         expected_min_down_time = OrderedDict(
             sorted({"Gas_CCGT": 7, "Coal": 10, "Gas_CT": 3, "Gas_CCGT_New": 5,
                     "Gas_CCGT_New_Binary": 5,
@@ -233,8 +232,8 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         )
         actual_min_down_time = OrderedDict(
             sorted(
-                {prj: instance.dispcapcommit_min_down_time_hours[prj]
-                 for prj in instance.DISPATCHABLE_CAPACITY_COMMIT_GENERATORS
+                {prj: instance.gen_commit_cap_min_down_time_hours[prj]
+                 for prj in instance.GEN_COMMIT_CAP
                  }.items()
             )
         )
