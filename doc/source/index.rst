@@ -22,5 +22,6 @@ Welcome to the GridPath Documentation.
    usage
    functionality
    database
+   visualization
    architecture
    advanced_docs
