@@ -18,7 +18,7 @@ from viz.common_functions import create_stacked_bar_plot, show_plot, \
     get_parent_parser, get_tech_colors, get_tech_plotting_order
 
 
-def parse_arguments(arguments):
+def create_parser():
     """
 
     :return:
@@ -33,7 +33,15 @@ def parse_arguments(arguments):
     parser.add_argument("--stage", default=1,
                         help="The stage ID. Defaults to 1.")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
