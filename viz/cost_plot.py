@@ -187,7 +187,9 @@ def main(args=None):
         script="cost_plot"
     )
 
-    plot_title = "Total Cost by Period - {} - Stage {}".format(
+    plot_title = "{}Total Cost by Period - {} - Stage {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "CostPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.stage)

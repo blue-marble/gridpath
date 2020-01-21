@@ -237,8 +237,11 @@ def main(args=None):
         script="rps_plot"
     )
 
-    plot_title = "RPS Result by Period - {} - Subproblem {} - Stage {}".format(
-        parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
+    plot_title = \
+        "{}RPS Result by Period - {} - Subproblem {} - Stage {}".format(
+            "{} - ".format(scenario)
+            if parsed_args.scenario_name_in_title else "",
+            parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
     plot_name = "RPSPlot-{}-{}-{}".format(
         parsed_args.rps_zone, parsed_args.subproblem, parsed_args.stage)
 
