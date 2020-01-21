@@ -194,8 +194,10 @@ gridpath.project.capacity.operational_types.gen_commit_bin
 
 gridpath.project.capacity.operational_types.gen_commit_cap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_module_specific_components
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_sets
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_req_params
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_opt_params
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_constraints
 
 gridpath.project.capacity.operational_types.gen_hydro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
