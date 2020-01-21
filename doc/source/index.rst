@@ -14,7 +14,7 @@ GridPath Documentation
 Welcome to the GridPath Documentation.
 
 .. toctree::
-   :numbered: 4
+   :numbered: 3
    :maxdepth: 2
 
    introduction
