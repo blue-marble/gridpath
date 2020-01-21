@@ -101,7 +101,9 @@ def main(args=None):
     tech_plotting_order = get_tech_plotting_order(c)
 
     plot_title = \
-        "Total Capacity by Period - {} - Subproblem {} - Stage {}".format(
+        "{}Total Capacity by Period - {} - Subproblem {} - Stage {}".format(
+            "{} - ".format(scenario)
+            if parsed_args.scenario_name_in_title else "",
             parsed_args.load_zone,
             parsed_args.subproblem,
             parsed_args.stage

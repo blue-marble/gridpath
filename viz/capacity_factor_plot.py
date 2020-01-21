@@ -255,7 +255,9 @@ def main(args=None):
 
     tech_colors = get_tech_colors(c)
 
-    plot_title = "Capacity Factors by Period - {} - Stage {}".format(
+    plot_title = "{}Capacity Factors by Period - {} - Stage {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "CapFactorPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.stage)

@@ -209,7 +209,9 @@ def main(args=None):
         script="curtailment_hydro_heatmap_plot"
     )
 
-    plot_title = "Hydro Curtailment by Month-Hour - {} - {} - {}".format(
+    plot_title = "{}Hydro Curtailment by Month-Hour - {} - {} - {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.load_zone, parsed_args.period, parsed_args.stage
     )
     plot_name = "HydroCurtailmentPlot-{}-{}-{}".format(

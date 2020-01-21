@@ -245,8 +245,10 @@ def main(args=None):
         script="carbon_plot"
     )
 
-    plot_title = "Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
+    plot_title = "{}Carbon Emissions by Period - {} - Subproblem {} - Stage {}"\
         .format(
+            "{} - ".format(scenario)
+            if parsed_args.scenario_name_in_title else "",
             parsed_args.carbon_cap_zone, parsed_args.subproblem,
             parsed_args.stage)
     plot_name = "CarbonPlot-{}-{}-{}".format(

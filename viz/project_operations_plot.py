@@ -364,7 +364,9 @@ def main(args=None):
         script="project_operations_plot"
     )
 
-    plot_title = "Operations Plot - {} - {} - Stage {}".format(
+    plot_title = "{}Operations Plot - {} - {} - Stage {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.project, parsed_args.period, parsed_args.stage)
     plot_name = "OperationsPlot-{}-{}-{}".format(
         parsed_args.project, parsed_args.period, parsed_args.stage)

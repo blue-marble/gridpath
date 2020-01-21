@@ -109,7 +109,9 @@ def main(args=None):
     tech_colors = get_tech_colors(c)
     tech_plotting_order = get_tech_plotting_order(c)
 
-    plot_title = "Energy by Period - {} - Stage {}".format(
+    plot_title = "{}Energy by Period - {} - Stage {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "EnergyPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.stage)
