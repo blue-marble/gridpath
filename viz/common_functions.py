@@ -85,7 +85,8 @@ def get_parent_parser():
                              "in a subfolder of this base directory, generally "
                              "'scenario_name/results/figures'")
     parser.add_argument("--scenario_name_in_title", default=False,
-                        action="store_true")
+                        action="store_true",
+                        help="Include the scenario name in the plot title.")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
