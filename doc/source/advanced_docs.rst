@@ -195,6 +195,7 @@ gridpath.project.capacity.operational_types.gen_commit_bin
 gridpath.project.capacity.operational_types.gen_commit_cap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_module_specific_components
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_sets
 
 gridpath.project.capacity.operational_types.gen_hydro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
