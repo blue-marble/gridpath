@@ -30,11 +30,7 @@ from viz.common_functions import show_hide_legend, show_plot, \
     get_parent_parser, get_tech_colors, get_tech_plotting_order
 
 
-def parse_arguments(arguments):
-    """
-
-    :return:
-    """
+def create_parser():
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
@@ -47,7 +43,15 @@ def parse_arguments(arguments):
     parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments

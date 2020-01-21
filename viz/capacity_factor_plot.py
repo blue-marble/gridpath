@@ -23,7 +23,7 @@ from viz.common_functions import show_hide_legend, show_plot, \
     get_parent_parser, get_tech_colors
 
 
-def parse_arguments(arguments):
+def create_parser():
     """
 
     :return:
@@ -38,7 +38,15 @@ def parse_arguments(arguments):
     parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments

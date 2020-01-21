@@ -143,6 +143,7 @@ GridPath uses the following Python packages (not exhaustive):
   manipulations
 * `numpy <https://numpy.org/>`_ for calculations
 * `networkx <https://networkx.github.io/>`_ for network calculations
+* `bokeh <https://bokeh.org/>`_ for interactive plotting
 * `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
 
 You can install all needed Python packages, including those for the extra
@@ -162,13 +163,13 @@ required packages with::
 
 Read below for what the extra features are to determine whether you need them.
 
-Optional packages
-*****************
+Optional packages for extra features
+************************************
 
 The extra features are: 1) the GridPath user interface and 2) building/editing
 the documentation.
 
-GridPath's optional features can be installed individually as follows.
+GridPath's extra features can be installed individually as follows.
 
 For editing or building documentation from source, run::
 
@@ -197,7 +198,7 @@ We recommend `SQLite Studio <https://sqlitestudio.pl/index.rvt>`_ as an SQLite
 database GUI.
 
 We have implemented various tools to help you build your database. See the
-'The GridPath Database' section of the documentation.
+:ref:`database-section-ref` section of the documentation for more information.
 
 Solver
 ------

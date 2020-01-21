@@ -26,7 +26,7 @@ from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
 
 
-def parse_arguments(arguments):
+def create_parser():
     """
 
     :return:
@@ -49,7 +49,15 @@ def parse_arguments(arguments):
                         help="The desired ending horizon. Assumes horizons are"
                              "a set of increasing numbers. Optional")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
