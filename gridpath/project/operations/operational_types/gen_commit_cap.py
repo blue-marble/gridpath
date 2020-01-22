@@ -59,19 +59,22 @@ def add_module_specific_components(m, d):
     The following Pyomo model components are defined in this module:
 
     +-------------------------------------------------------------------------+
-    | Sets                                                                    |
+    |Sets                                                                     |
     +=========================================================================+
-    | | :code:`GEN_COMMIT_CAP`                                                |
-    | The set of generators of the :code:`gen_commit_cap` operational type.   |
+    || :code:`GEN_COMMIT_CAP`                                                 |
+    |                                                                         |
+    |The set of generators of the `gen_commit_cap` operational type           |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_CAP_OPR_TMPS`                                       |
-    | Two-dimensional set with generators of the :code:`gen_commit_cap`       |
-    | operational type and their operational timepoints.                      |
+    || :code:`GEN_COMMIT_CAP_OPR_TMPS`                                        |
+    |                                                                         |
+    |Two-dimensional set with generators of the :code:`gen_commit_cap`        |
+    |operational type and their operational timepoints.                       |
     +-------------------------------------------------------------------------+
-    | | :code:`GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG`                              |
-    | Three-dimensional set with generators of the :code:`gen_commit_cap`     |
-    | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PROJECTS`).                  |
+    || :code:`GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG`                               |
+    |                                                                         |
+    |Three-dimensional set with generators of the :code:`gen_commit_cap`      |
+    |operational type, their operational timepoints, and their fuel           |
+    |segments (if the project is in :code:`FUEL_PROJECTS`).                   |
     +-------------------------------------------------------------------------+
 
     |
@@ -80,12 +83,14 @@ def add_module_specific_components(m, d):
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`unit_size_mw`                                                  |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The MW size of a unit in this project (projects of the                  |
     | :code:`gen_commit_cap` type can represent a fleet of similar units).    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_min_stable_level_fraction`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The minimum stable level of this project as a fraction of its capacity. |
     | This can also be interpreted as the minimum stable level of a unit      |
     | within this project (as the project itself can represent multiple       |
@@ -98,36 +103,43 @@ def add_module_specific_components(m, d):
     | Optional Input Params                                                   |
     +=========================================================================+
     | | :code:`gen_commit_cap_startup_plus_ramp_up_rate`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's ramp rate when starting up as percent of project capacity |
     | per minute (defaults to 1 if not specified).                            |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_shutdown_plus_ramp_down_rate`                   |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's ramp rate when shutting down as percent of project        |
     | capacity per minute (defaults to 1 if not specified).                   |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_ramp_up_when_on_rate`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's upward ramp rate limit during operations, defined as a    |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_ramp_down_when_on_rate`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_ramp_down_when_on_rate`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_min_up_time_hours`                              |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's minimum up time in hours.                                 |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_min_down_time_hours`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`)                               |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    |                                                                         |
     | The project's minimum down time in hours.                               |
     +-------------------------------------------------------------------------+
 
@@ -137,50 +149,59 @@ def add_module_specific_components(m, d):
     | Variables                                                               |
     +=========================================================================+
     | | :code:`GenCommitCap_Provide_Power_MW`                                 |
-    | | (within :code:`NonNegativeReals`)                                     |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`NonNegativeReals`)                                   |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Power provision in MW from this project in each timepoint in which the  |
     | project is operational (capacity exists and the project is available).  |
     +-------------------------------------------------------------------------+
     | | :code:`Commit_Capacity_MW`                                            |
-    | | (within :code:`NonNegativeReals`)                                     |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`NonNegativeReals`)                                   |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | A continuous variable that represents the commitment state of the       |
     | (i.e. of the units represented by this project).                        |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Fuel_Burn_MMBTU`                                  |
-    | | (within :code:`NonNegativeReals`)                                     |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`NonNegativeReals`)                                   |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Fuel burn by this project in each operational timepoint.                |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Up_Startup_MW`                                            |
-    | | (within :code:`Reals`)                                                |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`Reals`)                                              |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The upward ramp of the project when capacity is started up.             |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Down_Startup_MW`                                          |
-    | | (within :code:`Reals`)                                                |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`Reals`)                                              |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The downward ramp of the project when capacity is shutting down.        |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Up_When_On_MW`                                            |
-    | | (within :code:`Reals`)                                                |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`Reals`)                                              |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The upward ramp of the project when capacity on.                        |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Down_When_On_MW`                                          |
-    | | (within :code:`Reals`)                                                |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`Reals`)                                              |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The downward ramp of the project when capacity is on.                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Startup_MW`                                       |
-    | | (within :code:`NonNegativeReals`)                                     |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`NonNegativeReals`)                                   |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The amount of capacity started up.                                      |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Shutdown_MW`                                      |
-    | | (within :code:`NonNegativeReals`)                                     |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Within*: :code:`NonNegativeReals`)                                   |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | The amount of capacity shut down.                                       |
     +-------------------------------------------------------------------------+
 
@@ -192,81 +213,99 @@ def add_module_specific_components(m, d):
     | Commitment and Power                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`Commit_Capacity_Constraint`                                    |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits committed capacity to the available capacity.                    |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Max_Power_Constraint`                             |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the power plus upward reserves to the committed capacity.        |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Min_Power_Constraint`                             |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the power provision minus downward reserves to the minimum       |
     | stable level for the project.                                           |
     +-------------------------------------------------------------------------+
     | Ramps                                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Up_Off_to_On_Constraint`                                  |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project upward ramp when turning capacity on based   |
     | on the :code:`gen_commit_cap_startup_plus_ramp_up_rate`.                |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Up_When_On_Constraint`                                    |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project upward ramp when capacity is on based on     |
     | the :code:`gen_commit_cap_ramp_up_when_on_rate`.                        |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Up_When_On_Headroom_Constraint`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project upward ramp based on the headroom available  |
     | in the previous timepoint.                                              |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Ramp_Up_Constraint`                               |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project upward ramp (regardless of commitment state).|
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Down_On_to_Off_Constraint`                                |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project downward ramp when turning capacity on based |
     | on the :code:`gen_commit_cap_shutdown_plus_ramp_down_rate`.             |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Down_When_On_Constraint`                                  |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project downward ramp when capacity is on based on   |
     | the :code:`gen_commit_cap_ramp_down_when_on_rate`.                      |
     +-------------------------------------------------------------------------+
     | | :code:`Ramp_Down_When_On_Headroom_Constraint`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project downward ramp based on the headroom          |
     | available in the current timepoint.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Ramp_Down_Constraint`                             |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the allowed project downward ramp (regardless of commitment      |
     | state).                                                                 |
     +-------------------------------------------------------------------------+
     | Minimum Up and Down Time                                                |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Startup_Constraint`                               |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the capacity started up to the difference in commitment between  |
     | the current and previous timepoint.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Shutdown_Constraint`                              |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Limits the capacity shut down to the difference in commitment between   |
     | the current and previous timepoint.                                     |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Min_Up_Time_Constraint`                           |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Requires that when units within this project are started, they stay on  |
     | for at least :code:`gen_commit_cap_min_up_time_hours`.                  |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Min_Down_Time_Constraint`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`)                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
+    |                                                                         |
     | Requires that when units within this project are stopped, they stay off |
     | for at least :code:`gen_commit_cap_min_down_time_hours`.                |
     +-------------------------------------------------------------------------+
+
+
+
 
     """
 
