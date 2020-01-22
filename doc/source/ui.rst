@@ -81,6 +81,8 @@ been selected and no further action is required.
 .. Note:: The GridPath UI server will not work until the Python environment
     directory has been selected and the UI restarted.
 
+.. image:: ../graphics/ui_ui_settings.png
+
 Solvers
 *******
 You must tell the GridPath UI where the executables are located for solvers
@@ -90,6 +92,8 @@ the 'Change to' row for one of the three solvers and then find the
 executable for that solver using the :code:`Browse` button in the respective
 row. The 'Status' row will warn you if a restart is required for either the
 solver name or executable value to take effect.
+
+.. image:: ../graphics/ui_solver_settings.png
 
 ****
 Home
