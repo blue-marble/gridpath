@@ -35,8 +35,13 @@ directory of your GridPath Python environment. In the :code:`Solvers` table,
 you must specify up to three different solvers and the location of the
 solver executables that the UI can then use to solve scenarios.
 
+.. _ui-settings-section-ref:
+
+UI Settings
+***********
+
 Scenarios Directory
-*******************
+===================
 
 The :code:`Scenarios Directory` can be any folder in your file system. To
 select one click the :code:`Browse` button in the 'Change to' row of the
@@ -48,7 +53,7 @@ selected directory to be recognized by the UI, or 'set' if a directory has
 been selected and no further action is required.
 
 GridPath Database
-*****************
+=================
 
 The GridPath UI uses a GridPath database file to manage inputs and outputs.
 This database must conform to the GridPath database schema and be
@@ -63,7 +68,7 @@ need to restart for the selected database file to be recognize by the UI, or
 'set' if a database file has been selected and no further action is required.
 
 GridPath Python Environment Directory
-*************************************
+=====================================
 
 The GridPath UI uses your GridPath Python installation. Before using it, you
 must install GridPath using the instructions in
@@ -83,6 +88,8 @@ been selected and no further action is required.
 
 .. image:: ../graphics/ui_ui_settings.png
 
+.. _solver-settings-section-ref:
+
 Solvers
 *******
 You must tell the GridPath UI where the executables are located for solvers
@@ -98,3 +105,25 @@ solver name or executable value to take effect.
 ****
 Home
 ****
+
+The GridPath :code:`Home` screen provides an overview of UI settings status
+and the scenario status via four different tables.
+
+The :code:`UI Status` table provides information about whether the UI server
+is running and whether the scenarios directory, GridPath database, and
+GridPath Python environment directory have been set (see
+:ref:`ui-settings-section-ref`).
+
+The :code:`Solver Status` table provides information about whether the user
+has selected solvers and their respective executables (see
+:ref:`solver-settings-section-ref`).
+
+The :code:`Run Status` table provides information about whether the user's
+GridPath's scenarios have been run and are complete, and if any have
+encountered errors.
+
+The :code:`Validation Status` table provides information about whether the
+user's GridPath's scenarios have been validated, and, if so, whether any
+have been found to be invalid.
+
+.. image:: ../graphics/ui_home_screen.png
