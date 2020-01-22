@@ -29,13 +29,6 @@ def load_geography_load_zones(io, c, subscenario_input, data_input):
         data_input_subscenario = data_input.loc[data_input['load_zone_scenario_id'] == sc_id]
         load_zones = data_input_subscenario['load_zone'].to_list()
 
-        # load_zone_overgen_penalties = dict(
-        #     zip(data_input_subscenario.load_zone,
-        #         zip(data_input_subscenario.allow_overgeneration, data_input_subscenario.overgeneration_penalty_per_mw)))
-        # load_zone_unserved_energy_penalties = dict(
-        #     zip(data_input_subscenario.load_zone,
-        #         zip(data_input_subscenario.allow_unserved_energy, data_input_subscenario.unserved_energy_penalty_per_mw)))
-
         load_zone_overgen_penalties = {}
 
         for l_z in load_zones:
