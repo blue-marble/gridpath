@@ -3,8 +3,8 @@
 
 """
 This module describes the operations of 'continuous/linear-commit' generators,
-i.e. generators with on/off commitment decisions, but with the linear
-commitment decision relaxed. The relaxation replaces the linear variables
+i.e. generators with on/off commitment decisions, but with the binary
+commitment decision relaxed. The relaxation replaces the binary variables
 (commit, start, stop, synced_units) with continuous variables within the range
 [0,1]. Except for this relaxation, the formulation is exactly the same as
 *gen_commit_bin*. Please refer to the *gen_commit_bin* module for more
