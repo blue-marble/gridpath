@@ -9,6 +9,12 @@ commitment decision relaxed. The relaxation replaces the binary variables
 [0,1]. Except for this relaxation, the formulation is exactly the same as
 *gen_commit_bin*. Please refer to the *gen_commit_bin* module for more
 information on the formulation.
+
+.. Note:: Some of the more complex constraints in this module such as the
+startup trajectories might show weird behavior in the linearized version, e.g.
+different fractions of the unit might be starting up and shutting down in the
+same timepoint. We don't recommend using this linearized version in combination
+with these complex constraints.
 """
 
 from __future__ import division
