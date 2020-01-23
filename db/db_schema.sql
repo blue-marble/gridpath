@@ -2306,6 +2306,7 @@ committed_mw FLOAT,
 committed_units INTEGER,
 started_units INTEGER,
 stopped_units INTEGER,
+synced_units INTEGER,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
