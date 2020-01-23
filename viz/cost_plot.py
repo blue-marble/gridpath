@@ -18,7 +18,7 @@ from viz.common_functions import create_stacked_bar_plot, show_plot, \
     get_parent_parser
 
 
-def parse_arguments(arguments):
+def create_parser():
     """
 
     :return:
@@ -33,7 +33,15 @@ def parse_arguments(arguments):
     parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
@@ -187,7 +195,9 @@ def main(args=None):
         script="cost_plot"
     )
 
-    plot_title = "Total Cost by Period - {} - Stage {}".format(
+    plot_title = "{}Total Cost by Period - {} - Stage {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
         parsed_args.load_zone, parsed_args.stage)
     plot_name = "CostPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.stage)

@@ -84,6 +84,9 @@ def get_parent_parser():
                              "the plot html file. Note: the file will be saved "
                              "in a subfolder of this base directory, generally "
                              "'scenario_name/results/figures'")
+    parser.add_argument("--scenario_name_in_title", default=False,
+                        action="store_true",
+                        help="Include the scenario name in the plot title.")
     parser.add_argument("--ylimit", help="Set y-axis limit.", type=float)
     parser.add_argument("--show",
                         default=False, action="store_true",
@@ -95,8 +98,48 @@ def get_parent_parser():
     return parser
 
 
+def get_tech_colors(c):
+    """
+    Get the colors by technology as specified in the viz_technologies db
+    table.
+
+    :param c:
+    :return:
+    """
+    colors = c.execute(
+        """
+        SELECT technology, color
+        FROM viz_technologies
+        WHERE color is not NULL
+        """
+    ).fetchall()
+
+    return dict(colors)
+
+
+def get_tech_plotting_order(c):
+    """
+    Get the plotting order of each technology as specified in the
+    viz_technologies db table.
+
+    :param c:
+    :return:
+    """
+
+    order = c.execute(
+        """
+        SELECT technology, plotting_order
+        FROM viz_technologies
+        WHERE plotting_order is not NULL
+        """
+    ).fetchall()
+
+    return dict(order)
+
+
 def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
-                            group_column, column_mapper={}, ylimit=None):
+                            group_column, column_mapper={}, group_colors={},
+                            group_order={}, ylimit=None):
     """
     Create a stacked bar chart based on a DataFrame and the desired x-axis,
     y-axis, and group (category). Different groups/categories will be stacked.
@@ -123,6 +166,10 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
     :param group_column:
     :param column_mapper: optional dict that maps columns names to cleaner
         labels, e.g. 'capacity_mw' becomes 'Capacity (MW)'
+    :param group_colors: optional dict that maps groups to colors. Groups
+        without a specified color will use a default palette
+    :param group_order: optional dict that maps groups to their plotting order
+        in the stacked bar chart (lower = bottom)
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
@@ -150,10 +197,22 @@ def create_stacked_bar_plot(df, title, y_axis_column, x_axis_column,
 
     # Determine column types for plotting, legend and colors
     # Order of stacked_cols will define order of stacked areas in chart
-    stacked_cols = list(df.columns)
+    for col in df.columns:
+        if col not in group_order:
+            group_order[col] = max(group_order.values(), default=0) + 1
+    stacked_cols = sorted(df.columns, key=lambda x: group_order[x])
 
-    # Stacked Area Colors
-    colors = cividis(len(stacked_cols))
+    # Set up color scheme. Use cividis palette for unspecified colors
+    unspecified_columns = [c for c in stacked_cols
+                           if c not in group_colors.keys()]
+    unspecified_group_colors = dict(zip(unspecified_columns,
+                                        cividis(len(unspecified_columns))))
+    colors = []
+    for column in stacked_cols:
+        if column in group_colors:
+            colors.append(group_colors[column])
+        else:
+            colors.append(unspecified_group_colors[column])
 
     # Set up the figure
     plot = figure(

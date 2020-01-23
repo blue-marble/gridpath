@@ -3,14 +3,16 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>Scenarios Directory</caption>
+        <caption>UI Settings</caption>
         <tr>
-          <th>Current</th>
-          <th>Last Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">Scenarios Directory</th>
         </tr>
         <tr>
+          <td>Current</td>
           <td>{{currentScenariosDirectory}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="Scenarios directory"
@@ -20,6 +22,9 @@
                     (click)="browseScenariosDirectory()">Browse
             </button>
           </td>
+        </tr>
+        <tr>
+          <td>Status</td>
           <td [ngClass]="{
               'orange' : directoryStatus == 'restart required',
               'green' : directoryStatus == 'set'
@@ -32,14 +37,15 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>GridPath Database</caption>
         <tr>
-          <th>Current</th>
-          <th>Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">GridPath Database</th>
         </tr>
         <tr>
+          <td>Current</td>
           <td>{{currentGridPathDB}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="GridPath database file"
@@ -48,6 +54,9 @@
             <button id="browseGPDatabase" class="button-primary"
                     (click)="browseGPDatabase()">Browse</button>
           </td>
+        </tr>
+        <tr>
+          <td>Status</td>
           <td [ngClass]="{
               'orange' : databaseStatus == 'restart required',
               'green' : databaseStatus == 'set'
@@ -60,14 +69,15 @@
   <div class="row">
     <div class="col-md-auto">
       <table class="scenario-detail">
-        <caption>GridPath Python Environment Directory</caption>
         <tr>
-          <th>Current</th>
-          <th>Requested</th>
-          <th>Request Status</th>
+          <th colspan="2">GridPath Python Environment Directory</th>
         </tr>
         <tr>
-          <td>{{requestedPythonDirectory}}</td>
+          <td>Current</td>
+          <td>{{currentPythonDirectory}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
           <td>
             <input class="u-full-width" size="50"
                    placeholder="GridPath Python environment directory"
@@ -76,7 +86,10 @@
             <button id="browsePythonEnvironment" class="button-primary"
                     (click)="browsePythonEnvironment()">Browse</button>
           </td>
-          <td  [ngClass]="{
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td [ngClass]="{
               'orange' : pythonStatus == 'restart required',
               'green' : pythonStatus == 'set'
            }">{{pythonStatus}}</td>
@@ -90,49 +103,132 @@
       <table class="scenario-detail">
         <caption>Solvers</caption>
         <tr>
-          <th>Solver</th>
-          <th>Current Executable</th>
-          <th>Last Requested Executable</th>
-          <th>Request Status</th>
+          <th>Solver 1</th>
+          <th>Name</th>
+          <th>Executable</th>
         </tr>
         <tr>
-          <td>Cbc</td>
-          <td>{{currentCbcExecutable}}</td>
+          <td>Current</td>
+          <td>{{currentSolver1Name}}</td>
+          <td>{{currentSolver1Executable}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
+          <td>
+            <select [(ngModel)]="requestedSolver1Name"
+                    (change)="changeSolver1NameStatus()">
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
+            </select>
+          </td>
           <td>
             <input class="u-full-width" size="50"
-                   placeholder="Cbc solver executable" type="text"
-                   [(ngModel)]="requestedCbcExecutable">
+                   placeholder="Solver 1 executable" type="text"
+                   [(ngModel)]="requestedSolver1Executable">
             <button id="browseCbcExecutable" class="button-primary"
-                    (click)="browseCbcExecutable()">Browse
+                    (click)="browseSolver1Executable()">Browse
             </button>
           </td>
-          <td></td>
         </tr>
         <tr>
-          <td>CPLEX</td>
-          <td>{{currentCPLEXExecutable}}</td>
+          <td>Status</td>
+          <td [ngClass]="{
+              'orange' : solver1NameStatus == 'restart required',
+              'green' : solver1NameStatus == 'set'
+           }">{{solver1NameStatus}}</td>
+          <td [ngClass]="{
+              'orange' : solver1ExecutableStatus == 'restart required',
+              'green' : solver1ExecutableStatus == 'set'
+           }">{{solver1ExecutableStatus}}</td>
+        </tr>
+      </table>
+
+      <table class="scenario-detail">
+        <tr>
+          <th>Solver 2</th>
+          <th>Name</th>
+          <th>Executable</th>
+        </tr>
+        <tr>
+          <td>Current</td>
+          <td>{{currentSolver2Name}}</td>
+          <td>{{currentSolver2Executable}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
+          <td>
+            <select [(ngModel)]="requestedSolver2Name"
+                    (change)="changeSolver2NameStatus()">
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
+            </select>
+          </td>
           <td>
             <input class="u-full-width" size="50"
-                   placeholder="CPLEX solver executable" type="text"
-                   [(ngModel)]="requestedCPLEXExecutable">
+                   placeholder="Solver 2 executable" type="text"
+                   [(ngModel)]="requestedSolver2Executable">
             <button id="browseCPLEXExecutable" class="button-primary"
-            (click)="browseCPLEXExecutable()">Browse
+            (click)="browseSolver2Executable()">Browse
             </button>
           </td>
-          <td></td>
         </tr>
         <tr>
-          <td>Gurobi</td>
-          <td>{{currentGurobiExecutable}}</td>
+          <td>Status</td>
+          <td [ngClass]="{
+              'orange' : solver2NameStatus == 'restart required',
+              'green' : solver2NameStatus == 'set'
+           }">{{solver2NameStatus}}</td>
+          <td [ngClass]="{
+              'orange' : solver2ExecutableStatus == 'restart required',
+              'green' : solver2ExecutableStatus == 'set'
+           }">{{solver2ExecutableStatus}}<td>
+        </tr>
+      </table>
+      <table class="scenario-detail">
+        <tr>
+          <th>Solver 3</th>
+          <th>Name</th>
+          <th>Executable</th>
+        </tr>
+        <tr>
+          <td>Current</td>
+          <td>{{currentSolver3Name}}</td>
+          <td>{{currentSolver3Executable}}</td>
+        </tr>
+        <tr>
+          <td>Change to</td>
+          <td>
+            <select [(ngModel)]="requestedSolver3Name"
+                    (change)="changeSolver3NameStatus()">
+              <option value="{{null}}"></option>
+              <ng-container *ngFor="let solver of supportedSolvers">
+                <option value="{{solver}}">{{solver}}</option>
+              </ng-container>
+            </select>
+          </td>
           <td>
             <input class="u-full-width" size="50"
-                   placeholder="Gurobi solver executable" type="text"
-                   [(ngModel)]="requestedGurobiExecutable">
+                   placeholder="Solver 3 executable" type="text"
+                   [(ngModel)]="requestedSolver3Executable">
             <button id="browseGurobiExecutable" class="button-primary"
-                    (click)="browseGurobiExecutable()">Browse
+                    (click)="browseSolver3Executable()">Browse
             </button>
           </td>
-          <td></td>
+        </tr>
+        <tr>
+          <td>Status</td>
+          <td [ngClass]="{
+              'orange' : solver3NameStatus == 'restart required',
+              'green' : solver3NameStatus == 'set'
+           }">{{solver3NameStatus}}</td>
+          <td [ngClass]="{
+              'orange' : solver3ExecutableStatus == 'restart required',
+              'green' : solver3ExecutableStatus == 'set'
+           }">{{solver3ExecutableStatus}}</td>
         </tr>
       </table>
     </div>

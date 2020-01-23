@@ -855,23 +855,23 @@ def process_module_specific_results(db, c, subscenarios):
     # Aggregate hydro curtailment (just scheduled curtailment)
     agg_sql = """
         INSERT INTO results_project_curtailment_hydro
-        (scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        (scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw)
         SELECT
-        scenario_id, subproblem_id, stage_id, period, horizon, timepoint, 
+        scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint, month, hour_of_day,
         load_zone, scheduled_curtailment_mw
         FROM (
-            SELECT scenario_id, subproblem_id, stage_id, period, horizon, 
+            SELECT scenario_id, subproblem_id, stage_id, period, 
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
             FROM results_project_dispatch_gen_hydro
-            GROUP BY subproblem_id, stage_id, timepoint, load_zone
+            GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl
         JOIN (
-            SELECT subproblem_id, period, timepoint, month, hour_of_day
+            SELECT subproblem_id, stage_id, timepoint, month, hour_of_day
             FROM inputs_temporal_timepoints
             WHERE temporal_scenario_id = (
                 SELECT temporal_scenario_id 
@@ -879,7 +879,7 @@ def process_module_specific_results(db, c, subscenarios):
                 WHERE scenario_id = ?
                 )
         ) as tmp_info_tbl
-        USING (subproblem_id, period, timepoint)
+        USING (subproblem_id, stage_id, timepoint)
         WHERE scenario_id = ?
         ORDER BY subproblem_id, stage_id, load_zone, timepoint;
         """

@@ -24,13 +24,14 @@ class ScenarioDetailAPI(Resource):
         scenario_detail_api = dict()
 
         # Get the scenario name
-        [scenario_name, validation_status, run_status, run_process_id,
-         run_start_datetime] = c.execute("""
-          SELECT scenarios.scenario_name,
+        [scenario_name, scenario_description, validation_status, run_status,
+         run_process_id, run_start_time, run_end_time] = c.execute("""
+          SELECT scenarios.scenario_name, scenarios.scenario_description,
             scenarios_view.validation_status,
             scenarios_view.run_status,
             scenarios.run_process_id, 
-            scenarios.run_start_datetime
+            scenarios.run_start_time,
+            scenarios.run_end_time
           FROM scenarios
           JOIN scenarios_view
             USING (scenario_id) 
@@ -39,16 +40,24 @@ class ScenarioDetailAPI(Resource):
         ).fetchone()
 
         scenario_detail_api["scenarioName"] = scenario_name
+        scenario_detail_api["scenarioDescription"] = scenario_description
         scenario_detail_api["validationStatus"] = validation_status
         scenario_detail_api["runStatus"] = run_status
-        scenario_detail_api["scenarioName"] = scenario_name
         scenario_detail_api["runPID"] = run_process_id
+        # Format for to match logfile name
         scenario_detail_api["runStartTime"] = \
-            string_from_time(
+            "" if run_start_time is None else string_from_time(
                 datetime.datetime.strptime(
-                  run_start_datetime, '%Y-%m-%d %H:%M:%S.%f'
+                  run_start_time, '%Y-%m-%d %H:%M:%S.%f'
                 )
             )
+        scenario_detail_api["runEndTime"] = \
+            "" if run_end_time is None else run_end_time
+        scenario_detail_api["runElapsedTime"] = \
+            "" if run_start_time is None else \
+            str(datetime.datetime.now() - datetime.datetime.strptime(
+                  run_start_time, '%Y-%m-%d %H:%M:%S.%f'
+                ))
 
         # TODO: should probably specify the default solver somewhere in the
         #  code and use that parameter here
@@ -95,7 +104,9 @@ class ScenarioDetailAPI(Resource):
 
         # We'll need scenario ID and name, which we add separately as they
         # are not in the ui_scenario_detail_table_row_metadata table
-        for base_column in ["scenario_id", "scenario_name"]:
+        for base_column in [
+          "scenario_id", "scenario_name", "scenario_description"
+        ]:
             scenario_edit_api[base_column] = scenario_edit_api_all[base_column]
 
         # Add only columns requested by the UI to the final scenario-edit API

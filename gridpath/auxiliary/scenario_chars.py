@@ -173,6 +173,10 @@ class OptionalFeatures(object):
 
 
 class SubScenarios(object):
+    """
+    The subscenario IDs will be used to format SQL queries, so we set them to
+    "NULL" (not None) if an ID is not specified for the scenario.
+    """
     def __init__(self, cursor, scenario_id):
         """
         
@@ -181,349 +185,463 @@ class SubScenarios(object):
         """
         self.SCENARIO_ID = scenario_id
 
-        self.TEMPORAL_SCENARIO_ID = cursor.execute(
+        temporal_sid = cursor.execute(
             """SELECT temporal_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TEMPORAL_SCENARIO_ID = \
+            "NULL" if temporal_sid is None else temporal_sid
 
-        self.LOAD_ZONE_SCENARIO_ID = cursor.execute(
+        lz_sid = cursor.execute(
             """SELECT load_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LOAD_ZONE_SCENARIO_ID = \
+            "NULL" if lz_sid is None else lz_sid
 
-        self.LF_RESERVES_UP_BA_SCENARIO_ID = cursor.execute(
+        lf_res_up_ba_sid = cursor.execute(
             """SELECT lf_reserves_up_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LF_RESERVES_UP_BA_SCENARIO_ID = \
+            "NULL" if lf_res_up_ba_sid is None else lf_res_up_ba_sid
 
-        self.LF_RESERVES_DOWN_BA_SCENARIO_ID = cursor.execute(
+        lf_res_down_ba_sid = cursor.execute(
             """SELECT lf_reserves_down_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LF_RESERVES_DOWN_BA_SCENARIO_ID = \
+            "NULL" if lf_res_down_ba_sid is None else lf_res_down_ba_sid
         
-        self.REGULATION_UP_BA_SCENARIO_ID = cursor.execute(
+        reg_up_ba_sid = cursor.execute(
             """SELECT regulation_up_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.REGULATION_UP_BA_SCENARIO_ID = \
+            "NULL" if reg_up_ba_sid is None else reg_up_ba_sid
 
-        self.REGULATION_DOWN_BA_SCENARIO_ID = cursor.execute(
+        reg_down_ba_sid = cursor.execute(
             """SELECT regulation_down_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.REGULATION_DOWN_BA_SCENARIO_ID = \
+            "NULL" if reg_down_ba_sid is None else reg_down_ba_sid
 
-        self.FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
+        freq_resp_ba_sid = cursor.execute(
             """SELECT frequency_response_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.FREQUENCY_RESPONSE_BA_SCENARIO_ID = \
+            "NULL" if freq_resp_ba_sid is None else freq_resp_ba_sid
 
-        self.SPINNING_RESERVES_BA_SCENARIO_ID = cursor.execute(
+        spin_res_ba_sid = cursor.execute(
             """SELECT spinning_reserves_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.SPINNING_RESERVES_BA_SCENARIO_ID = \
+            "NULL" if spin_res_ba_sid is None else spin_res_ba_sid
 
-        self.RPS_ZONE_SCENARIO_ID = cursor.execute(
+        rps_zone_sid = cursor.execute(
             """SELECT rps_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.RPS_ZONE_SCENARIO_ID = \
+            "NULL" if rps_zone_sid is None else rps_zone_sid
 
-        self.CARBON_CAP_ZONE_SCENARIO_ID = cursor.execute(
+        carbon_cap_zone_sid = cursor.execute(
             """SELECT carbon_cap_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.CARBON_CAP_ZONE_SCENARIO_ID = \
+            "NULL" if carbon_cap_zone_sid is None else carbon_cap_zone_sid
 
-        self.PRM_ZONE_SCENARIO_ID = cursor.execute(
+        prm_zone_sid = cursor.execute(
             """SELECT prm_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PRM_ZONE_SCENARIO_ID = \
+            "NULL" if prm_zone_sid is None else prm_zone_sid
 
-        self.LOCAL_CAPACITY_ZONE_SCENARIO_ID = cursor.execute(
+        loc_cap_zone_sid = cursor.execute(
             """SELECT local_capacity_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LOCAL_CAPACITY_ZONE_SCENARIO_ID = \
+            "NULL" if loc_cap_zone_sid is None else loc_cap_zone_sid
 
-        self.PROJECT_PORTFOLIO_SCENARIO_ID = cursor.execute(
+        proj_portfolio_sid = cursor.execute(
             """SELECT project_portfolio_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_PORTFOLIO_SCENARIO_ID = \
+            "NULL" if proj_portfolio_sid is None else proj_portfolio_sid
 
-        self.PROJECT_LOAD_ZONE_SCENARIO_ID = cursor.execute(
+        proj_lz_sid = cursor.execute(
             """SELECT project_load_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_LOAD_ZONE_SCENARIO_ID = \
+            "NULL" if proj_lz_sid is None else proj_lz_sid
 
-        self.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID = cursor.execute(
+        p_lf_res_up_ba_sid = cursor.execute(
             """SELECT project_lf_reserves_up_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_LF_RESERVES_UP_BA_SCENARIO_ID = \
+            "NULL" if p_lf_res_up_ba_sid is None else p_lf_res_up_ba_sid
 
-        self.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID = cursor.execute(
+        p_lf_res_down_ba_sid = cursor.execute(
             """SELECT project_lf_reserves_down_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_LF_RESERVES_DOWN_BA_SCENARIO_ID = \
+            "NULL" if p_lf_res_down_ba_sid is None else p_lf_res_down_ba_sid
         
-        self.PROJECT_REGULATION_UP_BA_SCENARIO_ID = cursor.execute(
+        p_reg_up_ba_sid = cursor.execute(
             """SELECT project_regulation_up_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_REGULATION_UP_BA_SCENARIO_ID = \
+            "NULL" if p_reg_up_ba_sid is None else p_reg_up_ba_sid
 
-        self.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID = cursor.execute(
+        p_reg_down_ba_sid = cursor.execute(
             """SELECT project_regulation_down_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_REGULATION_DOWN_BA_SCENARIO_ID = \
+            "NULL" if p_reg_down_ba_sid is None else p_reg_down_ba_sid
 
-        self.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID = cursor.execute(
+        p_fr_ba_sid = cursor.execute(
             """SELECT project_frequency_response_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_FREQUENCY_RESPONSE_BA_SCENARIO_ID = \
+            "NULL" if p_fr_ba_sid is None else p_fr_ba_sid
 
-        self.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID = cursor.execute(
+        p_sp_ba_sid = cursor.execute(
             """SELECT project_spinning_reserves_ba_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_SPINNING_RESERVES_BA_SCENARIO_ID = \
+            "NULL" if p_sp_ba_sid is None else p_sp_ba_sid
 
-        self.PROJECT_RPS_ZONE_SCENARIO_ID = cursor.execute(
+        p_rps_z_sid = cursor.execute(
             """SELECT project_rps_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_RPS_ZONE_SCENARIO_ID = \
+            "NULL" if p_rps_z_sid is None else p_rps_z_sid
 
-        self.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID = cursor.execute(
+        p_cc_z_sid = cursor.execute(
             """SELECT project_carbon_cap_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_CARBON_CAP_ZONE_SCENARIO_ID = \
+            "NULL" if p_cc_z_sid is None else p_cc_z_sid
 
-        self.PROJECT_PRM_ZONE_SCENARIO_ID = cursor.execute(
+        p_prm_z_sid = cursor.execute(
             """SELECT project_prm_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_PRM_ZONE_SCENARIO_ID = \
+            "NULL" if p_prm_z_sid is None else p_prm_z_sid
 
-        self.PROJECT_ELCC_CHARS_SCENARIO_ID = cursor.execute(
+        p_elcc_char_sid = cursor.execute(
             """SELECT project_elcc_chars_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_ELCC_CHARS_SCENARIO_ID = \
+            "NULL" if p_elcc_char_sid is None else p_elcc_char_sid
 
-        self.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID = cursor.execute(
+        p_lc_z_sid = cursor.execute(
             """SELECT project_local_capacity_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_LOCAL_CAPACITY_ZONE_SCENARIO_ID = \
+            "NULL" if p_lc_z_sid is None else p_lc_z_sid
 
-        self.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID = cursor.execute(
+        p_lc_char_sid = cursor.execute(
             """SELECT project_local_capacity_chars_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_LOCAL_CAPACITY_CHARS_SCENARIO_ID = \
+            "NULL" if p_lc_char_sid is None else p_lc_char_sid
 
-        self.PROJECT_EXISTING_CAPACITY_SCENARIO_ID = cursor.execute(
+        p_ecap_sid = cursor.execute(
             """SELECT project_existing_capacity_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_EXISTING_CAPACITY_SCENARIO_ID = \
+            "NULL" if p_ecap_sid is None else p_ecap_sid
 
-        self.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID = cursor.execute(
+        p_efc_sid = cursor.execute(
             """SELECT project_existing_fixed_cost_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_EXISTING_FIXED_COST_SCENARIO_ID = \
+            "NULL" if p_efc_sid is None else p_efc_sid
 
-        self.PROJECT_NEW_COST_SCENARIO_ID = cursor.execute(
+        p_ncost_sid = cursor.execute(
             """SELECT project_new_cost_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_NEW_COST_SCENARIO_ID = \
+            "NULL" if p_ncost_sid is None else p_ncost_sid
 
-        self.PROJECT_NEW_POTENTIAL_SCENARIO_ID = cursor.execute(
+        p_npot_sid = cursor.execute(
             """SELECT project_new_potential_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_NEW_POTENTIAL_SCENARIO_ID = \
+            "NULL" if p_npot_sid is None else p_npot_sid
 
-        self.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID = cursor.execute(
+        p_nbbsize_sid = cursor.execute(
             """SELECT project_new_binary_build_size_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID = \
+            "NULL" if p_nbbsize_sid is None else p_nbbsize_sid
 
-        self.PRM_ENERGY_ONLY_SCENARIO_ID = cursor.execute(
+        prm_en_only_sid = cursor.execute(
             """SELECT prm_energy_only_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PRM_ENERGY_ONLY_SCENARIO_ID = \
+            "NULL" if prm_en_only_sid is None else prm_en_only_sid
 
-        self.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = cursor.execute(
+        p_opchar_sid = cursor.execute(
             """SELECT project_operational_chars_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID = \
+            "NULL" if p_opchar_sid is None else p_opchar_sid
 
-        self.PROJECT_AVAILABILITY_SCENARIO_ID = cursor.execute(
+        p_av_sid = cursor.execute(
             """SELECT project_availability_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PROJECT_AVAILABILITY_SCENARIO_ID = \
+            "NULL" if p_av_sid is None else p_av_sid
 
-        self.FUEL_SCENARIO_ID = cursor.execute(
+        fuel_sid = cursor.execute(
             """SELECT fuel_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.FUEL_SCENARIO_ID = \
+            "NULL" if fuel_sid is None else fuel_sid
 
-        self.FUEL_PRICE_SCENARIO_ID = cursor.execute(
+        fuel_price_sid = cursor.execute(
             """SELECT fuel_price_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.FUEL_PRICE_SCENARIO_ID = \
+            "NULL" if fuel_price_sid is None else fuel_price_sid
 
-        self.TRANSMISSION_PORTFOLIO_SCENARIO_ID = cursor.execute(
+        tx_port_sid = cursor.execute(
             """SELECT transmission_portfolio_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_PORTFOLIO_SCENARIO_ID = \
+            "NULL" if tx_port_sid is None else tx_port_sid
 
-        self.TRANSMISSION_LOAD_ZONE_SCENARIO_ID = cursor.execute(
+        tx_lz_sid = cursor.execute(
             """SELECT transmission_load_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_LOAD_ZONE_SCENARIO_ID = \
+            "NULL" if tx_lz_sid is None else tx_lz_sid
 
-        self.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID = cursor.execute(
+        tx_ecap_sid = cursor.execute(
             """SELECT transmission_existing_capacity_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID = \
+            "NULL" if tx_ecap_sid is None else tx_ecap_sid
 
-        self.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID = cursor.execute(
+        tx_opchar = cursor.execute(
             """SELECT transmission_operational_chars_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID = \
+            "NULL" if tx_opchar is None else tx_opchar
 
-        self.TRANSMISSION_HURDLE_RATE_SCENARIO_ID = cursor.execute(
+        tx_hurdle_sid = cursor.execute(
             """SELECT transmission_hurdle_rate_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_HURDLE_RATE_SCENARIO_ID = \
+            "NULL" if tx_hurdle_sid is None else tx_hurdle_sid
 
-        self.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID = cursor.execute(
+        tx_cc_z_sid = cursor.execute(
             """SELECT transmission_carbon_cap_zone_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_CARBON_CAP_ZONE_SCENARIO_ID = \
+            "NULL" if tx_cc_z_sid is None else tx_cc_z_sid
 
-        self.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID = cursor.execute(
+        tx_sim_f_sid = cursor.execute(
             """SELECT transmission_simultaneous_flow_limit_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_SCENARIO_ID = \
+            "NULL" if tx_sim_f_sid is None else tx_sim_f_sid
 
-        self.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID = \
+        tx_sim_f_line_sid = \
             cursor.execute(
                 """SELECT
                 transmission_simultaneous_flow_limit_line_group_scenario_id
                 FROM scenarios
                 WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TRANSMISSION_SIMULTANEOUS_FLOW_LIMIT_LINE_SCENARIO_ID = \
+            "NULL" if tx_sim_f_line_sid is None else tx_sim_f_line_sid
 
-        self.LOAD_SCENARIO_ID = cursor.execute(
+        load_sid = cursor.execute(
             """SELECT load_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LOAD_SCENARIO_ID = \
+            "NULL" if load_sid is None else load_sid
 
-        self.LF_RESERVES_UP_SCENARIO_ID = cursor.execute(
+        lf_res_up_sid = cursor.execute(
             """SELECT lf_reserves_up_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LF_RESERVES_UP_SCENARIO_ID = \
+            "NULL" if lf_res_up_sid is None else lf_res_up_sid
 
-        self.LF_RESERVES_DOWN_SCENARIO_ID = cursor.execute(
+        lf_res_down_sid = cursor.execute(
             """SELECT lf_reserves_down_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LF_RESERVES_DOWN_SCENARIO_ID = \
+            "NULL" if lf_res_down_sid is None else lf_res_down_sid
         
-        self.REGULATION_UP_SCENARIO_ID = cursor.execute(
+        reg_up_sid = cursor.execute(
             """SELECT regulation_up_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.REGULATION_UP_SCENARIO_ID = \
+            "NULL" if reg_up_sid is None else reg_up_sid
 
-        self.REGULATION_DOWN_SCENARIO_ID = cursor.execute(
+        reg_down_sid = cursor.execute(
             """SELECT regulation_down_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.REGULATION_DOWN_SCENARIO_ID = \
+            "NULL" if reg_down_sid is None else reg_down_sid
 
-        self.FREQUENCY_RESPONSE_SCENARIO_ID = cursor.execute(
+        fr_sid = cursor.execute(
             """SELECT frequency_response_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.FREQUENCY_RESPONSE_SCENARIO_ID = \
+            "NULL" if fr_sid is None else fr_sid
 
-        self.SPINNING_RESERVES_SCENARIO_ID = cursor.execute(
+        spin_sid = cursor.execute(
             """SELECT spinning_reserves_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.SPINNING_RESERVES_SCENARIO_ID = \
+            "NULL" if spin_sid is None else spin_sid
 
-        self.RPS_TARGET_SCENARIO_ID = cursor.execute(
+        rps_sid = cursor.execute(
             """SELECT rps_target_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.RPS_TARGET_SCENARIO_ID = \
+            "NULL" if rps_sid is None else rps_sid
 
-        self.CARBON_CAP_TARGET_SCENARIO_ID = cursor.execute(
+        cc_sid = cursor.execute(
             """SELECT carbon_cap_target_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.CARBON_CAP_TARGET_SCENARIO_ID = \
+            "NULL" if cc_sid is None else cc_sid
 
-        self.PRM_REQUIREMENT_SCENARIO_ID = cursor.execute(
+        prm_sid = cursor.execute(
             """SELECT prm_requirement_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.PRM_REQUIREMENT_SCENARIO_ID = \
+            "NULL" if prm_sid is None else prm_sid
 
-        self.ELCC_SURFACE_SCENARIO_ID = cursor.execute(
+        elcc_sid = cursor.execute(
             """SELECT elcc_surface_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.ELCC_SURFACE_SCENARIO_ID = \
+            "NULL" if elcc_sid is None else elcc_sid
 
-        self.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID = cursor.execute(
+        lc_sid = cursor.execute(
             """SELECT local_capacity_requirement_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.LOCAL_CAPACITY_REQUIREMENT_SCENARIO_ID = \
+            "NULL" if lc_sid is None else lc_sid
 
-        self.TUNING_SCENARIO_ID = cursor.execute(
+        tuning_sid = cursor.execute(
             """SELECT tuning_scenario_id
                FROM scenarios
                WHERE scenario_id = {};""".format(scenario_id)
         ).fetchone()[0]
+        self.TUNING_SCENARIO_ID = \
+            "NULL" if tuning_sid is None else tuning_sid
 
         self.subscenario_ids_by_feature = \
             self.determine_subscenarios_by_feature(cursor)

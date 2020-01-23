@@ -1,3 +1,18 @@
+.. _database-section-ref:
+
+########
+Database
+########
+
+Table chapter describes the following:
+
+* :ref:`database-structure-section-ref` : the structure of the database and its
+  associated tables
+* :ref:`building-the-database-section-ref` : instructions on how to build the
+  database
+
+.. _database-structure-section-ref:
+
 ******************
 Database Structure
 ******************
@@ -87,6 +102,14 @@ The :code:`ui_` Tables
 **********************
 The :code:`ui_` tables are used to include and exclude components of the
 GridPath user interface.
+
+The :code:`viz_` Tables
+**********************
+The :code:`viz_` tables are used in the GridPath visualization suite, for
+instance when determining in which color and order to plot the technologies in
+the dispatch plot.
+
+.. _building-the-database-section-ref:
 
 *********************
 Building the Database

@@ -102,7 +102,8 @@ export class ScenarioComparisonInputsComponent implements OnInit {
       state: {
         startingValues: {
           baseScenarioStartingValue: this.baseScenarioID,
-          scenariosToCompareStartingValues: this.scenariosIDsToCompare
+          scenariosToCompareStartingValues: this.scenariosIDsToCompare,
+          showResultsButtonsStartingValue: false
         }
       }
     };

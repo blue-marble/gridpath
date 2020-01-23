@@ -18,6 +18,7 @@ from bokeh.models import ColumnDataSource, Legend, NumeralTickFormatter
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.embed import json_item
+from bokeh.palettes import cividis
 
 import pandas as pd
 import sys
@@ -25,14 +26,11 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
-from viz.common_functions import show_hide_legend, show_plot, get_parent_parser
+from viz.common_functions import show_hide_legend, show_plot, \
+    get_parent_parser, get_tech_colors, get_tech_plotting_order
 
 
-def parse_arguments(arguments):
-    """
-
-    :return:
-    """
+def create_parser():
     parser = ArgumentParser(add_help=True, parents=[get_parent_parser()])
     parser.add_argument("--scenario_id", help="The scenario ID. Required if "
                                               "no --scenario is specified.")
@@ -45,90 +43,24 @@ def parse_arguments(arguments):
     parser.add_argument("--stage", default=1, type=int,
                         help="The stage ID. Defaults to 1.")
 
-    # Parse arguments
+    return parser
+
+
+def parse_arguments(arguments):
+    """
+
+    :return:
+    """
+    parser = create_parser()
     parsed_arguments = parser.parse_args(args=arguments)
 
     return parsed_arguments
 
 
-# These are the technologies we are expecting
-# At this stage, if other technologies are specified, the script will break
-TECHNOLOGIES = [
-    "Battery",
-    "Biomass",
-    "Coal",
-    "CCGT",
-    "CHP",
-    "Geothermal",
-    "Hydro",
-    "Nuclear",
-    "Peaker",
-    "Pumped_Storage",
-    "Small_Hydro",
-    "Solar",
-    "Solar_BTM",
-    "Steam",
-    "unspecified",
-    "Wind"
-]
-
-# Assign colors to each technology (+ curtailment/imports)
-COLORS = dict([
-    ("unspecified", "ghostwhite"),
-    ("Nuclear", "purple"),
-    ("Coal", "dimgrey"),
-    ("CHP", "darkkhaki"),
-    ("Geothermal", "yellowgreen"),
-    ("Biomass", "olivedrab"),
-    ("Small_Hydro", "mediumaquamarine"),
-    ("Steam", "whitesmoke"),
-    ("CCGT", "lightgrey"),
-    ("Hydro", "darkblue"),
-    ("Imports", "darkgrey"),
-    ("Peaker", "grey"),
-    ("Wind", "deepskyblue"),
-    ("Solar_BTM", "orange"),
-    ("Solar", "gold"),
-    ("Pumped_Storage", "darkslategrey"),
-    ("Battery", "teal"),
-    ("Curtailment_Variable", "indianred"),
-    ("Curtailment_Hydro", "firebrick")
-])
-
-
-# TODO: should we slice by subproblem too? Horizon should be fine, right?
-def determine_x_axis(c, scenario_id, load_zone, horizon, stage):
-    """
-    Determine the number of timepoints for the x axis and make a list of
-    timepoints from 1 to that number
-    :param c:
-    :param scenario_id:
-    :param load_zone:
-    :param horizon:
-    :param stage:
-    :return:
-    """
-    # Get x-axis values
-    x_axis_count = c.execute(
-        """SELECT COUNT(DISTINCT timepoint)
-           FROM results_project_dispatch_all
-           WHERE scenario_id = {}
-           AND load_zone = '{}'
-           AND horizon = {}
-           AND stage_id = {}""".format(
-            scenario_id, load_zone, horizon, stage
-        )
-    ).fetchone()[0]
-
-    x_axis = list(range(1, x_axis_count + 1))
-
-    return x_axis_count, x_axis
-
-
-def get_power_by_tech_results(c, scenario_id, load_zone, horizon, stage):
+def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
     """
     Get results for power by technology and create dictionary
-    :param c:
+    :param conn:
     :param scenario_id:
     :param load_zone:
     :param horizon:
@@ -137,7 +69,7 @@ def get_power_by_tech_results(c, scenario_id, load_zone, horizon, stage):
     """
 
     # Power by technology
-    query = """SELECT technology, power_mw
+    query = """SELECT timepoint, technology, power_mw
         FROM results_project_dispatch_by_technology
         WHERE scenario_id = {}
         AND load_zone = '{}'
@@ -153,35 +85,11 @@ def get_power_by_tech_results(c, scenario_id, load_zone, horizon, stage):
         stage
         )
 
-    power_by_technology_list = c.execute(query).fetchall()
+    df = pd.read_sql(query, conn)
+    if not df.empty:
+        df = df.pivot(index="timepoint", columns="technology")["power_mw"]
 
-    power_by_technology_dict = dict()
-    for tech, power in power_by_technology_list:
-        if tech in list(power_by_technology_dict.keys()):
-            power_by_technology_dict[str(tech)].append(power)
-        else:
-            power_by_technology_dict[str(tech)] = [power]
-
-    # TODO: Make this easier easier/faster with df?
-    #   df.pivot(index=df.index, columns='technology')['power_mw']
-
-    return power_by_technology_dict
-
-
-def fill_out_missing_techs(power_by_tech, expected_techs):
-    """
-    Check if the power_by_tech includes all expected technologies. If not, fill
-    out missing techs with 0s as values.
-    :param power_by_tech:
-    :param expected_techs:
-    """
-
-    technologies = power_by_tech.keys()
-    x_axis_length = len(list(power_by_tech.values())[0])
-
-    for tech in expected_techs:
-        if tech not in technologies:
-            power_by_tech[tech] = [0] * x_axis_length
+    return df
 
 
 def get_variable_curtailment_results(
@@ -315,7 +223,7 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     return load
 
 
-def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
+def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
     """
     Get the dispatch data by timepoint and technology for a given
     scenario/load_zone/horizon/stage.
@@ -323,7 +231,7 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     **kwargs needed, so that an error isn't thrown when calling this
     function with extra arguments from the UI.
 
-    :param c:
+    :param conn:
     :param scenario_id:
     :param load_zone:
     :param horizon:
@@ -331,23 +239,32 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     :return:
     """
 
-    x_axis_count, x_axis = determine_x_axis(
-        c=c,
+    c = conn.cursor()
+
+    # Get dispatch by technology
+    # TODO: Let tech order depend on specified order in database table.
+    #  Storage might be tricky because we manipulate it!
+    df = get_power_by_tech_results(
+        conn=conn,
         scenario_id=scenario_id,
         load_zone=load_zone,
         horizon=horizon,
         stage=stage
     )
 
-    power_by_tech = get_power_by_tech_results(
-        c=c,
-        scenario_id=scenario_id,
-        load_zone=load_zone,
-        horizon=horizon,
-        stage=stage
-    )
-    fill_out_missing_techs(power_by_tech, TECHNOLOGIES)
+    # Add x axis
+    # TODO: assumes hourly timepoints for now, make it flexible instead
+    df["x"] = range(0, len(df))
 
+    # Split storage into charging and discharging and aggregate storage charging
+    # Assume any dispatch that is negative is storage charging
+    df["Storage_Charging"] = 0
+    stor_techs = df.columns[(df < 0).any()]
+    for tech in stor_techs:
+        df["Storage_Charging"] += -df[tech].clip(upper=0)
+        df[tech] = df[tech].clip(lower=0)
+
+    # Add variable curtailment (if any)
     curtailment_variable = get_variable_curtailment_results(
         c=c,
         scenario_id=scenario_id,
@@ -355,7 +272,10 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
         horizon=horizon,
         stage=stage
     )
+    if curtailment_variable:
+        df["Curtailment_Variable"] = curtailment_variable
 
+    # Add hydro curtailment (if any)
     curtailment_hydro = get_hydro_curtailment_results(
         c=c,
         scenario_id=scenario_id,
@@ -363,7 +283,10 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
         horizon=horizon,
         stage=stage
     )
+    if curtailment_hydro:
+        df["Curtailment_Hydro"] = curtailment_hydro
 
+    # Add imports and exports (if any)
     imports, exports = get_imports_exports_results(
         c=c,
         scenario_id=scenario_id,
@@ -371,7 +294,12 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
         horizon=horizon,
         stage=stage
     )
+    if imports:
+        df["Imports"] = imports
+    if exports:
+        df["Exports"] = exports
 
+    # Add load
     load = get_load(
         c=c,
         scenario_id=scenario_id,
@@ -379,45 +307,7 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
         horizon=horizon,
         stage=stage
     )
-
-    # Create data df
-    # NOTE: can also do pd.DataFrame(power_by_tech)
-    # NOTE: column order in this df sets the order for the chart/legend!
-    # Has to match tech color tech names at top of file
-    df = pd.DataFrame(
-        data={
-            "unspecified": power_by_tech["unspecified"],
-            "Nuclear": power_by_tech["Nuclear"],
-            "Coal": power_by_tech["Coal"],
-            "CHP": power_by_tech["CHP"],
-            "Geothermal": power_by_tech["Geothermal"],
-            "Biomass": power_by_tech["Biomass"],
-            "Small_Hydro": power_by_tech["Small_Hydro"],
-            "Steam": power_by_tech["Steam"],
-            "CCGT": power_by_tech["CCGT"],
-            "Hydro": power_by_tech["Hydro"],
-            "Imports": [0] * x_axis_count if not imports else imports,
-            "Peaker": power_by_tech["Peaker"],
-            "Wind": power_by_tech["Wind"],
-            "Solar_BTM": power_by_tech["Solar_BTM"],
-            "Solar": power_by_tech["Solar"],
-            "Pumped_Storage": [i if i > 0 else 0
-                               for i in power_by_tech["Pumped_Storage"]],
-            "Battery": [i if i > 0 else 0
-                        for i in power_by_tech["Battery"]],
-            "Curtailment_Variable": [0] * x_axis_count
-            if not curtailment_variable else curtailment_variable,
-            "Curtailment_Hydro": [0] * x_axis_count
-            if not curtailment_hydro else curtailment_hydro,
-            "x": x_axis,
-            "Load": load,
-            "Exports": [0] * x_axis_count if not exports else exports,
-            "Pumped_Storage_Charging": [-i if i < 0 else 0 for i in
-                                        power_by_tech["Pumped_Storage"]],
-            "Battery_Charging": [-i if i < 0 else 0
-                                 for i in power_by_tech["Battery"]]
-        }
-    )
+    df["Load"] = load
 
     # Dataframe for testing without database
     # df = pd.DataFrame(
@@ -452,14 +342,26 @@ def get_plotting_data(c, scenario_id, load_zone, horizon, stage, **kwargs):
     return df
 
 
-def create_plot(df, title, ylimit=None):
+def create_plot(df, title, tech_colors={}, tech_plotting_order={},
+                ylimit=None):
     """
 
     :param df:
     :param title: string, plot title
+    :param tech_colors: optional dict that maps technologies to colors.
+        Technologies without a specified color map will use a default palette
+    :param tech_plotting_order: optional dict that maps technologies to their
+        plotting order in the stacked bar/area chart.
     :param ylimit: float/int, upper limit of y-axis; optional
     :return:
     """
+
+    # Re-arrange df according to plotting order
+    for col in df.columns:
+        if col not in tech_plotting_order:
+            tech_plotting_order[col] = max(tech_plotting_order.values()) + 1
+    df = df.reindex(sorted(df.columns, key=lambda x: tech_plotting_order[x]),
+                    axis=1)
 
     # Set up data source
     source = ColumnDataSource(data=df)
@@ -468,15 +370,21 @@ def create_plot(df, title, ylimit=None):
     # Order of stacked_cols will define order of stacked areas in chart
     all_cols = list(df.columns)
     x_col = "x"
-    line_cols = ["Load", "Exports",
-                 "Battery_Charging", "Pumped_Storage_Charging"]
+    # TODO: remove hard-coding?
+    line_cols = ["Load", "Exports", "Storage_Charging"]
     stacked_cols = [c for c in all_cols if c not in line_cols + [x_col]]
 
-    # Stacked Area Colors
-    colors = [COLORS[c] for c in stacked_cols]
-    # Example using palettes
-    #   from bokeh.palettes import d3
-    #   colors = d3['Category20b'][len(stacked_cols)]
+    # Set up color scheme. Use cividis palette for unspecified colors
+    unspecified_columns = [c for c in stacked_cols
+                           if c not in tech_colors.keys()]
+    unspecified_tech_colors = dict(zip(unspecified_columns,
+                                        cividis(len(unspecified_columns))))
+    colors = []
+    for tech in stacked_cols:
+        if tech in tech_colors:
+            colors.append(tech_colors[tech])
+        else:
+            colors.append(unspecified_tech_colors[tech])
 
     # TODO: include horizon in title? (would need to add function arg)
     # Set up the figure
@@ -514,9 +422,11 @@ def create_plot(df, title, ylimit=None):
     load_renderers = [load_renderer]
 
     # Add 'Load + ...' lines
-    inactive_exports = (df[line_cols[1]] == 0).all()
-    inactive_pumped_storage = (df[line_cols[2]] == 0).all()
-    inactive_batteries = (df[line_cols[3]] == 0).all()
+    if line_cols[1] not in df.columns:
+        inactive_exports = True
+    else:
+        inactive_exports = (df[line_cols[1]] == 0).all()
+    inactive_storage = (df[line_cols[2]] == 0).all()
 
     if not inactive_exports:
         # Add export line to plot
@@ -532,33 +442,19 @@ def create_plot(df, title, ylimit=None):
         legend_items.append((label, [exports_renderer]))
         load_renderers.append(exports_renderer)
 
-    if not inactive_pumped_storage:
-        # Add pumped storage line to plot
-        label = legend_items[-1][0] + " + Pumped Storage"
-        ps_renderer = plot.line(
+    if not inactive_storage:
+        # Add storage line to plot
+        label = legend_items[-1][0] + " + Storage Charging"
+        stor_renderer = plot.line(
             x=df[x_col],
-            y=df[line_cols[0:3]].sum(axis=1),
-            line_color=COLORS["Pumped_Storage"],
+            y=df[line_cols].sum(axis=1),
+            line_color="black",
             line_width=2,
             line_dash="dotted",
             name=label
         )
-        legend_items.append((label, [ps_renderer]))
-        load_renderers.append(ps_renderer)
-
-    if not inactive_batteries:
-        # Add batteries line to plot
-        label = legend_items[-1][0] + " + Batteries"
-        batt_renderer = plot.line(
-            x=df[x_col],
-            y=df[line_cols].sum(axis=1),
-            line_color=COLORS["Battery"],
-            line_width=2,
-            line_dash="dotdash",
-            name=label
-        )
-        legend_items.append((label, [batt_renderer]))
-        load_renderers.append(batt_renderer)
+        legend_items.append((label, [stor_renderer]))
+        load_renderers.append(stor_renderer)
 
     # Add Legend
     legend = Legend(items=legend_items)
@@ -624,13 +520,18 @@ def main(args=None):
         script="dispatch_plot"
     )
 
-    plot_title = "Dispatch Plot - {} - Stage {} - Horizon {}".format(
-        parsed_args.load_zone, parsed_args.horizon, parsed_args.stage)
+    tech_colors = get_tech_colors(c)
+    tech_plotting_order = get_tech_plotting_order(c)
+
+    plot_title = "{}Dispatch Plot - {} - Stage {} - Horizon {}".format(
+        "{} - ".format(scenario)
+        if parsed_args.scenario_name_in_title else "",
+        parsed_args.load_zone, parsed_args.stage, parsed_args.horizon)
     plot_name = "dispatchPlot-{}-{}".format(
         parsed_args.load_zone, parsed_args.horizon)
 
     df = get_plotting_data(
-        c=c,
+        conn=conn,
         scenario_id=scenario_id,
         load_zone=parsed_args.load_zone,
         horizon=parsed_args.horizon,
@@ -640,7 +541,9 @@ def main(args=None):
     plot = create_plot(
         df=df,
         title=plot_title,
-        ylimit=parsed_args.ylimit
+        tech_colors=tech_colors,
+        tech_plotting_order=tech_plotting_order,
+        ylimit=parsed_args.ylimit,
     )
 
     # Show plot in HTML browser file if requested

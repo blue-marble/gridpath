@@ -1,6 +1,9 @@
 from setuptools import find_packages, setup
 
-extras_doc = ["Sphinx"]
+extras_doc = [
+    "Sphinx",
+    "sphinx-argparse"
+]
 extras_ui = [
     "eventlet",  # Async mode for SocketIO
     "Flask",  # Local API server for UI

@@ -1,9 +1,12 @@
 export class ScenarioDetailAPI {
   scenarioName: string;
+  scenarioDescription: string;
   validationStatus: string;
   runStatus: string;
   runPID: number;
   runStartTime: string;
+  runEndTime: string;
+  runElapsedTime: string;
   solver: string;
   editScenarioValues: StartingValues;
   scenarioDetailTables: ScenarioDetailTable[];
@@ -26,6 +29,7 @@ export class StartingValues {
   // tslint:disable:variable-name
   scenario_id: number;
   scenario_name: string;
+  scenario_description: string;
   features$fuels: boolean;
   features$transmission: boolean;
   features$transmission_hurdle_rates: boolean;

@@ -132,6 +132,7 @@ class ScenarioResultsPlot(Resource):
             "--return_json",
             "--database", self.db_path,
             "--scenario_id", scenario_id,
+            "--scenario_name_in_title"
         ]
 
         filter_arguments = []

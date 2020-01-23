@@ -34,12 +34,18 @@ function createMainWindow () {
         // TODO: should a solver be required; currently not (user can
         //  browse without running scenarios)
         const optionalKeys = [
-          'currentCbcExecutable',
-          'currentCPLEXExecutable',
-          'currentGurobiExecutable',
-          'requestedCbcExecutable',
-          'requestedCPLEXExecutable',
-          'requestedGurobiExecutable'
+          'currentSolver1Name',
+          'currentSolver1Executable',
+          'currentSolver2Name',
+          'currentSolver2Executable',
+          'currentSolver3Name',
+          'currentSolver3Executable',
+          'requestedSolver1Name',
+          'requestedSolver1Executable',
+          'requestedSolver2Name',
+          'requestedSolver2Executable',
+          'requestedSolver3Name',
+          'requestedSolver3Executable'
         ];
 
         requiredKeys.forEach(function(requiredKey) {
@@ -115,6 +121,15 @@ function createMainWindow () {
         // when you should delete the corresponding element.
         mainWindow = null
     });
+
+    // Open external links in default browser
+    // Source: https://stackoverflow.com/questions/32402327/how-can-i-force-external-links-from-browser-window-to-open-in-a-default-browser
+    mainWindow.webContents.on(
+      'new-window', function(e, url
+      ) {
+      e.preventDefault();
+      require('electron').shell.openExternal(url);
+    });
 }
 
 
@@ -167,90 +182,6 @@ app.on('activate', () => {
 });
 
 
-// Settings
-
-// Set the scenarios directory setting based on Angular input
-// Get setting from renderer and store it
-ipcMain.on('setScenariosDirectorySetting', (event, scenariosDir) => {
-	console.log(`Scenarios folder set to ${scenariosDir}`);
-	// TODO: do we need to keep in storage?
-  // Set the scenarios directory path in Electron JSON storage
-  storage.set(
-      'requestedScenariosDirectory',
-      { 'value': scenariosDir },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the GridPath database setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setGridPathDatabaseSetting', (event, gpDB) => {
-	console.log(`GridPath database set to ${gpDB}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedGridPathDatabase',
-      { 'value': gpDB },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Python environment setting based on Angular input
-// Get setting from renderer and store it
-ipcMain.on('setPythonEnvironmentSetting', (event, pythonenvironment) => {
-	console.log(`Python environment directory set to ${pythonenvironment}`);
-	// TODO: do we need to keep in storage?
-  // Set the Python environment path in Electron JSON storage
-  storage.set(
-      'requestedPythonEnvironment',
-      { 'value': pythonenvironment },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Cbc executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setCbcExecutableSetting', (event, msg) => {
-	console.log(`Cbc executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedCbcExecutable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the CPLEX executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setCPLEXExecutableSetting', (event, msg) => {
-	console.log(`CPLEX executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedCPLEXExecutable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
-// Set the Gurobi executable setting based on Angular input
-// Get setting from renderer, store it, and send it to the server
-ipcMain.on('setGurobiExecutableSetting', (event, msg) => {
-	console.log(`Gurobi executable set to ${msg}`);
-
-	// TODO: do we need to keep in storage?
-  // Set the database file path in Electron JSON storage
-  storage.set(
-      'requestedGurobiExecutable',
-      { 'value': msg },
-      (error) => {if (error) throw error;}
-  );
-});
-
 // Flask server
 function startServer () {
   storage.getMany(
@@ -258,18 +189,26 @@ function startServer () {
       'currentGridPathDatabase',
       'currentScenariosDirectory',
       'currentPythonEnvironment',
-      'currentCbcExecutable',
-      'currentCPLEXExecutable',
-      'currentGurobiExecutable',
+      'currentSolver1Name',
+      'currentSolver1Executable',
+      'currentSolver2Name',
+      'currentSolver2Executable',
+      'currentSolver3Name',
+      'currentSolver3Executable',
       'requestedGridPathDatabase',
       'requestedScenariosDirectory',
       'requestedPythonEnvironment',
-      'requestedCbcExecutable',
-      'requestedCPLEXExecutable',
-      'requestedGurobiExecutable'
+      'requestedSolver1Name',
+      'requestedSolver1Executable',
+      'requestedSolver2Name',
+      'requestedSolver2Executable',
+      'requestedSolver3Name',
+      'requestedSolver3Executable'
     ],
     (error, data) => {
       if (error) throw error;
+
+      console.log(data);
 
       // When we first start the server, we will set the 'current' settings
       // the last-requested settings; we will then use the 'current'
@@ -277,83 +216,41 @@ function startServer () {
       // variables. New settings will therefore require a server restart to
       // take effect. The user will see both the 'current' and 'requested'
       // settings and will be informed of the need to restart.
-      // TODO: refactor
-      if (data['currentGridPathDatabase']['value']
-        === data['requestedGridPathDatabase']['value']) {
-        console.log("Current and requested GP databases match.")
-      } else {
-        storage.set(
-          'currentGridPathDatabase',
-          { 'value': data['requestedGridPathDatabase']['value'] },
-          (error) => {if (error) throw error;}
-        );
-      }
-      if (data['currentScenariosDirectory']['value']
-        === data['requestedScenariosDirectory']['value']) {
-        console.log("Current and requested GP directories match.");
-      } else {
-        storage.set(
-          'currentScenariosDirectory',
-          { 'value': data['requestedScenariosDirectory']['value'] },
-          (error) => {if (error) throw error;}
-        );
-      }
-      if (data['currentPythonEnvironment']['value']
-        === data['requestedPythonEnvironment']['value']) {
-        console.log("Current and requested Python directories match.")
-      } else {
-        storage.set(
-          'currentPythonEnvironment',
-          { 'value': data['requestedPythonEnvironment']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentCbcExecutable']['value']
-        === data['requestedCbcExecutable']['value']) {
-        console.log("Current and requested Cbc executables match.")
-      } else {
-        storage.set(
-          'currentCbcExecutable',
-          { 'value': data['requestedCbcExecutable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentCPLEXExecutable']['value']
-        === data['requestedCPLEXExecutable']['value']) {
-        console.log("Current and requested CPLEX executables match.")
-      } else {
-        storage.set(
-          'currentCPLEXExecutable',
-          { 'value': data['requestedCPLEXExecutable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
-      if (data['currentGurobiExecutable']['value']
-        === data['requestedGurobiExecutable']['value']) {
-        console.log("Current and requested Gurobi executables match.")
-      } else {
-        storage.set(
-          'currentGurobiExecutable',
-          { 'value': data['requestedGurobiExecutable']['value'] },
-          (error) => {
-            if (error) throw error;
-          }
-        );
-      }
 
+      const settingPairs = [
+        {'current': 'currentGridPathDatabase',
+          'requested': 'requestedGridPathDatabase'},
+        {'current': 'currentScenariosDirectory',
+          'requested': 'requestedScenariosDirectory'},
+        {'current': 'currentPythonEnvironment',
+          'requested': 'requestedPythonEnvironment'},
+        {'current': 'currentSolver1Name',
+          'requested': 'requestedSolver1Name'},
+        {'current': 'currentSolver1Executable',
+          'requested': 'requestedSolver1Executable'},
+        {'current': 'currentSolver2Name',
+          'requested': 'requestedSolver2Name'},
+        {'current': 'currentSolver2Executable',
+          'requested': 'requestedSolver2Executable'},
+        {'current': 'currentSolver3Name',
+          'requested': 'requestedSolver3Name'},
+        {'current': 'currentSolver3Executable',
+          'requested': 'requestedSolver3Executable'},
+      ];
+
+      for (let pair of settingPairs) {
+        check_and_set_setting(data, pair['current'], pair['requested']);
+      }
 
       const dbPath = data['requestedGridPathDatabase']['value'];
       const scenariosDir = data['requestedScenariosDirectory']['value'];
       const pyDir = data['requestedPythonEnvironment']['value'];
-      const cbcExec = data['requestedCbcExecutable']['value'];
-      const cplexExec = data['requestedCPLEXExecutable']['value'];
-      const gurobiExec = data['requestedGurobiExecutable']['value'];
+      const solver1Name = data['requestedSolver1Name']['value'];
+      const solver1Exec = data['requestedSolver1Executable']['value'];
+      const solver2Name = data['requestedSolver2Name']['value'];
+      const solver2Exec = data['requestedSolver2Executable']['value'];
+      const solver3Name = data['requestedSolver3Name']['value'];
+      const solver3Exec = data['requestedSolver3Executable']['value'];
 
       // The server entry point based on the Python directory and the
       // executables directory ('Scripts' on Windows, 'bin' otherwise)
@@ -395,9 +292,12 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
-                CBC_EXECUTABLE: cbcExec,
-                CPLEX_EXECUTABLE: cplexExec,
-                GUROBI_EXECUTABLE: gurobiExec
+                SOLVER1_NAME: solver1Name,
+                SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_NAME: solver2Name,
+                SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_NAME: solver3Name,
+                SOLVER3_EXECUTABLE: solver3Exec
               }
             },
             );
@@ -411,9 +311,12 @@ function startServer () {
               env: {
                 GRIDPATH_DATABASE_PATH: dbPath,
                 SCENARIOS_DIRECTORY: scenariosDir,
-                CBC_EXECUTABLE: cbcExec,
-                CPLEX_EXECUTABLE: cplexExec,
-                GUROBI_EXECUTABLE: gurobiExec
+                SOLVER1_NAME: solver1Name,
+                SOLVER1_EXECUTABLE: solver1Exec,
+                SOLVER2_NAME: solver2Name,
+                SOLVER2_EXECUTABLE: solver2Exec,
+                SOLVER3_NAME: solver3Name,
+                SOLVER3_EXECUTABLE: solver3Exec
               }
             }
           );
@@ -441,6 +344,64 @@ function startServer () {
   );
 }
 
+function check_and_set_setting(
+  settings_data, setting_name_current, setting_name_requested
+) {
+  if (settings_data[setting_name_current]['value']
+    === settings_data[setting_name_requested]['value']) {
+  } else {
+    storage.set(
+      setting_name_current,
+      { 'value': settings_data[setting_name_requested]['value'] },
+      (error) => {
+        if (error) throw error;
+      }
+    );
+  }
+}
+
+// //// IPC Communication //// //
+
+// Settings
+
+// Set the scenarios directory setting based on Angular input
+ipcMain.on('setScenariosDirectorySetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedScenariosDirectory', msg);
+});
+
+// Set the GridPath database setting based on Angular input
+ipcMain.on('setGridPathDatabaseSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedGridPathDatabase', msg);
+});
+
+// Set the Python environment setting based on Angular input
+ipcMain.on('setPythonEnvironmentSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedPythonEnvironment', msg);
+});
+
+// Set the Solver1 name and executable settings based on Angular input
+ipcMain.on('setSolver1NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver1Name', msg);
+});
+ipcMain.on('setSolver1ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver1Executable', msg);
+});
+
+// Set the Solver2 executable setting based on Angular input
+ipcMain.on('setSolver2NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver2Name', msg);
+});
+ipcMain.on('setSolver2ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver2Executable', msg);
+});
+
+// Set the Solver3 executable setting based on Angular input
+ipcMain.on('setSolver3NameSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver3Name', msg);
+});
+ipcMain.on('setSolver3ExecutableSetting', (event, msg) => {
+  save_setting_in_electron_storage('requestedSolver3Executable', msg);
+});
 
 // Send stored settings to Angular if requested
 ipcMain.on('requestStoredSettings', (event) => {
@@ -448,9 +409,12 @@ ipcMain.on('requestStoredSettings', (event) => {
       ['currentScenariosDirectory', 'requestedScenariosDirectory',
         'currentGridPathDatabase', 'requestedGridPathDatabase',
         'currentPythonEnvironment', 'requestedPythonEnvironment',
-        'currentCbcExecutable', 'requestedCbcExecutable',
-        'currentCPLEXExecutable', 'requestedCPLEXExecutable',
-        'currentGurobiExecutable', 'requestedGurobiExecutable'
+        'currentSolver1Name', 'requestedSolver1Name',
+        'currentSolver1Executable', 'requestedSolver1Executable',
+        'currentSolver2Name', 'requestedSolver2Name',
+        'currentSolver2Executable', 'requestedSolver2Executable',
+        'currentSolver3Name', 'requestedSolver3Name',
+        'currentSolver3Executable', 'requestedSolver3Executable'
 
       ],
       (error, data) => {
@@ -459,3 +423,23 @@ ipcMain.on('requestStoredSettings', (event) => {
       }
     );
 });
+
+ipcMain.on('requestStoredScenarioDirectoryForLog', (event) => {
+    storage.getMany(
+      ['currentScenariosDirectory'],
+      (error, data) => {
+        if (error) throw error;
+        event.sender.send('sendStoredScenarioDirectoryForLog', data)
+      }
+    );
+});
+
+function save_setting_in_electron_storage(setting_name, ipc_message) {
+  console.log(`${setting_name} set to ${ipc_message}`);
+  // Set the solver 3 executable path in Electron JSON storage
+  storage.set(
+      setting_name,
+      { 'value': ipc_message },
+      (error) => {if (error) throw error;}
+  );
+}

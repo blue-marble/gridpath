@@ -120,6 +120,9 @@ def load_data(db, omit_data):
         load_ui_scenario_results_table_metadata(db=db, c=c)
         load_ui_scenario_results_plot_metadata(db=db, c=c)
 
+        # Data for plotting
+        load_viz_technologies(db=db, c=c)
+
     else:
         pass
 
@@ -308,6 +311,15 @@ def load_ui_scenario_results_plot_metadata(db, c):
         """
     load_aux_data(conn=db, cursor=c,
                   filename="ui_scenario_results_plot_metadata.csv",
+                  sql=sql)
+
+
+def load_viz_technologies(db, c):
+    sql = """
+        INSERT INTO viz_technologies
+        (technology, color, plotting_order)
+        VALUES (?, ?, ?);"""
+    load_aux_data(conn=db, cursor=c, filename="viz_technologies.csv",
                   sql=sql)
 
 

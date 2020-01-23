@@ -9,6 +9,7 @@
   <div class="row" id="scenario-detail-heading">
     <div class="col-md-auto">
       <h4>{{scenarioDetail.scenarioName}}<span> Scenario Details</span></h4>
+      <h6>{{scenarioDetail.scenarioDescription}}</h6>
     </div>
   </div>
 
@@ -36,7 +37,8 @@
           <th>Status</th>
           <th>Action</th>
           <th>Detail</th>
-          <th>Options</th>
+          <th *ngIf="scenarioDetail.runStatus=='running'">Elapsed Time</th>
+          <th *ngIf="scenarioDetail.runStatus=='complete'">Run End Time</th>
         </tr>
         <tr>
           <td>Validation Status</td>
@@ -102,7 +104,12 @@
               View Results
             </button>
           </td>
-          <td>{{scenarioDetail.solver}}</td>
+          <td *ngIf="scenarioDetail.runStatus=='running'">
+            {{scenarioDetail.runElapsedTime}}
+          </td>
+          <td *ngIf="scenarioDetail.runStatus=='complete'">
+            {{scenarioDetail.runEndTime}}
+          </td>
         </tr>
       </table>
     </div>

@@ -81,6 +81,10 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
       `Running scenario ${this.scenarioDetail.scenarioName}, scenario_id ${this.scenarioID}`
     );
 
+    // Change the run status to blank
+    this.scenarioDetail.runStatus = 'launching';
+
+    // Connect to the server and launch the scenario process
     const socket = socketConnect();
 
     socket.emit(
@@ -131,6 +135,14 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
           () => {
             this.getScenarioDetailAPI(this.scenarioID);
           });
+    });
+
+    // If the process ID does not exist, warn the user that we'll clean up
+    // this scenario as a previous process run likely did not exit correctly
+    socket.on('process_id_not_found', () => {
+      alert('The process ID for this scenario was not found. This is likely ' +
+        'the result of a previous system error. Any scenario results will be ' +
+        'cleared.');
     });
   }
 
@@ -195,8 +207,8 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     const logFile = `e2e_${this.scenarioDetail.runStartTime}_pid_${this.scenarioDetail.runPID}.log`;
 
     // Ask Electron for any the current scenarios setting
-    electron.ipcRenderer.send('requestStoredSettings');
-    electron.ipcRenderer.on('sendStoredSettings',
+    electron.ipcRenderer.send('requestStoredScenarioDirectoryForLog');
+    electron.ipcRenderer.on('sendStoredScenarioDirectoryForLog',
       (event, data) => {
         const logFilePath = path.join(
           data.currentScenariosDirectory.value,

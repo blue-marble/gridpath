@@ -96,7 +96,7 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
                              actual_disp_bin_commit_gen_set)
 
         # Set: DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
-        expected_operational_timpoints_by_project = sorted(
+        expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(
                 expected_disp_bin_commit_gen_set
             )
@@ -106,7 +106,7 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
              instance.
                 DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS]
         )
-        self.assertListEqual(expected_operational_timpoints_by_project,
+        self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
         # Param: disp_binary_commit_min_stable_level_fraction

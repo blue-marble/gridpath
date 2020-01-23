@@ -1,4 +1,8 @@
-======================================
+**************
+Using GridPath
+**************
+
+
 Running GridPath from the Command Line
 ======================================
 
@@ -7,34 +11,32 @@ The gridpath_run and gridpath_run_e2e commands
 
 If you install GridPath via the setup script following the instructions above,
 you can use the command :code:`gridpath_run` to run a scenario from any
-directory -- as long as your GridPath Python environment is enabled -- as
+directory -- as long as your GridPath Python environment is enabled and the
+scenario folder contains the appropriate .tab files -- as
 follows::
 
-    gridpath_run --scenario SCENARIO_NAME --scenario_location
-    /PATH/TO/SCENARIO
+    gridpath_run --scenario SCENARIO_NAME --scenario_location /PATH/TO/SCENARIO
 
 If you are using the database, you can use the command :code:`gridpath_run_e2e`
 to run GridPath end-to-end, i.e. get inputs for the scenario from the database,
 solve the scenario problem, import the results into the database, and
 process them::
 
-    gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location
-    /PATH/TO/SCENARIO
+    gridpath_run_e2e --scenario SCENARIO_NAME --scenario_location /PATH/TO/SCENARIO
 
 To see usage and other optional arguments, e.g. how to specify a
 solver, check the help menu, e.g.::
 
     gridpath_run --help
 
-
 The run_scenario.py and run_end_to_end.py scripts
 -------------------------------------------------
 
 You can also run scenarios via the :code:`run_scenario.py` script in the
 *./gridpath/* directory. The scenario name should be specified with the
-:code:`--scenario` argument. For example, to run a scenario named 'test' (located
-in the *./scenarios/* directory) navigate to the *./gridpath/* directory and
-run the following::
+:code:`--scenario` argument. For example, to run a scenario named 'test'
+(located in the *./scenarios/* directory) navigate to the *./gridpath/*
+directory and run the following::
 
     python run_scenario.py --scenario test
 
@@ -62,7 +64,7 @@ solver, check the help menu::
     python run_scenario.py --help
 
 
-========
+
 Examples
 ========
 To run any of the problems in the *examples* directory, you also need
@@ -73,7 +75,6 @@ the *examples* directory, run the following::
     python run_scenario.py --scenario test --scenario_location ../examples
 
 
-========
 Workflow
 ========
 
@@ -101,7 +102,7 @@ future, we may support other file formats, including CSVs. We may also skip
 the writing of files altogether, although keeping an additional record of what
 goes into a scenario is often useful.
 
-The next step is of the Python model (consisting of various modules that
+The next step is for the Python model (consisting of various modules that
 create the model formulation) to read in the TAB-delimited input files and
 create the optimization problem. The compiled model file is then sent to the
 solver. GridPath is solver-agnostic and supports a wide range of solvers.

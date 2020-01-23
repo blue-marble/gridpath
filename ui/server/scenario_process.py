@@ -12,14 +12,18 @@ import sys
 
 from db.common_functions import connect_to_database
 from gridpath.run_end_to_end import update_run_status
+from ui.server.db_ops.delete_scenario import clear as clear_scenario
 
 
-def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
+def launch_scenario_process(
+    db_path, scenarios_directory, scenario_id, solver, solver_executable
+    ):
     """
     :param db_path:
     :param scenarios_directory:
     :param scenario_id: integer, the scenario_id from the database
-    :param solver: dictionary with keys "name" and "executable" for the solver
+    :param solver: string, the solver name
+    :param solver: string, the solver executable
     :return:
 
     Launch a process to run the scenario.
@@ -61,8 +65,8 @@ def launch_scenario_process(db_path, scenarios_directory, scenario_id, solver):
              "--database", db_path,
              "--scenario", scenario_name,
              "--scenario_location", scenarios_directory,
-             "--solver", solver["name"],
-             "--solver_executable", solver["executable"]],
+             "--solver", solver,
+             "--solver_executable", solver_executable],
             shell=False
         )
 
@@ -99,24 +103,36 @@ def stop_scenario_run(db_path, scenario_id):
     if run_status != "running":
         # TODO: Tell user scenario is not running
         pass
+    # If we can't find the process ID (None or psutil error),
+    # the process likely did not exit cleanly, so we'll clear scenario
+    # results and update the run status to 'run_error'
+    elif process_id is None:
+        clean_up_scenario_with_no_process_id(
+          db_path=db_path, scenario_id=scenario_id
+        )
     else:
+        print("Attempting to terminate process ID {}".format(process_id))
         # TODO: is there an additional check to do, to make sure we don't
         #  terminate the wrong process (e.g. because of a prior crash,
         #  scenario appearing as running, but a different process actually
         #  having this id)
-        p = psutil.Process(process_id)
-        p.terminate()
+        try:
+            p = psutil.Process(process_id)
+            p.terminate()
+        except psutil.NoSuchProcess:
+            clean_up_scenario_with_no_process_id(
+                db_path=db_path, scenario_id=scenario_id
+            )
 
         # Update the scenario status to 'run_stopped'
         # This is only needed on Windows; on Mac, the signal is caught by
-        # run_end_to_end
+        # run_end_to_end, which updates the scenario status
         if os.name == "nt":
-            conn = connect_to_database(db_path=db_path)
-            c = conn.cursor()
-            scenario_name = get_scenario_name_from_scenario_id(
-              cursor=c, scenario_id=scenario_id)
-            update_run_status(db_path=db_path, scenario=scenario_name,
-                              status_id=4)
+            connect_to_db_and_update_run_status(
+              db_path=db_path,
+              scenario_id=scenario_id,
+              status_id=4
+            )
 
 
 def get_scenario_name_from_scenario_id(cursor, scenario_id):
@@ -132,3 +148,34 @@ def get_scenario_name_from_scenario_id(cursor, scenario_id):
     ).fetchone()[0]
 
     return scenario_name
+
+
+def connect_to_db_and_update_run_status(db_path, scenario_id, status_id):
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+    scenario_name = get_scenario_name_from_scenario_id(
+      cursor=c, scenario_id=scenario_id)
+    update_run_status(db_path=db_path, scenario=scenario_name,
+                      status_id=status_id)
+
+
+def clean_up_scenario_with_no_process_id(db_path, scenario_id):
+    """
+
+    :param db_path:
+    :param scenario_id:
+    :return:
+    """
+    print("No such process")
+    # Warn the user about what we're about to do
+    emit(
+      "process_id_not_found"
+    )
+    # Clear scenario from database
+    clear_scenario(db_path=db_path, scenario_id=scenario_id)
+    # Update status to 'run_error'
+    connect_to_db_and_update_run_status(
+      db_path=db_path,
+      scenario_id=scenario_id,
+      status_id=3
+    )

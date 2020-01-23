@@ -1,4 +1,8 @@
-================
+************
+Installation
+************
+
+
 Using a Terminal
 ================
 
@@ -14,20 +18,17 @@ icon in the upper-right corner of the menu bar, or by pressing
 Command-Space bar.
 
 
-==================
 GridPath Directory
 ==================
 
 You first need to create a directory where to download GridPath's source
 code. We will refer to this directory as :code:`PATH/TO/GRIDPATH`.
 
-===========
 Source Code
 ===========
 GridPath's source code is stored in a GitHub repository. You will need
 Git to download the source code.
 
---------------
 Installing Git
 --------------
 Git installation instructions are `here <https://git-scm.com/book/en/v2/Getting-Started-Installing-Git>`_
@@ -42,7 +43,6 @@ On RPM-based Linux distributions (e.g Fedora), use :code:`sudo dnf install
 git-all`; on Debian-based Linux distributions (e.g. Ubuntu), use :code:`sudo
 apt install git-all`.
 
--------------------------------
 Cloning the GridPath Repository
 -------------------------------
 
@@ -63,14 +63,12 @@ repository will not be required except for users who want to edit the source
 code.
 
 
-============
 Requirements
 ============
 
 GridPath is written and tested in Python 3, uses an SQLite database to store
 input and output data, and requires a solver to produce results.
 
-------
 Python
 ------
 
@@ -137,6 +135,17 @@ the following::
 Packages
 ^^^^^^^^
 
+GridPath uses the following Python packages (not exhaustive):
+
+* `sqlite3 <https://docs.python.org/3/library/sqlite3.html>`_ for database
+  interface (comes with Python's standard library)
+* `pandas <https://pandas.pydata.org/>`_ for storing data and array
+  manipulations
+* `numpy <https://numpy.org/>`_ for calculations
+* `networkx <https://networkx.github.io/>`_ for network calculations
+* `bokeh <https://bokeh.org/>`_ for interactive plotting
+* `pyomo <http://www.pyomo.org/>`_ for creating optimization problems
+
 You can install all needed Python packages, including those for the extra
 features, by navigating to the the GridPath directory :code:`PATH/TO/GRIDPATH`
 with :code:`cd PATH/TO/GRIDPATH` and running::
@@ -154,13 +163,13 @@ required packages with::
 
 Read below for what the extra features are to determine whether you need them.
 
-Optional packages
-*****************
+Optional packages for extra features
+************************************
 
 The extra features are: 1) the GridPath user interface and 2) building/editing
 the documentation.
 
-GridPath's optional features can be installed individually as follows.
+GridPath's extra features can be installed individually as follows.
 
 For editing or building documentation from source, run::
 
@@ -175,7 +184,6 @@ addition to Python and will be required to install various node packages.
 See the User Interface section for more info.
 
 
---------
 Database
 --------
 While not strictly required -- you can generate TAB-delimited scenario input
@@ -190,9 +198,8 @@ We recommend `SQLite Studio <https://sqlitestudio.pl/index.rvt>`_ as an SQLite
 database GUI.
 
 We have implemented various tools to help you build your database. See the
-'The GridPath Database' section of the documentation.
+:ref:`database-section-ref` section of the documentation for more information.
 
-------
 Solver
 ------
 You will need a solver to get optimization results. GridPath assumes you
@@ -212,7 +219,6 @@ instructions for Windows `here <https://www.java.com/en/download/help/path
 .xml>`_).
 
 
-=========================
 Testing Your Installation
 =========================
 
@@ -220,3 +226,12 @@ To test the GridPath codebase, use the unittest module as follows from the
 :code:`PATH/TO/GRIDPATH` directory::
 
     python -m unittest discover tests
+
+This command will use the python `unittest  <https://docs.python.org/3/library/
+unittest.html>`_ module to test all functions in the :code:`./tests` folder.
+Testing includes both simple unittests as well as integration tests that run
+small example problems (for which you will need a solver).
+
+Note: the -m switch allows modules to be located using the Python module name
+space for execution as scripts, so it can be located just as if its filename was
+provided in the command line.
