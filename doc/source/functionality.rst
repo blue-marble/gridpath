@@ -484,12 +484,7 @@ variable O&M costs.
 
 Always-On Generation (*gen_always_on*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that must produce power in all
-timepoints they are available; unlike the must-run generators, however, they
-can vary power output between a pre-specified minimum stable level (greater
-than 0) and their available capacity. Always-on generators cannot provide
-reserves. Ramp rate limits can be optionally specified. Costs for this
-operational type include fuel costs and variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on
 
 Binary-Commit Generation (*gen_commit_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
