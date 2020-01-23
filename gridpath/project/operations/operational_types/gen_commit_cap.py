@@ -126,12 +126,6 @@ def add_module_specific_components(m, d):
     | The project's downward ramp rate limit during operations, defined as a  |
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
-    | | :code:`gen_commit_cap_ramp_down_when_on_rate`                         |
-    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
-    |                                                                         |
-    | The project's downward ramp rate limit during operations, defined as a  |
-    | fraction of its capacity per minute.                                    |
-    +-------------------------------------------------------------------------+
     | | :code:`gen_commit_cap_min_up_time_hours`                              |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     |                                                                         |
