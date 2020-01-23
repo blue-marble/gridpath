@@ -2,8 +2,20 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This module describes the operations of must-run generators. These
-generators can provide power but not reserves.
+This operational type describes must-run generators that produce constant
+power equal to their capacity in all timepoints when they are available.
+
+The available capacity can either be a set input (e.g. for the gen_spec
+capacity_type) or a decision variable by period (e.g. for the gen_new_lin
+capacity_type). This makes this operational type suitable for both production
+simulation type problems and capacity expansion problems.
+
+The heat rate is assumed to be constant and this operational type cannot
+provide reserves (since there is no operable range, i.e. no headroom or
+footroom).
+
+Costs for this operational type include fuel costs and variable O&M costs.
+
 """
 
 import warnings
@@ -20,73 +32,120 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_MUST_RUN`                                                  |
+    |                                                                         |
+    | The set of generators of the :code:`gen_must_run` operational type.     |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_MUST_RUN_OPR_TMPS`                                         |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_must_run`         |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`GenMustRun_No_Upward_Reserves_Constraint`                      |
+    | | *Defined over*: :code:`GEN_MUST_RUN_OPR_TMPS`                         |
+    |                                                                         |
+    | Must-run projects cannot provide upward reserves.                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenMustRun_No_Downward_Reserves_Constraint`                    |
+    | | *Defined over*: :code:`GEN_MUST_RUN_OPR_TMPS`                         |
+    |                                                                         |
+    | Must-run projects cannot provide downward reserves.                     |
+    +-------------------------------------------------------------------------+
 
 
     """
 
-    # TODO: do we need this set or can we remove it
-    m.MUST_RUN_GENERATORS = Set(within=m.PROJECTS,
-                                initialize=generator_subset_init(
-                                    "operational_type", "gen_must_run")
-                                )
+    # Sets
+    ###########################################################################
 
-    # TODO: do we need this set or can we remove it?
-    m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.MUST_RUN_GENERATORS))
+    m.GEN_MUST_RUN = Set(
+        within=m.PROJECTS,
+        initialize=generator_subset_init("operational_type", "gen_must_run")
+    )
+
+    m.GEN_MUST_RUN_OPR_TMPS = Set(
+        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_MUST_RUN)
+    )
+
+    # Constraints
+    ###########################################################################
 
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone if 'gen_must_run' type
-    def no_upwards_reserve_rule(mod, g, tmp):
+    def no_upward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenMustRun_No_Upward_Reserves_Constraint
+        **Enforced Over**: GEN_MUST_RUN_OPR_TMPS
+
+        Upward reserves should be zero in every operational timepoint.
+        """
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'gen_must_run' operational type and should 
-                not be assigned any upward reserve BAs since it cannot provide 
-                upward reserves. Please replace the upward reserve BA for 
-                project {} with '.' (no value) in projects.tab. Model will add  
-                constraint to ensure project {} cannot provide upward reserves
+                """project {} is of the 'gen_must_run' operational type and 
+                should not be assigned any upward reserve BAs since it cannot 
+                provide upward reserves. Please replace the upward reserve BA 
+                for project {} with '.' (no value) in projects.tab. Model will 
+                add constraint to ensure project {} cannot provide upward 
+                reserves.
                 """.format(g, g, g)
             )
             return sum(getattr(mod, c)[g, tmp]
                        for c in getattr(d, headroom_variables)[g]) == 0
         else:
             return Constraint.Skip
-    m.Must_Run_No_Upwards_Reserves_Constraint = Constraint(
-            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=no_upwards_reserve_rule)
+    m.GenMustRun_No_Upward_Reserves_Constraint = Constraint(
+        m.GEN_MUST_RUN_OPR_TMPS,
+        rule=no_upward_reserve_rule
+    )
 
     # TODO: remove this constraint once input validation is in place that
     #  does not allow specifying a reserve_zone if 'gen_must_run' type
-    def no_downwards_reserve_rule(mod, g, tmp):
+    def no_downward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenMustRun_No_Downward_Reserves_Constraint
+        **Enforced Over**: GEN_MUST_RUN_OPR_TMPS
+
+        Downward reserves should be zero in every operational timepoint.
+        """
         if getattr(d, footroom_variables)[g]:
             warnings.warn(
-                """project {} is of the 'gen_must_run' operational type and should 
-                not be assigned any downward reserve BAs since it cannot provide 
-                upwards reserves. Please replace the downward reserve BA for 
-                project {} with '.' (no value) in projects.tab. Model will add  
-                constraint to ensure project {} cannot provide downward reserves
+                """project {} is of the 'gen_must_run' operational type and 
+                should not be assigned any downward reserve BAs since it cannot
+                provide upwards reserves. Please replace the downward reserve 
+                BA for project {} with '.' (no value) in projects.tab. Model 
+                will add constraint to ensure project {} cannot provide 
+                downward reserves.
                 """.format(g, g, g)
             )
             return sum(getattr(mod, c)[g, tmp]
                        for c in getattr(d, footroom_variables)[g]) == 0
         else:
             return Constraint.Skip
-    m.Must_Run_No_Downwards_Reserves_Constraint = Constraint(
-            m.MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=no_downwards_reserve_rule)
+    m.GenMustRun_No_Downward_Reserves_Constraint = Constraint(
+        m.GEN_MUST_RUN_OPR_TMPS,
+        rule=no_downward_reserve_rule
+    )
 
+
+# Operational Type Methods
+###############################################################################
 
 def power_provision_rule(mod, g, tmp):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param tmp: the operational timepoint
-    :return: expression for power provision by must-run generators
-
     Power provision for must run generators is simply their capacity in all
     timepoints when they are operational.
     """
@@ -96,11 +155,7 @@ def power_provision_rule(mod, g, tmp):
 
 def online_capacity_rule(mod, g, tmp):
     """
-    Since no commitment, all capacity assumed online
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Since there is no commitment, all capacity is assumed to be online.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -109,10 +164,6 @@ def online_capacity_rule(mod, g, tmp):
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision for must-run generators, if eligible, is their capacity.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -121,10 +172,6 @@ def rec_provision_rule(mod, g, tmp):
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Can't dispatch down and curtailment not allowed
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
@@ -132,10 +179,6 @@ def scheduled_curtailment_rule(mod, g, tmp):
 def subhourly_curtailment_rule(mod, g, tmp):
     """
     Can't provide reserves
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
@@ -143,25 +186,17 @@ def subhourly_curtailment_rule(mod, g, tmp):
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
     Can't provide reserves
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Output doesn't vary, so this is a constant
+    Output doesn't vary, so this is a constant.
+
     Return 0 if must-run generator with no fuel (e.g. geothermal); these
     should not have been given a fuel or labeled carbonaceous in the first
-    place
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
+    place.
     """
     if g in mod.FUEL_PROJECTS:
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
@@ -172,11 +207,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_shutdown_rule(mod, g, tmp):
     """
-    Must-run generators are never started up or shut down
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Must-run generators are never started up or shut down.
     """
     raise ValueError(
         "ERROR! Must-run generators should not incur startup/shutdown "
@@ -188,13 +219,12 @@ def startup_shutdown_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
+
+# Validation
+###############################################################################
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
