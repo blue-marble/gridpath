@@ -143,3 +143,49 @@ The information in the status columns is color-coded depending on the value.
 You can navigate to the :code:`New Scenario` screen by clicking on the
 :code:`New Scenario` button at the top of the scenarios list (in additon to
 via the navigation bar).
+
+Scenario Detail
+***************
+
+Scenario Status
+===============
+
+Validation Status
+-----------------
+
+Run Status
+----------
+
+Validating a Scenario
+=====================
+
+Running a Scenario
+==================
+
+
+Scenario Inputs
+===============
+
+Editing a Scenario
+==================
+
+Deleting a Scenario
+===================
+
+
+Scenario Results
+****************
+
+
+********************
+Scenarios Comparison
+********************
+
+Scenario Selection
+******************
+
+Comparing Scenario Inputs
+*************************
+
+Comparing Scenario Results
+**************************
