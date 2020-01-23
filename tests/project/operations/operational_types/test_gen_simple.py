@@ -85,17 +85,17 @@ class TestDispatchableNoCommitOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: DISPATCHABLE_NO_COMMIT_GENERATORS
+        # Set: GEN_SIMPLE
         expected_disp_no_commit_gen_set = sorted([
             "Disp_No_Commit"
         ])
         actual_disp_no_commit_gen_set = sorted([
-            prj for prj in instance.DISPATCHABLE_NO_COMMIT_GENERATORS
+            prj for prj in instance.GEN_SIMPLE
             ])
         self.assertListEqual(expected_disp_no_commit_gen_set,
                              actual_disp_no_commit_gen_set)
 
-        # Set: DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_SIMPLE_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(
                 expected_disp_no_commit_gen_set
@@ -104,32 +104,32 @@ class TestDispatchableNoCommitOperationalType(unittest.TestCase):
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-                DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS]
+                GEN_SIMPLE_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: dispatchable_no_commit_ramp_up_rate
+        # Param: gen_simple_ramp_up_rate
         expected_ramp_up_when_on_rate = {
             "Disp_No_Commit": 1  # default value
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispatchable_no_commit_ramp_up_rate[
+            prj: instance.gen_simple_ramp_up_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_NO_COMMIT_GENERATORS
+            for prj in instance.GEN_SIMPLE
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: dispatchable_no_commit_ramp_down_rate
+        # Param: gen_simple_ramp_down_rate
         expected_ramp_down_when_on_rate = {
             "Disp_No_Commit": 1  # default value
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispatchable_no_commit_ramp_down_rate[
+            prj: instance.gen_simple_ramp_down_rate[
                 prj]
-            for prj in instance.DISPATCHABLE_NO_COMMIT_GENERATORS
+            for prj in instance.GEN_SIMPLE
         }
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate

@@ -467,13 +467,7 @@ currently implemented operational types include:
 
 Simple Generation (*gen_simple*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that can vary their output
-between 0 and full capacity in every timepoint in which they are available
-(i.e. they have power output variable but no commitment variables associated
-with them). The heat rate of these generators does not degrade below full
-load and they can be allowed to provide upward and/or downward reserves.
-Costs for this operational type include fuel costs, variable O&M costs, and
-startup and shutdown costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_simple
 
 Must-Run Generation (*gen_must_run*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
