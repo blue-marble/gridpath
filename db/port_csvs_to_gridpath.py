@@ -2,7 +2,40 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Port csv data to GridPath
+The *port_csvs_to_gridpath.py* script ports the input data provided through
+csvs to the sql database, which is created using the create_database.py
+script. The csv_data_master.csv has the list of all the tables in the
+gridpath database. The 'required' column in this csv indicates whether the
+table is required [1] or optional [0]. The 'include' column indicates
+whether the user would like to include this table and import the csv data
+into this table [1] or omit the table [0]. The paths to the csv data
+subfolders that house the csv scenario data for each table are also proided
+in this master csv.
+
+Input csvs for tables required for optional features are under the
+'features' subfolder
+
+Each table's subfolder has one "subscenario_xxx.csv", which has
+ details of all the subscenarios including subscenario_id, name,
+description and the file name of the subscenario data csv. Each subscenario
+should have one separate csv that holds the input data. The port script will
+only input data for subscenarios included in the subscenario_xxx.csv. The
+script will ignore csvs that have "template" or "ignore" in their filenames.
+The csv filenames can be specified with or without the .csv extension.
+Only for the variable generator profiles, the subscenario input data for
+each project is provided in separate csvs even if multiple projects belong
+to the same subscenario.
+
+The scenario.csv under the scenario folder holds the input data for the
+scenario table, which indicates which subscenarios should be included in a
+particular scenario by providing the subscenario_id. Each scenario has a
+separate column. The user-defined name of the scenario should be entered as
+the name of the scenario column.
+
+The input params for this script include database name (db_name_, database
+path (db_location), and csvs folder path (csv_location. The defaults are the
+"io.db" database and "csvs" folder located under the "db" folder.
+
 """
 
 import os
@@ -39,7 +72,8 @@ def parse_arguments(args):
     parser = ArgumentParser(add_help=True)
 
     # Database name and location options
-    # Not adding defaults here because the connect_to_database function has its own defaults
+    # Adding defaults here even though the connect_to_database function has its own defaults
+    # because parser passes a text string of None and not a python None
     parser.add_argument("--db_name", default="io",
                         help="Name of the database without the db extension.")
     parser.add_argument("--db_location", default=".",
@@ -54,12 +88,6 @@ def parse_arguments(args):
                         help="Create in-memory database. The db_name and "
                              "db_location argument will be inactive.")
 
-    # parser.add_argument("--db_name", default="io",
-    #                     help="Name of the database.")
-    # parser.add_argument("--db_location", default=".",
-    #                     help="Path to the database (relative to "
-    #                          "port_csvs_to_db.py).")
-    #
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
     return parsed_arguments
