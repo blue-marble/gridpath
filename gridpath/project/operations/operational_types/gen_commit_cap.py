@@ -671,85 +671,85 @@ def ramp_up_on_to_on_constraint_rule(mod, g, tmp):
 
 
 def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: Ramp_Up_When_On_Headroom_Constraint
-        **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
+    """
+    **Constraint Name**: Ramp_Up_When_On_Headroom_Constraint
+    **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
 
-        Generators online in the previous timepoint that are still online
-        could not have ramped up above their total online capacity, i.e. not
-        more than their available headroom in the previous timepoint.
-        The maximum possible headroom in the previous timepoint is equal to
-        the difference between committed capacity and (power provided minus
-        downward reserves).
-        """
-        # TODO: check behavior more carefully (same for ramp down)
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        else:
-            return mod.Ramp_Up_When_On_MW[g, tmp] \
-                <= \
-                mod.Commit_Capacity_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                - (mod.GenCommitCap_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   - mod.GenCommitCap_Downwards_Reserves_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]])
+    Generators online in the previous timepoint that are still online
+    could not have ramped up above their total online capacity, i.e. not
+    more than their available headroom in the previous timepoint.
+    The maximum possible headroom in the previous timepoint is equal to
+    the difference between committed capacity and (power provided minus
+    downward reserves).
+    """
+    # TODO: check behavior more carefully (same for ramp down)
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    else:
+        return mod.Ramp_Up_When_On_MW[g, tmp] \
+            <= \
+            mod.Commit_Capacity_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            - (mod.GenCommitCap_Provide_Power_MW[
+                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               - mod.GenCommitCap_Downwards_Reserves_MW[
+                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]])
 
 
 def ramp_up_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: GenCommitCap_Ramp_Up_Constraint
-        **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
+    """
+    **Constraint Name**: GenCommitCap_Ramp_Up_Constraint
+    **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
 
-        The ramp up (power provided in the current timepoint minus power
-        provided in the previous timepoint), adjusted for any reserve provision
-        in the current and previous timepoint, cannot exceed a prespecified
-        ramp rate (expressed as fraction of capacity)
-        Two components:
-        1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
-        If we are turning generators on since the previous timepoint, we will
-        allow the ramp of going from 0 to minimum stable level + some
-        additional ramping : the gen_commit_cap_startup_plus_ramp_up_rate
-        parameter
-        2) Ramp_Up_When_On_MW (see Ramp_Up_When_On_Constraint and
-        Ramp_Up_When_On_Headroom_Constraint above):
-        Units committed in both the current timepoint and the previous
-        timepoint could have ramped up at a certain rate since the previous
-        timepoint
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # start up the full capacity and ramp up the full operable range
-        # between timepoints, constraint won't bind, so skip
-        elif (mod.gen_commit_cap_startup_plus_ramp_up_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-              >= 1
-              and
-              mod.gen_commit_cap_ramp_up_when_on_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-              >= (1 - mod.gen_commit_cap_min_stable_level_fraction[g])
-              ):
-            return Constraint.Skip
-        else:
-            return (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-                    + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp]) \
-                - (mod.GenCommitCap_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   - mod.GenCommitCap_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   ) \
-                <= \
-                mod.Ramp_Up_Startup_MW[g, tmp] \
-                + mod.Ramp_Up_When_On_MW[g, tmp]
+    The ramp up (power provided in the current timepoint minus power
+    provided in the previous timepoint), adjusted for any reserve provision
+    in the current and previous timepoint, cannot exceed a prespecified
+    ramp rate (expressed as fraction of capacity)
+    Two components:
+    1) Ramp_Up_Startup_MW (see Ramp_Up_Off_to_On_Constraint above):
+    If we are turning generators on since the previous timepoint, we will
+    allow the ramp of going from 0 to minimum stable level + some
+    additional ramping : the gen_commit_cap_startup_plus_ramp_up_rate
+    parameter
+    2) Ramp_Up_When_On_MW (see Ramp_Up_When_On_Constraint and
+    Ramp_Up_When_On_Headroom_Constraint above):
+    Units committed in both the current timepoint and the previous
+    timepoint could have ramped up at a certain rate since the previous
+    timepoint
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    # If ramp rate limits, adjusted for timepoint duration, allow you to
+    # start up the full capacity and ramp up the full operable range
+    # between timepoints, constraint won't bind, so skip
+    elif (mod.gen_commit_cap_startup_plus_ramp_up_rate[g] * 60
+          * mod.number_of_hours_in_timepoint[
+              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+          >= 1
+          and
+          mod.gen_commit_cap_ramp_up_when_on_rate[g] * 60
+          * mod.number_of_hours_in_timepoint[
+              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+          >= (1 - mod.gen_commit_cap_min_stable_level_fraction[g])
+          ):
+        return Constraint.Skip
+    else:
+        return (mod.GenCommitCap_Provide_Power_MW[g, tmp]
+                + mod.GenCommitCap_Upwards_Reserves_MW[g, tmp]) \
+            - (mod.GenCommitCap_Provide_Power_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               - mod.GenCommitCap_Downwards_Reserves_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               ) \
+            <= \
+            mod.Ramp_Up_Startup_MW[g, tmp] \
+            + mod.Ramp_Up_When_On_MW[g, tmp]
 
 
 def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
@@ -810,29 +810,29 @@ def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
 
 
 def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
-        """
-        **Constraint Name**: Ramp_Down_When_On_Headroom_Constraint
-        **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
+    """
+    **Constraint Name**: Ramp_Down_When_On_Headroom_Constraint
+    **Enforced Over**: GEN_COMMIT_CAP_OPR_TMPS
 
-        Generators still online in the current timepoint could not have ramped
-        down more than their current headroom. The maximum possible headroom is
-        equal to the difference between committed capacity and (power provided
-        minus downward reserves).
-        Note: Ramp_Down_When_On_MW is negative when a unit is ramping down, so
-        we add a negative sign before it the constraint.
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        else:
-            return -mod.Ramp_Down_When_On_MW[g, tmp] \
-                   <= \
-                   mod.Commit_Capacity_MW[g, tmp] \
-                   - (mod.GenCommitCap_Provide_Power_MW[g, tmp]
-                      - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp])
+    Generators still online in the current timepoint could not have ramped
+    down more than their current headroom. The maximum possible headroom is
+    equal to the difference between committed capacity and (power provided
+    minus downward reserves).
+    Note: Ramp_Down_When_On_MW is negative when a unit is ramping down, so
+    we add a negative sign before it the constraint.
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    else:
+        return -mod.Ramp_Down_When_On_MW[g, tmp] \
+               <= \
+               mod.Commit_Capacity_MW[g, tmp] \
+               - (mod.GenCommitCap_Provide_Power_MW[g, tmp]
+                  - mod.GenCommitCap_Downwards_Reserves_MW[g, tmp])
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
