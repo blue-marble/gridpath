@@ -297,9 +297,14 @@ def add_module_specific_components(m, d):
     | Requires that when units within this project are stopped, they stay off |
     | for at least :code:`gen_commit_cap_min_down_time_hours`.                |
     +-------------------------------------------------------------------------+
-
-
-
+    | Fuel Burn                                                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`Fuel_Burn_GenCommitCap_Constraint`                             |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG`              |
+    |                                                                         |
+    | Determines fuel burn from the project in each timepoint based on its    |
+    | heat rate curve.                                                        |
+    +-------------------------------------------------------------------------+
 
     """
 
