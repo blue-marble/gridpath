@@ -318,13 +318,14 @@ def add_module_specific_components(m, d):
                              mod.GEN_COMMIT_CAP)
     )
 
-    m.GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG = \
-        Set(dimen=3,
-            within=m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp, s) for (g, tmp, s)
-                in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
-                if g in mod.GEN_COMMIT_CAP))
+    m.GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG = Set(
+        dimen=3,
+        within=m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp, s)
+            in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_COMMIT_CAP)
+    )
 
     # Required Params
     ###########################################################################
@@ -332,40 +333,48 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_CAP,
         within=NonNegativeReals
     )
-    m.gen_commit_cap_min_stable_level_fraction = \
-        Param(m.GEN_COMMIT_CAP,
-              within=PercentFraction)
+    m.gen_commit_cap_min_stable_level_fraction = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction
+    )
 
     # Optional Params
     ###########################################################################
-    m.gen_commit_cap_startup_plus_ramp_up_rate = \
-        Param(m.GEN_COMMIT_CAP,
-              within=PercentFraction, default=1)
-    m.gen_commit_cap_shutdown_plus_ramp_down_rate = \
-        Param(m.GEN_COMMIT_CAP,
-              within=PercentFraction, default=1)
-    m.gen_commit_cap_ramp_up_when_on_rate = \
-        Param(m.GEN_COMMIT_CAP,
-              within=PercentFraction, default=1)
-    m.gen_commit_cap_ramp_down_when_on_rate = \
-        Param(m.GEN_COMMIT_CAP,
-              within=PercentFraction, default=1)
-    m.gen_commit_cap_min_up_time_hours = \
-        Param(m.GEN_COMMIT_CAP,
-              within=NonNegativeReals, default=1)
-    m.gen_commit_cap_min_down_time_hours = \
-        Param(m.GEN_COMMIT_CAP,
-              within=NonNegativeReals, default=1)
+    m.gen_commit_cap_startup_plus_ramp_up_rate = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction, default=1
+    )
+    m.gen_commit_cap_shutdown_plus_ramp_down_rate = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction, default=1
+    )
+    m.gen_commit_cap_ramp_up_when_on_rate = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction, default=1
+    )
+    m.gen_commit_cap_ramp_down_when_on_rate = Param(
+        m.GEN_COMMIT_CAP,
+        within=PercentFraction, default=1
+    )
+    m.gen_commit_cap_min_up_time_hours = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals, default=1
+    )
+    m.gen_commit_cap_min_down_time_hours = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals, default=1
+    )
 
     # Variables
     ###########################################################################
-    m.GenCommitCap_Provide_Power_MW = \
-        Var(m.GEN_COMMIT_CAP_OPR_TMPS,
-            within=NonNegativeReals)
-    m.Commit_Capacity_MW = \
-        Var(m.GEN_COMMIT_CAP_OPR_TMPS,
-            within=NonNegativeReals
-            )
+    m.GenCommitCap_Provide_Power_MW = Var(
+        m.GEN_COMMIT_CAP_OPR_TMPS,
+        within=NonNegativeReals
+    )
+    m.Commit_Capacity_MW = Var(
+        m.GEN_COMMIT_CAP_OPR_TMPS,
+        within=NonNegativeReals
+    )
     m.GenCommitCap_Fuel_Burn_MMBTU = Var(
         m.GEN_COMMIT_CAP_OPR_TMPS,
         within=NonNegativeReals
@@ -424,14 +433,16 @@ def add_module_specific_components(m, d):
                    for c in getattr(d, headroom_variables)[g])
     m.GenCommitCap_Upwards_Reserves_MW = Expression(
         m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=upwards_reserve_rule)
+        rule=upwards_reserve_rule
+    )
 
     def downwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, footroom_variables)[g])
     m.GenCommitCap_Downwards_Reserves_MW = Expression(
         m.GEN_COMMIT_CAP_OPR_TMPS,
-        rule=downwards_reserve_rule)
+        rule=downwards_reserve_rule
+    )
 
     # Constraints
     ###########################################################################
