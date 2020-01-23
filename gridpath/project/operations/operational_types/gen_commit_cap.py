@@ -59,22 +59,22 @@ def add_module_specific_components(m, d):
     The following Pyomo model components are defined in this module:
 
     +-------------------------------------------------------------------------+
-    |Sets                                                                     |
+    | Sets                                                                    |
     +=========================================================================+
-    || :code:`GEN_COMMIT_CAP`                                                 |
+    | | :code:`GEN_COMMIT_CAP`                                                |
     |                                                                         |
-    |The set of generators of the `gen_commit_cap` operational type           |
+    | The set of generators of the `gen_commit_cap` operational type          |
     +-------------------------------------------------------------------------+
-    || :code:`GEN_COMMIT_CAP_OPR_TMPS`                                        |
+    | | :code:`GEN_COMMIT_CAP_OPR_TMPS`                                       |
     |                                                                         |
-    |Two-dimensional set with generators of the :code:`gen_commit_cap`        |
-    |operational type and their operational timepoints.                       |
+    | Two-dimensional set with generators of the :code:`gen_commit_cap`       |
+    | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
-    || :code:`GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG`                               |
+    | | :code:`GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG`                              |
     |                                                                         |
-    |Three-dimensional set with generators of the :code:`gen_commit_cap`      |
-    |operational type, their operational timepoints, and their fuel           |
-    |segments (if the project is in :code:`FUEL_PROJECTS`).                   |
+    | Three-dimensional set with generators of the :code:`gen_commit_cap`     |
+    | operational type, their operational timepoints, and their fuel          |
+    | segments (if the project is in :code:`FUEL_PROJECTS`).                  |
     +-------------------------------------------------------------------------+
 
     |
@@ -82,7 +82,7 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`gen_commit_cap_unit_size_mw`                                                  |
+    | | :code:`gen_commit_cap_unit_size_mw`                                   |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     |                                                                         |
     | The MW size of a unit in this project (projects of the                  |
