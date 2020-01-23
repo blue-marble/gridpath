@@ -85,17 +85,17 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: DISPATCHABLE_BINARY_COMMIT_GENERATORS
+        # Set: GEN_COMMIT_BIN
         expected_disp_bin_commit_gen_set = sorted([
             "Disp_Binary_Commit"
         ])
         actual_disp_bin_commit_gen_set = sorted([
-            prj for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj for prj in instance.GEN_COMMIT_BIN
             ])
         self.assertListEqual(expected_disp_bin_commit_gen_set,
                              actual_disp_bin_commit_gen_set)
 
-        # Set: DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_COMMIT_BIN_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(
                 expected_disp_bin_commit_gen_set
@@ -104,71 +104,71 @@ class TestDispatchableBinaryCommitOperationalType(unittest.TestCase):
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-                DISPATCHABLE_BINARY_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS]
+                GEN_COMMIT_BIN_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: disp_binary_commit_min_stable_level_fraction
+        # Param: gen_commit_bin_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
         actual_min_stable_fraction = {
-            prj: instance.disp_binary_commit_min_stable_level_fraction[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_min_stable_level_fraction[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
-        # Param: dispbincommit_startup_plus_ramp_up_rate
+        # Param: gen_commit_bin_startup_plus_ramp_up_rate
         expected_startup_plus_ramp_up_rate = {"Disp_Binary_Commit": 0.6}
         actual_startup_plus_ramp_up_rate = {
-            prj: instance.dispbincommit_startup_plus_ramp_up_rate[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_startup_plus_ramp_up_rate[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_startup_plus_ramp_up_rate,
                              actual_startup_plus_ramp_up_rate)
 
-        # Param: dispbincommit_shutdown_plus_ramp_down_rate
+        # Param: gen_commit_bin_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Binary_Commit": 0.6}
         actual_shutdown_plus_ramp_down_rate = {
-            prj: instance.dispbincommit_shutdown_plus_ramp_down_rate[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_shutdown_plus_ramp_down_rate[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate)
 
-        # Param: dispbincommit_ramp_up_when_on_rate
+        # Param: gen_commit_bin_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Binary_Commit": 0.3}
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispbincommit_ramp_up_when_on_rate[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_ramp_up_when_on_rate[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
-        # Param: dispbincommit_ramp_down_when_on_rate
+        # Param: gen_commit_bin_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {"Disp_Binary_Commit": 0.5}
         actual_ramp_down_when_on_rate = {
-            prj: instance.dispbincommit_ramp_down_when_on_rate[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_ramp_down_when_on_rate[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
-        # Param: dispbincommit_min_up_time_hours
+        # Param: gen_commit_bin_min_up_time_hrs
         expected_min_up_time = {"Disp_Binary_Commit": 3}
         actual_min_up_time = {
-            prj: instance.dispbincommit_min_up_time_hours[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_min_up_time_hrs[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
 
         self.assertDictEqual(expected_min_up_time,
                              actual_min_up_time)
 
-        # Param: dispbincommit_min_down_time_hours
+        # Param: gen_commit_bin_min_down_time_hrs
         expected_min_down_time = {"Disp_Binary_Commit": 7}
         actual_min_down_time = {
-            prj: instance.dispbincommit_min_down_time_hours[prj]
-            for prj in instance.DISPATCHABLE_BINARY_COMMIT_GENERATORS
+            prj: instance.gen_commit_bin_min_down_time_hrs[prj]
+            for prj in instance.GEN_COMMIT_BIN
         }
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
