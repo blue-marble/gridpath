@@ -111,14 +111,14 @@ class TestDispatchableCapacityCommitOperationalType(unittest.TestCase):
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: unit_size_mw
+        # Param: gen_commit_cap_unit_size_mw
         expected_unit_size = {
             "Gas_CCGT": 6, "Coal": 6, "Gas_CT": 6, "Gas_CCGT_New": 6,
             "Gas_CCGT_New_Binary": 6,
             "Gas_CT_New": 6, "Gas_CCGT_z2": 6, "Coal_z2": 6, "Gas_CT_z2": 6
         }
         actual_unit_size = {
-            prj: instance.unit_size_mw[prj]
+            prj: instance.gen_commit_cap_unit_size_mw[prj]
             for prj in instance.GEN_COMMIT_CAP
         }
         self.assertDictEqual(expected_unit_size,

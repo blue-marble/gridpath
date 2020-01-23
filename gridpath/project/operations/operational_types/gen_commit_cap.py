@@ -82,7 +82,7 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Required Input Params                                                   |
     +=========================================================================+
-    | | :code:`unit_size_mw`                                                  |
+    | | :code:`gen_commit_cap_unit_size_mw`                                                  |
     | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
     |                                                                         |
     | The MW size of a unit in this project (projects of the                  |
@@ -328,7 +328,10 @@ def add_module_specific_components(m, d):
 
     # Required Params
     ###########################################################################
-    m.unit_size_mw = Param(m.GEN_COMMIT_CAP, within=NonNegativeReals)
+    m.gen_commit_cap_unit_size_mw = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals
+    )
     m.gen_commit_cap_min_stable_level_fraction = \
         Param(m.GEN_COMMIT_CAP,
               within=PercentFraction)
@@ -994,7 +997,7 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
         mod.fuel_burn_slope_mmbtu_per_mwh[g, s] \
         * mod.GenCommitCap_Provide_Power_MW[g, tmp] \
         + mod.fuel_burn_intercept_mmbtu_per_hr[g, s] \
-        * (mod.Commit_Capacity_MW[g, tmp] / mod.unit_size_mw[g])
+        * (mod.Commit_Capacity_MW[g, tmp] / mod.gen_commit_cap_unit_size_mw[g])
 
 
 # Operational Type Methods
@@ -1204,7 +1207,7 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         else:
             pass
 
-    data_portal.data()["unit_size_mw"] = unit_size_mw
+    data_portal.data()["gen_commit_cap_unit_size_mw"] = unit_size_mw
     data_portal.data()["gen_commit_cap_min_stable_level_fraction"] = \
         min_stable_fraction
 
@@ -1326,7 +1329,8 @@ def export_module_specific_results(mod, d, scenario_directory, subproblem, stage
                 mod.load_zone[p],
                 value(mod.GenCommitCap_Provide_Power_MW[p, tmp]),
                 value(mod.Commit_Capacity_MW[p, tmp]),
-                value(mod.Commit_Capacity_MW[p, tmp]) / mod.unit_size_mw[p]
+                value(mod.Commit_Capacity_MW[p, tmp]) /
+                mod.gen_commit_cap_unit_size_mw[p]
             ])
 
 
