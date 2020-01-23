@@ -1004,12 +1004,6 @@ def fuel_burn_constraint_rule(mod, g, tmp, s):
 ###############################################################################
 def power_provision_rule(mod, g, tmp):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param tmp: the operational timepoint
-    :return: expression for power provision by dispatchable-capacity-commit
-     generators
-
     Power provision for dispatchable-capacity-commit generators is a
     variable constrained to be between the minimum stable level (defined as
     a fraction of committed capacity) and the committed capacity.
@@ -1020,10 +1014,6 @@ def power_provision_rule(mod, g, tmp):
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision from dispatchable generators is an endogenous variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return mod.GenCommitCap_Provide_Power_MW[g, tmp]
 
@@ -1032,10 +1022,6 @@ def commitment_rule(mod, g, tmp):
     """
     Number of units committed is the committed capacity divided by the unit
     size
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return mod.Commit_Capacity_MW[g, tmp]
 
@@ -1043,10 +1029,6 @@ def commitment_rule(mod, g, tmp):
 def online_capacity_rule(mod, g, tmp):
     """
     Capacity online in each timepoint
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return mod.Commit_Capacity_MW[g, tmp]
 
@@ -1054,10 +1036,6 @@ def online_capacity_rule(mod, g, tmp):
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down and use energy (fuel) later
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
@@ -1065,33 +1043,18 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
     """
     if g in mod.FUEL_PROJECTS:
         return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp]
@@ -1107,10 +1070,6 @@ def startup_shutdown_rule(mod, g, tmp):
     previous_timepoint for the first timepoint if the horizon;
     if the horizon is linear, no previous_timepoint is defined for the first
     timepoint of the horizon, so return 'None' here
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[
         mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -1125,10 +1084,6 @@ def startup_shutdown_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[
         mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -1145,10 +1100,6 @@ def power_delta_rule(mod, g, tmp):
 def fix_commitment(mod, g, tmp):
     """
     Fix committed capacity based on number of committed units and unit size
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     mod.Commit_Capacity_MW[g, tmp] = \
         mod.fixed_commitment[g, mod.previous_stage_timepoint_map[tmp]]
