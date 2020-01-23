@@ -127,3 +127,19 @@ user's GridPath's scenarios have been validated, and, if so, whether any
 have been found to be invalid.
 
 .. image:: ../graphics/ui_home_screen.png
+
+
+*********
+Scenarios
+*********
+
+The GridPath :code:`Scenarios` screen provides a list of all scenarios the
+user has created along with their status (validation status and run status)
+and options to navigate to viewing detailed scenario information via the
+:code:`View Detail` button and, if the scenario is complete, to viewing the
+scenario results via the :code:`View Results` button. The :code:`View
+Results` button is available only if the scenario 'Run Status' is 'complete.'
+The information in the status columns is color-coded depending on the value.
+You can navigate to the :code:`New Scenario` screen by clicking on the
+:code:`New Scenario` button at the top of the scenarios list (in additon to
+via the navigation bar).
