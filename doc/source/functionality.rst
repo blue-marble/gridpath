@@ -502,9 +502,7 @@ Curtailable Hydro Generation (*gen_hydro*)
 
 Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes the operations of hydro generation and is
-like the *gen_hydro* operational type except that curtailment is not
-allowed.
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take
 
 Curtailable Variable Generation (*gen_var*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
