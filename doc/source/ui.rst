@@ -147,21 +147,38 @@ via the navigation bar).
 Scenario Detail
 ***************
 
-Scenario Status
-===============
+The :code:`Scenario Detail` screen is a gateway to more detailed information
+about a scenario, including its setup, inputs, status, and results. At the top
+of this screen, you can find buttons for deleting a scenario or editing its
+setup (i.e. its features and subscenario selections).
 
-Validation Status
------------------
+Scenario Validation and Run Status
+==================================
 
-Run Status
-----------
+The :code:`Scenario Status` table shows the validation and run status for
+the scenario. The table includes columns for the current status and for the
+associated action and status detail, i.e. the action to take and detail to
+view vary depending on the current status.
 
 Validating a Scenario
-=====================
+---------------------
+
+GridPath includes functionality to test the validity of a scenario's setup
+and inputs. Click the :code:`Validate Scenario` button in the
+:code:`Validation Status` row of the :code:`Scenario Status` table to
+validate or re-validate the scenario. If errors are found, you will be able
+to click on a :code:`View Errors` button in the :code:`Detail` column to see
+a table with the validation errors.
 
 Running a Scenario
-==================
-
+------------------
+If a scenario is not yet 'complete,' you will be able to run by clicking the
+:code:`Run Scenario` button in the :code:`Run Status` row of the
+:code:`Scenario Status` table. The scenario status should then change to
+'launching' and then 'running.' Once the scenario is running, you will be
+able to stop the scenario run via the :code:`Stop Run` button in the
+:code:`Action` column and to view the scenario log via the :code:`View Log`
+button in the :code:`Detail` column.
 
 Scenario Inputs
 ===============
