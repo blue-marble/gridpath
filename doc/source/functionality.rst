@@ -477,10 +477,7 @@ startup and shutdown costs.
 
 Must-Run Generation (*gen_must_run*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that produce constant power equal
-to their capacity in all timepoints when they are available. They cannot
-provide reserves. Costs for this operational type include fuel costs and
-variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
 
 Always-On Generation (*gen_always_on*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
