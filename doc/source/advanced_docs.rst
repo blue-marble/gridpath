@@ -169,8 +169,7 @@ gridpath.project.operations.costs
 
 gridpath.project.capacity.operational_types.gen_simple
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_simple
-    :members: power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_simple.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_must_run
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

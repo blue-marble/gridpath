@@ -2,8 +2,18 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of no-commit generators, a proxy for a perfectly flexible generator
-with constant heat rate, no minimum output, and (optional) ramp rate limits.
+This operational type describes generators that can vary their output
+between zero and full capacity in every timepoint in which they are available
+(i.e. they have a power output variable but no commitment variables associated
+with them).
+
+The heat rate of these generators does not degrade below full load and they
+can be allowed to provide upward and/or downward reserves subject to
+available headroom and footroom. Ramp limits can be optionally specified.
+
+Costs for this operational type include fuel costs, variable O&M costs, and
+startup and shutdown costs.
+
 """
 
 import os
@@ -20,215 +30,298 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_SIMPLE`                                                    |
+    |                                                                         |
+    | The set of generators of the :code:`gen_simple` operational type.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_SIMPLE_OPR_TMPS`                                           |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_simple`           |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_simple_ramp_up_rate`                                       |
+    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The project's upward ramp rate limit during operations, defined as a    |
+    | fraction of its capacity per minute.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_simple_ramp_down_rate`                                     |
+    | | *Defined over*: :code:`GEN_SIMPLE`                                    |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The project's downward ramp rate limit during operations, defined as a  |
+    | fraction of its capacity per minute.                                    |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`GenSimple_Provide_Power_MW`                                    |
+    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Power provision in MW from this project in each timepoint in which the  |
+    | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | Power                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenSimple_Max_Power_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    |                                                                         |
+    | Limits the power plus upward reserves to the available capacity.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenSimple_Min_Power_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    |                                                                         |
+    | Power provision minus downward reserves should exceed the minimum       |
+    | stable level for the project.                                           |
+    +-------------------------------------------------------------------------+
+    | Ramps                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenSimple_Ramp_Up_Constraint`                                  |
+    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    |                                                                         |
+    | Limits the allowed project upward ramp based on the                     |
+    | :code:`gen_simple_ramp_up_rate`.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenSimple_Ramp_Down_Constraint`                                |
+    | | *Defined over*: :code:`GEN_SIMPLE_OPR_TMPS`                           |
+    |                                                                         |
+    | Limits the allowed project downward ramp based on the                   |
+    | :code:`gen_simple_ramp_down_rate`.                                      |
+    +-------------------------------------------------------------------------+
+
     """
 
     # Sets
-    m.DISPATCHABLE_NO_COMMIT_GENERATORS = Set(
+    ###########################################################################
+
+    m.GEN_SIMPLE = Set(
         within=m.PROJECTS,
-        initialize=
-        generator_subset_init("operational_type", "gen_simple")
+        initialize=generator_subset_init("operational_type", "gen_simple")
     )
 
-    m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.DISPATCHABLE_NO_COMMIT_GENERATORS))
+    m.GEN_SIMPLE_OPR_TMPS = Set(
+        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_SIMPLE)
+    )
 
-    # Params
-    # Ramp rates can be optionally specified and will default to 1 if not
-    # Ramp rate units are "percent of project capacity per minute"
-    m.dispatchable_no_commit_ramp_up_rate = \
-        Param(m.DISPATCHABLE_NO_COMMIT_GENERATORS, within=PercentFraction,
-              default=1)
-    m.dispatchable_no_commit_ramp_down_rate = \
-        Param(m.DISPATCHABLE_NO_COMMIT_GENERATORS, within=PercentFraction,
-              default=1)
+    # Optional Params
+    ###########################################################################
+
+    m.gen_simple_ramp_up_rate = Param(
+        m.GEN_SIMPLE, within=PercentFraction,
+        default=1
+    )
+    m.gen_simple_ramp_down_rate = Param(
+        m.GEN_SIMPLE, within=PercentFraction,
+        default=1
+    )
 
     # Variables
-    m.Provide_Power_DispNoCommit_MW = Var(
-        m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
+    ###########################################################################
+
+    m.GenSimple_Provide_Power_MW = Var(
+        m.GEN_SIMPLE_OPR_TMPS,
         within=NonNegativeReals
     )
 
     # Expressions
+    ###########################################################################
+
     def upwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, headroom_variables)[g])
-    m.Dispatchable_No_Commit_Upwards_Reserves_MW = Expression(
-        m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=upwards_reserve_rule)
+    m.GenSimple_Upwards_Reserves_MW = Expression(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=upwards_reserve_rule
+    )
 
     def downwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, footroom_variables)[g])
-    m.Dispatchable_No_Commit_Downwards_Reserves_MW = Expression(
-        m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-        rule=downwards_reserve_rule)
+    m.GenSimple_Downwards_Reserves_MW = Expression(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=downwards_reserve_rule
+    )
 
-    # Operational constraints
-    def max_power_rule(mod, g, tmp):
-        """
-        Power plus upward services cannot exceed capacity.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] + \
-            mod.Dispatchable_No_Commit_Upwards_Reserves_MW[g, tmp] \
-            <= mod.Capacity_MW[g, mod.period[tmp]] \
+    # Constraints
+    ###########################################################################
+
+    m.GenSimple_Max_Power_Constraint = Constraint(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=max_power_rule
+    )
+
+    m.GenSimple_Min_Power_Constraint = Constraint(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=min_power_rule
+    )
+
+    m.GenSimple_Ramp_Up_Constraint = Constraint(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=ramp_up_rule
+    )
+
+    m.GenSimple_Ramp_Down_Constraint = Constraint(
+        m.GEN_SIMPLE_OPR_TMPS,
+        rule=ramp_down_rule
+    )
+
+
+# Constraint Formulation Rules
+###############################################################################
+
+# Power
+def max_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenSimple_Max_Power_Constraint
+    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
+
+    Power plus upward services cannot exceed capacity.
+    """
+    return mod.GenSimple_Provide_Power_MW[g, tmp] \
+        + mod.GenSimple_Upwards_Reserves_MW[g, tmp] \
+        <= mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp]
+
+
+def min_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenSimple_Min_Power_Constraint
+    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
+
+    Power minus downward services cannot be below zero.
+    """
+    return mod.GenSimple_Provide_Power_MW[g, tmp] \
+        - mod.GenSimple_Downwards_Reserves_MW[g, tmp] \
+        >= 0
+
+
+# Ramps
+def ramp_up_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenSimple_Ramp_Up_Constraint
+    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
+
+    Difference between power generation of consecutive timepoints, adjusted
+    for reserve provision in current and previous timepoint, has to obey
+    ramp up rate limits.
+
+    We assume that a unit has to reach its setpoint at the start of the
+    timepoint; as such, the ramping between 2 timepoints is assumed to
+    take place during the duration of the first timepoint, and the
+    ramp rate limit is adjusted for the duration of the first timepoint.
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    # If ramp rate limits, adjusted for timepoint duration, allow you to
+    # ramp up the full operable range between timepoints, constraint won't
+    # bind, so skip
+    elif (mod.gen_simple_ramp_up_rate[g] * 60
+          * mod.number_of_hours_in_timepoint[mod.previous_timepoint[
+                tmp, mod.balancing_type_project[g]]]
+          >= 1):
+        return Constraint.Skip
+    else:
+        return mod.GenSimple_Provide_Power_MW[g, tmp] \
+            + mod.GenSimple_Upwards_Reserves_MW[g, tmp] \
+            - (mod.GenSimple_Provide_Power_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               - mod.GenSimple_Downwards_Reserves_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[
+                       g]]]) \
+            <= \
+            mod.gen_simple_ramp_up_rate[g] * 60 \
+            * mod.number_of_hours_in_timepoint[
+                   mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
-    m.DispNoCommit_Max_Power_Constraint = \
-        Constraint(
-            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=max_power_rule
-        )
 
-    def min_power_rule(mod, g, tmp):
-        """
-        Power minus downward services cannot be below 0 (no commitment variable).
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-            mod.Dispatchable_No_Commit_Downwards_Reserves_MW[g, tmp] \
-            >= 0
-    m.DispNoCommit_Min_Power_Constraint = \
-        Constraint(
-            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=min_power_rule
-        )
 
-    # Optional ramp constraints
-    def ramp_up_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints, adjusted
-        for reserve provision in current and previous timepoint, has to obey
-        ramp up rate limits.
+def ramp_down_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenSimple_Ramp_Down_Constraint
+    **Enforced Over**: GEN_SIMPLE_OPR_TMPS
 
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]
-        ] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]
-        ] \
-                == "linear":
-            return Constraint.Skip
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp up the full operable range between timepoints, constraint won't
-        # bind, so skip
-        elif (mod.dispatchable_no_commit_ramp_up_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[mod.previous_timepoint[
-                    tmp, mod.balancing_type_project[g]]]
-              >= 1
-              ):
-            return Constraint.Skip
-        else:
-            return mod.Provide_Power_DispNoCommit_MW[g, tmp] \
-                + mod.Dispatchable_No_Commit_Upwards_Reserves_MW[g, tmp] \
-                - (mod.Provide_Power_DispNoCommit_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   - mod.Dispatchable_No_Commit_Downwards_Reserves_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[
-                           g]]]) \
-                <= \
-                mod.dispatchable_no_commit_ramp_up_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[
-                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.Availability_Derate[g, tmp]
+    Difference between power generation of consecutive timepoints, adjusted
+    for reserve provision in current and previous timepoint, has to obey
+    ramp down rate limits.
 
-    m.Dispatchable_No_Commit_Ramp_Up_Constraint = \
-        Constraint(
-            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=ramp_up_rule
-        )
+    We assume that a unit has to reach its setpoint at the start of the
+    timepoint; as such, the ramping between 2 timepoints is assumed to
+    take place during the duration of the first timepoint, and the
+    ramp rate limit is adjusted for the duration of the first timepoint.
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    # If ramp rate limits, adjusted for timepoint duration, allow you to
+    # ramp down the full operable range between timepoints, constraint
+    # won't bind, so skip
+    elif (mod.gen_simple_ramp_down_rate[g] * 60
+          * mod.number_of_hours_in_timepoint[
+              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+          >= 1):
+        return Constraint.Skip
+    else:
+        return mod.GenSimple_Provide_Power_MW[g, tmp] \
+            - mod.GenSimple_Downwards_Reserves_MW[g, tmp] \
+            - (mod.GenSimple_Provide_Power_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               + mod.GenSimple_Upwards_Reserves_MW[
+                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               ) \
+            >= \
+            - mod.gen_simple_ramp_down_rate[g] * 60 \
+            * mod.number_of_hours_in_timepoint[
+                   mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp]
 
-    def ramp_down_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints, adjusted
-        for reserve provision in current and previous timepoint, has to obey
-        ramp down rate limits.
 
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]
-        ] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If ramp rate limits, adjusted for timepoint duration, allow you to
-        # ramp down the full operable range between timepoints, constraint
-        # won't bind, so skip
-        elif (mod.dispatchable_no_commit_ramp_down_rate[g] * 60
-              * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-              >= 1
-              ):
-            return Constraint.Skip
-        else:
-            return mod.Provide_Power_DispNoCommit_MW[g, tmp] \
-                - mod.Dispatchable_No_Commit_Downwards_Reserves_MW[g, tmp] \
-                - (mod.Provide_Power_DispNoCommit_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   + mod.Dispatchable_No_Commit_Upwards_Reserves_MW[
-                       g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   ) \
-                >= \
-                - mod.dispatchable_no_commit_ramp_down_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[
-                       mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.Availability_Derate[g, tmp]
-
-    m.Dispatchable_No_Commit_Ramp_Down_Constraint = \
-        Constraint(
-            m.DISPATCHABLE_NO_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=ramp_down_rule
-        )
-
+# Operational Type Methods
+###############################################################################
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from dispatchable generators is an endogenous variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Power provision from simple generators is an endogenous variable.
     """
-    return mod.Provide_Power_DispNoCommit_MW[g, tmp]
+    return mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
 def online_capacity_rule(mod, g, tmp):
     """
-    Since no commitment, all capacity assumed online
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Since there is no commitment, all capacity is assumed to be online.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -236,23 +329,15 @@ def online_capacity_rule(mod, g, tmp):
 
 def rec_provision_rule(mod, g, tmp):
     """
-    REC provision from dispatchable generators, if eligible, is an endogenous
+    REC provision from simple generators, if eligible, is an endogenous
     variable.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.Provide_Power_DispNoCommit_MW[g, tmp]
+    return mod.GenSimple_Provide_Power_MW[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     No 'curtailment' -- simply dispatch down
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
@@ -260,22 +345,12 @@ def scheduled_curtailment_rule(mod, g, tmp):
 # TODO: ignoring subhourly behavior for dispatchable gens for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
@@ -285,18 +360,13 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Fuel burn is the product of the fuel burn slope and the power output. For
-    no commit generators we assume only one average heat rate is specified
-    in heat_rate_curves.tab, so the fuel burn slope is equal to the specified
+    simple generators we assume only one average heat rate is specified in
+    heat_rate_curves.tab, so the fuel burn slope is equal to the specified
     heat rate and the intercept is zero.
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
     """
     if g in mod.FUEL_PROJECTS:
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
-            * mod.Provide_Power_DispNoCommit_MW[g, tmp]
+            * mod.GenSimple_Provide_Power_MW[g, tmp]
     else:
         raise ValueError(error_message)
 
@@ -304,35 +374,30 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 def startup_shutdown_rule(mod, g, tmp):
     """
     No commit variables, so shouldn't happen
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
             and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
         return None
     else:
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-            mod.Provide_Power_DispNoCommit_MW[g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+        return mod.GenSimple_Provide_Power_MW[g, tmp] - \
+            mod.GenSimple_Provide_Power_MW[g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
 
 
 def power_delta_rule(mod, g, tmp):
     """
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
             and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
         pass
     else:
-        return mod.Provide_Power_DispNoCommit_MW[g, tmp] - \
-               mod.Provide_Power_DispNoCommit_MW[
+        return mod.GenSimple_Provide_Power_MW[g, tmp] - \
+               mod.GenSimple_Provide_Power_MW[
                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
                ]
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(mod, data_portal,
                               scenario_directory, subproblem, stage):
@@ -348,21 +413,21 @@ def load_module_specific_data(mod, data_portal,
 
     ramp_up_rate = dict()
     ramp_down_rate = dict()
-    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                      "inputs", "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
-    optional_columns = ["ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate"]
+    optional_columns = ["ramp_up_when_on_rate", "ramp_down_when_on_rate"]
     used_columns = [c for c in optional_columns if c in header]
 
-    df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type"] + used_columns
-        )
+    df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"] + used_columns
+    )
 
     # Ramp rate limits are optional; will default to 1 if not specified
     if "ramp_up_when_on_rate" in used_columns:
@@ -374,7 +439,7 @@ def load_module_specific_data(mod, data_portal,
                 ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()["dispatchable_no_commit_ramp_up_rate"] = \
+        data_portal.data()["gen_simple_ramp_up_rate"] = \
             ramp_up_rate
 
     if "ramp_down_when_on_rate" in used_columns:
@@ -386,9 +451,12 @@ def load_module_specific_data(mod, data_portal,
                 ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()["dispatchable_no_commit_ramp_down_rate"] = \
+        data_portal.data()["gen_simple_ramp_down_rate"] = \
             ramp_down_rate
 
+
+# Validation
+###############################################################################
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
@@ -485,7 +553,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "minimum_duration_hours"
     ]
     validation_errors = check_req_prj_columns(df, expected_na_columns, False,
-                                          "Dispatchable_no_commit")
+                                              "gen_simple")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
@@ -501,7 +569,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Check that there is only one load point (constant heat rate)
     validation_errors = check_constant_heat_rate(hr_df,
-                                                 "Dispatchable_no_commit")
+                                                 "gen_simple")
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
