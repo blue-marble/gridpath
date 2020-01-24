@@ -224,7 +224,7 @@ gridpath.project.capacity.operational_types.stor
 
 gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.dr
+.. automodule:: gridpath.project.operations.operational_types.dr.add_module_specific_components
 
 
 Load Balance

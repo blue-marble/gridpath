@@ -565,17 +565,9 @@ charging and discharging efficiencies. Storage projects can be allowed to
 provide upward and/or downward reserves. Costs for this operational type
 include variable O&M costs.
 
-Shiftable Load (*dr_shift*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes a generic shiftable load resource. There are
-two opertional variables in each timepoint: one for shifting load up (adding
-load) and another for shifting load down (subtracting load). These cannot
-exceed the power capacity of the project and must meet an energy balance
-constrain on each horizon. Efficiency losses are not currently implemented.
-There are two opertional variables: shift load up (add load) and shift load
-down (subtract load). These cannot exceed the power capacity of the project
-and must meet an energy balance constraint on each horizon (no efficiency
-loss implemented).
+Shiftable Load (*dr*)
+^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.dr
 
 .. _load-balance-section-ref:
 
