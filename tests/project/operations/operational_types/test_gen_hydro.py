@@ -85,12 +85,12 @@ class TestHydroCurtailable(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: HYDRO_CURTAILABLE_PROJECTS
+        # Sets: GEN_HYDRO
         expected_projects = ["Hydro"]
-        actual_projects = [p for p in instance.HYDRO_CURTAILABLE_PROJECTS]
+        actual_projects = [p for p in instance.GEN_HYDRO]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+        # Sets: GEN_HYDRO_OPR_HRZS
         expected_operational_horizons = sorted(
             [("Hydro", 202001), ("Hydro", 202002),
              ("Hydro", 203001), ("Hydro", 203002)]
@@ -98,13 +98,13 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_operational_horizons = sorted(
             [p for p in 
              instance
-                .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                .GEN_HYDRO_OPR_HRZS
              ]
             )
         self.assertListEqual(expected_operational_horizons,
                              actual_operational_horizons)
 
-        # Param: hydro_curtailable_average_power_fraction
+        # Param: gen_hydro_average_power_fraction
         expected_average_power = OrderedDict(
             sorted(
                 {("Hydro", 202001): 0.5,
@@ -116,17 +116,17 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_average_power = OrderedDict(
             sorted(
                 {(prj, horizon):
-                    instance.hydro_curtailable_average_power_fraction[prj,
+                    instance.gen_hydro_average_power_fraction[prj,
                                                                  horizon]
                  for (prj, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 .GEN_HYDRO_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_average_power, actual_average_power)
 
-        # Param: hydro_curtailable_min_power_fraction
+        # Param: gen_hydro_min_power_fraction
         expected_min_power = OrderedDict(
             sorted(
                 {("Hydro", 202001): 0.15,
@@ -138,16 +138,16 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_min_power = OrderedDict(
             sorted(
                 {(prj, horizon):
-                    instance.hydro_curtailable_min_power_fraction[prj, horizon]
+                    instance.gen_hydro_min_power_fraction[prj, horizon]
                  for (prj, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 .GEN_HYDRO_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_power, actual_min_power)
 
-        # Param: hydro_curtailable_max_power_fraction
+        # Param: gen_hydro_max_power_fraction
         expected_max_power = OrderedDict(
             sorted(
                 {("Hydro", 202001): 1,
@@ -159,16 +159,16 @@ class TestHydroCurtailable(unittest.TestCase):
         actual_max_power = OrderedDict(
             sorted(
                 {(prj, horizon):
-                    instance.hydro_curtailable_max_power_fraction[prj, horizon]
+                    instance.gen_hydro_max_power_fraction[prj, horizon]
                  for (prj, horizon) in
                  instance
-                 .HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 .GEN_HYDRO_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_max_power, actual_max_power)
 
-        # HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
+        # GEN_HYDRO_OPR_TMPS
         expected_tmps = sorted(
             get_project_operational_timepoints(
                 expected_projects
@@ -176,31 +176,31 @@ class TestHydroCurtailable(unittest.TestCase):
         )
         actual_tmps = sorted([
             tmp for tmp in
-            instance.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.GEN_HYDRO_OPR_TMPS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
-        # Param: hydro_curtailable_ramp_up_rate
+        # Param: gen_hydro_ramp_up_rate
         expected_ramp_up = OrderedDict(
             sorted({"Hydro": 0.5}.items())
         )
         actual_ramp_up = OrderedDict(
             sorted(
-                {prj: instance.hydro_curtailable_ramp_up_rate[prj]
-                 for prj in instance.HYDRO_CURTAILABLE_PROJECTS
+                {prj: instance.gen_hydro_ramp_up_rate[prj]
+                 for prj in instance.GEN_HYDRO
                  }.items()
             )
         )
         self.assertDictEqual(expected_ramp_up, actual_ramp_up)
 
-        # Param: hydro_curtailable_ramp_down_rate
+        # Param: gen_hydro_ramp_down_rate
         expected_ramp_down = OrderedDict(
             sorted({"Hydro": 0.5}.items())
         )
         actual_ramp_down = OrderedDict(
             sorted(
-                {prj: instance.hydro_curtailable_ramp_down_rate[prj]
-                 for prj in instance.HYDRO_CURTAILABLE_PROJECTS
+                {prj: instance.gen_hydro_ramp_down_rate[prj]
+                 for prj in instance.GEN_HYDRO
                  }.items()
             )
         )
