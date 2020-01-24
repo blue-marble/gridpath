@@ -479,19 +479,7 @@ Always-On Generation (*gen_always_on*)
 
 Binary-Commit Generation (*gen_commit_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational types describes generators that can be turned on and off,
-i.e. that have binary commitment variables associated with them. The
-optimization makes commitment and power output decisions in every timepoint.
-If the generators are not committed, power output is 0. If they are
-committed, these generators can vary power output between a pre-specified
-minimum stable level (greater than 0) and their available capacity. Run-up
-and shut-down trajectories can be optionally modeled. Heat rate degradation
-below full load is considered. These generators can optionally be allowed to
-provide upward and/or downward reserves. Ramp rate limits as well us minimum
-up and down time constraints are implemented. Starts and stops -- and the
-associated cost and emissions -- can be tracked and constrained for these
-generators. Costs for this operational type include fuel costs, variable O&M
-costs, and startup and shutdown costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
 
 Continuous-Commit Generation (*gen_commit_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
