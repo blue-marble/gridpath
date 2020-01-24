@@ -85,24 +85,24 @@ class TestHydroNonCurtailable(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: HYDRO_NONCURTAILABLE_PROJECTS
+        # Sets: GEN_HYDRO_MUST_TAKE
         expected_projects = ["Hydro_NonCurtailable"]
-        actual_projects = [p for p in instance.HYDRO_NONCURTAILABLE_PROJECTS]
+        actual_projects = [p for p in instance.GEN_HYDRO_MUST_TAKE]
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Sets: HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+        # Sets: GEN_HYDRO_MUST_TAKE_OPR_HRZS
         expected_operational_horizons = sorted(
             [("Hydro_NonCurtailable", 2020),
              ("Hydro_NonCurtailable", 2030)]
         )
         actual_operational_horizons = sorted(
-            [p for p in instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+            [p for p in instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
              ]
             )
         self.assertListEqual(expected_operational_horizons,
                              actual_operational_horizons)
 
-        # Param: hydro_noncurtailable_average_power_fraction
+        # Param: gen_hydro_must_take_average_power_fraction
         expected_average_power = OrderedDict(
             sorted({("Hydro_NonCurtailable", 2020): 0.5,
                     ("Hydro_NonCurtailable", 2030): 0.5}.items())
@@ -110,15 +110,15 @@ class TestHydroNonCurtailable(unittest.TestCase):
         actual_average_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_average_power_fraction[prj, period]
+                    instance.gen_hydro_must_take_average_power_fraction[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_average_power, actual_average_power)
 
-        # Param: hydro_noncurtailable_min_power_fraction
+        # Param: gen_hydro_must_take_min_power_fraction
         expected_min_power = OrderedDict(
             sorted({("Hydro_NonCurtailable", 2020): 0.15,
                     ("Hydro_NonCurtailable", 2030): 0.15}.items())
@@ -126,15 +126,15 @@ class TestHydroNonCurtailable(unittest.TestCase):
         actual_min_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_min_power_fraction[prj, period]
+                    instance.gen_hydro_must_take_min_power_fraction[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_power, actual_min_power)
 
-        # Param: hydro_noncurtailable_max_power_fraction
+        # Param: gen_hydro_must_take_max_power_fraction
         expected_max_power = OrderedDict(
             sorted({("Hydro_NonCurtailable", 2020): 1,
                     ("Hydro_NonCurtailable", 2030): 1}.items())
@@ -142,45 +142,45 @@ class TestHydroNonCurtailable(unittest.TestCase):
         actual_max_power = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.hydro_noncurtailable_max_power_fraction[prj, period]
+                    instance.gen_hydro_must_take_max_power_fraction[prj, period]
                  for (prj, period) in
-                 instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_HORIZONS
+                 instance.GEN_HYDRO_MUST_TAKE_OPR_HRZS
                  }.items()
             )
         )
         self.assertDictEqual(expected_max_power, actual_max_power)
 
-        # HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
+        # GEN_HYDRO_MUST_TAKE_OPR_TMPS
         expected_tmps = sorted(
             get_project_operational_timepoints(expected_projects)
         )
         actual_tmps = sorted([
             tmp for tmp in
-            instance.HYDRO_NONCURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.GEN_HYDRO_MUST_TAKE_OPR_TMPS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
-        # Param: hydro_noncurtailable_ramp_up_rate
+        # Param: gen_hydro_must_take_ramp_up_rate
         expected_ramp_up = OrderedDict(
             sorted({"Hydro_NonCurtailable": 0.5}.items())
         )
         actual_ramp_up = OrderedDict(
             sorted(
-                {prj: instance.hydro_noncurtailable_ramp_up_rate[prj]
-                 for prj in instance.HYDRO_NONCURTAILABLE_PROJECTS
+                {prj: instance.gen_hydro_must_take_ramp_up_rate[prj]
+                 for prj in instance.GEN_HYDRO_MUST_TAKE
                  }.items()
             )
         )
         self.assertDictEqual(expected_ramp_up, actual_ramp_up)
 
-        # Param: hydro_noncurtailable_ramp_down_rate
+        # Param: gen_hydro_must_take_ramp_down_rate
         expected_ramp_down = OrderedDict(
             sorted({"Hydro_NonCurtailable": 0.5}.items())
         )
         actual_ramp_down = OrderedDict(
             sorted(
-                {prj: instance.hydro_noncurtailable_ramp_down_rate[prj]
-                 for prj in instance.HYDRO_NONCURTAILABLE_PROJECTS
+                {prj: instance.gen_hydro_must_take_ramp_down_rate[prj]
+                 for prj in instance.GEN_HYDRO_MUST_TAKE
                  }.items()
             )
         )
