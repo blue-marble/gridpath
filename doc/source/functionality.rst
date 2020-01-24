@@ -497,13 +497,8 @@ Capacity-Commit Generation (*gen_commit_cap*)
 
 Curtailable Hydro Generation (*gen_hydro*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes the operations of hydro generation. These
-projects can vary power output between a minimum and maximum level specified
-for each horizon, and must produce a pre-specified amount of energy on each
-horizon when they are available, some of which may be curtailed. The
-curtailable hydro projects can be allowed to provide upward and/or downward
-reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
-Costs for this operational type include variable O&M costs.
+
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro
 
 Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
