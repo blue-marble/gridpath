@@ -213,7 +213,7 @@ class Logging(object):
                     )
                 )
 
-        self.log_file = open(self.log_file_path, "w", buffering=1)
+        self.log_file = open(self.log_file_path, "a", buffering=1)
 
     def __getattr__(self, attr):
         """
