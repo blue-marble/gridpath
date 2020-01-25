@@ -150,7 +150,16 @@ Scenario Detail
 The :code:`Scenario Detail` screen is a gateway to more detailed information
 about a scenario, including its setup, inputs, status, and results. At the top
 of this screen, you can find buttons for deleting a scenario or editing its
-setup (i.e. its features and subscenario selections).
+setup (i.e. its features and subscenario selections). Deleting the scenario
+will currently remove it from the scenarios list and clear all results
+associated with it in the database; it does not currently delete the scenario
+directory on disk (but that's likely what we will do in the future). Editing
+the scenario allows the user to change its setup but not its name. Note that
+editing an existing scenario will remove prior results from the database
+(but not yet from disk). On the wishlist to implement ASAP is the ability to
+edit the scenario name and description (without having to delete prior
+results). We will likely do that via a separate button next to the scenario
+name/description.
 
 Scenario Validation and Run Status
 ==================================
