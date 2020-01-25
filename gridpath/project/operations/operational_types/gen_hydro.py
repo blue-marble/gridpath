@@ -2,8 +2,17 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of curtailable conventional hydro generators
+This operational type describes the operations of hydro generation projects.
+These projects can vary power output between a minimum and maximum level
+specified for each horizon, and must produce a pre-specified amount of
+energy on each horizon when they are available, some of which may be
+curtailed. The curtailable hydro projects can be allowed to provide upward
+and/or downward reserves. Ramp rate limits can optionally be enforced.
+
+Costs for this operational type include variable O&M costs.
+
 """
+
 from __future__ import print_function
 
 from builtins import next
@@ -24,339 +33,435 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    Here, we define the set of hydro projects:
-    *HYDRO_CURTAILABLE_PROJECTS*
-    (:math:`CHG`, index :math:`chg`) and use this set to get the subset of
-    *PROJECT_OPERATIONAL_TIMEPOINTS* with :math:`g \in CHG` -- the
-    *HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS* (:math:`CHG\_OT`).
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_HYDRO`                                                     |
+    |                                                                         |
+    | The set of generators of the :code:`gen_hydro` operational type.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_OPR_HRZS`                                            |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_hydro`            |
+    | operational type and their operational horizons.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_HYDRO_OPR_TMPS`                                            |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_hydro`            |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
 
-    We also need the *HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS* set
-    (:math:`CHG\_OH`) over which we will define hydro's main operational
-    parameters including:
-    *hydro_curtailable_average_power_fraction* \ :sub:`chg, oh`\ -- the
-    average power fraction on a given horizon *oh*, i.e. the average capacity
-    factor. Multiply by the capacity, the timepoint's number of hours
-    represented, and the availability, and sum across all timepoints on the
-    horizon to get the horizon energy budget. Note that the effective energy
-    budget will be lower than what the average power fraction suggests if there
-    are any availability derates! \n
-    *hydro_curtailable_min_power_fraction* \ :sub:`chg, oh`\ -- the minimum
-    power output on each timepoint on horizon *oh* as a fraction of capacity \n
-    *hydro_curtailable_max_power_fraction* \ :sub:`chg, oh`\ -- the maximum
-    power output on each timepoint on horizon *oh* as a fraction of capacity \n
-    *hydro_curtailable_ramp_up_rate* \ :sub:`chg`\ -- the project's
-    upward ramp rate limit, defined as a fraction of its capacity per minute \n
-    *hydro_curtailable_ramp_down_rate* \ :sub:`chg`\ -- the project's
-    downward ramp rate limit, defined as a fraction of its capacity per minute\n
+    |
 
-    The power provision variable for curtailable hydro projects,
-    *Hydro_Curtailable_Provide_Power_MW*, is defined over
-    *HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS*.
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_hydro_max_power_fraction`                                  |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's maximum power output in each operational horizon as a     |
+    | fraction of its available capacity.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_min_power_fraction`                                  |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's minimum power output in each operational horizon as a     |
+    | fraction of its available capacity.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_average_power_fraction`                              |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | The project's avarage power output in each operational horizon as a     |
+    | fraction of its available capacity. This can be interpreted as the      |
+    | project's average capacity factor or plant load factor.                 |
+    +-------------------------------------------------------------------------+
 
-    The main constraints on curtailable-hydro project power provision
-    are as follows:
+    |
 
-    For :math:`(chg, oh) \in CCG\_OH`: \n
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_hydro_ramp_up_rate`                                        |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The project's upward ramp rate limit during operations, defined as a    |
+    | fraction of its capacity per minute.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_hydro_ramp_down_rate`                                      |
+    | | *Defined over*: :code:`GEN_HYDRO`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The project's downward ramp rate limit during operations, defined as a  |
+    | fraction of its capacity per minute.                                    |
+    +-------------------------------------------------------------------------+
 
-    :math:`\sum_{{tmp}\in T_h}{Hydro\_Curtailable\_Provide\_Power\_MW_{
-    chg, tmp} + Hydro\_Curtailable\_Curtail\_MW{chg, tmp}}
-    \\times number\_of\_hours\_in\_timepoint_{tmp} = \sum_{{
-    tmp}\in T_h}{hydro\_curtailable\_average\_power\_fraction_{
-    chg, tmp}} \\times Capacity\_MW_{tmp}
-    \\times number\_of\_hours\_in\_timepoint_{tmp}
-    \\times availability\_derate_{tmp}`
+    |
 
-    For :math:`(chg, tmp) \in CHG\_OT`: \n
-    :math:`Hydro\_Curtailable\_Provide\_Power\_MW_{chg, tmp} \geq
-    hydro\_curtailable\_min\_power\_fraction_{chg, tmp}
-    \\times Capacity\_MW_{tmp} \\times availability\_derate_{tmp}`
-    :math:`Hydro\_Curtailable\_Provide\_Power\_MW_{chg, tmp} \leq
-    hydro\_curtailable\_max\_power\_fraction_{chg, tmp}
-    \\times Capacity\_MW_{tmp} \\times availability\_derate_{tmp}`
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`GenHydro_Provide_Power_MW`                                     |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Power provision in MW from this project in each timepoint in which the  |
+    | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Curtail_MW`                                           |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Curtailment in MW from this project in each timepoint in which the      |
+    | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
 
-    Hydro ramps can be constrained: documentation to be added.
+    |
 
-    :return:
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | Power                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Max_Power_Constraint`                                 |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    |                                                                         |
+    | Limits the power plus upward reserves based on the                      |
+    | :code:`gen_hydro_max_power_fraction` and the available capacity.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Min_Power_Constraint`                                 |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    |                                                                         |
+    | Power provision minus downward reserves should exceed a certain level   |
+    | based on the :code:`gen_hydro_min_power_fraction` and the available     |
+    | capacity.                                                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Energy_Budget_Constraint`                             |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_HRZS`                            |
+    |                                                                         |
+    | The project's average capacity factor in each operational horizon,      |
+    | including curtailment, should match the specified                       |
+    | :code:`gen_hydro_average_power_fraction`.                               |
+    +-------------------------------------------------------------------------+
+    | Ramps                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Ramp_Up_Constraint`                                   |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | Limits the allowed project upward ramp based on the                     |
+    | :code:`gen_hydro_ramp_up_rate`.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenHydro_Ramp_Down_Constraint`                                 |
+    | | *Defined over*: :code:`GEN_HYDRO_OPR_TMPS`                            |
+    |                                                                         |
+    | Limits the allowed project downward ramp based on the                   |
+    | :code:`gen_hydro_ramp_down_rate`.                                       |
+    +-------------------------------------------------------------------------+
+
     """
-    # Sets and params
-    m.HYDRO_CURTAILABLE_PROJECTS = Set(
+    # Sets
+    ###########################################################################
+
+    m.GEN_HYDRO = Set(
         within=m.PROJECTS,
-        initialize=
-        generator_subset_init("operational_type", "gen_hydro")
+        initialize=generator_subset_init("operational_type", "gen_hydro")
     )
 
-    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS = Set(dimen=2)
+    m.GEN_HYDRO_OPR_HRZS = Set(dimen=2)
 
-    m.hydro_curtailable_average_power_fraction = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
-              within=NonNegativeReals)
-    m.hydro_curtailable_min_power_fraction = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
-              within=NonNegativeReals)
-    m.hydro_curtailable_max_power_fraction = \
-        Param(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
-              within=NonNegativeReals)
+    m.GEN_HYDRO_OPR_TMPS = Set(
+        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_HYDRO)
+    )
 
-    m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.HYDRO_CURTAILABLE_PROJECTS))
+    # Required Params
+    ###########################################################################
 
-    # Ramp rates can be optionally specified and will default to 1 if not
-    # Ramp rate units are "percent of project capacity per minute"
-    m.hydro_curtailable_ramp_up_rate = \
-        Param(m.HYDRO_CURTAILABLE_PROJECTS, within=PercentFraction, default=1)
-    m.hydro_curtailable_ramp_down_rate = \
-        Param(m.HYDRO_CURTAILABLE_PROJECTS, within=PercentFraction, default=1)
+    m.gen_hydro_max_power_fraction = Param(
+        m.GEN_HYDRO_OPR_HRZS,
+        within=PercentFraction
+    )
+
+    m.gen_hydro_min_power_fraction = Param(
+        m.GEN_HYDRO_OPR_HRZS,
+        within=PercentFraction
+    )
+
+    m.gen_hydro_average_power_fraction = Param(
+        m.GEN_HYDRO_OPR_HRZS,
+        within=PercentFraction
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_hydro_ramp_up_rate = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction, default=1
+    )
+
+    m.gen_hydro_ramp_down_rate = Param(
+        m.GEN_HYDRO,
+        within=PercentFraction, default=1
+    )
 
     # Variables
-    m.Hydro_Curtailable_Provide_Power_MW = \
-        Var(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            within=NonNegativeReals)
+    ###########################################################################
 
-    m.Hydro_Curtailable_Curtail_MW = \
-        Var(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            within=NonNegativeReals)
+    m.GenHydro_Provide_Power_MW = Var(
+        m.GEN_HYDRO_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.GenHydro_Curtail_MW = Var(
+        m.GEN_HYDRO_OPR_TMPS,
+        within=NonNegativeReals
+    )
 
     # Expressions
+    ###########################################################################
+
     def upwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, headroom_variables)[g])
-    m.Hydro_Curtailable_Upwards_Reserves_MW = Expression(
-        m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.GenHydro_Upwards_Reserves_MW = Expression(
+        m.GEN_HYDRO_OPR_TMPS,
         rule=upwards_reserve_rule)
 
     def downwards_reserve_rule(mod, g, tmp):
         return sum(getattr(mod, c)[g, tmp]
                    for c in getattr(d, footroom_variables)[g])
-    m.Hydro_Curtailable_Downwards_Reserves_MW = Expression(
-        m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.GenHydro_Downwards_Reserves_MW = Expression(
+        m.GEN_HYDRO_OPR_TMPS,
         rule=downwards_reserve_rule)
 
-    # Operational constraints
-    def hydro_energy_budget_rule(mod, g, h):
-        """
-        The sum of hydro energy output within a horizon must match the horizon's
-        hydro energy budget. The budget is calculated by multiplying the
-        user-specified average power fraction (i.e. the average capacity factor)
-        for that horizon with the product of the matching period's installed
-        capacity (which can be a user input or a decision variable, depending on
-        the capacity type), the number of hours in that horizon, and any
-        availability derates if applicable.
+    # Constraints
+    ###########################################################################
 
-        WARNING: If there are any availability derates, this means the effective
-        average power fraction (and associated energy budget) will be lower than
-        the user-specified input!
+    m.GenHydro_Max_Power_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=max_power_rule
+    )
 
-        Example: The average power fraction is 50% of the installed capacity in
-        horizon 1, which represents a winter week. If the installed capacity
-        during the period of interest is 1,000 MW, there are 168 hours in
-        the horizon (1 week), and the unit is fully available, the hydro budget
-        for this horizon is 0.5 * 1,000 MW * 168 h = 84,000 MWh.
-        If the unit were unavailable for half of the timepoints in that horizon,
-        the budget would be half, i.e. 42,000 MWh, even though the average power
-        fraction is the same!
+    m.GenHydro_Min_Power_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=min_power_rule
+    )
 
-        :param mod:
-        :param g:
-        :param h:
-        :return:
-        """
-        return sum((mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
-                    mod.Hydro_Curtailable_Curtail_MW[g, tmp])
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
-            == \
-            sum(mod.hydro_curtailable_average_power_fraction[g, h]
-                * mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-                * mod.number_of_hours_in_timepoint[tmp]
-                for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
+    m.GenHydro_Energy_Budget_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_HRZS,
+        rule=energy_budget_rule
+    )
 
-    m.Curtailable_Hydro_Energy_Budget_Constraint = \
-        Constraint(m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS,
-                   rule=hydro_energy_budget_rule)
+    m.GenHydro_Ramp_Up_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=ramp_up_rule
+    )
 
-    def max_power_rule(mod, g, tmp):
-        """
-        Power plus upward reserves shall not exceed the maximum power output.
-        The maximum power output (fraction) is a user input that is specified
-        by horizon. If the unit is unavailable, it will be further de-rated.
+    m.GenHydro_Ramp_Down_Constraint = Constraint(
+        m.GEN_HYDRO_OPR_TMPS,
+        rule=ramp_down_rule
+    )
 
-        Example: The maximum power is 90% of the installed capacity in horizon
-        1, which represents a winter week. If the installed capacity during the
-        timepoint (period) of interest (which can be a user input or a decision
-        variable, depending on the capacity type) is 1,000 MW and the project is
-        fully available, the project's maximum power output is 900 MW.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
-            + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp] \
-            <= mod.hydro_curtailable_max_power_fraction[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
+
+# Constraint Formulation Rules
+###############################################################################
+
+def max_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenHydro_Max_Power_Constraint
+    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+
+    Power plus upward reserves shall not exceed the maximum power output.
+    The maximum power output (fraction) is a user input that is specified
+    by horizon. If the unit is unavailable, it will be further de-rated.
+
+    Example: The maximum power is 90% of the installed capacity in horizon
+    1, which represents a winter week. If the installed capacity during the
+    timepoint (period) of interest (which can be a user input or a decision
+    variable, depending on the capacity type) is 1,000 MW and the project is
+    fully available, the project's maximum power output is 900 MW.
+    """
+    return mod.GenHydro_Provide_Power_MW[g, tmp] \
+        + mod.GenHydro_Upwards_Reserves_MW[g, tmp] \
+        <= mod.gen_hydro_max_power_fraction[
+               g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+        * mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp]
+
+
+def min_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenHydro_Min_Power_Constraint
+    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+
+    Power minus downward reserves must exceed the minimum power output.
+    The minimum power output (fraction) is a user input that is specified
+    by horizon. If the unit is unavailable, it will be further de-rated.
+
+    Example: The minimum power is 30% of the installed capacity in horizon
+    1, which represents a winter week. If the installed capacity during the
+    timepoint (period) of interest (which can be a user input or a decision
+    variable, depending on the capacity type) is 1,000 MW and the project is
+    fully available, the project's minimum power output is 300 MW.
+    """
+    return mod.GenHydro_Provide_Power_MW[g, tmp] \
+        - mod.GenHydro_Downwards_Reserves_MW[g, tmp] \
+        >= mod.gen_hydro_min_power_fraction[
+               g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
+        * mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp]
+
+
+def energy_budget_rule(mod, g, h):
+    """
+    **Constraint Name**: GenHydro_Energy_Budget_Constraint
+    **Enforced Over**: GEN_HYDRO_OPR_HRZS
+
+    The sum of hydro energy output within a horizon must match the horizon's
+    hydro energy budget. The budget is calculated by multiplying the
+    user-specified average power fraction (i.e. the average capacity factor)
+    for that horizon with the product of the matching period's installed
+    capacity (which can be a user input or a decision variable, depending on
+    the capacity type), the number of hours in that horizon, and any
+    availability derates if applicable.
+
+    WARNING: If there are any availability derates, this means the effective
+    average power fraction (and associated energy budget) will be lower than
+    the user-specified input!
+
+    Example: The average power fraction is 50% of the installed capacity in
+    horizon 1, which represents a winter week. If the installed capacity
+    during the period of interest is 1,000 MW, there are 168 hours in
+    the horizon (1 week), and the unit is fully available, the hydro budget
+    for this horizon is 0.5 * 1,000 MW * 168 h = 84,000 MWh.
+    If the unit were unavailable for half of the timepoints in that horizon,
+    the budget would be half, i.e. 42,000 MWh, even though the average power
+    fraction is the same!
+    """
+    return sum((mod.GenHydro_Provide_Power_MW[g, tmp] +
+                mod.GenHydro_Curtail_MW[g, tmp])
+               * mod.number_of_hours_in_timepoint[tmp]
+               for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
+        == \
+        sum(mod.gen_hydro_average_power_fraction[g, h]
+            * mod.Capacity_MW[g, mod.period[tmp]]
             * mod.Availability_Derate[g, tmp]
+            * mod.number_of_hours_in_timepoint[tmp]
+            for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
 
-    m.Hydro_Curtailable_Max_Power_Constraint = \
-        Constraint(
-            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=max_power_rule
-        )
 
-    def min_power_rule(mod, g, tmp):
-        """
-        Power minus downward reserves must exceed the minimum power output.
-        The minimum power output (fraction) is a user input that is specified
-        by horizon. If the unit is unavailable, it will be further de-rated.
+def ramp_up_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenHydro_Ramp_Up_Constraint
+    **Enforced Over**: GEN_HYDRO_OPR_TMPS
 
-        Example: The minimum power is 30% of the installed capacity in horizon
-        1, which represents a winter week. If the installed capacity during the
-        timepoint (period) of interest (which can be a user input or a decision
-        variable, depending on the capacity type) is 1,000 MW and the project is
-        fully available, the project's minimum power output is 300 MW.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] \
-            - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp] \
-            >= mod.hydro_curtailable_min_power_fraction[
-                   g, mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            * mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp]
+    Difference between power generation of consecutive timepoints, adjusted
+    for reserve provision in current and previous timepoint, has to obey
+    ramp up rate limits.
 
-    m.Hydro_Curtailable_Min_Power_Constraint = \
-        Constraint(
-            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=min_power_rule
-        )
-
-    def ramp_up_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints, adjusted
-        for reserve provision in current and previous timepoint, has to obey
-        ramp up rate limits.
-
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod: 
-        :param g: 
-        :param tmp: 
-        :return: 
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If you can ramp up the the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        elif mod.hydro_curtailable_ramp_up_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                >= 1:
-            return Constraint.Skip
-        else:
-            return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
-                    + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
-                    + mod.Hydro_Curtailable_Upwards_Reserves_MW[g, tmp]) \
-                - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   - mod.Hydro_Curtailable_Downwards_Reserves_MW[
-                        g, mod.previous_timepoint[
-                            tmp, mod.balancing_type_project[g]]]) \
-                <= \
-                mod.hydro_curtailable_ramp_up_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.Availability_Derate[g, tmp]
-    m.Hydro_Curtailable_Ramp_Up_Constraint = \
-        Constraint(
-            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=ramp_up_rule
-        )
-
-    def ramp_down_rule(mod, g, tmp):
-        """
-        Difference between power generation of consecutive timepoints, adjusted
-        for reserve provision in current and previous timepoint, has to obey
-        ramp down rate limits.
-
-        We assume that a unit has to reach its setpoint at the start of the
-        timepoint; as such, the ramping between 2 timepoints is assumed to
-        take place during the duration of the first timepoint, and the
-        ramp rate limit is adjusted for the duration of the first timepoint.
-        :param mod: 
-        :param g: 
-        :param tmp: 
-        :return: 
-        """
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        # If you can ramp down the the total project's capacity within the
-        # previous timepoint, skip the constraint (it won't bind)
-        elif mod.hydro_curtailable_ramp_down_rate[g] * 60 \
+    We assume that a unit has to reach its setpoint at the start of the
+    timepoint; as such, the ramping between 2 timepoints is assumed to
+    take place during the duration of the first timepoint, and the
+    ramp rate limit is adjusted for the duration of the first timepoint.
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    # If you can ramp up the the total project's capacity within the
+    # previous timepoint, skip the constraint (it won't bind)
+    elif mod.gen_hydro_ramp_up_rate[g] * 60 \
             * mod.number_of_hours_in_timepoint[
-            mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                >= 1:
-            return Constraint.Skip
-        else:
-            return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
-                    + mod.Hydro_Curtailable_Curtail_MW[g, tmp]
-                    - mod.Hydro_Curtailable_Downwards_Reserves_MW[g, tmp]) \
-                - (mod.Hydro_Curtailable_Provide_Power_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   + mod.Hydro_Curtailable_Curtail_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
-                   + mod.Hydro_Curtailable_Upwards_Reserves_MW[
-                        g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
-                >= \
-                - mod.hydro_curtailable_ramp_down_rate[g] * 60 \
-                * mod.number_of_hours_in_timepoint[
-                    mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
-                * mod.Capacity_MW[g, mod.period[tmp]] \
-                * mod.Availability_Derate[g, tmp]
-    m.Hydro_Curtailable_Ramp_Down_Constraint = \
-        Constraint(
-            m.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=ramp_down_rule
-        )
+                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            >= 1:
+        return Constraint.Skip
+    else:
+        return (mod.GenHydro_Provide_Power_MW[g, tmp]
+                + mod.GenHydro_Curtail_MW[g, tmp]
+                + mod.GenHydro_Upwards_Reserves_MW[g, tmp]) \
+            - (mod.GenHydro_Provide_Power_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               + mod.GenHydro_Curtail_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               - mod.GenHydro_Downwards_Reserves_MW[
+                    g, mod.previous_timepoint[
+                        tmp, mod.balancing_type_project[g]]]) \
+            <= \
+            mod.gen_hydro_ramp_up_rate[g] * 60 \
+            * mod.number_of_hours_in_timepoint[
+                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp]
 
+
+def ramp_down_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenHydro_Ramp_Down_Constraint
+    **Enforced Over**: GEN_HYDRO_OPR_TMPS
+
+    Difference between power generation of consecutive timepoints, adjusted
+    for reserve provision in current and previous timepoint, has to obey
+    ramp down rate limits.
+
+    We assume that a unit has to reach its setpoint at the start of the
+    timepoint; as such, the ramping between 2 timepoints is assumed to
+    take place during the duration of the first timepoint, and the
+    ramp rate limit is adjusted for the duration of the first timepoint.
+    """
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    # If you can ramp down the the total project's capacity within the
+    # previous timepoint, skip the constraint (it won't bind)
+    elif mod.gen_hydro_ramp_down_rate[g] * 60 \
+        * mod.number_of_hours_in_timepoint[
+        mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            >= 1:
+        return Constraint.Skip
+    else:
+        return (mod.GenHydro_Provide_Power_MW[g, tmp]
+                + mod.GenHydro_Curtail_MW[g, tmp]
+                - mod.GenHydro_Downwards_Reserves_MW[g, tmp]) \
+            - (mod.GenHydro_Provide_Power_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               + mod.GenHydro_Curtail_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+               + mod.GenHydro_Upwards_Reserves_MW[
+                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+            >= \
+            - mod.gen_hydro_ramp_down_rate[g] * 60 \
+            * mod.number_of_hours_in_timepoint[
+                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.Capacity_MW[g, mod.period[tmp]] \
+            * mod.Availability_Derate[g, tmp]
+
+
+# Operational Type Methods
+###############################################################################
 
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from curtailable hydro
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Power provision from curtailable hydro.
     """
-    return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
+    return mod.GenHydro_Provide_Power_MW[g, tmp]
 
 
 def online_capacity_rule(mod, g, tmp):
     """
-    Since no commitment, all capacity assumed online
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Since there is no commitment, all is capacity assumed to be online.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -364,61 +469,36 @@ def online_capacity_rule(mod, g, tmp):
 
 def rec_provision_rule(mod, g, tmp):
     """
-    REC provision from curtailable hydro if eligible
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    REC provision from curtailable hydro if eligible.
     """
-    return mod.Hydro_Curtailable_Provide_Power_MW[g, tmp]
+    return mod.GenHydro_Provide_Power_MW[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
     """
-    This treatment does not allow curtailment
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.Hydro_Curtailable_Curtail_MW[g, tmp]
+    return mod.GenHydro_Curtail_MW[g, tmp]
 
 
 # TODO: ignoring subhourly behavior for hydro for now
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return 0
 
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
     """
     if g in mod.FUEL_PROJECTS:
         raise ValueError(
-            "ERROR! Curtailable hydro projects should not use fuel." + "\n" +
+            "ERROR! gen_hydro projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
             "and change its fuel to '.' (no value)."
         )
@@ -428,15 +508,10 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_shutdown_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     raise ValueError(
-        "ERROR! Hydro generators should not incur startup/shutdown costs." +
-        "\n" +
+        "ERROR! gen_hydro projects should not incur startup/shutdown "
+        "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
         "and change its startup/shutdown costs to '.' (no value)."
     )
@@ -444,11 +519,6 @@ def startup_shutdown_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[
         mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -456,15 +526,16 @@ def power_delta_rule(mod, g, tmp):
             == "linear":
         pass
     else:
-        return (mod.Hydro_Curtailable_Provide_Power_MW[g, tmp] +
-                mod.Hydro_Curtailable_Curtail_MW[g, tmp]) - \
-               (mod.Hydro_Curtailable_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                ]
-                + mod.Hydro_Curtailable_Curtail_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                ])
+        return (mod.GenHydro_Provide_Power_MW[g, tmp] +
+                mod.GenHydro_Curtail_MW[g, tmp]) \
+               - (mod.GenHydro_Provide_Power_MW[g, mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]]
+                  + mod.GenHydro_Curtail_MW[g, mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]])
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(m, data_portal,
                               scenario_directory, subproblem, stage):
@@ -521,32 +592,29 @@ def load_module_specific_data(m, data_portal,
             pass
 
     # Load data
-    data_portal.data()[
-        "HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_HORIZONS"
-    ] = {
-        None: project_horizons
-    }
-    data_portal.data()["hydro_curtailable_average_power_fraction"] = avg
-    data_portal.data()["hydro_curtailable_min_power_fraction"] = min
-    data_portal.data()["hydro_curtailable_max_power_fraction"] = max
+    data_portal.data()["GEN_HYDRO_OPR_HRZS"] = {None: project_horizons}
+    data_portal.data()["gen_hydro_average_power_fraction"] = avg
+    data_portal.data()["gen_hydro_min_power_fraction"] = min
+    data_portal.data()["gen_hydro_max_power_fraction"] = max
 
     # Ramp rate limits are optional; will default to 1 if not specified
     ramp_up_rate = dict()
     ramp_down_rate = dict()
-    header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                      "projects.tab"),
-                         sep="\t", header=None, nrows=1).values[0]
+    header = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t", header=None, nrows=1
+    ).values[0]
 
-    optional_columns = ["ramp_up_when_on_rate",
-                        "ramp_down_when_on_rate"]
+    optional_columns = ["ramp_up_when_on_rate", "ramp_down_when_on_rate"]
     used_columns = [c for c in optional_columns if c in header]
 
-    dynamic_components = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "operational_type"] + used_columns
-            )
+    dynamic_components = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"] + used_columns
+    )
 
     if "ramp_up_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
@@ -557,9 +625,7 @@ def load_module_specific_data(m, data_portal,
                 ramp_up_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "hydro_curtailable_ramp_up_rate"] = \
-            ramp_up_rate
+        data_portal.data()["gen_hydro_ramp_up_rate"] = ramp_up_rate
 
     if "ramp_down_when_on_rate" in used_columns:
         for row in zip(dynamic_components["project"],
@@ -570,9 +636,7 @@ def load_module_specific_data(m, data_portal,
                 ramp_down_rate[row[0]] = float(row[2])
             else:
                 pass
-        data_portal.data()[
-            "hydro_curtailable_ramp_down_rate"] = \
-            ramp_down_rate
+        data_portal.data()["gen_hydro_ramp_down_rate"] = ramp_down_rate
 
 
 def export_module_specific_results(mod, d,
@@ -590,14 +654,14 @@ def export_module_specific_results(mod, d,
                            "dispatch_gen_hydro.csv"),
               "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project", "horizon",
-                         "timepoint", "timepoint_weight",
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw"
                          ])
 
-        for (p, tmp) in mod.HYDRO_CURTAILABLE_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in mod.GEN_HYDRO_OPR_TMPS:
             writer.writerow([
                 p,
                 mod.period[tmp],
@@ -608,10 +672,13 @@ def export_module_specific_results(mod, d,
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.Hydro_Curtailable_Provide_Power_MW[p, tmp]),
-                value(mod.Hydro_Curtailable_Curtail_MW[p, tmp])
+                value(mod.GenHydro_Provide_Power_MW[p, tmp]),
+                value(mod.GenHydro_Curtail_MW[p, tmp])
             ])
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -687,22 +754,6 @@ def get_module_specific_inputs_from_database(
     )
 
     return hydro_chars
-
-
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # hydro_chars = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do stuff here to validate inputs
 
 
 def write_module_specific_model_inputs(
@@ -834,7 +885,7 @@ def import_module_specific_results_to_database(
 
 def process_module_specific_results(db, c, subscenarios):
     """
-    Aggregate scheduled curtailment
+    Aggregate scheduled curtailment.
     :param db:
     :param c:
     :param subscenarios:
@@ -887,3 +938,22 @@ def process_module_specific_results(db, c, subscenarios):
                           data=(subscenarios.SCENARIO_ID,
                                 subscenarios.SCENARIO_ID),
                           many=False)
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # hydro_chars = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # do stuff here to validate inputs

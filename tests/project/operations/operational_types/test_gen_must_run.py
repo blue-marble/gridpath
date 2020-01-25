@@ -85,24 +85,24 @@ class TestMustRunOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: MUST_RUN_GENERATORS
+        # Set: GEN_MUST_RUN
         expected_gen_must_run_gen_set = sorted([
             "Nuclear", "Nuclear_z2"
         ])
         actual_gen_must_run_gen_set = sorted([
-            prj for prj in instance.MUST_RUN_GENERATORS
+            prj for prj in instance.GEN_MUST_RUN
             ])
         self.assertListEqual(expected_gen_must_run_gen_set,
                              actual_gen_must_run_gen_set)
 
-        # Set: MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_MUST_RUN_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(expected_gen_must_run_gen_set)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-             MUST_RUN_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             GEN_MUST_RUN_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)

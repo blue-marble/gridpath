@@ -467,45 +467,19 @@ currently implemented operational types include:
 
 Simple Generation (*gen_simple*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that can vary their output
-between 0 and full capacity in every timepoint in which they are available
-(i.e. they have power output variable but no commitment variables associated
-with them). The heat rate of these generators does not degrade below full
-load and they can be allowed to provide upward and/or downward reserves.
-Costs for this operational type include fuel costs, variable O&M costs, and
-startup and shutdown costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_simple
 
 Must-Run Generation (*gen_must_run*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that produce constant power equal
-to their capacity in all timepoints when they are available. They cannot
-provide reserves. Costs for this operational type include fuel costs and
-variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run
 
 Always-On Generation (*gen_always_on*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators that must produce power in all
-timepoints they are available; unlike the must-run generators, however, they
-can vary power output between a pre-specified minimum stable level (greater
-than 0) and their available capacity. Always-on generators cannot provide
-reserves. Ramp rate limits can be optionally specified. Costs for this
-operational type include fuel costs and variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on
 
 Binary-Commit Generation (*gen_commit_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational types describes generators that can be turned on and off,
-i.e. that have binary commitment variables associated with them. The
-optimization makes commitment and power output decisions in every timepoint.
-If the generators are not committed, power output is 0. If they are
-committed, these generators can vary power output between a pre-specified
-minimum stable level (greater than 0) and their available capacity. Run-up
-and shut-down trajectories can be optionally modeled. Heat rate degradation
-below full load is considered. These generators can optionally be allowed to
-provide upward and/or downward reserves. Ramp rate limits as well us minimum
-up and down time constraints are implemented. Starts and stops -- and the
-associated cost and emissions -- can be tracked and constrained for these
-generators. Costs for this operational type include fuel costs, variable O&M
-costs, and startup and shutdown costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
 
 Continuous-Commit Generation (*gen_commit_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -518,48 +492,17 @@ generators).
 
 Capacity-Commit Generation (*gen_commit_cap*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
 
-This operational type is particularly well suited for application to 'fleets'
-of generators with the same characteristics. For example, we could have a
-GridPath project with a total capacity of 2000 MW, which actually consists
-of four 500-MW units. The optimization decides how much total capacity to
-commit (i.e. turn on), e.g. if 2000 MW are committed, then four generators (x
-500 MW) are on and if 500 MW are committed, then one generator is on, etc.
-The capacity commitment decision variables are continuous. This approach
-makes it possible to reduce problem size by grouping similar generators
-together and linearizing the commitment decisions.
-
-The optimization makes the capacity-commitment and dispatch decisions in
-every timepoint. Project power output can vary between a minimum loading level
-(specified as a fraction of committed capacity) and the committed capacity
-in each timepoint when the project is available. Heat rate degradation below
-full load is considered. These projects can be allowed to provide upward
-and/or downward reserves.
-
-No standard approach exists for applying ramp rate and minimum up and down
-time constraints to this operational type. GridPath does include
-experimental functionality for doing so. Starts and stops -- and the
-associated cost and emissions -- can also be tracked and constrained for
-this operational type.
-
-Costs for this operational type include fuel costs, variable O&M costs, and
-startup and shutdown costs.
 
 Curtailable Hydro Generation (*gen_hydro*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes the operations of hydro generation. These
-projects can vary power output between a minimum and maximum level specified
-for each horizon, and must produce a pre-specified amount of energy on each
-horizon when they are available, some of which may be curtailed. The
-curtailable hydro projects can be allowed to provide upward and/or downward
-reserves. Timepoint-to-timepoint ramp rate limits can optionally be enforced.
-Costs for this operational type include variable O&M costs.
+
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro
 
 Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes the operations of hydro generation and is
-like the *gen_hydro* operational type except that curtailment is not
-allowed.
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take
 
 Curtailable Variable Generation (*gen_var*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -589,17 +532,9 @@ charging and discharging efficiencies. Storage projects can be allowed to
 provide upward and/or downward reserves. Costs for this operational type
 include variable O&M costs.
 
-Shiftable Load (*dr_shift*)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes a generic shiftable load resource. There are
-two opertional variables in each timepoint: one for shifting load up (adding
-load) and another for shifting load down (subtracting load). These cannot
-exceed the power capacity of the project and must meet an energy balance
-constrain on each horizon. Efficiency losses are not currently implemented.
-There are two opertional variables: shift load up (add load) and shift load
-down (subtract load). These cannot exceed the power capacity of the project
-and must meet an energy balance constraint on each horizon (no efficiency
-loss implemented).
+Shiftable Load (*dr*)
+^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: gridpath.project.operations.operational_types.dr
 
 .. _load-balance-section-ref:
 

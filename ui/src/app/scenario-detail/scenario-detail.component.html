@@ -93,7 +93,9 @@
           <td>
             <button
               class='button-secondary'
-              *ngIf="scenarioDetail.runStatus=='running'"
+              *ngIf="scenarioDetail.runStatus=='running' ||
+              scenarioDetail.runStatus=='run_error' ||
+              scenarioDetail.runStatus=='run_stopped'"
               (click)="viewRunLog()">
               View Run Log
             </button>

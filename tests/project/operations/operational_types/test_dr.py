@@ -85,35 +85,35 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS
+        # Set: DR
         expected_projects = sorted([
             "Shift_DR"
         ])
         actual_always_on_gen_set = sorted([
-            prj for prj in instance.SHIFTABLE_LOAD_GENERIC_PROJECTS
+            prj for prj in instance.DR
         ])
         self.assertListEqual(expected_projects,
                              actual_always_on_gen_set)
 
-        # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS_OPERATIONAL_TIMEPOINTS
+        # Set: DR_OPERATIONAL_TIMEPOINTS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(expected_projects)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS]
+             instance.DR_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Set: SHIFTABLE_LOAD_GENERIC_PROJECTS_OPERATIONAL_HORIZONS
+        # Set: DR_OPERATIONAL_HORIZONS
         expected_operational_horizons_by_project = sorted([
             ("Shift_DR", 202001), ("Shift_DR", 202002),
             ("Shift_DR", 203001), ("Shift_DR", 203002)
         ])
         actual_operational_horizons_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.SHIFTABLE_LOAD_GENERIC_PROJECT_OPERATIONAL_HORIZONS]
+             instance.DR_OPR_HRZS]
         )
         self.assertListEqual(expected_operational_horizons_by_project,
                              actual_operational_horizons_by_project)

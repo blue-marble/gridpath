@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestAlwaysOnOperationalType(unittest.TestCase):
+class TestGenAlwaysOnOperationalType(unittest.TestCase):
     """
 
     """
@@ -85,71 +85,71 @@ class TestAlwaysOnOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: ALWAYS_ON_GENERATORS
+        # Set: GEN_ALWAYS_ON
         expected_always_on_gen_set = sorted([
             "Nuclear_Flexible"
         ])
         actual_always_on_gen_set = sorted([
-            prj for prj in instance.ALWAYS_ON_GENERATORS
+            prj for prj in instance.GEN_ALWAYS_ON
         ])
         self.assertListEqual(expected_always_on_gen_set,
                              actual_always_on_gen_set)
 
-        # Set: ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_ALWAYS_ON_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(expected_always_on_gen_set)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.ALWAYS_ON_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             instance.GEN_ALWAYS_ON_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: always_on_unit_size_mw
+        # Param: gen_always_on_unit_size_mw
         expected_unit_size = {
             "Nuclear_Flexible": 584
         }
         actual_unit_size = {
-            prj: instance.always_on_unit_size_mw[prj]
-            for prj in instance.ALWAYS_ON_GENERATORS
+            prj: instance.gen_always_on_unit_size_mw[prj]
+            for prj in instance.GEN_ALWAYS_ON
         }
         self.assertDictEqual(expected_unit_size,
                              actual_unit_size)
 
-        # Param: always_on_min_stable_level_fraction
+        # Param: gen_always_on_min_stable_level_fraction
         expected_min_stable_fraction = {
             "Nuclear_Flexible": 0.72
         }
         actual_min_stable_fraction = {
-            prj: instance.always_on_min_stable_level_fraction[prj]
-            for prj in instance.ALWAYS_ON_GENERATORS
+            prj: instance.gen_always_on_min_stable_level_fraction[prj]
+            for prj in instance.GEN_ALWAYS_ON
         }
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction
                              )
 
-        # Param: always_on_ramp_up_rate
+        # Param: gen_always_on_ramp_up_rate
         expected_ramp_up_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.always_on_ramp_up_rate[
+            prj: instance.gen_always_on_ramp_up_rate[
                 prj]
-            for prj in instance.ALWAYS_ON_GENERATORS
+            for prj in instance.GEN_ALWAYS_ON
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
                              actual_ramp_down_when_on_rate
                              )
 
-        # Param: always_on_ramp_down_rate
+        # Param: gen_always_on_ramp_down_rate
         expected_ramp_down_when_on_rate = {
             "Nuclear_Flexible": 0.18
         }
         actual_ramp_down_when_on_rate = {
-            prj: instance.always_on_ramp_down_rate[
+            prj: instance.gen_always_on_ramp_down_rate[
                 prj]
-            for prj in instance.ALWAYS_ON_GENERATORS
+            for prj in instance.GEN_ALWAYS_ON
         }
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate

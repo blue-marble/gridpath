@@ -581,6 +581,95 @@ def check_projects_for_reserves(projects_op_type, projects_w_ba,
     return results
 
 
+def validate_startup_shutdown_rate_inputs(df, hrs_in_tmp):
+    """
+    TODO: additional checks:
+     - check for excessively slow startup ramps which would wrap around the
+       horizon and disallow any startups
+     - Check that non lin/bin commit types have no shutdown trajectories
+       --> ramp should be large enough (but check shouldn't be here!)
+
+    :param df: DataFrame with project_chars (see projects.tab)
+    :param hrs_in_tmp:
+    :return:
+    """
+
+    results = []
+
+    # 0. Prepare data frame
+
+    # Add missing columns and populate with defaults
+    if "min_down_time_hours" not in df.columns:
+        df["min_down_time_hours"] = 0
+    if "startup_plus_ramp_up_rate" not in df.columns:
+        df["startup_plus_ramp_up_rate"] = 1
+    if "shutdown_plus_ramp_down_rate" not in df.columns:
+        df["shutdown_plus_ramp_down_rate"] = 1
+    if "startup_fuel_mmbtu_per_mw" not in df.columns:
+        df["startup_fuel_mmbtu_per_mw"] = 0
+
+    # Replace any NA/None with defaults
+    df["min_down_time_hours"] = \
+        df["min_down_time_hours"].fillna(0)
+    df["startup_plus_ramp_up_rate"] = \
+        df["startup_plus_ramp_up_rate"].fillna(1)
+    df["shutdown_plus_ramp_down_rate"] = \
+        df["shutdown_plus_ramp_down_rate"].fillna(1)
+    df["startup_fuel_mmbtu_per_mw"] = \
+        df["startup_fuel_mmbtu_per_mw"].fillna(0)
+
+    # Calculate startup and shutdown duration
+    df["startup_duration"] = df["min_stable_level"] \
+                             / df["startup_plus_ramp_up_rate"] / 60
+    df["shutdown_duration"] = df["min_stable_level"] \
+                              / df["shutdown_plus_ramp_down_rate"] / 60
+    df["startup_plus_shutdown_duration"] = \
+        df["startup_duration"] + df["shutdown_duration"]
+
+    # 1. Calculate Masks (True/False Arrays)
+    trajectories_fit_mask = (df["startup_plus_shutdown_duration"]
+                             > df["min_down_time_hours"])
+    down_time_mask = df["min_down_time_hours"] > 0
+    ramp_rate_mask = ((df["startup_plus_ramp_up_rate"] < 1) |
+                      (df["shutdown_plus_ramp_down_rate"] < 1))
+    startup_fuel_mask = df["startup_fuel_mmbtu_per_mw"] > 0
+    startup_trajectory_mask = df["startup_duration"] > hrs_in_tmp
+    shutdown_trajectory_mask = df["shutdown_duration"] > hrs_in_tmp
+
+    # 2. Check startup and shutdown ramp duration fit within min down time
+    # (to avoid overlap of startup and shutdown trajectory)
+    # Invalid projects are projects with a non-fitting trajectory, with a
+    # specified down time and/or a specified startup or shutdown rate
+    # and at least a startup or shutdown trajectory (i.e. across multiple tmps)
+    invalids = (trajectories_fit_mask
+                & (down_time_mask | ramp_rate_mask)
+                & (startup_trajectory_mask | shutdown_trajectory_mask))
+    if invalids.any():
+        bad_projects = df[invalids]["project"]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Startup ramp duration plus shutdown ramp duration"
+            " should be less than the minimum down time. Make sure the minimum"
+            " down time is long enough to fit the trajectories!"
+                .format(print_bad_projects)
+        )
+
+    # 2. Check that startup fuel and startup trajectories are not combined
+    invalids = startup_fuel_mask & startup_trajectory_mask
+    if invalids.any():
+        bad_projects = df[invalids]["project"]
+        print_bad_projects = ", ".join(bad_projects)
+        results.append(
+            "Project(s) '{}': Cannot have both startup_fuel inputs and a startup "
+            "trajectory that takes multiple timepoints as this will double "
+            "count startup fuel consumption. Please adjust startup ramp rate or"
+            " startup fuel consumption inputs"
+                .format(print_bad_projects)
+        )
+
+    return results
+
+
 def setup_results_import(conn, cursor, table, scenario_id, subproblem, stage):
     """
     :param conn: the connection object

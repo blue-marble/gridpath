@@ -169,18 +169,15 @@ gridpath.project.operations.costs
 
 gridpath.project.capacity.operational_types.gen_simple
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_simple
-    :members: power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_simple.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_must_run
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_must_run
-    :members: power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_must_run.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_always_on
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_always_on
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_always_on.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_commit_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -189,24 +186,19 @@ gridpath.project.capacity.operational_types.gen_commit_lin
 
 gridpath.project.capacity.operational_types.gen_commit_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_bin.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_commit_cap
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_cap.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_hydro
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_hydro
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_hydro_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.
-gen_hydro_must_take
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_hydro_must_take.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_var
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -225,7 +217,7 @@ gridpath.project.capacity.operational_types.stor
 
 gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.dr
+.. automodule:: gridpath.project.operations.operational_types.dr.add_module_specific_components
 
 
 Load Balance
