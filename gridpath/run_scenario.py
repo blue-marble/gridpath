@@ -274,15 +274,18 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout
+        stderr_original = sys.stderr
 
         # The print statement will call the write() method of any object
         # you assign to sys.stdout (in this case the Logging object). The
         # write method of Logging writes both to sys.stdout and a log file
         # (see auxiliary/auxiliary.py)
-        sys.stdout = Logging(
+        logger = Logging(
             logs_dir=logs_directory,
             start_time=datetime.datetime.now(), e2e=False, process_id=None
         )
+        sys.stdout = logger
+        sys.stderr = logger
 
     # If directed, set temporary file directory to be the logs directory
     # In conjunction with --keepfiles, this will write the solver solution
@@ -318,6 +321,7 @@ def run_optimization(scenario_directory, subproblem, stage, parsed_arguments):
     # to log file)
     if parsed_arguments.log:
         sys.stdout = stdout_original
+        sys.stderr = stderr_original
 
     # Return the objective function value (in 'testing' mode,
     # the value gets checked against the expected value)

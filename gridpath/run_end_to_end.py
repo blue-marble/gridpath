@@ -165,17 +165,20 @@ def main(args=None):
 
         # Save sys.stdout so we can return to it later
         stdout_original = sys.stdout
+        stderr_original = sys.stderr
 
         # The print statement will call the write() method of any object
         # you assign to sys.stdout (in this case the Logging object). The
         # write method of Logging writes both to sys.stdout and a log file
         # (see auxiliary/auxiliary.py)
-        sys.stdout = Logging(
+        logger = Logging(
             logs_dir=logs_directory,
             start_time=start_time,
             e2e=True,
             process_id=process_id
         )
+        sys.stdout = logger
+        sys.stderr = logger
 
     print("Running scenario {} end to end".format(parsed_args.scenario))
 
@@ -239,6 +242,7 @@ def main(args=None):
     # to log file)
     if parsed_args.log:
         sys.stdout = stdout_original
+        sys.stderr = stderr_original
 
 
 # TODO: need to make sure that the database can be closed properly, pending
