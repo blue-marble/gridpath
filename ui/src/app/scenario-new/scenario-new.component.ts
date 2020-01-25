@@ -282,20 +282,44 @@ export class ScenarioNewComponent implements OnInit {
   saveNewScenario() {
     const socket = socketConnect();
 
-    // Re-enable scenarioName form control (it's disabled when editing a
-    // scenario)
-    this.newScenarioForm.controls.scenarioName.enable();
+    // If we're editing a scenario
+    if (this.inactiveScenarioName) {
+      // Re-enable scenarioName form control (it's disabled when editing a
+      // scenario)
+      this.newScenarioForm.controls.scenarioName.enable();
+      // Warn the user that the scenario will be cleared
+      if (confirm('You are editing an existing scenario. All prior data for' +
+        ' the scenario will be cleared. Are you sure?')) {
+        socket.emit(
+          'clear_scenario',
+          {scenario: this.scenarioID}
+        );
+        // Tell the server to edit the scenario
+        socket.emit('add_new_scenario', this.newScenarioForm.value);
 
-    socket.emit('add_new_scenario', this.newScenarioForm.value);
+        socket.on('return_new_scenario_id', (newScenarioID) => {
+          console.log('New scenario ID is ', newScenarioID);
+          this.zone.run(
+            () => {
+              this.router.navigate(['/scenario/', newScenarioID]);
+            }
+          );
+        });
+      }
+    // If this is a new scenario
+    } else {
+      // Tell the server to add the scenario
+      socket.emit('add_new_scenario', this.newScenarioForm.value);
 
-    socket.on('return_new_scenario_id', (newScenarioID) => {
-      console.log('New scenario ID is ', newScenarioID);
-      this.zone.run(
-        () => {
-          this.router.navigate(['/scenario/', newScenarioID]);
-        }
-      );
-    });
+      socket.on('return_new_scenario_id', (newScenarioID) => {
+        console.log('New scenario ID is ', newScenarioID);
+        this.zone.run(
+          () => {
+            this.router.navigate(['/scenario/', newScenarioID]);
+          }
+        );
+      });
+    }
   }
 
   goBack(): void {
