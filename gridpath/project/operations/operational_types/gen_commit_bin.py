@@ -218,7 +218,7 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
     | The project's maximum power output (in MW) if the unit was committed.   |
-    | Depends on the project's availability and capacity in the timepoint.
+    | Depends on the project's availability and capacity in the timepoint.    |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Pmin_MW`                                          |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
