@@ -200,8 +200,8 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
     :return:
     """
 
-    load = c.execute(
-        """SELECT load_mw
+    load_balance = c.execute(
+        """SELECT load_mw, unserved_energy_mw
         FROM results_system_load_balance
         WHERE scenario_id = {}
         AND load_zone = '{}'
@@ -218,9 +218,10 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
         )
     ).fetchall()
 
-    load = [i[0] for i in load]
+    load = [i[0] for i in load_balance]
+    unserved_energy = [i[1] for i in load_balance]
 
-    return load
+    return load, unserved_energy
 
 
 def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
@@ -300,14 +301,15 @@ def get_plotting_data(conn, scenario_id, load_zone, horizon, stage, **kwargs):
         df["Exports"] = exports
 
     # Add load
-    load = get_load(
+    load_balance = get_load(
         c=c,
         scenario_id=scenario_id,
         load_zone=load_zone,
         horizon=horizon,
         stage=stage
     )
-    df["Load"] = load
+    df["Load"] = load_balance[0]
+    df["Unserved_Energy"] = load_balance[1]
 
     # Dataframe for testing without database
     # df = pd.DataFrame(
