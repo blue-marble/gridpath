@@ -21,6 +21,7 @@ export class ResultsOptions {
   subproblemOptions: [];
   stageOptions: [];
   projectOptions: [];
+  commitProjectOptions: [];
 }
 
 export class IncludedPlotFormBuilderAPI {
@@ -34,4 +35,5 @@ export class IncludedPlotFormBuilderAPI {
   'subproblem': [] | string;
   'stage': [] | string;
   'project': [] | string;
+  'commitProject': [] | string;
 }

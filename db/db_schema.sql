@@ -3403,7 +3403,8 @@ period_form_control INTEGER,
 horizon_form_control INTEGER,
 subproblem_form_control INTEGER,
 stage_form_control INTEGER,
-project_form_control INTEGER
+project_form_control INTEGER,
+commit_project_form_control INTEGER
 );
 
 ---------------------
