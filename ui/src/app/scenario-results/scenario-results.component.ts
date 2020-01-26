@@ -162,6 +162,7 @@ export class ScenarioResultsComponent implements OnInit {
             subproblem: plot.subproblem,
             stage: plot.stage,
             project: plot.project,
+            commitProject: plot.commitProject,
             yMax: null
           });
           this.allPlotFormGroups.push(form);
@@ -189,7 +190,7 @@ export class ScenarioResultsComponent implements OnInit {
         this.scenarioID, formValues.plotType, formValues.loadZone,
           formValues.rpsZone, formValues.carbonCapZone, formValues.period,
           formValues.horizon, formValues.subproblem, formValues.stage,
-          formValues.project, formValues.yMax
+          formValues.project, formValues.commitProject, formValues.yMax
       ).subscribe(resultsPlot => {
         this.plotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.resultsToShow = resultsPlot.plotJSON.target_id;
@@ -217,7 +218,7 @@ export class ScenarioResultsComponent implements OnInit {
       scenarioID, formValues.plotType, formValues.loadZone, formValues.rpsZone,
       formValues.carbonCapZone, formValues.period, formValues.horizon,
       formValues.subproblem, formValues.stage, formValues.project,
-      formValues.yMax
+      formValues.commitProject, formValues.yMax
     ).subscribe(resultsPlot => {
         this.resultsPlot = resultsPlot.plotJSON;
         Bokeh.embed.embed_item(this.resultsPlot);
@@ -241,6 +242,7 @@ export class ScenarioResultsComponent implements OnInit {
               subproblem: formValues.subproblem,
               stage: formValues.stage,
               project: formValues.project,
+              commitProject: formValues.commitProject,
               yMax: formValues.yMax}
         );
   }
@@ -284,9 +286,10 @@ export function getFormGroupValues(formGroup) {
       : (formGroup.value.stage === 'Select Stage') ? 'default'
         : formGroup.value.stage;
     const project = formGroup.value.project;
+    const commitProject = formGroup.value.commitProject;
     let yMax = formGroup.value.yMax;
     if (yMax === null) { yMax = 'default'; }
 
     return {plotType, loadZone, carbonCapZone, rpsZone, period, horizon,
-      subproblem, stage, project, yMax};
+      subproblem, stage, project, commitProject, yMax};
 }

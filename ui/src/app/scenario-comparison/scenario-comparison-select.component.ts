@@ -175,6 +175,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
             subproblem: plot.subproblem,
             stage: plot.stage,
             project: plot.project,
+            commitProject: plot.commitProject,
             yMax: null
           });
           this.allPlotFormGroups.push(form);
@@ -285,6 +286,7 @@ export class ScenarioComparisonSelectComponent implements OnInit {
               subproblem: formValues.subproblem,
               stage: formValues.stage,
               project: formValues.project,
+              commitProject: formValues.commitProjectOptions,
               yMax: formValues.yMax}
         );
   }

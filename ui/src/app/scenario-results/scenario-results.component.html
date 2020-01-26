@@ -103,6 +103,13 @@
                     <option>{{opt}}</option>
                   </ng-container>
                 </select>
+                <select class="custom-select" formControlName="commitProject"
+                        *ngIf="formGroup.value['commitProject'] !== 'default'">
+                  <ng-container
+                    *ngFor="let opt of formOptions.commitProjectOptions">
+                    <option>{{opt}}</option>
+                  </ng-container>
+                </select>
               </div>
             </fieldset>
             <p><label id="yMaxLabel">

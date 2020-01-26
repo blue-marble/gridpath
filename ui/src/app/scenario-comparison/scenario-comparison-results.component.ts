@@ -37,6 +37,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
     subproblem: number,
     stage: number,
     project: string,
+    commitProject: string,
     yMax: number
   };
 
@@ -101,7 +102,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
         this.baseScenarioID, this.formValues.plotType, this.formValues.loadZone,
           this.formValues.rpsZone, this.formValues.carbonCapZone, this.formValues.period,
           this.formValues.horizon, this.formValues.subproblem, this.formValues.stage,
-          this.formValues.project, this.formValues.yMax
+          this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
         this.basePlotHTMLTarget = resultsPlot.plotJSON.target_id;
         this.basePlotJSON = resultsPlot.plotJSON;
@@ -115,7 +116,7 @@ export class ScenarioComparisonResultsComponent implements OnInit {
         scenarioIDTOCompare, this.formValues.plotType, this.formValues.loadZone,
           this.formValues.rpsZone, this.formValues.carbonCapZone, this.formValues.period,
           this.formValues.horizon, this.formValues.subproblem, this.formValues.stage,
-          this.formValues.project, this.formValues.yMax
+          this.formValues.project, this.formValues.commitProject, this.formValues.yMax
       ).subscribe(resultsPlot => {
         this.comparePlotsHTMLTargets.push(resultsPlot.plotJSON.target_id);
         this.comparePlotsJSON.push(resultsPlot.plotJSON);
