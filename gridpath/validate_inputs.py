@@ -120,7 +120,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                 # If the feature is requested, and the associated subscenarios
                 # are not specified, raise a validation error
                 if feature in feature_list and \
-                        getattr(subscenarios, sc_id) is None:
+                        getattr(subscenarios, sc_id) == "NULL":
                     validation_results.append(
                         (subscenarios.SCENARIO_ID,
                          "N/A",
@@ -136,7 +136,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                 # If the feature is not requested, and the associated
                 # subscenarios are specified, raise a validation error
                 elif feature not in feature_list and \
-                        getattr(subscenarios, sc_id) is not None:
+                        getattr(subscenarios, sc_id) != "NULL":
                     validation_results.append(
                         (subscenarios.SCENARIO_ID,
                          "N/A",
