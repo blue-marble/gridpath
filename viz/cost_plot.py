@@ -73,7 +73,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
 
     # System costs by scenario and period -- by source and total
     sql = """SELECT period,
-        capacity_cost/1000000 as Capacity_Additions,
+        capacity_cost/1000000 as Capacity,
         fuel_cost/1000000 as Fuel,
         variable_om_cost/1000000 as Variable_OM,
         startup_cost/1000000 as Startups,
@@ -166,7 +166,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     df = pd.melt(
         df,
         id_vars=['period'],
-        value_vars=['Capacity_Additions', 'Fuel', 'Variable_OM',
+        value_vars=['Capacity', 'Fuel', 'Variable_OM',
                     'Startups', 'Shutdowns', 'Hurdle_Rates'],
         var_name='Cost Component',
         value_name='Cost ($MM)'
