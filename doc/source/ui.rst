@@ -150,27 +150,38 @@ Scenario Detail
 The :code:`Scenario Detail` screen is a gateway to more detailed information
 about a scenario, including its setup, inputs, status, and results. At the top
 of this screen, you can find buttons for deleting a scenario or editing its
-setup (i.e. its features and subscenario selections). Deleting the scenario
-will currently remove it from the scenarios list and clear all results
-associated with it in the database; it does not currently delete the scenario
-directory on disk (but that's likely what we will do in the future). Editing
-the scenario allows the user to change its setup but not its name. Note that
-editing an existing scenario will remove prior results from the database
-(but not yet from disk). On the wishlist to implement ASAP is the ability to
-edit the scenario name and description (without having to delete prior
-results). We will likely do that via a separate button next to the scenario
-name/description.
-
-Scenario Validation and Run Status
-==================================
+setup (i.e. its features and subscenario selections).
 
 The :code:`Scenario Status` table shows the validation and run status for
 the scenario. The table includes columns for the current status and for the
 associated action and status detail, i.e. the action to take and detail to
 view vary depending on the current status.
 
+Below the :code:`Scenario Status` table are various tables that include
+information about the scenario setup including its features and subscenarios
+(grouped by theme/feature) as well as the solver settings to use to run the
+scenario.
+
+Deleting a Scenario
+===================
+
+Deleting the scenario will currently remove it from the scenarios list and
+clear all results associated with it in the database; it does not currently
+delete the scenario directory on disk (but that's likely what we will do in
+the future).
+
+Editing a Scenario
+==================
+
+Editing the scenario allows the user to change its setup but not its name.
+Note that editing an existing scenario will remove prior results from the
+database (but not yet from disk). On the wishlist to implement ASAP is the
+ability to edit the scenario name and description (without having to delete
+prior results). We will likely do that via a separate button next to the
+scenario name/description.
+
 Validating a Scenario
----------------------
+=====================
 
 GridPath includes functionality to test the validity of a scenario's setup
 and inputs. Click the :code:`Validate Scenario` button in the
@@ -180,27 +191,62 @@ to click on a :code:`View Errors` button in the :code:`Detail` column to see
 a table with the validation errors.
 
 Running a Scenario
-------------------
-If a scenario is not yet 'complete,' you will be able to run by clicking the
+==================
+If a scenario is not yet 'complete,' you will be able to run it by clicking the
 :code:`Run Scenario` button in the :code:`Run Status` row of the
 :code:`Scenario Status` table. The scenario status should then change to
 'launching' and then 'running.' Once the scenario is running, you will be
-able to stop the scenario run via the :code:`Stop Run` button in the
-:code:`Action` column and to view the scenario log via the :code:`View Log`
-button in the :code:`Detail` column.
+able to stop the run via the :code:`Stop Run` button in the :code:`Action`
+column and to view the scenario log via the :code:`View Log` button in the
+:code:`Detail` column.
 
-Scenario Inputs
-===============
+Viewing Scenario Results
+========================
+If the scenario status in the :code:`Scenario Status` is 'complete,' you
+will be able to click on a :code:`View Results` button in the :code:`Detail`
+column to switch to the scenario results screen. See
+:ref:`ui-scenario-results-section-ref`.
 
-Editing a Scenario
-==================
-
-Deleting a Scenario
+Clearing a Scenario
 ===================
 
+Viewing Scenario Setup and Inputs
+=================================
+The :code:`Features` table below the :code:`Scenario Status` table contains
+information about which GridPath features are requested by the scenario. The
+various tables below (e.g. :code:`Temporal Settings`, :code:`Load Zone
+Settings`, :code:`System Load`, :code:`Generation and Storage Capacity`, and
+so on, contain information about the data inputs used by the scenario. Each
+row of these tables has the name of the subscenario used in the
+:code:`Value` column. You can see the description of the subscenario and the
+underlying data by clicking on the row's :code:`View Description` and `View
+Inputs` buttons respectively.
+
+
+.. _ui-scenario-results-section-ref:
 
 Scenario Results
 ****************
+
+The :code:`Scenario Results` view can be accessed if a scenario is
+'complete' by clicking on the :code:`View Results` button in either the
+:code:`Scenarios` screen or the :code:`Scenario Detail` screen.
+
+This view includes a row for results tables and a row for results plots that
+can be viewed in the UI.
+
+.. note:: You can change which tables and plots are available in the UI by
+    changing the value in the :code:`include` column of the
+    :code:`ui_scenario_results_table_metadata` and
+    :code:`ui_scenario_results_plot_metadata` in the database respectively.
+    Additional tables and plots can be added by populating these tables.
+
+You can click on the :code:`Show Table` or :code:`Show Plot` buttons to view
+the table or plot, and on the :code:`Download Data` button to download the
+underlying data to a CSV file. For the plots, you will usually also use the
+dropdown menus to slice out a particular set of data (e.g. the new capacity
+built in a certain zone or the operations for a particular generator in a
+particular period and/or stage).
 
 
 ********************
