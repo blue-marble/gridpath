@@ -261,3 +261,9 @@ Comparing Scenario Inputs
 
 Comparing Scenario Results
 **************************
+
+************
+New Scenario
+************
+
+New scenario names cannot have white spaces
