@@ -87,9 +87,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
                 value(m.Total_Delivered_RPS_Energy_MWh[z, p]) +
                 value(m.Total_Curtailed_RPS_Energy_MWh[z, p]),
-                value(m.Total_Delivered_RPS_Energy_MWh[z, p]) /
+                1 if float(m.rps_target_mwh[z, p]) == 0
+                else value(
+                    m.Total_Delivered_RPS_Energy_MWh[z, p]) /
                 float(m.rps_target_mwh[z, p]),
-                value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
+                0 if (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
+                      + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])) == 0
+                else value(m.Total_Curtailed_RPS_Energy_MWh[z, p]) /
                 (value(m.Total_Delivered_RPS_Energy_MWh[z, p])
                  + value(m.Total_Curtailed_RPS_Energy_MWh[z, p])),
                 value(m.RPS_Shortage_MWh_Expression[z, p])
