@@ -248,6 +248,11 @@ dropdown menus to slice out a particular set of data (e.g. the new capacity
 built in a certain zone or the operations for a particular generator in a
 particular period and/or stage).
 
+You can add any number of plots. Clear them with the Clear Plots button
+Plots interactivity
+You can double-click on the legend to hide it
+Ymax
+
 
 ********************
 Scenarios Comparison
@@ -261,6 +266,9 @@ Comparing Scenario Inputs
 
 Comparing Scenario Results
 **************************
+
+Plots interactivity
+You can double-click on the legend to hide it
 
 ************
 New Scenario
