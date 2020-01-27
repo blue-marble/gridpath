@@ -156,7 +156,7 @@ def import_results_into_database(scenario_id, subproblem, stage,
             technology = row[3]
             load_zone = row[4]
             capacity_mw = row[5]
-            energy_capacity_mwh = 'NULL' if row[6] == "" else row[6]
+            energy_capacity_mwh = None if row[6] == "" else row[6]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
