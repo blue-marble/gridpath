@@ -361,18 +361,7 @@ is either fully retired or not retired at all.
 
 Linear New-Build Generation (*gen_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generation that can be built by the
-optimization at a cost. These investment decisions are linearized, i.e.
-the decision is not whether to build a unit of a specific size (e.g. a
-50-MW combustion turbine), but how much capacity to build at a particular
-*project*. Once built, the capacity exists for the duration of the
-generator's pre-specified lifetime. Minimum and maximum capacity constraints
-can be optionally implemented. The cost input to the model is a annualized
-cost per unit capacity. If the optimization makes the decision to build
-new capacity, the total annualized cost is incurred in each period of the study
-(and multiplied by the number of years the period represents) for the
-duration of the project's lifetime. Annual fixed O&M costs are also incurred
-by linear new-build generation.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
 
 Binary New-Build Generation (*gen_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
