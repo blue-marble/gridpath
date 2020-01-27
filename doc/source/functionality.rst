@@ -515,18 +515,7 @@ not allowed.
 
 Storage (*stor*)
 ^^^^^^^^^^^^^^^^
-This operational type describes a generic storage resource. It can be
-applied to a battery, to a pumped-hydro project or another storage
-technology. The type is associated with three main variables in each
-timepoint when the project is available: the charging level, the discharging
-level, and the energy available in storage. The first two are constrained to
-be less than or equal to the project's power capacity. The third is
-constrained to be less than or equal to the project's energy capacity. The
-model tracks the stage of charge in each timepoint based on the charging and
-discharging decisions in the previous timepoint, with adjustments for
-charging and discharging efficiencies. Storage projects can be allowed to
-provide upward and/or downward reserves. Costs for this operational type
-include variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.stor
 
 Shiftable Load (*dr*)
 ^^^^^^^^^^^^^^^^^^^^^
