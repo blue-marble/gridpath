@@ -308,17 +308,26 @@ export class ScenarioNewComponent implements OnInit {
       }
     // If this is a new scenario
     } else {
-      // Tell the server to add the scenario
-      socket.emit('add_new_scenario', this.newScenarioForm.value);
+      // Check that the scenario name is not null
+      if (this.newScenarioForm.value.scenarioName === null
+      ) {
+        alert('You must give the scenario a name.');
+      // Don't allow white spaces
+      } else if (this.newScenarioForm.value.scenarioName.indexOf(' ') >= 0) {
+        alert('Scenario name may not contain white spaces.');
+      } else {
+        // Tell the server to add the scenario
+        socket.emit('add_new_scenario', this.newScenarioForm.value);
 
-      socket.on('return_new_scenario_id', (newScenarioID) => {
-        console.log('New scenario ID is ', newScenarioID);
-        this.zone.run(
-          () => {
-            this.router.navigate(['/scenario/', newScenarioID]);
-          }
-        );
-      });
+        socket.on('return_new_scenario_id', (newScenarioID) => {
+          console.log('New scenario ID is ', newScenarioID);
+          this.zone.run(
+            () => {
+              this.router.navigate(['/scenario/', newScenarioID]);
+            }
+          );
+        });
+      }
     }
   }
 
