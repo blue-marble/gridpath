@@ -351,8 +351,8 @@ def summarize_module_specific_results(
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
-            capacity_results_agg_df["retire_mw"] > 0
-        ]["retire_mw"]
+            capacity_results_agg_df["retired_mw"] > 0
+        ]["retired_mw"]
     )
 
     lin_retirement_df.columns = ["Retired Capacity (MW)"]

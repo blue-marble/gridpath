@@ -20,8 +20,6 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, \
     NonNegativeReals, Binary, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 from gridpath.project.capacity.capacity_types.common_methods import \
@@ -283,7 +281,7 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
                            "capacity_gen_ret_bin"
                            ".csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "capacity_type", "technology",
+        writer.writerow(["project", "period", "technology",
                          "load_zone", "retired_mw", "retired_binary"])
         for (prj, p) in \
                 m.EXISTING_BIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS:
@@ -293,7 +291,8 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[prj],
                 m.load_zone[prj],
                 value(m.Retire_Binary[prj, p] *
-                      m.existing_bin_econ_ret_capacity_mw[prj, p])
+                      m.existing_bin_econ_ret_capacity_mw[prj, p]),
+                value(m.Retire_Binary[prj, p])
             ])
 
 
@@ -327,8 +326,8 @@ def summarize_module_specific_results(
     # Get all technologies with the new build capacity
     bin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
-            capacity_results_agg_df["retire_mw"] > 0
-            ]["retire_mw"]
+            capacity_results_agg_df["retired_mw"] > 0
+            ]["retired_mw"]
     )
 
     bin_retirement_df.columns = ["Retired Capacity (MW)"]
