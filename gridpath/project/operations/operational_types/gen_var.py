@@ -4,9 +4,10 @@
 """
 This operational type describes generator projects whose power output is equal
 to a pre-specified fraction of their available capacity (a capacity factor
-parameter) in every timepoint, e.g. a wind farm. Curtailment is allowed.
-GridPath includes experimental features to allow these generators to provide
-upward and/or downward reserves.
+parameter) in every timepoint, e.g. a wind farm with variable output depending
+on local weather. Curtailment (dispatch down) is allowed. GridPath includes
+experimental features to allow these generators to provide upward and/or
+downward reserves.
 
 Costs for this operational type include variable O&M costs.
 
@@ -16,7 +17,7 @@ from __future__ import print_function
 
 from builtins import next
 from builtins import zip
-from builtins import str
+
 import csv
 import os.path
 import pandas as pd
@@ -82,6 +83,16 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
+    | | :code:`GenVar_Subhourly_Curtailment_MW`                               |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Sub-hourly curtailment (in MW) from providing downward reserves.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Subhourly_Energy_Delivered_MW`                          |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Sub-hourly energy delivered (in MW) from providing upward reserves.     |
+    +-------------------------------------------------------------------------+
     | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
@@ -90,7 +101,7 @@ def add_module_specific_components(m, d):
     | | :code:`GenVar_Total_Curtailment_MW`                                   |
     | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
     |                                                                         |
-    | Scheduled curtailment plus an upward adjustment for additional          |
+    | Scheduled curtailment (in MW) plus an upward adjustment for additional  |
     | curtailment when providing downward reserves, and a downward adjustment |
     | adjustment for a reduction in curtailment when providing upward         |
     | reserves, to account for sub-hourly dispatch when providing reserves.   |
@@ -184,7 +195,7 @@ def add_module_specific_components(m, d):
 
     def subhourly_curtailment_expression_rule(mod, g, tmp):
         """
-        Subhourly curtailment from providing downward reserves.
+        Sub-hourly curtailment from providing downward reserves.
         """
         return footroom_subhourly_energy_adjustment_rule(d, mod, g, tmp)
 
@@ -195,7 +206,7 @@ def add_module_specific_components(m, d):
 
     def subhourly_delivered_energy_expression_rule(mod, g, tmp):
         """
-        Subhourly energy delivered from providing upward reserves.
+        Sub-hourly energy delivered from providing upward reserves.
         """
         return headroom_subhourly_energy_adjustment_rule(d, mod, g, tmp)
 
@@ -272,7 +283,7 @@ def total_curtailment_expression_rule(mod, g, tmp):
         - mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
-# Operational Type Methods
+# Constraint Formulation Rules
 ###############################################################################
 
 def max_power_rule(mod, g, tmp):
@@ -359,7 +370,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Variable generators should not have fuel use
+    Variable generators should not have fuel use.
     """
     if g in mod.FUEL_PROJECTS:
         raise ValueError(
@@ -373,7 +384,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_shutdown_rule(mod, g, tmp):
     """
-    Variable generators don't incur startup costs.
+    Variable generators are never started up or shut down.
     """
     raise ValueError(
         "ERROR! gen_var projects should not incur startup/shutdown "

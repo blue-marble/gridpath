@@ -510,8 +510,7 @@ Curtailable Variable Generation (*gen_var*)
 
 Non-curtailable Variable Generation (*gen_var_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is like the *gen_var* type except that curtailment is
-not allowed.
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
 
 Storage (*stor*)
 ^^^^^^^^^^^^^^^^

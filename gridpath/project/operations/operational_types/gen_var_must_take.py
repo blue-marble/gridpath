@@ -2,8 +2,10 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Operations of variable generators that cannot be curtailed (dispatched down).
-Cannot provide reserves.
+This operational type is like the *gen_var* type with two main differences.
+First, the project's output is must-take, i.e. curtailment (dispatch down) is
+not allowed. Second, because the project's output is not controllable, projects
+of this operational type cannot provide operational reserves .
 """
 
 from builtins import zip
@@ -22,34 +24,90 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
 
 def add_module_specific_components(m, d):
     """
-    Variable generators require a capacity factor for each timepoint.
-    :param m:
-    :param d:
-    :return:
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_VAR_MUST_TAKE`                                             |
+    |                                                                         |
+    | The set of generators of the :code:`gen_var_must_take` operational type.|
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_VAR_MUST_TAKE_OPR_TMPS`                                    |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_var_must_take`    |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_must_take_cap_factor`                                  |
+    | | *Defined over*: :code:`GEN_VAR_MUST_TAKE`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power output in each operational timepoint as a fraction  |
+    | of its available capacity (i.e. the capacity factor).                   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`GenVarMustTake_No_Upward_Reserves_Constraint`                  |
+    | | *Defined over*: :code:`GEN_VAR_MUST_TAKE_OPR_TMPS`                    |
+    |                                                                         |
+    | Variable must-take generator projects cannot provide upward reserves.   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVarMustTake_No_Downward_Reserves_Constraint`                |
+    | | *Defined over*: :code:`GEN_VAR_MUST_TAKE_OPR_TMPS`                    |
+    |                                                                         |
+    | Variable must-take generator projects cannot provide downward reserves. |
+    +-------------------------------------------------------------------------+
+
+
     """
-    # Sets and params
-    m.VARIABLE_NO_CURTAILMENT_GENERATORS = Set(
+
+    # Sets
+    ###########################################################################
+
+    m.GEN_VAR_MUST_TAKE = Set(
         within=m.PROJECTS,
-        initialize=generator_subset_init(
-            "operational_type", "gen_var_must_take"
-        )
+        initialize=generator_subset_init("operational_type",
+                                         "gen_var_must_take")
     )
 
-    m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.VARIABLE_NO_CURTAILMENT_GENERATORS))
+    m.GEN_VAR_MUST_TAKE_OPR_TMPS = Set(
+        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_VAR_MUST_TAKE)
+    )
 
-    # TODO: allow cap factors greater than 1?
-    m.cap_factor_no_curtailment = Param(
-        m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                         within=NonNegativeReals)
+    # Required Params
+    ###########################################################################
+
+    # TODO: allow cap factors greater than 1, but throw a warning?
+    m.gen_var_must_take_cap_factor = Param(
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    # Constraints
+    ###########################################################################
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'gen_var_must_take'
-    #  type
-    def no_upwards_reserve_rule(mod, g, tmp):
+    #  does not allow specifying a reserve_zone if 'gen_var_must_take' type
+    def no_upward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenVarMustTake_No_Upward_Reserves_Constraint
+        **Enforced Over**: GEN_VAR_MUST_TAKE_OPR_TMPS
+
+        Upward reserves should be zero in every operational timepoint.
+        """
         if getattr(d, headroom_variables)[g]:
             warnings.warn(
                 """project {} is of the 'gen_var_must_take' operational 
@@ -64,118 +122,99 @@ def add_module_specific_components(m, d):
                        for c in getattr(d, headroom_variables)[g]) == 0
         else:
             return Constraint.Skip
-    m.Variable_No_Curtailment_No_Upwards_Reserves_Constraint = Constraint(
-            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=no_upwards_reserve_rule)
+
+    m.GenVarMustTake_No_Upward_Reserves_Constraint = Constraint(
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
+        rule=no_upward_reserve_rule
+    )
 
     # TODO: remove this constraint once input validation is in place that
-    #  does not allow specifying a reserve_zone if 'gen_var_must_take'
-    #  type
-    def no_downwards_reserve_rule(mod, g, tmp):
+    #  does not allow specifying a reserve_zone if 'gen_var_must_take' type
+    def no_downward_reserve_rule(mod, g, tmp):
+        """
+        **Constraint Name**: GenVarMustTake_No_Downward_Reserves_Constraint
+        **Enforced Over**: GEN_VAR_MUST_TAKE_OPR_TMPS
+
+        Downward reserves should be zero in every operational timepoint.
+        """
         if getattr(d, footroom_variables)[g]:
             warnings.warn(
                 """project {} is of the 'gen_var_must_take' operational 
                 type and should not be assigned any downward reserve BAs since 
-                it cannot provide downward reserves. Please replace the downward 
-                reserve BA for project {} with '.' (no value) in projects.tab. 
-                Model will add  constraint to ensure project {} cannot provide 
-                downward reserves
+                it cannot provide downward reserves. Please replace the
+                downward reserve BA for project {} with '.' (no value) in 
+                projects.tab. Model will add constraint to ensure project {} 
+                cannot provide downward reserves.
                 """.format(g, g, g)
             )
             return sum(getattr(mod, c)[g, tmp]
                        for c in getattr(d, footroom_variables)[g]) == 0
         else:
             return Constraint.Skip
-    m.Variable_No_Curtailment_No_Downwards_Reserves_Constraint = Constraint(
-            m.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            rule=no_downwards_reserve_rule)
+
+    m.GenVarMustTake_No_Downward_Reserves_Constraint = Constraint(
+        m.GEN_VAR_MUST_TAKE_OPR_TMPS,
+        rule=no_downward_reserve_rule
+    )
 
 
-# Operations
+# Operational Type Methods
+###############################################################################
+
 def power_provision_rule(mod, g, tmp):
     """
-    Power provision from variable non-curtailable generators is their capacity
-    times the capacity factor in each timepoint
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Power provision from variable must-take generators is their capacity times
+    the capacity factor in each timepoint.
     """
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * mod.cap_factor_no_curtailment[g, tmp]
+        * mod.gen_var_must_take_cap_factor[g, tmp]
 
 
 def online_capacity_rule(mod, g, tmp):
     """
-    Since no commitment, all capacity assumed online
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Since there is no commitment, all capacity is assumed to be online.
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
 
 
-# RPS
 def rec_provision_rule(mod, g, tmp):
     """
-    REC provision from variable non-curtailable generators is the same as
-    power-provision: their capacity times the capacity factor in each timepoint
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    REC provision from variable must-take generators is the same as power
+    provision: their capacity times the capacity factor in each timepoint.
     """
 
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * mod.cap_factor_no_curtailment[g, tmp]
+        * mod.gen_var_must_take_cap_factor[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
     """
-    No curtailment
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    No curtailment allowed for must-take variable generators.
     """
     return 0
 
 
 def subhourly_curtailment_rule(mod, g, tmp):
     """
-    Can't provide downward reserves, so no subhourly curtailment
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Can't provide downward reserves, so no sub-hourly curtailment.
     """
     return 0
 
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
     """
-    Can't provide upward reserves, so no subhourly curtailment
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Can't provide upward reserves, so no sub-hourly energy delivered.
     """
     return 0
 
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
-    Variable generators should not have fuel use
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
+    Variable generators should not have fuel use.
     """
     if g in mod.FUEL_PROJECTS:
         raise ValueError(
@@ -189,11 +228,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_shutdown_rule(mod, g, tmp):
     """
-    Variable generators are never started up.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Variable generators are never started up or shut down.
     """
     raise ValueError(
         "ERROR! Variable generators should not incur startup/shutdown "
@@ -205,12 +240,7 @@ def startup_shutdown_rule(mod, g, tmp):
 
 def power_delta_rule(mod, g, tmp):
     """
-    Exogenously defined ramp for variable generators (no curtailment); excludes
-    any ramping from reserve provision.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
+    Exogenously defined ramp for variable must-take generators.
     """
     if tmp == mod.first_horizon_timepoint[
         mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -218,22 +248,20 @@ def power_delta_rule(mod, g, tmp):
             == "linear":
         pass
     else:
-        return (mod.Capacity_MW[g, mod.period[tmp]]
-                * mod.Availability_Derate[g, tmp]
-                * mod.cap_factor_no_curtailment[g, tmp]) - \
-               (mod.Capacity_MW[
-                    g, mod.period[
-                        mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                    ]
-                ]
-                * mod.Availability_Derate[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                ]
-                * mod.cap_factor_no_curtailment[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                ]
-                )
+        return \
+            (mod.Capacity_MW[g, mod.period[tmp]]
+             * mod.Availability_Derate[g, tmp]
+             * mod.gen_var_must_take_cap_factor[g, tmp]) \
+            - (mod.Capacity_MW[g, mod.period[mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]]]
+               * mod.Availability_Derate[g, mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]]
+               * mod.gen_var_must_take_cap_factor[g, mod.previous_timepoint[
+                    tmp, mod.balancing_type_project[g]]])
 
+
+# Inputs-Outputs
+###############################################################################
 
 def load_module_specific_data(mod, data_portal,
                               scenario_directory, subproblem, stage):
@@ -254,13 +282,12 @@ def load_module_specific_data(mod, data_portal,
     # needed for the data check below (to avoid throwing warning unnecessarily)
     var_proj = list()
 
-    prj_op_type_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t", usecols=["project",
-                               "operational_type"]
-        )
+    prj_op_type_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "projects.tab"),
+        sep="\t",
+        usecols=["project", "operational_type"]
+    )
 
     for row in zip(prj_op_type_df["project"],
                    prj_op_type_df["operational_type"]):
@@ -275,12 +302,12 @@ def load_module_specific_data(mod, data_portal,
     project_timepoints = list()
     cap_factor = dict()
 
-    prj_tmp_cf_df = \
-        pd.read_csv(
-            os.path.join(scenario_directory, subproblem, stage, "inputs",
-                         "variable_generator_profiles.tab"),
-            sep="\t", usecols=["project", "timepoint", "cap_factor"]
-        )
+    prj_tmp_cf_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "variable_generator_profiles.tab"),
+        sep="\t",
+        usecols=["project", "timepoint", "cap_factor"]
+    )
     for row in zip(prj_tmp_cf_df["project"],
                    prj_tmp_cf_df["timepoint"],
                    prj_tmp_cf_df["cap_factor"]):
@@ -302,13 +329,13 @@ def load_module_specific_data(mod, data_portal,
             )
 
     # Load data
-    data_portal.data()[
-        "VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS"
-    ] = {
-        None: project_timepoints
-    }
-    data_portal.data()["cap_factor_no_curtailment"] = cap_factor
+    data_portal.data()["GEN_VAR_MUST_TAKE_OPR_TMPS"] = \
+        {None: project_timepoints}
+    data_portal.data()["gen_var_must_take_cap_factor"] = cap_factor
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -406,6 +433,51 @@ def get_module_specific_inputs_from_database(
     return variable_profiles
 
 
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    variable_generator_profiles.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    variable_profiles = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    # If variable_generator_profiles.tab file already exists, append rows to it
+    if os.path.isfile(os.path.join(inputs_directory,
+                                   "variable_generator_profiles.tab")
+                      ):
+        with open(os.path.join(inputs_directory,
+                               "variable_generator_profiles.tab"), "a") as \
+                variable_profiles_tab_file:
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+            for row in variable_profiles:
+                writer.writerow(row)
+    # If variable_generator_profiles.tab does not exist, write header first,
+    # then add profiles data
+    else:
+        with open(os.path.join(inputs_directory,
+                               "variable_generator_profiles.tab"), "w", newline="") as \
+                variable_profiles_tab_file:
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+
+            # Write header
+            writer.writerow(
+                ["project", "timepoint", "cap_factor"]
+            )
+            for row in variable_profiles:
+                writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
@@ -470,45 +542,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-
-
-def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input
-    variable_generator_profiles.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    variable_profiles = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-
-    # If variable_generator_profiles.tab file already exists, append rows to it
-    if os.path.isfile(os.path.join(inputs_directory,
-                                   "variable_generator_profiles.tab")
-                      ):
-        with open(os.path.join(inputs_directory,
-                               "variable_generator_profiles.tab"), "a") as \
-                variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
-            for row in variable_profiles:
-                writer.writerow(row)
-    # If variable_generator_profiles.tab does not exist, write header first,
-    # then add profiles data
-    else:
-        with open(os.path.join(inputs_directory,
-                               "variable_generator_profiles.tab"), "w", newline="") as \
-                variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
-
-            # Write header
-            writer.writerow(
-                ["project", "timepoint", "cap_factor"]
-            )
-            for row in variable_profiles:
-                writer.writerow(row)
