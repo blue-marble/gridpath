@@ -23,5 +23,6 @@ Welcome to the GridPath Documentation.
    functionality
    database
    visualization
+   ui
    architecture
    advanced_docs

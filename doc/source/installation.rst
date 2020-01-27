@@ -1,3 +1,5 @@
+.. _installation-section-ref:
+
 ************
 Installation
 ************
@@ -78,6 +80,8 @@ Python packages. You can get the official CPython distribution `here
 `here <https://www.anaconda.com/distribution/>`_, or `another Python
 distribution <https://wiki.python.org/moin/PythonDistributions>`_.
 
+
+.. _python-virtual-env-section-ref:
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Python Virtual Environment
