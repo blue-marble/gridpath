@@ -106,7 +106,7 @@ solver name or executable value to take effect.
 Home
 ****
 
-The GridPath :code:`Home` screen provides an overview of UI settings status
+The GridPath UI :code:`Home` screen provides an overview of UI settings status
 and the scenario status via four different tables.
 
 The :code:`UI Status` table provides information about whether the UI server
@@ -133,21 +133,25 @@ have been found to be invalid.
 Scenarios
 *********
 
-The GridPath :code:`Scenarios` screen provides a list of all scenarios the
+The GridPath UI :code:`Scenarios` screen provides a list of all scenarios the
 user has created along with their status (validation status and run status)
-and options to navigate to viewing detailed scenario information via the
-:code:`View Detail` button and, if the scenario is complete, to viewing the
-scenario results via the :code:`View Results` button. The :code:`View
-Results` button is available only if the scenario 'Run Status' is 'complete.'
-The information in the status columns is color-coded depending on the value.
-You can navigate to the :code:`New Scenario` screen by clicking on the
-:code:`New Scenario` button at the top of the scenarios list (in additon to
-via the navigation bar).
+and options to navigate to viewing detailed scenario information (see
+:ref:`ui-scenario-detail-section-ref`) via the :code:`View Detail` button
+and, if the scenario is complete, to viewing the scenario results (see
+:ref:`ui-scenario-results-section-ref`) via the :code:`View Results` button.
+The :code:`View Results` button is available only if the scenario 'Run
+Status' is 'complete.' The information in the status columns is color-coded
+depending on the value. You can navigate to the :code:`New Scenario` screen
+by clicking on the :code:`New Scenario` button at the top of the scenarios
+list (in addition to via the navigation bar).
+
+.. _ui-scenario-detail-section-ref:
 
 Scenario Detail
 ***************
 
-The :code:`Scenario Detail` screen is a gateway to more detailed information
+The :code:`Scenario Detail` screen is accessed from the main :code:`Scenario
+Screen` and is a gateway to more detailed information
 about a scenario, including its setup, inputs, status, and results. At the top
 of this screen, you can find buttons for deleting a scenario or editing its
 setup (i.e. its features and subscenario selections).
@@ -209,10 +213,19 @@ column to switch to the scenario results screen. See
 
 Clearing a Scenario
 ===================
+If the scenario status in the :code:`Scenario Status` is 'complete,' you
+will be able to click on a :code:`Clear Results` button in the :code:`Action`
+column to clear all scenario results, including validation information.
+
+Scenario Run Solver Info
+========================
+The :code:`Solver Options` table below the :code:`Scenario Status` table
+contains information about which solver will be used to run the scenario and
+what solver options will be requested.
 
 Viewing Scenario Setup and Inputs
 =================================
-The :code:`Features` table below the :code:`Scenario Status` table contains
+The :code:`Features` table below the :code:`Solver Options` table contains
 information about which GridPath features are requested by the scenario. The
 various tables below (e.g. :code:`Temporal Settings`, :code:`Load Zone
 Settings`, :code:`System Load`, :code:`Generation and Storage Capacity`, and
@@ -229,49 +242,86 @@ Scenario Results
 ****************
 
 The :code:`Scenario Results` view can be accessed if a scenario is
-'complete' by clicking on the :code:`View Results` button in either the
-:code:`Scenarios` screen or the :code:`Scenario Detail` screen.
+'complete' by clicking on the :code:`View Results` button in either the main
+:code:`Scenarios` view or the :code:`Scenario Detail` view.
 
 This view includes a row for results tables and a row for results plots that
 can be viewed in the UI.
-
-.. note:: You can change which tables and plots are available in the UI by
-    changing the value in the :code:`include` column of the
-    :code:`ui_scenario_results_table_metadata` and
-    :code:`ui_scenario_results_plot_metadata` in the database respectively.
-    Additional tables and plots can be added by populating these tables.
 
 You can click on the :code:`Show Table` or :code:`Show Plot` buttons to view
 the table or plot, and on the :code:`Download Data` button to download the
 underlying data to a CSV file. For the plots, you will usually also use the
 dropdown menus to slice out a particular set of data (e.g. the new capacity
 built in a certain zone or the operations for a particular generator in a
-particular period and/or stage).
+particular period and/or stage). You can also set the size of the y-axis by
+using the :code:`Ymax (MW)` input field.
 
-You can add any number of plots. Clear them with the Clear Plots button
-Plots interactivity
-You can double-click on the legend to hide it
-Ymax
+Tables will be shown separately. You can add any number of plots to the view.
+Clear them with the code:`Clear Plots` button at the beginning of the plots
+row.
+
+Plots are interactive. You can hover to view detail on the underlying data,
+pan, and zoom in and out. You can also download the plot image via the disk
+icon. You can hide individual plot items by clicking on the respective
+legend label. The whole legend can be hidden by double-clicking on the right
+side of the plot where the legend is located.
 
 
 ********************
 Scenarios Comparison
 ********************
 
+The GridPath UI :code:`Scenarios Comparison` screen provides functionality
+to compare the setup/inputs and results for an arbitrary number of scenarios.
+
 Scenario Selection
 ******************
+The main :code:`Scenarios Comparison` screen is where the user must choose a
+'Base' scenario (select one scenario in the :code:`Choose Base Scenario`
+column of the :code:`Scenario Selection` table) and any number of scenarios
+to compare to the 'base' scenario (select any number of scenarios in the
+:code:`Select Scenarios to Compare` column of the :code:`Scenario Selection`
+table). You can then click on either the :code:`Compare Inputs` or the
+:code:`Compare Results` directory to view a comparison of the inputs and
+results of the selected scenarios respectively.
 
 Comparing Scenario Inputs
 *************************
+When comparing scenario inputs, you will see the same tables as in the
+:code:`Scenario Detail` screen (see :ref:`ui-scenario-detail-section-ref`)
+but including all the scenarios selected in the scenario-selection screen.
+In each table, the 'Base' scenario you selected will be on the left,
+followed by columns for each of the selected scenarios to compare. In each
+table for each scenario to compare, differences from the 'Base' scenario
+will be highlighted.
 
 Comparing Scenario Results
 **************************
-
-Plots interactivity
-You can double-click on the legend to hide it
+When comparing scenario results, you will see the same view as in the
+:code:`Scenario Results` screen (see :ref:`ui-scenario-results-section-ref`)
+containing a row for results tables and a row for results plots available to
+view in the UI. These tables, however, will contain the results for all
+scenarios selected; results for the 'Base' scenario will be listed first,
+followed by those for the scenarios to compare. Similarly, clicking on a
+:code:`Show Plots` button will display the plots for each of the scenarios
+selected, with that for the 'Base' scenario at the top. Note that the
+available options in the drop-down menus of the plot will depend on the
+'Base' scenario (e.g. if you select a scenario with a single load zone as
+the 'Base' scenario but are comparing to a scenario with two load zones,
+only the 'Base' scenario load zone will be available in the :code:`Select
+Zone` drop-down menu).
 
 ************
 New Scenario
 ************
 
-New scenario names cannot have white spaces
+The GridPath UI :code:`New Scenario` screen makes it possible to create a
+new scenario via the UI. This view looks similar to the :code:`Scenario
+Detail` screen (see :ref:`ui-scenario-detail-section-ref`) but the user must
+populate the values in the various scenario-detail tables. You can
+pre-populate all fields based on an existing scenario by selecting a
+scenario name and clicking the :code:`Populate from Scenario` button, the
+adding a name and description for the new scenario, and changing any inputs
+from the pre-populated values.
+
+.. note:: New scenario names cannot have white spaces at this stage.
