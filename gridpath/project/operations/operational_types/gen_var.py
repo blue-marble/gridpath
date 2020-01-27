@@ -543,7 +543,7 @@ def get_module_specific_inputs_from_database(
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
     variable_profiles = c.execute("""
-        SELECT project, timepoint, gen_var_cap_factor
+        SELECT project, timepoint, cap_factor
         FROM (
         -- Select only projects from the relevant portfolio
         SELECT project
@@ -572,7 +572,7 @@ def get_module_specific_inputs_from_database(
         AND stage_id = {}
         ) as tmps_tbl
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective gen_var_cap_factor (and no others) from 
+        -- respective cap_factor (and no others) from 
         -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
@@ -655,7 +655,7 @@ def write_module_specific_model_inputs(
 
             # Write header
             writer.writerow(
-                ["project", "timepoint", "gen_var_cap_factor"]
+                ["project", "timepoint", "cap_factor"]
             )
             for row in variable_profiles:
                 writer.writerow(row)
