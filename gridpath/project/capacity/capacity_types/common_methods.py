@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
+import os.path
+
+from db.common_functions import spin_on_database_lock
 
 # TODO: if vintage is 2020 and lifetime is 30, is the project available in
 #  2050 or not -- maybe have options for how this should be treated?
@@ -65,3 +69,61 @@ def project_vintages_operational_in_period(
         else:
             pass
     return project_vintages
+
+
+def update_capacity_results_table(
+     db, c, results_directory, scenario_id, subproblem, stage, results_file
+):
+    results = []
+    with open(os.path.join(results_directory, results_file), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        header = next(reader)
+
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            new_build_mw = get_header_value(header, "new_build_mw")
+            new_build_mwh = get_header_value(header, "new_build_mwh")
+            new_build_binary = get_header_value(header, "new_build_binary")
+            retired_mw = get_header_value(header, "retired_mw")
+            retired_binary = get_header_value(header, "retired_binary")
+
+            results.append(
+                (new_build_mw, new_build_mwh, new_build_binary,
+                 retired_mw, retired_binary,
+                 scenario_id, project, period, subproblem, stage)
+            )
+
+    # Update the results table with the module-specific results
+    update_sql = """
+        UPDATE results_project_capacity
+        SET new_build_mw = ?,
+        new_build_mwh = ?,
+        new_build_binary = ?,
+        retired_mw = ?,
+        retired_binary = ?
+        WHERE scenario_id = ?
+        AND project = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+
+
+def get_header_value(header, column):
+    """
+
+    :param header:
+    :param column:
+    :return:
+    """
+    try:
+        column_value = header.index(column)
+    except ValueError:
+        column_value = None
+
+    return column_value

@@ -7,8 +7,13 @@ describe the various ways in which project capacity can be treated in the
 optimization problem, e.g. as specified, available to be built, available to
 be retired, etc.
 """
+import csv
+import os.path
 
-from gridpath.auxiliary.auxiliary import load_gen_storage_capacity_type_modules
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import \
+    load_gen_storage_capacity_type_modules, setup_results_import
+
 
 # TODO: we should shorten the names of the capacity-type modules, e.g. to
 #   gen_specified, gen_specified_lin_ret, gen_new, stor_specified, stor_new,
@@ -113,6 +118,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             pass
 
 
+# TODO: move this to gridpath.project.capacity.__init__?
 def import_results_into_database(scenario_id, subproblem, stage,
                                  c, db, results_directory):
     """
@@ -123,6 +129,62 @@ def import_results_into_database(scenario_id, subproblem, stage,
     :param results_directory:
     :return:
     """
+    # First import the capacity_all results; the capacity type modules will
+    # then update the database tables rather than insert (all projects
+    # should have been inserted here)
+    # Delete prior results and create temporary import table for ordering
+    # Capacity results
+    print("project capacity")
+
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(conn=db, cursor=c,
+                         table="results_project_capacity",
+                         scenario_id=scenario_id, subproblem=subproblem,
+                         stage=stage)
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory, "capacity_all.csv"), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            capacity_type = row[2]
+            technology = row[3]
+            load_zone = row[4]
+            capacity_mw = row[5]
+            energy_capacity_mwh = 'NULL' if row[6] == "" else row[6]
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 capacity_type, technology, load_zone,
+                 capacity_mw, energy_capacity_mwh)
+            )
+
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_capacity{}
+        (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, energy_capacity_mwh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_project_capacity
+        (scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, energy_capacity_mwh)
+        SELECT
+        scenario_id, project, period, subproblem_id, stage_id, capacity_type,
+        technology, load_zone, capacity_mw, energy_capacity_mwh
+        FROM temp_results_project_capacity{}
+        ORDER BY scenario_id, project, period, subproblem_id, 
+        stage_id;""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # Load in the required capacity type modules
     required_capacity_type_modules = get_required_capacity_type_modules(
