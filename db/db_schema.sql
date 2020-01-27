@@ -1277,7 +1277,7 @@ capacity_type VARCHAR(32),
 PRIMARY KEY (transmission_portfolio_scenario_id, transmission_line),
 FOREIGN KEY (transmission_portfolio_scenario_id) REFERENCES
 subscenarios_transmission_portfolios
-(transmission_portfolio_scenario_id)
+(transmission_portfolio_scenario_id),
 FOREIGN KEY (capacity_type) REFERENCES mod_tx_capacity_types
 (capacity_type)
 );
@@ -1386,7 +1386,7 @@ reactance_ohms FLOAT,
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
 subscenarios_transmission_operational_chars
-(transmission_operational_chars_scenario_id)
+(transmission_operational_chars_scenario_id),
 FOREIGN KEY (operational_type) REFERENCES mod_tx_operational_types
 (operational_type)
 );
