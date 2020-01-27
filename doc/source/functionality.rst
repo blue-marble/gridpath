@@ -506,11 +506,7 @@ Non-Curtailable Hydro Generation (*gen_hydro_must_take*)
 
 Curtailable Variable Generation (*gen_var*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type describes generators whose power output is equal to a
-pre-specified fraction of their available capacity (a capacity factor
-parameter) in every timepoint. Curtailment is allowed. GridPath includes
-experimental features to allow these generators to provide upward and/or
-downward reserves. Costs for this operational type include variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.gen_var
 
 Non-curtailable Variable Generation (*gen_var_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

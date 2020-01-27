@@ -86,37 +86,34 @@ class TestVariableOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: VARIABLE_GENERATORS
+        # Set: GEN_VAR
         expected_variable_gen_set = sorted([
             "Wind", "Wind_z2"
         ])
         actual_variable_gen_set = sorted([
-            prj for prj in instance.VARIABLE_GENERATORS
+            prj for prj in instance.GEN_VAR
             ])
         self.assertListEqual(expected_variable_gen_set,
                              actual_variable_gen_set)
 
-        # Set: VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_VAR_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(expected_variable_gen_set)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-             VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS]
+             GEN_VAR_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: cap_factor
-        all_df = \
-            pd.read_csv(
-                os.path.join(
-                    TEST_DATA_DIRECTORY, "inputs",
-                    "variable_generator_profiles.tab"
-                ),
-                sep="\t"
-            )
+        # Param: gen_var_cap_factor
+        all_df = pd.read_csv(
+            os.path.join(TEST_DATA_DIRECTORY, "inputs",
+                         "variable_generator_profiles.tab"),
+            sep="\t"
+        )
 
         # We only want projects of the 'gen_var' operational type
         v_df = all_df[all_df["project"].isin(expected_variable_gen_set)]
@@ -124,8 +121,8 @@ class TestVariableOperationalType(unittest.TestCase):
             v_df.set_index(['project', 'timepoint']).to_dict()['cap_factor']
 
         actual_cap_factor = {
-            (g, tmp): instance.cap_factor[g, tmp]
-            for (g, tmp) in instance.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS
+            (g, tmp): instance.gen_var_cap_factor[g, tmp]
+            for (g, tmp) in instance.GEN_VAR_OPR_TMPS
         }
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 

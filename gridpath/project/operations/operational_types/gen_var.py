@@ -2,9 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This modules describes the operational capabilities and constraints of
-variable projects. These projects can be curtailed (dispatched down) and can
-provide reserves.
+This operational type describes generator projects whose power output is equal
+to a pre-specified fraction of their available capacity (a capacity factor
+parameter) in every timepoint, e.g. a wind farm. Curtailment is allowed.
+GridPath includes experimental features to allow these generators to provide
+upward and/or downward reserves.
+
+Costs for this operational type include variable O&M costs.
+
 """
 from __future__ import division
 from __future__ import print_function
@@ -31,225 +36,307 @@ from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    Here, we define the set of dispatchable-capacity-commit generators:
-    *VARIABLE_GENERATORS* (:math:`VG`, index :math:`vg`) and use this set
-    to get the subset of *PROJECT_OPERATIONAL_TIMEPOINTS* with
-    :math:`g \in VG` -- the *VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS*
-    (:math:`VG\_OT`).
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_VAR`                                                       |
+    |                                                                         |
+    | The set of generators of the :code:`gen_var` operational type.          |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_VAR_OPR_TMPS`                                              |
+    |                                                                         |
+    | Two-dimensional set with generators of the :code:`gen_var`              |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
 
-    The main operational parameter for variable generators is their capacity
-    factor, *cap_factor* \ :sub:`vg, tmp`\  defined over :math:`VG\_OT`.
+    |
 
-    The power provision variable for dispatchable-capacity-commit generators,
-    *Provide_Variable_Power_MW*, is defined over
-    *VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS*.
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_var_cap_factor`                                            |
+    | | *Defined over*: :code:`GEN_VAR`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's power output in each operational timepoint as a fraction  |
+    | of its available capacity (i.e. the capacity factor).                   |
+    +-------------------------------------------------------------------------+
 
-    This operational type is curtailable, so power provision is defined to
-    be less than or equal to the capacity times the capacity factor in each
-    timepoint:
+    |
 
-    For :math:`(vg, tmp) \in VG\_OT`: \n
-    :math:`Provide\_Variable\_Power\_MW_{vg, tmp} \leq
-    Capacity\_MW_{vg,p^{tmp}} \\times cap\_factor_{vg, tmp}`
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`GenVar_Provide_Power_MW`                                       |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Power provision in MW from this project in each timepoint in which the  |
+    | project is operational (capacity exists and the project is available).  |
+    +-------------------------------------------------------------------------+
 
-    Advanced functionality includes allowing the variable projects to provide
-    reserves; we will document this functionality once we have fully
-    validated it.
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenVar_Scheduled_Curtailment_MW`                               |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | The available power minus what was actually provided (in MW).           |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Total_Curtailment_MW`                                   |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Scheduled curtailment plus an upward adjustment for additional          |
+    | curtailment when providing downward reserves, and a downward adjustment |
+    | adjustment for a reduction in curtailment when providing upward         |
+    | reserves, to account for sub-hourly dispatch when providing reserves.   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | Power                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Max_Power_Constraint`                                   |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Limits the power plus upward reserves in each timepoint based on the    |
+    | :code:`gen_var_cap_factor` and the available capacity.                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenVar_Min_Power_Constraint`                                   |
+    | | *Defined over*: :code:`GEN_VAR_OPR_TMPS`                              |
+    |                                                                         |
+    | Power provision minus downward reserves should exceed zero.             |
+    +-------------------------------------------------------------------------+
+
     """
-    # Sets and params
-    m.VARIABLE_GENERATORS = Set(within=m.PROJECTS,
-                                initialize=generator_subset_init(
-                                    "operational_type", "gen_var")
-                                )
 
-    m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.VARIABLE_GENERATORS))
+    # Sets
+    ###########################################################################
+    m.GEN_VAR = Set(
+        within=m.PROJECTS,
+        initialize=generator_subset_init("operational_type", "gen_var"))
+
+    m.GEN_VAR_OPR_TMPS = Set(
+        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=lambda mod:
+        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            if g in mod.GEN_VAR)
+    )
+
+    # Required Params
+    ###########################################################################
 
     # TODO: allow cap factors greater than 1, but throw a warning?
-    m.cap_factor = Param(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                         within=NonNegativeReals)
+    m.gen_var_cap_factor = Param(
+        m.GEN_VAR_OPR_TMPS,
+        within=NonNegativeReals
+    )
 
-    # Variable generators treated as dispatchable (can also be curtailed and
-    # provide reserves)
-    m.Provide_Variable_Power_MW = \
-        Var(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-            within=NonNegativeReals)
+    # Variables
+    ###########################################################################
 
-    def max_power_rule(mod, g, tmp):
-        """
-        Power provision plus upward services cannot exceed available power.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Variable_Power_MW[g, tmp] + \
-            sum(getattr(mod, c)[g, tmp]
-                / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
-                for c in getattr(d, headroom_variables)[g]) \
-            <= mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            * mod.cap_factor[g, tmp]
-    m.Variable_Max_Power_Constraint = \
-        Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=max_power_rule)
+    m.GenVar_Provide_Power_MW = Var(
+        m.GEN_VAR_OPR_TMPS,
+        within=NonNegativeReals
+    )
 
-    def min_power_rule(mod, g, tmp):
-        """
-        Power provision minus downward services cannot be less than 0.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Provide_Variable_Power_MW[g, tmp] - \
-            sum(getattr(mod, c)[g, tmp]
-                / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
-                for c in getattr(d, footroom_variables)[g]) \
-            >= 0
-    m.Variable_Min_Power_Constraint = \
-        Constraint(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=min_power_rule)
+    # Expressions
+    ###########################################################################
 
-    def scheduled_curtailment_expression_rule(mod, g, tmp):
+    def upwards_reserve_rule(mod, g, tmp):
         """
-        Scheduled curtailment is the available power minus what was actually
-        provided.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Gather all headroom variables, and de-rate the total reserves offered
+        to account for the fact that gen_var output is uncertain.
         """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.Availability_Derate[g, tmp] \
-            * mod.cap_factor[g, tmp] - \
-            mod.Provide_Variable_Power_MW[g, tmp]
+        return sum(
+            getattr(mod, c)[g, tmp]
+            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
+            for c in getattr(d, headroom_variables)[g]
+        )
 
-    m.Scheduled_Variable_Generator_Curtailment_MW = \
-        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=scheduled_curtailment_expression_rule)
+    m.GenVar_Upwards_Reserves_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=upwards_reserve_rule
+    )
+
+    def downwards_reserve_rule(mod, g, tmp):
+        """
+        Gather all footroom variables, and de-rate the total reserves offered
+        to account for the fact that gen_var output is uncertain.
+        """
+        return sum(
+            getattr(mod, c)[g, tmp]
+            / getattr(mod, getattr(d, reserve_variable_derate_params)[c])[g]
+            for c in getattr(d, footroom_variables)[g]
+        )
+
+    m.GenVar_Downwards_Reserves_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=downwards_reserve_rule
+    )
 
     def subhourly_curtailment_expression_rule(mod, g, tmp):
         """
-        Subhourly curtailment from providing downward reserves
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Subhourly curtailment from providing downward reserves.
         """
-        return footroom_subhourly_energy_adjustment_rule(d=d, mod=mod, g=g,
-                                                         tmp=tmp)
+        return footroom_subhourly_energy_adjustment_rule(d, mod, g, tmp)
 
-    m.Subhourly_Variable_Generator_Curtailment_MW = \
-        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=subhourly_curtailment_expression_rule)
+    m.GenVar_Subhourly_Curtailment_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=subhourly_curtailment_expression_rule
+    )
 
     def subhourly_delivered_energy_expression_rule(mod, g, tmp):
         """
-        # Subhourly energy delivered from providing upward reserves
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Subhourly energy delivered from providing upward reserves.
         """
-        return headroom_subhourly_energy_adjustment_rule(d=d, mod=mod, g=g,
-                                                         tmp=tmp)
+        return headroom_subhourly_energy_adjustment_rule(d, mod, g, tmp)
 
-    m.Subhourly_Variable_Generator_Energy_Delivered_MW = \
-        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=subhourly_delivered_energy_expression_rule)
+    m.GenVar_Subhourly_Energy_Delivered_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=subhourly_delivered_energy_expression_rule
+    )
 
-    def total_curtailment_expression_rule(mod, g, tmp):
-        """
-        Available energy that was not delivered
-        There's an adjustment for subhourly reserve provision:
-        1) if downward reserves are provided, they will be called upon
-        occasionally, so power provision will have to decrease and additional
-        curtailment will be incurred;
-        2) if upward reserves are provided (energy is being curtailed),
-        they will be called upon occasionally, so power provision will have to
-        increase and less curtailment will be incurred
-        The subhourly adjustment here is a simple linear function of reserve
-        
-        Assume cap factors don't incorporate availability derates, 
-        so don't multply capacity by Availability_Derate here (will count
-        as curtailment)
-        
-        provision.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Capacity_MW[g, mod.period[tmp]] \
-            * mod.cap_factor[g, tmp] - \
-            mod.Provide_Variable_Power_MW[g, tmp] \
-            + mod.Subhourly_Variable_Generator_Curtailment_MW[g, tmp] \
-            - mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
+    m.GenVar_Scheduled_Curtailment_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=scheduled_curtailment_expression_rule
+    )
 
-    m.Total_Variable_Generator_Curtailment_MW = \
-        Expression(m.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS,
-                   rule=total_curtailment_expression_rule)
+    m.GenVar_Total_Curtailment_MW = Expression(
+        m.GEN_VAR_OPR_TMPS,
+        rule=total_curtailment_expression_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.GenVar_Max_Power_Constraint = Constraint(
+        m.GEN_VAR_OPR_TMPS,
+        rule=max_power_rule
+    )
+
+    m.GenVar_Min_Power_Constraint = Constraint(
+        m.GEN_VAR_OPR_TMPS,
+        rule=min_power_rule
+    )
 
 
-# Operations
+# Expression Methods
+###############################################################################
+
+def scheduled_curtailment_expression_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenVar_Scheduled_Curtailment_MW
+    **Defined Over**: GEN_VAR_OPR_TMPS
+
+    Scheduled curtailment is the available power minus what was actually
+    provided.
+    """
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.gen_var_cap_factor[g, tmp] \
+        - mod.GenVar_Provide_Power_MW[g, tmp]
+
+
+def total_curtailment_expression_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenVar_Total_Curtailment_MW
+    **Defined Over**: GEN_VAR_OPR_TMPS
+
+    Available energy that was not delivered
+    There's an adjustment for subhourly reserve provision:
+    1) if downward reserves are provided, they will be called upon
+    occasionally, so power provision will have to decrease and additional
+    curtailment will be incurred;
+    2) if upward reserves are provided (energy is being curtailed),
+    they will be called upon occasionally, so power provision will have to
+    increase and less curtailment will be incurred
+    The subhourly adjustment here is a simple linear function of reserve
+
+    Assume cap factors don't incorporate availability derates,
+    so don't multiply capacity by Availability_Derate here (will count
+    as curtailment).
+    """
+
+    return mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.gen_var_cap_factor[g, tmp] \
+        - mod.GenVar_Provide_Power_MW[g, tmp] \
+        + mod.GenVar_Subhourly_Curtailment_MW[g, tmp] \
+        - mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
+
+
+# Operational Type Methods
+###############################################################################
+
+def max_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenVar_Max_Power_Constraint
+    **Enforced Over**: GEN_VAR_OPR_TMPS
+
+    Power provision plus upward services cannot exceed available power, which
+    is equal to the available capacity multiplied by the capacity factor.
+    """
+    return mod.GenVar_Provide_Power_MW[g, tmp] \
+        + mod.GenVar_Upwards_Reserves_MW[g, tmp] \
+        <= mod.Capacity_MW[g, mod.period[tmp]] \
+        * mod.Availability_Derate[g, tmp] \
+        * mod.gen_var_cap_factor[g, tmp]
+
+
+def min_power_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenVar_Min_Power_Constraint
+    **Enforced Over**: GEN_VAR_OPR_TMPS
+
+    Power provision minus downward services cannot be less than zero.
+    """
+    return mod.GenVar_Provide_Power_MW[g, tmp] \
+        - mod.GenVar_Downwards_Reserves_MW[g, tmp] \
+        >= 0
+
+
+# Operational Type Methods
+###############################################################################
+
 def power_provision_rule(mod, g, tmp):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param tmp: the operational timepoint
-    :return: expression for power provision by variable generators
-
     Power provision from variable generators is their capacity times the
     capacity factor in each timepoint minus any upward reserves/curtailment.
     """
 
-    return mod.Provide_Variable_Power_MW[g, tmp]
+    return mod.GenVar_Provide_Power_MW[g, tmp]
 
 
 def online_capacity_rule(mod, g, tmp):
     """
     Since no commitment, all capacity assumed online
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
 
 
-# RPS
 def rec_provision_rule(mod, g, tmp):
     """
     REC provision from variable generators is a variable lesser than or
     equal to capacity times the capacity factor in each timepoint minus any
     upward reserves/curtailment. See max_power_rule above.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-
-    return mod.Provide_Variable_Power_MW[g, tmp]
+    return mod.GenVar_Provide_Power_MW[g, tmp]
 
 
 def scheduled_curtailment_rule(mod, g, tmp):
     """
     Variable generation can be dispatched down, i.e. scheduled below the
     available energy
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.Scheduled_Variable_Generator_Curtailment_MW[g, tmp]
+    return mod.GenVar_Scheduled_Curtailment_MW[g, tmp]
 
 
 def subhourly_curtailment_rule(mod, g, tmp):
@@ -257,12 +344,8 @@ def subhourly_curtailment_rule(mod, g, tmp):
     If providing downward reserves, variable generators will occasionally
     have to be dispatched down relative to their schedule, resulting in
     additional curtailment within the hour
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.Subhourly_Variable_Generator_Curtailment_MW[g, tmp]
+    return mod.GenVar_Subhourly_Curtailment_MW[g, tmp]
 
 
 def subhourly_energy_delivered_rule(mod, g, tmp):
@@ -270,26 +353,17 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
     If providing upward reserves, variable generators will occasionally be
     dispatched up, so additional energy will be delivered within the hour
     relative to their schedule (less curtailment)
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.Subhourly_Variable_Generator_Energy_Delivered_MW[g, tmp]
+    return mod.GenVar_Subhourly_Energy_Delivered_MW[g, tmp]
 
 
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Variable generators should not have fuel use
-    :param mod:
-    :param g:
-    :param tmp:
-    :param error_message:
-    :return:
     """
     if g in mod.FUEL_PROJECTS:
         raise ValueError(
-            "ERROR! Variable projects should not use fuel." + "\n" +
+            "ERROR! gen_var projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +
             "and change its fuel to '.' (no value)."
         )
@@ -300,13 +374,9 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 def startup_shutdown_rule(mod, g, tmp):
     """
     Variable generators don't incur startup costs.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     raise ValueError(
-        "ERROR! Variable generators should not incur startup/shutdown "
+        "ERROR! gen_var projects should not incur startup/shutdown "
         "costs." + "\n" +
         "Check input data for generator '{}'".format(g) + "\n" +
         "and change its startup/shutdown costs to '.' (no value)."
@@ -317,10 +387,6 @@ def power_delta_rule(mod, g, tmp):
     """
     Curtailment is counted as part of the ramp here; excludes any ramping from
     reserve provision.
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
     if tmp == mod.first_horizon_timepoint[
         mod.horizon[tmp, mod.balancing_type_project[g]]] \
@@ -331,19 +397,17 @@ def power_delta_rule(mod, g, tmp):
         return \
             (mod.Capacity_MW[g, mod.period[tmp]]
              * mod.Availability_Derate[g, tmp]
-             * mod.cap_factor[g, tmp]) - \
-            (mod.Capacity_MW[
-                 g, mod.period[
-                     mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-                 ]
-             ] * mod.Availability_Derate[
-                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-            ]
-             * mod.cap_factor[
-                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
-             ]
-             )
+             * mod.gen_var_cap_factor[g, tmp]) \
+            - (mod.Capacity_MW[g, mod.period[mod.previous_timepoint[
+                tmp, mod.balancing_type_project[g]]]]
+               * mod.Availability_Derate[g, mod.previous_timepoint[
+                tmp, mod.balancing_type_project[g]]]
+               * mod.gen_var_cap_factor[g, mod.previous_timepoint[
+                tmp, mod.balancing_type_project[g]]])
 
+
+# Inputs-Outputs
+###############################################################################
 
 def load_module_specific_data(mod, data_portal,
                               scenario_directory, subproblem, stage):
@@ -362,7 +426,7 @@ def load_module_specific_data(mod, data_portal,
     # Also get a list of the projects of the 'gen_var_must_take'
     # operational_type, needed for the data check below
     # (to avoid throwing warning unnecessarily)
-    var_no_curt_proj = list()
+    var_must_take_prjs = list()
 
     prj_op_type_df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
@@ -376,7 +440,7 @@ def load_module_specific_data(mod, data_portal,
         if row[1] == 'gen_var':
             projects.append(row[0])
         elif row[1] == 'gen_var_must_take':
-            var_no_curt_proj.append(row[0])
+            var_must_take_prjs.append(row[0])
         else:
             pass
 
@@ -397,7 +461,7 @@ def load_module_specific_data(mod, data_portal,
             project_timepoints.append((row[0], row[1]))
             cap_factor[(row[0], row[1])] = float(row[2])
         # Profile could be for a 'gen_var' project, in which case ignore
-        elif row[0] in var_no_curt_proj:
+        elif row[0] in var_must_take_prjs:
             pass
         else:
             warnings.warn(
@@ -409,12 +473,8 @@ def load_module_specific_data(mod, data_portal,
             )
 
     # Load data
-    data_portal.data()[
-        "VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS"
-    ] = {
-        None: project_timepoints
-    }
-    data_portal.data()["cap_factor"] = cap_factor
+    data_portal.data()["GEN_VAR_OPR_TMPS"] = {None: project_timepoints}
+    data_portal.data()["gen_var_cap_factor"] = cap_factor
 
 
 def export_module_specific_results(mod, d,
@@ -431,8 +491,8 @@ def export_module_specific_results(mod, d,
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "dispatch_variable.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "balancing_type_project", "horizon",
-                         "timepoint", "timepoint_weight",
+        writer.writerow(["project", "period", "balancing_type_project",
+                         "horizon", "timepoint", "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "technology", "load_zone",
                          "power_mw", "scheduled_curtailment_mw",
@@ -441,7 +501,7 @@ def export_module_specific_results(mod, d,
                          "total_curtailment_mw"
                          ])
 
-        for (p, tmp) in mod.VARIABLE_GENERATOR_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in mod.GEN_VAR_OPR_TMPS:
             writer.writerow([
                 p,
                 mod.period[tmp],
@@ -452,14 +512,16 @@ def export_module_specific_results(mod, d,
                 mod.number_of_hours_in_timepoint[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
-                value(mod.Provide_Variable_Power_MW[p, tmp]),
-                value(mod.Scheduled_Variable_Generator_Curtailment_MW[p, tmp]),
-                value(mod.Subhourly_Variable_Generator_Curtailment_MW[p, tmp]),
-                value(mod.Subhourly_Variable_Generator_Energy_Delivered_MW[
-                          p, tmp]),
-                value(mod.Total_Variable_Generator_Curtailment_MW[p, tmp])
+                value(mod.GenVar_Provide_Power_MW[p, tmp]),
+                value(mod.GenVar_Scheduled_Curtailment_MW[p, tmp]),
+                value(mod.GenVar_Subhourly_Curtailment_MW[p, tmp]),
+                value(mod.GenVar_Subhourly_Energy_Delivered_MW[p, tmp]),
+                value(mod.GenVar_Total_Curtailment_MW[p, tmp])
             ])
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -481,7 +543,7 @@ def get_module_specific_inputs_from_database(
     # (periods with existing project capacity for existing projects or
     # with costs specified for new projects)
     variable_profiles = c.execute("""
-        SELECT project, timepoint, cap_factor
+        SELECT project, timepoint, gen_var_cap_factor
         FROM (
         -- Select only projects from the relevant portfolio
         SELECT project
@@ -510,7 +572,7 @@ def get_module_specific_inputs_from_database(
         AND stage_id = {}
         ) as tmps_tbl
         -- Now that we have the relevant projects and timepoints, get the 
-        -- respective cap_factor (and no others) from 
+        -- respective gen_var_cap_factor (and no others) from 
         -- inputs_project_variable_generator_profiles through a LEFT OUTER JOIN
         LEFT OUTER JOIN
         inputs_project_variable_generator_profiles
@@ -557,22 +619,6 @@ def get_module_specific_inputs_from_database(
     return variable_profiles
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # variable_profiles = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn
-
-    # do stuff here to validate inputs
-
-
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
@@ -609,7 +655,7 @@ def write_module_specific_model_inputs(
 
             # Write header
             writer.writerow(
-                ["project", "timepoint", "cap_factor"]
+                ["project", "timepoint", "gen_var_cap_factor"]
             )
             for row in variable_profiles:
                 writer.writerow(row)
@@ -757,3 +803,22 @@ def process_module_specific_results(db, c, subscenarios):
         data=(subscenarios.SCENARIO_ID, subscenarios.SCENARIO_ID),
         many=False
     )
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # variable_profiles = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn
+
+    # do stuff here to validate inputs
