@@ -106,7 +106,7 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         INNER JOIN
         
         (SELECT scenario_id, project, period, avg(capacity_mw) as capacity_mw
-        FROM results_project_capacity_all
+        FROM results_project_capacity
         GROUP BY scenario_id, project, period) AS capacity_table
         USING (scenario_id, project, period)
         

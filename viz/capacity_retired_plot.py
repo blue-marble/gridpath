@@ -68,14 +68,7 @@ def get_plotting_data(conn, scenario_id, load_zone, subproblem, stage,
 
     # Retired capacity by period and technology
     sql = """SELECT period, technology, sum(retired_mw) as capacity_mw
-        FROM (SELECT scenario_id, load_zone, subproblem_id, stage_id,
-              project, period, technology, retired_mw 
-              FROM results_project_capacity_linear_economic_retirement
-              UNION 
-              SELECT scenario_id, load_zone, subproblem_id, stage_id, 
-              project, period, technology, retired_mw 
-              FROM results_project_capacity_binary_economic_retirement
-             ) as tbl
+        FROM results_project_capacity
         WHERE scenario_id = ?
         AND load_zone = ?
         AND subproblem_id = ?
