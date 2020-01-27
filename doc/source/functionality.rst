@@ -376,10 +376,7 @@ by linear new-build generation.
 
 Binary New-Build Generation (*gen_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generation units of a pre-specified size, costs,
-and operational characteristics that can either be built by the optimization
-or not in all or some investment *periods*. Once built, the capacity remains
-available for the duration of the project's pre-specified lifetime.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin
 
 Specified Storage (*stor_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
