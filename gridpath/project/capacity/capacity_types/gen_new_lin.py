@@ -2,18 +2,26 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.gen_new_lin**
-module describes the capacity of generators that can be built by the
-optimization at a cost. Once built, these generators remain available for
-the duration of their pre-specified lifetime. Minimum and maximum capacity
-constraints can be optionally implemented.
+This capacity type describes new generation projects that can be built by the
+optimization at a cost. These investment decisions are linearized, i.e.
+the decision is not whether to build a unit of a specific size (e.g. a
+50-MW combustion turbine), but how much capacity to build at a particular
+*project*. Once built, the capacity exists for the duration of the generator's
+pre-specified lifetime. Minimum and maximum capacity constraints can be
+optionally implemented.
+
+The cost input to the model is an annualized cost per unit capacity. If the
+optimization makes the decision to build new capacity, the total annualized
+cost is incurred in each period of the study (and multiplied by the number
+of years the period represents) for the duration of the project's lifetime.
+Annual fixed O&M costs are also incurred by linear new-build generation.
 """
 
 from __future__ import print_function
 
 from builtins import next
 from builtins import zip
-from builtins import str
+
 import csv
 import os.path
 import pandas as pd
@@ -31,73 +39,291 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-vintage
-    combinations to describe the periods in time when project capacity can be
-    built in the optimization: the *NEW_BUILD_GENERATOR_VINTAGES* set,
-    which we will also designate with :math:`NG\_V` and index with
-    :math:`ng, v` where :math:`ng\in R` and :math:`v\in P`. For each :math:`ng,
-    v`, we load the *lifetime_yrs_by_new_build_vintage* parameter, which is
-    the project's lifetime, i.e. how long project capacity of a particular
-    vintage remains operational. We will then use this parameter to
-    determine the operational periods :math:`p` for each :math:`ng, v`. For
-    each :math:`ng, v`, we also declare the cost to build new capacity: the
-    *annualized_real_cost_per_mw_yr* parameter.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_NEW_LIN_VNTS`                                              |
+    |                                                                         |
+    | A two-dimensional set of project-vintage combinations to describe the   |
+    | periods in time when project capacity can be built in the optimization. |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT`                             |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | minimum build capacity specified.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT`                             |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | maximum build capacity specified.                                       |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_new_lin_lifetime_yrs_by_vintage`                           |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's lifetime, i.e. how long project capacity of a particular  |
+    | vintage remains operational.                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_new_lin_annualized_real_cost_per_mw_yr`                    |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new capacity in annualized real dollars in  |
+    | per MW.                                                                 |
+    +-------------------------------------------------------------------------+
 
     .. note:: The cost input to the model is a levelized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
         the duration of the project's lifetime. It is up to the user to
-        ensure that the *lifetime_yrs_by_new_build_vintage* and
-        *annualized_real_cost_per_mw_yr parameters* are consistent.
+        ensure that the :code:`gen_new_lin_lifetime_yrs_by_vintage` and
+        :code:`gen_new_lin_annualized_real_cost_per_mw_yr` parameters are
+        consistent.
 
-    For each project vintage, the user can optionally specify a minimum
-    cumulative amount of capacity that must be built by that period and/or a
-    maximum amount of cumulative capacity that can be built by that period:
-    the :math:`min\_cumulative\_new\_build\_mw_{ng,v}` and
-    :math:`max\_cumulative\_new\_build\_mw_{ng,v}` parameters respectively.
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_new_lin_min_cumulative_new_build_mw`                       |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum cumulative amount of capacity (in MW) that must be built    |
+    | for a project by a certain period.                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_new_lin_max_cumulative_new_build_mw`                       |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum cumulative amount of capacity (in MW) that must be built    |
+    | for a project by a certain period.                                      |
+    +-------------------------------------------------------------------------+
 
-    The :math:`Build\_MW_{ng,v}` variable is defined over the :math:`NG\_V`
-    set and determines how much capacity of each possible vintage :math:`v`
-    is  built at each new-build project :math:`ng`.
+    |
 
-    We use the *NEW_BUILD_GENERATOR_VINTAGES* set and the
-    *lifetime_yrs_by_new_build_vintage* parameter to determine the
-    operational periods for capacity of each possible vintage: the
-    *OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE* set indexed by
-    :math:`ng,v`.
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE`                               |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    |                                                                         |
+    | Indexed set that describes the operational periods for each possible    |
+    | project-vintage combination, based on the                               |
+    | :code:`gen_new_lin_lifetime_yrs_by_vintage`. For instance, capacity of  |
+    | the 2020 vintage with lifetime of 30 years will be assumed operational  |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_LIN_OPR_PRDS`                                          |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be operational if built. This set is added to the   |
+    | list of sets to join to get the final                                   |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_LIN_VNTS_OPR_IN_PERIOD`                                |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the project-vintages that could be           |
+    | operational in each period based on the                                 |
+    | :code:`gen_new_lin_lifetime_yrs_by_vintage`.                            |
+    +-------------------------------------------------------------------------+
 
-    .. note:: A period is currently defined as operational for project
-        :math:`ng` if :math:`v <= p < lifetime\_yrs\_by\_new\_build\_vintage_{
-        ng,v}`, so capacity of the 2020 vintage with lifetime of 30 years will
-        be assumed operational starting Jan 1, 2020 and through Dec 31, 2049,
-        but will not be operational in 2050.
+    |
 
-    The *NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS* set is a
-    two-dimensional set that includes the periods when project capacity of
-    any vintage *could* be operational if built.  This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *NG_P* to
-    designate this set (index :math:`ng, np` where :math:`ng\in R` and
-    :math:`np\in P`).
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`GenNewLin_Build_MW`                                            |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Determines how much capacity of each possible vintage is built at each  |
+    | gen_new_lin project.                                                    |
+    +-------------------------------------------------------------------------+
 
-    Finally, we need to determine which project vintages could be
-    operational in each period: the
-    *NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
-    :math:`p`, this two-dimensional set :math:`\{NG\_OV_p\}_{p\in P}`
-    (:math:`NG\_OV_p\subset NG\_V`) can help us tell how much capacity we
-    have available in period :math:`p` of each new-build project :math:`ng`
-    depending on the build decisions made by the optimization.
+    |
 
-    Finally, we are ready to define the capacity expression for new-build
-    generators:
-    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np} = \sum_{(ng,ov)\in
-    NG\_OV_{np}}{Build\_MW_{ng,ov}}`. The capacity of a new-build generator in
-    a given operational period for the new-build generator is equal to the
-    sum of all capacity-build of vintages operational in that period.
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`GenNewLin_Capacity_MW`                                         |
+    | | *Defined over*: :code:`GEN_NEW_LIN_OPR_PRDS`                          |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The capacity of a new-build generator in a given operational period is  |
+    | equal to the sum of all capacity-build of vintages operational in that  |
+    | period.                                                                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`GenNewLin_Min_Cum_Build_Constraint`                            |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT`             |
+    |                                                                         |
+    | Ensures that certain amount of capacity is built by a certain period,   |
+    | based on :code:`gen_new_lin_min_cumulative_new_build_mw`.               |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenNewLin_Max_Cum_Build_Constraint`                            |
+    | | *Defined over*: :code:`GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT`             |
+    |                                                                         |
+    | Limits the amount of capacity built by a certain period, based on       |
+    | :code:`gen_new_lin_max_cumulative_new_build_mw`.                        |
+    +-------------------------------------------------------------------------+
+
+
+    """
+
+    # Sets
+    ###########################################################################
+
+    m.GEN_NEW_LIN_VNTS = Set(
+        dimen=2, within=m.PROJECTS*m.PERIODS
+    )
+
+    m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT = Set(
+        dimen=2, within=m.GEN_NEW_LIN_VNTS
+    )
+
+    m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT = Set(
+        dimen=2, within=m.GEN_NEW_LIN_VNTS
+    )
+
+    # Required Params
+    ###########################################################################
+
+    m.gen_new_lin_lifetime_yrs_by_vintage = Param(
+        m.GEN_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.gen_new_lin_annualized_real_cost_per_mw_yr = Param(
+        m.GEN_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.gen_new_lin_min_cumulative_new_build_mw = Param(
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    m.gen_new_lin_max_cumulative_new_build_mw = Param(
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE = Set(
+        m.GEN_NEW_LIN_VNTS,
+        initialize=operational_periods_by_generator_vintage
+    )
+
+    m.GEN_NEW_LIN_OPR_PRDS = Set(
+        dimen=2,
+        initialize=gen_new_lin_operational_periods
+    )
+
+    m.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD = Set(
+        m.PERIODS, dimen=2,
+        initialize=gen_new_lin_vintages_operational_in_period
+    )
+
+    # Variables
+    ###########################################################################
+
+    m.GenNewLin_Build_MW = Var(
+        m.GEN_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    # Expressions
+    ###########################################################################
+
+    m.GenNewLin_Capacity_MW = Expression(
+        m.GEN_NEW_LIN_OPR_PRDS,
+        rule=gen_new_lin_capacity_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.GenNewLin_Min_Cum_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT,
+        rule=min_cum_build_rule
+    )
+
+    m.GenNewLin_Max_Cum_Build_Constraint = Constraint(
+        m.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT,
+        rule=max_cum_build_rule
+    )
+
+    # Dynamic Components
+    ###########################################################################
+
+    # Add to list of sets we'll join to get the final
+    # PROJECT_OPERATIONAL_PERIODS set
+    getattr(d, capacity_type_operational_period_sets).append(
+        "GEN_NEW_LIN_OPR_PRDS",
+    )
+
+
+# Set Rules
+###############################################################################
+
+def operational_periods_by_generator_vintage(mod, prj, v):
+    return operational_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"), vintage=v,
+        lifetime=mod.gen_new_lin_lifetime_yrs_by_vintage[prj, v]
+    )
+
+
+def gen_new_lin_operational_periods(mod):
+    return project_operational_periods(
+        project_vintages_set=mod.GEN_NEW_LIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE
+    )
+
+
+def gen_new_lin_vintages_operational_in_period(mod, p):
+    return project_vintages_operational_in_period(
+        project_vintage_set=mod.GEN_NEW_LIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE,
+        period=p
+    )
+
+
+# Expression Rules
+###############################################################################
+
+def gen_new_lin_capacity_rule(mod, g, p):
+    """
+    **Expression Name**: GenNewLin_Capacity_MW
+    **Enforced Over**: GEN_NEW_LIN_OPR_PRDS
+
+    The capacity of a new-build generator in a given operational period is
+    equal to the sum of all capacity-build of vintages operational in that
+    period.
+
     This expression is not defined for a new-build generator's non-operational
     periods (i.e. it's 0). E.g. if we were allowed to build capacity in 2020
     and 2030, and the project had a 15 year lifetime, in 2020 we'd take 2020
@@ -105,113 +331,49 @@ def add_module_specific_components(m, d):
     nd 2030 capacity-build, in 2040, we'd take 2030 capacity-build only, and
     in 2050, the capacity would be undefined (i.e. 0 for the purposes of the
     objective function).
-
-    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np}` can then be constrained
-    by :math:`min\_cumulative\_new\_build\_mw_{ng,v}` and
-    :math:`max\_cumulative\_new\_build\_mw_{ng,v}` (the set of vintages *v*
-    is a subset of the set of operational periods *np*).
-
     """
+    return sum(mod.GenNewLin_Build_MW[g, v] for (gen, v)
+               in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
+               if gen == g)
 
-    # Indexes and param
-    m.NEW_BUILD_GENERATOR_VINTAGES = Set(dimen=2, within=m.PROJECTS*m.PERIODS)
-    m.lifetime_yrs_by_new_build_vintage = \
-        Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
-    m.annualized_real_cost_per_mw_yr = \
-        Param(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
 
-    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT = \
-        Set(dimen=2, within=m.NEW_BUILD_GENERATOR_VINTAGES)
-    m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT = \
-        Set(dimen=2, within=m.NEW_BUILD_GENERATOR_VINTAGES)
-    m.min_cumulative_new_build_mw = \
-        Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT,
-              within=NonNegativeReals)
-    m.max_cumulative_new_build_mw = \
-        Param(m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT,
-              within=NonNegativeReals)
+# Constraint Formulation Rules
+###############################################################################
 
-    # Build variable
-    m.Build_MW = Var(m.NEW_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
+def min_cum_build_rule(mod, g, p):
+    """
+    **Constraint Name**: GenNewLin_Min_Cum_Build_Constraint
+    **Enforced Over**: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
 
-    # Auxiliary sets
-    m.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE = \
-        Set(m.NEW_BUILD_GENERATOR_VINTAGES,
-            initialize=operational_periods_by_generator_vintage)
+    Must build a certain amount of capacity by period p.
+    """
+    if mod.gen_new_lin_min_cumulative_new_build_mw == 0:
+        return Constraint.Skip
+    else:
+        return mod.GenNewLin_Capacity_MW[g, p] \
+            >= mod.gen_new_lin_min_cumulative_new_build_mw[g, p]
 
-    m.NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS = \
-        Set(dimen=2, initialize=new_build_option_operational_periods)
 
-    # Add to list of sets we'll join to get the final
-    # PROJECT_OPERATIONAL_PERIODS set
-    getattr(d, capacity_type_operational_period_sets).append(
-        "NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS",
-    )
+def max_cum_build_rule(mod, g, p):
+    """
+    **Constraint Name**: GenNewLin_Max_Cum_Build_Constraint
+    **Enforced Over**: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
 
-    m.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD = \
-        Set(m.PERIODS, dimen=2,
-            initialize=new_build_option_vintages_operational_in_period)
+    Can't build more than certain amount of capacity by period p.
+    """
+    return mod.GenNewLin_Capacity_MW[g, p] \
+        <= mod.gen_new_lin_max_cumulative_new_build_mw[g, p]
 
-    # Expressions and constraints
-    def new_build_capacity_rule(mod, g, p):
-        """
-        Sum all builds of vintages operational in the current period
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return sum(mod.Build_MW[g, v] for (gen, v)
-                   in mod.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-                   if gen == g)
 
-    m.New_Build_Option_Capacity_MW = \
-        Expression(m.NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS,
-                   rule=new_build_capacity_rule)
-
-    def min_cumulative_new_build_rule(mod, g, p):
-        """
-        Must build a certain amount by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        if mod.min_cumulative_new_build_mw == 0:
-            return Constraint.Skip
-        else:
-            return mod.New_Build_Option_Capacity_MW[g, p] >= \
-                mod.min_cumulative_new_build_mw[g, p]
-    m.Min_Cumulative_New_Capacity_Constraint = Constraint(
-        m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT,
-        rule=min_cumulative_new_build_rule)
-
-    def max_cumulative_new_build_rule(mod, g, p):
-        """
-        Can't build more than certain amount by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.New_Build_Option_Capacity_MW[g, p] <= \
-            mod.max_cumulative_new_build_mw[g, p]
-    m.Max_Cumulative_New_Capacity_Constraint = Constraint(
-        m.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT,
-        rule=max_cumulative_new_build_rule)
-
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the capacity of project *g* in period *p*
-
-    See the **add_module_specific_components** method above for how
-    :math:`New\_Build\_Option\_Capacity\_MW_{ng,np}` is calculated.
+    The capacity in a period is the sum of the new capacity of all
+    vintages operational in the that period.
     """
-    return mod.New_Build_Option_Capacity_MW[g, p]
+    return mod.GenNewLin_Capacity_MW[g, p]
 
 
 # TODO: we need to think through where to multiply the annualized costs by
@@ -224,22 +386,19 @@ def capacity_rule(mod, g, p):
 #  capacity constraints
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized capacity cost of *gen_new_lin*
-        project *g* in period *p*
-
     The capacity cost for new-build generators in a given period is the
     capacity-build of a particular vintage times the annualized cost for
     that vintage summed over all vintages operational in the period.
     """
-    return sum(mod.Build_MW[g, v]
-               * mod.annualized_real_cost_per_mw_yr[g, v]
+    return sum(mod.GenNewLin_Build_MW[g, v]
+               * mod.gen_new_lin_annualized_real_cost_per_mw_yr[g, v]
                for (gen, v)
-               in mod.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+               in mod.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p]
                if gen == g)
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -254,16 +413,17 @@ def load_module_specific_data(
     :return:
     """
 
-    # TODO: throw an error when a generator of the 'new_build_option' capacity
+    # TODO: throw an error when a generator of the 'gen_new_lin' capacity
     #   type is not found in new_build_option_vintage_costs.tab
     data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     os.path.join(scenario_directory, subproblem, stage,
+                                  "inputs",
                                   "new_build_generator_vintage_costs.tab"),
-                     index=m.NEW_BUILD_GENERATOR_VINTAGES,
+                     index=m.GEN_NEW_LIN_VNTS,
                      select=("project", "vintage",
                              "lifetime_yrs", "annualized_real_cost_per_mw_yr"),
-                     param=(m.lifetime_yrs_by_new_build_vintage,
-                            m.annualized_real_cost_per_mw_yr)
+                     param=(m.gen_new_lin_lifetime_yrs_by_vintage,
+                            m.gen_new_lin_annualized_real_cost_per_mw_yr)
                      )
 
     # Min and max cumulative capacity
@@ -282,20 +442,20 @@ def load_module_specific_data(
                         "max_cumulative_new_build_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
-    dynamic_components = pd.read_csv(
+    df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage, "inputs",
                      "new_build_generator_vintage_costs.tab"),
         sep="\t", usecols=["project", "vintage"] + used_columns
     )
 
     # min_cumulative_new_build_mw is optional,
-    # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+    # so GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
     # and min_cumulative_new_build_mw simply won't be initialized if
     # min_cumulative_new_build_mw does not exist in the input file
-    if "min_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["min_cumulative_new_build_mw"]):
+    if "min_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_min.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -305,13 +465,13 @@ def load_module_specific_data(
         pass
 
     # max_cumulative_new_build_mw is optional,
-    # so NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+    # so GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
     # and max_cumulative_new_build_mw simply won't be initialized if
     # max_cumulative_new_build_mw does not exist in the input file
-    if "max_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["max_cumulative_new_build_mw"]):
+    if "max_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_max.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -324,23 +484,23 @@ def load_module_specific_data(
     if not project_vintages_with_min:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT"
-        ] = {None: project_vintages_with_min}
-    data_portal.data()["min_cumulative_new_build_mw"] = \
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT"] = \
+            {None: project_vintages_with_min}
+    data_portal.data()["gen_new_lin_min_cumulative_new_build_mw"] = \
         min_cumulative_mw
 
     if not project_vintages_with_max:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT"
-        ] = {None: project_vintages_with_max}
-    data_portal.data()["max_cumulative_new_build_mw"] = \
+        data_portal.data()["GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT"] = \
+            {None: project_vintages_with_max}
+    data_portal.data()["gen_new_lin_max_cumulative_new_build_mw"] = \
         max_cumulative_mw
 
 
-def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
+def export_module_specific_results(
+        scenario_directory, subproblem, stage, m, d
+):
     """
     Export new build generation results.
     :param scenario_directory:
@@ -356,38 +516,14 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_mw"])
-        for (prj, p) in m.NEW_BUILD_GENERATOR_VINTAGES:
+        for (prj, p) in m.GEN_NEW_LIN_VNTS:
             writer.writerow([
                 prj,
                 p,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.Build_MW[prj, p])
+                value(m.GenNewLin_Build_MW[prj, p])
             ])
-
-
-def operational_periods_by_generator_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.lifetime_yrs_by_new_build_vintage[prj, v]
-    )
-
-
-def new_build_option_operational_periods(mod):
-    return project_operational_periods(
-        project_vintages_set=mod.NEW_BUILD_GENERATOR_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE
-    )
-
-
-def new_build_option_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
-        project_vintage_set=mod.NEW_BUILD_GENERATOR_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE,
-        period=p
-    )
 
 
 def summarize_module_specific_results(
@@ -434,6 +570,9 @@ def summarize_module_specific_results(
             new_build_df.to_string(outfile)
             outfile.write("\n")
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -488,24 +627,6 @@ def get_module_specific_inputs_from_database(
     )
 
     return new_gen_costs
-
-
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    # new_gen_costs = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # validate inputs
-    # check that annualize real cost is positive
-    # check that maximum new build doesn't decrease
-    # ...
 
 
 def write_module_specific_model_inputs(
@@ -608,3 +729,24 @@ def import_module_specific_results_into_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    # new_gen_costs = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # validate inputs
+    # check that annualize real cost is positive
+    # check that maximum new build doesn't decrease
+    # ...
