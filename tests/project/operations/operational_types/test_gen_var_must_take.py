@@ -86,12 +86,12 @@ class TestVariableNoCurtailmentOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: VARIABLE_NO_CURTAILMENT_GENERATORS
+        # Set: GEN_VAR_MUST_TAKE
         expected_gen_set = sorted([
             "Customer_PV"
         ])
         actual_gen_set = sorted([
-            prj for prj in instance.VARIABLE_NO_CURTAILMENT_GENERATORS
+            prj for prj in instance.GEN_VAR_MUST_TAKE
             ])
         self.assertListEqual(expected_gen_set,
                              actual_gen_set)
@@ -103,12 +103,12 @@ class TestVariableNoCurtailmentOperationalType(unittest.TestCase):
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
              instance.
-                VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS]
+                GEN_VAR_MUST_TAKE_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: cap_factor_no_curtailment
+        # Param: gen_var_must_take_cap_factor
         all_df = \
             pd.read_csv(
                 os.path.join(
@@ -125,9 +125,9 @@ class TestVariableNoCurtailmentOperationalType(unittest.TestCase):
             vnc_df.set_index(['project', 'timepoint']).to_dict()['cap_factor']
 
         actual_cap_factor = {
-            (g, tmp): instance.cap_factor_no_curtailment[g, tmp]
+            (g, tmp): instance.gen_var_must_take_cap_factor[g, tmp]
             for (g, tmp) in
-            instance.VARIABLE_NO_CURTAILMENT_GENERATOR_OPERATIONAL_TIMEPOINTS
+            instance.GEN_VAR_MUST_TAKE_OPR_TMPS
         }
         self.assertDictEqual(expected_cap_factor, actual_cap_factor)
 

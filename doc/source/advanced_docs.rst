@@ -206,8 +206,7 @@ gridpath.project.capacity.operational_types.gen_var
 
 gridpath.project.capacity.operational_types.gen_var_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take.add_module_specific_components
 
 gridpath.project.capacity.operational_types.stor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
