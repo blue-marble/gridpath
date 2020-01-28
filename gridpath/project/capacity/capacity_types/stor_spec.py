@@ -2,15 +2,20 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **stor_spec** module describes the power
-and energy capacity of storage projects that are available to the optimization
-without having to incur an investment cost. For example, this module can be
-applied to existing storage projects or to storage projects that we know
-will be built in the future and whose capital costs we want to ignore.
+This capacity type describes the power (i.e. charging and discharging
+capacity) and energy capacity (i.e. duration) of storage projects that are
+available to the optimization without having to incur an investment cost.
+For example, it can be applied to existing storage projects or to
+storage projects that will be built in the future and whose capital costs we
+want to ignore (in the objective function).
 
 It is not required to specify a capacity for all periods, i.e. a project can
 be operational in some periods but not in others with no restriction on the
-order and combination of periods.
+order and combination of periods. The user may specify a fixed O&M cost for
+specified-storage projects, but this cost will be a fixed number in the
+objective function and will therefore not affect any of the optimization
+decisions.
+
 """
 
 import csv
@@ -24,126 +29,158 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+     The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-period
-    combinations to describe the project capacity will be available to the
-    optimization in a given period: the
-    *STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS* set. This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* and *STORAGE_OPERATIONAL_PERIODS* set s
-    defined in **gridpath.project.capacity.capacity**. We will also use
-    *ES_P* to designate this set (index :math:`es, esp` where :math:`es\in
-    R` and :math:`esp\in P`).
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`STOR_SPEC_OPR_PRDS`                                            |
+    |                                                                         |
+    | Two-dimensional set of project-period combinations that helps describe  |
+    | the project capacity available in a given period. This set is added to  |
+    | the list of sets to join to get the final                               |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
 
-    We then add four parameters associated with this capacity_type,
-    the project energy and power capacity and its annual fixed cost per
-    unit power and annual fixed cost per unit energy for each operational
-    period:
-    :math:`storage\_specified\_power\_capacity\_mw_{es,esp}`,
-    :math:`storage\_specified\_power\_capacity\_mw_{es,esp}`,
-    :math:`storage\_specified\_fixed\_cost\_per\_mw\_yr_{es,esp}`, and
-    :math:`storage\_specified\_fixed\_cost\_per\_mwh\_yr_{es,esp}`. The
-    fixed cost can be added to the objective function for cost-tracking
-    purposes but will not affect any optimization decisions.
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`stor_spec_power_capacity_mw`                                   |
+    | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's specified power capacity (in MW) in each          |
+    | operational period.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_spec_energy_capacity_mwh`                                 |
+    | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's specified energy capacity (in MWh) in each        |
+    | operational period.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_spec_fixed_cost_per_mw_yr`                                |
+    | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's fixed cost for the power components (in $ per     |
+    | MW-yr.) in each operational period. This cost will be added to the      |
+    | objective function but will not affect optimization decisions.          |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_spec_fixed_cost_per_mwh_yr`                               |
+    | | *Defined over*: :code:`STOR_SPEC_OPR_PRDS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The storage project's fixed cost for the energy components (in $ per    |
+    | MWh-yr.) in each operational period. This cost will be added to the     |
+    | objective function but will not affect optimization decisions.          |
+    +-------------------------------------------------------------------------+
+
     """
-    m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS = \
-        Set(dimen=2)
+
+    # Sets
+    ###########################################################################
+
+    m.STOR_SPEC_OPR_PRDS = Set(dimen=2)
+
+    # Required Params
+    ###########################################################################
+
+    m.stor_spec_power_capacity_mw = Param(
+        m.STOR_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    m.stor_spec_energy_capacity_mwh = Param(
+        m.STOR_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    m.stor_spec_fixed_cost_per_mw_yr = Param(
+        m.STOR_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    m.stor_spec_fixed_cost_per_mwh_yr = Param(
+        m.STOR_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    # Dynamic Components
+    ###########################################################################
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
+        "STOR_SPEC_OPR_PRDS",
     )
+
     # Add to list of sets we'll join to get the final
     # STORAGE_OPERATIONAL_PERIODS set
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS",
+        "STOR_SPEC_OPR_PRDS",
     )
 
-    m.storage_specified_power_capacity_mw = \
-        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
 
-    m.storage_specified_energy_capacity_mwh = \
-        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
-
-    m.storage_specified_fixed_cost_per_mw_yr = \
-        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
-
-    m.storage_specified_fixed_cost_per_mwh_yr = \
-        Param(m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
-
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the power capacity of project *g* in period *p*
-
-    The power capacity of projects of the
-    *stor_spec* capacity type is a
+    The power capacity of projects of the *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.storage_specified_power_capacity_mw[g, p]
+    return mod.stor_spec_power_capacity_mw[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the energy capacity of project *g* in period *p*
-
-    The energy capacity of projects of the
-    *stor_spec* capacity type is a
+    The energy capacity of projects of the *stor_spec* capacity type is a
     pre-specified number for each of the project's operational periods.
     """
-    return mod.storage_specified_energy_capacity_mwh[g, p]
+    return mod.stor_spec_energy_capacity_mwh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized fixed cost of
-        *stor_spec* project *g* in period *p*
-
-    The capacity cost of projects of the *stor_spec*
-    capacity type is a pre-specified number equal to the power capacity
-    times the per-mw fixed cost plus the energy capacity times the per-mwh
-    fixed cost for each of the project's operational periods.
+    The capacity cost of projects of the *stor_spec* capacity type is a
+    pre-specified number equal to the power capacity times the per-mw fixed
+    cost plus the energy capacity times the per-mwh fixed cost for each of
+    the project's operational periods.
     """
-    return mod.storage_specified_power_capacity_mw[g, p] \
-        * mod.storage_specified_fixed_cost_per_mw_yr[g, p] \
-        + mod.storage_specified_energy_capacity_mwh[g, p] \
-        * mod.storage_specified_fixed_cost_per_mwh_yr[g, p]
+    return mod.stor_spec_power_capacity_mw[g, p] \
+        * mod.stor_spec_fixed_cost_per_mw_yr[g, p] \
+        + mod.stor_spec_energy_capacity_mwh[g, p] \
+        * mod.stor_spec_fixed_cost_per_mwh_yr[g, p]
 
 
-def load_module_specific_data(m,
-                              data_portal, scenario_directory, subproblem, stage):
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage, "inputs",
-                                  "storage_specified_capacities.tab"),
-                     index=
-                     m.STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS,
-                     select=("project", "period",
-                             "storage_specified_power_capacity_mw",
-                             "storage_specified_energy_capacity_mwh",
-                             "storage_specified_fixed_cost_per_mw_yr",
-                             "storage_specified_fixed_cost_per_mwh_yr"),
-                     param=(m.storage_specified_power_capacity_mw,
-                            m.storage_specified_energy_capacity_mwh,
-                            m.storage_specified_fixed_cost_per_mw_yr,
-                            m.storage_specified_fixed_cost_per_mwh_yr)
-                     )
+# Input-Output
+###############################################################################
 
+def load_module_specific_data(
+        m, data_portal, scenario_directory, subproblem, stage
+):
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+                              "storage_specified_capacities.tab"),
+        index=m.STOR_SPEC_OPR_PRDS,
+        select=("project", "period",
+                "storage_specified_power_capacity_mw",
+                "storage_specified_energy_capacity_mwh",
+                "storage_specified_fixed_cost_per_mw_yr",
+                "storage_specified_fixed_cost_per_mwh_yr"),
+        param=(m.stor_spec_power_capacity_mw,
+               m.stor_spec_energy_capacity_mwh,
+               m.stor_spec_fixed_cost_per_mw_yr,
+               m.stor_spec_fixed_cost_per_mwh_yr)
+    )
+
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -191,25 +228,6 @@ def get_module_specific_inputs_from_database(
     return stor_capacities
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # stor_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do validation
-    # make sure existing capacity is a postive number
-    # make sure annual fixed costs are positive
-
-
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
@@ -228,19 +246,41 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "storage_specified_capacities.tab"), "w", newline="") as \
-            storage_specified_capacities_tab_file:
-        writer = csv.writer(storage_specified_capacities_tab_file,
-                            delimiter="\t")
+                           "storage_specified_capacities.tab"),
+              "w", newline="") as f:
+        writer = csv.writer(f, delimiter="\t")
 
         # Write header
         writer.writerow(
             ["project", "period",
-             "storage_specified_power_capacity_mw",
-             "storage_specified_energy_capacity_mwh",
-             "storage_specified_fixed_cost_per_mw_yr",
-             "storage_specified_fixed_cost_per_mwh_yr"]
+             "stor_spec_power_capacity_mw",
+             "stor_spec_energy_capacity_mwh",
+             "stor_spec_fixed_cost_per_mw_yr",
+             "stor_spec_fixed_cost_per_mwh_yr"]
         )
 
         for row in stor_capacities:
             writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # stor_capacities = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # do validation
+    # make sure existing capacity is a postive number
+    # make sure annual fixed costs are positive
+
