@@ -336,14 +336,7 @@ Specified Generation (*gen_spec*)
 
 Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators with the same characteristics as
-*gen_ret_lin*, but whose fixed O&M cost can be avoided by 'retiring' them.
-The optimization can make the decision to retire generation in each study
-*period*. Once retired, the generator may not become operational
-again. Retirement decisions for this capacity type are 'linearized,' i.e.
-the optimization may retire generators partially (e.g. retire only 200 MW of
-a 500-MW generator). If retired, the annual fixed O&M cost of these projects
-is avoided in the objective function.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
 
 Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
