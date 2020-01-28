@@ -84,8 +84,7 @@ gridpath.project.capacity.capacity_types
 
 gridpath.project.capacity.capacity_types.gen_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.gen_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
