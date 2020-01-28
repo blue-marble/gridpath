@@ -82,19 +82,19 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_BINARY_BUILD_GENERATOR_VINTAGES
+        # Set: GEN_NEW_BIN_VNTS
         expected_gen_vintage_set = sorted([
             ("Gas_CCGT_New_Binary", 2020),
             ("Gas_CCGT_New_Binary", 2030)
         ])
         actual_gen_vintage_set = sorted(
             [(prj, period)
-             for (prj, period) in instance.NEW_BINARY_BUILD_GENERATOR_VINTAGES
+             for (prj, period) in instance.GEN_NEW_BIN_VNTS
              ]
         )
         self.assertListEqual(expected_gen_vintage_set, actual_gen_vintage_set)
 
-        # Params: lifetime_yrs_by_new_binary_build_vintage
+        # Params: gen_new_bin_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted(
                 {("Gas_CCGT_New_Binary", 2020): 30,
@@ -104,14 +104,14 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.lifetime_yrs_by_new_binary_build_vintage[prj, vintage]
-                 for (prj, vintage) in instance.NEW_BINARY_BUILD_GENERATOR_VINTAGES
+                    instance.gen_new_bin_lifetime_yrs_by_vintage[prj, vintage]
+                 for (prj, vintage) in instance.GEN_NEW_BIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
-        # Params: new_binary_build_annualized_real_cost_per_mw_yr
+        # Params: gen_new_bin_annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(
             sorted(
                 {("Gas_CCGT_New_Binary", 2020): 200000,
@@ -121,8 +121,8 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
         actual_cost = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.new_binary_build_annualized_real_cost_per_mw_yr[prj, vintage]
-                 for (prj, vintage) in instance.NEW_BINARY_BUILD_GENERATOR_VINTAGES
+                    instance.gen_new_bin_annualized_real_cost_per_mw_yr[prj, vintage]
+                 for (prj, vintage) in instance.GEN_NEW_BIN_VNTS
                  }.items()
             )
         )
@@ -142,7 +142,7 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE
+        # Set: OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE
         expected_periods_by_gen_vintage = {
             ("Gas_CCGT_New_Binary", 2020): [2020, 2030],
             ("Gas_CCGT_New_Binary", 2030): [2030]
@@ -150,33 +150,33 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
         actual_periods_by_gen_vintage = {
             (prj, vintage): [period for period in
                 instance.
-                    OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE[
+                    OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE[
                     prj, vintage]]
             for (prj, vintage) in
-                instance.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE
+                instance.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE
         }
         self.assertDictEqual(expected_periods_by_gen_vintage,
                              actual_periods_by_gen_vintage)
 
-        # Set: NEW_BINARY_BUILD_GENERATOR_OPERATIONAL_PERIODS
+        # Set: GEN_NEW_BIN_OPR_PRDS
         expected_gen_op_periods = [
             ("Gas_CCGT_New_Binary", 2020),
             ("Gas_CCGT_New_Binary", 2030)
         ]
         actual_gen_op_periods = sorted([
             (prj, period) for (prj, period) in
-            instance.NEW_BINARY_BUILD_GENERATOR_OPERATIONAL_PERIODS
+            instance.GEN_NEW_BIN_OPR_PRDS
         ])
         self.assertListEqual(expected_gen_op_periods, actual_gen_op_periods)
 
-        # Set: NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD
+        # Set: GEN_NEW_BIN_VNTS_OPR_IN_PERIOD
         expected_gen_vintage_op_in_period = {
             2020: [("Gas_CCGT_New_Binary", 2020)],
             2030: [("Gas_CCGT_New_Binary", 2020), ("Gas_CCGT_New_Binary", 2030)]
         }
         actual_gen_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
-                sorted(instance.NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p])
+                sorted(instance.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p])
                 ] for p in sorted(instance.PERIODS)
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
@@ -185,7 +185,7 @@ class TestNewBinaryBuildGenerator(unittest.TestCase):
     def test_input_validations(self):
         cost_df_columns = ["project", "period", "lifetime_yrs",
             "annualized_real_cost_per_kw_yr"]
-        bld_size_df_columns = ["project", "binary_build_size_mw"]
+        bld_size_df_columns = ["project", "gen_new_bin_build_size_mw"]
         test_cases = {
             # Make sure correct inputs don't throw error
             1: {"cost_df": pd.DataFrame(
