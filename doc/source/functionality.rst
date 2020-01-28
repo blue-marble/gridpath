@@ -355,9 +355,7 @@ is avoided in the objective function.
 
 Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators with the same characteristics as
-*gen_ret_lin*. However, retirement decisions are binary, i.e. the generator
-is either fully retired or not retired at all.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin
 
 Linear New-Build Generation (*gen_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
