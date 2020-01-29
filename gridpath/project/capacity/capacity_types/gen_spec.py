@@ -2,15 +2,17 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gen_spec** module describes the capacity of
-generators that are available to the optimization without having to incur an
-investment cost. For example, this module can be applied to existing
-generators or to generators that we know will be built in the future and
-whose capital costs we want to ignore.
+This capacity type describes generator projects that are available to the
+optimization without having to incur an investment cost, e.g. existing
+projects or projects that will be built in the future and whose capital
+costs we want to ignore (in the objective function). A specified generator can
+be available at a specified capacity in all periods, or in some periods only,
+with no restriction on the order and combination of periods or the variation
+in capacity by period.
 
-It is not required to specify a capacity for all periods, i.e. a project can
-be operational in some periods but not in others with no restriction on the
-order and combination of periods.
+The user may specify a fixed O&M cost for these generators, but this cost will
+be a fixed number in the objective function and will therefore not affect any
+of the optimization decisions.
 """
 
 
@@ -24,81 +26,97 @@ from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
 
 
-# TODO: rename 'existing' to 'specified' to better reflect functionality (
-#  i.e. this module can be used to specify capacity that comes online in the
-#  future but is 'given' to the optimization without having to incur
-#  investment costs)
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-period
-    combinations to describe the project capacity will be available to the
-    optimization in a given period: the
-    *EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS* set. This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *EG_P* to
-    designate this set (index :math:`eg, ep` where :math:`eg\in R` and
-    :math:`ep\in P`).
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_SPEC_OPR_PRDS`                                             |
+    |                                                                         |
+    | Two-dimensional set of project-period combinations that describes the   |
+    | project capacity available in a given period. This set is added to the  |
+    | list of sets to join to get the final                                   |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
 
-    We then add two parameters associated with this capacity_type,
-    the project capacity and its fixed cost for each operational period:
-    :math:`existing\_gen\_no\_econ\_ret\_capacity\_mw_{eg,ep}` and
-    :math:`existing\_no\_econ\_ret\_fixed\_cost\_per\_mw\_yr_{eg,ep}`. The
-    latter can be added to the objective function for cost-tracking
-    purposes but will not affect any optimization decisions.
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_spec_capacity_mw`                                          |
+    | | *Defined over*: :code:`GEN_SPEC_OPR_PRDS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's specified capacity (in MW) in each operational period.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_spec_fixed_cost_per_mw_yr`                                 |
+    | | *Defined over*: :code:`GEN_SPEC_OPR_PRDS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's fixed cost (in $ per MW-yr.) in each operational period.  |
+    | This cost will be added to the objective function but will not affect   |
+    | optimization decisions.                                                 |
+    +-------------------------------------------------------------------------+
+
     """
-    m.EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS = \
-        Set(dimen=2, within=m.PROJECTS*m.PERIODS)
+
+    # Sets
+    ###########################################################################
+
+    m.GEN_SPEC_OPR_PRDS = Set(
+        dimen=2, within=m.PROJECTS*m.PERIODS
+    )
+
+    # Required Params
+    ###########################################################################
+
+    m.gen_spec_capacity_mw = Param(
+        m.GEN_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    m.gen_spec_fixed_cost_per_mw_yr = Param(
+        m.GEN_SPEC_OPR_PRDS,
+        within=NonNegativeReals
+    )
+
+    # Dynamic Components
+    ###########################################################################
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS",
+        "GEN_SPEC_OPR_PRDS",
     )
 
-    m.existing_gen_no_econ_ret_capacity_mw = \
-        Param(m.EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
-    m.existing_no_econ_ret_fixed_cost_per_mw_yr = \
-        Param(m.EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS,
-              within=NonNegativeReals)
 
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the capacity of project *g* in period *p*
-
-    The capacity of projects of the *existing_gen_no_econoimc_retirement*
-    capacity type is a pre-specified number for each of the project's
-    operational periods.
+    The capacity of projects of the *gen_spec* capacity type is a
+    pre-specified number for each of the project's operational periods.
     """
-    return mod.existing_gen_no_econ_ret_capacity_mw[g, p]
+    return mod.gen_spec_capacity_mw[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized fixed cost of
-        *gen_spec* project *g* in period *p*
-
-    The capacity cost of projects of the *existing_gen_no_econoimc_retirement*
-    capacity type is a pre-specified number equal to the capacity times the
-    per-mw fixed cost for each of the project's operational periods.
+    The capacity cost of projects of the *gen_spec* capacity type is a
+    pre-specified number equal to the capacity times the per-mw fixed cost
+    for each of the project's operational periods.
     """
-    existing_gen_no_econ_ret_total_fixed_cost = \
-        mod.existing_gen_no_econ_ret_capacity_mw[g, p] \
-        * mod.existing_no_econ_ret_fixed_cost_per_mw_yr[g, p]
+    return mod.gen_spec_capacity_mw[g, p] \
+        * mod.gen_spec_fixed_cost_per_mw_yr[g, p]
 
-    return existing_gen_no_econ_ret_total_fixed_cost
 
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -113,76 +131,70 @@ def load_module_specific_data(
     :return:
     """
 
-    def determine_existing_gen_no_econ_ret_projects():
+    def determine_gen_spec_projects():
         """
-        Find the existing_no_economic_retirement capacity type projects
+        Find the gen_spec capacity type projects
         :return:
         """
 
-        ex_gen_no_econ_ret_projects = list()
+        gen_spec_projects = list()
 
-        dynamic_components = \
-            pd.read_csv(
-                os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
-                sep="\t", usecols=["project",
-                                   "capacity_type"]
-                )
+        df = pd.read_csv(
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
+                         "projects.tab"),
+            sep="\t",
+            usecols=["project", "capacity_type"]
+        )
 
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["capacity_type"]):
+        for row in zip(df["project"],
+                       df["capacity_type"]):
             if row[1] == "gen_spec":
-                ex_gen_no_econ_ret_projects.append(row[0])
+                gen_spec_projects.append(row[0])
             else:
                 pass
 
-        return ex_gen_no_econ_ret_projects
+        return gen_spec_projects
 
     def determine_period_params():
-        """
-
-        :return:
-        """
-        generators_list = determine_existing_gen_no_econ_ret_projects()
+        generators_list = determine_gen_spec_projects()
         generator_period_list = list()
-        existing_no_econ_ret_capacity_mw_dict = dict()
-        existing_no_econ_ret_fixed_cost_per_mw_yr_dict = dict()
-        dynamic_components = \
-            pd.read_csv(
-                os.path.join(scenario_directory, subproblem, stage, "inputs",
-                             "existing_generation_period_params.tab"),
-                sep="\t"
-                )
+        gen_spec_capacity_mw_dict = dict()
+        gen_spec_fixed_cost_per_mw_yr_dict = dict()
+        df = pd.read_csv(
+            os.path.join(scenario_directory, subproblem, stage, "inputs",
+                         "existing_generation_period_params.tab"),
+            sep="\t"
+        )
 
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["period"],
-                       dynamic_components["existing_capacity_mw"],
-                       dynamic_components["fixed_cost_per_mw_yr"]):
+        for row in zip(df["project"],
+                       df["period"],
+                       df["existing_capacity_mw"],
+                       df["fixed_cost_per_mw_yr"]):
             if row[0] in generators_list:
                 generator_period_list.append((row[0], row[1]))
-                existing_no_econ_ret_capacity_mw_dict[(row[0], row[1])] = \
+                gen_spec_capacity_mw_dict[(row[0], row[1])] = \
                     float(row[2])
-                existing_no_econ_ret_fixed_cost_per_mw_yr_dict[(row[0],
-                                                                 row[1])] = \
+                gen_spec_fixed_cost_per_mw_yr_dict[(row[0], row[1])] = \
                     float(row[3])
             else:
                 pass
 
         return generator_period_list, \
-            existing_no_econ_ret_capacity_mw_dict, \
-            existing_no_econ_ret_fixed_cost_per_mw_yr_dict
+            gen_spec_capacity_mw_dict, \
+            gen_spec_fixed_cost_per_mw_yr_dict
 
-    data_portal.data()[
-        "EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS"
-    ] = {
-        None: determine_period_params()[0]
-    }
+    data_portal.data()["GEN_SPEC_OPR_PRDS"] = \
+        {None: determine_period_params()[0]}
 
-    data_portal.data()["existing_gen_no_econ_ret_capacity_mw"] = \
+    data_portal.data()["gen_spec_capacity_mw"] = \
         determine_period_params()[1]
 
-    data_portal.data()["existing_no_econ_ret_fixed_cost_per_mw_yr"] = \
+    data_portal.data()["gen_spec_fixed_cost_per_mw_yr"] = \
         determine_period_params()[2]
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -195,8 +207,7 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    # Select generators of 'gen_spec' capacity
-    # type only
+    # Select generators of 'gen_spec' capacity type only
     ep_capacities = c.execute(
         """SELECT project, period, existing_capacity_mw,
         annual_fixed_cost_per_mw_year
@@ -228,25 +239,6 @@ def get_module_specific_inputs_from_database(
     return ep_capacities
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # ep_capacities = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # do validation
-    # make sure existing capacity is a postive number
-    # make sure annual fixed costs are positive
-
-
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
@@ -270,8 +262,8 @@ def write_module_specific_model_inputs(
                                    "existing_generation_period_params.tab")
                       ):
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "a") \
-                as existing_project_capacity_tab_file:
+                               "existing_generation_period_params.tab"),
+                  "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")
             for row in ep_capacities:
@@ -280,8 +272,8 @@ def write_module_specific_model_inputs(
     # write header first, then add input data
     else:
         with open(os.path.join(inputs_directory,
-                               "existing_generation_period_params.tab"), "w", newline="") \
-                as existing_project_capacity_tab_file:
+                               "existing_generation_period_params.tab"),
+                  "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
                                 delimiter="\t")
 
@@ -294,3 +286,25 @@ def write_module_specific_model_inputs(
             # Write input data
             for row in ep_capacities:
                 writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # ep_capacities = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # do validation
+    # make sure existing capacity is a postive number
+    # make sure annual fixed costs are positive

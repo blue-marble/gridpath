@@ -332,15 +332,7 @@ optimization problem. The currently implemented capacity types include:
 
 Specified Generation (*gen_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators that are available to the optimization
-without having to incur an investment cost, e.g. existing generators or
-generators that will be built in the future and whose capital costs we want
-to ignore (in the objective function). A specified generator can be available
-in all periods, or in some periods only, with no restriction on the order
-and combination of periods. The user may specify a fixed O&M cost for these
-generators, but this cost will be a fixed number in the objective function
-and will therefore not affect any of the optimization decisions.
-
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
 
 Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
