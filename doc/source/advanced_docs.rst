@@ -170,8 +170,7 @@ gridpath.project.capacity.operational_types.gen_always_on
 
 gridpath.project.capacity.operational_types.gen_commit_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_commit_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

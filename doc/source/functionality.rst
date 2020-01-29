@@ -428,12 +428,7 @@ Binary-Commit Generation (*gen_commit_bin*)
 
 Continuous-Commit Generation (*gen_commit_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is the same as the *gen_commit_bin* operational type,
-but the commitment decisions are declared as continuous (with bounds of 0 to
-1) instead of binary, so 'partial' generators can be committed. This
-treatment can be helpful in situations when mixed-integer problem runtimes
-are long and is similar to loosening the MIP gap (but can target specific
-generators).
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
 
 Capacity-Commit Generation (*gen_commit_cap*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

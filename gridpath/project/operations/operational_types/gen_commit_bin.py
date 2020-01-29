@@ -662,7 +662,7 @@ def add_module_specific_components(m, d):
 def pmax_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Pmax_MW
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp]
@@ -671,7 +671,7 @@ def pmax_rule(mod, g, tmp):
 def pmin_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Pmin_MW
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
@@ -681,7 +681,7 @@ def pmin_rule(mod, g, tmp):
 def provide_power_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Provide_Power_MW
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
     """
     return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
         + mod.GenCommitBin_Pmin_MW[g, tmp] \
@@ -693,7 +693,7 @@ def provide_power_rule(mod, g, tmp):
 def ramp_up_rate_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Ramp_Up_Rate_MW_Per_Tmp
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
 
     Ramp up rate limit in MW per timepoint, derived from input ramp rate
     which is given in fraction of installed capacity per minute. Longer
@@ -717,7 +717,7 @@ def ramp_up_rate_rule(mod, g, tmp):
 def ramp_down_rate_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Ramp_Down_Rate_MW_Per_Tmp
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
 
     Ramp down rate limit in MW per timepoint, derived from input ramp rate
     which is given in fraction of installed capacity per minute. Longer
@@ -741,7 +741,7 @@ def ramp_down_rate_rule(mod, g, tmp):
 def startup_ramp_rate_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
@@ -753,7 +753,7 @@ def startup_ramp_rate_rule(mod, g, tmp):
 def shutdown_ramp_rate_rule(mod, g, tmp):
     """
     **Expression Name**: GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \

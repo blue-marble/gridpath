@@ -85,26 +85,24 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: DISPATCHABLE_LINEAR_COMMIT_GENERATORS
-        expected_disp_lin_commit_gen_set = sorted([
+        # Set: GEN_COMMIT_LIN
+        expected_gen_commit_lin_set = sorted([
             "Disp_Cont_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
-        actual_disp_lin_commit_gen_set = sorted([
-            prj for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+        actual_gen_commit_lin_set = sorted([
+            prj for prj in instance.GEN_COMMIT_LIN
             ])
-        self.assertListEqual(expected_disp_lin_commit_gen_set,
-                             actual_disp_lin_commit_gen_set)
+        self.assertListEqual(expected_gen_commit_lin_set,
+                             actual_gen_commit_lin_set)
 
-        # Set: DISPATCHABLE_LINEAR_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS
+        # Set: GEN_COMMIT_LIN_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(
-                expected_disp_lin_commit_gen_set
+                expected_gen_commit_lin_set
             )
         )
         actual_operational_timepoints_by_project = sorted(
-            [(g, tmp) for (g, tmp) in
-             instance.
-                DISPATCHABLE_LINEAR_COMMIT_GENERATOR_OPERATIONAL_TIMEPOINTS]
+            [(g, tmp) for (g, tmp) in instance.GEN_COMMIT_LIN_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
@@ -114,75 +112,75 @@ class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
                                         "Clunky_Old_Gen": 0.4,
                                         "Clunky_Old_Gen2": 0.4}
         actual_min_stable_fraction = {
-            prj: instance.disp_linear_commit_min_stable_level_fraction[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_min_stable_level_fraction[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_min_stable_fraction,
                              actual_min_stable_fraction)
 
-        # Param: displincommit_startup_plus_ramp_up_rate
+        # Param: gen_commit_lin_startup_plus_ramp_up_rate
         expected_startup_plus_ramp_up_rate = {"Disp_Cont_Commit": 0.6,
                                               "Clunky_Old_Gen": 1,
                                               "Clunky_Old_Gen2": 1}
         actual_startup_plus_ramp_up_rate = {
-            prj: instance.displincommit_startup_plus_ramp_up_rate[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_startup_plus_ramp_up_rate[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_startup_plus_ramp_up_rate,
                              actual_startup_plus_ramp_up_rate)
 
-        # Param: displincommit_shutdown_plus_ramp_down_rate
+        # Param: gen_commit_lin_shutdown_plus_ramp_down_rate
         expected_shutdown_plus_ramp_down_rate = {"Disp_Cont_Commit": 0.6,
                                                  "Clunky_Old_Gen": 1,
                                                  "Clunky_Old_Gen2": 1}
         actual_shutdown_plus_ramp_down_rate = {
-            prj: instance.displincommit_shutdown_plus_ramp_down_rate[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_shutdown_plus_ramp_down_rate[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_shutdown_plus_ramp_down_rate,
                              actual_shutdown_plus_ramp_down_rate)
 
-        # Param: displincommit_ramp_up_when_on_rate
+        # Param: gen_commit_lin_ramp_up_when_on_rate
         expected_ramp_up_when_on_rate = {"Disp_Cont_Commit": 0.3,
                                          "Clunky_Old_Gen": 1,
                                          "Clunky_Old_Gen2": 1}
         actual_ramp_down_when_on_rate = {
-            prj: instance.displincommit_ramp_up_when_on_rate[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_ramp_up_when_on_rate[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_ramp_up_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
-        # Param: displincommit_ramp_down_when_on_rate
+        # Param: gen_commit_lin_ramp_down_when_on_rate
         expected_ramp_down_when_on_rate = {"Disp_Cont_Commit": 0.5,
                                            "Clunky_Old_Gen": 1,
                                            "Clunky_Old_Gen2": 1}
         actual_ramp_down_when_on_rate = {
-            prj: instance.displincommit_ramp_down_when_on_rate[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_ramp_down_when_on_rate[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_ramp_down_when_on_rate,
                              actual_ramp_down_when_on_rate)
 
-        # Param: displincommit_min_up_time_hours
+        # Param: gen_commit_lin_min_up_time_hrs
         expected_min_up_time = {"Disp_Cont_Commit": 3,
                                 "Clunky_Old_Gen": 0,
                                 "Clunky_Old_Gen2": 0}
         actual_min_up_time = {
-            prj: instance.displincommit_min_up_time_hours[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_min_up_time_hrs[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
 
         self.assertDictEqual(expected_min_up_time,
                              actual_min_up_time)
 
-        # Param: displincommit_min_down_time_hours
+        # Param: gen_commit_lin_min_down_time_hrs
         expected_min_down_time = {"Disp_Cont_Commit": 7,
                                   "Clunky_Old_Gen": 0,
                                   "Clunky_Old_Gen2": 0}
         actual_min_down_time = {
-            prj: instance.displincommit_min_down_time_hours[prj]
-            for prj in instance.DISPATCHABLE_LINEAR_COMMIT_GENERATORS
+            prj: instance.gen_commit_lin_min_down_time_hrs[prj]
+            for prj in instance.GEN_COMMIT_LIN
         }
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
