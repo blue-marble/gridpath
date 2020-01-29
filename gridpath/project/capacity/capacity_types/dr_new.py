@@ -2,18 +2,21 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This module describes a supply curve for new shiftable load capacity.
-
-The supply curve does not have vintages, i.e. there are no cost differences for
-capacity built in different periods. The cost for new capacity is specified
-via a piecewise linear function of new capacity build and constraint (cost is
-constrained to be greater than or equal to the function).
+This capacity type describes a supply curve for new shiftable load (DR; demand
+response) capacity. The supply curve does not have vintages, i.e. there are
+no cost differences for capacity built in different periods. The cost for
+new capacity is specified via a piecewise linear function of new capacity
+build and constraint (cost is constrained to be greater than or equal to the
+function).
 
 The new capacity build variable has units of MWh. We then calculate the
 power capacity based on the 'minimum duration' specified for the project,
 e.g. if the minimum duration specified is N hours, then the MW capacity will
 be the new build in MWh divided by N (the MWh capacity can't be discharged
 in less than N hours, as the max power constraint will bind).
+
+This type is a custom implementation for GridPath projects in the California
+Integrated Resource Planning proceeding.
 """
 from __future__ import division
 
@@ -32,162 +35,288 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    Describes the model formulation for a supply curve for shift DR. No
-    vintages for now.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`DR_NEW`                                                        |
+    |                                                                         |
+    | The list of :code:`dr_new` projects being modeled.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`DR_NEW_OPR_PRDS`                                               |
+    |                                                                         |
+    | Two-dimensional set of all :code:`dr_new` projects and their            |
+    | operational periods.                                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`DR_NEW_PTS`                                                    |
+    |                                                                         |
+    | Two-dimensional set of all :code:`dr_new` projects and their supply     |
+    | curve points.                                                           |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`dr_new_min_duration`                                           |
+    | | *Defined over*: :code:`DR_NEW`                                        |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's duration in hours, i.e. how many hours the load can be    |
+    | shifted.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`dr_new_min_cumulative_new_build_mwh`                           |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum cumulative amount of shiftable load capacity (in MWh) that  |
+    | must be built for a project by a certain period.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`dr_new_max_cumulative_new_build_mwh`                           |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum cumulative amount of shiftable load capacity (in MWh) that  |
+    | must be built for a project by a certain period.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`dr_new_supply_curve_slope`                                     |
+    | | *Defined over*: :code:`DR_NEW_PTS`                                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's slope for each point (section) in the piecewise linear    |
+    | supply cost curve, in $ per MWh.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`dr_new_supply_curve_intercept`                                 |
+    | | *Defined over*: :code:`DR_NEW_PTS`                                    |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's intercept for each point (section) in the piecewise       |
+    | linear supply cost curve, in $.                                         |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`DRNew_Build_MWh`                                               |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Determines how much shiftable load capacity (in MWh) is built in each   |
+    | operational period.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`DRNew_Cost`                                                    |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The cost of new shiftable load capacity in each operational period.     |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`DRNew_Energy_Capacity_MWh`                                     |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's total energy capacity (in MWh) in each operational period |
+    | is the sum of the new-built energy capacity in all of the previous      |
+    | periods.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`DRNew_Power_Capacity_MW`                                       |
+    | | *Defined over*: :code:`DR_NEW_OPR_PRDS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's total power capacity (in MW) in each operational period   |
+    | is equal to the total energy capacity in that period, divided by the    |
+    | project's minimum duraiton (in hours).                                  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`DRNew_Cost_Constraint`                                         |
+    | | *Defined over*: :code:`DR_NEW_PTS*PERIODS`                            |
+    |                                                                         |
+    | Ensures that the project's cost in each operational period is larger    |
+    | than the calculated piecewise linear cost in each segment. Only one     |
+    | segment will bind at a time.                                            |
+    +-------------------------------------------------------------------------+
+
     """
 
-    m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS = Set()
-    m.shiftable_load_supply_curve_min_duration = Param(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS, within=NonNegativeReals
-    )
+    # Sets
+    ###########################################################################
 
-    m.new_shiftable_load_supply_curve_min_cumulative_new_build_mwh = Param(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS, m.PERIODS,
-        within=NonNegativeReals
-    )
-    m.new_shiftable_load_supply_curve_max_cumulative_new_build_mwh = Param(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS, m.PERIODS,
-        within=NonNegativeReals
-    )
+    m.DR_NEW = Set()
 
-    # Limit supply curve to 1000 points
-    m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS = Set(
+    m.DR_NEW_OPR_PRDS = Set(
         dimen=2,
-        within=m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS*list(range(1, 1001))
+        initialize=m.DR_NEW*m.PERIODS
     )
-    m.new_shiftable_load_supply_curve_slope = Param(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS,
+
+    m.DR_NEW_PTS = Set(
+        dimen=2,
+        within=m.DR_NEW*list(range(1, 1001))
+    )
+
+    # Required Params
+    ###########################################################################
+
+    m.dr_new_min_duration = Param(
+        m.DR_NEW,
         within=NonNegativeReals
     )
-    m.new_shiftable_load_supply_curve_intercept = Param(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS,
+
+    m.dr_new_min_cumulative_new_build_mwh = Param(
+        m.DR_NEW, m.PERIODS,  # TODO: change to DR_NEW_OPR_PRDS?
+        within=NonNegativeReals
+    )
+
+    m.dr_new_max_cumulative_new_build_mwh = Param(
+        m.DR_NEW, m.PERIODS,  # TODO: change to DR_NEW_OPR_PRDS?
+        within=NonNegativeReals
+    )
+
+    m.dr_new_supply_curve_slope = Param(
+        m.DR_NEW_PTS,
+        within=NonNegativeReals
+    )
+
+    m.dr_new_supply_curve_intercept = Param(
+        m.DR_NEW_PTS,
         within=Reals
     )
 
-    # No vintages (can build in all periods with no cost differences)
-    # Supply curve is in terms of energy
-    m.Build_Shiftable_Load_Supply_Curve_Energy_MWh = Var(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS, m.PERIODS,
+    # Variables
+    ###########################################################################
+
+    m.DRNew_Build_MWh = Var(
+        m.DR_NEW, m.PERIODS,  # TODO: change to DR_NEW_OPR_PRDS?
         within=NonNegativeReals
     )
 
-    # No vintages, so all periods are operational
-    m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS = Set(
-        dimen=2,
-        initialize=m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS*m.PERIODS
+    m.DRNew_Cost = Var(
+        m.DR_NEW_OPR_PRDS,
+        within=NonNegativeReals
     )
+
+    # Expressions
+    ###########################################################################
+
+    m.DRNew_Energy_Capacity_MWh = Expression(
+        m.DR_NEW_OPR_PRDS,
+        rule=dr_new_energy_capacity_rule
+    )
+
+    m.DRNew_Power_Capacity_MW = Expression(
+        m.DR_NEW_OPR_PRDS,
+        rule=dr_new_power_capacity_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.DRNew_Cost_Constraint = Constraint(
+        m.DR_NEW_PTS*m.PERIODS,  # TODO: define new set?
+        rule=cost_rule
+    )
+
+    # Dynamic Components
+    ###########################################################################
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS",
+        "DR_NEW_OPR_PRDS",
     )
     # Add to list of sets we'll join to get the final
     # STORAGE_OPERATIONAL_PERIODS set
     # We'll include shiftable load with storage
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS",
+        "DR_NEW_OPR_PRDS",
     )
 
-    def new_shiftable_load_supply_curve_energy_capacity_rule(mod, g, p):
-        """
-        Vintages = all periods
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return sum(
-            mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, prev_p]
-            for prev_p in mod.PERIODS if prev_p <= p
-        )
 
-    m.New_Shiftable_Load_Supply_Curve_Energy_Capacity_MWh = Expression(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,
-        rule=new_shiftable_load_supply_curve_energy_capacity_rule
+# Expression Rules
+###############################################################################
+
+def dr_new_energy_capacity_rule(mod, g, p):
+    """
+    **Expression Name**: DRNew_Energy_Capacity_MWh
+    **Defined Over**: DR_NEW_OPR_PRDS
+
+    Vintages = all periods
+    """
+    return sum(
+        mod.DRNew_Build_MWh[g, prev_p]
+        for prev_p in mod.PERIODS if prev_p <= p
     )
 
-    def new_shiftable_load_supply_curve_power_capacity_rule(mod, g, p):
-        """
-        Vintages = all periods
 
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.Build_Shiftable_Load_Supply_Curve_Energy_MWh[g, p] \
-            / mod.shiftable_load_supply_curve_min_duration[g]
+def dr_new_power_capacity_rule(mod, g, p):
+    """
+    **Expression Name**: DRNew_Power_Capacity_MW
+    **Defined Over**: DR_NEW_OPR_PRDS
 
-    m.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW = Expression(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,
-        rule=new_shiftable_load_supply_curve_power_capacity_rule
-    )
+    Vintages = all periods
+    """
+    return mod.DRNew_Build_MWh[g, p] / mod.dr_new_min_duration[g]
 
-    # Cost
-    m.New_Shiftable_Load_Supply_Curve_Cost = Var(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS,
-        within=NonNegativeReals
-    )
 
-    def new_shiftable_load_supply_curve_cost_rule(mod, project, point, period):
-        """
+# Constraint Formulation Rules
+###############################################################################
 
-        :param mod:
-        :param project:
-        :param point:
-        :param period:
-        :return:
-        """
-        return mod.New_Shiftable_Load_Supply_Curve_Cost[project, period] \
-            >= mod.new_shiftable_load_supply_curve_slope[project, point] \
-            * mod.New_Shiftable_Load_Supply_Curve_Energy_Capacity_MWh[
-                      project, period] \
-            + mod.new_shiftable_load_supply_curve_intercept[project, point]
+def cost_rule(mod, project, point, period):
+    """
+    **Constraint Name**: DRNew_Cost_Constraint
+    **Enforced Over**: m.DR_NEW_PTS*m.PERIODS
 
-    m.New_Shiftable_Load_Supply_Curve_Cost_Constraint = Constraint(
-        m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS*m.PERIODS,
-        rule=new_shiftable_load_supply_curve_cost_rule
-    )
+    For each segment on the piecewise linear curve, the cost variable is
+    constrained to be equal to or larger than the calculated value on the
+    curve. Depending on the cumulative build (*DRNew_Energy_Capacity_MWh*)
+    only one segment is active at a time. The supply curve is assumed to be
+    convex, i.e. costs increase at an increasing rate as you move up the
+    curve.
+    """
+    return mod.DRNew_Cost[project, period] \
+        >= mod.dr_new_supply_curve_slope[project, point] \
+        * mod.DRNew_Energy_Capacity_MWh[project, period] \
+        + mod.dr_new_supply_curve_intercept[project, point]
 
+
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the power capacity of storage project *g* in period *p*
-
-    The total power capacity of shiftable load operational in period :math:`p`.
+    The total power capacity of dr_new operational in period p.
     """
-    return mod.New_Shiftable_Load_Supply_Curve_Power_Capacity_MW[g, p]
+    return mod.DRNew_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the power capacity of storage project *g* in period *p*
-
-    The total power capacity of shiftable load operational in period :math:`p`.
+    The total energy capacity of dr_new operational in period p.
     """
-    return mod.New_Shiftable_Load_Supply_Curve_Energy_Capacity_MWh[g, p]
+    return mod.DRNew_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized capacity cost of
-        *new_shiftable_load_supply_curve* project *g* in period *p*
     """
-    return mod.New_Shiftable_Load_Supply_Curve_Cost[g, p]
+    return mod.DRNew_Cost[g, p]
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -203,21 +332,18 @@ def load_module_specific_data(
     """
 
     def determine_projects():
-        """
-        :return:
-        """
         projects = list()
         max_fraction = dict()
 
-        dynamic = pd.read_csv(
+        df = pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage,
                          "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type", "minimum_duration_hours"]
         )
-        for r in zip(dynamic["project"],
-                     dynamic["capacity_type"],
-                     dynamic["minimum_duration_hours"]):
+        for r in zip(df["project"],
+                     df["capacity_type"],
+                     df["minimum_duration_hours"]):
             if r[1] == "dr_new":
                 projects.append(r[0])
                 max_fraction[r[0]] \
@@ -227,32 +353,28 @@ def load_module_specific_data(
 
         return projects, max_fraction
 
-    data_portal.data()["NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS"] = {
-        None: determine_projects()[0]
-    }
-    data_portal.data()["shiftable_load_supply_curve_min_duration"] = \
-        determine_projects()[1]
+    data_portal.data()["DR_NEW"] = {None: determine_projects()[0]}
+    data_portal.data()["dr_new_min_duration"] = determine_projects()[1]
 
     data_portal.load(
-        filename=os.path.join(
-            scenario_directory, "inputs",
-            "new_shiftable_load_supply_curve.tab"),
-        index=m.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS,
+        filename=os.path.join(scenario_directory, "inputs",
+                              "new_shiftable_load_supply_curve.tab"),
+        index=m.DR_NEW_PTS,
         select=("project", "point", "slope", "intercept"),
-        param=(m.new_shiftable_load_supply_curve_slope,
-               m.new_shiftable_load_supply_curve_intercept)
+        param=(m.dr_new_supply_curve_slope,
+               m.dr_new_supply_curve_intercept)
     )
 
     data_portal.load(
-        filename=os.path.join(
-            scenario_directory, "inputs",
-            "new_shiftable_load_supply_curve_potential.tab"),
-        param=(
-            m.new_shiftable_load_supply_curve_min_cumulative_new_build_mwh,
-            m.new_shiftable_load_supply_curve_max_cumulative_new_build_mwh
-        )
+        filename=os.path.join(scenario_directory, "inputs",
+                              "new_shiftable_load_supply_curve_potential.tab"),
+        param=(m.dr_new_min_cumulative_new_build_mwh,
+               m.dr_new_max_cumulative_new_build_mwh)
     )
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -335,22 +457,6 @@ def get_module_specific_inputs_from_database(
     return min_max_builds, supply_curve_count, supply_curve_id, supply_curve
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
-    #     get_module_specific_inputs_from_database(
-    #         subscenarios, subproblem, stage, conn)
-
-    # validate inputs
-
-
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
@@ -374,10 +480,9 @@ def write_module_specific_model_inputs(
         get_module_specific_inputs_from_database(
             subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(
-            inputs_directory,
-            "new_shiftable_load_supply_curve_potential.tab"
-    ), "w", newline="") as potentials_tab_file:
+    with open(os.path.join(inputs_directory,
+                           "new_shiftable_load_supply_curve_potential.tab"),
+              "w", newline="") as potentials_tab_file:
         writer = csv.writer(potentials_tab_file, delimiter="\t")
 
         writer.writerow([
@@ -392,10 +497,9 @@ def write_module_specific_model_inputs(
     # Supply curve
     # No supply curve periods for now, so check that we have only specified
     # a single supply curve for all periods in inputs_project_new_cost
-    with open(os.path.join(
-            inputs_directory,
-            "new_shiftable_load_supply_curve.tab"
-    ), "w", newline="") as supply_curve_tab_file:
+    with open(os.path.join(inputs_directory,
+                           "new_shiftable_load_supply_curve.tab"),
+              "w", newline="") as supply_curve_tab_file:
         writer = csv.writer(supply_curve_tab_file, delimiter="\t")
 
         writer.writerow([
@@ -414,3 +518,22 @@ def write_module_specific_model_inputs(
 
                 for row in supply_curve:
                     writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    # min_max_builds, supply_curve_count, supply_curve_id, supply_curve = \
+    #     get_module_specific_inputs_from_database(
+    #         subscenarios, subproblem, stage, conn)
+
+    # validate inputs

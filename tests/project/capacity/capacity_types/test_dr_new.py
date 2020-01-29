@@ -82,28 +82,28 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS
+        # Set: DR_NEW
         expected_projects = ["Shift_DR"]
         actual_projects = sorted(
-            [prj for prj in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS]
+            [prj for prj in instance.DR_NEW]
         )
         self.assertListEqual(expected_projects,
                              actual_projects)
 
-        # Param: shiftable_load_supply_curve_min_duration
+        # Param: dr_new_min_duration
         expected_duration = OrderedDict(
             sorted({"Shift_DR": 6}.items())
         )
         actual_duration = OrderedDict(
             sorted(
-                {prj: instance.shiftable_load_supply_curve_min_duration[prj]
-                 for prj in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS
+                {prj: instance.dr_new_min_duration[prj]
+                 for prj in instance.DR_NEW
                  }.items()
             )
         )
         self.assertDictEqual(expected_duration, actual_duration)
 
-        # Param: new_shiftable_load_supply_curve_min_cumulative_new_build_mwh
+        # Param: dr_new_min_cumulative_new_build_mwh
         expected_min_build = OrderedDict(
             sorted({("Shift_DR", 2020): 1,
                     ("Shift_DR", 2030): 2}.items())
@@ -111,17 +111,17 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         actual_min_build = OrderedDict(
             sorted(
                 {(prj, p): instance.
-                new_shiftable_load_supply_curve_min_cumulative_new_build_mwh[
+                dr_new_min_cumulative_new_build_mwh[
                     prj, p]
                  for prj in
-                 instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS
+                 instance.DR_NEW
                  for p in instance.PERIODS
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_build, actual_min_build)
 
-        # Param: new_shiftable_load_supply_curve_max_cumulative_new_build_mwh
+        # Param: dr_new_max_cumulative_new_build_mwh
         expected_potential = OrderedDict(
             sorted({("Shift_DR", 2020): 10,
                     ("Shift_DR", 2030): 20}.items())
@@ -129,27 +129,27 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         actual_potential = OrderedDict(
             sorted(
                 {(prj, p): instance.
-                new_shiftable_load_supply_curve_max_cumulative_new_build_mwh[
+                dr_new_max_cumulative_new_build_mwh[
                     prj, p]
                  for prj in
-                 instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECTS
+                 instance.DR_NEW
                  for p in instance.PERIODS
                  }.items()
             )
         )
         self.assertDictEqual(expected_potential, actual_potential)
 
-        # Set: NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS
+        # Set: DR_NEW_PTS
         expected_proj_points = [
             ("Shift_DR", 1), ("Shift_DR", 2), ("Shift_DR", 3)
         ]
         actual_proj_points = sorted([
             (prj, pnt) for (prj, pnt)
-            in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS
+            in instance.DR_NEW_PTS
         ])
         self.assertListEqual(expected_proj_points, actual_proj_points)
 
-        # Param: new_shiftable_load_supply_curve_slope
+        # Param: dr_new_supply_curve_slope
         expected_slopes = {
             ("Shift_DR", 1): 25000,
             ("Shift_DR", 2): 50000,
@@ -157,13 +157,13 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         }
         actual_slopes = {
             (prj, pnt):
-                instance.new_shiftable_load_supply_curve_slope[prj, pnt]
+                instance.dr_new_supply_curve_slope[prj, pnt]
             for (prj, pnt)
-            in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS
+            in instance.DR_NEW_PTS
         }
         self.assertDictEqual(expected_slopes, actual_slopes)
 
-        # Param: new_shiftable_load_supply_curve_intercept
+        # Param: dr_new_supply_curve_intercept
         expected_intercepts = {
             ("Shift_DR", 1): 0,
             ("Shift_DR", 2): -256987769,
@@ -171,20 +171,20 @@ class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
         }
         actual_intercepts = {
             (prj, pnt):
-                instance.new_shiftable_load_supply_curve_intercept[prj, pnt]
+                instance.dr_new_supply_curve_intercept[prj, pnt]
             for (prj, pnt)
-            in instance.NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_POINTS
+            in instance.DR_NEW_PTS
         }
         self.assertDictEqual(expected_intercepts, actual_intercepts)
 
-        # Set: NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS
+        # Set: DR_NEW_OPR_PRDS
         expected_op_per = sorted([
             ("Shift_DR", 2020), ("Shift_DR", 2030)
         ])
         actual_op_per = sorted([
             (prj, per) for (prj, per)
             in instance.
-                NEW_SHIFTABLE_LOAD_SUPPLY_CURVE_PROJECT_OPERATIONAL_PERIODS
+                DR_NEW_OPR_PRDS
         ])
         self.assertListEqual(expected_op_per, actual_op_per)
 
