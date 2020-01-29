@@ -352,19 +352,7 @@ Binary New-Build Generation (*gen_new_bin*)
 
 Specified Storage (*stor_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes the power (i.e. charging and discharging
-capacity) and energy capacity (i.e. duration) of storage projects that are
-available to the optimization without having to incur an investment cost.
-For example, it can be applied to existing storage projects or to
-storage projects that will be built in the future and whose capital costs we
-want to ignore (in the objective function).
-
-It is not required to specify a capacity for all periods, i.e. a project can
-be operational in some periods but not in others with no restriction on the
-order and combination of periods. The user may specify a fixed O&M cost for
-specified-storage projects, but this cost will be a fixed number in the
-objective function and will therefore not affect any of the optimization
-decisions.
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
 
 Linear New-Build Storage (*stor_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

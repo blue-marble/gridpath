@@ -82,19 +82,19 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+        # Set: STOR_SPEC_OPR_PRDS
         expected_proj_period_set = sorted([
             ("Battery_Specified", 2020)
         ])
         actual_proj_period_set = \
             sorted([(prj, period) for (prj, period) in
                     instance.
-                   STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+                   STOR_SPEC_OPR_PRDS
                     ]
                    )
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
-        # Params: storage_specified_power_capacity_mw
+        # Params: stor_spec_power_capacity_mw
         expected_specified_power_cap = OrderedDict(
             sorted(
                 {("Battery_Specified", 2020): 6}.items()
@@ -103,10 +103,10 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         actual_specified_power_cap = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.storage_specified_power_capacity_mw[prj, period]
+                    instance.stor_spec_power_capacity_mw[prj, period]
                  for (prj, period) in
                  instance.
-                    STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+                    STOR_SPEC_OPR_PRDS
                  }.items()
             )
         )
@@ -122,17 +122,17 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         actual_specified_energy_cap = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.storage_specified_energy_capacity_mwh[prj, period]
+                    instance.stor_spec_energy_capacity_mwh[prj, period]
                  for (prj, period) in
                  instance.
-                    STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+                    STOR_SPEC_OPR_PRDS
                  }.items()
             )
         )
         self.assertDictEqual(expected_specified_energy_cap,
                              actual_specified_energy_cap)
 
-        # Params: storage_specified_fixed_cost_per_mw_yr
+        # Params: stor_spec_fixed_cost_per_mw_yr
         expected_fixed_cost_per_mw = OrderedDict(
             sorted(
                 {("Battery_Specified", 2020): 10000}.items()
@@ -141,18 +141,18 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         actual_fixed_cost_per_mw = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.storage_specified_fixed_cost_per_mw_yr[prj,
+                    instance.stor_spec_fixed_cost_per_mw_yr[prj,
                                                                     period]
                  for (prj, period) in
                  instance.
-                    STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+                    STOR_SPEC_OPR_PRDS
                  }.items()
             )
         )
         self.assertDictEqual(expected_fixed_cost_per_mw,
                              actual_fixed_cost_per_mw)
 
-        # Params: storage_specified_fixed_cost_per_mwh_yr
+        # Params: stor_spec_fixed_cost_per_mwh_yr
         expected_fixed_cost_per_mwh = OrderedDict(
             sorted(
                 {("Battery_Specified", 2020): 5000}.items()
@@ -161,11 +161,11 @@ class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
         actual_fixed_cost_per_mwh = OrderedDict(
             sorted(
                 {(prj, period):
-                    instance.storage_specified_fixed_cost_per_mwh_yr[prj,
+                    instance.stor_spec_fixed_cost_per_mwh_yr[prj,
                                                                     period]
                  for (prj, period) in
                  instance.
-                    STORAGE_SPECIFIED_NO_ECON_RETRMNT_OPERATIONAL_PERIODS
+                    STOR_SPEC_OPR_PRDS
                  }.items()
             )
         )
