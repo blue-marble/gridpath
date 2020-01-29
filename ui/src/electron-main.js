@@ -255,18 +255,28 @@ function startServer () {
       // The server entry point based on the Python directory and the
       // executables directory ('Scripts' on Windows, 'bin' otherwise)
       const executablesDirectory = (isWindows === true) ? 'Scripts' : 'bin';
-      const serverEntryPoint = path.join(
-        pyDir, executablesDirectory, 'gridpath_run_server'
-      );
 
       // Start the server (if Python path is set)
       if (pyDir == null) {
-        // TODO: add handling of null here
-        console.log("No Python path set.")
+        console.log("No Python path set.");
+        require('electron').dialog.showMessageBox(
+          {
+            type: 'warning',
+            buttons: ['OK'],
+            title: 'Warning: No Python Set',
+            message: 'Welcome to GridPath. A GriPath Python environment' +
+              ' directory has not been set, so the GridPath UI server will' +
+              ' not start. Go to Settings to select a Python directory and' +
+              ' other UI requirements, then restart the UI.'
+         });
       }
       else {
         console.log("Starting server...");
         console.log("...database is ", dbPath);
+
+        const serverEntryPoint = path.join(
+          pyDir, executablesDirectory, 'gridpath_run_server'
+        );
         // Start Flask server
         // TODO: lots of issues with child_process on Windows.
         //  Enough to switch back to python-shell?
