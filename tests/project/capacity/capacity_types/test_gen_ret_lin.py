@@ -82,77 +82,77 @@ class TestExistingGenLinearEconRet(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+        # Set: GEN_RET_LIN_OPR_PRDS
         expected_gen_set = [("Clunky_Old_Gen", 2020), ("Clunky_Old_Gen", 2030)]
         actual_gen_set = sorted([
             (g, p) for (g, p) in
             instance.
-            EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+            GEN_RET_LIN_OPR_PRDS
             ])
         self.assertListEqual(expected_gen_set, actual_gen_set)
 
-        # Param: existing_lin_econ_ret_capacity_mw
+        # Param: gen_ret_lin_capacity_mw
         expected_cap = {
             ("Clunky_Old_Gen", 2020): 10, ("Clunky_Old_Gen", 2030): 10
         }
         actual_cap = {
-            (g, p): instance.existing_lin_econ_ret_capacity_mw[g, p]
+            (g, p): instance.gen_ret_lin_capacity_mw[g, p]
             for (g, p) in
             instance.
-            EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+            GEN_RET_LIN_OPR_PRDS
     }
         self.assertDictEqual(expected_cap, actual_cap)
 
-        # Set: EXISTING_LINEAR_ECON_RETRMNT_GENERATORS
+        # Set: GEN_RET_LIN
         expected_gens = ["Clunky_Old_Gen"]
         actual_gens = [
-            g for g in instance.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS
+            g for g in instance.GEN_RET_LIN
         ]
         self.assertListEqual(expected_gens, actual_gens)
 
-        # Set: OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS
+        # Set: OPR_PRDS_BY_GEN_RET_LIN
         expected_periods_by_generator = {
             "Clunky_Old_Gen": [2020, 2030]
         }
         actual_periods_by_generator = {
             g: [p for p in
-                instance.OPRTNL_PERIODS_BY_EX_LIN_ECON_RETRMNT_GENERATORS[g]
-                ] for g in instance.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS
+                instance.OPR_PRDS_BY_GEN_RET_LIN[g]
+                ] for g in instance.GEN_RET_LIN
         }
         self.assertDictEqual(expected_periods_by_generator,
                              actual_periods_by_generator)
 
-        # Param: ex_gen_lin_econ_ret_gen_first_period
+        # Param: gen_ret_lin_first_period
         expected_first_period = {
             "Clunky_Old_Gen": 2020
         }
         actual_first_period = {
-            g: instance.ex_gen_lin_econ_ret_gen_first_period[g]
-            for g in instance.EXISTING_LINEAR_ECON_RETRMNT_GENERATORS
+            g: instance.gen_ret_lin_first_period[g]
+            for g in instance.GEN_RET_LIN
             }
         self.assertDictEqual(expected_first_period, actual_first_period)
 
-        # Param: existing_lin_econ_ret_capacity_mw
+        # Param: gen_ret_lin_capacity_mw
         expected_cap = {
             ("Clunky_Old_Gen", 2020): 10, ("Clunky_Old_Gen", 2030): 10
         }
         actual_cap = {
-            (g, p): instance.existing_lin_econ_ret_capacity_mw[g, p]
+            (g, p): instance.gen_ret_lin_capacity_mw[g, p]
             for (g, p) in
             instance.
-                EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                GEN_RET_LIN_OPR_PRDS
         }
         self.assertDictEqual(expected_cap, actual_cap)
 
-        # Param: existing_lin_econ_ret_fixed_cost_per_mw_yr
+        # Param: gen_ret_lin_fixed_cost_per_mw_yr
         expected_cost = {
             ("Clunky_Old_Gen", 2020): 1000, ("Clunky_Old_Gen", 2030): 1000
         }
         actual_cost = {
-            (g, p): instance.existing_lin_econ_ret_fixed_cost_per_mw_yr[g, p]
+            (g, p): instance.gen_ret_lin_fixed_cost_per_mw_yr[g, p]
             for (g, p) in
             instance.
-            EXISTING_LIN_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+            GEN_RET_LIN_OPR_PRDS
             }
         self.assertDictEqual(expected_cost, actual_cost)
 
