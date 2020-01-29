@@ -74,7 +74,7 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | The project's cost to build new capacity in annualized real dollars per |
-    | MW.                                                                 |
+    | MW.                                                                     |
     +-------------------------------------------------------------------------+
     | | :code:`gen_new_bin_build_size_mw`                                     |
     | | *Defined over*: :code:`GEN_NEW_BIN`                                   |
@@ -252,7 +252,7 @@ def gen_new_bin_vintages_operational_in_period(mod, p):
 
 def only_build_once_rule(mod, g, p):
     """
-    **Expression Name**: GenNewBin_Only_Build_Once_Constraint
+    **Constraint Name**: GenNewBin_Only_Build_Once_Constraint
     **Enforced Over**: GEN_NEW_BIN_OPR_PRDS
 
     Once a project is built, it cannot be built again in another vintage
@@ -276,8 +276,9 @@ def only_build_once_rule(mod, g, p):
 
 def capacity_rule(mod, g, p):
     """
-    The capacity for new-build generators in a given period is the sum of all
-    capacity-build over all vintages operational in the period.
+    The capacity of a new generator project in a given operational period
+    period is equal to the sum of all binary build decisions of vintages
+    operational in that period multiplied with the build capacity size.
 
     Note: only one vintage can have a non-zero GenNewBin_Build variable in each
     period due to the *only_build_once_rule*.

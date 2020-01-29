@@ -360,9 +360,7 @@ Linear New-Build Storage (*stor_new_lin*)
 
 Binary New-Build Storage (*stor_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes storage units of pre-specified size, costs, and
-operational characteristics that can either be built by the optimization or
-not in all or some investment *periods*.
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
 
 Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
