@@ -83,36 +83,36 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_BUILD_TRANSMISSION_VINTAGES
+        # Set: TX_NEW_LIN_VNTS
         expected_tx_vintages = sorted([("Tx_New", 2020), ("Tx_New", 2030)])
         actual_tx_vintages = sorted(
-            [(tx, v) for (tx, v) in instance.NEW_BUILD_TRANSMISSION_VINTAGES]
+            [(tx, v) for (tx, v) in instance.TX_NEW_LIN_VNTS]
             )
         self.assertListEqual(expected_tx_vintages, actual_tx_vintages)
 
-        # Param: tx_lifetime_yrs_by_new_build_vintage
+        # Param: tx_new_lin_lifetime_yrs
         expected_lifetime = OrderedDict(sorted({
             ("Tx_New", 2020): 35, ("Tx_New", 2030): 35
                                                }.items()
                                                )
                                         )
         actual_lifetime = OrderedDict(sorted({
-            (tx, v): instance.tx_lifetime_yrs_by_new_build_vintage[tx, v]
-            for (tx, v) in instance.NEW_BUILD_TRANSMISSION_VINTAGES
+            (tx, v): instance.tx_new_lin_lifetime_yrs[tx, v]
+            for (tx, v) in instance.TX_NEW_LIN_VNTS
                                                }.items()
                                                )
                                         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
-        # Param: tx_annualized_real_cost_per_mw_yr
+        # Param: tx_new_lin_annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(sorted({
             ("Tx_New", 2020): 10, ("Tx_New", 2030): 10
                                                }.items()
                                                )
                                         )
         actual_cost = OrderedDict(sorted({
-            (tx, v): instance.tx_annualized_real_cost_per_mw_yr[tx, v]
-            for (tx, v) in instance.NEW_BUILD_TRANSMISSION_VINTAGES
+            (tx, v): instance.tx_new_lin_annualized_real_cost_per_mw_yr[tx, v]
+            for (tx, v) in instance.TX_NEW_LIN_VNTS
                                                }.items()
                                                )
                                         )
@@ -132,7 +132,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: OPERATIONAL_PERIODS_BY_NEW_BUILD_TRANSMISSION_VINTAGE
+        # Set: OPR_PRDS_BY_TX_NEW_LIN_VINTAGE
         expected_op_p_by_tx_v = OrderedDict(sorted({
             ("Tx_New", 2020): [2020, 2030], ("Tx_New", 2030): [2030]
                                                    }.items()
@@ -142,25 +142,25 @@ class TestSpecifiedTransmission(unittest.TestCase):
             (tx, v):
                 [p for p
                  in instance.
-                    OPERATIONAL_PERIODS_BY_NEW_BUILD_TRANSMISSION_VINTAGE[tx, v]
+                    OPR_PRDS_BY_TX_NEW_LIN_VINTAGE[tx, v]
                  ]
-            for (tx, v) in instance.NEW_BUILD_TRANSMISSION_VINTAGES
+            for (tx, v) in instance.TX_NEW_LIN_VNTS
                                                    }.items()
                                                    )
                                             )
         self.assertDictEqual(expected_op_p_by_tx_v, actual_op_p_by_tx_v)
 
-        # Set: NEW_BUILD_TRANSMISSION_OPERATIONAL_PERIODS
+        # Set: TX_NEW_LIN_OPR_PRDS
         expected_tx_op_periods = sorted([
             ("Tx_New", 2020), ("Tx_New", 2030)
         ])
         actual_tx_op_periods = sorted([
             (tx, p) for (tx, p)
-            in instance.NEW_BUILD_TRANSMISSION_OPERATIONAL_PERIODS
+            in instance.TX_NEW_LIN_OPR_PRDS
         ])
         self.assertListEqual(expected_tx_op_periods, actual_tx_op_periods)
 
-        # Set: NEW_BUILD_TRANSMISSION_VINTAGES_OPERATIONAL_IN_PERIOD
+        # Set: TX_NEW_LIN_VNTS_OPR_IN_PRD
         expected_tx_v_by_period = OrderedDict(sorted({
             2020: sorted([("Tx_New", 2020)]),
             2030: sorted([("Tx_New", 2020), ("Tx_New", 2030)])
@@ -171,7 +171,7 @@ class TestSpecifiedTransmission(unittest.TestCase):
             p: sorted(
                 [(tx, v) for (tx, v) in
                  instance.
-                 NEW_BUILD_TRANSMISSION_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+                 TX_NEW_LIN_VNTS_OPR_IN_PRD[p]
                  ]
             ) for p in instance.PERIODS
                                                      }.items()
