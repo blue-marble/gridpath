@@ -108,9 +108,7 @@ gridpath.project.capacity.capacity_types.stor_spec
 
 gridpath.project.capacity.capacity_types.stor_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.stor_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
