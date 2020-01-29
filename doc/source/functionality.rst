@@ -364,9 +364,7 @@ Binary New-Build Storage (*stor_new_bin*)
 
 Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes a supply curve for new shiftable load capacity.
-This type is a custom implementation for GridPath projects in the California
-Integrated Resource Planning proceeding.
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
 
 .. _project-availability-type-section-ref:
 

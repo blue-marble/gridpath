@@ -116,9 +116,7 @@ gridpath.project.capacity.capacity_types.stor_new_bin
 
 gridpath.project.capacity.capacity_types.dr_new
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.dr_new
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
 
 Project Availability
 --------------------
