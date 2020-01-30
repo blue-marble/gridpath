@@ -82,18 +82,18 @@ class TestSpecifiedTransmission(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
+        # Set: TX_SPEC_OPR_PRDS
         expected_periods = [("Tx1", 2020), ("Tx1", 2030),
                             ("Tx2", 2020), ("Tx2", 2030),
                             ("Tx3", 2020), ("Tx3", 2030)
                             ]
         actual_periods = sorted([
             (tx, p) for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
+            in instance.TX_SPEC_OPR_PRDS
             ])
         self.assertListEqual(expected_periods, actual_periods)
 
-        # Param: specified_tx_min_mw
+        # Param: tx_spec_min_flow_mw
         expected_min = OrderedDict(sorted({
             ("Tx1", 2020): -10, ("Tx1", 2030): -10,
             ("Tx2", 2020): -10, ("Tx2", 2030): -10,
@@ -102,8 +102,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                           )
                                    )
         actual_min = OrderedDict(sorted({
-            (tx, p): instance.specified_tx_min_mw[tx, p] for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
+            (tx, p): instance.tx_spec_min_flow_mw[tx, p] for (tx, p)
+            in instance.TX_SPEC_OPR_PRDS
                                         }.items()
                                         )
                                  )
@@ -118,8 +118,8 @@ class TestSpecifiedTransmission(unittest.TestCase):
                                           )
                                    )
         actual_max = OrderedDict(sorted({
-            (tx, p): instance.specified_tx_max_mw[tx, p] for (tx, p)
-            in instance.SPECIFIED_TRANSMISSION_LINE_OPERATIONAL_PERIODS
+            (tx, p): instance.tx_spec_max_flow_mw[tx, p] for (tx, p)
+            in instance.TX_SPEC_OPR_PRDS
                                         }.items()
                                         )
                                  )
