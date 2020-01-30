@@ -13,14 +13,13 @@ import unittest
 from tests.common_functions import create_abstract_model, \
     add_components_and_load_data
 
-
 TEST_DATA_DIRECTORY = \
     os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_data")
 
 # Import prerequisite modules
 PREREQUISITE_MODULE_NAMES = [
-     "temporal.operations.timepoints", "temporal.operations.horizons",
-     "temporal.investment.periods", "geography.load_zones", "project"]
+    "temporal.operations.timepoints", "temporal.operations.horizons",
+    "temporal.investment.periods", "geography.load_zones", "project"]
 NAME_OF_MODULE_BEING_TESTED = \
     "project.capacity.capacity_types.gen_spec"
 IMPORTED_PREREQ_MODULES = list()
@@ -44,6 +43,7 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
     """
 
     """
+
     def test_add_model_components(self):
         """
         Test that there are no errors when adding model components
@@ -82,7 +82,7 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+        # Set: GEN_SPEC_OPR_PRDS
         expected_proj_period_set = sorted([
             ("Nuclear", 2020), ("Gas_CCGT", 2020), ("Coal", 2020),
             ("Gas_CT", 2020), ("Wind", 2020), ("Nuclear", 2030),
@@ -100,13 +100,11 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
             ("Nuclear_Flexible", 2030)
         ])
         actual_proj_period_set = sorted([
-            (prj, period) for (prj, period) in
-                 instance.
-                     EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
-            ])
+            (prj, period) for (prj, period) in instance.GEN_SPEC_OPR_PRDS
+        ])
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
-        
-        # Params: existing_gen_no_econ_ret_capacity_mw
+
+        # Params: gen_spec_capacity_mw
         expected_existing_cap = OrderedDict(
             sorted(
                 {("Nuclear", 2020): 6, ("Gas_CCGT", 2020): 6,
@@ -128,22 +126,22 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
                  ("Disp_No_Commit", 2020): 6, ("Disp_No_Commit", 2030): 6,
                  ("Customer_PV", 2020): 1, ("Customer_PV", 2030): 1,
                  ("Nuclear_Flexible", 2030): 1000
-        }.items()
+                 }.items()
             )
         )
         actual_existing_cap = OrderedDict(
             sorted(
                 {(prj, period):
-                     instance.existing_gen_no_econ_ret_capacity_mw[prj, period]
+                     instance.gen_spec_capacity_mw[prj, period]
                  for (prj, period) in
                  instance.
-                    EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                     GEN_SPEC_OPR_PRDS
                  }.items()
             )
         )
         self.assertDictEqual(expected_existing_cap, actual_existing_cap)
-        
-        # Params: existing_no_econ_ret_fixed_cost_per_mw_yr
+
+        # Params: gen_spec_fixed_cost_per_mw_yr
         expected_fixed_cost = OrderedDict(
             sorted(
                 {("Nuclear", 2020): 0, ("Gas_CCGT", 2020): 0,
@@ -165,19 +163,19 @@ class TestExistingNoEconomicRetirement(unittest.TestCase):
                  ("Disp_No_Commit", 2020): 0, ("Disp_No_Commit", 2030): 0,
                  ("Customer_PV", 2020): 0, ("Customer_PV", 2030): 0,
                  ("Nuclear_Flexible", 2030): 1
-        }.items()
+                 }.items()
             )
         )
         actual_fixed_cost = OrderedDict(
             sorted(
-                {(prj, period): instance.existing_no_econ_ret_fixed_cost_per_mw_yr[prj, period]
-                 for (prj, period) in
-                 instance.
-                     EXISTING_NO_ECON_RETRMNT_GENERATORS_OPERATIONAL_PERIODS
+                {(prj, period): instance.gen_spec_fixed_cost_per_mw_yr[
+                    prj, period]
+                 for (prj, period) in instance.GEN_SPEC_OPR_PRDS
                  }.items()
             )
         )
         self.assertDictEqual(expected_fixed_cost, actual_fixed_cost)
+
 
 if __name__ == "__main__":
     unittest.main()

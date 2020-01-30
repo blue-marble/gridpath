@@ -332,96 +332,39 @@ optimization problem. The currently implemented capacity types include:
 
 Specified Generation (*gen_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators that are available to the optimization
-without having to incur an investment cost, e.g. existing generators or
-generators that will be built in the future and whose capital costs we want
-to ignore (in the objective function). A specified generator can be available
-in all periods, or in some periods only, with no restriction on the order
-and combination of periods. The user may specify a fixed O&M cost for these
-generators, but this cost will be a fixed number in the objective function
-and will therefore not affect any of the optimization decisions.
-
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
 
 Specified Generation with Linear Economic Retirement (*gen_ret_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators with the same characteristics as
-*gen_ret_lin*, but whose fixed O&M cost can be avoided by 'retiring' them.
-The optimization can make the decision to retire generation in each study
-*period*. Once retired, the generator may not become operational
-again. Retirement decisions for this capacity type are 'linearized,' i.e.
-the optimization may retire generators partially (e.g. retire only 200 MW of
-a 500-MW generator). If retired, the annual fixed O&M cost of these projects
-is avoided in the objective function.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
 
 Specified Generation with Binary Economic Retirement (*gen_ret_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generators with the same characteristics as
-*gen_ret_lin*. However, retirement decisions are binary, i.e. the generator
-is either fully retired or not retired at all.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin
 
 Linear New-Build Generation (*gen_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generation that can be built by the
-optimization at a cost. These investment decisions are linearized, i.e.
-the decision is not whether to build a unit of a specific size (e.g. a
-50-MW combustion turbine), but how much capacity to build at a particular
-*project*. Once built, the capacity exists for the duration of the
-generator's pre-specified lifetime. Minimum and maximum capacity constraints
-can be optionally implemented. The cost input to the model is a annualized
-cost per unit capacity. If the optimization makes the decision to build
-new capacity, the total annualized cost is incurred in each period of the study
-(and multiplied by the number of years the period represents) for the
-duration of the project's lifetime. Annual fixed O&M costs are also incurred
-by linear new-build generation.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
 
 Binary New-Build Generation (*gen_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes generation units of a pre-specified size, costs,
-and operational characteristics that can either be built by the optimization
-or not in all or some investment *periods*. Once built, the capacity remains
-available for the duration of the project's pre-specified lifetime.
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin
 
 Specified Storage (*stor_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes the power (i.e. charging and discharging
-capacity) and energy capacity (i.e. duration) of storage projects that are
-available to the optimization without having to incur an investment cost.
-For example, it can be applied to existing storage projects or to
-storage projects that will be built in the future and whose capital costs we
-want to ignore (in the objective function).
-
-It is not required to specify a capacity for all periods, i.e. a project can
-be operational in some periods but not in others with no restriction on the
-order and combination of periods. The user may specify a fixed O&M cost for
-specified-storage projects, but this cost will be a fixed number in the
-objective function and will therefore not affect any of the optimization
-decisions.
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
 
 Linear New-Build Storage (*stor_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes storage projects that can be built by the
-optimization at a cost. Investment decisions made separately for the
-project's power capacity and its energy capacity, therefore endogenously
-determine the sizing of the storage. The decisions are linearized (i.e. the
-model decides how much power capacity and how much energy capacity to build
-at a project, not whether or not to built a project of pre-defined capacity).
-Once built, these storage projects remain available for the duration of their
-pre-specified lifetime. Minimum and maximum power capacity and duration
-constraints can be optionally implemented. Like with new-build generation,
-capacity costs added to the objective function include the annualized
-capital cost and the annual fixed O&M cost.
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
 
 Binary New-Build Storage (*stor_new_bin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes storage units of pre-specified size, costs, and
-operational characteristics that can either be built by the optimization or
-not in all or some investment *periods*.
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
 
 Shiftable Load Supply Curve (*dr_new*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes a supply curve for new shiftable load capacity.
-This type is a custom implementation for GridPath projects in the California
-Integrated Resource Planning proceeding.
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
 
 .. _project-availability-type-section-ref:
 
@@ -483,12 +426,7 @@ Binary-Commit Generation (*gen_commit_bin*)
 
 Continuous-Commit Generation (*gen_commit_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is the same as the *gen_commit_bin* operational type,
-but the commitment decisions are declared as continuous (with bounds of 0 to
-1) instead of binary, so 'partial' generators can be committed. This
-treatment can be helpful in situations when mixed-integer problem runtimes
-are long and is similar to loosening the MIP gap (but can target specific
-generators).
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
 
 Capacity-Commit Generation (*gen_commit_cap*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -510,23 +448,11 @@ Curtailable Variable Generation (*gen_var*)
 
 Non-curtailable Variable Generation (*gen_var_must_take*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This operational type is like the *gen_var* type except that curtailment is
-not allowed.
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
 
 Storage (*stor*)
 ^^^^^^^^^^^^^^^^
-This operational type describes a generic storage resource. It can be
-applied to a battery, to a pumped-hydro project or another storage
-technology. The type is associated with three main variables in each
-timepoint when the project is available: the charging level, the discharging
-level, and the energy available in storage. The first two are constrained to
-be less than or equal to the project's power capacity. The third is
-constrained to be less than or equal to the project's energy capacity. The
-model tracks the stage of charge in each timepoint based on the charging and
-discharging decisions in the previous timepoint, with adjustments for
-charging and discharging efficiencies. Storage projects can be allowed to
-provide upward and/or downward reserves. Costs for this operational type
-include variable O&M costs.
+.. automodule:: gridpath.project.operations.operational_types.stor
 
 Shiftable Load (*dr*)
 ^^^^^^^^^^^^^^^^^^^^^

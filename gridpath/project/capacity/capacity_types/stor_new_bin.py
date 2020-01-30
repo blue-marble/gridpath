@@ -2,12 +2,19 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.stor_new_bin**
-module describes the capacity of storage projects that can be built by the
-optimization at a cost. The user provides the build capacity and energy, and
-the optimization determines whether to build it or not (binary decision).
-Once built, these storage projects remain available for the duration of their
-pre-specified lifetime.
+This capacity type describes new storage projects that can be built by the
+optimization at a pre-specified size, duration and cost. The model can
+decide to build the project at the specified size in some or all investment
+*periods*, or not at all. Once built, the capacity remains available for the
+duration of the project's pre-specified lifetime.
+
+The cost input to the model is an annualized cost per unit of power capacity
+(MW) and an annualized cost per unit energy capacity (MWh). Both costs are
+additive. If the optimization makes the decision to build new
+power/energy capacity, the total annualized cost is incurred in each period
+of the study (and multiplied by the number of years the period represents)
+for the duration of the project's lifetime. Annual fixed O&M costs are also
+incurred by binary new-build storage.
 """
 
 from __future__ import print_function
@@ -34,219 +41,327 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-vintage
-    combinations to describe the periods in time when project capacity can be
-    built in the optimization: the *NEW_BINARY_BUILD_STORAGE_VINTAGES* set,
-    which we will also designate with :math:`NS\_V` and index with
-    :math:`ns, v` where :math:`ns\in R` and :math:`v\in P`. For each :math:`ns,
-    v`, we load the *lifetime_yrs_by_new_binary_build_storage vintage* parameter,
-    which is the project's lifetime, i.e. how long project capacity of a
-    particular vintage remains operational. We will then use this parameter to
-    determine the operational periods :math:`p` for each :math:`ns, v`. For
-    each :math:`ns, v`, we also declare the per-unit cost to build new power
-    and energy capacity: the *new_binary_build_storage_annualized_real_cost_per_mw_yr*
-    and *new_binary_build_storage_annualized_real_cost_per_mwh_yr* parameters.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`STOR_NEW_BIN`                                                  |
+    |                                                                         |
+    | The list of projects of capacity type :code:`stor_new_bin`.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_BIN_VNTS`                                             |
+    |                                                                         |
+    | A two-dimensional set of project-vintage combinations to describe the   |
+    | periods in time when storage capacity/energy can be built in the        |
+    | optimization.                                                           |
+    +-------------------------------------------------------------------------+
 
-    .. note:: The cost inputs to the model are annualized costs per unit
-        capacity. The annualized costs are incurred in each period of the study
-        (and multiplied by the number of years the period represents) for
-        the duration of the project's lifetime. It is up to the user to
-        ensure that the *lifetime_yrs_by_new_binary_build_storage* input to the
-        model is consistent with the exogenous cost annualization.
+    |
 
-    Storage duration in this module is exogenous: the user specifies the build
-    capacity and energy, and the model decides whether to build it or not
-    (binary decision).
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`stor_new_bin_lifetime_yrs`                                     |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's lifetime, i.e. how long project capacity/energy of a      |
+    | particular vintage remains operational.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_annualized_real_cost_per_mw_yr`                   |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new power capacity in annualized real       |
+    | dollars in per MW.                                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_annualized_real_cost_per_mwh_yr`                  |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new energy capacity in annualized real      |
+    | dollars in per MW.                                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_build_size_mw`                                    |
+    | | *Defined over*: :code:`STOR_NEW_BIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's specified power capacity build size in MW. The model can  |
+    | only build the project in this pre-specified size.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_bin_build_size_mwh`                                   |
+    | | *Defined over*: :code:`STOR_NEW_BIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's specified energy capacity build size in MWh. The model    |
+    | can only build the project in this pre-specified size.                  |
+    +-------------------------------------------------------------------------+
 
-    The variable :math:`Build\_Binary\_Storage_{ns,v}` is defined over
-    the :math:`NS\_V` set and determines whether the vintage :math:`v` is
-    built at each new-build storage project :math:`ns`.
+    .. note:: The cost input to the model is a levelized cost per unit
+        capacity/energy. This annualized cost is incurred in each period of
+        the study (and multiplied by the number of years the period
+        represents) for the duration of the project's lifetime. It is up to
+        the user to ensure that the
+        :code:`stor_new_bin_lifetime_yrs`,
+        :code:`stor_new_bin_annualized_real_cost_per_mw_yr`, and
+        :code:`stor_new_bin_annualized_real_cost_per_mwh_yr' parameters are
+        consistent.
 
-    We use the *NEW_BINARY_BUILD_STORAGE_VINTAGES* set and the
-    *lifetime_yrs_by_new_binary_build_storage_vintage* parameter to determine
-    the operational periods for capacity of each possible vintage: the
-    *OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE* set indexed by
-    :math:`ns,v`.
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE`                              |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    |                                                                         |
+    | Indexed set that describes the operational periods for each possible    |
+    | project-vintage combination, based on the                               |
+    | :code:`stor_new_bin_lifetime_yrs`. For instance, capacity of 2020       |
+    | vintage with lifetime of 30 years will be assumed operational starting  |
+    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
+    | in 2050.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_BIN_OPR_PRDS`                                         |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be operational if built. This set is added to the   |
+    | list of sets to join to get the final                                   |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_BIN_VNTS_OPR_IN_PRD`                                  |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the project-vintages that could be           |
+    | operational in each period based on the                                 |
+    | :code:`stor_new_bin_lifetime_yrs`.                                      |
+    +-------------------------------------------------------------------------+
 
-    .. note:: A period is currently defined as operational for project
-        :math:`ng` if :math:`v <= p < lifetime\_yrs\_by\_new\_build\_vintage_{
-        ng,v}`, so capacity of the 2020 vintage with lifetime of 30 years will
-        be assumed operational starting Jan 1, 2020 and through Dec 31, 2049,
-        but will not be operational in 2050.
+    |
 
-    The *NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS* set is a
-    two-dimensional set that includes the periods when project capacity of
-    any vintage *could* be operational if built.  This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *NS_P* to
-    designate this set (index :math:`ns, np` where :math:`ns\in R` and
-    :math:`np\in P`).
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`StorNewBin_Build`                                              |
+    | | *Defined over*: :code:`STOR_NEW_BIN_VNTS`                             |
+    | | *Within*: :code:`Binary`                                              |
+    |                                                                         |
+    | Binary build decision for each project-vintage combination (1=build).   |
+    +-------------------------------------------------------------------------+
 
-    Finally, we need to determine which project vintages could be
-    operational in each period: the
-    *NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
-    :math:`p`, this two-dimensional set :math:`\{NS\_OV_p\}_{p\in P}`
-    (:math:`NS\_OV_p\subset NS\_V`) can help us tell how much power
-    and energy capacity we have available in period :math:`p` of each
-    new-build project :math:`ns` depending on the build decisions made by
-    the optimization.
+    |
 
-    Then, we are ready to define the power and energy capacity for binary
-    new-build storage:
-
-    :math:`Capacity\_MW_{ns,np} = \sum_{(ns,ov)\in
-    NS\_OV_{np}}{Build\_Binary\_Storage_{ns,ov}}
-    * {binary\_build\_size\_storage\_mw_{ns,ov}}`.
-
-    :math:`Energy\_Capacity\_MWh_{ns,np} = \sum_{(ns,ov)\in
-    NS\_OV_{np}}{Build\_Binary\_Storage_{ns,ov}}
-    * {binary\_build\_size\_storage\_mwh_{ns}}`.
-
-    The power/energy capacity of a new-build generator in a given operational
-    period for the new-build generator is equal to the sum of all binary build
-    decisions of vintages operational in that period multiplied with the
-    power/energy capacity.
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`StorNewBin_Only_Build_Once_Constraint`                         |
+    | | *Defined over*: :code:`STOR_NEW_BIN_OPR_PRDS`                         |
+    |                                                                         |
+    | Once a project is built, it cannot be built again in another vintage    |
+    | until its lifetime is expired.                                          |
+    +-------------------------------------------------------------------------+
 
     """
-    # Sets (to index params)
-    m.NEW_BINARY_BUILD_STORAGE_PROJECTS = Set()
-    m.NEW_BINARY_BUILD_STORAGE_VINTAGES = \
-        Set(dimen=2, within=m.NEW_BINARY_BUILD_STORAGE_PROJECTS*m.PERIODS)
 
-    # Params
-    m.lifetime_yrs_by_new_binary_build_storage_vintage = \
-        Param(m.NEW_BINARY_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.new_binary_build_storage_annualized_real_cost_per_mw_yr = \
-        Param(m.NEW_BINARY_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.new_binary_build_storage_annualized_real_cost_per_mwh_yr = \
-        Param(m.NEW_BINARY_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.binary_build_size_storage_mw = \
-        Param(m.NEW_BINARY_BUILD_STORAGE_PROJECTS, within=NonNegativeReals)
-    m.binary_build_size_storage_mwh = \
-        Param(m.NEW_BINARY_BUILD_STORAGE_PROJECTS, within=NonNegativeReals)
+    # Sets
+    ###########################################################################
 
-    # Build variable (binary)
-    m.Build_Binary_Storage = \
-        Var(m.NEW_BINARY_BUILD_STORAGE_VINTAGES, within=Binary)
+    m.STOR_NEW_BIN = Set()
 
-    # Auxiliary sets
-    m.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE = \
-        Set(m.NEW_BINARY_BUILD_STORAGE_VINTAGES,
-            initialize=operational_periods_by_storage_vintage)
+    m.STOR_NEW_BIN_VNTS = Set(
+        dimen=2, within=m.STOR_NEW_BIN*m.PERIODS
+    )
 
-    m.NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS = \
-        Set(dimen=2, initialize=new_binary_build_storage_operational_periods)
+    # Required Params
+    ###########################################################################
+
+    m.stor_new_bin_lifetime_yrs = Param(
+        m.STOR_NEW_BIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_bin_annualized_real_cost_per_mw_yr = Param(
+        m.STOR_NEW_BIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_bin_annualized_real_cost_per_mwh_yr = Param(
+        m.STOR_NEW_BIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_bin_build_size_mw = Param(
+        m.STOR_NEW_BIN,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_bin_build_size_mwh = Param(
+        m.STOR_NEW_BIN,
+        within=NonNegativeReals
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE = Set(
+        m.STOR_NEW_BIN_VNTS,
+        initialize=operational_periods_by_storage_vintage
+    )
+
+    m.STOR_NEW_BIN_OPR_PRDS = Set(
+        dimen=2,
+        initialize=stor_new_bin_operational_periods
+    )
+
+    m.STOR_NEW_BIN_VNTS_OPR_IN_PRD = Set(
+        m.PERIODS, dimen=2,
+        initialize=stor_new_bin_vintages_operational_in_period
+    )
+
+    # Variables
+    ###########################################################################
+
+    m.StorNewBin_Build = Var(
+        m.STOR_NEW_BIN_VNTS,
+        within=Binary
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.StorNewBin_Only_Build_Once_Constraint = Constraint(
+        m.STOR_NEW_BIN_OPR_PRDS,
+        rule=only_build_once_rule
+    )
+
+    # Dynamic Components
+    ###########################################################################
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS",
+        "STOR_NEW_BIN_OPR_PRDS",
     )
     # Add to list of sets we'll join to get the final
     # STORAGE_OPERATIONAL_PERIODS set
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS",
+        "STOR_NEW_BIN_OPR_PRDS",
     )
 
-    m.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD = \
-        Set(m.PERIODS, dimen=2,
-            initialize=new_binary_build_storage_vintages_operational_in_period)
 
-    def only_build_once_rule(mod, g, p):
-        """
-        Once a project is built, it cannot be built again in another vintage
-        until its lifetime is expired. Said differently, in each period only
-        one vintage can have a non-zero binary build decision.
+# Set Rules
+###############################################################################
 
-        Note: this constraint could be generalized into a min and max build
-        constraint if we want to allow multiple units to be built.
+def operational_periods_by_storage_vintage(mod, prj, v):
+    return operational_periods_by_project_vintage(
+        periods=mod.PERIODS,
+        vintage=v,
+        lifetime=mod.stor_new_bin_lifetime_yrs[prj, v])
 
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        # Sum of all binary build decisions of vintages operational in the
-        # current period should be less than or equal to 1
-        return sum(
-            mod.Build_Binary_Storage[g, v] for (gen, v)
-            in mod.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-            if gen == g
-        ) <= 1
 
-    m.New_Binary_Build_Storage_Only_Build_Once_Constraint = Constraint(
-        m.NEW_BINARY_BUILD_STORAGE_VINTAGES,
-        rule=only_build_once_rule
+def stor_new_bin_operational_periods(mod):
+    return project_operational_periods(
+        project_vintages_set=mod.STOR_NEW_BIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
     )
 
+
+def stor_new_bin_vintages_operational_in_period(mod, p):
+    return project_vintages_operational_in_period(
+        project_vintage_set=mod.STOR_NEW_BIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE,
+        period=p
+    )
+
+
+# Constraint Formulation Rules
+###############################################################################
+
+def only_build_once_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewBin_Only_Build_Once_Constraint
+    **Enforced Over**: STOR_NEW_BIN_OPR_PRDS
+
+    Once a project is built, it cannot be built again in another vintage
+    until its lifetime is expired. Said differently, in each period only
+    one vintage can have a non-zero binary build decision.
+
+    Note: this constraint could be generalized into a min and max build
+    constraint if we want to allow multiple units to be built.
+    """
+    # Sum of all binary build decisions of vintages operational in the
+    # current period should be less than or equal to 1
+    return sum(
+        mod.StorNewBin_Build[g, v] for (gen, v)
+        in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
+        if gen == g
+    ) <= 1
+
+
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the power capacity of storage project *g* in period *p*
+    The power capacity of a new storage project in a given operational
+    period is equal to the sum of all binary build decisions of vintages
+    operational in that period multiplied with the power capacity size.
 
-    Note: only one vintage can have a non-zero Build_Binary_Storage variable in
+    Note: only one vintage can have a non-zero StorNewBin_Build variable in
     each period due to the *only_build_once_rule*.
     """
     return sum(
-        mod.Build_Binary_Storage[g, v]
-        * mod.binary_build_size_storage_mw[g]
+        mod.StorNewBin_Build[g, v]
+        * mod.stor_new_bin_build_size_mw[g]
         for (gen, v)
-        in mod.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+        in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
         if gen == g
     )
 
 
 def energy_capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the energy capacity of storage project *g* in period *p*
+    The energy capacity of a new storage project in a given operational
+    period is equal to the sum of all binary build decisions of vintages
+    operational in that period multiplied with the energy capacity size.
 
-    Note: only one vintage can have a non-zero Build_Binary_Storage variable in
+    Note: only one vintage can have a non-zero StorNewBin_Build variable in
     each period due to the *only_build_once_rule*.
     """
     return sum(
-        mod.Build_Binary_Storage[g, v]
-        * mod.binary_build_size_storage_mwh[g]
+        mod.StorNewBin_Build[g, v]
+        * mod.stor_new_bin_build_size_mwh[g]
         for (gen, v)
-        in mod.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+        in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
         if gen == g
     )
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized capacity cost of *stor_new_bin*
-        project *g* in period *p*
-
-    This function retuns the total power and energy capacity cost for
-    stor_new_bin  projects in each period (sum over all vintages
-    operational in current period).
+    The capacity cost for new storage projects in a given period is the
+    capacity-build of a particular vintage times the annualized power cost for
+    that vintage plus the energy-build of the same vintages times the
+    annualized energy cost for that vintage, summed over all vintages
+    operational in the period. Note that power and energy costs are additive.
     """
 
     return sum(
-        mod.Build_Binary_Storage[g, v]
-        * (mod.binary_build_size_storage_mw[g]
-           * mod.new_binary_build_storage_annualized_real_cost_per_mw_yr[g, v]
-           +
-           mod.binary_build_size_storage_mwh[g]
-           * mod.new_binary_build_storage_annualized_real_cost_per_mwh_yr[g, v])
+        mod.StorNewBin_Build[g, v]
+        * (mod.stor_new_bin_build_size_mw[g]
+           * mod.stor_new_bin_annualized_real_cost_per_mw_yr[g, v]
+           + mod.stor_new_bin_build_size_mwh[g]
+           * mod.stor_new_bin_annualized_real_cost_per_mwh_yr[g, v])
         for (gen, v)
-        in mod.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+        in mod.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
         if gen == g
     )
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(m, data_portal,
                               scenario_directory, subproblem, stage):
@@ -266,21 +381,21 @@ def load_module_specific_data(m, data_portal,
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "new_binary_build_storage_vintage_costs.tab"),
-        index=m.NEW_BINARY_BUILD_STORAGE_VINTAGES,
+        index=m.STOR_NEW_BIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
                 "annualized_real_cost_per_mw_yr",
                 "annualized_real_cost_per_mwh_yr"),
-        param=(m.lifetime_yrs_by_new_binary_build_storage_vintage,
-               m.new_binary_build_storage_annualized_real_cost_per_mw_yr,
-               m.new_binary_build_storage_annualized_real_cost_per_mwh_yr)
+        param=(m.stor_new_bin_lifetime_yrs,
+               m.stor_new_bin_annualized_real_cost_per_mw_yr,
+               m.stor_new_bin_annualized_real_cost_per_mwh_yr)
     )
 
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "new_binary_build_storage_size.tab"),
-        index=m.NEW_BINARY_BUILD_STORAGE_PROJECTS,
+        index=m.STOR_NEW_BIN,
         select=("project", "binary_build_size_mw", "binary_build_size_mwh"),
-        param=(m.binary_build_size_storage_mw, m.binary_build_size_storage_mwh)
+        param=(m.stor_new_bin_build_size_mw, m.stor_new_bin_build_size_mwh)
     )
 
 
@@ -299,41 +414,18 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_binary", "new_build_mw", "new_build_mwh"])
-        for (prj, p) in m.NEW_BINARY_BUILD_STORAGE_VINTAGES:
+        for (prj, p) in m.STOR_NEW_BIN_VNTS:
             writer.writerow([
                 prj,
                 p,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.Build_Binary_Storage[prj, p]),
-                value(m.Build_Binary_Storage[prj, p] *
-                      m.binary_build_size_storage_mw[prj]),
-                value(m.Build_Binary_Storage[prj, p] *
-                      m.binary_build_size_storage_mwh[prj])
+                value(m.StorNewBin_Build[prj, p]),
+                value(m.StorNewBin_Build[prj, p] *
+                      m.stor_new_bin_build_size_mw[prj]),
+                value(m.StorNewBin_Build[prj, p] *
+                      m.stor_new_bin_build_size_mwh[prj])
             ])
-
-
-def operational_periods_by_storage_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.lifetime_yrs_by_new_binary_build_storage_vintage[prj, v])
-
-
-def new_binary_build_storage_operational_periods(mod):
-    return project_operational_periods(
-        project_vintages_set=mod.NEW_BINARY_BUILD_STORAGE_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE
-    )
-
-
-def new_binary_build_storage_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
-        project_vintage_set=mod.NEW_BINARY_BUILD_STORAGE_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE,
-        period=p
-    )
 
 
 def summarize_module_specific_results(
@@ -379,6 +471,9 @@ def summarize_module_specific_results(
             new_build_df.to_string(outfile)
             outfile.write("\n")
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -443,6 +538,82 @@ def get_module_specific_inputs_from_database(
 
     return new_stor_costs, new_stor_build_size
 
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    new_binary_build_storage_vintage_costs.tab file and the
+    new_binary_build_storage_size.tab file
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    new_stor_costs, new_stor_build_size = \
+        get_module_specific_inputs_from_database(
+            subscenarios, subproblem, stage, conn)
+
+    with open(os.path.join(inputs_directory,
+                           "new_binary_build_storage_vintage_costs.tab"),
+              "w", newline="") as new_storage_costs_tab_file:
+        writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "vintage", "lifetime_yrs",
+             "annualized_real_cost_per_mw_yr",
+             "annualized_real_cost_per_mwh_yr"]
+        )
+
+        for row in new_stor_costs:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+    with open(os.path.join(inputs_directory,
+                           "new_binary_build_storage_size.tab"),
+              "w", newline="") as new_build_size_tab_file:
+        writer = csv.writer(new_build_size_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "binary_build_size_mw", "binary_build_size_mwh"]
+        )
+
+        for row in new_stor_build_size:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+
+def import_module_specific_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Capacity results
+    print("project new binary build storage")
+
+    update_capacity_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="capacity_stor_new_bin.csv"
+    )
+
+
+# Validation
+###############################################################################
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
@@ -611,79 +782,3 @@ def validate_costs(cost_df, prj_periods):
             )
 
     return results
-
-
-
-def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input
-    new_binary_build_storage_vintage_costs.tab file and the
-    new_binary_build_storage_size.tab file
-    :param inputs_directory: local directory where .tab files will be saved
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    new_stor_costs, new_stor_build_size = \
-        get_module_specific_inputs_from_database(
-            subscenarios, subproblem, stage, conn)
-
-    with open(os.path.join(inputs_directory,
-                           "new_binary_build_storage_vintage_costs.tab"),
-              "w",
-              newline="") as \
-            new_storage_costs_tab_file:
-        writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
-             "annualized_real_cost_per_mw_yr",
-             "annualized_real_cost_per_mwh_yr"]
-        )
-
-        for row in new_stor_costs:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
-
-    with open(os.path.join(inputs_directory,
-                           "new_binary_build_storage_size.tab"), "w", newline="") as \
-            new_build_size_tab_file:
-        writer = csv.writer(new_build_size_tab_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["project", "binary_build_size_mw", "binary_build_size_mwh"]
-        )
-
-        for row in new_stor_build_size:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
-
-
-def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :return:
-    """
-    # Capacity results
-    print("project new binary build storage")
-
-    update_capacity_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="capacity_stor_new_bin.csv"
-    )

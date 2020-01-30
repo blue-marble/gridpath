@@ -2,20 +2,24 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.stor_new_lin**
-module describes the capacity of storage projects that can be built by the
-optimization at a cost. The optimization determines both the power
-capacity of the storage project and its energy capacity (i.e. capacity and
-duration). Once built, these storage projects remain available for the
-duration of their pre-specified lifetime. Minimum and maximum power capacity
-and duration constraints can be optionally implemented.
+This capacity type describes storage projects that can be built by the
+optimization at a cost. Investment decisions are made separately for the
+project's power capacity and its energy capacity, therefore endogenously
+determining the duration sizing of the storage. The decisions are linearized,
+i.e. the model decides how much power capacity and how much energy capacity
+to build at a project, not whether or not to built a project of pre-defined
+capacity. Once built, these storage projects remain available for the duration
+of their pre-specified lifetime. Minimum and maximum power capacity and
+duration constraints can be optionally implemented.
+
+Like with new-build generation, capacity costs added to the objective
+function include the annualized capital cost and the annual fixed O&M cost.
 """
 
 from __future__ import print_function
 
 from builtins import next
 from builtins import zip
-from builtins import str
 import csv
 import os.path
 import pandas as pd
@@ -23,7 +27,6 @@ from pyomo.environ import Set, Param, Var, Expression, NonNegativeReals, \
     Constraint, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -34,333 +37,574 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-vintage
-    combinations to describe the periods in time when project capacity can be
-    built in the optimization: the *NEW_BUILD_STORAGE_VINTAGES* set,
-    which we will also designate with :math:`NS\_V` and index with
-    :math:`ns, v` where :math:`ns\in R` and :math:`v\in P`. For each :math:`ns,
-    v`, we load the *lifetime_yrs_by_stor_new_lin vintage* parameter,
-    which is the project's lifetime, i.e. how long project capacity of a
-    particular vintage remains operational. We will then use this parameter to
-    determine the operational periods :math:`p` for each :math:`ns, v`. For
-    each :math:`ns, v`, we also declare the per-unit cost to build new power
-    and energy capacity: the *stor_new_lin_annualized_real_cost_per_mw_yr*
-    and *stor_new_lin_annualized_real_cost_per_mwh_yr* parameters.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`STOR_NEW_LIN`                                                  |
+    |                                                                         |
+    | The list of projects of capacity type :code:`stor_new_lin`.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS`                                             |
+    |                                                                         |
+    | A two-dimensional set of project-vintage combinations to describe the   |
+    | periods in time when storage capacity/energy can be built in the        |
+    | optimization.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT`                   |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | minimum build capacity specified.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT`                     |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | minimum build energy specified.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT`                   |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | maximum build capacity specified.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT`                     |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | maximum build energy specified.                                         |
+    +-------------------------------------------------------------------------+
 
-    .. note:: The cost inputs to the model are annualized costs per unit
-        capacity. The annualized costs are incurred in each period of the study
-        (and multiplied by the number of years the period represents) for
-        the duration of the project's lifetime. It is up to the user to
-        ensure that the *lifetime_yrs_by_stor_new_lin* input to the model
-        is consistent with the exogenous cost annualization.
+    |
 
-    For each project vintage, the user can optionally specify a minimum
-    cumulative amount of power capacity and/or energy capacity that must be
-    built by that period and/or a maximum amount of cumulative power
-    and/or energy capacity  that can be built by that period:
-    the :math:`min\_storage_cumulative\_new\_build\_mw_{ns,
-    v}` / :math:`min\_storage_cumulative\_new\_build\_mwh_{ns,v}` and
-    :math:`max\_storage\_cumulative\_new\_build\_mw_{ns,v}` /
-    :math:`max\_storage\_cumulative\_new\_build\_mwh_{ns,v}` parameters
-    respectively.
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`stor_new_lin_min_duration_hrs`                                 |
+    | | *Defined over*: :code:`STOR_NEW_LIN`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's minimum duration, i.e. ratio of MWh of energy capacity    |
+    | by MW of powre capacity, in hours.                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_lifetime_yrs`                                     |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's lifetime, i.e. how long project capacity/energy of a      |
+    | particular vintage remains operational.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_annualized_real_cost_per_mw_yr`                   |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new power capacity in annualized real       |
+    | dollars in per MW.                                                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_annualized_real_cost_per_mwh_yr`                  |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new energy capacity in annualized real      |
+    | dollars in per MW.                                                      |
+    +-------------------------------------------------------------------------+
 
-    Storage sizing in this module is endogenous: the model decides both the
-    power capacity and energy capacity of the project, therefore determining
-    optimal storage sizing/duration.
+    .. note:: The cost input to the model is a levelized cost per unit
+        capacity/energy. This annualized cost is incurred in each period of
+        the study (and multiplied by the number of years the period
+        represents) for the duration of the project's lifetime. It is up to
+        the user to ensure that the
+        :code:`stor_new_lin_lifetime_yrs`,
+        :code:`stor_new_lin_annualized_real_cost_per_mw_yr`, and
+        :code:`stor_new_lin_annualized_real_cost_per_mwh_yr' parameters are
+        consistent.
 
-    Two variables, :math:`Build\_Storage\_Power\_MW_{ns,v}` and
-    :math:`Build\_Storage\_Energy\_MWh_{ns,v}` are defined over
-    the :math:`NS\_V` set and determines how much power and energy capacity
-    respectively of each possible vintage :math:`v` is  built at each
-    new-build storage project :math:`ns`.
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`stor_new_lin_min_cumulative_new_build_mw`                      |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum cumulative amount of power capacity (in MW) that must be    |
+    | built for a storage project by a certain period.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_min_cumulative_new_build_mwh`                     |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum cumulative amount of energy capacity (in MWh) that must be  |
+    | built for a storage project by a certain period.                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_max_cumulative_new_build_mw`                      |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum cumulative amount of power capacity (in MW) that can be     |
+    | built for a project by a certain period.                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`stor_new_lin_max_cumulative_new_build_mwh`                     |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum cumulative amount of energy capacity (in MW) that can be    |
+    | built for a project by a certain period.                                |
+    +-------------------------------------------------------------------------+
 
-    We use the *NEW_BUILD_STORAGE_VINTAGES* set and the
-    *lifetime_yrs_by_stor_new_lin_vintage* parameter to determine the
-    operational periods for capacity of each possible vintage: the
-    *OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE* set indexed by
-    :math:`ns,v`.
+    |
 
-    .. note:: A period is currently defined as operational for project
-        :math:`ng` if :math:`v <= p < lifetime\_yrs\_by\_new\_build\_vintage_{
-        ng,v}`, so capacity of the 2020 vintage with lifetime of 30 years will
-        be assumed operational starting Jan 1, 2020 and through Dec 31, 2049,
-        but will not be operational in 2050.
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE`                              |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    |                                                                         |
+    | Indexed set that describes the operational periods for each possible    |
+    | project-vintage combination, based on the                               |
+    | :code:`stor_new_lin_lifetime_yrs`. For instance, capacity of 2020       |
+    | vintage with lifetime of 30 years will be assumed operational starting  |
+    | Jan 1, 2020 and through Dec 31, 2049, but will *not* be operational     |
+    | in 2050.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_OPR_PRDS`                                         |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be operational if built. This set is added to the   |
+    | list of sets to join to get the final                                   |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`STOR_NEW_LIN_VNTS_OPR_IN_PRD`                                  |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the project-vintages that could be           |
+    | operational in each period based on the                                 |
+    | :code:`stor_new_lin_lifetime_yrs`.                                      |
+    +-------------------------------------------------------------------------+
 
-    The *NEW_BUILD_STORAGE_OPERATIONAL_PERIODS* set is a
-    two-dimensional set that includes the periods when project capacity of
-    any vintage *could* be operational if built.  This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *NS_P* to
-    designate this set (index :math:`ns, np` where :math:`ns\in R` and
-    :math:`np\in P`).
+    |
 
-    Finally, we need to determine which project vintages could be
-    operational in each period: the
-    *NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
-    :math:`p`, this two-dimensional set :math:`\{NS\_OV_p\}_{p\in P}`
-    (:math:`NS\_OV_p\subset NS\_V`) can help us tell how much power
-    and energy capacity we have available in period :math:`p` of each
-    new-build project :math:`ns` depending on the build decisions made by
-    the optimization.
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`StorNewLin_Build_MW`                                           |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Determines how much power capacity (in MW) of each possible vintage is  |
+    | built at each stor_new_lin project.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Build_MWh`                                          |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Determines how much energy capacity (in MWh) of each possible vintage   |
+    | is built at each stor_new_lin project. Note that this is independent    |
+    | from :code:`StorNewLin_Build_MW`, making the storage duration sizing    |
+    | an endogenous model decision.                                           |
+    +-------------------------------------------------------------------------+
 
-    Finally, we are ready to define the power and energy capacity expressions
-    for new-build storage:
+    |
 
-    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np} = \sum_{(ns,ov)\in
-    NS\_OV_{np}}{Build\_Power\_Capacity\_MW_{ns,ov}}`.
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`StorNewLin_Power_Capacity_MW`                                  |
+    | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The power capacity of a new storage project (in MW) in a given          |
+    | operational period is equal to the sum of all capacity-build of         |
+    | vintages operational in that period.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Energy_Capacity_MWh`                                |
+    | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The energy capacity of a new storage project (in MWh) in a given        |
+    | operational period is equal to the sum of all energy-build of vintages  |
+    | operational in that period.                                             |
+    +-------------------------------------------------------------------------+
 
-    :math:`New\_Build\_Storage\_Energy\_Capacity\_MW_{ns,np} = \sum_{(ns,ov)\in
-    NS\_OV_{np}}{Build\_Energy\_Capacity\_MW_{ns,ov}}`.
+    |
 
-    The power/energy capacity of a new-build generator in a given operational
-    period for the new-build generator is equal to the sum of all power/energy
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`StorNewLin_Min_Duration_Constraint`                            |
+    | | *Defined over*: :code:`STOR_NEW_LIN_OPR_PRDS`                         |
+    |                                                                         |
+    | Ensures that the storage duration in each operational period is above   |
+    | a pre-specified requirement.                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Min_Cum_Build_Capacity_Constraint`                  |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT`   |
+    |                                                                         |
+    | Ensures that A certain amount of power capacity is built by a certain   |
+    | period, based on :code:`stor_new_lin_min_cumulative_new_build_mw`.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Min_Cum_Build_Energy_Constraint`                    |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT`     |
+    |                                                                         |
+    | Ensures that A certain amount of energy capacity is built by a certain  |
+    | period, based on :code:`stor_new_lin_min_cumulative_new_build_mwh`.     |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Max_Cum_Build_Capacity_Constraint`                  |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT`   |
+    |                                                                         |
+    | Limits the amount of power capacity built by a certain period, based on |
+    | :code:`stor_new_lin_max_cumulative_new_build_mw`.                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`StorNewLin_Max_Cum_Build_Energy_Constraint`                    |
+    | | *Defined over*: :code:`STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT`     |
+    |                                                                         |
+    | Limits the amount of energy capacity built by a certain period, based   |
+    | on :code:`stor_new_lin_max_cumulative_new_build_mwh`.                   |
+    +-------------------------------------------------------------------------+
+
+    """
+
+    # Sets
+    ###########################################################################
+
+    m.STOR_NEW_LIN = Set()
+
+    m.STOR_NEW_LIN_VNTS = Set(
+        dimen=2, within=m.STOR_NEW_LIN*m.PERIODS
+    )
+
+    m.STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT = Set(
+        dimen=2, within=m.STOR_NEW_LIN_VNTS
+    )
+
+    m.STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT = Set(
+        dimen=2, within=m.STOR_NEW_LIN_VNTS
+    )
+
+    m.STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT = Set(
+        dimen=2, within=m.STOR_NEW_LIN_VNTS
+    )
+
+    m.STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT = Set(
+        dimen=2, within=m.STOR_NEW_LIN_VNTS
+    )
+
+    # Required Params
+    ###########################################################################
+
+    m.stor_new_lin_min_duration_hrs = Param(
+        m.STOR_NEW_LIN,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_lifetime_yrs = Param(
+        m.STOR_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_annualized_real_cost_per_mw_yr = Param(
+        m.STOR_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_annualized_real_cost_per_mwh_yr = Param(
+        m.STOR_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    # Optional Params
+    ###########################################################################
+
+    m.stor_new_lin_min_cumulative_new_build_mw = Param(
+        m.STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_min_cumulative_new_build_mwh = Param(
+        m.STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_max_cumulative_new_build_mw = Param(
+        m.STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    m.stor_new_lin_max_cumulative_new_build_mwh = Param(
+        m.STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT,
+        within=NonNegativeReals
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE = Set(
+        m.STOR_NEW_LIN_VNTS,
+        initialize=operational_periods_by_storage_vintage
+    )
+
+    m.STOR_NEW_LIN_OPR_PRDS = Set(
+        dimen=2,
+        initialize=stor_new_lin_operational_periods
+    )
+
+    m.STOR_NEW_LIN_VNTS_OPR_IN_PRD = Set(
+        m.PERIODS, dimen=2,
+        initialize=stor_new_lin_vintages_operational_in_period
+    )
+
+    # Variable
+    ###########################################################################
+
+    m.StorNewLin_Build_MW = Var(
+        m.STOR_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.StorNewLin_Build_MWh = Var(
+        m.STOR_NEW_LIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    # Expressions
+    ###########################################################################
+
+    m.StorNewLin_Power_Capacity_MW = Expression(
+        m.STOR_NEW_LIN_OPR_PRDS,
+        rule=power_rule
+    )
+
+    m.StorNewLin_Energy_Capacity_MWh = Expression(
+        m.STOR_NEW_LIN_OPR_PRDS,
+        rule=energy_rule
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.StorNewLin_Min_Duration_Constraint = Constraint(
+        m.STOR_NEW_LIN_OPR_PRDS,
+        rule=min_duration_rule
+    )
+
+    m.StorNewLin_Min_Cum_Build_Capacity_Constraint = Constraint(
+        m.STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT,
+        rule=min_cum_build_capacity_rule
+    )
+
+    m.StorNewLin_Min_Cum_Build_Energy_Constraint = Constraint(
+        m.STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT,
+        rule=min_cum_build_energy_rule
+    )
+
+    m.StorNewLin_Max_Cum_Build_Capacity_Constraint = Constraint(
+        m.STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT,
+        rule=max_cum_build_capacity_rule
+    )
+
+    m.StorNewLin_Max_Cum_Build_Energy_Constraint = Constraint(
+        m.STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT,
+        rule=max_cum_build_energy_rule
+    )
+
+    # Dynamic Components
+    ###########################################################################
+
+    # Add to list of sets we'll join to get the final
+    # PROJECT_OPERATIONAL_PERIODS set
+    getattr(d, capacity_type_operational_period_sets).append(
+        "STOR_NEW_LIN_OPR_PRDS",
+    )
+    # Add to list of sets we'll join to get the final
+    # STORAGE_OPERATIONAL_PERIODS set
+    getattr(d, storage_only_capacity_type_operational_period_sets).append(
+        "STOR_NEW_LIN_OPR_PRDS",
+    )
+
+
+# Set Rules
+###############################################################################
+
+def operational_periods_by_storage_vintage(mod, prj, v):
+    return operational_periods_by_project_vintage(
+        periods=mod.PERIODS,
+        vintage=v,
+        lifetime=mod.stor_new_lin_lifetime_yrs[prj, v])
+
+
+def stor_new_lin_operational_periods(mod):
+    return project_operational_periods(
+        project_vintages_set=mod.STOR_NEW_LIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE
+    )
+
+
+def stor_new_lin_vintages_operational_in_period(mod, p):
+    return project_vintages_operational_in_period(
+        project_vintage_set=mod.STOR_NEW_LIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE,
+        period=p
+    )
+
+
+# Expression Rules
+###############################################################################
+
+def power_rule(mod, g, p):
+    """
+    **Expression Name**: StorNewLin_Power_Capacity_MW
+    **Defined Over**: STOR_NEW_LIN_OPR_PRDS
+
+    The power capacity of a new storage project in a given operational
+    period for the storage project is equal to the sum of all power
     capacity-build of vintages operational in that period.
 
-    This expression is not defined for a new-build storage project's
+    This expression is not defined for a new storage project's
     non-operational periods (i.e. it's 0). E.g. if we were allowed to build
     capacity in 2020 and 2030, and the project had a 15 year lifetime,
     in 2020 we'd take 2020 capacity-build only, in 2030, we'd take the sum
     of 2020 capacity-build and 2030 capacity-build, in 2040, we'd take 2030
     capacity-build only, and in 2050, the capacity would be undefined (i.e.
     0 for the purposes of the objective function).
-
-    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np}` can then be
-    constrained by :math:`min\_storage\_cumulative\_new\_build\_mw_{ns,v}` and
-    :math:`max\_storage\_cumulative\_new\_build\_mw_{ng,v}` (the set of
-    vintages *v* is a subset of the set of operational periods *np*).
-
-    :math:`New\_Build\_Storage\_Energy\_Capacity\_MWh_{ns,np}` can then be
-    constrained by :math:`min\_storage\_cumulative\_new\_build\_mwh_{ns,v}` and
-    :math:`max\_storage\_cumulative\_new\_build\_mwh_{ng,v}` (the set of
-    vintages *v* is a subset of the set of operational periods *np*).
     """
-    m.NEW_BUILD_STORAGE_PROJECTS = Set()
-    m.minimum_duration_hours = \
-        Param(m.NEW_BUILD_STORAGE_PROJECTS, within=NonNegativeReals)
-    m.NEW_BUILD_STORAGE_VINTAGES = \
-        Set(dimen=2, within=m.NEW_BUILD_STORAGE_PROJECTS*m.PERIODS)
-    m.lifetime_yrs_by_stor_new_lin_vintage = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.stor_new_lin_annualized_real_cost_per_mw_yr = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
-    m.stor_new_lin_annualized_real_cost_per_mwh_yr = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES, within=NonNegativeReals)
+    return sum(mod.StorNewLin_Build_MW[g, v]
+               for (gen, v) in mod.STOR_NEW_LIN_VNTS_OPR_IN_PRD[p]
+               if gen == g)
 
-    # Min and max cumulative MW and MWh are optional params that will be
-    # initialized only if data are specified
-    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT = Set(dimen=2)
-    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT = Set(dimen=2)
-    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT = Set(dimen=2)
-    m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT = Set(dimen=2)
-    m.min_storage_cumulative_new_build_mw = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT,
-              within=NonNegativeReals)
-    m.min_storage_cumulative_new_build_mwh = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT,
-              within=NonNegativeReals)
-    m.max_storage_cumulative_new_build_mw = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT,
-              within=NonNegativeReals)
-    m.max_storage_cumulative_new_build_mwh = \
-        Param(m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT,
-              within=NonNegativeReals)
 
-    m.Build_Storage_Power_MW = \
-        Var(m.NEW_BUILD_STORAGE_VINTAGES,
-            within=NonNegativeReals)
-    m.Build_Storage_Energy_MWh = \
-        Var(m.NEW_BUILD_STORAGE_VINTAGES,
-            within=NonNegativeReals)
+def energy_rule(mod, g, p):
+    """
+    **Expression Name**: StorNewLin_Energy_Capacity_MWh
+    **Defined Over**: STOR_NEW_LIN_OPR_PRDS
 
-    m.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE = \
-        Set(m.NEW_BUILD_STORAGE_VINTAGES,
-            initialize=operational_periods_by_storage_vintage)
+    The energy capacity of a new storage project in a given operational
+    period for the storage project is equal to the sum of all energy
+    capacity-build of vintages operational in that period.
 
-    m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS = \
-        Set(dimen=2, initialize=stor_new_lin_operational_periods)
+    This expression is not defined for a new storage project's
+    non-operational periods (i.e. it's 0). E.g. if we were allowed to build
+    energy in 2020 and 2030, and the project had a 15 year lifetime,
+    in 2020 we'd take 2020 energy-build only, in 2030, we'd take the sum
+    of 2020 energy-build and 2030 energy-build, in 2040, we'd take 2030
+    energy-build only, and in 2050, the energy would be undefined (i.e.
+    0 for the purposes of the objective function).
+    """
+    return sum(mod.StorNewLin_Build_MWh[g, v]
+               for (gen, v) in mod.STOR_NEW_LIN_VNTS_OPR_IN_PRD[p]
+               if gen == g)
 
-    # Add to list of sets we'll join to get the final
-    # PROJECT_OPERATIONAL_PERIODS set
-    getattr(d, capacity_type_operational_period_sets).append(
-        "NEW_BUILD_STORAGE_OPERATIONAL_PERIODS",
-    )
-    # Add to list of sets we'll join to get the final
-    # STORAGE_OPERATIONAL_PERIODS set
-    getattr(d, storage_only_capacity_type_operational_period_sets).append(
-        "NEW_BUILD_STORAGE_OPERATIONAL_PERIODS",
-    )
 
-    m.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD = \
-        Set(m.PERIODS, dimen=2,
-            initialize=stor_new_lin_vintages_operational_in_period)
+# Constraint Formulation Rules
+###############################################################################
 
-    def stor_new_lin_power_capacity_rule(mod, g, p):
-        """
-        Sum all builds of vintages operational in the current period
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return sum(mod.Build_Storage_Power_MW[g, v] for (gen, v)
-                   in mod.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-                   if gen == g)
+def min_duration_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Min_Duration_Constraint
+    **Enforced Over**: STOR_NEW_LIN_OPR_PRDS
 
-    m.New_Build_Storage_Power_Capacity_MW = \
-        Expression(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
-                   rule=stor_new_lin_power_capacity_rule)
+    Storage duration must be above a pre-specified requirement in each
+    operational period.
+    """
+    return mod.StorNewLin_Energy_Capacity_MWh[g, p] \
+        >= mod.StorNewLin_Power_Capacity_MW[g, p] \
+        * mod.stor_new_lin_min_duration_hrs[g]
 
-    def stor_new_lin_energy_capacity_rule(mod, g, p):
-        """
-        Sum all builds of vintages operational in the current period
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return sum(mod.Build_Storage_Energy_MWh[g, v] for (gen, v)
-                   in mod.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-                   if gen == g)
 
-    m.New_Build_Storage_Energy_Capacity_MWh = \
-        Expression(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
-                   rule=stor_new_lin_energy_capacity_rule)
+def min_cum_build_capacity_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Min_Cum_Build_Capacity_Constraint
+    **Enforced Over**: STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT
 
-    def minimum_duration_constraint_rule(mod, g, p):
-        """
-        Storage duration must be above a pre-specified requirement
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] >= \
-            mod.New_Build_Storage_Power_Capacity_MW[g, p] * \
-            mod.minimum_duration_hours[g]
-    m.New_Build_Storage_Minimum_Duration_Constraint = \
-        Constraint(m.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS,
-                   rule=minimum_duration_constraint_rule)
+    Must build a certain amount of power capacity by period p.
+    """
+    if mod.stor_new_lin_min_cumulative_new_build_mw == 0:
+        return Constraint.Skip
+    else:
+        return mod.StorNewLin_Power_Capacity_MW[g, p] \
+            >= mod.stor_new_lin_min_cumulative_new_build_mw[g, p]
 
-    def min_cumulative_new_build_capacity_rule(mod, g, p):
-        """
-        Must build a certain amount of capacity by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        if mod.min_storage_cumulative_new_build_mw == 0:
-            return Constraint.Skip
-        else:
-            return mod.New_Build_Storage_Power_Capacity_MW[g, p] >= \
-                mod.min_storage_cumulative_new_build_mw[g, p]
-    m.Min_Storage_Cumulative_New_Capacity_Constraint = Constraint(
-        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT,
-        rule=min_cumulative_new_build_capacity_rule)
 
-    def min_cumulative_new_build_energy_rule(mod, g, p):
-        """
-        Must build a certain amount of energy by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        if mod.min_storage_cumulative_new_build_mwh == 0:
-            return Constraint.Skip
-        else:
-            return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] >= \
-                mod.min_storage_cumulative_new_build_mwh[g, p]
-    m.Min_Storage_Cumulative_New_Energy_Constraint = Constraint(
-        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT,
-        rule=min_cumulative_new_build_energy_rule)
+def min_cum_build_energy_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Min_Cum_Build_Energy_Constraint
+    **Enforced Over**: STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT
 
-    def max_cumulative_new_build_capacity_rule(mod, g, p):
-        """
-        Can't build more than certain amount of capacity by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.New_Build_Storage_Power_Capacity_MW[g, p] <= \
-            mod.max_storage_cumulative_new_build_mw[g, p]
-    m.Max_Storage_Cumulative_New_Capacity_Constraint = Constraint(
-        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT,
-        rule=max_cumulative_new_build_capacity_rule)
+    Must build a certain amount of energy capacity by period p.
+    """
+    if mod.stor_new_lin_min_cumulative_new_build_mwh == 0:
+        return Constraint.Skip
+    else:
+        return mod.StorNewLin_Energy_Capacity_MWh[g, p] \
+            >= mod.stor_new_lin_min_cumulative_new_build_mwh[g, p]
 
-    def max_cumulative_new_build_energy_rule(mod, g, p):
-        """
-        Can't build more than certain amount of energy by period p
-        :param mod:
-        :param g:
-        :param p:
-        :return:
-        """
-        return mod.New_Build_Storage_Energy_Capacity_MWh[g, p] <= \
-            mod.max_storage_cumulative_new_build_mwh[g, p]
-    m.Max_Storage_Cumulative_New_Energy_Constraint = Constraint(
-        m.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT,
-        rule=max_cumulative_new_build_energy_rule)
 
+def max_cum_build_capacity_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Max_Cum_Build_Capacity_Constraint
+    **Enforced Over**: STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT
+
+    Can't build more than certain amount of power capacity by period p.
+    """
+    return mod.StorNewLin_Power_Capacity_MW[g, p] \
+        <= mod.stor_new_lin_max_cumulative_new_build_mw[g, p]
+
+
+def max_cum_build_energy_rule(mod, g, p):
+    """
+    **Constraint Name**: StorNewLin_Max_Cum_Build_Energy_Constraint
+    **Enforced Over**: STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT
+
+    Can't build more than certain amount of energy capacity by period p.
+    """
+    return mod.StorNewLin_Energy_Capacity_MWh[g, p] \
+        <= mod.stor_new_lin_max_cumulative_new_build_mwh[g, p]
+
+
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the power capacity of storage project *g* in period *p*
-
-    This function returns total power capacity at storage project :math:`g`
-    that is operational in period :math:`p`. See the
-    **add_module_specific_components** method above for how
-    :math:`New\_Build\_Storage\_Power\_Capacity\_MW_{ns,np}` is calculated.
+    The power capacity in a period is the sum of the new power capacity of all
+    vintages operational in the that period.
     """
-    return mod.New_Build_Storage_Power_Capacity_MW[g, p]
+    return mod.StorNewLin_Power_Capacity_MW[g, p]
 
 
 def energy_capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the energy capacity of storage project *g* in period *p*
-
-    This functin returns total energy capacity at storage project :math:`g`
-    that is operational in period :math:`p`. See the
-    **add_module_specific_components** method above for how
-    :math:`New\_Build\_Storage\_Power\_Capacity\_MWh_{ns,np}` is calculated.
+    The energy capacity in a period is the sum of the new energy capacity of
+    all vintages operational in the that period.
     """
-    return mod.New_Build_Storage_Energy_Capacity_MWh[g, p]
+    return mod.StorNewLin_Energy_Capacity_MWh[g, p]
 
 
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized capacity cost of *stor_new_lin*
-        project *g* in period *p*
-
-    This function retuns the total power and energy capacity cost for
-    stor_new_lin  projects in each period (sum over all vintages
-    operational in current period).
+    The capacity cost for new storage projects in a given period is the
+    capacity-build of a particular vintage times the annualized power cost for
+    that vintage plus the energy-build of the same vintages times the
+    annualized energy cost for that vintage, summed over all vintages
+    operational in the period. Note that power and energy costs are additive.
     """
-    return sum((mod.Build_Storage_Power_MW[g, v]
-               * mod.stor_new_lin_annualized_real_cost_per_mw_yr[g, v]
-               + mod.Build_Storage_Energy_MWh[g, v]
-               * mod.stor_new_lin_annualized_real_cost_per_mwh_yr[g, v])
-               for (gen, v)
-               in mod.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+    return sum((mod.StorNewLin_Build_MW[g, v]
+                * mod.stor_new_lin_annualized_real_cost_per_mw_yr[g, v]
+                + mod.StorNewLin_Build_MWh[g, v]
+                * mod.stor_new_lin_annualized_real_cost_per_mwh_yr[g, v])
+               for (gen, v) in mod.STOR_NEW_LIN_VNTS_OPR_IN_PRD[p]
                if gen == g)
 
 
-def load_module_specific_data(m, data_portal,
-                              scenario_directory, subproblem, stage):
+# Input-Output
+###############################################################################
+
+def load_module_specific_data(
+    m, data_portal, scenario_directory, subproblem, stage
+):
     """
 
     :param m:
@@ -370,53 +614,45 @@ def load_module_specific_data(m, data_portal,
     :param stage:
     :return:
     """
-    def determine_minimum_duration():
-        """
-        :return:
-        """
+    def determine_min_duration():
         stor_new_lin_projects = list()
-        storage_min_duration = dict()
+        stor_min_duration = dict()
 
-        dynamic = pd.read_csv(
+        _df = pd.read_csv(
             os.path.join(scenario_directory, subproblem, stage,
-                         "inputs","projects.tab"),
+                         "inputs", "projects.tab"),
             sep="\t",
             usecols=["project", "capacity_type", "minimum_duration_hours"]
         )
-        for r in zip(dynamic["project"],
-                     dynamic["capacity_type"],
-                     dynamic["minimum_duration_hours"]):
+        for r in zip(_df["project"],
+                     _df["capacity_type"],
+                     _df["minimum_duration_hours"]):
             if r[1] == "stor_new_lin":
                 stor_new_lin_projects.append(r[0])
-                storage_min_duration[r[0]] \
-                    = float(r[2])
+                stor_min_duration[r[0]] = float(r[2])
             else:
                 pass
 
-        return stor_new_lin_projects, storage_min_duration
+        return stor_new_lin_projects, stor_min_duration
 
-    data_portal.data()["NEW_BUILD_STORAGE_PROJECTS"] = {
-        None: determine_minimum_duration()[0]
-    }
-    data_portal.data()["minimum_duration_hours"] = \
-        determine_minimum_duration()[1]
+    data_portal.data()["STOR_NEW_LIN"] = \
+        {None: determine_min_duration()[0]}
+    data_portal.data()["stor_new_lin_min_duration_hrs"] = \
+        determine_min_duration()[1]
 
-    # TODO: throw an error when a generator of the 'stor_new_lin' capacity
+    # TODO: throw an error when a project of the 'stor_new_lin' capacity
     #   type is not found in new_build_storage_vintage_costs.tab
-    data_portal.load(filename=
-                     os.path.join(scenario_directory, subproblem, stage,
-                                  "inputs",
-                                  "new_build_storage_vintage_costs.tab"),
-                     index=
-                     m.NEW_BUILD_STORAGE_VINTAGES,
-                     select=("project", "vintage",
-                             "lifetime_yrs", "annualized_real_cost_per_mw_yr",
-                             "annualized_real_cost_per_mwh_yr"),
-                     param=(m.lifetime_yrs_by_stor_new_lin_vintage,
-                            m.stor_new_lin_annualized_real_cost_per_mw_yr,
-                            m.stor_new_lin_annualized_real_cost_per_mwh_yr
-                            )
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "new_build_storage_vintage_costs.tab"),
+        index=m.STOR_NEW_LIN_VNTS,
+        select=("project", "vintage", "lifetime_yrs",
+                "annualized_real_cost_per_mw_yr",
+                "annualized_real_cost_per_mwh_yr"),
+        param=(m.stor_new_lin_lifetime_yrs,
+               m.stor_new_lin_annualized_real_cost_per_mw_yr,
+               m.stor_new_lin_annualized_real_cost_per_mwh_yr)
+        )
 
     # Min and max power capacity and energy
     project_vintages_with_min_capacity = list()
@@ -440,22 +676,22 @@ def load_module_specific_data(m, data_portal,
                        "max_cumulative_new_build_mwh"]
     used_columns = [c for c in dynamic_columns if c in header]
 
-    dynamic_components = pd.read_csv(
+    df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage,
                      "inputs", "new_build_storage_vintage_costs.tab"),
         sep="\t",
         usecols=["project", "vintage"] + used_columns
     )
 
-    # min_storage_cumulative_new_build_mw and
-    # min_storage_cumulative_new_build_mwh are optional,
-    # so NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CONSTRAINT
+    # stor_new_lin_min_cumulative_new_build_mw and
+    # stor_new_lin_min_cumulative_new_build_mwh are optional,
+    # so STOR_NEW_LIN_VNTS_WITH_MIN_CONSTRAINT
     # and either params won't be initialized if the param does not exist in
     # the input file
-    if "min_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["min_cumulative_new_build_mw"]):
+    if "min_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["min_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_min_capacity.append((row[0], row[1]))
                 min_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -464,10 +700,10 @@ def load_module_specific_data(m, data_portal,
     else:
         pass
 
-    if "min_cumulative_new_build_mwh" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["min_cumulative_new_build_mwh"]):
+    if "min_cumulative_new_build_mwh" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["min_cumulative_new_build_mwh"]):
             if row[2] != ".":
                 project_vintages_with_min_energy.append((row[0], row[1]))
                 min_cumulative_mwh[(row[0], row[1])] = float(row[2])
@@ -476,15 +712,15 @@ def load_module_specific_data(m, data_portal,
     else:
         pass
 
-    # min_storage_cumulative_new_build_mw and
-    # min_storage_cumulative_new_build_mwh are optional,
-    # so NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CONSTRAINT
+    # stor_new_lin_min_cumulative_new_build_mw and
+    # stor_new_lin_min_cumulative_new_build_mwh are optional,
+    # so STOR_NEW_LIN_VNTS_WITH_MIN_CONSTRAINT
     # and either params won't be initialized if the param does not exist in
     # the input file
-    if "max_cumulative_new_build_mw" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["max_cumulative_new_build_mw"]):
+    if "max_cumulative_new_build_mw" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["max_cumulative_new_build_mw"]):
             if row[2] != ".":
                 project_vintages_with_max_capacity.append((row[0], row[1]))
                 max_cumulative_mw[(row[0], row[1])] = float(row[2])
@@ -493,10 +729,10 @@ def load_module_specific_data(m, data_portal,
     else:
         pass
 
-    if "max_cumulative_new_build_mwh" in dynamic_components.columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["vintage"],
-                       dynamic_components["max_cumulative_new_build_mwh"]):
+    if "max_cumulative_new_build_mwh" in df.columns:
+        for row in zip(df["project"],
+                       df["vintage"],
+                       df["max_cumulative_new_build_mwh"]):
             if row[2] != ".":
                 project_vintages_with_max_energy.append((row[0], row[1]))
                 max_cumulative_mwh[(row[0], row[1])] = float(row[2])
@@ -509,41 +745,39 @@ def load_module_specific_data(m, data_portal,
     if not project_vintages_with_min_capacity:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT"
-        ] = {None: project_vintages_with_min_capacity}
-    data_portal.data()["min_storage_cumulative_new_build_mw"] = \
+        data_portal.data()["STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT"] =\
+            {None: project_vintages_with_min_capacity}
+    data_portal.data()["stor_new_lin_min_cumulative_new_build_mw"] = \
         min_cumulative_mw
 
     if not project_vintages_with_min_energy:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT"
-        ] = {None: project_vintages_with_min_energy}
-    data_portal.data()["min_storage_cumulative_new_build_mwh"] = \
+        data_portal.data()["STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT"] = \
+            {None: project_vintages_with_min_energy}
+    data_portal.data()["stor_new_lin_min_cumulative_new_build_mwh"] = \
         min_cumulative_mwh
 
     if not project_vintages_with_max_capacity:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT"
-        ] = {None: project_vintages_with_max_capacity}
-    data_portal.data()["max_storage_cumulative_new_build_mw"] = \
+        data_portal.data()["STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT"] =\
+            {None: project_vintages_with_max_capacity}
+    data_portal.data()["stor_new_lin_max_cumulative_new_build_mw"] = \
         max_cumulative_mw
 
     if not project_vintages_with_max_energy:
         pass  # if the list is empty, don't initialize the set
     else:
-        data_portal.data()[
-            "NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT"
-        ] = {None: project_vintages_with_max_energy}
-    data_portal.data()["max_storage_cumulative_new_build_mwh"] = \
+        data_portal.data()["STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT"] = \
+            {None: project_vintages_with_max_energy}
+    data_portal.data()["stor_new_lin_max_cumulative_new_build_mwh"] = \
         max_cumulative_mwh
 
 
-def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
+def export_module_specific_results(
+        scenario_directory, subproblem, stage, m, d
+):
     """
     Export new build storage results.
     :param scenario_directory:
@@ -558,38 +792,15 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_mw", "new_build_mwh"])
-        for (prj, p) in m.NEW_BUILD_STORAGE_VINTAGES:
+        for (prj, p) in m.STOR_NEW_LIN_VNTS:
             writer.writerow([
                 prj,
                 p,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.Build_Storage_Power_MW[prj, p]),
-                value(m.Build_Storage_Energy_MWh[prj, p])
+                value(m.StorNewLin_Build_MW[prj, p]),
+                value(m.StorNewLin_Build_MWh[prj, p])
             ])
-
-
-def operational_periods_by_storage_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.lifetime_yrs_by_stor_new_lin_vintage[prj, v])
-
-
-def stor_new_lin_operational_periods(mod):
-    return project_operational_periods(
-        project_vintages_set=mod.NEW_BUILD_STORAGE_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE
-    )
-
-
-def stor_new_lin_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
-        project_vintage_set=mod.NEW_BUILD_STORAGE_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE,
-        period=p
-    )
 
 
 def summarize_module_specific_results(
@@ -605,16 +816,15 @@ def summarize_module_specific_results(
     """
 
     # Get the results CSV as dataframe
-    capacity_results_df = \
-        pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
-                                 "results", "capacity_stor_new_lin.csv")
-                    )
+    capacity_results_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "results", "capacity_stor_new_lin.csv")
+    )
 
-    capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", 'period'],
+        as_index=True
+    ).sum()
 
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
@@ -636,6 +846,9 @@ def summarize_module_specific_results(
             new_build_df.to_string(outfile)
             outfile.write("\n")
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -695,24 +908,6 @@ def get_module_specific_inputs_from_database(
     return new_stor_costs
 
 
-def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    # new_stor_costs = get_module_specific_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-    # validate inputs
-    # check that annualize real cost is positive
-    # check that maximum new build doesn't decrease
-    # ...
-
-
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn
 ):
@@ -731,8 +926,8 @@ def write_module_specific_model_inputs(
         subscenarios, subproblem, stage, conn)
 
     with open(os.path.join(inputs_directory,
-                           "new_build_storage_vintage_costs.tab"), "w", newline="") as \
-            new_storage_costs_tab_file:
+                           "new_build_storage_vintage_costs.tab"),
+              "w", newline="") as new_storage_costs_tab_file:
         writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
 
         # Write header
@@ -773,3 +968,24 @@ def import_module_specific_results_into_database(
         scenario_id=scenario_id, subproblem=subproblem, stage=stage,
         results_file="capacity_stor_new_lin.csv"
     )
+
+
+# Validation
+###############################################################################
+
+def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    # new_stor_costs = get_module_specific_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+
+    # validate inputs
+    # check that annualize real cost is positive
+    # check that maximum new build doesn't decrease
+    # ...

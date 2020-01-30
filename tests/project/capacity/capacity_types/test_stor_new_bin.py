@@ -82,58 +82,58 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_BINARY_BUILD_STORAGE_PROJECTS
+        # Set: STOR_NEW_BIN
         expected_stor_new_bin_project_set = ["Battery_Binary"]
         actual_stor_new_bin_project_set = sorted(
-            [prj for prj in instance.NEW_BINARY_BUILD_STORAGE_PROJECTS]
+            [prj for prj in instance.STOR_NEW_BIN]
         )
         self.assertListEqual(expected_stor_new_bin_project_set,
                              actual_stor_new_bin_project_set)
 
-        # Param: binary_build_size_storage_mw
-        expected_binary_build_size_storage_mw = OrderedDict(
+        # Param: stor_new_bin_build_size_mw
+        expected_stor_new_bin_build_size_mw = OrderedDict(
             sorted({"Battery_Binary": 10}.items())
         )
-        actual_binary_build_size_storage_mw = OrderedDict(
+        actual_stor_new_bin_build_size_mw = OrderedDict(
             sorted(
                 {prj:
-                    instance.binary_build_size_storage_mw[prj]
-                 for prj in instance.NEW_BINARY_BUILD_STORAGE_PROJECTS
+                    instance.stor_new_bin_build_size_mw[prj]
+                 for prj in instance.STOR_NEW_BIN
                  }.items()
             )
         )
-        self.assertDictEqual(expected_binary_build_size_storage_mw,
-                             actual_binary_build_size_storage_mw)
+        self.assertDictEqual(expected_stor_new_bin_build_size_mw,
+                             actual_stor_new_bin_build_size_mw)
 
-        # Param: binary_build_size_storage_mwh
-        expected_binary_build_size_storage_mwh = OrderedDict(
+        # Param: stor_new_bin_build_size_mwh
+        expected_stor_new_bin_build_size_mwh = OrderedDict(
             sorted({"Battery_Binary": 40}.items())
         )
-        actual_binary_build_size_storage_mwh = OrderedDict(
+        actual_stor_new_bin_build_size_mwh = OrderedDict(
             sorted(
                 {prj:
-                    instance.binary_build_size_storage_mwh[prj]
-                 for prj in instance.NEW_BINARY_BUILD_STORAGE_PROJECTS
+                    instance.stor_new_bin_build_size_mwh[prj]
+                 for prj in instance.STOR_NEW_BIN
                  }.items()
             )
         )
-        self.assertDictEqual(expected_binary_build_size_storage_mwh,
-                             actual_binary_build_size_storage_mwh)
+        self.assertDictEqual(expected_stor_new_bin_build_size_mwh,
+                             actual_stor_new_bin_build_size_mwh)
 
-        # Set: NEW_BINARY_BUILD_STORAGE_VINTAGES
+        # Set: STOR_NEW_BIN_VNTS
         expected_storage_vintage_set = sorted([
             ("Battery_Binary", 2020),
             ("Battery_Binary", 2030)
         ])
         actual_storage_vintage_set = sorted(
             [(prj, period)
-             for (prj, period) in instance.NEW_BINARY_BUILD_STORAGE_VINTAGES
+             for (prj, period) in instance.STOR_NEW_BIN_VNTS
              ]
         )
         self.assertListEqual(expected_storage_vintage_set,
                              actual_storage_vintage_set)
 
-        # Params: lifetime_yrs_by_new_binary_build_storage_vintage
+        # Params: stor_new_bin_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Battery_Binary", 2020): 10,
                     ("Battery_Binary", 2030): 10}.items())
@@ -141,15 +141,15 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         actual_lifetime = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.lifetime_yrs_by_new_binary_build_storage_vintage[
+                    instance.stor_new_bin_lifetime_yrs[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BINARY_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
-        # Params: new_binary_build_storage_annualized_real_cost_per_mw_yr
+        # Params: stor_new_bin_annualized_real_cost_per_mw_yr
         expected_mw_yr_cost = OrderedDict(
             sorted({("Battery_Binary", 2020): 1,
                     ("Battery_Binary", 2030): 1}.items())
@@ -157,15 +157,15 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         actual_mw_yr_cost = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.new_binary_build_storage_annualized_real_cost_per_mw_yr[
+                    instance.stor_new_bin_annualized_real_cost_per_mw_yr[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BINARY_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_mw_yr_cost, actual_mw_yr_cost)
 
-        # Params: new_binary_build_storage_annualized_real_cost_per_mw_yr
+        # Params: stor_new_bin_annualized_real_cost_per_mw_yr
         expected_mwh_yr_cost = OrderedDict(
             sorted({("Battery_Binary", 2020): 1,
                     ("Battery_Binary", 2030): 1}.items())
@@ -173,9 +173,9 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         actual_mwh_yr_cost = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.new_binary_build_storage_annualized_real_cost_per_mwh_yr[
+                    instance.stor_new_bin_annualized_real_cost_per_mwh_yr[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BINARY_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_BIN_VNTS
                  }.items()
             )
         )
@@ -195,7 +195,7 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE
+        # Sets: OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
         expected_op_periods_by_stor_vintage = {
             ("Battery_Binary", 2020): [2020],
             ("Battery_Binary", 2030): [2030]
@@ -203,33 +203,33 @@ class TestNewBinaryBuildStorage(unittest.TestCase):
         actual_periods_by_stor_vintage = {
             (prj, vintage):
                 [period for period in
-                 instance.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE[
+                 instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE[
                     prj, vintage]]
             for (prj, vintage) in
-                instance.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_STORAGE_VINTAGE
+                instance.OPR_PRDS_BY_STOR_NEW_BIN_VINTAGE
         }
         self.assertDictEqual(expected_op_periods_by_stor_vintage,
                              actual_periods_by_stor_vintage)
 
-        # Sets: NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS
+        # Sets: STOR_NEW_BIN_OPR_PRDS
         expected_stor_op_periods = sorted([
             ("Battery_Binary", 2020),
             ("Battery_Binary", 2030)
         ])
         actual_stor_op_periods = sorted([
             (prj, period) for (prj, period) in
-            instance.NEW_BINARY_BUILD_STORAGE_OPERATIONAL_PERIODS
+            instance.STOR_NEW_BIN_OPR_PRDS
         ])
         self.assertListEqual(expected_stor_op_periods, actual_stor_op_periods)
 
-        # Sets: NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD
+        # Sets: STOR_NEW_BIN_VNTS_OPR_IN_PRD
         expected_stor_vintage_op_in_period = {
             2020: [("Battery_Binary", 2020)],
             2030: [("Battery_Binary", 2030)]
         }
         actual_stor_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
-                instance.NEW_BINARY_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+                instance.STOR_NEW_BIN_VNTS_OPR_IN_PRD[p]
                 ] for p in instance.PERIODS
         }
         self.assertDictEqual(expected_stor_vintage_op_in_period,

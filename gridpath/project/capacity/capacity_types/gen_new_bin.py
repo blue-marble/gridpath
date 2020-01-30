@@ -2,12 +2,18 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.project.capacity.capacity_types.gen_new_bin**
-module describes the capacity of generators that can be built by the
-optimization at a cost. Once built, these generators remain available for
-the duration of their pre-specified lifetime. The decision to build is binary,
-i.e. either the project is built at a specfied build size capacity, or nothing
-is built at all. """
+This capacity type describes new generation projects that can be built by the
+optimization at a pre-specified size and cost. The model can decide to build
+the project at the specified size in some or all investment *periods*, or not
+at all. Once built, the capacity remains available for the duration of the
+project's pre-specified lifetime.
+
+The cost input to the model is an annualized cost per unit capacity. If the
+optimization makes the decision to build new capacity, the total annualized
+cost is incurred in each period of the study (and multiplied by the number
+of years the period represents) for the duration of the project's lifetime.
+Annual fixed O&M costs are also incurred by binary new-build generation.
+"""
 
 from __future__ import print_function
 
@@ -34,139 +40,254 @@ from gridpath.project.capacity.capacity_types.common_methods import \
 
 def add_module_specific_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding the components to
-    :param d: the DynamicComponents class object we are adding components to
+    The following Pyomo model components are defined in this module:
 
-    This function adds to the model a two-dimensional set of project-vintage
-    combinations to describe the periods in time when project capacity can be
-    built in the optimization: the *NEW_BINARY_BUILD_GENERATOR_VINTAGES* set,
-    which we will also designate with :math:`NG\_V` and index with
-    :math:`ng, v` where :math:`ng\in R` and :math:`v\in P`. For each :math:`ng,
-    v`, we load the *lifetime_yrs_by_new_binary_build_vintage* parameter, which
-    is the project's lifetime, i.e. how long project capacity of a particular
-    vintage remains operational. We will then use this parameter to
-    determine the operational periods :math:`p` for each :math:`ng, v`. For
-    each :math:`ng, v`, we also declare the cost to build new capacity: the
-    *new_binary_build_annualized_real_cost_per_mw_yr* parameter.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`GEN_NEW_BIN`                                                   |
+    |                                                                         |
+    | Two-dimensional set of project-vintage combinations to describe all     |
+    | possible project-vintage combinations for projects with a cumulative    |
+    | minimum build capacity specified.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_BIN_VNTS`                                              |
+    |                                                                         |
+    | A two-dimensional set of project-vintage combinations to describe the   |
+    | periods in time when project capacity can be built in the optimization. |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`gen_new_bin_lifetime_yrs_by_vintage`                           |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's lifetime, i.e. how long project capacity of a particular  |
+    | vintage remains operational.                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_new_bin_annualized_real_cost_per_mw_yr`                    |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's cost to build new capacity in annualized real dollars per |
+    | MW.                                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_new_bin_build_size_mw`                                     |
+    | | *Defined over*: :code:`GEN_NEW_BIN`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's specified build size in MW. The model can only build the  |
+    | project in this pre-specified size.                                     |
+    +-------------------------------------------------------------------------+
 
     .. note:: The cost input to the model is a levelized cost per unit
         capacity. This annualized cost is incurred in each period of the study
         (and multiplied by the number of years the period represents) for
         the duration of the project's lifetime. It is up to the user to
-        ensure that the *lifetime_yrs_by_new_binary_build_vintage* and
-        *new_binary_build_annualized_real_cost_per_mw_yr parameters* are
+        ensure that the :code:`gen_new_bin_lifetime_yrs_by_vintage` and
+        :code:`gen_new_bin_annualized_real_cost_per_mw_yr` parameters are
         consistent.
 
-    The :math:`Build\_Binary_{ng,v}` variable is defined over the :math:`NG\_V`
-    set and determines for each possible vintage :math:`v`at each new-build
-    project :math:`ng` whether the project is built or not (this is a binary
-    'on-off' decision). :math:`New\_Build\_Binary_{ng,np}` is constrained such
-    that once the decision to build is made, the project cannot be built again
-    in another vintage until its lifetime is expired.
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE`                               |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    |                                                                         |
+    | Indexed set that describes the operational periods for each possible    |
+    | project-vintage combination, based on the                               |
+    | :code:`gen_new_bin_lifetime_yrs_by_vintage`. For instance, capacity of  |
+    | the 2020 vintage with lifetime of 30 years will be assumed operational  |
+    | starting Jan 1, 2020 and through Dec 31, 2049, but will *not* be        |
+    | operational in 2050.                                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_BIN_OPR_PRDS`                                          |
+    |                                                                         |
+    | Two-dimensional set that includes the periods when project capacity of  |
+    | any vintage *could* be operational if built. This set is added to the   |
+    | list of sets to join to get the final                                   |
+    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | **gridpath.project.capacity.capacity**.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_NEW_BIN_VNTS_OPR_IN_PERIOD`                                |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the project-vintages that could be           |
+    | operational in each period based on the                                 |
+    | :code:`gen_new_bin_lifetime_yrs_by_vintage`.                            |
+    +-------------------------------------------------------------------------+
 
-    We use the *NEW_BUILD_BINARY_GENERATOR_VINTAGES* set and the
-    *lifetime_yrs_by_new_binary_build_vintage* parameter to determine the
-    operational periods for capacity of each possible vintage: the
-    *OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE* set indexed by
-    :math:`ng,v`.
+    |
 
-    .. note:: A period is currently defined as operational for project
-        :math:`ng` if :math:`v <= p <
-        lifetime\_yrs\_by\_new\_binary\_build\_vintage_{ng,v}`, so capacity of
-        the 2020 vintage with lifetime of 30 years will be assumed operational
-        starting Jan 1, 2020 and through Dec 31, 2049, but will not be
-        operational in 2050.
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`GenNewBin_Build`                                               |
+    | | *Defined over*: :code:`GEN_NEW_BIN_VNTS`                              |
+    | | *Within*: :code:`Binary          `                                    |
+    |                                                                         |
+    | Binary build decision for each project-vintage combination (1=build).   |
+    +-------------------------------------------------------------------------+
 
-    The *NEW_BINARY_BUILD_GENERATOR_OPERATIONAL_PERIODS* set is a
-    two-dimensional set that includes the periods when project capacity of
-    any vintage *could* be operational if built.  This set
-    is then added to the list of sets to join to get the final
-    *PROJECT_OPERATIONAL_PERIODS* set defined in
-    **gridpath.project.capacity.capacity**. We will also use *NG_P* to
-    designate this set (index :math:`ng, np` where :math:`ng\in R` and
-    :math:`np\in P`).
+    |
 
-    Finally, we need to determine which project vintages could be
-    operational in each period: the
-    *NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD* set. Indexed by
-    :math:`p`, this two-dimensional set :math:`\{NG\_OV_p\}_{p\in P}`
-    (:math:`NG\_OV_p\subset NG\_V`) can help us tell how much capacity we
-    have available in period :math:`p` of each new-build project :math:`ng`
-    depending on the build decisions made by the optimization.
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`GenNewBin_Only_Build_Once_Constraint`                          |
+    | | *Defined over*: :code:`GEN_NEW_BIN_OPR_PRDS`                          |
+    |                                                                         |
+    | Once a project is built, it cannot be built again in another vintage    |
+    | until its lifetime is expired.                                          |
+    +-------------------------------------------------------------------------+
 
     """
 
-    # Indexes and param
-    m.NEW_BINARY_BUILD_GENERATORS = Set(within=m.PROJECTS)
-    m.NEW_BINARY_BUILD_GENERATOR_VINTAGES = \
-        Set(dimen=2, within=m.PROJECTS*m.PERIODS)
-    m.lifetime_yrs_by_new_binary_build_vintage = \
-        Param(m.NEW_BINARY_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
-    m.new_binary_build_annualized_real_cost_per_mw_yr = \
-        Param(m.NEW_BINARY_BUILD_GENERATOR_VINTAGES, within=NonNegativeReals)
-    m.binary_build_size_mw = \
-        Param(m.NEW_BINARY_BUILD_GENERATORS, within=NonNegativeReals)
+    # Sets
+    ###########################################################################
 
-    # Build variable
-    m.Build_Binary = Var(m.NEW_BINARY_BUILD_GENERATOR_VINTAGES, within=Binary)
+    m.GEN_NEW_BIN = Set(
+        within=m.PROJECTS
+    )
 
-    # Auxiliary sets
-    m.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE = \
-        Set(m.NEW_BINARY_BUILD_GENERATOR_VINTAGES,
-            initialize=operational_periods_by_generator_vintage)
+    m.GEN_NEW_BIN_VNTS = Set(
+        dimen=2, within=m.PROJECTS*m.PERIODS
+    )
 
-    m.NEW_BINARY_BUILD_GENERATOR_OPERATIONAL_PERIODS = \
-        Set(dimen=2, initialize=new_build_option_operational_periods)
+    # Required Params
+    ###########################################################################
+
+    m.gen_new_bin_lifetime_yrs_by_vintage = Param(
+        m.GEN_NEW_BIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.gen_new_bin_annualized_real_cost_per_mw_yr = Param(
+        m.GEN_NEW_BIN_VNTS,
+        within=NonNegativeReals
+    )
+
+    m.gen_new_bin_build_size_mw = Param(
+        m.GEN_NEW_BIN,
+        within=NonNegativeReals
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE = Set(
+        m.GEN_NEW_BIN_VNTS,
+        initialize=operational_periods_by_generator_vintage
+    )
+
+    m.GEN_NEW_BIN_OPR_PRDS = Set(
+        dimen=2,
+        initialize=gen_new_bin_operational_periods
+    )
+
+    m.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD = Set(
+        m.PERIODS, dimen=2,
+        initialize=gen_new_bin_vintages_operational_in_period
+    )
+
+    # Variables
+    ###########################################################################
+
+    m.GenNewBin_Build = Var(
+        m.GEN_NEW_BIN_VNTS,
+        within=Binary
+    )
+
+    # Constraints
+    ###########################################################################
+
+    m.GenNewBin_Only_Build_Once_Constraint = Constraint(
+        m.GEN_NEW_BIN_OPR_PRDS,
+        rule=only_build_once_rule
+    )
+
+    # Dynamic Components
+    ###########################################################################
 
     # Add to list of sets we'll join to get the final
     # PROJECT_OPERATIONAL_PERIODS set
     getattr(d, capacity_type_operational_period_sets).append(
-        "NEW_BINARY_BUILD_GENERATOR_OPERATIONAL_PERIODS",
+        "GEN_NEW_BIN_OPR_PRDS",
     )
 
-    m.NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD = \
-        Set(m.PERIODS, dimen=2,
-            initialize=new_build_option_vintages_operational_in_period)
 
-    def only_build_once_rule(mod, g, p):
-        """
-        Once a project is built, it cannot be built again in another vintage
-        until its lifetime is expired.
+# Set Rules
+###############################################################################
 
-        Note: this constraint could be generalized into a min and max build
-        constraint if we want to allow multiple units to be built.
-        """
-
-        # Sum all binary build decisions of vintages operational in the current
-        # period and limit this to be less than or equal than 1
-        return sum(
-            mod.Build_Binary[g, v] for (gen, v)
-            in mod.NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
-            if gen == g
-        ) <= 1
-
-    m.New_Binary_Build_Generator_Only_Build_Once_Constraint = Constraint(
-        m.NEW_BINARY_BUILD_GENERATOR_VINTAGES,
-        rule=only_build_once_rule
+def operational_periods_by_generator_vintage(mod, prj, v):
+    return operational_periods_by_project_vintage(
+        periods=getattr(mod, "PERIODS"), vintage=v,
+        lifetime=mod.gen_new_bin_lifetime_yrs_by_vintage[prj, v]
     )
 
+
+def gen_new_bin_operational_periods(mod):
+    return project_operational_periods(
+        project_vintages_set=mod.GEN_NEW_BIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE
+    )
+
+
+def gen_new_bin_vintages_operational_in_period(mod, p):
+    return project_vintages_operational_in_period(
+        project_vintage_set=mod.GEN_NEW_BIN_VNTS,
+        operational_periods_by_project_vintage_set=
+        mod.OPR_PRDS_BY_GEN_NEW_BIN_VINTAGE,
+        period=p
+    )
+
+
+# Constraint Formulation Rules
+###############################################################################
+
+def only_build_once_rule(mod, g, p):
+    """
+    **Constraint Name**: GenNewBin_Only_Build_Once_Constraint
+    **Enforced Over**: GEN_NEW_BIN_OPR_PRDS
+
+    Once a project is built, it cannot be built again in another vintage
+    until its lifetime is expired. We sum all binary build decisions of
+    vintages operational in the current period and limit this to be less
+    than or equal than 1.
+
+    Note: this constraint could be generalized into a min and max build
+    constraint if we want to allow multiple units to be built.
+    """
+
+    return sum(
+        mod.GenNewBin_Build[g, v] for (gen, v)
+        in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
+        if gen == g
+    ) <= 1
+
+
+# Capacity Type Methods
+###############################################################################
 
 def capacity_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the capacity of project *g* in period *p*
+    The capacity of a new generator project in a given operational period
+    period is equal to the sum of all binary build decisions of vintages
+    operational in that period multiplied with the build capacity size.
 
-    Note: only one vintage can have a non-zero Build_Binary variable in each
+    Note: only one vintage can have a non-zero GenNewBin_Build variable in each
     period due to the *only_build_once_rule*.
     """
 
     return sum(
-        mod.Build_Binary[g, v]
-        * mod.binary_build_size_mw[g]
-        for (gen, v)
-        in mod.NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+        mod.GenNewBin_Build[g, v]
+        * mod.gen_new_bin_build_size_mw[g]
+        for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )
 
@@ -181,25 +302,21 @@ def capacity_rule(mod, g, p):
 #  capacity constraints
 def capacity_cost_rule(mod, g, p):
     """
-    :param mod: the Pyomo abstract model
-    :param g: the project
-    :param p: the operational period
-    :return: the total annualized capacity cost of *new_build_binary_generator*
-        project *g* in period *p*
-
     The capacity cost for new-build generators in a given period is the
     capacity-build of a particular vintage times the annualized cost for
     that vintage summed over all vintages operational in the period.
     """
     return sum(
-        mod.Build_Binary[g, v]
-        * mod.binary_build_size_mw[g]
-        * mod.new_binary_build_annualized_real_cost_per_mw_yr[g, v]
-        for (gen, v)
-        in mod.NEW_BINARY_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+        mod.GenNewBin_Build[g, v]
+        * mod.gen_new_bin_build_size_mw[g]
+        * mod.gen_new_bin_annualized_real_cost_per_mw_yr[g, v]
+        for (gen, v) in mod.GEN_NEW_BIN_VNTS_OPR_IN_PERIOD[p]
         if gen == g
     )
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -217,19 +334,19 @@ def load_module_specific_data(
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "new_binary_build_generator_vintage_costs.tab"),
-        index=m.NEW_BINARY_BUILD_GENERATOR_VINTAGES,
+        index=m.GEN_NEW_BIN_VNTS,
         select=("project", "vintage", "lifetime_yrs",
                 "annualized_real_cost_per_mw_yr"),
-        param=(m.lifetime_yrs_by_new_binary_build_vintage,
-               m.new_binary_build_annualized_real_cost_per_mw_yr)
+        param=(m.gen_new_bin_lifetime_yrs_by_vintage,
+               m.gen_new_bin_annualized_real_cost_per_mw_yr)
     )
 
     data_portal.load(
         filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
                               "new_binary_build_generator_size.tab"),
-        index=m.NEW_BINARY_BUILD_GENERATORS,
+        index=m.GEN_NEW_BIN,
         select=("project", "binary_build_size_mw"),
-        param=(m.binary_build_size_mw)
+        param=(m.gen_new_bin_build_size_mw)
     )
 
 
@@ -250,39 +367,15 @@ def export_module_specific_results(scenario_directory, subproblem, stage, m, d):
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
                          "new_build_binary", "new_build_mw"])
-        for (prj, v) in m.NEW_BINARY_BUILD_GENERATOR_VINTAGES:
+        for (prj, v) in m.GEN_NEW_BIN_VNTS:
             writer.writerow([
                 prj,
                 v,
                 m.technology[prj],
                 m.load_zone[prj],
-                value(m.Build_Binary[prj, v]),
-                value(m.Build_Binary[prj, v] * m.binary_build_size_mw[prj])
+                value(m.GenNewBin_Build[prj, v]),
+                value(m.GenNewBin_Build[prj, v] * m.gen_new_bin_build_size_mw[prj])
             ])
-
-
-def operational_periods_by_generator_vintage(mod, prj, v):
-    return operational_periods_by_project_vintage(
-        periods=getattr(mod, "PERIODS"), vintage=v,
-        lifetime=mod.lifetime_yrs_by_new_binary_build_vintage[prj, v]
-    )
-
-
-def new_build_option_operational_periods(mod):
-    return project_operational_periods(
-        project_vintages_set=mod.NEW_BINARY_BUILD_GENERATOR_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE
-    )
-
-
-def new_build_option_vintages_operational_in_period(mod, p):
-    return project_vintages_operational_in_period(
-        project_vintage_set=mod.NEW_BINARY_BUILD_GENERATOR_VINTAGES,
-        operational_periods_by_project_vintage_set=
-        mod.OPERATIONAL_PERIODS_BY_NEW_BINARY_BUILD_GENERATOR_VINTAGE,
-        period=p
-    )
 
 
 def summarize_module_specific_results(
@@ -303,11 +396,10 @@ def summarize_module_specific_results(
                      "results", "capacity_gen_new_bin.csv")
     )
 
-    capacity_results_agg_df = \
-        capacity_results_df.groupby(by=["load_zone", "technology",
-                                        'period'],
-                                    as_index=True
-                                    ).sum()
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", 'period'],
+        as_index=True
+    ).sum()
 
     # Set the formatting of float to be readable
     pd.options.display.float_format = "{:,.0f}".format
@@ -329,6 +421,9 @@ def summarize_module_specific_results(
             new_build_df.to_string(outfile)
             outfile.write("\n")
 
+
+# Database
+###############################################################################
 
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -371,11 +466,11 @@ def get_module_specific_inputs_from_database(
 
     c2 = conn.cursor()
     new_gen_build_size = c2.execute(
-        """SELECT project, binary_build_size_mw
+        """SELECT project, gen_new_bin_build_size_mw
         FROM inputs_project_portfolios
         
         INNER JOIN
-        (SELECT project, binary_build_size_mw
+        (SELECT project, gen_new_bin_build_size_mw
         FROM inputs_project_new_binary_build_size
         WHERE project_new_binary_build_size_scenario_id = {})
         USING (project)
@@ -389,6 +484,80 @@ def get_module_specific_inputs_from_database(
 
     return new_gen_costs, new_gen_build_size
 
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    new_binary_build_generator_vintage_costs.tab file and the
+    new_binary_build_generator_size.tab file
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    new_gen_costs, new_gen_build_size = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    with open(os.path.join(inputs_directory,
+                           "new_binary_build_generator_vintage_costs.tab"),
+              "w", newline="") as new_gen_costs_tab_file:
+        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "vintage", "lifetime_yrs",
+             "annualized_real_cost_per_mw_yr"]
+        )
+
+        for row in new_gen_costs:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+    with open(os.path.join(inputs_directory,
+                           "new_binary_build_generator_size.tab"),
+              "w", newline="") as new_build_size_tab_file:
+        writer = csv.writer(new_build_size_tab_file, delimiter="\t")
+
+        # Write header
+        writer.writerow(
+            ["project", "gen_new_bin_build_size_mw"]
+        )
+
+        for row in new_gen_build_size:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+
+def import_module_specific_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # New build capacity results
+    print("project new binary build generator")
+
+    update_capacity_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="capacity_gen_new_bin.csv"
+    )
+
+
+# Validation
+###############################################################################
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
@@ -550,74 +719,3 @@ def validate_costs(cost_df, prj_periods):
             )
 
     return results
-
-
-def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn
-):
-    """
-    Get inputs from database and write out the model input
-    new_binary_build_generator_vintage_costs.tab file and the
-    new_binary_build_generator_size.tab file
-    :param inputs_directory: local directory where .tab files will be saved
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    new_gen_costs, new_gen_build_size = get_module_specific_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-
-    with open(os.path.join(inputs_directory,
-                           "new_binary_build_generator_vintage_costs.tab"), "w", newline="") as \
-            new_gen_costs_tab_file:
-        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["project", "vintage", "lifetime_yrs",
-             "annualized_real_cost_per_mw_yr"]
-        )
-
-        for row in new_gen_costs:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
-
-    with open(os.path.join(inputs_directory,
-                           "new_binary_build_generator_size.tab"), "w", newline="") as \
-            new_build_size_tab_file:
-        writer = csv.writer(new_build_size_tab_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["project", "binary_build_size_mw"]
-        )
-
-        for row in new_gen_build_size:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)
-
-
-def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
-):
-    """
-
-    :param scenario_id:
-    :param subproblem:
-    :param stage:
-    :param c:
-    :param db:
-    :param results_directory:
-    :return:
-    """
-    # New build capacity results
-    print("project new binary build generator")
-
-    update_capacity_results_table(
-        db=db, c=c, results_directory=results_directory,
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
-        results_file="capacity_gen_new_bin.csv"
-    )

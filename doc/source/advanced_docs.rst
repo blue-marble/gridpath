@@ -84,52 +84,39 @@ gridpath.project.capacity.capacity_types
 
 gridpath.project.capacity.capacity_types.gen_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_spec
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_spec.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.gen_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_lin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.gen_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_new_bin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.gen_ret_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_lin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.gen_ret_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin
-    :members: add_module_specific_components, capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.gen_ret_bin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.stor_spec
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_spec
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.stor_spec.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.stor_new_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_lin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.stor_new_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.stor_new_bin.add_module_specific_components
 
 gridpath.project.capacity.capacity_types.dr_new
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.capacity.capacity_types.dr_new
-    :members: add_module_specific_components, capacity_rule,
-    energy_capacity_rule, capacity_cost_rule
+.. automodule:: gridpath.project.capacity.capacity_types.dr_new.add_module_specific_components
 
 Project Availability
 --------------------
@@ -181,8 +168,7 @@ gridpath.project.capacity.operational_types.gen_always_on
 
 gridpath.project.capacity.operational_types.gen_commit_lin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_commit_lin.add_module_specific_components
 
 gridpath.project.capacity.operational_types.gen_commit_bin
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -206,13 +192,11 @@ gridpath.project.capacity.operational_types.gen_var
 
 gridpath.project.capacity.operational_types.gen_var_must_take
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.gen_var_must_take.add_module_specific_components
 
 gridpath.project.capacity.operational_types.stor
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. automodule:: gridpath.project.operations.operational_types.stor
-    :members: add_module_specific_components, power_provision_rule
+.. automodule:: gridpath.project.operations.operational_types.stor.add_module_specific_components
 
 gridpath.project.capacity.operational_types.dr
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -84,41 +84,41 @@ class TestStorageGenericOperationalType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: STORAGE_GENERIC_PROJECTS
+        # Sets: STOR
         expected_projects = ["Battery", "Battery_Binary", "Battery_Specified"]
         actual_projects = sorted(
-            [p for p in instance.STORAGE_GENERIC_PROJECTS]
+            [p for p in instance.STOR]
         )
         self.assertListEqual(expected_projects, actual_projects)
 
-        # STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS
+        # STOR_OPR_TMPS
         expected_tmps = sorted(
             get_project_operational_timepoints(expected_projects)
         )
         actual_tmps = sorted([
             tmp for tmp in
-            instance.STORAGE_GENERIC_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.STOR_OPR_TMPS
             ])
         self.assertListEqual(expected_tmps, actual_tmps)
 
-        # Param: storage_generic_charging_efficiency
+        # Param: stor_charging_efficiency
         expected_charging_efficiency = {
             "Battery": 0.8, "Battery_Binary": 0.8, "Battery_Specified": 0.8
         }
         actual_charging_efficiency = {
-            prj: instance.storage_generic_charging_efficiency[prj]
-            for prj in instance.STORAGE_GENERIC_PROJECTS
+            prj: instance.stor_charging_efficiency[prj]
+            for prj in instance.STOR
         }
         self.assertDictEqual(expected_charging_efficiency,
                              actual_charging_efficiency)
 
-        # Param: storage_generic_discharging_efficiency
+        # Param: stor_discharging_efficiency
         expected_discharging_efficiency = {
             "Battery": 0.8, "Battery_Binary": 0.8, "Battery_Specified": 0.8
         }
         actual_discharging_efficiency = {
-            prj: instance.storage_generic_discharging_efficiency[prj]
-            for prj in instance.STORAGE_GENERIC_PROJECTS
+            prj: instance.stor_discharging_efficiency[prj]
+            for prj in instance.STOR
         }
         self.assertDictEqual(expected_discharging_efficiency,
                              actual_discharging_efficiency)

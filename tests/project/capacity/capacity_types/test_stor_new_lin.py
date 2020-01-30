@@ -82,50 +82,48 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_BUILD_STORAGE_PROJECTS
+        # Set: STOR_NEW_LIN
         expected_stor_new_lin_project_set = ["Battery"]
         actual_stor_new_lin_project_set = sorted(
-            [prj for prj in instance.NEW_BUILD_STORAGE_PROJECTS]
+            [prj for prj in instance.STOR_NEW_LIN]
         )
         self.assertListEqual(expected_stor_new_lin_project_set,
                              actual_stor_new_lin_project_set)
 
-        # Param: minimum_duration_hours
+        # Param: stor_new_lin_min_duration_hrs
         expected_min_duration = OrderedDict(
             sorted({"Battery": 1}.items())
         )
         actual_min_duration = OrderedDict(
             sorted(
-                {prj:
-                    instance.minimum_duration_hours[prj]
-                 for prj in instance.NEW_BUILD_STORAGE_PROJECTS
-                 }.items()
+                {prj: instance.stor_new_lin_min_duration_hrs[prj]
+                 for prj in instance.STOR_NEW_LIN}.items()
             )
         )
         self.assertDictEqual(expected_min_duration, actual_min_duration)
 
-        # Set: NEW_BUILD_STORAGE_VINTAGES
+        # Set: STOR_NEW_LIN_VNTS
         expected_storage_vintage_set = sorted([
             ("Battery", 2020), ("Battery", 2030)
         ])
         actual_storage_vintage_set = sorted(
             [(prj, period)
-             for (prj, period) in instance.NEW_BUILD_STORAGE_VINTAGES
+             for (prj, period) in instance.STOR_NEW_LIN_VNTS
              ]
         )
         self.assertListEqual(expected_storage_vintage_set,
                              actual_storage_vintage_set)
 
-        # Params: lifetime_yrs_by_stor_new_lin_vintage
+        # Params: stor_new_lin_lifetime_yrs
         expected_lifetime = OrderedDict(
             sorted({("Battery", 2020): 10, ("Battery", 2030): 10}.items())
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.lifetime_yrs_by_stor_new_lin_vintage[
+                    instance.stor_new_lin_lifetime_yrs[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_LIN_VNTS
                  }.items()
             )
         )
@@ -140,7 +138,7 @@ class TestNewBuildStorage(unittest.TestCase):
                 {(prj, vintage):
                     instance.stor_new_lin_annualized_real_cost_per_mw_yr[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_LIN_VNTS
                  }.items()
             )
         )
@@ -155,126 +153,126 @@ class TestNewBuildStorage(unittest.TestCase):
                 {(prj, vintage):
                     instance.stor_new_lin_annualized_real_cost_per_mwh_yr[
                         prj, vintage]
-                 for (prj, vintage) in instance.NEW_BUILD_STORAGE_VINTAGES
+                 for (prj, vintage) in instance.STOR_NEW_LIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_mwh_yr_cost, actual_mwh_yr_cost)
 
-        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+        # Set: STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT
         expected_storage_vintage_min_capacity_set = sorted([
             ("Battery", 2030)
         ])
         actual_storage_vintage_min_capacity_set = sorted(
             [(prj, period)
              for (prj, period) in
-             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+             instance.STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_storage_vintage_min_capacity_set,
                              actual_storage_vintage_min_capacity_set)
 
-        # Params: min_storage_cumulative_new_build_mw
+        # Params: stor_new_lin_min_cumulative_new_build_mw
         expected_min_capacity = OrderedDict(
             sorted({("Battery", 2030): 7}.items())
         )
         actual_min_capacity = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.min_storage_cumulative_new_build_mw[
+                    instance.stor_new_lin_min_cumulative_new_build_mw[
                         prj, vintage]
                  for (prj, vintage) in
                  instance.
-                 NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_CAPACITY_CONSTRAINT
+                 STOR_NEW_LIN_VNTS_W_MIN_CAPACITY_CONSTRAINT
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_capacity, actual_min_capacity)
         
-        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+        # Set: STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT
         expected_storage_vintage_min_energy_set = sorted([
             ("Battery", 2030)
         ])
         actual_storage_vintage_min_energy_set = sorted(
             [(prj, period)
              for (prj, period) in
-             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+             instance.STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_storage_vintage_min_energy_set,
                              actual_storage_vintage_min_energy_set)
 
-        # Params: min_storage_cumulative_new_build_mw
+        # Params: stor_new_lin_min_cumulative_new_build_mw
         expected_min_energy = OrderedDict(
             sorted({("Battery", 2030): 10}.items())
         )
         actual_min_energy = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.min_storage_cumulative_new_build_mwh[
+                    instance.stor_new_lin_min_cumulative_new_build_mwh[
                         prj, vintage]
                  for (prj, vintage) in
                  instance.
-                 NEW_BUILD_STORAGE_VINTAGES_WITH_MIN_ENERGY_CONSTRAINT
+                 STOR_NEW_LIN_VNTS_W_MIN_ENERGY_CONSTRAINT
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_energy, actual_min_energy)
 
-        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+        # Set: STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT
         expected_storage_vintage_max_capacity_set = sorted([
             ("Battery", 2020)
         ])
         actual_storage_vintage_max_capacity_set = sorted(
             [(prj, period)
              for (prj, period) in
-             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+             instance.STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_storage_vintage_max_capacity_set,
                              actual_storage_vintage_max_capacity_set)
 
-        # Params: max_storage_cumulative_new_build_mw
+        # Params: stor_new_lin_max_cumulative_new_build_mw
         expected_max_capacity = OrderedDict(
             sorted({("Battery", 2020): 6}.items())
         )
         actual_max_capacity = OrderedDict(
             sorted(
                 {(prj, vintage):
-                     instance.max_storage_cumulative_new_build_mw[
+                     instance.stor_new_lin_max_cumulative_new_build_mw[
                          prj, vintage]
                  for (prj, vintage) in
                  instance.
-                     NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_CAPACITY_CONSTRAINT
+                     STOR_NEW_LIN_VNTS_W_MAX_CAPACITY_CONSTRAINT
                  }.items()
             )
         )
         self.assertDictEqual(expected_max_capacity, actual_max_capacity)
 
-        # Set: NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+        # Set: STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT
         expected_storage_vintage_max_energy_set = sorted([
             ("Battery", 2020)
         ])
         actual_storage_vintage_max_energy_set = sorted(
             [(prj, period)
              for (prj, period) in
-             instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+             instance.STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_storage_vintage_max_energy_set,
                              actual_storage_vintage_max_energy_set)
 
-        # Params: max_storage_cumulative_new_build_mw
+        # Params: stor_new_lin_max_cumulative_new_build_mw
         expected_max_energy = OrderedDict(
             sorted({("Battery", 2020): 7}.items())
         )
         actual_max_energy = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.max_storage_cumulative_new_build_mwh[
+                    instance.stor_new_lin_max_cumulative_new_build_mwh[
                          prj, vintage]
                  for (prj, vintage) in
-                 instance.NEW_BUILD_STORAGE_VINTAGES_WITH_MAX_ENERGY_CONSTRAINT
+                 instance.STOR_NEW_LIN_VNTS_W_MAX_ENERGY_CONSTRAINT
                  }.items()
             )
         )
@@ -294,38 +292,38 @@ class TestNewBuildStorage(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Sets: OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE
+        # Sets: OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE
         expected_op_periods_by_stor_vintage = {
             ("Battery", 2020): [2020], ("Battery", 2030): [2030]
         }
         actual_periods_by_stor_vintage = {
             (prj, vintage):
                 [period for period in
-                 instance.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE[
+                 instance.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE[
                     prj, vintage]]
             for (prj, vintage) in
-                instance.OPERATIONAL_PERIODS_BY_NEW_BUILD_STORAGE_VINTAGE
+                instance.OPR_PRDS_BY_STOR_NEW_LIN_VINTAGE
         }
         self.assertDictEqual(expected_op_periods_by_stor_vintage,
                              actual_periods_by_stor_vintage)
 
-        # Sets: NEW_BUILD_STORAGE_OPERATIONAL_PERIODS
+        # Sets: STOR_NEW_LIN_OPR_PRDS
         expected_stor_op_periods = sorted([
             ("Battery", 2020), ("Battery", 2030)
         ])
         actual_stor_op_periods = sorted([
             (prj, period) for (prj, period) in
-            instance.NEW_BUILD_STORAGE_OPERATIONAL_PERIODS
+            instance.STOR_NEW_LIN_OPR_PRDS
         ])
         self.assertListEqual(expected_stor_op_periods, actual_stor_op_periods)
 
-        # Sets: NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD
+        # Sets: STOR_NEW_LIN_VNTS_OPR_IN_PRD
         expected_stor_vintage_op_in_period = {
             2020: [("Battery", 2020)], 2030: [("Battery", 2030)]
         }
         actual_stor_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
-                instance.NEW_BUILD_STORAGE_VINTAGES_OPERATIONAL_IN_PERIOD[p]
+                instance.STOR_NEW_LIN_VNTS_OPR_IN_PRD[p]
                 ] for p in instance.PERIODS
         }
         self.assertDictEqual(expected_stor_vintage_op_in_period,

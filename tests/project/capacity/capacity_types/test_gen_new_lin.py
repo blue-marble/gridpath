@@ -81,36 +81,38 @@ class TestNewBuildGenerator(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: NEW_BUILD_GENERATOR_VINTAGES
+        # Set: GEN_NEW_LIN_VNTS
         expected_gen_vintage_set = sorted([
-            ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030),
+            ("Gas_CCGT_New", 2020),
+            ("Gas_CCGT_New", 2030),
             ("Gas_CT_New", 2030)
         ])
         actual_gen_vintage_set = sorted(
             [(prj, period)
-             for (prj, period) in instance.NEW_BUILD_GENERATOR_VINTAGES
+             for (prj, period) in instance.GEN_NEW_LIN_VNTS
              ]
         )
         self.assertListEqual(expected_gen_vintage_set, actual_gen_vintage_set)
 
-        # Params: lifetime_yrs_by_new_build_vintage
+        # Params: gen_new_lin_lifetime_yrs_by_vintage
         expected_lifetime = OrderedDict(
             sorted(
-                {("Gas_CCGT_New", 2020): 30, ("Gas_CCGT_New", 2030): 30,
+                {("Gas_CCGT_New", 2020): 30,
+                 ("Gas_CCGT_New", 2030): 30,
                  ("Gas_CT_New", 2030): 30}.items()
             )
         )
         actual_lifetime = OrderedDict(
             sorted(
                 {(prj, vintage):
-                    instance.lifetime_yrs_by_new_build_vintage[prj, vintage]
-                 for (prj, vintage) in instance.NEW_BUILD_GENERATOR_VINTAGES
+                    instance.gen_new_lin_lifetime_yrs_by_vintage[prj, vintage]
+                 for (prj, vintage) in instance.GEN_NEW_LIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_lifetime, actual_lifetime)
 
-        # Params: annualized_real_cost_per_mw_yr
+        # Params: gen_new_lin_annualized_real_cost_per_mw_yr
         expected_cost = OrderedDict(
             sorted(
                 {("Gas_CCGT_New", 2020): 200000,
@@ -120,28 +122,28 @@ class TestNewBuildGenerator(unittest.TestCase):
         )
         actual_cost = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.annualized_real_cost_per_mw_yr[prj, vintage]
-                 for (prj, vintage) in instance.NEW_BUILD_GENERATOR_VINTAGES
+                {(prj, v):
+                    instance.gen_new_lin_annualized_real_cost_per_mw_yr[prj, v]
+                 for (prj, v) in instance.GEN_NEW_LIN_VNTS
                  }.items()
             )
         )
         self.assertDictEqual(expected_cost, actual_cost)
 
-        # Set: NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+        # Set: GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
         expected_gen_vintage_min_set = sorted([
             ("Gas_CT_New", 2030)
         ])
         actual_gen_vintage_min_set = sorted(
             [(prj, period)
              for (prj, period)
-             in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+             in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_gen_vintage_min_set,
                              actual_gen_vintage_min_set)
 
-        # Params: annualized_real_cost_per_mw_yr
+        # Params: gen_new_lin_min_cumulative_new_build_mw
         expected_min_new_mw = OrderedDict(
             sorted(
                 {("Gas_CT_New", 2030): 10}.items()
@@ -149,29 +151,29 @@ class TestNewBuildGenerator(unittest.TestCase):
         )
         actual_min_new_mw = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.min_cumulative_new_build_mw[prj, vintage]
-                 for (prj, vintage)
-                 in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MIN_CONSTRAINT
+                {(prj, v):
+                    instance.gen_new_lin_min_cumulative_new_build_mw[prj, v]
+                 for (prj, v)
+                 in instance.GEN_NEW_LIN_VNTS_W_MIN_CONSTRAINT
                  }.items()
             )
         )
         self.assertDictEqual(expected_min_new_mw, actual_min_new_mw)
 
-        # Set: NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+        # Set: GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
         expected_gen_vintage_max_set = sorted([
             ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030)
         ])
         actual_gen_vintage_max_set = sorted(
             [(prj, period)
              for (prj, period)
-             in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+             in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
              ]
         )
         self.assertListEqual(expected_gen_vintage_max_set,
                              actual_gen_vintage_max_set)
 
-        # Params: annualized_real_cost_per_mw_yr
+        # Params: gen_new_lin_max_cumulative_new_build_mw
         expected_max_new_mw = OrderedDict(
             sorted(
                 {("Gas_CCGT_New", 2020): 20,
@@ -180,10 +182,10 @@ class TestNewBuildGenerator(unittest.TestCase):
         )
         actual_max_new_mw = OrderedDict(
             sorted(
-                {(prj, vintage):
-                    instance.max_cumulative_new_build_mw[prj, vintage]
-                 for (prj, vintage)
-                 in instance.NEW_BUILD_GENERATOR_VINTAGES_WITH_MAX_CONSTRAINT
+                {(prj, v):
+                    instance.gen_new_lin_max_cumulative_new_build_mw[prj, v]
+                 for (prj, v)
+                 in instance.GEN_NEW_LIN_VNTS_W_MAX_CONSTRAINT
                  }.items()
             )
         )
@@ -203,41 +205,43 @@ class TestNewBuildGenerator(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE
+        # Set: OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE
         expected_periods_by_gen_vintage = {
             ("Gas_CCGT_New", 2020): [2020, 2030],
             ("Gas_CCGT_New", 2030): [2030],
             ("Gas_CT_New", 2030): [2030]
         }
         actual_periods_by_gen_vintage = {
-            (prj, vintage): [period for period in
-                instance.
-                    OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE[
-                    prj, vintage]]
-            for (prj, vintage) in
-                instance.OPERATIONAL_PERIODS_BY_NEW_BUILD_GENERATOR_VINTAGE
+            (prj, v): [period for period in
+                instance.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE[prj, v]]
+            for (prj, v) in
+                instance.OPR_PRDS_BY_GEN_NEW_LIN_VINTAGE
         }
         self.assertDictEqual(expected_periods_by_gen_vintage,
                              actual_periods_by_gen_vintage)
 
-        # Set: NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS
+        # Set: GEN_NEW_LIN_OPR_PRDS
         expected_gen_op_periods = [
-            ("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030)
+            ("Gas_CCGT_New", 2020),
+            ("Gas_CCGT_New", 2030),
+            ("Gas_CT_New", 2030)
         ]
         actual_gen_op_periods = sorted([
             (prj, period) for (prj, period) in
-            instance.NEW_BUILD_GENERATOR_OPERATIONAL_PERIODS
+            instance.GEN_NEW_LIN_OPR_PRDS
         ])
         self.assertListEqual(expected_gen_op_periods, actual_gen_op_periods)
 
-        # Set: NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD
+        # Set: GEN_NEW_LIN_VNTS_OPR_IN_PERIOD
         expected_gen_vintage_op_in_period = {
             2020: [("Gas_CCGT_New", 2020)],
-            2030: [("Gas_CCGT_New", 2020), ("Gas_CCGT_New", 2030), ("Gas_CT_New", 2030)]
+            2030: [("Gas_CCGT_New", 2020),
+                   ("Gas_CCGT_New", 2030),
+                   ("Gas_CT_New", 2030)]
         }
         actual_gen_vintage_op_in_period = {
             p: [(g, v) for (g, v) in
-                sorted(instance.NEW_BUILD_GENERATOR_VINTAGES_OPERATIONAL_IN_PERIOD[p])
+                sorted(instance.GEN_NEW_LIN_VNTS_OPR_IN_PERIOD[p])
                 ] for p in sorted(instance.PERIODS)
         }
         self.assertDictEqual(expected_gen_vintage_op_in_period,
