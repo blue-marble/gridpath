@@ -378,29 +378,15 @@ following *availability types* have been implemented.
 
 Exogenous
 ^^^^^^^^^
-For each project assigned this *availability type*, the user may specify an
-(un)availability schedule, i.e. a capacity derate of 0 to 1 for each
-timepoint in which the project may be operated. If fully derated in a given
-timepoint, the available project capacity will be 0 in that timepoint and all
-operational decision variables will therefore also be constrained to 0 in the
-optimization.
+.. automodule:: gridpath.project.availability.availability_types.exogenous
 
 Binary
 ^^^^^^
-*Projects* assigned this availability type have binary decision variables
-for their availability in each timepoint. This type can be useful in
-optimizing planned outage schedules. A *project* of this type is constrained
-to be unavailable for at least a pre-specified number of hours in each
-*period*. In addition, each unavailability event can be constrained to be
-within a minimum and maximum number of hours, and constraints can also be
-implemented on the minimum and maximum duration between unavailability events.
+.. automodule:: gridpath.project.availability.availability_types.binary
 
 Continuous
 ^^^^^^^^^^
-This *availability type* is formulated like the *binary* type except that
-all binary decision variables are relaxed to be continuous with bounds
-between 0 and 1. This can be useful to address computational difficulties
-when modeling endogenous *project* availabilities.
+.. automodule:: gridpath.project.availability.availability_types.continuous
 
 Project Operational Types
 -------------------------
