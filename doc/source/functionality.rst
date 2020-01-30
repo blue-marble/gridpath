@@ -570,28 +570,11 @@ capacity-associated costs. The currently implemented capacity types include:
 
 Specified Transmission (*tx_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes transmission lines that are available to the
-optimization without having to incur an investment cost, e.g. existing
-lines or lines that will be built in the future and whose capital costs
-we want to ignore (in the objective function). A specified transmission line
-can be available in all periods, or in some periods only, with no
-restriction on the order and combination of periods. The two transmission
-line directions may have different specified capacites.
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec
 
 Linear New-Build Transmission (*tx_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This capacity type describes transmission that can be built by the
-optimization at a cost. These investment decisions are linearized, i.e.
-the decision is not whether to build a specific transmission line, but how
-much capacity to build at a particular transmission corridor. Once built, the
-capacity remains available for the duration of the line's pre-specified
-lifetime. The cost input to the model is an annualized cost per unit capacity.
-If the optimization makes the decision to build new capacity, the total
-annualized cost is incurred in each period of the study (and multiplied by
-the number of years the period represents) for the duration of the project's
-lifetime. Annual fixed O&M costs are also incurred by linear new-build
-transmission lines.
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin
 
 Transmission Operational Types
 ------------------------------

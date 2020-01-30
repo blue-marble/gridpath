@@ -2,22 +2,22 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This transmission capacity type describes new transmission projects that
-can be built by the optimization at a cost. These investment decisions are
-linearized, i.e. the decision is not whether to build a project of a specific
-size (e.g. a 500-MW line), but how much capacity to build at a particular
-*transmission project*. Once built, the capacity exists for the duration of
-the project's pre-specified lifetime. The line flow limits are assumed to be
-the same in each direction, e.g. a 500 MW line from Zone 1 to Zone 2 will
-allow flows of 500 MW from Zone 1 to Zone 2 and vice versa.
+This capacity type describes transmission lines that can be built by the
+optimization at a cost. These investment decisions are linearized, i.e.
+the decision is not whether to build a specific transmission line, but how
+much capacity to build at a particular transmission corridor. Once built, the
+capacity remains available for the duration of the line's pre-specified
+lifetime. The line flow limits are assumed to be the same in each direction,
+e.g. a 500 MW line from Zone 1 to Zone 2 will allow flows of 500 MW from
+Zone 1 to Zone 2 and vice versa.
 
-The cost input to the model is an annualized cost per unit capacity. If the
-optimization makes the decision to build new capacity, the total annualized
-cost is incurred in each period of the study (and multiplied by the number
-of years the period represents) for the duration of the project's lifetime.
-Annual fixed O&M costs are also incurred by linear new-build generation.
+The cost input to the model is an annualized cost per unit capacity.
+If the optimization makes the decision to build new capacity, the total
+annualized cost is incurred in each period of the study (and multiplied by
+the number of years the period represents) for the duration of the
+transmission line's lifetime.
+
 """
-
 
 import csv
 import os.path
@@ -28,6 +28,7 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 
 
 # TODO: can we have different capacities depending on the direction
+# TODO: add fixed O&M costs similar to gen_new_lin
 def add_module_specific_components(m, d):
     """
     The following Pyomo model components are defined in this module:
@@ -37,8 +38,8 @@ def add_module_specific_components(m, d):
     +=========================================================================+
     | | :code:`TX_NEW_LIN_VNTS`                                               |
     |                                                                         |
-    | A two-dimensional set of project-vintage combinations to help describe  |
-    | the periods in time when transmission capacity can be built in the      |
+    | A two-dimensional set of line-vintage combinations to help describe     |
+    | the periods in time when transmission line capacity can be built in the |
     | optimization.                                                           |
     +-------------------------------------------------------------------------+
 
@@ -51,14 +52,14 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The transmission project's lifetime, i.e. how long project capacity of  |
-    | a particular vintage remains operational.                               |
+    | The transmission line's lifetime, i.e. how long line capacity of a      |
+    | particular vintage remains operational.                                 |
     +-------------------------------------------------------------------------+
     | | :code:`tx_new_lin_annualized_real_cost_per_mw_yr`                     |
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The transmission project's cost to build new capacity in annualized     |
+    | The transmission line's cost to build new capacity in annualized        |
     | real dollars per MW.                                                    |
     +-------------------------------------------------------------------------+
 
@@ -79,7 +80,7 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`TX_NEW_LIN_VNTS`                               |
     |                                                                         |
     | Indexed set that describes the operational periods for each possible    |
-    | transmission project-vintage combination, based on the                  |
+    | transmission line-vintage combination, based on the                     |
     | :code:`gen_new_lin_lifetime_yrs`. For instance, transmission capacity   |
     | of the 2020 vintage with lifetime of 30 years will be assumed           |
     | operational starting Jan 1, 2020 and through Dec 31, 2049, but will     |
@@ -96,7 +97,7 @@ def add_module_specific_components(m, d):
     | | :code:`TX_NEW_LIN_VNTS_OPR_IN_PRD`                                    |
     | | *Defined over*: :code:`PERIODS`                                       |
     |                                                                         |
-    | Indexed set that describes the transmission project-vintages that could |
+    | Indexed set that describes the transmission line-vintages that could    |
     | be operational in each period based on the                              |
     | :code:`tx_new_lin_lifetime_yrs`.                                        |
     +-------------------------------------------------------------------------+
@@ -111,7 +112,7 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
     | Determines how much transmission capacity of each possible vintage is   |
-    | built at each :code:`tx_new_lin transmission project`.                  |
+    | built at each :code:`tx_new_lin transmission line`.                     |
     +-------------------------------------------------------------------------+
 
     |
@@ -123,7 +124,7 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`TX_NEW_LIN_OPR_PRDS`                           |
     | | *Within*: :code:`NonNegativeReals`                                    |
     |                                                                         |
-    | The transmission capacity of a project in a given operational period is |
+    | The transmission capacity of a line in a given operational period is    |
     | equal to the sum of all capacity-build of vintages operational in that  |
     | period.                                                                 |
     +-------------------------------------------------------------------------+
@@ -227,13 +228,13 @@ def new_build_transmission_vintages_operational_in_period(mod, p):
 
 def tx_new_lin_capacity_rule(mod, g, p):
     """
-    The transmission capacity of a new project in a given operational period is
+    The transmission capacity of a new line in a given operational period is
     equal to the sum of all capacity-build of vintages operational in that
     period.
 
-    This expression is not defined for a new transmission project's non-
+    This expression is not defined for a new transmission line's non-
     operational periods (i.e. it's 0). E.g. if we were allowed to build
-    capacity in 2020 and 2030, and the project had a 15 year lifetime,
+    capacity in 2020 and 2030, and the line had a 15 year lifetime,
     in 2020 we'd take 2020 capacity-build only, in 2030, we'd take the sum
     of 2020 capacity-build and 2030 capacity-build, in 2040, we'd take 2030
     capacity-build only, and in 2050, the capacity would be undefined (i.e.
