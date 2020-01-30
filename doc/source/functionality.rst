@@ -602,9 +602,7 @@ implemented include:
 
 Linear Transport Transmission (*tx_simple*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Transmission line flows are simulated using a linear transport model,
-i.e. transmission flow is constrained to be less than or equal to the line
-capacity.
+.. automodule:: gridpath.transmission.operations.operational_types.tx_simple
 
 DC Power Flow (*tx_dcopf*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

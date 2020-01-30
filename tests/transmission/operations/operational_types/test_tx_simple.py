@@ -83,14 +83,14 @@ class TestTxOperations(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Set: TRANSMISSION_LINES_SIMPLE
+        # Set: TX_SIMPLE
         expected_tx = sorted(["Tx_New"])
         actual_tx = sorted(
-            instance.TRANSMISSION_LINES_SIMPLE
+            instance.TX_SIMPLE
         )
         self.assertListEqual(expected_tx, actual_tx)
         
-        # Set: TX_SIMPLE_OPERATIONAL_TIMEPOINTS
+        # Set: TX_SIMPLE_OPR_TMPS
         expect_tx_op_tmp = sorted(
             [
                 ("Tx_New", 20200101), ("Tx_New", 20200102),
@@ -145,7 +145,7 @@ class TestTxOperations(unittest.TestCase):
         )
         actual_tx_op_tmp = sorted(
             [(tx, tmp) for (tx, tmp)
-             in instance.TX_SIMPLE_OPERATIONAL_TIMEPOINTS]
+             in instance.TX_SIMPLE_OPR_TMPS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
