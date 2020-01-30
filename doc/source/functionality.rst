@@ -589,33 +589,7 @@ Linear Transport Transmission (*tx_simple*)
 
 DC Power Flow (*tx_dcopf*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-GridPath can also model DC power flow on the transmission network by
-assigning the *tx_dcopf* operational type to the transmission lines modeled.
-DC power flow is a linearized approach to the AC Power Flow problem, which
-is a non-linear, non-convex set of equations describing the energy flow
-through each transmission line. The three main assumptions for the DC power
-flow approximation are: 1) line resistances are negligible compared to line
-reactances, so reactive power flows can be neglected; 2) voltage magnitudes at
-each bus are kept at their nominal value; and 3) voltage angle differences
-across branches are small enough such that the sine of the difference can be
-approximated by the difference, i.e. :math:`\sin(\theta) \approx \theta`.
-
-Using these approximations, the power flow problem becomes linear and can be
-added to our capacity-expansion / unit commitment model using an additional
-set of constraints for flows on each *tx_dcopf* line.
-
-.. warning:: Transmission operational types can be optionally be mixed.
-    However, if there are any transmission lines that do not have the
-    *tx_dcopf* operational types, they will simply not be considered when
-    setting up the network constraints laid out in the *tx_dcopf* module, so
-    the network flows will be inaccurate.
-
-.. warning:: GridPath uses one user-specified reactance to characterize a
-    transmission line and this value doesn't change across time periods, even
-    when the planned transmission capacity changes or when the model selects to
-    build additional capacity (in the case of new build transmission). If
-    this is not a reasonable assumption for the transmission system of
-    interest, we recommended not to use the *tx_dcopf* operational type.
+.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf
 
 .. _operating-reserves-section-ref:
 

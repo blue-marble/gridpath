@@ -296,8 +296,7 @@ gridpath.transmission.operations.operational_types.tx_simple
 
 gridpath.transmission.operations.operational_types.tx_dcopf
 -----------------------------------------------------------
-.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf
-    :members: add_module_specific_components
+.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf.add_module_specific_components
 
 gridpath.transmission.operations.operations
 -------------------------------------------

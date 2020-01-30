@@ -2,17 +2,39 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This is a line-level module that adds to the formulation components that
-describe the amount of power flowing on each line, subject to DC OPF
-constraints. The DC OPF constraints are based on the Kirchhoff approach laid
-out in Horsch et al. (2018).
+This operational type describes transmission lines whose flows are simulated
+using DC optimal power flow (OPF) equations. DC power flow is a linearized
+approach to the AC Optimal Power Flow problem, which is a non-linear,
+non-convex set of equations describing the energy flow through each
+transmission line. The three main assumptions for the DC power flow
+approximation are:
 
-Note: transmission operational types can optionally be mixed and matched.
-If there are any non-tx_dcopf operational types, they will simply
-not be considered when setting up the network constraints laid out in this
-module.
+ 1. line resistances are negligible compared to line reactances, so reactive
+    power flows can be neglected;
+ 2. voltage magnitudes at each bus are kept at their nominal value; and
+ 3. voltage angle differences across branches are small enough such that the
+    sine of the difference can be approximated by the difference, i.e.
+    :math:`\sin(\\theta) \\approx \\theta`.
 
-Source: Horsch et al. (2018). Linear Optimal Power Flow Using Cycle Flows
+Using these approximations, the power flow problem becomes linear and can be
+added to our capacity-expansion / unit commitment model using an additional
+set of constraints for flows on each *tx_dcopf* line. The DC OPF constraints
+are based on the Kirchhoff approach laid out in "Horsch et al. (2018).
+Linear Optimal Power Flow Using Cycle Flows".
+
+.. warning:: Transmission operational types can be optionally be mixed.
+    However, if there are any transmission lines that do not have the
+    *tx_dcopf* operational types, they will simply not be considered when
+    setting up the network constraints laid out in the *tx_dcopf* module, so
+    the network flows will be inaccurate.
+
+.. warning:: GridPath uses one user-specified reactance to characterize a
+    transmission line and this value doesn't change across time periods, even
+    when the planned transmission capacity changes or when the model selects to
+    build additional capacity (in the case of new build transmission). If
+    this is not a reasonable assumption for the transmission system of
+    interest, we recommended not to use the *tx_dcopf* operational type.
+
 """
 
 from __future__ import print_function
@@ -26,265 +48,449 @@ from pyomo.environ import Set, Var, Constraint, Reals, Param
 
 def add_module_specific_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`TX_DCOPF`                                                      |
+    |                                                                         |
+    | The set of transmission lines of the :code:`tx_dcopf` operational type. |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_DCOPF_OPR_TMPS`                                             |
+    |                                                                         |
+    | Two-dimensional set with transmission lines of the :code:`tx_dcopf`     |
+    | operational type and their operational timepoints.                      |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`PRDS_CYCLES_ZONES`                                             |
+    |                                                                         |
+    | Three-dimensional set describing the combination of periods, cycles,    |
+    | and zones/nodes. A cycle is a "basic cycle" in the network as defined   |
+    | in graph theory. This is the key set on which most other sets are       |
+    | derived.                                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`PRDS_CYCLES`                                                   |
+    |                                                                         |
+    | Two-dimensional set with the period and cycle_id of the independent     |
+    | cycles of the network graph (the network can change between periods).   |
+    +-------------------------------------------------------------------------+
+    | | :code:`CYCLES_OPR_TMPS`                                               |
+    |                                                                         |
+    | Two-dimensional set with of cycle IDs and operational timepoints.       |
+    | KVL constraint is indexed by this set.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`ZONES_IN_PRD_CYCLE`                                            |
+    | | *Defined over*: :code:`PRDS_CYCLES`                                   |
+    |                                                                         |
+    | Indexed set of ordered zones/nodes by period-cycle. Helper set, not     |
+    | directly used in constraints/param indices.                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`PRDS_CYCLES_TX_DCOPF`                                          |
+    |                                                                         |
+    | Three-dimensional set of periods, cycle_ids, and transmission lines in  |
+    | that period-cycle. This set is used to determine the set                |
+    | :code:`TX_DCOPF_IN_PRD_CYCLE`.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_DCOPF_IN_PRD_CYCLE`                                         |
+    | | *Defined over*: :code:`PRDS_CYCLES`                                   |
+    |                                                                         |
+    | Indexed set of transmission lines in each period-cycle. This set is     |
+    | used in the KVL constraint when summing up the values.                  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Params                                                         |
+    +=========================================================================+
+    | | :code:`tx_dcopf_reactance_ohms`                                       |
+    | | *Defined over*: :code:`TX_DCOPF`                                      |
+    |                                                                         |
+    | The series reactance in Ohms for each :code:`tx_dcopf` transmission     |
+    | line.                                                                   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Params                                                          |
+    +=========================================================================+
+    | | :code:`tx_dcopf_cycle_direction`                                      |
+    | | *Defined over*: :code:`PRDS_CYCLES_TX_DCOPF`                          |
+    |                                                                         |
+    | The value of the cycle incidence matrix for each period-cycle-tx_line.  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`TxDcopf_Transmit_Power_MW`                                     |
+    | | *Defined over*: :code:`TX_DCOPF_OPR_TMPS`                             |
+    | | *Within*: :code:`Reals`                                               |
+    |                                                                         |
+    | The transmission line's power flow in each timepoint in which the line  |
+    | is operational. Negative power means the power flow goes in the         |
+    | opposite direction of the line's defined direction.                     |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`TxDcopf_Min_Transmit_Constraint`                               |
+    | | *Defined over*: :code:`TX_DCOPF_OPR_TMPS`                             |
+    |                                                                         |
+    | Transmitted power should exceed the transmission line's minimum power   |
+    | flow for in every operational timepoint.                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxDcopf_Max_Transmit_Constraint`                               |
+    | | *Defined over*: :code:`TX_DCOPF_OPR_TMPS`                             |
+    |                                                                         |
+    | Transmitted power cannot exceed the transmission line's maximum power   |
+    | flow in every operational timepoint.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxDcopf_Kirchhoff_Voltage_Law_Constraint`                      |
+    | | *Defined over*: :code:`CYCLES_OPR_TMPS`                               |
+    |                                                                         |
+    | The sum of all potential difference across branches around all cycles   |
+    | in the network must be zero. Using DC OPF assumptions, this can be      |
+    | expressed in terms of the cycle incidence matrix and line reactance.    |
+    +-------------------------------------------------------------------------+
+
     """
 
-    # --- Sets ---
+    # Sets
+    ###########################################################################
 
-    # DC OPF transmission lines
-    m.TRANSMISSION_LINES_DC_OPF = Set(
+    m.TX_DCOPF = Set(
         within=m.TRANSMISSION_LINES,
         rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
-                             mod.tx_operational_type[l] ==
-                             "tx_dcopf")
+                             mod.tx_operational_type[l] == "tx_dcopf")
     )
 
-    # DC OPF operational timepoints
-    m.TX_DC_OPF_OPERATIONAL_TIMEPOINTS = Set(
+    m.TX_DCOPF_OPR_TMPS = Set(
         dimen=2, within=m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod:
             set((l, tmp) for (l, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
-                if l in mod.TRANSMISSION_LINES_DC_OPF))
+                if l in mod.TX_DCOPF))
 
-    # Set of periods, cycles, and zones. This is the key set on which all other
-    #  sets below are based (we only want to do the networkx calcs once)
-    def periods_cycles_zones_init(mod):
-        result = list()
-        for period in mod.PERIODS:
-            # Get the relevant tx_lines (= currently operational & DC OPF)
-            tx_lines = list(
-                mod.TRANSMISSION_LINES_DC_OPF &
-                mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[period]
-            )
+    # Derived Sets
+    ###########################################################################
 
-            # Get the edges from the relevant tx_lines
-            edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
-                     for tx in tx_lines]
-            # TODO: make sure there are no parallel edges (or pre-process those)
-
-            # Create a network graph from the list of lines (edges) and find
-            # the elementary cycles (if any)
-            G = nx.Graph()
-            G.add_edges_from(edges)
-            cycles = nx.cycle_basis(G)  # list with list of zones for each cycle
-            for cycle_id, cycle in enumerate(cycles):
-                for zone in cycle:
-                    result.append((period, cycle_id, zone))
-        return result
-    m.PERIODS_CYCLES_ZONES = Set(
+    m.PRDS_CYCLES_ZONES = Set(
         dimen=3,
         rule=periods_cycles_zones_init,
         ordered=True
     )
 
-    # 2-D set: Period and cycle_id of the independent cycles of the network
-    # graph (the network can change between periods)
-    def period_cycles(mod):
-        # Note: set() will remove duplicates
-        return set([(p, c) for (p, c, z) in mod.PERIODS_CYCLES_ZONES])
-    m.PERIODS_CYCLES = Set(dimen=2, rule=period_cycles)
-
-    # 2-D Set of cycle IDs and operational timepoints
-    # KVL constraint is indexed by this set
-    # Note: This assumes timepoints are unique across periods
-    m.CYCLES_OPERATIONAL_TIMEPOINTS = Set(
+    m.PRDS_CYCLES = Set(
         dimen=2,
-        rule=lambda mod:
-            set((c, tmp)
-                for (p, c) in mod.PERIODS_CYCLES
-                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]))
+        rule=period_cycles_init
+    )
 
-    # Set of ordered zones/nodes in a cycle, indexed by (period, cycle)
-    # Helper set, not directly used in constraints/param indices
-    def zones_by_period_cycle(mod, period, cycle):
-        zones = [z for (p, c, z) in mod.PERIODS_CYCLES_ZONES
-                 if p == period and c == cycle]
-        return zones
-    m.ZONES_IN_PERIOD_CYCLE = Set(
-        m.PERIODS_CYCLES,
-        rule=zones_by_period_cycle,
+    # Note: This assumes timepoints are unique across periods
+    m.CYCLES_OPR_TMPS = Set(
+        dimen=2,
+        rule=lambda mod: set((c, tmp)
+                             for (p, c) in mod.PRDS_CYCLES
+                             for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
+    )
+
+    m.ZONES_IN_PRD_CYCLE = Set(
+        m.PRDS_CYCLES,
+        rule=zones_by_period_cycle_init,
         ordered=True
     )
 
-    # 3-D set of periods, cycle_ids, and transmission lines in that period-cycle
-    # Tx_cycle direction is indexed by this set, and the set is also used to get
-    # TRANSMISSION_LINES_IN_PERIOD_CYCLE set
-
-    # Note: Alternatively, we could simply define this set by the bigger set
-    #  m.PERIODS_CYCLES * m.TRANSMISSION_LINES_DC_OPF and set the
-    #  tx_cycle_direction to zero whenever the line is not part of the cycle.
-    #  This would get rid of the repetitive code in the init function below
-    #  at the cost of iterating over more tx_lines than necessary in the
-    #  summation of the KVL constraint
-    def periods_cycles_transmission_lines(mod):
-        result = list()
-        for p, c in mod.PERIODS_CYCLES:
-            # Ordered list of zones in the current cycle
-            zones = list(mod.ZONES_IN_PERIOD_CYCLE[(p, c)])
-
-            # Relevant tx_lines
-            tx_lines = list(
-                mod.TRANSMISSION_LINES_DC_OPF &
-                mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[p]
-            )
-
-            # Get the edges from the relevant tx_lines
-            edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
-                     for tx in tx_lines]
-
-            # Get the tx lines in this cycle
-            for tx_from, tx_to in zip(zones[-1:] + zones[:-1], zones):
-                try:
-                    index = edges.index((tx_from, tx_to))
-                except:
-                    try:
-                        # Revert direction
-                        index = edges.index((tx_to, tx_from))
-                    except:
-                        raise ValueError(
-                            "The branch connecting {} and {} is not in the "
-                            "transmission line inputs".format(
-                                tx_from, tx_to
-                            )
-                        )
-                tx_line = tx_lines[index]
-                result.append((p, c, tx_line))
-        return result
-    m.PERIODS_CYCLES_TRANSMISSION_LINES = Set(
+    m.PRDS_CYCLES_TX_DCOPF = Set(
         dimen=3,
-        within=m.PERIODS_CYCLES * m.TRANSMISSION_LINES,
-        rule=periods_cycles_transmission_lines)
-
-    # Indexed set of transmission lines in each period-cycle
-    # This set is used in the KVL constraint when summing up the values
-    def tx_lines_by_period_cycle(mod, period, cycle):
-        """
-        Figure out which tx_lines are in each period-cycle
-        :param mod:
-        :param period:
-        :param cycle:
-        :return:
-        """
-        txs = list(tx for (p, c, tx) in mod.PERIODS_CYCLES_TRANSMISSION_LINES
-                   if c == cycle and p == period)
-        return txs
-    m.TRANSMISSION_LINES_IN_PERIOD_CYCLE = Set(
-        m.PERIODS_CYCLES,
-        initialize=tx_lines_by_period_cycle
+        within=m.PRDS_CYCLES * m.TRANSMISSION_LINES,
+        rule=periods_cycles_transmission_lines_init
     )
 
-    # --- Params ---
-
-    # The series reactance for each DC OPF transmission line
-    m.reactance_ohms = Param(m.TRANSMISSION_LINES_DC_OPF)
-
-    # The value of the cycle incidence matrix for each period-cycle-tx_line
-    def tx_cycle_direction_init(mod, period, cycle, tx_line):
-        zones = list(mod.ZONES_IN_PERIOD_CYCLE[(period, cycle)])
-        from_to = (mod.load_zone_from[tx_line], mod.load_zone_to[tx_line])
-        if from_to in zip(zones[-1:] + zones[:-1], zones):
-            direction = 1
-        elif from_to in zip(zones, zones[-1:] + zones[:-1]):
-            direction = -1
-        else:
-            raise ValueError(
-                "The branch connecting {} and {} is not in the "
-                "transmission line inputs".format(
-                    mod.load_zone_from[tx_line], mod.load_zone_to[tx_line]
-                )
-            )
-        return direction
-
-    m.tx_cycle_direction = Param(
-        m.PERIODS_CYCLES_TRANSMISSION_LINES,
-        initialize=tx_cycle_direction_init
+    m.TX_DCOPF_IN_PRD_CYCLE = Set(
+        m.PRDS_CYCLES,
+        initialize=tx_lines_by_period_cycle_init
     )
 
-    # --- Decision variables ---
+    # Required Params
+    ###########################################################################
 
-    m.Transmit_Power_DC_OPF_MW = Var(m.TX_DC_OPF_OPERATIONAL_TIMEPOINTS,
-                                     within=Reals)
+    m.tx_dcopf_reactance_ohms = Param(
+        m.TX_DCOPF
+    )
 
-    # --- Constraints ---
+    # Derived Params
+    ###########################################################################
 
-    def kirchhoff_voltage_law_rule(mod, c, tmp):
-        """
-        The sum of all potential difference across branches around all cycles
-        in the network must be zero. In DC power flow we assume all voltage
-        magnitudes are kept at nominal value and the voltage angle differences
-        across branches is small enough that we can approximate the sinus of
-        the angle with the angle itself, i.e. sin(theta) ~ theta.
-        We can therefore write KVL in terms of voltage angles as follows:
+    m.tx_dcopf_cycle_direction = Param(
+        m.PRDS_CYCLES_TX_DCOPF,
+        initialize=tx_dcopf_cycle_direction_init
+    )
 
-        ..math:: \\sum_{l} C_{l,c} * \theta_{l} = 0   \\forall c = 1,...,L-N+1
+    # Variables
+    ###########################################################################
 
-        Using the linearized relationship between voltage angle
-        differences across branches and the line flow, :math:`\theta_{l} = x_{l}
-        * f_{l}`, we can factor out the voltage angles and write KVL purely in
-        terms of line flows and line reactances:
+    m.TxDcopf_Transmit_Power_MW = Var(
+        m.TX_DCOPF_OPR_TMPS,
+        within=Reals
+    )
 
-        .. math:: C_{l,c} * x_{l} * f_{l} = 0   \\forall c = 1,...,L-N+1
+    # Constraints
+    ###########################################################################
 
-        The latter equation is enforced in this constraint.
+    m.TxDcopf_Min_Transmit_Constraint = Constraint(
+        m.TX_DCOPF_OPR_TMPS,
+        rule=min_transmit_rule
+    )
 
-        Note: While most power flow formulations normalize all inputs to per
-        unit (p.u.) we can safely avoid that here since the normalization
-        factors out in the equation, and it is really just about the relative
-        magnitude of the reactance of the lines.
+    m.TxDcopf_Max_Transmit_Constraint = Constraint(
+        m.TX_DCOPF_OPR_TMPS,
+        rule=max_transmit_rule
+    )
 
-        Source: Horsch et al. (2018). Linear Optimal Power Flow Using Cycle
-        Flows
-        :param mod:
-        :param c: basic cycle in the network
-        :param tmp:
-        :return:
-        """
-
-        return sum(
-            mod.Transmit_Power_DC_OPF_MW[l, tmp]
-            * mod.tx_cycle_direction[mod.period[tmp], c, l]
-            * mod.reactance_ohms[l]
-            for l in mod.TRANSMISSION_LINES_IN_PERIOD_CYCLE[mod.period[tmp], c]
-        ) == 0
-
-    m.Kirchhoff_Voltage_Law_Constraint = Constraint(
-        m.CYCLES_OPERATIONAL_TIMEPOINTS,
+    m.TxDcopf_Kirchhoff_Voltage_Law_Constraint = Constraint(
+        m.CYCLES_OPR_TMPS,
         rule=kirchhoff_voltage_law_rule
     )
 
-    def min_transmit_rule(mod, l, tmp):
-        """
-        Line flows cannot exceed the minimum line rating
-        :param mod:
-        :param l:
-        :param tmp:
-        :return:
-        """
-        return mod.Transmit_Power_DC_OPF_MW[l, tmp] \
-            >= mod.Transmission_Min_Capacity_MW[l, mod.period[tmp]]
 
-    m.Min_Transmit_DC_OPF_Constraint = \
-        Constraint(m.TX_DC_OPF_OPERATIONAL_TIMEPOINTS,
-                   rule=min_transmit_rule)
+# Set Rules
+###############################################################################
 
-    def max_transmit_rule(mod, l, tmp):
-        """
-        Line flows cannot exceed the maximum line rating
-        :param mod:
-        :param l:
-        :param tmp:
-        :return:
-        """
-        return mod.Transmit_Power_DC_OPF_MW[l, tmp] \
-            <= mod.Transmission_Max_Capacity_MW[l, mod.period[tmp]]
+def periods_cycles_zones_init(mod):
+    """
+    Use the networkx module to determine the elementary (basic) cycles in the
+    network graph, where a cycle is defined by the list of unordered zones
+    (nodes) that belong to it. We do this for each period since the network
+    can change between periods as we add/remove transmission lines (edges).
 
-    m.Max_Transmit_DC_OPF_Constraint = \
-        Constraint(m.TX_DC_OPF_OPERATIONAL_TIMEPOINTS,
-                   rule=max_transmit_rule)
+    The result is returned as a 3-dimensional set of period-cycle-zone
+    combinations, e.g. (2030, 1, zone1) means that zone1 belongs to cycle 1
+    in period 2030. This is the key set on which all other derived sets are
+    based such that we onlyl have to perform the networkx calculations once.
+    """
+    result = list()
+    for period in mod.PERIODS:
+        # Get the relevant tx_lines (= currently operational & DC OPF)
+        tx_lines = list(
+            mod.TX_DCOPF &
+            mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[period]
+        )
 
+        # Get the edges from the relevant tx_lines
+        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
+                 for tx in tx_lines]
+        # TODO: make sure there are no parallel edges (or pre-process those)
+
+        # Create a network graph from the list of lines (edges) and find
+        # the elementary cycles (if any)
+        graph = nx.Graph()
+        graph.add_edges_from(edges)
+        cycles = nx.cycle_basis(graph)  # list w list of zones for each cycle
+        for cycle_id, cycle in enumerate(cycles):
+            for zone in cycle:
+                result.append((period, cycle_id, zone))
+    return result
+
+
+def period_cycles_init(mod):
+    """
+    Determine the period-cycle combinations from the larger PRDS_CYCLES_ZONES
+    set. Note: set() will remove duplicates.
+    """
+    return set([(p, c) for (p, c, z) in mod.PRDS_CYCLES_ZONES])
+
+
+def zones_by_period_cycle_init(mod, period, cycle):
+    """
+    Re-arrange the 3-dimensional PRDS_CYCLES_ZONES set into a 1-dimensional
+    set of ZONES, indexed by PRD_CYCLES
+    """
+    zones = [z for (p, c, z) in mod.PRDS_CYCLES_ZONES
+             if p == period and c == cycle]
+    return zones
+
+
+def periods_cycles_transmission_lines_init(mod):
+    """
+    Based on which zones are in which cycle in each period (as defined in
+    ZONES_IN_PRD_CYCLE), create a 3-dimensional set describing which
+    transmission lines are in which cycle during each period.
+
+    Note: Alternatively, we could simply define this set by the bigger set
+    m.PRDS_CYCLES * m.TX_DCOPF and set the tx_dcopf_cycle_direction to zero
+    whenever the line is not part of the cycle. This would get rid of the
+    repetitive code in the init function below at the cost of iterating over
+    more tx_lines than necessary in the summation of the KVL constraint.
+    """
+    result = list()
+    for p, c in mod.PRDS_CYCLES:
+        # Ordered list of zones in the current cycle
+        zones = list(mod.ZONES_IN_PRD_CYCLE[(p, c)])
+
+        # Relevant tx_lines
+        tx_lines = list(
+            mod.TX_DCOPF &
+            mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[p]
+        )
+
+        # Get the edges from the relevant tx_lines
+        edges = [(mod.load_zone_to[tx], mod.load_zone_from[tx])
+                 for tx in tx_lines]
+
+        # Get the tx lines in this cycle
+        for tx_from, tx_to in zip(zones[-1:] + zones[:-1], zones):
+            try:
+                index = edges.index((tx_from, tx_to))
+            except:
+                try:
+                    # Revert direction
+                    index = edges.index((tx_to, tx_from))
+                except:
+                    raise ValueError(
+                        "The branch connecting {} and {} is not in the "
+                        "transmission line inputs".format(
+                            tx_from, tx_to
+                        )
+                    )
+            tx_line = tx_lines[index]
+            result.append((p, c, tx_line))
+    return result
+
+
+def tx_lines_by_period_cycle_init(mod, period, cycle):
+    """
+    Re-arrange the 3-dimensional PRDS_CYCLES_TX_DCOPF set into a 1-dimensional
+    set of TX_DCOPF, indexed by PRD_CYCLES.
+    """
+    txs = list(tx for (p, c, tx) in mod.PRDS_CYCLES_TX_DCOPF
+               if c == cycle and p == period)
+    return txs
+
+
+# Param Rules
+###############################################################################
+
+def tx_dcopf_cycle_direction_init(mod, period, cycle, tx_line):
+    """
+    This parameter describes the non-zero values of the cycle incidence
+    matrix in each period. The parameter's value is 1 if the given tx_line
+    is an element of the given cycle in the given period and -1 if it is the
+    case for the reversed transmission line. The index of this param already
+    excludes combinations of transmission lines that aren't part of a cycle,
+    so the value is never zero.
+
+    Note: The cycle direction is randomly determined by the networkx
+    algorithm which means the param values can all be multiplied by (-1)
+    in some model runs compared ot others.
+
+    See "Horsch et al. (2018). Linear Optimal Power Flow Using Cycle Flows"
+    for more background.
+    """
+    zones = list(mod.ZONES_IN_PRD_CYCLE[(period, cycle)])
+    from_to = (mod.load_zone_from[tx_line], mod.load_zone_to[tx_line])
+    if from_to in zip(zones[-1:] + zones[:-1], zones):
+        direction = 1
+    elif from_to in zip(zones, zones[-1:] + zones[:-1]):
+        direction = -1
+    else:
+        raise ValueError(
+            "The branch connecting {} and {} is not in the "
+            "transmission line inputs".format(
+                mod.load_zone_from[tx_line], mod.load_zone_to[tx_line]
+            )
+        )
+    return direction
+
+
+# Constraint Formulations
+###############################################################################
+
+def min_transmit_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxDcopf_Min_Transmit_Constraint
+    **Enforced Over**: TX_DCOPF_OPR_TMPS
+
+    Transmitted power should exceed the minimum transmission flow capacity in
+    each operational timepoint.
+    """
+    return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
+        >= mod.Transmission_Min_Capacity_MW[l, mod.period[tmp]]
+
+
+def max_transmit_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxDcopf_Max_Transmit_Constraint
+    **Enforced Over**: TX_DCOPF_OPR_TMPS
+
+    Transmitted power cannot exceed the maximum transmission flow capacity in
+    each operational timepoint.
+    """
+    return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
+        <= mod.Transmission_Max_Capacity_MW[l, mod.period[tmp]]
+
+
+def kirchhoff_voltage_law_rule(mod, c, tmp):
+    """
+    **Constraint Name**: TxDcopf_Kirchhoff_Voltage_Law_Constraint
+    **Enforced Over**: CYCLES_OPR_TMPS
+
+    The sum of all potential difference across branches around all cycles
+    in the network must be zero in each operational timepoint. In DC power
+    flow we assume all voltage magnitudes are kept at nominal value and the
+    voltage  angle differences across branches is small enough that we can
+    approximate the sinus of the angle with the angle itself, i.e. sin(
+    theta) ~ theta. We can therefore write KVL in terms of voltage angles as
+    follows:
+
+    ..math:: \\sum_{l} C_{l,c} * \theta_{l} = 0   \\forall c = 1,...,L-N+1
+
+    Using the linearized relationship between voltage angle
+    differences across branches and the line flow, :math:`\theta_{l} = x_{l}
+    * f_{l}`, we can factor out the voltage angles and write KVL purely in
+    terms of line flows and line reactances:
+
+    .. math:: C_{l,c} * x_{l} * f_{l} = 0   \\forall c = 1,...,L-N+1
+
+    The latter equation is enforced in this constraint.
+
+    Note: While most power flow formulations normalize all inputs to per
+    unit (p.u.) we can safely avoid that here since the normalization
+    factors out in the equation, and it is really just about the relative
+    magnitude of the reactance of the lines.
+
+    Source: Horsch et al. (2018). Linear Optimal Power Flow Using Cycle Flows
+    """
+
+    return sum(
+        mod.TxDcopf_Transmit_Power_MW[l, tmp]
+        * mod.tx_dcopf_cycle_direction[mod.period[tmp], c, l]
+        * mod.tx_dcopf_reactance_ohms[l]
+        for l in mod.TX_DCOPF_IN_PRD_CYCLE[mod.period[tmp], c]
+    ) == 0
+
+
+# Operational Type Methods
+###############################################################################
+
+def transmit_power_rule(mod, l, tmp):
+    """
+    """
+    return mod.TxDcopf_Transmit_Power_MW[l, tmp]
+
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(m, data_portal, scenario_directory,
                               subproblem, stage):
@@ -315,17 +521,8 @@ def load_module_specific_data(m, data_portal, scenario_directory,
     ))
 
     # Load data
-    data_portal.data()["reactance_ohms"] = reactance_ohms
+    data_portal.data()["tx_dcopf_reactance_ohms"] = reactance_ohms
 
 
-def transmit_power_rule(mod, l, tmp):
-    """
-
-    :param mod:
-    :param l:
-    :param tmp:
-    :return:
-    """
-    return mod.Transmit_Power_DC_OPF_MW[l, tmp]
 
 
