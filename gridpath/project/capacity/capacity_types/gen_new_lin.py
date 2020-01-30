@@ -686,49 +686,6 @@ def import_module_specific_results_into_database(
         results_file="capacity_gen_new_lin.csv"
     )
 
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory,
-                           "capacity_gen_new_lin.csv"), "r") as \
-            capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            new_build_mw = row[4]
-
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                    technology, load_zone, new_build_mw)
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_capacity_gen_new_lin{}
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_capacity_gen_new_lin
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, new_build_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, new_build_mw
-        FROM temp_results_project_capacity_gen_new_lin{}
-        ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
-
-
 # Validation
 ###############################################################################
 
