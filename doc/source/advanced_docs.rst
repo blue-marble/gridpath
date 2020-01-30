@@ -276,13 +276,11 @@ gridpath.transmission.capacity.capacity_types
 
 gridpath.transmission.capacity.capacity_types.tx_spec
 -----------------------------------------------------
-.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec
-    :members: add_module_specific_components
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec.add_module_specific_components
 
 gridpath.transmission.capacity.capacity_types.tx_new_lin
 ---------------------------------------------------------
-.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin
-    :members: add_module_specific_components
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin.add_module_specific_components
 
 gridpath.transmission.capacity.capacity
 ---------------------------------------

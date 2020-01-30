@@ -2,19 +2,17 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-This capacity type describes transmission projects that are available to the
+This capacity type describes transmission lines that are available to the
 optimization without having to incur an investment cost, e.g. existing
-transmission projects or transmission projects that will be built in the
-future and whose capital costs we want to ignore (in the objective
-function). A specified project can be available at a specified capacity in
-all periods, or in some periods only, with no restriction on the order and
-combination of periods or the variation in capacity by period.
-
-The line flow capacity can be different in each direction and a negative
-number designates flow opposite to the defined direction, e.g. a line from
-Zone 1 to Zone 2 and a minimum flow capacity of -1,000 MW and a maximum flow
+lines or lines that will be built in the future and whose capital costs
+we want to ignore (in the objective function). A specified transmission line
+can be available in all periods, or in some periods only, with no
+restriction on the order and combination of periods. The two transmission
+line directions may have different specified capacities, e.g. a line from
+Zone 1 to Zone 2 with a minimum flow capacity of -1,000 MW and a maximum flow
 capacity of 1,200 MW can transmit up to 1,000 MW from Zone 2 to Zone 1 and
 up to 1,200 MW from Zone 1 to Zone 2.
+
 """
 
 import csv
@@ -22,7 +20,7 @@ import os.path
 from pyomo.environ import Set, Param, Reals
 
 
-# TODO: add fixed O&M cost
+# TODO: add fixed O&M costs similar to gen_spec
 def add_module_specific_components(m, d):
     """
     The following Pyomo model components are defined in this module:
@@ -32,7 +30,7 @@ def add_module_specific_components(m, d):
     +=========================================================================+
     | | :code:`TX_SPEC_OPR_PRDS`                                              |
     |                                                                         |
-    | Two-dimensional set of transmission project-period combinations that    |
+    | Two-dimensional set of transmission line-period combinations that       |
     | helps describe the transmission capacity available in a given period.   |
     | This set is added to the list of sets to join to get the final          |
     | :code:`TRANSMISSION_OPERATIONAL_PERIODS` set defined in                 |
@@ -48,7 +46,7 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
-    | The transmission project's specified minimum flow capacity (in MW) in   |
+    | The transmission line's specified minimum flow capacity (in MW) in      |
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
     +-------------------------------------------------------------------------+
@@ -56,7 +54,7 @@ def add_module_specific_components(m, d):
     | | *Defined over*: :code:`TX_SPEC_OPR_PRDS`                              |
     | | *Within*: :code:`Reals`                                               |
     |                                                                         |
-    | The transmission project's specified maximum flow capacity (in MW) in   |
+    | The transmission line's specified maximum flow capacity (in MW) in      |
     | each operational period. A negative number designates flow in the       |
     | opposite direction of the defined line flow direction.                  |
     +-------------------------------------------------------------------------+
