@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestAlwaysOnOperationalType(unittest.TestCase):
+class TestDROperationalType(unittest.TestCase):
     """
 
     """

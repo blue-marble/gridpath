@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestDispatchableNoCommitOperationalType(unittest.TestCase):
+class TestGenSimpleOperationalType(unittest.TestCase):
     """
 
     """

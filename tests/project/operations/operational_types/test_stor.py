@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestStorageGenericOperationalType(unittest.TestCase):
+class TestStorOperationalType(unittest.TestCase):
     """
 
     """

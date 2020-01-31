@@ -43,7 +43,7 @@ except ImportError:
           " to test.")
 
 
-class TestHydroCurtailable(unittest.TestCase):
+class TestGenHydroOperationalType(unittest.TestCase):
     """
 
     """

@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestDispatchableContinuousCommitOperationalType(unittest.TestCase):
+class TestGenCommitLinOperationalType(unittest.TestCase):
     """
 
     """

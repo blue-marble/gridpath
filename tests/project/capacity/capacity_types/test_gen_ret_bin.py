@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestExistingGenBinaryEconRet(unittest.TestCase):
+class TestGenRetBin(unittest.TestCase):
     """
 
     """

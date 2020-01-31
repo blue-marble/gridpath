@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestNewBinaryBuildStorage(unittest.TestCase):
+class TestStorNewBin(unittest.TestCase):
     """
 
     """

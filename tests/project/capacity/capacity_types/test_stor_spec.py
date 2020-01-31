@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestStorageSpecifiedNoEconomicRetirement(unittest.TestCase):
+class TestStorSpec(unittest.TestCase):
     """
 
     """
