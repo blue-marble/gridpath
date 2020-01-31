@@ -22,8 +22,13 @@ from gridpath.common_functions import get_db_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems
+import gridpath.scenario
 
 
+# TODO: need to think on how to deal with all the validation
+# functions. Could have them here or move into scenario.py
+# If keeping here, just give them a Scenario class object to
+# keep things simpler?
 def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     """"
     For each module, load the inputs from the database and validate them
@@ -73,7 +78,7 @@ def validate_inputs(subproblems, loaded_modules, subscenarios, conn):
     # --> isn't that easy to do w foreign key?
 
 
-def validate_subscenario_ids(subscenarios, optional_features, conn):
+def validate_subscenario_ids(subscenarios, feature_list, conn):
     """
     Check whether subscenarios_ids are consistent with:
      - core required subscenario_ids
@@ -82,7 +87,7 @@ def validate_subscenario_ids(subscenarios, optional_features, conn):
     data.
 
     :param subscenarios:
-    :param optional_features:
+    :param feature_list:
     :param conn:
     :return: Boolean, True is all subscenario IDs are valid.
     """
@@ -96,22 +101,21 @@ def validate_subscenario_ids(subscenarios, optional_features, conn):
         valid_data_dependent = False
 
     valid_feature = validate_feature_subscenario_ids(
-        subscenarios, optional_features, conn)
+        subscenarios, feature_list, conn)
 
     return valid_core and valid_data_dependent and valid_feature
 
 
-def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
+def validate_feature_subscenario_ids(subscenarios, feature_list, conn):
     """
 
     :param subscenarios:
-    :param optional_features:
+    :param feature_list:
     :param conn:
     :return:
     """
 
     subscenario_ids_by_feature = subscenarios.subscenario_ids_by_feature
-    feature_list = optional_features.determine_feature_list()
 
     validation_results = []
     for feature, subscenario_ids in subscenario_ids_by_feature.items():
@@ -160,12 +164,11 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
 def validate_required_subscenario_ids(subscenarios, conn):
     """
     Check whether the required subscenario_ids are specified in the db
-    :param subscenarios:
-    :param conn:
     :return: boolean, True if all required subscenario_ids are specified
     """
 
-    required_subscenario_ids = subscenarios.subscenario_ids_by_feature["core"]
+    required_subscenario_ids = \
+        subscenarios.subscenario_ids_by_feature["core"]
 
     validation_results = []
     for sc_id in required_subscenario_ids:
@@ -259,7 +262,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
     return not bool(validation_results)
 
 
-def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
+def validate_multi_stage_settings(feature_list, subscenarios, subproblems,
                                   conn):
     """
 
@@ -270,12 +273,12 @@ def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
     :return:
     """
 
-    multi_stage = optional_features.OPTIONAL_FEATURE_MULTI_STAGE
+    multi_stage = "multi_stage" in feature_list
 
     # Check whether multi_stage setting is consistent with actual inputs
     max_stages = max([len(stages) for subproblem, stages in
                       subproblems.SUBPROBLEM_STAGE_DICT.items()])
-    if max_stages > 1 and not multi_stage:
+    if max_stages > 1 and multi_stage:
         validation_results = [(
             subscenarios.SCENARIO_ID,
             "N/A",
@@ -407,36 +410,29 @@ def main(args=None):
         script="validate_inputs"
     )
 
+    sc = gridpath.scenario.Scenario(conn, scenario_id, scenario_name)
+
     # Reset input validation status and results
     reset_input_validation(conn, scenario_id)
 
-    # Get scenario characteristics (features, subscenarios, subproblems)
-    optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-    subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-    subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-
     # Validate multi-stage settings
-    validate_multi_stage_settings(optional_features, subscenarios, subproblems,
-                                  conn)
+    validate_multi_stage_settings(sc.feature_list, sc.subscenarios,
+                                  sc.subproblems, conn)
 
     # Check whether subscenario_ids are valid
-    is_valid = validate_subscenario_ids(subscenarios, optional_features, conn)
+    is_valid = validate_subscenario_ids(sc.subscenarios, sc.feature_list,
+                                        conn)
 
     # Only do the detailed input validation if all required subscenario_ids
     # are specified (otherwise will get errors when loading data)
     if is_valid:
-        # Load modules for all requested features
-        feature_list = optional_features.determine_feature_list()
-        modules_to_use = determine_modules(features=feature_list)
-        loaded_modules = load_modules(modules_to_use=modules_to_use)
-
         # Read in inputs from db and validate inputs for loaded modules
-        validate_inputs(subproblems, loaded_modules, subscenarios, conn)
+        sc.validate_inputs()
     else:
         print("Invalid subscenario ID(s). Skipped detailed input validation.")
 
     # Update validation status:
-    update_validation_status(conn, subscenarios.SCENARIO_ID)
+    update_validation_status(conn, sc.subscenarios.SCENARIO_ID)
 
     # Close the database connection explicitly
     conn.close()

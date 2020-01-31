@@ -38,6 +38,8 @@ def import_results_into_database(loaded_modules, scenario_id, subproblems,
     :return:
     """
 
+    # TODO: could generalize this function sinc we also do this for
+    #  get scenario inputs?
     subproblems_list = subproblems.SUBPROBLEMS
     for subproblem in subproblems_list:
         stages = subproblems.SUBPROBLEM_STAGE_DICT[subproblem]

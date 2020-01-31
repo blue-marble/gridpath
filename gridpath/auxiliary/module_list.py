@@ -295,6 +295,7 @@ def cross_feature_modules_list():
     return cross_modules
 
 
+# TODO: make it work just off a feature list input
 def determine_modules(features=None, scenario_directory=None,):
     """
     :param features: List of requested features. Optional input; if

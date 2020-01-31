@@ -8,6 +8,10 @@ Scenario characteristics in database
 from builtins import object
 
 
+# TODO: change into a function that returns the list of features?
+#  no reaseon to put it
+# TODO: group this with module_list since features and modules are
+# closely related.
 class OptionalFeatures(object):
     def __init__(self, cursor, scenario_id):
         """

@@ -26,6 +26,8 @@ from pyomo.environ import Set, Expression, value, BuildAction
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import \
     load_gen_storage_capacity_type_modules, join_sets, setup_results_import
+# TODO: with new way of setting up dynamic components, import no longer
+#  needed? (just use d.required_capacity_modules)
 from gridpath.auxiliary.dynamic_components import required_capacity_modules, \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
