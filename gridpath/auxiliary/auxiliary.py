@@ -221,6 +221,8 @@ def is_number(s):
 
 
 # TODO: handle non-existing scenarios/scenario_ids
+# TODO: just parse one argument "scenario" and have it both check the
+#  scenario_name and the scenario_id?
 def get_scenario_id_and_name(scenario_id_arg, scenario_name_arg, c, script):
     """
     Get the scenario_id and the scenario_ name. Usually only one is given (the

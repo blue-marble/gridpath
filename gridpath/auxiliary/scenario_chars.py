@@ -175,6 +175,10 @@ class OptionalFeatures(object):
 
         return feature_list
 
+    # Move function from get_scenario_inputs to here
+    def write_optional_features(self):
+        pass
+
 
 class SubScenarios(object):
     """
@@ -690,18 +694,12 @@ class SubScenarios(object):
         :return: List of the required capacity type submodules
         """
 
-        project_portfolio_scenario_id = c.execute(
-            """SELECT project_portfolio_scenario_id 
-            FROM scenarios 
-            WHERE scenario_id = {}""".format(self.SCENARIO_ID)
-        ).fetchone()[0]
-
         required_capacity_type_modules = [
             p[0] for p in c.execute(
                 """SELECT DISTINCT capacity_type 
                 FROM inputs_project_portfolios
                 WHERE project_portfolio_scenario_id = {}""".format(
-                    project_portfolio_scenario_id
+                    self.PROJECT_PORTFOLIO_SCENARIO_ID
                 )
             ).fetchall()
         ]
@@ -749,6 +747,7 @@ class SubProblems(object):
         #   (note stages also require you to save subproblem.csv files)
         #    subproblem.csv file might not be best way to specify that there are
         #    subproblems
+        # instead save it just in one big file in scenario base dir?
 
 
 class SolverOptions(object):

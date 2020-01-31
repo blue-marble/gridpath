@@ -2,40 +2,46 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Testing class
+This will be a class that will contain all "meta data" that is needed
+to run a scenario (can be multiple runs). It will have attributes that contain
+this information, some of which could be classes themselves such as
+Subproblems or OptionalFeatures.
 
-This will be a classs that will contain all other info that is needed
-to run something. It will have attributes that contain this information,
-some of which could be classes themselves
+Advantages:
+ - avoid many of the repetitive code in get_scenario_inputs.py,
+ process_results.py, etc. where we do the same loading of modules,
+ determining scenario name/id/dir etc., over an over.
+ - encapsulate all the information for running a scenario into one object
+ rather than having to pass around dynamic components, loaded modules,
+ scenario directories, etc.
+ - might allow for cleaner way on how to deal with (sub) problems. The
+ scenario class might hold info on whether we have any and the structure.
+- if we ever change how subproblems ands stages are organized, this approach
+  will make it easier to update code hwne we do (only one or tow functions vs.
+  a bunch of stuff scattered across files)
 
-The following code that is repeated in many scripts should all be done
-when initializing the Scenario Class Object:
+We can still have separate script files to invoke these methods separately
+in the command line. In that script, all we would do is parse arguments,
+create the Scenario class object, and invoke the method.
 
-scenario_id, scenario_name = get_scenario_id_and_name(
-    scenario_id_arg=scenario_id_arg,
-    scenario_name_arg=scenario_name_arg,
-    c=c,
-    script="get_scenario_inputs"
-)
+Issues encountered:
+ - object can be created from 2 different ways of data: 1. from the database
+ directly (in which case you need connection and scenario_id), or from
+ file (e.g. when running run_scenario.py) in which case you need the metadata
+ in auxiliary csv files (features.csv, subproblems.csv etc.)
+ - class might get very big?
 
-# Determine scenario directory and create it if needed
-scenario_directory = determine_scenario_directory(
-    scenario_location=scenario_location,
-    scenario_name=scenario_name
-)
-create_directory_if_not_exists(directory=scenario_directory)
+One solution would be to have a master Scenario class, and then 2 subclasses
+one is scenario_from_db, another one is scenario_from_file.
 
-optional_features = OptionalFeatures(cursor=c, scenario_id=scenario_id)
-subscenarios = SubScenarios(cursor=c, scenario_id=scenario_id)
-subproblems = SubProblems(cursor=c, scenario_id=scenario_id)
-solver_options = SolverOptions(cursor=c, scenario_id=scenario_id)
-
-
-TODO: get_scenario_inputs.py, process_results.py, etc. can all become
-  methods to this class. We can still have separate script files to invoke
-  these methods separately in the commande line. In that script, all we
-  would do is parse arguments, create the Scenario class object, and
-  invoke the method.
+General issues (not necessarily related to this):
+ - terminology between scenario, optimization, (sub)problem, subproblem
+ etc. is confusing and not always consistent. Should clarify somewhere
+ what we mean by each and perhaps think of cleaner names for some.
+ (e.g. subproblems.csv is also used to designate stage (sub) problems that
+ you have to optimize independently).
+ - Need to explain scenario_location, scenario_dir, and inputs/results_dir,
+ and relation to the terms above.
 
 """
 
@@ -49,33 +55,57 @@ import sys
 
 import gridpath.auxiliary.scenario_chars as sc
 from gridpath.auxiliary.module_list import determine_modules, load_modules
+from gridpath.common_functions import determine_scenario_directory
+from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
+
 
 
 class Scenario(object):
-
+    # TODO: dynamic components class could hold info on active subproblem
+    #   and stage, so we don't have to pass subproblem and stage around
+    #   explicitly everywhere?
+    # TODO: could have 2 subclasse? One is for scenario from file, one is for
+    #   scenario from database?
     def __init__(self, conn=None, scenario_id=None,
-                 scenario_name=None, scenario_dir=None):
+                 scenario_name=None, scenario_location=None):
         """
         Need to provide either a database connection and scenario id
         OR scenario location and name
-        (maybe create 2 types of classes with different methods for each?
-        One if scenario created from database, one if created from files?
         """
-
         self.conn = conn
-        self.scenario_id = scenario_id  # TODO: add way to add scenario name
-        # smarter way? (i.e. move get_scenario id and name here?)
+        self.scenario_id = scenario_id
         self.scenario_name = scenario_name
-        self.scenario_dir = scenario_dir
+        self.scenario_location = scenario_location
+
+        # TODO: this doesn't work if you are running from file (run_scenario)
+        self.scenario_id, self.scenario_name = get_scenario_id_and_name(
+            scenario_id_arg=scenario_id,
+            scenario_name_arg=scenario_name,
+            c=self.conn.cursor(), script="scenario.py")
+
+        self.scenario_dir = determine_scenario_directory(
+            scenario_location=scenario_location,
+            scenario_name=scenario_name
+        )
+        # TODO: create directory if it doesn't exist?
+
+        # flag to know whether we can get all our init info from database
+        # If not, GridPath will try to get scenario info from file(s)
+        self.db_scenario_identified = self.init_db_scenario_identified()
+
 
         # Start with empty dynamic components
         self.dynamic_components = DynamicComponents()
-        self.dynamic_components_added = False  # flag, true after we run "determine_dynamic_components"
+        self.dynamic_components_populated = False  # flag, true after we run
+        # "determine_dynamic_components"
 
         # State variables
-        self.active_subproblem = None
-        self.active_stage = None
-        self.has_subproblems = False
+        self.active_subproblem = None  # TODO: just an idea
+        self.active_stage = None  # TODO: just an idea
+        self.has_subproblems = False  # TODO: just an idea
+        self.results_exported = False
+        # TODO: Make this true if there ar results files present (and after
+        #  running export results (already done)
 
         # TODO: problem is that a lot of class inits require database which is
         #  a problem if you want to simply do run_scenario off the tab files
@@ -91,18 +121,30 @@ class Scenario(object):
         # on what's given to us.
         # Similar for solver options (has csv file vs. getting from db)
         # subproblems is similar to ScenarioStructure!
-        self.optional_features = self.init_optional_features()
-        self.subscenarios = self.init_subscenarios()
-        self.subproblems = self.init_subproblems()
-        self.solver_options = self.init_solver_options()
+        # TODO: also add optional_features class (not just list)
+        self.optional_features = self._init_optional_features()
+        self.subscenarios = self._init_subscenarios()
+        self.subproblems = self._init_subproblems()
+        self.solver_options = self._init_solver_options()
 
         self.loaded_modules = load_modules(
             determine_modules(self.optional_features)
         )
 
+
+    # Init functions (constructors?)
+    ###########################################################################
+
+    def _init_db_scenario_identified(self):
+        if self.conn is not None and (self.scenario_id is not None
+                                      or self.scenario_name is not None):
+            return True
+        else:
+            return False
+
     # TODO: question: could also make this not return anything but instead
     #  do the attribute assignment here. But that's more unclear?
-    def init_optional_features(self):
+    def _init_optional_features(self):
         if self.conn is None and self.scenario_id is None and \
                 self.scenario_dir is None:
             raise IOError("Need to provide at least database connection and"
@@ -124,10 +166,7 @@ class Scenario(object):
             of = sc.OptionalFeatures(self.conn, self.scenario_id)
             return of.determine_feature_list()
 
-    # Init functions (constructors?)
-    ###########################################################################
-
-    def init_subscenarios(self):
+    def _init_subscenarios(self):
         # cannot create this without database!
         if self.conn is None or self.scenario_id is None:
             # no subscenarios when creating scenario from DB!
@@ -135,19 +174,19 @@ class Scenario(object):
         else:
             return sc.SubScenarios(self.conn, self.scenario_id)
 
-    def init_solver_options(self):
+    def _init_solver_options(self):
         if self.conn is None or self.scenario_id is None:
             return sc.SolverOptions(self.conn, self.scenario_id)
         else:
             return []  # need to derive it from file and do some checks
             # see run_scenario for what happens (?)
 
-    def init_subproblems(self):
+    def _init_subproblems(self):
         if self.conn is None or self.scenario_id is None:
             return sc.SubProblems(self.conn, self.scenario_id)
         else:
             return []  # TODO: need to derive it from file structure,
-            # as is done in the run_scenario_script
+                       #  as is done in the run_scenario_script
 
     # Module level functions
     ###########################################################################
@@ -179,31 +218,108 @@ class Scenario(object):
                 #    ... (see Evernote validation list)
                 #    create separate function for each validation that you call here
 
-    def create_inputs_structure(self):
-        # create the tiered input file structure based on the subproblem
-        # scenario structure. Can't use this if you're initializing from
-        # file (since should already be there!)
-        pass
 
     def write_model_inputs(self):
         """
-        For each module, load the inputs from the database and write out the inputs
-        into .tab files, which will be used to construct the optimization
-        problem.
-        :return:
+        For each module, load the inputs from the database and write out the
+        inputs into .tab files, which will be used to construct the
+        optimization problem.
         """
-        # can only call this with database and scenario specified
-        # see get_scenario_inputs.py, but break out creating the file
-        # strucutr perhaps?
-        pass
 
-    # Model Setup
+        delete_prior_aux_files(scenario_directory=self.scenario_dir)
+
+        inputs_dirs = self.get_subproblem_directories("inputs")
+        # TODO: write out subproblem/stage strucutre file that specifie whole
+        #  sturcture in the base_dir. (not a nested set of .csv files like now)
+
+        for subproblem, stage in inputs_dirs.keys():
+            inputs_dir = inputs_dirs[(subproblem, stage)]
+            if not os.path.exists(inputs_dir):
+                os.makedirs(inputs_dir)
+
+            delete_prior_inputs(inputs_directory=inputs_dir)
+
+            # Write model input .tab files for each of the loaded_modules if
+            # appropriate. Note that all input files are saved in the
+            # input_directory, even the non-temporal inputs that are not
+            # dependent on the subproblem or stage. This simplifies the file
+            # structure at the expense of unnecessarily duplicating non-temporal
+            # input files such as projects.tab.
+            for m in self.loaded_modules:
+                if hasattr(m, "write_model_inputs"):
+                    m.write_model_inputs(
+                        inputs_directory=inputs_dir,
+                        subscenarios=self.subscenarios,
+                        subproblem=subproblem,
+                        stage=stage,
+                        conn=self.conn,
+                    )
+                else:
+                    pass
+
+    def get_subproblem_directories(self, data_type):
+        """
+        When there are multiple subproblems and/or stages,
+        the subproblem inputs and results files will be in nested dirs
+        :param data_type: "input" or "output"  # TODO: validate this!
+        :return: dictionary with directory by subproblem/stage
+
+        TODO: make this part of separete scenario structure class?
+        TODO: should we do this on init? (for both inputs and results)
+        """
+        dirs = {}  # TODO: should be ordered dict!
+        subproblems_list = self.subproblems.SUBPROBLEMS
+        for subproblem in subproblems_list:
+            stages = self.subproblems.SUBPROBLEM_STAGE_DICT[subproblem]
+            for stage in stages:
+                # if there are subproblems/stages, input directory is nested
+                if len(subproblems_list) > 1 and len(stages) > 1:
+                    dirs[(subproblem, stage)] = os.path.join(
+                        self.scenario_dir,
+                        str(subproblem),
+                        str(stage),
+                        data_type
+                    )
+                elif len(self.subproblems.SUBPROBLEMS) > 1:
+                    dirs[(subproblem, stage)] = os.path.join(
+                        self.scenario_dir,
+                        str(subproblem),
+                        data_type
+                    )
+                elif len(stages) > 1:
+                    dirs[(subproblem, stage)] = os.path.join(
+                        self.scenario_dir,
+                        str(stage),
+                        data_type
+                    )
+                else:
+                    dirs[(subproblem, stage)] = os.path.join(
+                        self.scenario_dir,
+                        data_type
+                    )
+
+        return dirs
+
 
     def populate_dynamic_components(self, subproblem, stage):
+        """
+        We iterate over all required modules and call their
+        *determine_dynamic_components* method, if applicable, in order to add
+        the dynamic components to the *dynamic_components* class object,
+        which we will then pass to the *add_model_components* module methods,
+        so that the applicable components can be added to the abstract model.
+        """
         # can only call this when scenario_dir is defined and we have input
         # files!
-        # TODO: how to handle subproblem and stage
+        # TODO: how to handle subproblem and stage, move into dynamic comps?
+        #  or simply pass the inputs dir, which is scenario_dir/subpr/stage
+        #  Migh be possible here, but write_model_inputs or
+        #  import_results_into_database need subproblem/stage to know in
+        #  which database you are importing
         # TODO: might want to rename determine_dynamic_components to something
+        # TODO: there are some functions that do similar stuff from the
+        #  database, e.g. get_required_capacity_types
+
         # that is more clear about that it changes the dynamic components
         # in place.
 
@@ -233,11 +349,6 @@ class Scenario(object):
 
     def load_scenario_data(self, model, subproblem, stage, quiet=False):
         """
-        :param model: the Pyomo abstract model object with components added
-        :param subproblem: the horizon subproblem
-        :param stage: the stage subproblem
-        :return: the compiled model instance
-
         Iterate over all required GridPath modules and call their
         *load_model_data* method in order to load input data into the
         data portal. Use the data portal to instanciate the abstract model.
@@ -293,6 +404,9 @@ class Scenario(object):
                                  model, self.dynamic_components)
         else:
             pass
+
+        # TODO: index this by subproblem and stage?
+        self.results_exported = True
 
     def export_pass_through_inputs(self, model, subproblem, stage):
         """
@@ -363,6 +477,39 @@ class Scenario(object):
                                     stage)
         else:
             pass
+
+
+    def import_results_into_database(self):
+        """
+
+        :return:
+        """
+        if not self.db_scenario_identified:
+            raise IOError("Scenario is not properly linked to database, "
+                          "cannot import results into database")
+        if not self.results_exported:
+            raise IOError("No results to export. Run optimzation first")
+
+        results_dirs = self.get_subproblem_directories("results")
+        for subproblem, stage in results_dirs.keys():
+            results_dir = results_dirs[(subproblem, stage)]
+
+            if not os.path.exists(results_dir):
+                os.makedirs(results_dir)
+
+            for m in self.loaded_modules:
+                if hasattr(m, "import_results_into_database"):
+                    m.import_results_into_database(
+                        scenario_id=self.scenario_id,
+                        subproblem=subproblem,
+                        stage=stage,
+                        c=self.conn.cursor(),  # TODO: remove this?
+                        db=self.conn,
+                        results_directory=results_dir
+                    )
+                else:
+                    pass
+
 
     def process_results(self):
         for m in self.loaded_modules:
@@ -483,3 +630,76 @@ class DynamicComponents(object):
         # Objective function
         # Modules will add component names to this list
         self.total_cost_components = list()
+
+
+def delete_prior_aux_files(scenario_directory):
+    """
+    Delete all auxiliary files that may exist in the scenario directory
+    :param scenario_directory: the scenario directory
+    :return:
+    """
+    prior_aux_files = [
+        "features.csv", "scenario_description.csv", "scenario_id.txt",
+        "solver_options.csv"
+    ]
+
+    for f in prior_aux_files:
+        if f in os.listdir(scenario_directory):
+            os.remove(os.path.join(scenario_directory, f))
+        else:
+            pass
+
+def delete_prior_inputs(inputs_directory):
+    """
+    Delete all .tab files that may exist in the specified directory
+    :param inputs_directory: local directory where .tab files are saved
+    :return:
+    """
+    prior_input_tab_files = [
+        f for f in os.listdir(inputs_directory) if f.endswith('.tab')
+    ]
+
+    for f in prior_input_tab_files:
+        os.remove(os.path.join(inputs_directory, f))
+
+
+def write_subproblems_csv(scenario_directory, subproblems):
+    """
+    Write the subproblems.csv file that will be used when solving multiple
+    subproblems/stages in 'production cost' mode.
+
+    TODO: rather than write nested subproblems.csv file, simply write a
+     master file with the subproblem_stage structure the same way as the
+     database has it. That way you can use same function as db to determine
+     the scenario structure
+    :return:
+    """
+
+    if not os.path.exists(scenario_directory):
+        os.makedirs(scenario_directory)
+    with open(os.path.join(scenario_directory, "subproblems.csv"),
+              "w", newline="") as subproblems_csv_file:
+        writer = csv.writer(subproblems_csv_file, delimiter=",")
+
+        # Write header
+        writer.writerow(["subproblems"])
+
+        for subproblem in subproblems:
+            writer.writerow([subproblem])
+
+
+def write_features_csv(scenario_directory, feature_list):
+    """
+    Write the features.csv file that will be used to determine which
+    GridPath modules to include
+    :return:
+    """
+    with open(os.path.join(scenario_directory, "features.csv"),
+              "w", newline="") as features_csv_file:
+        writer = csv.writer(features_csv_file, delimiter=",")
+
+        # Write header
+        writer.writerow(["features"])
+
+        for feature in feature_list:
+            writer.writerow([feature])

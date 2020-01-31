@@ -202,7 +202,7 @@ def create_and_solve_problem(scenario_directory, subproblem, stage,
     model = AbstractModel()
 
     # Determine and load modules
-    modules_to_use = determine_modules(scenario_directory=scenario_directory)
+    modules_to_use = f(scenario_directory=scenario_directory)
     loaded_modules = load_modules(modules_to_use)
 
     # Initialize the dynamic components class

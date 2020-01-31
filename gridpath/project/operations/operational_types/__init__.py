@@ -150,6 +150,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
     # Load in the required operational modules
     c = conn.cursor()
     scenario_id = subscenarios.SCENARIO_ID
+    # TODO: move the function to SubScenarios
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)
     imported_operational_modules = load_operational_type_modules(
         required_opchar_modules)
