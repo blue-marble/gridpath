@@ -62,7 +62,7 @@ def launch_scenario_process(
         run_gridpath_e2e_executable = \
             os.path.join(
               sys.executable[:-chars_to_remove],
-              "" if base_dir.lower() == "scripts" else "scripts",
+              "" if base_dir.lower() in ["scripts", "bin"] else "scripts",
               "gridpath_run_e2e"
             )
 
@@ -89,7 +89,7 @@ def check_scenario_run_status(db_path, scenario_id):
     run_status, process_id = c.execute("""
         SELECT run_status_name, run_process_id
         FROM scenarios
-        JOIN mod_run_status_types 
+        JOIN mod_run_status_types
         USING (run_status_id)
         WHERE scenario_id = {}
         """.format(scenario_id)
