@@ -2,6 +2,12 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 """
+For each project assigned this *availability type*, the user may specify an
+(un)availability schedule, i.e. a capacity derate of 0 to 1 for each
+timepoint in which the project may be operated. If fully derated in a given
+timepoint, the available project capacity will be 0 in that timepoint and all
+operational decision variables will therefore also be constrained to 0 in the
+optimization.
 
 """
 
@@ -16,42 +22,72 @@ from gridpath.project.common_functions import determine_project_subset
 
 def add_module_specific_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`AVL_EXOG`                                                      |
+    |                                                                         |
+    | The set of projects of the :code:`exogenous` availability type.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`AVL_EXOG_OPR_TMPS`                                             |
+    |                                                                         |
+    | Two-dimensional set with projects of the :code:`exogenous`              |
+    | availability type and their operational timepoints.                     |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`avl_exog_derate`                                               |
+    | | *Defined over*: :code:`AVL_EXOG_OPR_TMPS`                             |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`1`                                                  |
+    |                                                                         |
+    | The pre-specified availability derate (e.g. for maintenance/planned     |
+    | outages). Defaults to 1 if not specified.                               |
+    +-------------------------------------------------------------------------+
+
     """
+
     # Sets
-    m.EXOGENOUS_AVAILABILITY_PROJECTS = Set(within=m.PROJECTS)
+    ###########################################################################
+
+    m.AVL_EXOG = Set(within=m.PROJECTS)
 
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
-    m.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
+    m.AVL_EXOG_OPR_TMPS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            if g in mod.EXOGENOUS_AVAILABILITY_PROJECTS
-            )
-    )
-    
-    # Availability derate (e.g. for availability/planned outages)
-    # This can be optionally loaded from external data, but defaults to 1
-    m.availability_derate_exogenous = Param(
-        m.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        within=PercentFraction, default=1
+            if g in mod.AVL_EXOG)
     )
 
+    # Required Params
+    ###########################################################################
+
+    m.avl_exog_derate = Param(
+        m.AVL_EXOG_OPR_TMPS,
+        within=PercentFraction,
+        default=1
+    )
+
+
+# Availability Type Methods
+###############################################################################
 
 def availability_derate_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return mod.availability_derate_exogenous[g, tmp]
+    return mod.avl_exog_derate[g, tmp]
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -71,8 +107,7 @@ def load_module_specific_data(
         type="exogenous"
     )
 
-    data_portal.data()["EXOGENOUS_AVAILABILITY_PROJECTS"] = \
-        {None: project_subset}
+    data_portal.data()["AVL_EXOG"] = {None: project_subset}
 
     # Availability derates
     # Get any derates from the project_availability.tab file if it exists;
@@ -89,11 +124,14 @@ def load_module_specific_data(
     if os.path.exists(availability_file):
         data_portal.load(
             filename=availability_file,
-            param=m.availability_derate_exogenous
+            param=m.avl_exog_derate
         )
     else:
         pass
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(
         subscenarios, subproblem, stage, conn
@@ -201,15 +239,13 @@ def write_module_specific_model_inputs(
     :return:
     """
     availabilities = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-    # Fetch availability inputs
-    availabilities = availabilities.fetchall()
+        subscenarios, subproblem, stage, conn
+    ).fetchall()
 
     if availabilities:
         with open(os.path.join(inputs_directory,
                                "project_availability_exogenous.tab"),
-                  "w", newline="") as \
-                availability_tab_file:
+                  "w", newline="") as availability_tab_file:
             writer = csv.writer(availability_tab_file, delimiter="\t")
 
             writer.writerow(["project", "timepoint", "availability_derate"])
@@ -217,6 +253,9 @@ def write_module_specific_model_inputs(
             for row in availabilities:
                 writer.writerow(row)
 
+
+# Validation
+###############################################################################
 
 def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     """
@@ -284,7 +323,7 @@ def validate_availability(av_df):
         bad_projects = av_df["project"][invalids].values
         print_bad_projects = ", ".join(bad_projects)
         results.append(
-            "Project(s) '{}': expected 0 <= availability_derate_exogenous <= 1"
+            "Project(s) '{}': expected 0 <= avl_exog_derate <= 1"
             .format(print_bad_projects)
         )
 

@@ -85,7 +85,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: EXOGENOUS_AVAILABILITY_PROJECTS
+        # Set: AVL_EXOG
         expected_project_subset = sorted([
             "Nuclear", "Coal", "Wind", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
             "Gas_CT_New", "Nuclear_z2", "Gas_CCGT_z2", "Coal_z2", "Gas_CT_z2",
@@ -96,18 +96,18 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             "Customer_PV", "Nuclear_Flexible", "Shift_DR"
         ])
         actual_project_subset = sorted([
-            prj for prj in instance.EXOGENOUS_AVAILABILITY_PROJECTS
+            prj for prj in instance.AVL_EXOG
         ])
         self.assertListEqual(expected_project_subset,
                              actual_project_subset)
 
-        # Set: EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
+        # Set: AVL_EXOG_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(expected_project_subset)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS]
+             instance.AVL_EXOG_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
@@ -121,7 +121,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
         defaults = {
             (p, tmp): 1
             for (p, tmp) in
-            instance.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
+            instance.AVL_EXOG_OPR_TMPS
         }
         derates = {
             (p, tmp): avail for p, tmp, avail
@@ -135,9 +135,9 @@ class TestExogenousAvailabilityType(unittest.TestCase):
             else:
                 expected_availability_derate[p, tmp] = defaults[p, tmp]
         actual_availability_derate = {
-            (prj, tmp): instance.availability_derate_exogenous[prj, tmp]
+            (prj, tmp): instance.avl_exog_derate[prj, tmp]
             for (prj, tmp) in
-            instance.EXOGENOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
+            instance.AVL_EXOG_OPR_TMPS
         }
 
         self.assertDictEqual(expected_availability_derate,
@@ -162,7 +162,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, 0]
                       ]),
-                "error": ["Project(s) 'gas_ct': expected 0 <= availability_derate_exogenous <= 1"]
+                "error": ["Project(s) 'gas_ct': expected 0 <= avl_exog_derate <= 1"]
                 },
             # Availabilities > 1 are flagged
             3: {"av_df": pd.DataFrame(
@@ -171,7 +171,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'coal_plant': expected 0 <= availability_derate_exogenous <= 1"]
+                "error": ["Project(s) 'coal_plant': expected 0 <= avl_exog_derate <= 1"]
                 },
             # Make sure multiple errors are flagged correctly
             4: {"av_df": pd.DataFrame(
@@ -180,7 +180,7 @@ class TestExogenousAvailabilityType(unittest.TestCase):
                       ["gas_ct", 201802, 0.9],
                       ["coal_plant", 201801, -0.5]
                       ]),
-                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= availability_derate_exogenous <= 1"]
+                "error": ["Project(s) 'gas_ct, coal_plant': expected 0 <= avl_exog_derate <= 1"]
                 },
         }
 
