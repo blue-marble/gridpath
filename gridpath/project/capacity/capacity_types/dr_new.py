@@ -18,6 +18,7 @@ in less than N hours, as the max power constraint will bind).
 This type is a custom implementation for GridPath projects in the California
 Integrated Resource Planning proceeding.
 """
+
 from __future__ import division
 
 from builtins import zip
@@ -25,9 +26,11 @@ from builtins import range
 import csv
 import os.path
 import pandas as pd
-from pyomo.environ import Set, Param, Var, NonNegativeReals, \
+from pyomo.environ import Set, Param, Var, NonNegativeReals, value, \
     Reals, Expression, Constraint
 
+from db.common_functions import spin_on_database_lock
+from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets, \
     storage_only_capacity_type_operational_period_sets
@@ -253,6 +256,9 @@ def dr_new_energy_capacity_rule(mod, g, p):
     **Expression Name**: DRNew_Energy_Capacity_MWh
     **Defined Over**: DR_NEW_OPR_PRDS
 
+    Total energy capacity in each period is the sum of all new build over the
+    previous periods (including the current period).
+
     Vintages = all periods
     """
     return sum(
@@ -268,7 +274,7 @@ def dr_new_power_capacity_rule(mod, g, p):
 
     Vintages = all periods
     """
-    return mod.DRNew_Build_MWh[g, p] / mod.dr_new_min_duration[g]
+    return mod.DRNew_Energy_Capacity_MWh[g, p] / mod.dr_new_min_duration[g]
 
 
 # Constraint Formulation Rules
@@ -371,6 +377,78 @@ def load_module_specific_data(
         param=(m.dr_new_min_cumulative_new_build_mwh,
                m.dr_new_max_cumulative_new_build_mwh)
     )
+
+
+def export_module_specific_results(
+        scenario_directory, subproblem, stage, m, d
+):
+    """
+    Export new DR results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m:
+    :param d:
+    :return:
+    """
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+                           "capacity_dr_new.csv"), "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "technology", "load_zone",
+                         "new_build_mw", "new_build_mwh"])
+        for (prj, p) in m.DR_NEW_OPR_PRDS:
+            writer.writerow([
+                prj,
+                p,
+                m.technology[prj],
+                m.load_zone[prj],
+                value(m.DRNew_Build_MWh[prj, p] / m.dr_new_min_duration[prj]),
+                value(m.DRNew_Build_MWh[prj, p])
+            ])
+
+
+def summarize_module_specific_results(
+    scenario_directory, subproblem, stage, summary_results_file
+):
+    """
+    Summarize new DR capacity results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param summary_results_file:
+    :return:
+    """
+
+    # Get the results CSV as dataframe
+    capacity_results_df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "results", "capacity_dr_new.csv")
+    )
+
+    capacity_results_agg_df = capacity_results_df.groupby(
+        by=["load_zone", "technology", 'period'],
+        as_index=True
+    ).sum()
+
+    # Set the formatting of float to be readable
+    pd.options.display.float_format = "{:,.0f}".format
+    # Get all technologies with new build DR power OR energy capacity
+    new_build_df = pd.DataFrame(
+        capacity_results_agg_df[
+            (capacity_results_agg_df["new_build_mw"] > 0) |
+            (capacity_results_agg_df["new_build_mwh"] > 0)
+        ][["new_build_mw", "new_build_mwh"]]
+    )
+    new_build_df.columns =["New DR Power Capacity (MW)",
+                           "New DR Energy Capacity (MWh)"]
+
+    with open(summary_results_file, "a") as outfile:
+        outfile.write("\n--> New DR Capacity <--\n")
+        if new_build_df.empty:
+            outfile.write("No new DR was built.\n")
+        else:
+            new_build_df.to_string(outfile)
+            outfile.write("\n")
 
 
 # Database
@@ -518,6 +596,70 @@ def write_module_specific_model_inputs(
 
                 for row in supply_curve:
                     writer.writerow(row)
+
+
+def import_module_specific_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory
+):
+    """
+
+    :param scenario_id:
+    :param subproblem:
+    :param stage:
+    :param c:
+    :param db:
+    :param results_directory:
+    :return:
+    """
+    # Capacity results
+    print("project new DR")
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_capacity_dr_new",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory, "capacity_dr_new.csv"),
+              "r") as capacity_file:
+        reader = csv.reader(capacity_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            technology = row[2]
+            load_zone = row[3]
+            new_build_mw = row[4]
+            new_build_mwh = row[5]
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage,
+                 technology, load_zone, new_build_mw, new_build_mwh)
+            )
+
+    insert_temp_sql = """
+        INSERT INTO 
+        temp_results_project_capacity_dr_new{}
+        (scenario_id, project, period, subproblem_id, stage_id,
+        technology, load_zone, new_build_mw, new_build_mwh)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_project_capacity_dr_new
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, new_build_mw, new_build_mwh)
+        SELECT
+        scenario_id, project, period, subproblem_id, stage_id, 
+        technology, load_zone, new_build_mw, new_build_mwh
+        FROM temp_results_project_capacity_dr_new{}
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
 
 # Validation
