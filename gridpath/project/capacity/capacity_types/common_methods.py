@@ -84,11 +84,13 @@ def update_capacity_results_table(
         for row in reader:
             project = row[0]
             period = row[1]
-            new_build_mw = get_header_value(header, "new_build_mw")
-            new_build_mwh = get_header_value(header, "new_build_mwh")
-            new_build_binary = get_header_value(header, "new_build_binary")
-            retired_mw = get_header_value(header, "retired_mw")
-            retired_binary = get_header_value(header, "retired_binary")
+            new_build_mw = get_column_row_value(header, "new_build_mw", row)
+            new_build_mwh = get_column_row_value(header, "new_build_mwh", row)
+            new_build_binary = get_column_row_value(header,
+                                                    "new_build_binary", row)
+            retired_mw = get_column_row_value(header, "retired_mw", row)
+            retired_binary = get_column_row_value(header, "retired_binary",
+                                                  row)
 
             results.append(
                 (new_build_mw, new_build_mwh, new_build_binary,
@@ -114,16 +116,22 @@ def update_capacity_results_table(
     spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
 
 
-def get_header_value(header, column):
+def get_column_row_value(header, column_name, row):
     """
-
-    :param header:
-    :param column:
+    :param header: list; the CSV file header (list of column names)
+    :param column_name: string; the column name we're looking for
+    :param row: list; the values in the current row
     :return:
+
+    Check if the header contains the column_name; if not, return None for
+    the value for this column_name in this row; if it does, get the right
+    value from the value based on the column_name index in the header.
     """
     try:
-        column_value = header.index(column)
+        column_index = header.index(column_name)
     except ValueError:
-        column_value = None
+        column_index = None
 
-    return column_value
+    row_column_value = None if column_index is None else row[column_index]
+
+    return row_column_value
