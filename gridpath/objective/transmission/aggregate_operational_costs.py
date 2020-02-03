@@ -32,7 +32,7 @@ def add_model_components(m, d):
             * mod.timepoint_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)
+            for (tx, tmp) in mod.TX_OPR_TMPS)
 
     m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
     getattr(d, total_cost_components).append("Total_Hurdle_Cost")

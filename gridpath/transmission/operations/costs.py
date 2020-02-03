@@ -39,10 +39,10 @@ def add_model_components(m, d):
     )
 
     m.Hurdle_Cost_Positive_Direction = Var(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
+        m.TX_OPR_TMPS, within=NonNegativeReals
     )
     m.Hurdle_Cost_Negative_Direction = Var(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
+        m.TX_OPR_TMPS, within=NonNegativeReals
     )
 
     def hurdle_cost_positive_direction_rule(mod, tx, tmp):
@@ -62,7 +62,7 @@ def add_model_components(m, d):
                 >= mod.Transmit_Power_MW[tx, tmp] * \
                 mod.hurdle_rate_positive_direction_per_mwh[tx, mod.period[tmp]]
     m.Hurdle_Cost_Positive_Direction_Constraint = Constraint(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.TX_OPR_TMPS,
         rule=hurdle_cost_positive_direction_rule
     )
 
@@ -83,7 +83,7 @@ def add_model_components(m, d):
                 >= -mod.Transmit_Power_MW[tx, tmp] * \
                 mod.hurdle_rate_negative_direction_per_mwh[tx, mod.period[tmp]]
     m.Hurdle_Cost_Negative_Direction_Constraint = Constraint(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.TX_OPR_TMPS,
         rule=hurdle_cost_negative_direction_rule
     )
 
@@ -208,7 +208,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "hurdle_cost_positive_direction",
              "hurdle_cost_negative_direction"]
         )
-        for (tx, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+        for (tx, tmp) in m.TX_OPR_TMPS:
             writer.writerow([
                 tx,
                 m.period[tmp],

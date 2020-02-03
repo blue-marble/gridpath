@@ -47,16 +47,16 @@ def add_model_components(m, d):
              if mod.tx_carbon_cap_zone[tx] == co2_z])
 
     # Get operational carbon cap transmission line - timepoints combinations
-    m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS = Set(
-        within=m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+    m.CARBONACEOUS_TX_OPR_TMPS = Set(
+        within=m.TX_OPR_TMPS,
         rule=lambda mod: [(tx, tmp) for (tx, tmp) in
-                          mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
+                          mod.TX_OPR_TMPS
                           if tx in mod.CARBONACEOUS_TRANSMISSION_LINES]
     )
 
     # Variable for imported emissions
     m.Import_Carbon_Emissions_Tons = Var(
-        m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.CARBONACEOUS_TX_OPR_TMPS,
         within=NonNegativeReals
     )
 
@@ -86,7 +86,7 @@ def add_model_components(m, d):
                              )
 
     m.Imported_Carbon_Emissions_Constraint = Constraint(
-        m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.CARBONACEOUS_TX_OPR_TMPS,
         rule=carbon_emissions_imports_rule
     )
 
@@ -161,7 +161,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "carbon_emission_imports_tons",
                          "carbon_emission_imports_tons_degen"])
         for (tx, tmp) in \
-                m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+                m.CARBONACEOUS_TX_OPR_TMPS:
             writer.writerow([
                 tx,
                 m.period[tmp],

@@ -178,9 +178,9 @@ def add_module_specific_components(m, d):
     )
 
     m.TX_DCOPF_OPR_TMPS = Set(
-        dimen=2, within=m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        dimen=2, within=m.TX_OPR_TMPS,
         rule=lambda mod:
-            set((l, tmp) for (l, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
+            set((l, tmp) for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_DCOPF))
 
     # Derived Sets
@@ -284,7 +284,7 @@ def periods_cycles_zones_init(mod):
         # Get the relevant tx_lines (= currently operational & DC OPF)
         tx_lines = list(
             mod.TX_DCOPF &
-            mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[period]
+            mod.TX_LINES_OPR_IN_PRD[period]
         )
 
         # Get the edges from the relevant tx_lines
@@ -341,7 +341,7 @@ def periods_cycles_transmission_lines_init(mod):
         # Relevant tx_lines
         tx_lines = list(
             mod.TX_DCOPF &
-            mod.TRANSMISSION_LINES_OPERATIONAL_IN_PERIOD[p]
+            mod.TX_LINES_OPR_IN_PRD[p]
         )
 
         # Get the edges from the relevant tx_lines
@@ -383,6 +383,9 @@ def tx_lines_by_period_cycle_init(mod, period, cycle):
 
 def tx_dcopf_cycle_direction_init(mod, period, cycle, tx_line):
     """
+    **Param Name**: tx_dcopf_cycle_direction
+    **Defined Over**: PRDS_CYCLES_TX_DCOPF
+
     This parameter describes the non-zero values of the cycle incidence
     matrix in each period. The parameter's value is 1 if the given tx_line
     is an element of the given cycle in the given period and -1 if it is the
@@ -425,7 +428,7 @@ def min_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        >= mod.Transmission_Min_Capacity_MW[l, mod.period[tmp]]
+        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -437,7 +440,7 @@ def max_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp] \
-        <= mod.Transmission_Max_Capacity_MW[l, mod.period[tmp]]
+        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
 
 
 def kirchhoff_voltage_law_rule(mod, c, tmp):

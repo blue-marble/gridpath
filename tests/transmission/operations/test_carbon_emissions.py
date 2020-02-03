@@ -157,7 +157,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         )
         self.assertDictEqual(expected_tx_by_z, actual_tx_by_z)
 
-        # Set: CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS
+        # Set: CARBONACEOUS_TX_OPR_TMPS
         expect_tx_op_tmp = sorted(
             [
                 ("Tx1", 20200101), ("Tx1", 20200102),
@@ -260,7 +260,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         )
         actual_tx_op_tmp = sorted(
             [(tx, tmp) for (tx, tmp)
-             in instance.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS]
+             in instance.CARBONACEOUS_TX_OPR_TMPS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 

@@ -114,7 +114,7 @@ def add_model_components(m, d):
     ###########################################################################
 
     # Capacity-type modules will populate this list if called
-    # List will be used to initialize TRANSMISSION_OPERATIONAL_PERIODS
+    # List will be used to initialize TX_OPR_PRDS
     m.tx_capacity_type_operational_period_sets = []
 
 

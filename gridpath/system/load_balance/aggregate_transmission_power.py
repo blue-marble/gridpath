@@ -32,7 +32,7 @@ def add_model_components(m, d):
     def total_transmission_to_rule(mod, z, tmp):
         return sum(mod.Transmit_Power_MW[tx, tmp]
                    for tx in
-                   mod.TRANSMISSION_LINES_OPERATIONAL_IN_TIMEPOINT[tmp]
+                   mod.TX_LINES_OPR_IN_TMP[tmp]
                    if mod.load_zone_to[tx] == z)
     m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                            rule=total_transmission_to_rule)
@@ -43,7 +43,7 @@ def add_model_components(m, d):
     def total_transmission_from_rule(mod, z, tmp):
         return sum(mod.Transmit_Power_MW[tx, tmp]
                    for tx in
-                   mod.TRANSMISSION_LINES_OPERATIONAL_IN_TIMEPOINT[tmp]
+                   mod.TX_LINES_OPR_IN_TMP[tmp]
                    if mod.load_zone_from[tx] == z)
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                              rule=total_transmission_from_rule)

@@ -63,7 +63,7 @@ def add_model_components(m, d):
                    for tx_line in
                    mod.TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_LIMIT[g]
                    if (tx_line, tmp) in
-                   mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)
+                   mod.TX_OPR_TMPS)
     m.Simultaneous_Flow_MW = Expression(
         m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS,
         rule=simultaneous_flow_expression_rule

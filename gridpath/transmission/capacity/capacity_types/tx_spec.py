@@ -33,7 +33,7 @@ def add_module_specific_components(m, d):
     | Two-dimensional set of transmission line-period combinations that       |
     | helps describe the transmission capacity available in a given period.   |
     | This set is added to the list of sets to join to get the final          |
-    | :code:`TRANSMISSION_OPERATIONAL_PERIODS` set defined in                 |
+    | :code:`TX_OPR_PRDS` set defined in                                      |
     | **gridpath.transmission.capacity.capacity**.                            |
     +-------------------------------------------------------------------------+
 

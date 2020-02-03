@@ -29,7 +29,7 @@ def add_model_components(m, d):
     | Expressions                                                             |
     +=========================================================================+
     | | :code:`Transmit_Power_MW`                                             |
-    | | *Defined over*: :code:`TRANSMISSION_OPERATIONAL_TIMEPOINTS`           |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
     |                                                                         |
     | The transmission line's transmitted power in MW. A positive number      |
     | means the power flows in the line's defined direction, while a negative |
@@ -57,7 +57,7 @@ def add_model_components(m, d):
             transmit_power_rule(mod, tx, tmp)
 
     m.Transmit_Power_MW = Expression(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.TX_OPR_TMPS,
         rule=transmit_power_rule
     )
 
@@ -85,7 +85,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "transmission_flow_mw"])
-        for (l, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+        for (l, tmp) in m.TX_OPR_TMPS:
             writer.writerow([
                 l,
                 m.load_zone_from[l],
