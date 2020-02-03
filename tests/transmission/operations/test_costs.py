@@ -103,7 +103,7 @@ class TestTxAggregateCosts(unittest.TestCase):
             sorted([
                 ((tx, p), instance.hurdle_rate_positive_direction_per_mwh[
                     tx, p])
-                for tx in instance.TRANSMISSION_LINES
+                for tx in instance.TX_LINES
                 for p in instance.PERIODS
             ])
         )
@@ -126,7 +126,7 @@ class TestTxAggregateCosts(unittest.TestCase):
             sorted([
                 ((tx, p), instance.hurdle_rate_negative_direction_per_mwh[
                     tx, p])
-                for tx in instance.TRANSMISSION_LINES
+                for tx in instance.TX_LINES
                 for p in instance.PERIODS
             ])
         )

@@ -97,7 +97,7 @@ class TestTxOperations(unittest.TestCase):
                 {
                     tx: [p for p in
                          instance.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE[tx]]
-                    for tx in instance.TRANSMISSION_LINES
+                    for tx in instance.TX_LINES
                 }.items()
             )
         )

@@ -27,7 +27,7 @@ def add_model_components(m, d):
     :return:
     """
     # First figure out which projects we need to track for the carbon cap
-    m.CARBONACEOUS_TRANSMISSION_LINES = Set(within=m.TRANSMISSION_LINES)
+    m.CARBONACEOUS_TRANSMISSION_LINES = Set(within=m.TX_LINES)
     m.tx_carbon_cap_zone = Param(
         m.CARBONACEOUS_TRANSMISSION_LINES,
         within=m.CARBON_CAP_ZONES

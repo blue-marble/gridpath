@@ -29,12 +29,12 @@ def add_model_components(m, d):
     """
 
     m.hurdle_rate_positive_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, m.PERIODS,
+        m.TX_LINES, m.PERIODS,
         within=NonNegativeReals, default=0
     )
 
     m.hurdle_rate_negative_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, m.PERIODS,
+        m.TX_LINES, m.PERIODS,
         within=NonNegativeReals, default=0
     )
 

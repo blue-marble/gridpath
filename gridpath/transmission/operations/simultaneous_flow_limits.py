@@ -35,7 +35,7 @@ def add_model_components(m, d):
     )
 
     m.SIMULTANEOUS_FLOW_LIMIT_LINES = Set(
-        dimen=2, within=m.SIMULTANEOUS_FLOW_LIMITS * m.TRANSMISSION_LINES
+        dimen=2, within=m.SIMULTANEOUS_FLOW_LIMITS * m.TX_LINES
     )
 
     m.simultaneous_flow_direction = Param(

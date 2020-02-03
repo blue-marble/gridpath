@@ -172,8 +172,8 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     m.TX_DCOPF = Set(
-        within=m.TRANSMISSION_LINES,
-        rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
+        within=m.TX_LINES,
+        rule=lambda mod: set(l for l in mod.TX_LINES if
                              mod.tx_operational_type[l] == "tx_dcopf")
     )
 
@@ -213,7 +213,7 @@ def add_module_specific_components(m, d):
 
     m.PRDS_CYCLES_TX_DCOPF = Set(
         dimen=3,
-        within=m.PRDS_CYCLES * m.TRANSMISSION_LINES,
+        within=m.PRDS_CYCLES * m.TX_LINES,
         rule=periods_cycles_transmission_lines_init
     )
 

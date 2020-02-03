@@ -71,8 +71,8 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     m.TX_SIMPLE = Set(
-        within=m.TRANSMISSION_LINES,
-        rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
+        within=m.TX_LINES,
+        rule=lambda mod: set(l for l in mod.TX_LINES if
                              mod.tx_operational_type[l] == "tx_simple")
     )
 

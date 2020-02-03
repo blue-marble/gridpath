@@ -59,7 +59,7 @@ def add_model_components(m, d):
                           mod.tx_capacity_type_operational_period_sets)
 
     m.TRANSMISSION_OPERATIONAL_PERIODS = \
-        Set(dimen=2, within=m.TRANSMISSION_LINES*m.PERIODS,
+        Set(dimen=2, within=m.TX_LINES*m.PERIODS,
             initialize=join_tx_cap_type_operational_period_sets)
 
     def transmission_min_capacity_rule(mod, tx, p):
@@ -82,7 +82,7 @@ def add_model_components(m, d):
 
     # Define various sets to be used in transmission operations module
     m.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE = \
-        Set(m.TRANSMISSION_LINES,
+        Set(m.TX_LINES,
             rule=lambda mod, tx: set(
                 p for (l, p) in mod.TRANSMISSION_OPERATIONAL_PERIODS if
                 l == tx)
@@ -90,7 +90,7 @@ def add_model_components(m, d):
 
     def tx_op_tmps_init(mod):
         tx_tmps = set()
-        for tx in mod.TRANSMISSION_LINES:
+        for tx in mod.TX_LINES:
             for p in mod.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE[tx]:
                 for tmp in mod.TIMEPOINTS_IN_PERIOD[p]:
                     tx_tmps.add((tx, tmp))
