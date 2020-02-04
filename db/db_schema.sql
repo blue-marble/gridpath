@@ -1772,6 +1772,7 @@ scenario_id INTEGER PRIMARY KEY AUTOINCREMENT,
 scenario_name VARCHAR(64) UNIQUE,
 scenario_description VARCHAR(256),
 validation_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
+queue_order_id INTEGER UNIQUE DEFAULT NULL,
 run_status_id INTEGER DEFAULT 0, -- status is 0 on scenario creation
 run_process_id INTEGER DEFAULT NULL,
 run_start_time TIME,
