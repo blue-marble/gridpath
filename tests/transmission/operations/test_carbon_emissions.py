@@ -86,12 +86,12 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Set: CARBONACEOUS_TRANSMISSION_LINES
+        # Set: CRB_TX_LINES
         expected_tx_lines = sorted(
             ["Tx1", "Tx_New"]
         )
         actual_tx_lines = sorted(
-            tx for tx in instance.CARBONACEOUS_TRANSMISSION_LINES
+            tx for tx in instance.CRB_TX_LINES
         )
         self.assertListEqual(expected_tx_lines, actual_tx_lines)
 
@@ -105,7 +105,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         actual_zone = OrderedDict(
             sorted(
                 {tx: instance.tx_carbon_cap_zone[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
+                 instance.CRB_TX_LINES}.items()
             )
         )
         self.assertDictEqual(expected_zone, actual_zone)
@@ -119,7 +119,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         actual_dir = OrderedDict(
             sorted(
                 {tx: instance.carbon_cap_zone_import_direction[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
+                 instance.CRB_TX_LINES}.items()
             )
         )
         self.assertDictEqual(expected_dir, actual_dir)
@@ -133,12 +133,12 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         actual_co2 = OrderedDict(
             sorted(
                 {tx: instance.tx_co2_intensity_tons_per_mwh[tx] for tx in
-                 instance.CARBONACEOUS_TRANSMISSION_LINES}.items()
+                 instance.CRB_TX_LINES}.items()
             )
         )
         self.assertDictEqual(expected_co2, actual_co2)
 
-        # Set: CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE
+        # Set: CRB_TX_LINES_BY_CARBON_CAP_ZONE
         expected_tx_by_z = OrderedDict(
             sorted(
                 {"Carbon_Cap_Zone1": sorted(["Tx1", "Tx_New"]),
@@ -150,14 +150,14 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
                 {z: sorted(
                     [tx for tx in
                      instance.
-                     CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE[z]
+                     CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
                      ]
                 ) for z in instance.CARBON_CAP_ZONES}.items()
             )
         )
         self.assertDictEqual(expected_tx_by_z, actual_tx_by_z)
 
-        # Set: CARBONACEOUS_TX_OPR_TMPS
+        # Set: CRB_TX_OPR_TMPS
         expect_tx_op_tmp = sorted(
             [
                 ("Tx1", 20200101), ("Tx1", 20200102),
@@ -260,7 +260,7 @@ class TestTxAggregateCarbonEmissions(unittest.TestCase):
         )
         actual_tx_op_tmp = sorted(
             [(tx, tmp) for (tx, tmp)
-             in instance.CARBONACEOUS_TX_OPR_TMPS]
+             in instance.CRB_TX_OPR_TMPS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 

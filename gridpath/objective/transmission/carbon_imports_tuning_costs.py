@@ -44,7 +44,7 @@ def add_model_components(m, d):
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
             for (tx, tmp)
-            in mod.CARBONACEOUS_TX_OPR_TMPS
+            in mod.CRB_TX_OPR_TMPS
         )
 
     m.Total_Import_Carbon_Tuning_Cost = Expression(

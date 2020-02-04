@@ -41,9 +41,9 @@ def add_model_components(m, d):
                    * mod.number_of_hours_in_timepoint[tmp]
                    * mod.timepoint_weight[tmp]
                    for (tx, tmp) in
-                   mod.CARBONACEOUS_TX_OPR_TMPS
+                   mod.CRB_TX_OPR_TMPS
                    if tx in
-                   mod.CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE[z]
+                   mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
                    and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
                    )
 
@@ -73,9 +73,9 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
                * mod.number_of_hours_in_timepoint[tmp]
                * mod.timepoint_weight[tmp]
                for (tx, tmp) in
-               mod.CARBONACEOUS_TX_OPR_TMPS
+               mod.CRB_TX_OPR_TMPS
                if tx in
-               mod.CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE[z]
+               mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
                and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
                )
 
