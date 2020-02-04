@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+"""
+
+"""
+
+
 import csv
 import os.path
 from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
@@ -9,82 +14,175 @@ from pyomo.environ import Set, Param, Constraint, NonNegativeReals, \
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`SIM_FLOW_LMTS`                                                 |
+    |                                                                         |
+    | The set of simultaneous flow limits being modeled.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`SIM_FLOW_LMT_PRDS`                                             |
+    |                                                                         |
+    | Two-dimensional set of the simultaneous flow limits and the periods     |
+    | periods in which they are active.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`SIM_FLOW_LMT_TMPS`                                             |
+    |                                                                         |
+    | Two-dimensional set of the simultaneous flow limits in each             |
+    | operational timepoint.                                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`SIM_FLOW_LMT_TX_LINES`                                         |
+    |                                                                         |
+    | Two-dimensional set of the simultaneous flow limits and its associated  |
+    | transmission lines.                                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`TX_LINES_BY_SIM_FLOW_LMT`                                      |
+    | | *Defined over*: :code:`SIM_FLOW_LMTS`                                 |
+    |                                                                         |
+    | Indexed set describing the transmission lines associated with each      |
+    | simultaneous flow limit group.                                          |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`sim_flow_lmt_mw`                                               |
+    | | *Defined over*: :code:`SIM_FLOW_LMT_PRDS`                             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The flow limit in MW for each simultaneous flow limit group in each     |
+    | operational period, e.g. the sum of all imports into the CAISO zone     |
+    | cannot exceed 10,000 MW.                                                |
+    +-------------------------------------------------------------------------+
+    | | :code:`sim_flow_direction`                                            |
+    | | *Defined over*: :code:`SIM_FLOW_LMT_TX_LINES`                         |
+    | | *Within*: :code:`Integers [-1, 1]`                                    |
+    |                                                                         |
+    | For each transmission line in each simultaneous flow limit group, this  |
+    | param describes in which direction the transmission line is added into  |
+    | the flow limit constraint.                                              |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Sim_Flow_MW`                                                   |
+    | | *Defined over*: :code:`SIM_FLOW_LMT_TMPS`                             |
+    |                                                                         |
+    | The total flow on lines in each simultaneous flow limit group,          |
+    | according to their specified direction in :code:`sim_flow_direction`    |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Sim_Flow_Constrain                                             |
+    | | *Enforced over*: :code:`SIM_FLOW_LMT_TMPS`                            |
+    |                                                                         |
+    | The total flow on lines in each simultaneous flow limit group shall     |
+    | not exceed the simultaneous flow limit group's limit.                   |
+    +-------------------------------------------------------------------------+
+
     """
 
-    m.SIMULTANEOUS_FLOW_LIMIT_PERIODS = Set(dimen=2)
-    m.simultaneous_flow_limit_mw = Param(
-        m.SIMULTANEOUS_FLOW_LIMIT_PERIODS, within=NonNegativeReals
-    )
+    m.SIM_FLOW_LMT_PRDS = Set(dimen=2)
 
-    m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS = Set(
+    m.SIM_FLOW_LMT_TMPS = Set(
         dimen=2,
         rule=lambda mod:
         set((g, tmp)
-            for (g, p) in mod.SIMULTANEOUS_FLOW_LIMIT_PERIODS
-            for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-            )
+            for (g, p) in mod.SIM_FLOW_LMT_PRDS
+            for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
     )
-    m.SIMULTANEOUS_FLOW_LIMITS = Set(
+
+    m.SIM_FLOW_LMTS = Set(
         rule=lambda mod:
-        set(limit for (limit, period) in
-            mod.SIMULTANEOUS_FLOW_LIMIT_PERIODS)
+        set(limit for (limit, period) in mod.SIM_FLOW_LMT_PRDS)
     )
 
-    m.SIMULTANEOUS_FLOW_LIMIT_LINES = Set(
-        dimen=2, within=m.SIMULTANEOUS_FLOW_LIMITS * m.TRANSMISSION_LINES
+    m.SIM_FLOW_LMT_TX_LINES = Set(
+        dimen=2,
+        within=m.SIM_FLOW_LMTS * m.TX_LINES
     )
 
-    m.simultaneous_flow_direction = Param(
-        m.SIMULTANEOUS_FLOW_LIMIT_LINES, within=Integers,
+    m.TX_LINES_BY_SIM_FLOW_LMT = Set(
+        m.SIM_FLOW_LMTS,
+        rule=lambda mod, limit:
+        set(tx_line for (group, tx_line)
+            in mod.SIM_FLOW_LMT_TX_LINES if group == limit)
+    )
+
+    # Required Input Params
+    ###########################################################################
+
+    m.sim_flow_lmt_mw = Param(
+        m.SIM_FLOW_LMT_PRDS,
+        within=NonNegativeReals
+    )
+
+    m.sim_flow_direction = Param(
+        m.SIM_FLOW_LMT_TX_LINES,
+        within=Integers,
         validate=lambda mod, v, g, l: v in [-1, 1]
     )
 
-    m.TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_LIMIT = Set(
-        m.SIMULTANEOUS_FLOW_LIMITS,
-        rule=lambda mod, limit:
-        set(tx_line for (group, tx_line)
-            in mod.SIMULTANEOUS_FLOW_LIMIT_LINES if group == limit)
+    # Expressions
+    ###########################################################################
+
+    m.Sim_Flow_MW = Expression(
+        m.SIM_FLOW_LMT_TMPS,
+        rule=sim_flow_expression_rule
     )
 
-    def simultaneous_flow_expression_rule(mod, g, tmp):
-        """
-        Total flow on lines in each group
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return sum(mod.Transmit_Power_MW[tx_line, tmp] *
-                   mod.simultaneous_flow_direction[g, tx_line]
-                   for tx_line in
-                   mod.TRANSMISSION_LINES_BY_SIMULTANEOUS_FLOW_LIMIT[g]
-                   if (tx_line, tmp) in
-                   mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)
-    m.Simultaneous_Flow_MW = Expression(
-        m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS,
-        rule=simultaneous_flow_expression_rule
+    # Constraints
+    ###########################################################################
+
+    m.Sim_Flow_Constraint = Constraint(
+        m.SIM_FLOW_LMT_TMPS,
+        rule=sim_flow_constraint_rule
     )
 
-    def simultaneous_flow_constraint_rule(mod, g, tmp):
-        """
-        Total flow on lines in each group cannot exceed limit
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        return mod.Simultaneous_Flow_MW[g, tmp] \
-            <= mod.simultaneous_flow_limit_mw[g, mod.period[tmp]]
 
-    m.Simultaneous_Flow_Constraint = Constraint(
-        m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS,
-        rule=simultaneous_flow_constraint_rule
-    )
+# Expression Rules
+###############################################################################
 
+def sim_flow_expression_rule(mod, g, tmp):
+    """
+    **Expression Name**: Sim_Flow_MW
+    **Defined Over**: SIM_FLOW_LMT_TMPS
+
+    Total flow on lines in each simultaneous flow group.
+    """
+    return sum(mod.Transmit_Power_MW[tx_line, tmp]
+               * mod.sim_flow_direction[g, tx_line]
+               for tx_line in mod.TX_LINES_BY_SIM_FLOW_LMT[g]
+               if (tx_line, tmp) in mod.TX_OPR_TMPS)
+
+
+# Constraint Formulation Rules
+###############################################################################
+
+def sim_flow_constraint_rule(mod, g, tmp):
+    """
+    **Constraint Name**: Sim_Flow_Constraint
+    **Enforced Over**: SIM_FLOW_LMT_TMPS
+
+    Total flow on lines in each simultaneous flow group cannot exceed limit.
+    """
+    return mod.Sim_Flow_MW[g, tmp] \
+        <= mod.sim_flow_lmt_mw[g, mod.period[tmp]]
+
+
+# Input-Outputs
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -97,23 +195,23 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "transmission_simultaneous_flow_limits.tab"),
-                     select=("simultaneous_flow_limit", "period",
-                             "simultaneous_flow_limit_mw"),
-                     index=m.SIMULTANEOUS_FLOW_LIMIT_PERIODS,
-                     param=m.simultaneous_flow_limit_mw
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+                              "transmission_simultaneous_flow_limits.tab"),
+        select=("simultaneous_flow_limit", "period",
+                "simultaneous_flow_limit_mw"),
+        index=m.SIM_FLOW_LMT_PRDS,
+        param=m.sim_flow_lmt_mw
+    )
 
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "transmission_simultaneous_flow_limit_lines.tab"),
-                     select=("simultaneous_flow_limit", "transmission_line",
-                             "simultaneous_flow_direction"),
-                     index=m.SIMULTANEOUS_FLOW_LIMIT_LINES,
-                     param=m.simultaneous_flow_direction
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+                              "transmission_simultaneous_flow_limit_lines.tab"),
+        select=("simultaneous_flow_limit", "transmission_line",
+                "simultaneous_flow_direction"),
+        index=m.SIM_FLOW_LMT_TX_LINES,
+        param=m.sim_flow_direction
+    )
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -128,25 +226,27 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "transmission_simultaneous_flow_limits.csv"),
-              "w", newline="") as \
-            tx_op_results_file:
+              "w", newline="") as tx_op_results_file:
         writer = csv.writer(tx_op_results_file)
         writer.writerow(["simultaneous_flow_limit", "timepoint", "period",
                          "timepoint_weight", "simultaneous_flow_mw"])
-        for (g, tmp) in m.SIMULTANEOUS_FLOW_LIMIT_TIMEPOINTS:
+        for (g, tmp) in m.SIM_FLOW_LMT_TMPS:
             writer.writerow([
                 g,
                 tmp,
                 m.period[tmp],
                 m.timepoint_weight[tmp],
-                value(m.Simultaneous_Flow_MW[g, tmp])
+                value(m.Sim_Flow_MW[g, tmp])
             ])
 
 
 def save_duals(m):
-    m.constraint_indices["Simultaneous_Flow_Constraint"] = \
-        ["simultaneous_flow_limit", "timepoint", "dual"]
+    m.constraint_indices["Sim_Flow_Constraint"] = \
+        ["sim_flow_lmt", "timepoint", "dual"]
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -200,22 +300,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return flow_limits, limit_lines
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # flow_limits, limit_lines = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     transmission_simultaneous_flow_limits.tab and
@@ -234,8 +321,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     # transmission_simultaneous_flow_limits.tab
     with open(os.path.join(inputs_directory,
                            "transmission_simultaneous_flow_limits.tab"),
-              "w", newline="") as \
-            sim_flows_file:
+              "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t")
 
         # Write header
@@ -249,8 +335,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     # transmission_simultaneous_flow_limit_lines.tab
     with open(os.path.join(inputs_directory,
                            "transmission_simultaneous_flow_limit_lines.tab"),
-              "w", newline="") as \
-            sim_flow_limit_lines_file:
+              "w", newline="") as sim_flow_limit_lines_file:
         writer = csv.writer(sim_flow_limit_lines_file,
                             delimiter="\t")
 
@@ -262,3 +347,22 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         for row in limit_lines:
             writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # flow_limits, limit_lines = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+

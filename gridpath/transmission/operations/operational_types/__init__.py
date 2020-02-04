@@ -15,10 +15,8 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_model_components(m, d):
     """
-
-    :param m:
-    :param d:
-    :return:
+    Go through each relevant operational type and add the module components
+    for that operational type.
     """
     # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
@@ -30,8 +28,13 @@ def add_model_components(m, d):
             imp_op_m.add_module_specific_components(m, d)
 
 
+# Input-Output
+###############################################################################
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
+    Go through each relevant operational type and add load the model data
+    for that operational type.
 
     :param m:
     :param d:
@@ -106,37 +109,14 @@ def get_required_tx_opchar_modules(scenario_id, c):
     return required_tx_opchar_modules
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    # Load in the required operational modules
-    c = conn.cursor()
-    scenario_id = subscenarios.SCENARIO_ID
-    required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
-    imported_tx_operational_modules = load_tx_operational_type_modules(
-        required_tx_opchar_modules)
-
-    # Validate module-specific inputs
-    for op_m in required_tx_opchar_modules:
-        if hasattr(imported_tx_operational_modules[op_m],
-                   "validate_module_specific_inputs"):
-            imported_tx_operational_modules[op_m]. \
-                validate_module_specific_inputs(
-                    subscenarios, subproblem, stage, conn)
-        else:
-            pass
-
+# Database
+###############################################################################
 
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
-    Get inputs from database and write out the model input .tab files
+    Go through each relevant operational type and write the model inputs
+    for that operational type based on the database.
+
     :param inputs_directory: local directory where .tab files will be saved
     :param subscenarios: SubScenarios object with all subscenario info
     :param subproblem:
@@ -168,6 +148,8 @@ def import_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory
 ):
     """
+    Go through each relevant operational type and import the results into the
+    database for that operational type.
 
     :param scenario_id:
     :param c:
@@ -195,6 +177,8 @@ def import_results_into_database(
 
 def process_results(db, c, subscenarios):
     """
+    Go through each relevant operational type and process the results
+    for that operational type.
 
     :param db:
     :param c:
@@ -215,5 +199,38 @@ def process_results(db, c, subscenarios):
             imported_tx_operational_modules[op_m]. \
                 process_module_specific_results(
                     db, c, subscenarios)
+        else:
+            pass
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Go through each relevant operational type and validate the database inputs
+    for that operational type.
+
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    # Load in the required operational modules
+    c = conn.cursor()
+    scenario_id = subscenarios.SCENARIO_ID
+    required_tx_opchar_modules = get_required_tx_opchar_modules(scenario_id, c)
+    imported_tx_operational_modules = load_tx_operational_type_modules(
+        required_tx_opchar_modules)
+
+    # Validate module-specific inputs
+    for op_m in required_tx_opchar_modules:
+        if hasattr(imported_tx_operational_modules[op_m],
+                   "validate_module_specific_inputs"):
+            imported_tx_operational_modules[op_m]. \
+                validate_module_specific_inputs(
+                    subscenarios, subproblem, stage, conn)
         else:
             pass

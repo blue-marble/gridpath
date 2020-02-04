@@ -23,29 +23,47 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_model_components(m, d):
     """
-    :param m:
-    :param d:
-    :return:
+    The following Pyomo model components are defined in this module:
+
+    +-------------------------------------------------------------------------+
+    | Expressions                                                             |
+    +=========================================================================+
+    | | :code:`Transmit_Power_MW`                                             |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
+    |                                                                         |
+    | The transmission line's transmitted power in MW. A positive number      |
+    | means the power flows in the line's defined direction, while a negative |
+    | number means it flows in the opposite direction.                        |
+    +-------------------------------------------------------------------------+
     """
+
+    # Dynamic Components
+    ###########################################################################
 
     # Import needed transmission operational type modules
     imported_tx_operational_modules = load_tx_operational_type_modules(
             getattr(d, required_tx_operational_modules))
 
     # TODO: should we add the module specific components here or in
-    #  capacity_types/__init__.py? Doing it in __init__.py to be consistent with
-    #  projects/operations/power.py
-    # Get transmitted power for all lines from the tx operational modules
+    #  operational_types/__init__.py? Doing it in __init__.py to be consistent
+    #  with projects/operations/power.py
+
+    # Expressions
+    ###########################################################################
+
     def transmit_power_rule(mod, tx, tmp):
         tx_op_type = mod.tx_operational_type[tx]
         return imported_tx_operational_modules[tx_op_type].\
             transmit_power_rule(mod, tx, tmp)
 
     m.Transmit_Power_MW = Expression(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.TX_OPR_TMPS,
         rule=transmit_power_rule
     )
 
+
+# Input-Output
+###############################################################################
 
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
@@ -67,7 +85,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "timepoint_weight",
                          "number_of_hours_in_timepoint",
                          "transmission_flow_mw"])
-        for (l, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+        for (l, tmp) in m.TX_OPR_TMPS:
             writer.writerow([
                 l,
                 m.load_zone_from[l],
@@ -95,11 +113,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
+# Database
+###############################################################################
+
 def import_results_into_database(scenario_id, subproblem, stage, c, db,
                                  results_directory):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:

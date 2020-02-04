@@ -18,16 +18,20 @@ from gridpath.auxiliary.auxiliary import write_validation_to_database
 
 def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     """
+    Determine the required transmission capacity types and
+    transmission operational types based on the inputs in the
+    transmission_lines.tab file, and add this information to the
+    dynamic components.
 
     :param d:
     :param scenario_directory:
-    :param stage:
+    :param subproblem:
     :param stage:
     :return:
     """
 
-    # Get the capacity type of each generator
-    dynamic_components = pd.read_csv(
+    # Get the capacity and operational type of each transmission line
+    df = pd.read_csv(
         os.path.join(scenario_directory, subproblem, stage, "inputs",
                      "transmission_lines.tab"),
         sep="\t",
@@ -38,33 +42,84 @@ def determine_dynamic_components(d, scenario_directory, subproblem, stage):
     # Required capacity modules are the unique set of tx capacity types
     # This list will be used to know which capacity modules to load
     setattr(d, required_tx_capacity_modules,
-            dynamic_components.tx_capacity_type.unique()
-            )
+            df.tx_capacity_type.unique())
 
     # Required operational modules are the unique set of tx operational types
     # This list will be used to know which operational modules to load
     setattr(d, required_tx_operational_modules,
-            dynamic_components.tx_operational_type.unique()
-            )
+            df.tx_operational_type.unique())
 
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`TX_LINES`                                                      |
+    |                                                                         |
+    | The set of transmission lines to be modeled.                            |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`tx_capacity_type`                                              |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    |                                                                         |
+    | The transmission line's capacity type. This will determine how the      |
+    | capacity of the line is modeled, e.g. as a specified number or as a     |
+    | decision variable in the optimization.                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_operational_type`                                           |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    |                                                                         |
+    | The transmission line's operational type. This will determine how the   |
+    | operations of the line are modeled, e.g. through a simple linear        |
+    | transport model or power flow using DC OPF assumptions.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`load_zone_from`                                                |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    |                                                                         |
+    | The transmission line's starting load zone (the power flow can go both  |
+    | directions, but each line has a defined direction).                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`load_zone_to`                                                  |
+    | | *Defined over*: :code:`TX_LINES`                                      |
+    |                                                                         |
+    | The transmission line's ending load zone (the power flow can go both    |
+    | directions, but each line has a defined direction).                     |
+    +-------------------------------------------------------------------------+
+
+
     """
-    m.TRANSMISSION_LINES = Set()
-    m.tx_capacity_type = Param(m.TRANSMISSION_LINES)
-    m.tx_operational_type = Param(m.TRANSMISSION_LINES)
-    m.load_zone_from = Param(m.TRANSMISSION_LINES)
-    m.load_zone_to = Param(m.TRANSMISSION_LINES)
+
+    # Sets
+    ###########################################################################
+
+    m.TX_LINES = Set()
+
+    # Required Input Params
+    ###########################################################################
+
+    m.tx_capacity_type = Param(m.TX_LINES)
+    m.tx_operational_type = Param(m.TX_LINES)
+    m.load_zone_from = Param(m.TX_LINES)
+    m.load_zone_to = Param(m.TX_LINES)
+
+    # Dynamic Components
+    ###########################################################################
 
     # Capacity-type modules will populate this list if called
-    # List will be used to initialize TRANSMISSION_OPERATIONAL_PERIODS
+    # List will be used to initialize TX_OPR_PRDS
     m.tx_capacity_type_operational_period_sets = []
 
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -83,11 +138,14 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
                      select=("TRANSMISSION_LINES", "tx_capacity_type",
                              "tx_operational_type",
                              "load_zone_from", "load_zone_to"),
-                     index=m.TRANSMISSION_LINES,
+                     index=m.TX_LINES,
                      param=(m.tx_capacity_type, m.tx_operational_type,
                             m.load_zone_from, m.load_zone_to)
                      )
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -99,7 +157,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
 
     # TODO: we might want to get the reactance in the tx_dcopf
-    #  tx_operational_type rather than here (similar comment as in project/init)
+    #  tx_operational_type rather than here (see also comment in project/init)
     c = conn.cursor()
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, operational_type,
@@ -128,6 +186,42 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return transmission_lines
 
 
+def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and write out the model input
+    transmission_lines.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    transmission_lines = get_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+              "w", newline="") as \
+            transmission_lines_tab_file:
+        writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
+
+        # TODO: remove all_caps for TRANSMISSION_LINES and make columns
+        #  same as database
+        # Write header
+        writer.writerow(
+            ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
+             "load_zone_from", "load_zone_to", "reactance_ohms"]
+        )
+
+        for row in transmission_lines:
+            replace_nulls = ["." if i is None else i for i in row]
+            writer.writerow(replace_nulls)
+
+
+# Validation
+###############################################################################
+
 def validate_inputs(subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and validate the inputs
@@ -152,7 +246,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
         columns=[s[0] for s in transmission_lines.description]
     )
 
-    # Check that we're not combining incompatible capacity and operational types
+    # Ensure we're not combining incompatible capacity and operational types
     invalid_combos = c.execute(
         """SELECT capacity_type, operational_type 
         FROM mod_tx_capacity_and_tx_operational_type_invalid_combos"""
@@ -231,34 +325,3 @@ def validate_reactance(df):
         )
 
     return results
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and write out the model input
-    transmission_lines.tab file.
-    :param inputs_directory: local directory where .tab files will be saved
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-
-    transmission_lines = get_inputs_from_database(
-        subscenarios, subproblem, stage, conn)
-
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
-              "w", newline="") as \
-            transmission_lines_tab_file:
-        writer = csv.writer(transmission_lines_tab_file, delimiter="\t")
-
-        # Write header
-        writer.writerow(
-            ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to", "reactance_ohms"]
-        )
-
-        for row in transmission_lines:
-            replace_nulls = ["." if i is None else i for i in row]
-            writer.writerow(replace_nulls)

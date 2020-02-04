@@ -228,6 +228,9 @@ def new_build_transmission_vintages_operational_in_period(mod, p):
 
 def tx_new_lin_capacity_rule(mod, g, p):
     """
+    **Expression Name**: TxNewLin_Capacity_MW
+    **Defined Over**: TX_NEW_LIN_OPR_PRDS
+
     The transmission capacity of a new line in a given operational period is
     equal to the sum of all capacity-build of vintages operational in that
     period.
@@ -316,7 +319,7 @@ def export_module_specific_results(
         writer.writerow(["transmission_line", "period",
                          "load_zone_from", "load_zone_to",
                          "new_build_transmission_capacity_mw"])
-        for (transmission_line, p) in m.TRANSMISSION_OPERATIONAL_PERIODS:
+        for (transmission_line, p) in m.TX_OPR_PRDS:
             writer.writerow([
                 transmission_line,
                 p,

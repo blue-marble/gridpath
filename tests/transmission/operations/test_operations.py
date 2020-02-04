@@ -83,7 +83,7 @@ class TestTxOperations(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Set: OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE
+        # Set: OPR_PRDS_BY_TX_LINE
         expected_op_p_by_tx = OrderedDict(
             sorted(
                 {
@@ -96,14 +96,14 @@ class TestTxOperations(unittest.TestCase):
             sorted(
                 {
                     tx: [p for p in
-                         instance.OPERATIONAL_PERIODS_BY_TRANSMISSION_LINE[tx]]
-                    for tx in instance.TRANSMISSION_LINES
+                         instance.OPR_PRDS_BY_TX_LINE[tx]]
+                    for tx in instance.TX_LINES
                 }.items()
             )
         )
         self.assertDictEqual(expected_op_p_by_tx, actual_op_p_by_tx)
         
-        # Set: TRANSMISSION_OPERATIONAL_TIMEPOINTS
+        # Set: TX_OPR_TMPS
         expect_tx_op_tmp = sorted(
             [
                 ("Tx1", 20200101), ("Tx1", 20200102),
@@ -305,11 +305,11 @@ class TestTxOperations(unittest.TestCase):
         )
         actual_tx_op_tmp = sorted(
             [(tx, tmp) for (tx, tmp)
-             in instance.TRANSMISSION_OPERATIONAL_TIMEPOINTS]
+             in instance.TX_OPR_TMPS]
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
         
-        # Set: TRANSMISSION_LINES_OPERATIONAL_IN_TIMEPOINT
+        # Set: TX_LINES_OPR_IN_TMP
         expected_operational_tx_in_tmp = OrderedDict(sorted({
             20200101: ["Tx1", "Tx2", "Tx3", "Tx_New"],
             20200102: ["Tx1", "Tx2", "Tx3", "Tx_New"],
@@ -413,7 +413,7 @@ class TestTxOperations(unittest.TestCase):
         actual_operational_tx_in_tmp = OrderedDict(sorted({
             tmp: sorted(
                 [prj for prj
-                 in instance.TRANSMISSION_LINES_OPERATIONAL_IN_TIMEPOINT[tmp]]
+                 in instance.TX_LINES_OPR_IN_TMP[tmp]]
             )
             for tmp in instance.TIMEPOINTS
         }.items()
