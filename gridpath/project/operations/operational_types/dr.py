@@ -81,7 +81,8 @@ def add_module_specific_components(m, d):
     | | :code:`DR_Energy_Budget_Constraint`                                   |
     | | *Defined˚ over*: :code:`DR_OPR_HRZS`                                  |
     |                                                                         |
-    | Total energy that can be shifted on each horizon should equal budget.   |
+    | Total energy that can be shifted on each horizon should be less than    |
+    | or equal to budget.                                                     |
     +-------------------------------------------------------------------------+
 
     """
@@ -190,7 +191,8 @@ def energy_budget_rule(mod, p, h):
     **Constraint Name**: DR_Energy_Budget_Constraint
     **Enforced Over**: DR_OPR_HRZS
 
-    Total energy that can be shifted on each horizon should equal budget.
+    Total energy that can be shifted on each horizon should be less than or
+    equal to budget.
 
     Get the period for the total capacity from the first timepoint of the
     horizon.
@@ -198,7 +200,7 @@ def energy_budget_rule(mod, p, h):
     return sum(mod.DR_Shift_Up_MW[p, tmp]
                * mod.number_of_hours_in_timepoint[tmp]
                for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
-        == mod.Energy_Capacity_MWh[p, mod.period[
+        <= mod.Energy_Capacity_MWh[p, mod.period[
             mod.first_horizon_timepoint[h]]]
 
 
