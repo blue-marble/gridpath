@@ -44,7 +44,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenCommitCapOperationalType(unittest.TestCase):
+class TestGenCommitCap(unittest.TestCase):
     """
 
     """

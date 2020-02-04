@@ -23,7 +23,7 @@ PREREQUISITE_MODULE_NAMES = [
      "temporal.operations.timepoints", "temporal.operations.horizons",
      "temporal.investment.periods", "geography.load_zones", "project",
      "project.capacity.capacity", "project.availability.availability",
-    "project.fuels", "project.operations"]
+     "project.fuels", "project.operations"]
 NAME_OF_MODULE_BEING_TESTED = \
     "project.operations.operational_types.gen_hydro"
 IMPORTED_PREREQ_MODULES = list()
@@ -43,7 +43,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenHydroOperationalType(unittest.TestCase):
+class TestGenHydro(unittest.TestCase):
     """
 
     """

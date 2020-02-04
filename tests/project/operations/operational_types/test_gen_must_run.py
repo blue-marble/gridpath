@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenMustRunOperationalType(unittest.TestCase):
+class TestGenMustRun(unittest.TestCase):
     """
 
     """

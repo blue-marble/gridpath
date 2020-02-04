@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenCommitBinOperationalType(unittest.TestCase):
+class TestGenCommitBin(unittest.TestCase):
     """
 
     """

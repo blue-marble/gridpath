@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestDROperationalType(unittest.TestCase):
+class TestDR(unittest.TestCase):
     """
 
     """

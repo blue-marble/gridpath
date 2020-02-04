@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenSimpleOperationalType(unittest.TestCase):
+class TestGenSimple(unittest.TestCase):
     """
 
     """

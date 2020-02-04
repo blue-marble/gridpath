@@ -67,5 +67,6 @@ class TestOperationalTypes(unittest.TestCase):
                                      stage=""
                                      )
 
+
 if __name__ == "__main__":
     unittest.main()
