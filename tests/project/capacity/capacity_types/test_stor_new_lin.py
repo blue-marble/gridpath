@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestNewBuildStorage(unittest.TestCase):
+class TestStorNewLin(unittest.TestCase):
     """
 
     """

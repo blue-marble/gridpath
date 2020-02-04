@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestExistingNoEconomicRetirement(unittest.TestCase):
+class TestGenSpec(unittest.TestCase):
     """
 
     """

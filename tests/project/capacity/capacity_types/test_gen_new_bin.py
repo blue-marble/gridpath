@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestNewBinaryBuildGenerator(unittest.TestCase):
+class TestGenNewBin(unittest.TestCase):
     """
 
     """

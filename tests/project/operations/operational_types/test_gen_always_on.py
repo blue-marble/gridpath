@@ -42,7 +42,7 @@ except ImportError:
           " to test.")
 
 
-class TestGenAlwaysOnOperationalType(unittest.TestCase):
+class TestGenAlwaysOn(unittest.TestCase):
     """
 
     """
