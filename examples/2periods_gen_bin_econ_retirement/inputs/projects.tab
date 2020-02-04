@@ -4,4 +4,4 @@ Gas_CCGT	Zone1	gen_spec	exogenous	2	gen_commit_lin	day	Zone1	Zone1	Zone1	Zone1	0
 Coal	Zone1	gen_spec	exogenous	1	gen_commit_lin	day	.	Zone1	.	Zone1	0.4	1	0	Coal	Coal
 Gas_CT	Zone1	gen_spec	exogenous	2	gen_commit_lin	day	.	.	.	.	0.4	0	1	Gas	Gas
 Wind	Zone1	gen_spec	exogenous	0	gen_var	day	.	.	.	.	.	.	.	.	Wind
-Clunky_Old_Gen	Zone1	gen_ret_bin	exogenous	1	gen_simple	day	.	.	.	.	0.4	1	0	Coal	Coal
+Clunky_Old_Gen	Zone1	gen_ret_bin	exogenous	1	gen_simple	day	.	.	.	.	0.4	0	0	Coal	Coal

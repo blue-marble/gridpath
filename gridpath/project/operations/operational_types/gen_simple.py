@@ -373,21 +373,24 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 
 def startup_shutdown_rule(mod, g, tmp):
     """
-    No commit variables, so shouldn't happen
+    Since there is no commitment, there is no concept of starting up or
+    shutting down.
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
-        return None
-    else:
-        return mod.GenSimple_Provide_Power_MW[g, tmp] - \
-            mod.GenSimple_Provide_Power_MW[g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+    raise ValueError(
+        "ERROR! gen_simple projects should not incur startup/shutdown "
+        "costs." + "\n" +
+        "Check input data for generator '{}'".format(g) + "\n" +
+        "and change its startup/shutdown costs to '.' (no value)."
+    )
 
 
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
+    if tmp == mod.first_horizon_timepoint[mod.horizon[
+        tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
         pass
     else:
         return mod.GenSimple_Provide_Power_MW[g, tmp] - \
