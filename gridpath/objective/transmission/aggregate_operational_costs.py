@@ -26,8 +26,8 @@ def add_model_components(m, d):
         :return:
         """
         return sum(
-            (mod.Hurdle_Cost_Positive_Direction[tx, tmp] +
-             mod.Hurdle_Cost_Negative_Direction[tx, tmp])
+            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] +
+             mod.Hurdle_Cost_Neg_Dir[tx, tmp])
             * mod.number_of_hours_in_timepoint[tmp]
             * mod.timepoint_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
