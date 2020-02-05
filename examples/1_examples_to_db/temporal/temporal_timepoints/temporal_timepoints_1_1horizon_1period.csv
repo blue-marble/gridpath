@@ -1,0 +1,1 @@
+temporal_scenario_id,subproblem_id,stage_id,timepoint,period,number_of_hours_in_timepoint,timepoint_weight,previous_stage_timepoint_map,spinup_or_lookahead,month,hour_of_day1,1,1,20200101,2020,1,1,,,1,11,1,1,20200102,2020,1,1,,,1,2

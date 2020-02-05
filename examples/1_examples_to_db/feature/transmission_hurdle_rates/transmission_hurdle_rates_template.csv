@@ -1,0 +1,2 @@
+transmission_hurdle_rate_scenario_id,transmission_line,period,hurdle_rate_positive_direction_per_mwh,hurdle_rate_negative_direction_per_mwh
+1,name_of_transmission_line,2020,5,5
