@@ -17,13 +17,13 @@ from ui.server.db_ops.delete_scenario import clear as clear_scenario
 
 def launch_scenario_process(
     db_path, scenarios_directory, scenario_id, solver, solver_executable
-    ):
+):
     """
     :param db_path:
     :param scenarios_directory:
     :param scenario_id: integer, the scenario_id from the database
     :param solver: string, the solver name
-    :param solver: string, the solver executable
+    :param solver_executable: string, the solver executable
     :return:
 
     Launch a process to run the scenario.
@@ -82,7 +82,7 @@ def check_scenario_run_status(db_path, scenario_id):
     run_status, process_id = c.execute("""
         SELECT run_status_name, run_process_id
         FROM scenarios
-        JOIN mod_run_status_types 
+        JOIN mod_run_status_types
         USING (run_status_id)
         WHERE scenario_id = {}
         """.format(scenario_id)
