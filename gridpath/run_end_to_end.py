@@ -133,7 +133,7 @@ def check_if_in_queue(db_path, scenario):
 
     queue_order_id = c.execute(
         """
-        SELECT queue_order
+        SELECT queue_order_id
         FROM scenarios
         WHERE scenario_name = '{}'
         """.format(scenario)
@@ -149,8 +149,9 @@ def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
     c = conn.cursor()
 
     if queue_order_id is not None:
+        print("Removing scenario ID {} from queue".format(scenario))
         sql = """
-            UPDATE scenarios SET queue_order_id = NULL WHERE scenario = ?
+            UPDATE scenarios SET queue_order_id = NULL WHERE scenario_name = ?
         """
         spin_on_database_lock(
             conn=conn, cursor=c, sql=sql,
