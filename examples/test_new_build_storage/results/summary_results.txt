@@ -13,13 +13,15 @@ Zone1     Storage    2020                                  6                    
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Coal                          0              0
-                 Gas                          17             55
+Zone1     2020   CCGT                          5             15
+                 CT                           12             40
+                 Coal                          0              0
                  Nuclear                      12             40
                  Storage                      -1             -5
                  Wind                          3              9
-          2030   Coal                          0              0
-                 Gas                          17             55
+          2030   CCGT                          5             15
+                 CT                           12             40
+                 Coal                          0              0
                  Nuclear                      12             40
                  Storage                      -1             -5
                  Wind                          3              9
