@@ -59,7 +59,7 @@ def generic_add_model_components(
     # Reserve constraints
     def meet_reserve_rule(mod, ba, tmp):
         return getattr(mod, total_reserve_provision_expression)[ba, tmp] \
-            + getattr(mod, reserve_violation_variable)[ba, tmp] \
+            + getattr(mod, reserve_violation_expression)[ba, tmp] \
             == getattr(mod, reserve_requirement_param)[ba, tmp]
 
     setattr(m, meet_reserve_constraint,
