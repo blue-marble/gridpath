@@ -1,5 +1,9 @@
 horizon	balancing_type_horizon	timepoint
-1	day	1
-1	day	2
-2	day	3
-2	day	4
+2020	year	20200101
+202001	day	20200101
+2020	year	20200102
+202001	day	20200102
+2020	year	20200201
+202002	day	20200201
+2020	year	20200202
+202002	day	20200202

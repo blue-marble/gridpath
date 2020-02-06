@@ -247,7 +247,7 @@ def main(args=None):
               "scenario {}.".format(parsed_args.scenario))
         sys.exit(1)
     try:
-        run_scenario.main(args=args)
+        expected_objective_values= run_scenario.main(args=args)
     except Exception as e:
         logging.exception(e)
         remove_from_queue_if_in_queue(
@@ -301,6 +301,9 @@ def main(args=None):
     if parsed_args.log:
         sys.stdout = stdout_original
         sys.stderr = stderr_original
+
+    # Return expected objective values (for testing)
+    return expected_objective_values
 
 
 # TODO: need to make sure that the database can be closed properly, pending

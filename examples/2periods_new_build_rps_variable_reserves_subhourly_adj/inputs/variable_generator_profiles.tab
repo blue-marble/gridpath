@@ -1,9 +1,9 @@
 project	timepoint	cap_factor
-Wind	1	.9
-Wind	2	.5
-Wind	3	.9
-Wind	4	.5
-Wind_New	1	.9
-Wind_New	2	.5
-Wind_New	3	.9
-Wind_New	4	.5
+Wind	20200101	0.9
+Wind	20200102	0.5
+Wind	20300101	0.9
+Wind	20300102	0.5
+Wind_new	20200101	0.9
+Wind_new	20200102	0.5
+Wind_new	20300101	0.9
+Wind_new	20300102	0.5
