@@ -96,7 +96,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         writer = csv.writer(carbon_cap_zones_file, delimiter="\t")
 
         # Write header
-        writer.writerow(["carbon_cap_zone", "violation",
+        writer.writerow(["carbon_cap_zone", "allow_violation",
                          "violation_penalty_per_mmt"])
 
         for row in carbon_cap_zone:
