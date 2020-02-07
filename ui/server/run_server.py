@@ -5,7 +5,9 @@ from flask import Flask
 from flask_restful import Api
 from flask_socketio import SocketIO, emit
 import os
+import psutil
 import signal
+import subprocess
 import sys
 
 # API
@@ -66,6 +68,7 @@ SOLVERS = {
   SOLVER2_NAME: SOLVER2_EXECUTABLE,
   SOLVER3_NAME: SOLVER3_EXECUTABLE
 }
+RUN_QUEUE_MANAGER_PID = None
 
 
 # TODO: not sure we'll need this
@@ -228,6 +231,37 @@ def socket_clear_scenario(client_message):
     emit("scenario_deleted")
 
 
+# Queue Manager
+@socketio.on("start_queue_manager")
+def start_run_queue_manager():
+    # Start queue manager
+    print("Starting queue manager")
+    chars_to_remove = 10 if os.name == "nt" else 6
+    run_queue_manager_executable = \
+        sys.executable[:-chars_to_remove] + "gridpath_run_queue_manager"
+    print(run_queue_manager_executable)
+    p = subprocess.Popen(
+      [run_queue_manager_executable],
+      shell=False,
+    )
+    print("Queue manager process ID is ,", p.pid)
+    global RUN_QUEUE_MANAGER_PID
+    RUN_QUEUE_MANAGER_PID = p.pid
+
+    # Needed to ensure child processes are terminated when server exits
+    atexit.register(p.terminate)
+
+
+@socketio.on("stop_queue_manager")
+def stop_run_queue_manager():
+    global RUN_QUEUE_MANAGER_PID
+    print("Stopping queue manager with pid ", RUN_QUEUE_MANAGER_PID)
+    p = psutil.Process(RUN_QUEUE_MANAGER_PID)
+    p.terminate()
+
+    RUN_QUEUE_MANAGER_PID = None
+
+
 # ### SAVING DATA ### #
 
 @socketio.on("save_table_data")
@@ -276,6 +310,7 @@ def socket_save_plot_data(client_message):
 
 
 def main():
+    # Run server
     socketio.run(
         app,
         host='127.0.0.1',

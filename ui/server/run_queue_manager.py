@@ -1,4 +1,4 @@
-from socketio import Client
+import socketio
 import sched
 import time
 
@@ -47,51 +47,61 @@ def manage_queue(sch):
 
     # If there are scenarios in the queue and none of them are running,
     # get the next scenarios to run and launch it
-    if scenarios_in_queue and not running_scenarios:
-        next_scenario_to_run = c.execute("""
-            SELECT scenario_id, MIN(queue_order_id)
-            FROM scenarios
-            WHERE queue_order_id IS NOT NULL
-            GROUP BY scenario_id
-        """).fetchone()
-
-        # # Get the requested solver
-        solver = c.execute("""
-            SELECT name
-            FROM options_solver_descriptions
-            WHERE solver_options_id = (
-                SELECT solver_options_id
+    if scenarios_in_queue:
+        if not running_scenarios:
+            next_scenario_to_run = c.execute("""
+                SELECT scenario_id, MIN(queue_order_id)
                 FROM scenarios
-                WHERE scenario_id = {}
-                );
-            """.format(next_scenario_to_run[0])
-        ).fetchone()[0]
+                WHERE queue_order_id IS NOT NULL
+                GROUP BY scenario_id
+            """).fetchone()
 
-        # TODO: should we ping back the server function instead of launching
-        #  here?
-        # launch_scenario_process(
-        #     db_path=db_path,
-        #     scenarios_directory=scenarios_directory,
-        #     scenario_id=next_scenario_to_run[0],
-        #     solver=solver,
-        #     solver_executable=solver_executable
-        # )
-        sio.emit(
-            "launch_scenario_process",
-            {"scenario": next_scenario_to_run[0], "solver": solver,
-             "skipWarnings": False}
-        )
+            # # Get the requested solver
+            solver = c.execute("""
+                SELECT name
+                FROM options_solver_descriptions
+                WHERE solver_options_id = (
+                    SELECT solver_options_id
+                    FROM scenarios
+                    WHERE scenario_id = {}
+                    );
+                """.format(next_scenario_to_run[0])
+            ).fetchone()[0]
+
+            # TODO: should we ping back the server function instead of launching
+            #  here?
+            # launch_scenario_process(
+            #     db_path=db_path,
+            #     scenarios_directory=scenarios_directory,
+            #     scenario_id=next_scenario_to_run[0],
+            #     solver=solver,
+            #     solver_executable=solver_executable
+            # )
+            sio = socketio.Client()
+            sio.connect("http://127.0.0.1:8080")
+            print("Connection to server established")
+            sio.emit(
+                "launch_scenario_process",
+                {"scenario": next_scenario_to_run[0], "solver": solver,
+                 "skipWarnings": False}
+            )
+        else:
+            pass
     else:
-        pass
+        sio = socketio.Client()
+        sio.connect("http://127.0.0.1:8080")
+        print("Connection to server established")
+        sio.emit("stop_queue_manager")
 
     scheduler.enter(5, 1, manage_queue, (sch,))
 
 
-if __name__ == "__main__":
-    sio = Client()
-    sio.connect("http://127.0.0.1:8080")
-    print("Connection to server established")
+def main():
     scheduler.enter(5, 1, manage_queue, (scheduler,))
     scheduler.run()
+
+
+if __name__ == "__main__":
+    main()
 
 
