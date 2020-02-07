@@ -3,24 +3,7 @@ import sched
 import time
 
 from db.common_functions import connect_to_database
-from ui.server.scenario_process import launch_scenario_process
 
-
-# # Global server variables
-# SCENARIOS_DIRECTORY = os.environ['SCENARIOS_DIRECTORY']
-# # DATABASE_PATH = '/Users/ana/dev/ui-run-scenario/db/io.db'
-# DATABASE_PATH = os.environ['GRIDPATH_DATABASE_PATH']
-# SOLVER1_NAME = os.environ['SOLVER1_NAME']
-# SOLVER1_EXECUTABLE = os.environ['SOLVER1_EXECUTABLE']
-# SOLVER2_NAME = os.environ['SOLVER2_NAME']
-# SOLVER2_EXECUTABLE = os.environ['SOLVER2_EXECUTABLE']
-# SOLVER3_NAME = os.environ['SOLVER3_NAME']
-# SOLVER3_EXECUTABLE = os.environ['SOLVER3_EXECUTABLE']
-# SOLVERS = {
-#   SOLVER1_NAME: SOLVER1_EXECUTABLE,
-#   SOLVER2_NAME: SOLVER2_EXECUTABLE,
-#   SOLVER3_NAME: SOLVER3_EXECUTABLE
-# }
 
 # Make scheduler object
 scheduler = sched.scheduler(time.time, time.sleep)
@@ -30,25 +13,13 @@ def manage_queue(sch):
     conn = connect_to_database("/Users/ana/dev/gridpath_dev/db/io_irp.db")
     c = conn.cursor()
 
-    # Check if there are any scenarios in the queue
-    scenarios_in_queue = c.execute("""
-        SELECT scenario_id, scenario_name, queue_order_id, run_status_id
-        FROM scenarios
-        WHERE queue_order_id IS NOT NULL;
-    """).fetchall()
-
-    # Get the scenarios from the queue that are currently running
-    running_scenarios = c.execute("""
-        SELECT scenario_id, scenario_name, run_status_id
-        FROM scenarios
-        WHERE queue_order_id IS NOT NULL
-        AND run_status_id = 1
-    """).fetchall()
+    scenarios_in_queue = get_scenarios_in_queue(c=c)
+    running_scenarios = get_running_scenarios(c=c)
 
     # If there are scenarios in the queue and none of them are running,
     # get the next scenarios to run and launch it
-    if scenarios_in_queue:
-        if not running_scenarios:
+    if scenarios_in_queue:  # there are scenarios in the queue
+        if not running_scenarios:  # none of them is 'running'
             next_scenario_to_run = c.execute("""
                 SELECT scenario_id, MIN(queue_order_id)
                 FROM scenarios
@@ -68,18 +39,8 @@ def manage_queue(sch):
                 """.format(next_scenario_to_run[0])
             ).fetchone()[0]
 
-            # TODO: should we ping back the server function instead of launching
-            #  here?
-            # launch_scenario_process(
-            #     db_path=db_path,
-            #     scenarios_directory=scenarios_directory,
-            #     scenario_id=next_scenario_to_run[0],
-            #     solver=solver,
-            #     solver_executable=solver_executable
-            # )
             sio = socketio.Client()
             sio.connect("http://127.0.0.1:8080")
-            print("Connection to server established")
             sio.emit(
                 "launch_scenario_process",
                 {"scenario": next_scenario_to_run[0], "solver": solver,
@@ -88,12 +49,62 @@ def manage_queue(sch):
         else:
             pass
     else:
+        # Tell the server to stop the manager process if nothing in the queue
         sio = socketio.Client()
         sio.connect("http://127.0.0.1:8080")
         print("Connection to server established")
         sio.emit("stop_queue_manager")
 
     scheduler.enter(5, 1, manage_queue, (sch,))
+
+
+def get_scenarios_in_queue(c):
+    # Check if there are any scenarios in the queue
+    scenarios_in_queue = c.execute("""
+        SELECT scenario_id, scenario_name, queue_order_id, run_status_id
+        FROM scenarios
+        WHERE queue_order_id IS NOT NULL;
+    """).fetchall()
+
+    return scenarios_in_queue
+
+
+def get_running_scenarios(c):
+    # Get the scenarios from the queue that are currently running
+    running_scenarios = c.execute("""
+        SELECT scenario_id, scenario_name, run_status_id
+        FROM scenarios
+        WHERE queue_order_id IS NOT NULL
+        AND run_status_id = 1
+    """).fetchall()
+
+    return running_scenarios
+
+
+def get_max_queue_order_id(c):
+    max_queue_id = c.execute("""
+        SELECT max(queue_order_id)
+        FROM scenarios;
+    """).fetchone()[0]
+
+    if max_queue_id is None:
+        max_queue_id = 0
+
+    return max_queue_id
+
+
+def add_scenario_to_queue(db_path, scenario_id):
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    next_queue_id = get_max_queue_order_id(c=c) + 1
+
+    # TODO: use spin_on_database_lock
+    c.execute("""
+        UPDATE scenarios SET queue_order_id = {} WHERE scenario_id = {};
+    """.format(next_queue_id, scenario_id))
+
+    conn.commit()
 
 
 def main():

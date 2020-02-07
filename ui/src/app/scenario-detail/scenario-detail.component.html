@@ -6,13 +6,6 @@
     </div>
   </div>
 
-    <div class="row">
-    <div class="col-md-auto">
-      <button id="startRunQueueManagerButton" class="button-primary"
-            (click)="startRunQueueManager()">Start Run Queue Manager</button>
-    </div>
-  </div>
-
   <div class="row" id="scenario-detail-heading">
     <div class="col-md-auto">
       <h4>{{scenarioDetail.scenarioName}}<span> Scenario Details</span></h4>
@@ -89,6 +82,15 @@
               scenarioDetail.runStatus=='run_stopped'"
               (click)="runScenario(); runScenarioClicked = true">
               Run Scenario
+            </button>
+            <button
+              class='button-secondary'
+              [disabled]="runScenarioClicked"
+              *ngIf="scenarioDetail.runStatus=='not_run' ||
+              scenarioDetail.runStatus=='run_error' ||
+              scenarioDetail.runStatus=='run_stopped'"
+              (click)="addScenarioToRunQueue(); runScenarioClicked = true">
+              Add To Queue
             </button>
             <button
               class='button-secondary'

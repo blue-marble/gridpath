@@ -19,6 +19,7 @@ from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
 from ui.server.save_data import save_table_data_to_csv, save_plot_data_to_csv
+from ui.server.run_queue_manager import add_scenario_to_queue
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -232,8 +233,23 @@ def socket_clear_scenario(client_message):
 
 
 # Queue Manager
+@socketio.on("add_scenario_to_queue")
+def socket_add_scenario_to_queue(client_message):
+    """
+
+    :return:
+    """
+    add_scenario_to_queue(
+      db_path=DATABASE_PATH, scenario_id=client_message["scenario"]
+    )
+
+    # Start the run queue manager if we don't have a process currently
+    if RUN_QUEUE_MANAGER_PID is None:
+        socket_start_run_queue_manager()
+
+
 @socketio.on("start_queue_manager")
-def start_run_queue_manager():
+def socket_start_run_queue_manager():
     # Start queue manager
     print("Starting queue manager")
     chars_to_remove = 10 if os.name == "nt" else 6
@@ -253,7 +269,7 @@ def start_run_queue_manager():
 
 
 @socketio.on("stop_queue_manager")
-def stop_run_queue_manager():
+def socket_stop_run_queue_manager():
     global RUN_QUEUE_MANAGER_PID
     print("Stopping queue manager with pid ", RUN_QUEUE_MANAGER_PID)
     p = psutil.Process(RUN_QUEUE_MANAGER_PID)
