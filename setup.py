@@ -8,8 +8,9 @@ extras_ui = [
     "eventlet",  # Async mode for SocketIO
     "Flask",  # Local API server for UI
     "Flask-RESTful",  # Flask extension for building REST APIs
-    "Flask-SocketIO",  # Client-server communication
-    "psutil"  # Process management
+    "Flask-SocketIO",  # Flask client-server communication
+    "psutil",  # Process management
+    "python-socketio[client]",  # SocketIO Python client
 ]
 extras_all = extras_ui + extras_doc
 
@@ -49,7 +50,8 @@ setup(name="GridPath",
               "gridpath.import_scenario_results:main",
               "gridpath_process_results = gridpath.process_results:main",
               "gridpath_validate = gridpath.validate_inputs:main",
-              "gridpath_run_server = ui.server.run_server:main"
+              "gridpath_run_server = ui.server.run_server:main",
+              "gridpath_run_queue_manager = ui.server.run_queue_manager:main"
           ]
       }
       )

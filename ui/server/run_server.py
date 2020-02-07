@@ -115,6 +115,9 @@ def socket_launch_scenario_process(client_message):
     print(client_message)
 
     scenario_id = client_message["scenario"]
+
+    # TODO: get this from the database instead of passing from the UI to
+    #  consolidate
     solver = client_message["solver"]
 
     # TODO: add error if solver is not in the keys of the SOLVERS
