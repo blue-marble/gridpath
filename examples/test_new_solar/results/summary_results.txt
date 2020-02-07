@@ -12,9 +12,8 @@ Zone1     Solar      2020                    4
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   CCGT                          9             30
-                 CT                            0              1
-                 Coal                          4             14
+Zone1     2020   Coal                          4             14
+                 Gas                           9             31
                  Nuclear                      12             39
                  Solar                         4             13
                  Wind                          1              3
