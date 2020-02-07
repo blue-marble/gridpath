@@ -239,10 +239,10 @@ def main(args=None):
         get_scenario_inputs.main(args=args)
     except Exception as e:
         logging.exception(e)
-        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         remove_from_queue_if_in_queue(
             parsed_args.database, parsed_args.scenario, queue_order_id
         )
+        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when getting inputs from the database for "
               "scenario {}.".format(parsed_args.scenario))
         sys.exit(1)
@@ -250,10 +250,10 @@ def main(args=None):
         run_scenario.main(args=args)
     except Exception as e:
         logging.exception(e)
-        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         remove_from_queue_if_in_queue(
             parsed_args.database, parsed_args.scenario, queue_order_id
         )
+        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when running scenario {}.".format(
             parsed_args.scenario))
         sys.exit(1)
@@ -262,10 +262,10 @@ def main(args=None):
         import_scenario_results.main(args=args)
     except Exception as e:
         logging.exception(e)
-        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         remove_from_queue_if_in_queue(
             parsed_args.database, parsed_args.scenario, queue_order_id
         )
+        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when importing results for "
               "scenario {}.".format(parsed_args.scenario))
         sys.exit(1)
@@ -274,20 +274,20 @@ def main(args=None):
         process_results.main(args=args)
     except Exception as e:
         logging.exception(e)
-        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         remove_from_queue_if_in_queue(
             parsed_args.database, parsed_args.scenario, queue_order_id
         )
+        update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print('Error encountered when importing results for '
               'scenario {}.'.format(parsed_args.scenario))
         sys.exit(1)
 
     # If we make it here, mark run as complete and update run end time
     end_time = datetime.datetime.now()
-    update_run_status(parsed_args.database, parsed_args.scenario, 2)
     remove_from_queue_if_in_queue(
         parsed_args.database, parsed_args.scenario, queue_order_id
     )
+    update_run_status(parsed_args.database, parsed_args.scenario, 2)
     record_end_time(
         db_path=parsed_args.database, scenario=parsed_args.scenario,
         process_id=process_id, end_time=end_time
@@ -312,6 +312,13 @@ def exit_gracefully():
     print('Exiting gracefully')
     args = sys.argv[1:]
     parsed_args = parse_arguments(args)
+    # Check if running from queue
+    queue_order_id = check_if_in_queue(
+        parsed_args.database, parsed_args.scenario
+    )
+    remove_from_queue_if_in_queue(
+        parsed_args.database, parsed_args.scenario, queue_order_id
+    )
     update_run_status(parsed_args.database, parsed_args.scenario, 4)
 
 

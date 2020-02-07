@@ -579,6 +579,7 @@ def delete_scenario_results(conn, scenario_id):
     status_sql = """
         UPDATE scenarios
         SET validation_status_id=0,
+        que_order_id=NULL,
         run_status_id=0, 
         run_process_id=NULL
         WHERE scenario_id = ?

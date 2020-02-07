@@ -11,7 +11,8 @@ import subprocess
 import sys
 
 from db.common_functions import connect_to_database
-from gridpath.run_end_to_end import update_run_status
+from gridpath.run_end_to_end import update_run_status, check_if_in_queue, \
+  remove_from_queue_if_in_queue
 from ui.server.db_ops.delete_scenario import clear as clear_scenario
 
 
@@ -150,11 +151,19 @@ def get_scenario_name_from_scenario_id(cursor, scenario_id):
     return scenario_name
 
 
+# TODO: need to test removing from queue works on Windows
 def connect_to_db_and_update_run_status(db_path, scenario_id, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
     scenario_name = get_scenario_name_from_scenario_id(
       cursor=c, scenario_id=scenario_id)
+    # Check if running from queue
+    queue_order_id = check_if_in_queue(
+        db_path, scenario_id
+    )
+    remove_from_queue_if_in_queue(
+        db_path, scenario_id, queue_order_id
+    )
     update_run_status(db_path=db_path, scenario=scenario_name,
                       status_id=status_id)
 
