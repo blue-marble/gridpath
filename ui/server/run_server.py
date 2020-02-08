@@ -251,12 +251,14 @@ def socket_add_scenario_to_queue(client_message):
 def start_run_queue_manager():
     # Start queue manager
     print("Starting queue manager")
+
+    # Consolidate how we get the executable path with the scenario process
     chars_to_remove = 10 if os.name == "nt" else 6
     run_queue_manager_executable = \
         sys.executable[:-chars_to_remove] + "gridpath_run_queue_manager"
     print(run_queue_manager_executable)
     p = subprocess.Popen(
-      [run_queue_manager_executable],
+      [run_queue_manager_executable, "--database", DATABASE_PATH],
       shell=False,
     )
     print("Queue manager PID: ,", p.pid)

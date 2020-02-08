@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 import socketio
 import signal
 import sys
@@ -10,7 +11,11 @@ from db.common_functions import connect_to_database
 # If we have runs in the queue, they need to be removed when forcing this
 # process to close (e.g. when exiting the UI)
 def exit_gracefully():
-    conn = connect_to_database("/Users/ana/dev/gridpath_dev/db/io_irp.db")
+    print('Exiting gracefully')
+    args = sys.argv[1:]
+    parsed_args = parse_arguments(args)
+
+    conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
     # TODO: use spin on database lock
@@ -48,8 +53,8 @@ def sigint_handler(signal, frame):
     sys.exit(0)
 
 
-def manage_queue():
-    conn = connect_to_database("/Users/ana/dev/gridpath_dev/db/io_irp.db")
+def manage_queue(db_path):
+    conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
     scenarios_in_queue = get_scenarios_in_queue(c=c)
@@ -148,11 +153,35 @@ def add_scenario_to_queue(db_path, scenario_id):
     conn.commit()
 
 
-def main():
+def parse_arguments(args):
+    """
+    :param args: the script arguments specified by the user
+    :return: the parsed known argument values (<class 'argparse.Namespace'>
+    Python object)
+
+    Parse the known arguments.
+    """
+
+    parser = ArgumentParser(add_help=True)
+    parser.add_argument("--database", default="../db/io.db",
+                        help="The database file path. Defaults to ../db/io.db "
+                             "if not specified")
+
+    parsed_arguments = parser.parse_args(args=args)
+
+    return parsed_arguments
+
+
+def main(args=None):
     signal.signal(signal.SIGTERM, sigterm_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    manage_queue()
+    if args is None:
+        args = sys.argv[1:]
+
+    parsed_args = parse_arguments(args)
+
+    manage_queue(db_path=parsed_args.database)
 
 
 if __name__ == "__main__":
