@@ -245,11 +245,10 @@ def socket_add_scenario_to_queue(client_message):
 
     # Start the run queue manager if we don't have a process currently
     if RUN_QUEUE_MANAGER_PID is None:
-        socket_start_run_queue_manager()
+        start_run_queue_manager()
 
 
-@socketio.on("start_queue_manager")
-def socket_start_run_queue_manager():
+def start_run_queue_manager():
     # Start queue manager
     print("Starting queue manager")
     chars_to_remove = 10 if os.name == "nt" else 6
@@ -260,7 +259,7 @@ def socket_start_run_queue_manager():
       [run_queue_manager_executable],
       shell=False,
     )
-    print("Queue manager process ID is ,", p.pid)
+    print("Queue manager PID: ,", p.pid)
     global RUN_QUEUE_MANAGER_PID
     RUN_QUEUE_MANAGER_PID = p.pid
 
@@ -271,7 +270,7 @@ def socket_start_run_queue_manager():
 @socketio.on("stop_queue_manager")
 def socket_stop_run_queue_manager():
     global RUN_QUEUE_MANAGER_PID
-    print("Stopping queue manager with pid ", RUN_QUEUE_MANAGER_PID)
+    print("Stopping queue manager with PID ", RUN_QUEUE_MANAGER_PID)
     p = psutil.Process(RUN_QUEUE_MANAGER_PID)
     p.terminate()
 
