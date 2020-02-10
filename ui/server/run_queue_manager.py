@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import os
 import socketio
 import signal
 import sys
@@ -36,8 +37,9 @@ def sigterm_handler(signal, frame):
     """
     print('SIGTERM received by queue manager. Terminating queue manager '
           'process.')
-    exit_gracefully()
-    sys.exit(0)
+    # exit_gracefully()
+    # sys.exit(0)
+    pass
 
 
 def sigint_handler(signal, frame):
@@ -54,53 +56,62 @@ def sigint_handler(signal, frame):
 
 
 def manage_queue(db_path):
-    conn = connect_to_database(db_path=db_path)
-    c = conn.cursor()
-
     while True:
-        print("Looping")
-        scenarios_in_queue = get_scenarios_in_queue(c=c)
-        running_scenarios = get_running_scenarios(c=c)
-
-        # If there are scenarios in the queue and none of them are running,
-        # get the next scenarios to run and launch it
-        if scenarios_in_queue:  # there are scenarios in the queue
-            if not running_scenarios:  # none of them is 'running'
-                next_scenario_to_run = c.execute("""
-                    SELECT scenario_id, MIN(queue_order_id)
-                    FROM scenarios
-                    WHERE queue_order_id IS NOT NULL
-                    GROUP BY scenario_id
-                """).fetchone()
-
-                # # Get the requested solver
-                solver = c.execute("""
-                    SELECT name
-                    FROM options_solver_descriptions
-                    WHERE solver_options_id = (
-                        SELECT solver_options_id
-                        FROM scenarios
-                        WHERE scenario_id = {}
-                        );
-                    """.format(next_scenario_to_run[0])
-                ).fetchone()[0]
-
-                sio = socketio.Client()
-                sio.connect("http://127.0.0.1:8080")
-                sio.emit(
-                    "launch_scenario_process",
-                    {"scenario": next_scenario_to_run[0], "solver": solver,
-                     "skipWarnings": False}
-                )
-            else:
-                pass
-        else:
-            # Tell the server to stop the manager process if nothing in the queue
+        try:
+            # Check if server is running
             sio = socketio.Client()
             sio.connect("http://127.0.0.1:8080")
             print("Connection to server established")
-            sio.emit("stop_queue_manager")
+
+            conn = connect_to_database(db_path=db_path)
+            c = conn.cursor()
+
+            scenarios_in_queue = get_scenarios_in_queue(c=c)
+            running_scenarios = get_running_scenarios(c=c)
+
+            # If there are scenarios in the queue and none of them are running,
+            # get the next scenarios to run and launch it
+            if scenarios_in_queue:  # there are scenarios in the queue
+                if not running_scenarios:  # none of them is 'running'
+                    next_scenario_to_run = c.execute("""
+                        SELECT scenario_id, MIN(queue_order_id)
+                        FROM scenarios
+                        WHERE queue_order_id IS NOT NULL
+                        GROUP BY scenario_id
+                    """).fetchone()
+
+                    # # Get the requested solver
+                    solver = c.execute("""
+                        SELECT name
+                        FROM options_solver_descriptions
+                        WHERE solver_options_id = (
+                            SELECT solver_options_id
+                            FROM scenarios
+                            WHERE scenario_id = {}
+                            );
+                        """.format(next_scenario_to_run[0])
+                                       ).fetchone()[0]
+                    sio.emit(
+                        "launch_scenario_process",
+                        {"scenario": next_scenario_to_run[0], "solver": solver,
+                         "skipWarnings": False}
+                    )
+                else:
+                    pass
+            else:
+                # sio.emit("stop_queue_manager")
+                # sys.exit(0)
+                pass
+
+        except socketio.exceptions.ConnectionError:
+            print("Server not responding, exiting")
+            break
+
         time.sleep(5)
+
+    print("Broke out of while loop and trying to exit")
+    os._exit(0)
+
 
     # scheduler.enter(5, 1, manage_queue, (sch,))
 
@@ -167,7 +178,7 @@ def parse_arguments(args):
     """
 
     parser = ArgumentParser(add_help=True)
-    parser.add_argument("--database", default="../db/io.db",
+    parser.add_argument("--database", default="../db/io_irp.db",
                         help="The database file path. Defaults to ../db/io.db "
                              "if not specified")
 
