@@ -57,10 +57,11 @@ def manage_queue(db_path):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    scenarios_in_queue = get_scenarios_in_queue(c=c)
-    running_scenarios = get_running_scenarios(c=c)
-
     while True:
+        print("Looping")
+        scenarios_in_queue = get_scenarios_in_queue(c=c)
+        running_scenarios = get_running_scenarios(c=c)
+
         # If there are scenarios in the queue and none of them are running,
         # get the next scenarios to run and launch it
         if scenarios_in_queue:  # there are scenarios in the queue
@@ -147,7 +148,10 @@ def add_scenario_to_queue(db_path, scenario_id):
 
     # TODO: use spin_on_database_lock
     c.execute("""
-        UPDATE scenarios SET queue_order_id = {} WHERE scenario_id = {};
+        UPDATE scenarios
+        SET queue_order_id = {},
+        run_status_id = 5
+        WHERE scenario_id = {};
     """.format(next_queue_id, scenario_id))
 
     conn.commit()
