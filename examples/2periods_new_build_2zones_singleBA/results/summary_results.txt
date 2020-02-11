@@ -6,9 +6,8 @@
                              New Capacity (MW)
 load_zone technology period                   
 Zone1     Gas        2020                   28
-                     2030                    1
 Zone2     Gas        2020                   24
-                     2030                    4
+                     2030                    6
 
 ### OPERATIONAL RESULTS ###
 
@@ -19,15 +18,15 @@ Zone1     2020   Coal                          4              4
                  Gas                          71             79
                  Nuclear                      12             13
                  Wind                          3              3
-          2030   Coal                          6              6
-                 Gas                          70             77
+          2030   Coal                          3              3
+                 Gas                          72             80
                  Nuclear                      12             13
                  Wind                          3              3
 Zone2     2020   Coal                          6              7
                  Gas                          69             77
                  Nuclear                      12             13
                  Wind                          3              3
-          2030   Coal                          2              3
-                 Gas                          73             81
+          2030   Coal                          5              6
+                 Gas                          70             78
                  Nuclear                      12             13
                  Wind                          3              3
