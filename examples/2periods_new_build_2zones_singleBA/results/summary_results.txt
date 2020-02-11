@@ -3,18 +3,31 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                              New Capacity (MW)
-load_zone technology  period                   
-Zone1     unspecified 2020                   25
-Zone2     unspecified 2020                   27
-                      2030                    6
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Gas        2020                   28
+                     2030                    1
+Zone2     Gas        2020                   24
+                     2030                    4
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
-                              Annual Energy (MWh)  % Total Power
-load_zone period technology                                     
-Zone1     2020   unspecified                   90            100
-          2030   unspecified                   90            100
-Zone2     2020   unspecified                   90            100
-          2030   unspecified                   90            100
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                          4              4
+                 Gas                          71             79
+                 Nuclear                      12             13
+                 Wind                          3              3
+          2030   Coal                          6              6
+                 Gas                          70             77
+                 Nuclear                      12             13
+                 Wind                          3              3
+Zone2     2020   Coal                          6              7
+                 Gas                          69             77
+                 Nuclear                      12             13
+                 Wind                          3              3
+          2030   Coal                          2              3
+                 Gas                          73             81
+                 Nuclear                      12             13
+                 Wind                          3              3
