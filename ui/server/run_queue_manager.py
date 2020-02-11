@@ -8,9 +8,6 @@ import time
 from db.common_functions import connect_to_database
 
 
-# TODO: how should we do this on Windows
-# If we have runs in the queue, they need to be removed when forcing this
-# process to close (e.g. when exiting the UI)
 def exit_gracefully():
     print('Exiting gracefully')
     args = sys.argv[1:]
@@ -37,9 +34,8 @@ def sigterm_handler(signal, frame):
     """
     print('SIGTERM received by queue manager. Terminating queue manager '
           'process.')
-    # exit_gracefully()
-    # sys.exit(0)
-    pass
+    exit_gracefully()
+    sys.exit(0)
 
 
 def sigint_handler(signal, frame):
@@ -98,10 +94,14 @@ def manage_queue(db_path):
                     )
                 else:
                     pass
+            # If there are no scenarios in the queue, tell the server to
+            # reset the queue manager PID and exit the loop
+            # TODO: is keeping track of the queue manager PID still needed
+            #  now that the queue manager exits when it does not get a
+            #  response from the server?
             else:
-                # sio.emit("stop_queue_manager")
-                # sys.exit(0)
-                pass
+                sio.emit("reset_queue_manager_pid")
+                break
 
         except socketio.exceptions.ConnectionError:
             print("Server not responding, exiting")
@@ -109,11 +109,13 @@ def manage_queue(db_path):
 
         time.sleep(5)
 
+    # Need os._exit(0) to exit process, not just thread (sys.exit exits only
+    # current thread)
+    # https://stackoverflow.com/questions/73663/terminating-a-python-script
+    # https://stackoverflow.com/questions/905189/why-does-sys-exit-not-exit-when-called-inside-a-thread-in-python/5120178#5120178
     print("Broke out of while loop and trying to exit")
+    exit_gracefully()
     os._exit(0)
-
-
-    # scheduler.enter(5, 1, manage_queue, (sch,))
 
 
 def get_scenarios_in_queue(c):

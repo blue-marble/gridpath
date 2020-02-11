@@ -248,6 +248,12 @@ def socket_add_scenario_to_queue(client_message):
         start_run_queue_manager()
 
 
+@socketio.on("reset_queue_manager_pid")
+def socket_queue_manager_exit_alert():
+    global RUN_QUEUE_MANAGER_PID
+    RUN_QUEUE_MANAGER_PID = None
+
+
 def start_run_queue_manager():
     # Start queue manager
     print("Starting queue manager")
@@ -266,17 +272,9 @@ def start_run_queue_manager():
     RUN_QUEUE_MANAGER_PID = p.pid
 
     # Needed to ensure child processes are terminated when server exits
+    # TODO: still needed now that the queue manager will exit when it does
+    #  not get a response from the server?
     atexit.register(p.terminate)
-
-
-@socketio.on("stop_queue_manager")
-def socket_stop_run_queue_manager():
-    global RUN_QUEUE_MANAGER_PID
-    print("Stopping queue manager with PID ", RUN_QUEUE_MANAGER_PID)
-    p = psutil.Process(RUN_QUEUE_MANAGER_PID)
-    p.terminate()
-
-    RUN_QUEUE_MANAGER_PID = None
 
 
 # ### SAVING DATA ### #
