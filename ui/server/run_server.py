@@ -19,7 +19,8 @@ from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
 from ui.server.save_data import save_table_data_to_csv, save_plot_data_to_csv
-from ui.server.run_queue_manager import add_scenario_to_queue
+from ui.server.run_queue_manager import add_scenario_to_queue,\
+    remove_scenario_from_queue
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -246,6 +247,17 @@ def socket_add_scenario_to_queue(client_message):
     # Start the run queue manager if we don't have a process currently
     if RUN_QUEUE_MANAGER_PID is None:
         start_run_queue_manager()
+
+
+@socketio.on("remove_scenario_from_queue")
+def socket_remove_scenario_from_queue(client_message):
+    """
+
+    :return:
+    """
+    remove_scenario_from_queue(
+      db_path=DATABASE_PATH, scenario_id=client_message["scenario"]
+    )
 
 
 @socketio.on("reset_queue_manager_pid")

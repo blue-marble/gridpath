@@ -90,7 +90,13 @@
               scenarioDetail.runStatus=='run_error' ||
               scenarioDetail.runStatus=='run_stopped'"
               (click)="addScenarioToRunQueue(); runScenarioClicked = true">
-              Add To Queue
+              Add to Queue
+            </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='in_queue'"
+              (click)="removeScenarioFromRunQueue(); runScenarioClicked = false">
+              Remove from Queue
             </button>
             <button
               class='button-secondary'

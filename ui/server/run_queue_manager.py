@@ -141,6 +141,23 @@ def add_scenario_to_queue(db_path, scenario_id):
     conn.commit()
 
 
+# TODO: enforce clear results when run stopped and run error, so that we can
+#  comfortably reset to not_run here
+def remove_scenario_from_queue(db_path, scenario_id):
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    # TODO: use spin_on_database_lock
+    c.execute("""
+        UPDATE scenarios
+        SET queue_order_id = NULL,
+        run_status_id = 0
+        WHERE scenario_id = {};
+    """.format(scenario_id))
+
+    conn.commit()
+
+
 def parse_arguments(args):
     """
     :param args: the script arguments specified by the user

@@ -289,4 +289,13 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
         {scenario: this.scenarioID}
       );
   }
+
+  removeScenarioFromRunQueue(): void {
+      const socket = socketConnect();
+
+      socket.emit(
+        'remove_scenario_from_queue',
+        {scenario: this.scenarioID}
+      );
+  }
 }
