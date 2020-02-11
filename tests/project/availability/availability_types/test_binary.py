@@ -86,28 +86,28 @@ class TestBinaryAvailabilityType(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: BINARY_AVAILABILITY_PROJECTS
+        # Set: AVL_BIN
         expected_project_subset = sorted([
             "Gas_CCGT"
         ])
         actual_project_subset = sorted([
-            prj for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj for prj in instance.AVL_BIN
         ])
         self.assertListEqual(expected_project_subset,
                              actual_project_subset)
 
-        # Set: BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS
+        # Set: AVL_BIN_OPR_TMPS
         expected_operational_timpoints_by_project = sorted(
             get_project_operational_timepoints(expected_project_subset)
         )
         actual_operational_timepoints_by_project = sorted(
             [(g, tmp) for (g, tmp) in
-             instance.BINARY_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS]
+             instance.AVL_BIN_OPR_TMPS]
         )
         self.assertListEqual(expected_operational_timpoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Param: unavailable_hours_per_period_binary
+        # Param: avl_bin_unavl_hrs_per_prd
         expected_unavailable_hours_per_period = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
             param="unavailable_hours_per_period",
@@ -115,13 +115,13 @@ class TestBinaryAvailabilityType(unittest.TestCase):
         )
 
         actual_unavailable_hours_per_period = {
-            prj: instance.unavailable_hours_per_period_binary[prj]
-            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj: instance.avl_bin_unavl_hrs_per_prd[prj]
+            for prj in instance.AVL_BIN
         }
         self.assertDictEqual(expected_unavailable_hours_per_period,
                              actual_unavailable_hours_per_period)
 
-        # Param: unavailable_hours_per_event_min_binary
+        # Param: avl_bin_min_unavl_hrs_per_event
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
             param="unavailable_hours_per_event_min",
@@ -129,47 +129,47 @@ class TestBinaryAvailabilityType(unittest.TestCase):
         )
 
         actual_unavailable_hours_per_event = {
-            prj: instance.unavailable_hours_per_event_min_binary[prj]
-            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj: instance.avl_bin_min_unavl_hrs_per_event[prj]
+            for prj in instance.AVL_BIN
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)
 
-        # Param: unavailable_hours_per_event_max_binary
+        # Param: avl_bin_max_unavl_hrs_per_event
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
             param="unavailable_hours_per_event_max",
             project_subset=actual_project_subset
         )
         actual_unavailable_hours_per_event = {
-            prj: instance.unavailable_hours_per_event_max_binary[prj]
-            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj: instance.avl_bin_max_unavl_hrs_per_event[prj]
+            for prj in instance.AVL_BIN
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)
 
-        # Param: available_hours_between_events_min_binary
+        # Param: avl_bin_min_avl_hrs_between_events
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
             param="available_hours_between_events_min",
             project_subset=actual_project_subset
         )
         actual_unavailable_hours_per_event = {
-            prj: instance.available_hours_between_events_min_binary[prj]
-            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj: instance.avl_bin_min_avl_hrs_between_events[prj]
+            for prj in instance.AVL_BIN
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)
 
-        # Param: available_hours_between_events_max_binary
+        # Param: avl_bin_max_avl_hrs_between_events
         expected_unavailable_hours_per_event = get_endogenous_params(
             test_data_directory=TEST_DATA_DIRECTORY,
             param="available_hours_between_events_max",
             project_subset=actual_project_subset
         )
         actual_unavailable_hours_per_event = {
-            prj: instance.available_hours_between_events_max_binary[prj]
-            for prj in instance.BINARY_AVAILABILITY_PROJECTS
+            prj: instance.avl_bin_max_avl_hrs_between_events[prj]
+            for prj in instance.AVL_BIN
         }
         self.assertDictEqual(expected_unavailable_hours_per_event,
                              actual_unavailable_hours_per_event)

@@ -2,12 +2,17 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Projects with timepoint-level, continuous availability decision variables.
+This *availability type* is formulated like the *binary* type except that
+all binary decision variables are relaxed to be continuous with bounds
+between 0 and 1. This can be useful to address computational difficulties
+when modeling endogenous *project* availabilities.
+
 """
 
 import csv
 import os.path
-from pyomo.environ import Param, Set, Var, Constraint, PercentFraction, value
+from pyomo.environ import Param, Set, Var, Constraint, PercentFraction, \
+    value, NonNegativeReals
 
 from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
@@ -18,237 +23,375 @@ from gridpath.project.common_functions import determine_project_subset
 
 def add_module_specific_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`AVL_CONT`                                                      |
+    |                                                                         |
+    | The set of projects of the :code:`continuous` availability type.        |
+    +-------------------------------------------------------------------------+
+    | | :code:`AVL_CONT_OPR_PRDS`                                             |
+    |                                                                         |
+    | Two-dimensional set with projects of the :code:`continuous` availability|
+    | type and their operational periods.                                     |
+    +-------------------------------------------------------------------------+
+    | | :code:`AVL_CONT_OPR_TMPS`                                             |
+    |                                                                         |
+    | Two-dimensional set with projects of the :code:`continuous` availability|
+    | type and their operational timepoints.                                  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`avl_cont_unavl_hrs_per_prd`                                    |
+    | | *Defined over*: :code:`AVL_CONT`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The number of hours the project must be unavailable per period.         |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_min_unavl_hrs_per_event`                              |
+    | | *Defined over*: :code:`AVL_CONT`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum number of hours an unavailability event should last for.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_max_unavl_hrs_per_event`                              |
+    | | *Defined over*: :code:`AVL_CONT`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum number of hours an unavailability event can last for.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_min_avl_hrs_between_events`                           |
+    | | *Defined over*: :code:`AVL_CONT`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The minimum number of hours a project should be available between       |
+    | unavailability events.                                                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`avl_cont_max_avl_hrs_between_events`                           |
+    | | *Defined over*: :code:`AVL_CONT`                                      |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The maximum number of hours a project can be available between          |
+    | unavailability events.                                                  |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`AvlCont_Unavailable`                                           |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | Continuous decision variable that specifies whteher the project is      |
+    | unavailable or not in each operational timepoint (1=unavailable).       |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Start_Unavailability`                                  |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | Continuous decision variable that designates the start of an            |
+    | unavailability event (when the project goes from available to           |
+    | unavailable.                                                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Stop_Unavailability`                                   |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    | | *Within*: :code:`PercentFraction`                                     |
+    |                                                                         |
+    | Continuous decision variable that designates the end of an              |
+    | unavailability event (when the project goes from unavailable to         |
+    | available.                                                              |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`AvlCont_Tot_Sched_Unavl_per_Prd_Constraint`                    |
+    | | *Defined over*: :code:`AVL_CONT_OPR_PRDS`                             |
+    |                                                                         |
+    | The project must be unavailable for :code:`avl_cont_unavl_hrs_per_prd`  |
+    | hours in each period.                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Unavl_Start_and_Stop_Constraint`                       |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    |                                                                         |
+    | Link the three continuous variables in each timepoint such that         |
+    | :code:`AvlCont_Start_Unavailability` is 1 if the project goes from      |
+    | available to unavailable, and :code:`AvlCont_Stop_Unavailability` is 1  |
+    | if the project goes from unavailable to available.                      |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Min_Event_Duration_Constraint`                         |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    |                                                                         |
+    | The duration of each unavailability event should be larger than or      |
+    | equal to :code:`avl_cont_min_unavl_hrs_per_event` hours.                |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Max_Event_Duration_Constraint`                         |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    |                                                                         |
+    | The duration of each unavailability event should be smaller than or     |
+    | equal to :code:`avl_cont_max_unavl_hrs_per_event` hours.                |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Min_Time_Between_Events_Constraint`                    |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    |                                                                         |
+    | The time between unavailability events should be larger than or equal   |
+    | to :code:`avl_cont_min_avl_hrs_between_events` hours.                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`AvlCont_Max_Time_Between_Events_Constraint`                    |
+    | | *Defined over*: :code:`AVL_CONT_OPR_TMPS`                             |
+    |                                                                         |
+    | The time between unavailability events should be smaller than or equal  |
+    | to :code:`avl_cont_max_avl_hrs_between_events` hours.                   |
+    +-------------------------------------------------------------------------+
+
     """
+
     # Sets
-    m.CONTINUOUS_AVAILABILITY_PROJECTS = Set(within=m.PROJECTS)
-    m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS = Set(
+    ###########################################################################
+
+    m.AVL_CONT = Set(within=m.PROJECTS)
+
+    m.AVL_CONT_OPR_PRDS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_PERIODS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_PERIODS
-            if g in mod.CONTINUOUS_AVAILABILITY_PROJECTS
-            )
+            if g in mod.AVL_CONT)
     )
+
     # TODO: factor out this lambda rule, as it is used in all operational type
     #  modules and availability type modules
-    m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS = Set(
+    m.AVL_CONT_OPR_TMPS = Set(
         dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod:
         set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-            if g in mod.CONTINUOUS_AVAILABILITY_PROJECTS
-            )
+            if g in mod.AVL_CONT)
     )
 
-    # Params
-    m.unavailable_hours_per_period_continuous = Param(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS
+    # Required Input Params
+    ###########################################################################
+
+    m.avl_cont_unavl_hrs_per_prd = Param(
+        m.AVL_CONT, within=NonNegativeReals
     )
-    m.unavailable_hours_per_event_min_continuous = Param(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS
+
+    m.avl_cont_min_unavl_hrs_per_event = Param(
+        m.AVL_CONT, within=NonNegativeReals
     )
-    m.unavailable_hours_per_event_max_continuous = Param(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS
+
+    m.avl_cont_max_unavl_hrs_per_event = Param(
+        m.AVL_CONT, within=NonNegativeReals
     )
-    m.available_hours_between_events_min_continuous = Param(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS
+
+    m.avl_cont_min_avl_hrs_between_events = Param(
+        m.AVL_CONT, within=NonNegativeReals
     )
-    m.available_hours_between_events_max_continuous = Param(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS
+
+    m.avl_cont_max_avl_hrs_between_events = Param(
+        m.AVL_CONT, within=NonNegativeReals
     )
 
     # Variables
-    m.Unavailable_Continuous = Var(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+    ###########################################################################
+
+    m.AvlCont_Unavailable = Var(
+        m.AVL_CONT_OPR_TMPS,
         within=PercentFraction
     )
-    m.Start_Unavailability_Continuous = Var(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+
+    m.AvlCont_Start_Unavailability = Var(
+        m.AVL_CONT_OPR_TMPS,
         within=PercentFraction
     )
-    m.Stop_Unavailability_Continuous = Var(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
+
+    m.AvlCont_Stop_Unavailability = Var(
+        m.AVL_CONT_OPR_TMPS,
         within=PercentFraction
     )
 
     # Constraints
-    def total_scheduled_availability_per_period_rule(mod, g, p):
-        """
-        :param mod:
-        :param g:
-        :param p:
-        :return:
+    ###########################################################################
 
-        The generator must be down for
-        unavailable_hours_per_period_continuous in each period.
-        TODO: it's possible that solve time will be faster if we make this
-            constraint >= instead of ==, but then degeneracy could be an issue
-        """
-        return sum(mod.Unavailable_Continuous[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
-                   ) \
-            == mod.unavailable_hours_per_period_continuous[g]
-
-    m.Total_Scheduled_Availability_Per_Period_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_PERIODS,
+    m.AvlCont_Tot_Sched_Unavl_per_Prd_Constraint = Constraint(
+        m.AVL_CONT_OPR_PRDS,
         rule=total_scheduled_availability_per_period_rule
     )
 
-    def availability_start_and_stop_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-
-        Constrain the start and stop availability variables based on the
-        availability status in the current and previous timepoint. If the
-        generator is down in the current timepoint and was not down in the
-        previous timepoint, then the RHS is 1 and Start_Unavailability_Continuous
-        must be set to 1. If the generator is not down in the current
-        timepoint and was down in the previous timepoint, then the RHS is -1
-        and Stop_Unavailability_Continuous must be set to 1.
-        """
-        # TODO: refactor skipping of constraint in first timepoint of linear
-        #  horizons, as we do it a lot
-        if tmp == mod.first_horizon_timepoint[
-            mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp,
-                                             mod.balancing_type_project[g]]] \
-                == "linear":
-            return Constraint.Skip
-        else:
-            return mod.Start_Unavailability_Continuous[g, tmp] \
-                - mod.Stop_Unavailability_Continuous[g, tmp] \
-                == mod.Unavailable_Continuous[g, tmp] \
-                - mod.Unavailable_Continuous[
-                       g, mod.previous_timepoint[tmp,
-                                                 mod.balancing_type_project[g]]
-                   ]
-
-    m.Availability_Start_and_Stop_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_start_and_stop_rule
+    m.AvlCont_Unavl_Start_and_Stop_Constraint = Constraint(
+        m.AVL_CONT_OPR_TMPS,
+        rule=unavailability_start_and_stop_rule
     )
 
-    def availability_event_min_duration_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-
-        If a generator became unavailable within
-        unavailable_hours_per_event_min_continuous from the current timepoint,
-        it must still be unavailable in the current timepoint.
-        """
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.unavailable_hours_per_event_min_continuous[g]
-        )
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
-        return sum(mod.Start_Unavailability_Continuous[g, tp]
-                   for tp in relevant_tmps) \
-            <= mod.Unavailable_Continuous[g, tmp]
-
-    m.Availability_Event_Min_Duration_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_event_min_duration_rule
+    m.AvlCont_Min_Event_Duration_Constraint = Constraint(
+        m.AVL_CONT_OPR_TMPS,
+        rule=event_min_duration_rule
     )
 
-    def availability_event_max_duration_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-
-        If a generator became unavailable within
-        max_unavailable_hours_per_event_min_continuous from the current timepoint,
-        it must have also been brought back to availability during that time.
-        """
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.unavailable_hours_per_event_max_continuous[g]
-        )
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
-        return sum(
-            (mod.Start_Unavailability_Continuous[g, tp] -
-             mod.Stop_Unavailability_Continuous[g, tp])
-            for tp in relevant_tmps
-        ) <= 0
-
-    m.Availability_Event_Max_Duration_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=availability_event_max_duration_rule
+    m.AvlCont_Max_Event_Duration_Constraint = Constraint(
+        m.AVL_CONT_OPR_TMPS,
+        rule=event_max_duration_rule
     )
 
-    def min_time_between_availability_events_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-
-        If a generator became available within
-        unavailable_hours_per_event_min_continuous from the current timepoint, 
-        it must still be available in the current timepoint.
-        """
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.available_hours_between_events_min_continuous[g]
-        )
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
-        return sum(mod.Stop_Unavailability_Continuous[g, tp]
-                   for tp in relevant_tmps) \
-            <= 1 - mod.Unavailable_Continuous[g, tmp]
-
-    m.Min_Time_Between_Availability_Events_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=min_time_between_availability_events_rule
+    m.AvlCont_Min_Time_Between_Events_Constraint = Constraint(
+        m.AVL_CONT_OPR_TMPS,
+        rule=min_time_between_events_rule
     )
 
-    def max_time_between_availability_events_rule(mod, g, tmp):
-        """
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-
-        If a generator became available within
-        available_hours_between_events_min_continuous from the current timepoint,
-        it must have also been brought back to down during that time.
-        """
-        relevant_tmps = determine_relevant_timepoints(
-            mod, g, tmp, mod.available_hours_between_events_min_continuous[g]
-        )
-        if relevant_tmps == [tmp]:
-            return Constraint.Skip
-        return sum(
-            (mod.Stop_Unavailability_Continuous[g, tp] -
-             mod.Start_Unavailability_Continuous[g, tp])
-            for tp in relevant_tmps
-        ) <= 0
-
-    m.Max_Time_Between_Availability_Events_Continuous_Constraint = Constraint(
-        m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS,
-        rule=max_time_between_availability_events_rule
+    m.AvlCont_Max_Time_Between_Events_Constraint = Constraint(
+        m.AVL_CONT_OPR_TMPS,
+        rule=max_time_between_events_rule
     )
 
+
+# Constraint Formulation Rules
+###############################################################################
+
+def total_scheduled_availability_per_period_rule(mod, g, p):
+    """
+    **Constraint Name**: AvlCont_Tot_Sched_Unavl_per_Prd_Constraint
+    **Enforced Over**: AVL_CONT_OPR_PRDS
+
+    The project must be down for avl_cont_unavl_hrs_per_prd in each period.
+    TODO: it's possible that solve time will be faster if we make this
+        constraint >= instead of ==, but then degeneracy could be an issue
+    """
+    return sum(
+        mod.AvlCont_Unavailable[g, tmp]
+        * mod.number_of_hours_in_timepoint[tmp]
+        for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+    ) == mod.avl_cont_unavl_hrs_per_prd[g]
+
+
+def unavailability_start_and_stop_rule(mod, g, tmp):
+    """
+    **Constraint Name**: AvlCont_Unavl_Start_and_Stop_Constraint
+    **Enforced Over**: AVL_CONT_OPR_TMPS
+
+    Constrain the start and stop availability variables based on the
+    availability status in the current and previous timepoint. If the
+    project is down in the current timepoint and was not down in the
+    previous timepoint, then the RHS is 1 and AvlCont_Start_Unavailability
+    must be set to 1. If the project is not down in the current
+    timepoint and was down in the previous timepoint, then the RHS is -1
+    and AvlCont_Stop_Unavailability must be set to 1.
+    """
+    # TODO: refactor skipping of constraint in first timepoint of linear
+    #  horizons, as we do it a lot
+    if tmp == mod.first_horizon_timepoint[
+        mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            == "linear":
+        return Constraint.Skip
+    else:
+        return mod.AvlCont_Start_Unavailability[g, tmp] \
+            - mod.AvlCont_Stop_Unavailability[g, tmp] \
+            == mod.AvlCont_Unavailable[g, tmp] \
+            - mod.AvlCont_Unavailable[g, mod.previous_timepoint[
+                tmp, mod.balancing_type_project[g]]]
+
+
+def event_min_duration_rule(mod, g, tmp):
+    """
+    **Constraint Name**: AvlCont_Min_Event_Duration_Constraint
+    **Enforced Over**: AVL_CONT_OPR_TMPS
+
+    If a project became unavailable within avl_cont_min_unavl_hrs_per_event
+    from the current timepoint, it must still be unavailable in the current
+    timepoint.
+    """
+    relevant_tmps = determine_relevant_timepoints(
+        mod, g, tmp, mod.avl_cont_min_unavl_hrs_per_event[g]
+    )
+    if relevant_tmps == [tmp]:
+        return Constraint.Skip
+    return sum(
+        mod.AvlCont_Start_Unavailability[g, tp]
+        for tp in relevant_tmps
+    ) <= mod.AvlCont_Unavailable[g, tmp]
+
+
+def event_max_duration_rule(mod, g, tmp):
+    """
+    **Constraint Name**: AvlCont_Max_Event_Duration_Constraint
+    **Enforced Over**: AVL_CONT_OPR_TMPS
+
+    If a project became unavailable within avl_cont_max_unavl_hrs_per_event
+    from the current timepoint, it must have also been brought back to
+    availability during that time.
+    """
+    relevant_tmps = determine_relevant_timepoints(
+        mod, g, tmp, mod.avl_cont_max_unavl_hrs_per_event[g]
+    )
+    if relevant_tmps == [tmp]:
+        return Constraint.Skip
+    return sum(
+        (mod.AvlCont_Start_Unavailability[g, tp]
+         - mod.AvlCont_Stop_Unavailability[g, tp])
+        for tp in relevant_tmps
+    ) <= 0
+
+
+def min_time_between_events_rule(mod, g, tmp):
+    """
+    **Constraint Name**: AvlCont_Min_Time_Between_Events_Constraint
+    **Enforced Over**: AVL_CONT_OPR_TMPS
+
+    If a project became available within avl_cont_min_avl_hrs_between_events
+    from the current timepoint, it must still be available in the current
+    timepoint.
+    """
+    relevant_tmps = determine_relevant_timepoints(
+        mod, g, tmp, mod.avl_cont_min_avl_hrs_between_events[g]
+    )
+    if relevant_tmps == [tmp]:
+        return Constraint.Skip
+    return sum(
+        mod.AvlCont_Stop_Unavailability[g, tp]
+        for tp in relevant_tmps
+    ) <= 1 - mod.AvlCont_Unavailable[g, tmp]
+
+
+def max_time_between_events_rule(mod, g, tmp):
+    """
+    **Constraint Name**: AvlCont_Max_Time_Between_Events_Constraint
+    **Enforced Over**: AVL_CONT_OPR_TMPS
+
+    If a project became available within avl_cont_max_avl_hrs_between_events
+    from the current timepoint, it must have also been made unavailable
+    again during that time.
+    """
+    relevant_tmps = determine_relevant_timepoints(
+        mod, g, tmp, mod.avl_cont_max_avl_hrs_between_events[g]
+    )
+    if relevant_tmps == [tmp]:
+        return Constraint.Skip
+    return sum(
+        (mod.AvlCont_Stop_Unavailability[g, tp] -
+         mod.AvlCont_Start_Unavailability[g, tp])
+        for tp in relevant_tmps
+    ) <= 0
+
+
+# Availability Type Methods
+###############################################################################
 
 def availability_derate_rule(mod, g, tmp):
     """
-
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
-    return 1 - mod.Unavailable_Continuous[g, tmp]
+    return 1 - mod.AvlCont_Unavailable[g, tmp]
 
+
+# Input-Output
+###############################################################################
 
 def load_module_specific_data(
         m, data_portal, scenario_directory, subproblem, stage
@@ -268,45 +411,80 @@ def load_module_specific_data(
         type="continuous"
     )
 
-    data_portal.data()["CONTINUOUS_AVAILABILITY_PROJECTS"] = \
-        {None: project_subset}
+    data_portal.data()["AVL_CONT"] = {None: project_subset}
 
-    unavailable_hours_per_period_continuous_dict = {}
-    unavailable_hours_per_event_min_continuous_dict = {}
-    unavailable_hours_per_event_max_continuous_dict = {}
-    available_hours_between_events_min_continuous_dict = {}
-    available_hours_between_events_max_continuous_dict = {}
+    avl_cont_unavl_hrs_per_prd_dict = {}
+    avl_cont_min_unavl_hrs_per_event_dict = {}
+    avl_cont_max_unavl_hrs_per_event_dict = {}
+    avl_cont_min_avl_hrs_between_events_dict = {}
+    avl_cont_max_avl_hrs_between_events_dict = {}
 
     with open(os.path.join(scenario_directory, subproblem, stage,
-                              "inputs", "project_availability_endogenous.tab"),
+                           "inputs", "project_availability_endogenous.tab"),
               "r") as f:
         reader = csv.reader(f, delimiter="\t")
         next(reader)
 
         for row in reader:
             if row[0] in project_subset:
-                unavailable_hours_per_period_continuous_dict[row[0]] = \
-                    float(row[1])
-                unavailable_hours_per_event_min_continuous_dict[row[0]] = \
-                    float(row[2])
-                unavailable_hours_per_event_max_continuous_dict[row[0]] = \
-                    float(row[3])
-                available_hours_between_events_min_continuous_dict[row[0]] = \
-                    float(row[4])
-                available_hours_between_events_max_continuous_dict[row[0]] = \
-                    float(row[5])
+                avl_cont_unavl_hrs_per_prd_dict[row[0]] = float(row[1])
+                avl_cont_min_unavl_hrs_per_event_dict[row[0]] = float(row[2])
+                avl_cont_max_unavl_hrs_per_event_dict[row[0]] = float(row[3])
+                avl_cont_min_avl_hrs_between_events_dict[row[0]] = float(row[4])
+                avl_cont_max_avl_hrs_between_events_dict[row[0]] = float(row[5])
 
-    data_portal.data()["unavailable_hours_per_period_continuous"] = \
-        unavailable_hours_per_period_continuous_dict
-    data_portal.data()["unavailable_hours_per_event_min_continuous"] = \
-        unavailable_hours_per_event_min_continuous_dict
-    data_portal.data()["unavailable_hours_per_event_max_continuous"] = \
-        unavailable_hours_per_event_max_continuous_dict
-    data_portal.data()["available_hours_between_events_min_continuous"] = \
-        available_hours_between_events_min_continuous_dict
-    data_portal.data()["available_hours_between_events_max_continuous"] = \
-        available_hours_between_events_max_continuous_dict
+    data_portal.data()["avl_cont_unavl_hrs_per_prd"] = \
+        avl_cont_unavl_hrs_per_prd_dict
+    data_portal.data()["avl_cont_min_unavl_hrs_per_event"] = \
+        avl_cont_min_unavl_hrs_per_event_dict
+    data_portal.data()["avl_cont_max_unavl_hrs_per_event"] = \
+        avl_cont_max_unavl_hrs_per_event_dict
+    data_portal.data()["avl_cont_min_avl_hrs_between_events"] = \
+        avl_cont_min_avl_hrs_between_events_dict
+    data_portal.data()["avl_cont_max_avl_hrs_between_events"] = \
+        avl_cont_max_avl_hrs_between_events_dict
 
+
+def export_module_specific_results(
+        scenario_directory, subproblem, stage, m, d):
+    """
+    Export operations results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m: The Pyomo abstract model
+    :param d: Dynamic components
+    :return: Nothing
+    """
+
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+                           "project_availability_endogenous.csv"),
+              "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["project", "period", "horizon", "timepoint",
+                         "timepoint_weight", "number_of_hours_in_timepoint",
+                         "load_zone", "technology",
+                         "unavailability_decision", "start_unavailability",
+                         "stop_unavailability", "availability_derate"])
+        for (p, tmp) in m.AVL_CONT_OPR_TMPS:
+            writer.writerow([
+                p,
+                m.period[tmp],
+                m.horizon[tmp, m.balancing_type_project[p]],
+                tmp,
+                m.timepoint_weight[tmp],
+                m.number_of_hours_in_timepoint[tmp],
+                m.load_zone[p],
+                m.technology[p],
+                value(m.AvlCont_Unavailable[p, tmp]),
+                value(m.AvlCont_Start_Unavailability[p, tmp]),
+                value(m.AvlCont_Stop_Unavailability[p, tmp]),
+                1-value(m.AvlCont_Unavailable[p, tmp])
+            ])
+
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -350,7 +528,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
 
 
 def write_module_specific_model_inputs(
-        inputs_directory, subscenarios, subproblem, stage, conn):
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
     """
 
     :param inputs_directory:
@@ -390,48 +569,6 @@ def write_module_specific_model_inputs(
             writer.writerow(replace_nulls)
 
 
-def export_module_specific_results(
-        scenario_directory, subproblem, stage, m, d):
-    """
-    Export operations results.
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    The Pyomo abstract model
-    :param d:
-    Dynamic components
-    :return:
-    Nothing
-    """
-
-    # First power
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "project_availability_endogenous.csv"),
-              "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["project", "period", "horizon", "timepoint",
-                         "timepoint_weight", "number_of_hours_in_timepoint",
-                         "load_zone", "technology",
-                         "unavailability_decision", "start_unavailability",
-                         "stop_unavailability", "availability_derate"])
-        for (p, tmp) in m.CONTINUOUS_AVAILABILITY_PROJECTS_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.Unavailable_Continuous[p, tmp]),
-                value(m.Start_Unavailability_Continuous[p, tmp]),
-                value(m.Stop_Unavailability_Continuous[p, tmp]),
-                1-value(m.Unavailable_Continuous[p, tmp])
-            ])
-
-
 def import_module_specific_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory
 ):
@@ -456,9 +593,9 @@ def import_module_specific_results_into_database(
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory, 
-                           "project_availability_endogenous.csv"), "r") as \
-            dispatch_file:
+    with open(os.path.join(results_directory,
+                           "project_availability_endogenous.csv"),
+              "r") as dispatch_file:
         reader = csv.reader(dispatch_file)
 
         next(reader)  # skip header
