@@ -8,7 +8,6 @@ import os
 from flask_socketio import emit
 import psutil
 import subprocess
-import sys
 
 from db.common_functions import connect_to_database
 from gridpath.run_end_to_end import update_run_status, check_if_in_queue, \

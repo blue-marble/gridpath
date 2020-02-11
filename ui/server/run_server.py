@@ -5,7 +5,6 @@ from flask import Flask
 from flask_restful import Api
 from flask_socketio import SocketIO, emit
 import os
-import psutil
 import signal
 import subprocess
 import sys
@@ -261,7 +260,7 @@ def start_run_queue_manager():
     run_queue_manager_executable = get_executable_path(
         script_name="gridpath_run_queue_manager"
     )
-    
+
     p = subprocess.Popen(
       [run_queue_manager_executable, "--database", DATABASE_PATH],
       shell=False,
