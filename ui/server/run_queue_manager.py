@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 import os
 import socketio
-import signal
 import sys
 import time
 
@@ -21,34 +20,6 @@ def exit_gracefully():
         UPDATE scenarios SET queue_order_id = NULL;
     """)
     conn.commit()
-
-
-# Define custom signal handlers
-def sigterm_handler(signal, frame):
-    """
-    Exit when SIGTERM received (we're sending SIGTERM from Electron on app
-    exit)
-    :param signal:
-    :param frame:
-    :return:
-    """
-    print('SIGTERM received by queue manager. Terminating queue manager '
-          'process.')
-    exit_gracefully()
-    sys.exit(0)
-
-
-def sigint_handler(signal, frame):
-    """
-    Exit when SIGINT received
-    :param signal:
-    :param frame:
-    :return:
-    """
-    print('SIGINT received by queue manager. Terminating queue manager '
-          'process.')
-    exit_gracefully()
-    sys.exit(0)
 
 
 def manage_queue(db_path):
@@ -190,9 +161,6 @@ def parse_arguments(args):
 
 
 def main(args=None):
-    signal.signal(signal.SIGTERM, sigterm_handler)
-    signal.signal(signal.SIGINT, sigint_handler)
-
     if args is None:
         args = sys.argv[1:]
 
