@@ -12,6 +12,7 @@ import sys
 
 # API
 from ui.server.create_api import add_api_resources
+from ui.server.common_functions import get_executable_path
 
 # Database operations functions (Socket IO)
 from ui.server.db_ops.add_scenario import add_or_update_scenario
@@ -257,12 +258,10 @@ def socket_queue_manager_exit_alert():
 def start_run_queue_manager():
     # Start queue manager
     print("Starting queue manager")
-
-    # Consolidate how we get the executable path with the scenario process
-    chars_to_remove = 10 if os.name == "nt" else 6
-    run_queue_manager_executable = \
-        sys.executable[:-chars_to_remove] + "gridpath_run_queue_manager"
-    print(run_queue_manager_executable)
+    run_queue_manager_executable = get_executable_path(
+        script_name="gridpath_run_queue_manager"
+    )
+    
     p = subprocess.Popen(
       [run_queue_manager_executable, "--database", DATABASE_PATH],
       shell=False,
