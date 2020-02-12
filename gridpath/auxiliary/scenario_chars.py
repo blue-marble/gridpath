@@ -497,6 +497,14 @@ class SubScenarios(object):
         self.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID = \
             "NULL" if tx_ecap_sid is None else tx_ecap_sid
 
+        tx_ncost_sid = cursor.execute(
+            """SELECT transmission_new_cost_scenario_id
+               FROM scenarios
+               WHERE scenario_id = {};""".format(scenario_id)
+        ).fetchone()[0]
+        self.TRANSMISSION_NEW_COST_SCENARIO_ID = \
+            "NULL" if tx_ncost_sid is None else tx_ncost_sid
+
         tx_opchar = cursor.execute(
             """SELECT transmission_operational_chars_scenario_id
                FROM scenarios

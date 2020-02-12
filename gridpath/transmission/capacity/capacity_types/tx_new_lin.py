@@ -332,7 +332,6 @@ def export_module_specific_results(
 # Database
 ###############################################################################
 
-# TODO: untested
 def get_module_specific_inputs_from_database(
         subscenarios, subproblem, stage, conn
 ):
@@ -344,14 +343,13 @@ def get_module_specific_inputs_from_database(
     :return:
     """
     c = conn.cursor()
-    # TODO: add inputs_transmission_new_cost and
-    #  subscenarios_transmission_new_cost tables to testing database
+
     tx_cost = c.execute(
         """SELECT transmission_line, vintage, tx_lifetime_yrs, 
         tx_annualized_real_cost_per_mw_yr
         FROM inputs_transmission_portfolios
         CROSS JOIN
-        (SELECT period
+        (SELECT period as vintage
         FROM inputs_temporal_periods
         WHERE temporal_scenario_id = {}) as relevant_periods
         INNER JOIN
@@ -362,7 +360,7 @@ def get_module_specific_inputs_from_database(
         USING (transmission_line, vintage   )
         WHERE transmission_portfolio_scenario_id = {};""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
-            subscenarios.TRANSMISSION_EXISTING_CAPACITY_SCENARIO_ID,
+            subscenarios.TRANSMISSION_NEW_COST_SCENARIO_ID,
             subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID
         )
     )
@@ -370,7 +368,6 @@ def get_module_specific_inputs_from_database(
     return tx_cost
 
 
-# TODO: untested
 def write_module_specific_model_inputs(
         inputs_directory, subscenarios, subproblem, stage, conn):
     """
@@ -402,7 +399,6 @@ def write_module_specific_model_inputs(
             writer.writerow(row)
 
 
-# TODO: untested
 def import_module_specific_results_into_database(
         scenario_id, subproblem, stage, c, db, results_directory
 ):
