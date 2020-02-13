@@ -1,1 +1,1 @@
-regulation_up_ba_scenario_id,regulation_up_ba,allow_violation,violation_penalty_per_mw,reserve_to_energy_adjustment3,Zone1,1,99999999,0.23,Zone2,1,99999999,0.2
+regulation_up_ba_scenario_id,regulation_up_ba,allow_violation,violation_penalty_per_mw,reserve_to_energy_adjustment3,Zone1,1,99999999,3,Zone2,1,99999999,
