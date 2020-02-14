@@ -5,6 +5,9 @@
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
-                              Annual Energy (MWh)  % Total Power
-load_zone period technology                                     
-Zone1     2020   unspecified                   31            100
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                   4.266667      13.913043
+                 Gas                   13.400000      43.695652
+                 Nuclear               12.000000      39.130435
+                 Wind                   1.000000       3.260870
