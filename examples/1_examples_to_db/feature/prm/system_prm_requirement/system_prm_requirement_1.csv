@@ -1,3 +1,1 @@
-prm_requirement_scenario_id,prm_zone,period,prm_requirement_mw,prm_zone_scenario_id
-1,Zone_prm_1,2020,50,1
-1,Zone_prm_1,2025,100,1
+prm_requirement_scenario_id,prm_zone,period,prm_requirement_mw,prm_zone_scenario_id1,ZonePRM1,2020,60,11,ZonePRM1,2030,60,1
