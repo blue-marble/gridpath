@@ -1,0 +1,19 @@
+##### SUMMARY RESULTS FOR SCENARIO *test_new_binary_storage* #####
+
+### CAPACITY RESULTS ###
+
+--> New Binary Storage Capacity <--
+                             New Binary Storage Power Capacity (MW)  New Binary Storage Energy Capacity (MWh)
+load_zone technology period                                                                                  
+Zone1     Storage    2020                                        10                                        40
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                          0              0
+                 Gas                          17             55
+                 Nuclear                      12             40
+                 Storage                      -1             -5
+                 Wind                          3              9
