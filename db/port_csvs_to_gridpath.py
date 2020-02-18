@@ -50,13 +50,15 @@ from create_database import get_database_file_path
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
+    load_project_local_capacity_chars, \
     load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
     load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
-    load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps, load_scenarios, load_solver_options
+    load_fuels, load_system_carbon_cap, load_system_local_capacity, load_system_prm, load_system_rps, \
+    load_scenarios, load_solver_options
 
 
 # Policy and reserves list
-policy_list = ['carbon_cap', 'prm', 'rps']
+policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
 reserves_list = ['frequency_response', 'lf_reserves_down', 'lf_reserves_up',
                  'regulation_down', 'regulation_up', 'spinning_reserves']
 
@@ -239,6 +241,17 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_new_costs.load_project_new_costs(io, c2, csv_subscenario_input, csv_data_input)
 
+    ## PROJECT LOCAL CAPACITY CHARS ##
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'project_local_capacity_chars', 'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_local_capacity_chars',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_project_local_capacity_chars.load_project_local_capacity_chars(
+            io, c2, csv_subscenario_input, csv_data_input)
+
     #### LOAD PROJECT AVAILABILITY DATA ####
 
     ## PROJECT AVAILABILITY TYPES ##
@@ -310,7 +323,7 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
 
-    ## PROJECT POLICY (CARBON CAP, PRM, RPS) ZONES ##
+    ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
     for policy_type in policy_list:
         if csv_data_master.loc[csv_data_master['table'] == 'project_' + policy_type + '_zones', 'include'].iloc[0] == 1:
             data_folder_path = os.path.join(folder_path, csv_data_master.loc[
@@ -326,7 +339,16 @@ def load_csv_data(db_path, csv_path):
         load_system_carbon_cap.load_system_carbon_cap_targets(io, c2, csv_subscenario_input, csv_data_input)
 
     ## SYSTEM LOCAL CAPACITY TARGETS ##
-
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'system_local_capacity_requirement',
+                           'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'system_local_capacity_requirement',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_system_local_capacity.load_system_local_capacity_requirement(
+            io, c2, csv_subscenario_input, csv_data_input)
 
 
     ## SYSTEM PRM TARGETS ##
