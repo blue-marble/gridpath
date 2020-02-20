@@ -646,7 +646,8 @@ def import_module_specific_results_into_database(
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
         horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw
+        load_zone, technology, unavailability_decision, start_unavailablity, 
+        stop_unavailability, availability_derate
         FROM temp_results_project_availability_endogenous{}
         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)

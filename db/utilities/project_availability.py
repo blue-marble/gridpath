@@ -118,11 +118,12 @@ def insert_project_availability_endogenous(
     :param project_avail_scenarios: two-level dictionary by project and 
         subscenario id, with the subscenario name and description as a tuple 
         value
-    :param project_avail: three-level dictionary with unavailable hours per
-        period and per event by project,
-        endogenous_availability_scenario_id; the per period param is then
-        under the 'unavailable_hours_per_period' key and the per event param
-        is under the 'unavailable_hours_per_event' key
+    :param project_avail: {project: {scenario_id: (
+        unavailable_hours_per_period,
+        unavailable_hours_per_event_min,
+        unavailable_hours_per_event_max,
+        available_hours_between_events_min,
+        available_hours_between_events_max)}}
     """
     print("...endogenous")
 
@@ -147,17 +148,23 @@ def insert_project_availability_endogenous(
     for prj in list(project_avail.keys()):
         for subscenario_id in list(project_avail[prj].keys()):
             inputs_data.append(
-                (prj, subscenario_id,
-                 project_avail[subscenario_id][prj[
-                     "unavailable_hours_per_period"]],
-                 project_avail[subscenario_id][prj[
-                     "unavailable_hours_per_event"]])
+                (prj,
+                 subscenario_id,
+                 project_avail[prj][subscenario_id][0],
+                 project_avail[prj][subscenario_id][1],
+                 project_avail[prj][subscenario_id][2],
+                 project_avail[prj][subscenario_id][3],
+                 project_avail[prj][subscenario_id][4])
             )
     inputs_sql = """
         INSERT INTO inputs_project_availability_endogenous
-        (project, endogenous_availability_scenario_id, 
+        (project, 
+        endogenous_availability_scenario_id, 
         unavailable_hours_per_period,
-        unavailable_hours_per_event)
-        VALUES (?, ?, ?, ?, ?);
+        unavailable_hours_per_event_min,
+        unavailable_hours_per_event_max,
+        available_hours_between_events_min,
+        available_hours_between_events_max)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
