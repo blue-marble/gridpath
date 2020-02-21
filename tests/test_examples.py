@@ -5,10 +5,14 @@ from builtins import str
 import os
 import unittest
 
-from gridpath import run_scenario
+from gridpath import run_end_to_end
+from db import create_database, port_csvs_to_gridpath
+
 
 # Change directory to 'gridpath' directory, as that's what run_scenario.py
 # expects
+# TODO: handle this more robustly? (e.g. db scripts expect you to be in
+#  db folder and changing directions all the time is not ideal.
 os.chdir(os.path.join(os.path.dirname(__file__), "..", "gridpath"))
 EXAMPLES_DIRECTORY = os.path.join(os.getcwd(), "..", "examples")
 
@@ -17,15 +21,48 @@ class TestExamples(unittest.TestCase):
     """
 
     """
+
+    @classmethod
+    def setUpClass(cls):
+        """
+        Set up the testing database
+        :return:
+        """
+
+        create_database.main(["--db_location", "../tests",
+                              "--db_name", "testing"])
+        port_csvs_to_gridpath.main(["--db_location", "../tests/",
+                                    "--db_name", "testing",
+                                    "--csv_location",
+                                    "../examples/1_examples_to_db"])
+
+        # TODO: remove database if error happens. Now it doesn't and next time
+        #  you run it you get a "database already exists" error.
+        # TODO: create in memory instead and pass around connection?
+
+        # self.conn = sqlite3.connect(":memory:")
+        # self.conn.execute("PRAGMA journal_mode=WAL")
+        # create_database.create_database_schema(
+        #     db=self.conn,
+        #     parsed_arguments=["--db_schema", "db_schema.sql"]
+        # )
+        # create_database.load_data(db=self.conn, omit_data=False)
+        # port_csvs_to_gridpath.load_csv_data(
+        #     conn=self.conn,
+        #     csv_path="../examples/1_examples_to_db"
+        # )
+
     def test_example_test(self):
         """
         Check objective function value of "test" example
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 866737242.3466034
 
@@ -38,9 +75,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_no_overgen_allowed",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_no_overgen_allowed",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 1200069229.87995
 
@@ -53,9 +92,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_new_build_storage",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_new_build_storage",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 102420.06359999996
 
@@ -69,9 +110,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_new_binary_build_storage",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_new_binary_build_storage",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 102487.92
 
@@ -85,10 +128,12 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "test_new_build_storage_cumulative_min_max",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario",
+                                 "test_new_build_storage_cumulative_min_max",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 104184.53965
 
@@ -101,9 +146,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_no_reserves", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_no_reserves", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 53381.74655000001
 
@@ -116,9 +162,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_w_hydro", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_w_hydro", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 49067.079900000004
 
@@ -131,9 +178,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "test_w_storage", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_w_storage", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 54334.546550000014
 
@@ -146,9 +194,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2horizons", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2horizons", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 1733474484.6932068
 
@@ -161,9 +210,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2horizons_w_hydro", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2horizons_w_hydro", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 100062.55
 
@@ -185,8 +235,9 @@ class TestExamples(unittest.TestCase):
         future more general revamp of the examples.
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario",
                  "2horizons_w_hydro_and_nuclear_binary_availability",
                  "--quiet", "--scenario_location", EXAMPLES_DIRECTORY,
                  "--mute_solver_output", "--testing"]
@@ -208,11 +259,12 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "2horizons_w_hydro_w_balancing_types",
-                               "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario",
+                                 "2horizons_w_hydro_w_balancing_types",
+                                 "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 98134.16
 
@@ -225,9 +277,10 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2periods", "--quiet",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2periods", "--quiet",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--mute_solver_output", "--testing"])
 
         expected_objective = 17334744846.932064
 
@@ -239,9 +292,11 @@ class TestExamples(unittest.TestCase):
         Check objective function value of "2periods_new_build" example
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2periods_new_build",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2periods_new_build",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 111439176.928
 
@@ -254,9 +309,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2periods_new_build_2zones",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2periods_new_build_2zones",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 222878353.856
 
@@ -271,8 +328,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario",
                  "2periods_new_build_2zones_new_build_transmission",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
@@ -290,9 +348,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_new_build_2zones_singleBA",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_new_build_2zones_singleBA",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -309,9 +367,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_new_build_2zones_transmission",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_new_build_2zones_transmission",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -327,9 +385,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_new_build_rps",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_new_build_rps",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -346,10 +404,12 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "2periods_new_build_cumulative_min_max",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario",
+                                 "2periods_new_build_cumulative_min_max",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objective = 6296548240.926001
 
@@ -362,9 +422,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objectives = \
-            run_scenario.main(["--scenario", "single_stage_prod_cost",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "single_stage_prod_cost",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objectives = {
             1: 866737242.3466034,
@@ -385,9 +447,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objectives = \
-            run_scenario.main(["--scenario", "multi_stage_prod_cost",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "multi_stage_prod_cost",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objectives = {
             1: {1: 866737242.3466433,
@@ -416,9 +480,11 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objectives = \
-            run_scenario.main(["--scenario", "multi_stage_prod_cost_w_hydro",
-                               "--scenario_location", EXAMPLES_DIRECTORY,
-                               "--quiet", "--mute_solver_output", "--testing"])
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "multi_stage_prod_cost_w_hydro",
+                                 "--scenario_location", EXAMPLES_DIRECTORY,
+                                 "--quiet", "--mute_solver_output",
+                                 "--testing"])
 
         expected_objectives = {
             1: {1: 966735555.35,
@@ -447,9 +513,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_gen_lin_econ_retirement",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_gen_lin_econ_retirement",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -466,9 +532,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_gen_bin_econ_retirement",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_gen_bin_econ_retirement",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -485,9 +551,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_variable_gen_reserves",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_variable_gen_reserves",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -504,9 +570,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_new_build_rps_variable_reserves",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_new_build_rps_variable_reserves",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -524,8 +590,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario",
                  "2periods_new_build_rps_variable_reserves_subhourly_adj",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
@@ -542,9 +609,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_ramp_up_constraints",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_ramp_up_constraints",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -561,9 +628,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_ramp_up_and_down_constraints",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_ramp_up_and_down_constraints",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -580,8 +647,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario",
                  "2periods_new_build_rps_w_rps_ineligible_storage",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
@@ -599,9 +667,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "2periods_new_build_rps_w_rps_eligible_storage",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "2periods_new_build_rps_w_rps_eligible_storage",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -617,9 +685,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_new_solar",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_new_solar",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -635,9 +703,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_new_binary_solar",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_new_binary_solar",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -653,9 +721,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_new_binary_storage",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_new_binary_storage",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -671,9 +739,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_new_solar_carbon_cap",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_new_solar_carbon_cap",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -690,9 +758,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
-                 "test_new_solar_carbon_cap_2zones_tx",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario", "test_new_solar_carbon_cap_2zones_tx",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
             )
@@ -709,8 +777,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(
-                ["--scenario",
+            run_end_to_end.main(
+                ["--database", "../tests/testing.db",
+                 "--scenario",
                  "test_new_solar_carbon_cap_2zones_dont_count_tx",
                  "--scenario_location", EXAMPLES_DIRECTORY,
                  "--quiet", "--mute_solver_output", "--testing"]
@@ -728,7 +797,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario", "2periods_new_build_simple_prm",
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "2periods_new_build_simple_prm",
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
@@ -744,8 +814,9 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "2periods_new_build_local_capacity",
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario",
+                                 "2periods_new_build_local_capacity",
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
@@ -761,8 +832,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "test_tx_dcopf",
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_tx_dcopf",
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
@@ -778,8 +849,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "test_tx_simple",
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_tx_simple",
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
@@ -795,8 +866,8 @@ class TestExamples(unittest.TestCase):
         :return:
         """
         actual_objective = \
-            run_scenario.main(["--scenario",
-                               "test_startup_shutdown_rates",
+            run_end_to_end.main(["--database", "../tests/testing.db",
+                                 "--scenario", "test_startup_shutdown_rates",
                                "--scenario_location", EXAMPLES_DIRECTORY,
                                "--quiet", "--mute_solver_output", "--testing"])
 
@@ -804,6 +875,10 @@ class TestExamples(unittest.TestCase):
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=0)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.remove("../tests/testing.db")
 
 
 if __name__ == "__main__":
