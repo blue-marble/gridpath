@@ -108,8 +108,6 @@ def get_csv_folder_path(parsed_arguments, relative_path=".."):
 
     csv_path = str(parsed_arguments.csv_location)
 
-    print(csv_path)
-
     if csv_path is None:
         csv_path = os.path.join(os.path.dirname(__file__),
                                 relative_path, "db", "csvs")
