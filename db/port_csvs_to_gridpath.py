@@ -45,12 +45,12 @@ from argparse import ArgumentParser
 
 # Data-import modules
 from db.common_functions import connect_to_database
-from create_database import get_database_file_path
+from db.create_database import get_database_file_path
 
 from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
-    load_project_local_capacity_chars, \
+    load_project_local_capacity_chars, load_project_prm, \
     load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
     load_project_prm,\
     load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
@@ -111,7 +111,8 @@ def get_csv_folder_path(parsed_arguments, relative_path=".."):
     print(csv_path)
 
     if csv_path is None:
-        csv_path = os.path.join(os.getcwd(), relative_path, "db", "csvs")
+        csv_path = os.path.join(os.path.dirname(__file__),
+                                relative_path, "db", "csvs")
 
     if not os.path.isdir(csv_path):
         raise OSError(
@@ -123,16 +124,17 @@ def get_csv_folder_path(parsed_arguments, relative_path=".."):
 
     return csv_path
 
-def load_csv_data(db_path, csv_path):
+
+def load_csv_data(conn, csv_path):
     """
     The 'main' method parses the database name along with path as
     script arguments, reads the data from csvs, and loads the data
     in the database.
+
+    TODO: update description
     """
 
-    # Connect to the database
-    io = connect_to_database(db_path=db_path)
-    c2 = io.cursor()
+    c2 = conn.cursor()
 
     #### MASTER CSV DATA ####
     # if include flag is 1, then read the feature, subscenario_id, table, and path into a dictionary and call the specific function for the feature
@@ -148,7 +150,7 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'temporal', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_temporal_data(data_folder_path)
-        load_temporal.load_temporal(io, c2, csv_subscenario_input, csv_data_input)
+        load_temporal.load_temporal(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD LOAD (DEMAND) DATA ####
 
@@ -159,7 +161,7 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'geography_load_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_load_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_geography.load_geography_load_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT LOAD ZONES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_load_zones', 'include'].iloc[0] != 1:
@@ -168,7 +170,7 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_load_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_zones.load_project_load_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_zones.load_project_load_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## SYSTEM LOAD ##
     if csv_data_master.loc[csv_data_master['table'] == 'system_load', 'include'].iloc[0] != 1:
@@ -177,7 +179,7 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_load', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_system_load.load_system_static_load(io, c2, csv_subscenario_input, csv_data_input)
+        load_system_load.load_system_static_load(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECTS DATA ####
 
@@ -190,50 +192,50 @@ def load_csv_data(db_path, csv_path):
             csv_data_master['table'] == 'project_operational_chars', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         # This function is essential before any other project data is loaded in db. It loads the projects list.
-        load_project_list.load_project_list(io, c2, csv_subscenario_input, csv_data_input)
-        load_project_operational_chars.load_project_operational_chars(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_list.load_project_list(conn, c2, csv_subscenario_input, csv_data_input)
+        load_project_operational_chars.load_project_operational_chars(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT HYDRO GENERATOR PROFILES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_hydro_operational_chars', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_hydro_operational_chars', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_operational_chars.load_project_hydro_opchar(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_operational_chars.load_project_hydro_opchar(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT VARIABLE GENERATOR PROFILES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_variable_generator_profiles', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_variable_generator_profiles', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_operational_chars.load_project_variable_profiles(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_operational_chars.load_project_variable_profiles(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT PORTFOLIOS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_portfolios', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_portfolios', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_portfolios.load_project_portfolios(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_portfolios.load_project_portfolios(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT EXISTING CAPACITIES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_existing_capacity', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_existing_capacity', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_existing_params.load_project_existing_capacities(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_existing_params.load_project_existing_capacities(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT EXISTING FIXED COSTS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_existing_fixed_cost', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_existing_fixed_cost', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_existing_params.load_project_existing_fixed_costs(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_existing_params.load_project_existing_fixed_costs(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT NEW POTENTIAL ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_new_potential', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_new_potential', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_new_potentials.load_project_new_potentials(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_new_potentials.load_project_new_potentials(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT NEW BINARY BUILD SIZE ##
     if csv_data_master.loc[csv_data_master['table'] ==
@@ -244,14 +246,14 @@ def load_csv_data(db_path, csv_path):
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_new_potentials.load_project_new_binary_build_sizes(
-            io, c2, csv_subscenario_input, csv_data_input)
+            conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT NEW COSTS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_new_cost', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_new_cost', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_new_costs.load_project_new_costs(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_new_costs.load_project_new_costs(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT ELCC CHARS ##
     if csv_data_master.loc[csv_data_master['table'] ==
@@ -273,7 +275,18 @@ def load_csv_data(db_path, csv_path):
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_local_capacity_chars.load_project_local_capacity_chars(
-            io, c2, csv_subscenario_input, csv_data_input)
+            conn, c2, csv_subscenario_input, csv_data_input)
+
+    ## PROJECT ELCC CHARS ##
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'project_elcc_chars', 'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_elcc_chars',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_project_prm.load_project_prm(
+            conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT AVAILABILITY DATA ####
 
@@ -282,30 +295,30 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_types', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_availability.load_project_availability_types(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_availability.load_project_availability_types(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT AVAILABILITY EXOGENOUS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_availability_exogenous', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_exogenous', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_availability.load_project_availability_exogenous(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_availability.load_project_availability_exogenous(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT AVAILABILITY ENDOGENOUS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_availability_endogenous', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_endogenous', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_availability.load_project_availability_endogenous(io,  c2, csv_subscenario_input, csv_data_input)
+        load_project_availability.load_project_availability_endogenous(conn,  c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT HEAT RATE DATA ####
 
-    ## PROJCT HEAT RATES ##
+    ## PROJECT HEAT RATES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_heat_rate_curves', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_heat_rate_curves', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_project_operational_chars.load_project_hr_curves(io, c2, csv_subscenario_input, csv_data_input)
+        load_project_operational_chars.load_project_hr_curves(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD FUELS DATA ####
 
@@ -314,14 +327,14 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_fuels', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_fuels.load_fuels(io, c2, csv_subscenario_input, csv_data_input)
+        load_fuels.load_fuels(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## FUEL PRICES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_fuel_prices', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_fuel_prices', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_fuels.load_fuel_prices(io, c2, csv_subscenario_input, csv_data_input)
+        load_fuels.load_fuel_prices(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD POLICY DATA ####
 
@@ -330,28 +343,28 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'geography_carbon_cap_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_carbon_cap_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_geography.load_geography_carbon_cap_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## GEOGRAPHY LOCAL CAPACITY ZONES ##
     if csv_data_master.loc[csv_data_master['table'] == 'geography_local_capacity_zones', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'geography_local_capacity_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_local_capacity_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_geography.load_geography_local_capacity_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## GEOGRAPHY PRM ZONES ##
     if csv_data_master.loc[csv_data_master['table'] == 'geography_prm_zones', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'geography_prm_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_prm_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_geography.load_geography_prm_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## GEOGRAPHY RPS ZONES ##
     if csv_data_master.loc[csv_data_master['table'] == 'geography_rps_zones', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'geography_rps_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_geography.load_geography_rps_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_geography.load_geography_rps_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT POLICY (CARBON CAP, PRM, RPS, LOCAL CAPACITY) ZONES ##
     for policy_type in policy_list:
@@ -359,14 +372,14 @@ def load_csv_data(db_path, csv_path):
             data_folder_path = os.path.join(folder_path, csv_data_master.loc[
                 csv_data_master['table'] == 'project_' + policy_type + '_zones', 'path'].iloc[0])
             (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-            load_project_zones.load_project_policy_zones(io, c2, csv_subscenario_input, csv_data_input, policy_type)
+            load_project_zones.load_project_policy_zones(conn, c2, csv_subscenario_input, csv_data_input, policy_type)
 
     ## SYSTEM CARBON CAP TARGETS ##
     if csv_data_master.loc[csv_data_master['table'] == 'system_carbon_cap_targets', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_carbon_cap_targets', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_system_carbon_cap.load_system_carbon_cap_targets(io, c2, csv_subscenario_input, csv_data_input)
+        load_system_carbon_cap.load_system_carbon_cap_targets(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## SYSTEM LOCAL CAPACITY TARGETS ##
     if csv_data_master.loc[csv_data_master['table'] ==
@@ -378,7 +391,7 @@ def load_csv_data(db_path, csv_path):
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_system_local_capacity.load_system_local_capacity_requirement(
-            io, c2, csv_subscenario_input, csv_data_input)
+            conn, c2, csv_subscenario_input, csv_data_input)
 
 
     ## SYSTEM PRM TARGETS ##
@@ -386,14 +399,14 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_prm_requirement', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_system_prm.load_system_prm_requirement(io, c2, csv_subscenario_input, csv_data_input)
+        load_system_prm.load_system_prm_requirement(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## SYSTEM RPS TARGETS ##
     if csv_data_master.loc[csv_data_master['table'] == 'system_rps_targets', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'system_rps_targets', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_system_rps.load_system_rps_targets(io, c2, csv_subscenario_input, csv_data_input)
+        load_system_rps.load_system_rps_targets(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD RESERVES DATA ####
 
@@ -403,7 +416,7 @@ def load_csv_data(db_path, csv_path):
             data_folder_path = os.path.join(folder_path, csv_data_master.loc[
                 csv_data_master['table'] == 'geography_' + reserve_type + '_bas', 'path'].iloc[0])
             (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-            load_geography.load_geography_reserves_bas(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+            load_geography.load_geography_reserves_bas(conn, c2, csv_subscenario_input, csv_data_input, reserve_type)
 
     ## PROJECT RESERVES BAS ##
     for reserve_type in reserves_list:
@@ -411,7 +424,7 @@ def load_csv_data(db_path, csv_path):
             data_folder_path = os.path.join(folder_path, csv_data_master.loc[
                 csv_data_master['table'] == 'project_' + reserve_type + '_bas', 'path'].iloc[0])
             (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-            load_project_zones.load_project_reserve_bas(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+            load_project_zones.load_project_reserve_bas(conn, c2, csv_subscenario_input, csv_data_input, reserve_type)
 
     ## SYSTEM RESERVES ##
     for reserve_type in reserves_list:
@@ -419,7 +432,7 @@ def load_csv_data(db_path, csv_path):
             data_folder_path = os.path.join(folder_path, csv_data_master.loc[
                 csv_data_master['table'] == 'system_' + reserve_type, 'path'].iloc[0])
             (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-            load_system_reserves.load_system_reserves(io, c2, csv_subscenario_input, csv_data_input, reserve_type)
+            load_system_reserves.load_system_reserves(conn, c2, csv_subscenario_input, csv_data_input, reserve_type)
 
     #### LOAD TRANSMISSION DATA ####
 
@@ -428,21 +441,21 @@ def load_csv_data(db_path, csv_path):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_existing_capacity', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_capacities.load_transmission_capacities(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_capacities.load_transmission_capacities(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION PORTFOLIOS ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_portfolios', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_portfolios', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_portfolios.load_transmission_portfolios(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_portfolios.load_transmission_portfolios(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION ZONES ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_load_zones', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_load_zones', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_zones.load_transmission_zones(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_zones.load_transmission_zones(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION CARBON_CAP_ZONES ##
     if csv_data_master.loc[csv_data_master['table'] ==
@@ -454,28 +467,28 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(
             data_folder_path)
         load_transmission_zones.load_transmission_carbon_cap_zones(
-            io, c2, csv_subscenario_input, csv_data_input)
+            conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION OPERATIONAL CHARS ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_operational_chars', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_operational_chars', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_operational_chars.load_transmission_operational_chars(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_operational_chars.load_transmission_operational_chars(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION NEW COST ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_new_cost', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_new_cost', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_new_cost.load_transmission_new_cost(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_new_cost.load_transmission_new_cost(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## LOAD TRANSMISSION HURDLE RATES ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_hurdle_rates', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'transmission_hurdle_rates', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
-        load_transmission_hurdle_rates.load_transmission_hurdle_rates(io, c2, csv_subscenario_input, csv_data_input)
+        load_transmission_hurdle_rates.load_transmission_hurdle_rates(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD SCENARIOS DATA ####
     if csv_data_master.loc[csv_data_master['table'] == 'scenarios', 'include'].iloc[0] != 1:
@@ -493,7 +506,7 @@ def load_csv_data(db_path, csv_path):
                 if f_number > 1:
                     print('Error: More than one scenario csv input files')
 
-        load_scenarios.load_scenarios(io, c2, csv_data_input)
+        load_scenarios.load_scenarios(conn, c2, csv_data_input)
 
     #### LOAD SOLVER OPTIONS ####
     if csv_data_master.loc[csv_data_master['table'] == 'solver', 'include'].iloc[0] != 1:
@@ -510,10 +523,7 @@ def load_csv_data(db_path, csv_path):
                 print(f)
                 csv_solver_descriptions = pd.read_csv(os.path.join(data_folder_path, f))
 
-        load_solver_options.load_solver_options(io, c2, csv_solver_options, csv_solver_descriptions)
-
-    #### Close the database
-    io.close()
+        load_solver_options.load_solver_options(conn, c2, csv_solver_options, csv_solver_descriptions)
 
     #### Code to debug
     # subscenario_input = csv_subscenario_input
@@ -530,12 +540,16 @@ def main(args=None):
     parsed_args = parse_arguments(args=args)
 
     db_path = get_database_file_path(parsed_arguments=parsed_args)
-    print(db_path)
     csv_path = get_csv_folder_path(parsed_arguments=parsed_args)
-    print(csv_path)
+
+    # connect to database
+    conn = connect_to_database(db_path=db_path)
 
     # Load data
-    load_csv_data(db_path=db_path, csv_path=csv_path)
+    load_csv_data(conn=conn, csv_path=csv_path)
+
+    # Close connection
+    conn.close()
 
 
 if __name__ == "__main__":
