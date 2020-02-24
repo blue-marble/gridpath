@@ -4,7 +4,7 @@ import socketio
 import sys
 import time
 
-from db.common_functions import connect_to_database
+from db.common_functions import connect_to_database, spin_on_database_lock
 
 
 def exit_gracefully():
@@ -15,11 +15,14 @@ def exit_gracefully():
     conn = connect_to_database(db_path=parsed_args.database)
     c = conn.cursor()
 
-    # TODO: use spin on database lock
-    c.execute("""
+    sql = """
         UPDATE scenarios SET queue_order_id = NULL;
-    """)
+    """
     conn.commit()
+
+    spin_on_database_lock(
+      conn=conn, cursor=c, sql=sql, data=(), many=False
+    )
 
 
 def manage_queue(db_path):
@@ -130,32 +133,34 @@ def add_scenario_to_queue(db_path, scenario_id):
 
     next_queue_id = get_max_queue_order_id(c=c) + 1
 
-    # TODO: use spin_on_database_lock
-    c.execute("""
+    sql = """
         UPDATE scenarios
-        SET queue_order_id = {},
+        SET queue_order_id = ?,
         run_status_id = 5
-        WHERE scenario_id = {};
-    """.format(next_queue_id, scenario_id))
+        WHERE scenario_id = ?;
+    """
 
-    conn.commit()
+    spin_on_database_lock(
+      conn=conn, cursor=c, sql=sql,
+      data=(next_queue_id, scenario_id), many=False
+    )
 
 
-# TODO: enforce clear results when run stopped and run error, so that we can
-#  comfortably reset to not_run here
 def remove_scenario_from_queue(db_path, scenario_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    # TODO: use spin_on_database_lock
-    c.execute("""
+    sql = """
         UPDATE scenarios
         SET queue_order_id = NULL,
         run_status_id = 0
-        WHERE scenario_id = {};
-    """.format(scenario_id))
+        WHERE scenario_id = ?;
+    """
 
-    conn.commit()
+    spin_on_database_lock(
+      conn=conn, cursor=c, sql=sql,
+      data=(scenario_id,), many=False
+    )
 
 
 def parse_arguments(args):
