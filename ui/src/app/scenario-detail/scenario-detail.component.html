@@ -77,15 +77,15 @@
             <button
               class='button-secondary'
               [disabled]="runScenarioClicked"
-              *ngIf="scenarioDetail.runStatus=='not_run' ||
-              scenarioDetail.runStatus=='run_error' ||
-              scenarioDetail.runStatus=='run_stopped'"
+              *ngIf="scenarioDetail.runStatus=='not_run'"
               (click)="runScenario(); runScenarioClicked = true">
               Run Scenario
             </button>
             <button
               class='button-secondary'
-              *ngIf="scenarioDetail.runStatus=='complete'"
+              *ngIf="scenarioDetail.runStatus=='complete' ||
+              scenarioDetail.runStatus=='run_error' ||
+              scenarioDetail.runStatus=='run_stopped'"
               (click)="clearScenario(); runScenarioClicked = false">
               Clear Scenario Results
             </button>
