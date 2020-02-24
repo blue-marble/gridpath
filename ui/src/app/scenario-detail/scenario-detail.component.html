@@ -103,12 +103,6 @@
               (click)="removeScenarioFromRunQueue(); runScenarioClicked = false">
               Remove from Queue
             </button>
-            <button
-              class='button-secondary'
-              *ngIf="scenarioDetail.runStatus=='complete'"
-              (click)="clearScenario(); runScenarioClicked = false">
-              Clear Scenario Results
-            </button>
           </td>
           <td>
             <button
