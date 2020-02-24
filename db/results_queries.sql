@@ -1,32 +1,32 @@
 -- Cumulative generator newly build capacity by scenario, project, an period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
 rps_zone, carbon_cap_zone, new_build_mw
-FROM results_project_capacity_gen_new_lin
+FROM results_project_capacity
 JOIN scenarios USING (scenario_id)
 ;
 
 -- Cumulative storage newly build capacity by scenario, project, and period
 SELECT scenario_id, scenario_name, project, period, technology, load_zone,
 rps_zone, carbon_cap_zone, new_build_mw, new_build_mwh
-FROM results_project_capacity_stor_new_lin
+FROM results_project_capacity
 JOIN scenarios USING (scenario_id)
 ;
 
 -- Cumulative retirements by scenario, project and period
 select scenario_id, scenario_name, project, period, technology,
 local_capacity_zone,
-results_project_capacity_all.capacity_mw as remaining_capacity_mw,
+results_project_capacity.capacity_mw as remaining_capacity_mw,
 retired_mw,
-results_project_capacity_all.capacity_mw + retired_mw as retirable_mw
-from results_project_capacity_linear_economic_retirement
-left join results_project_capacity_all using (scenario_id, project, period)
+results_project_capacity.capacity_mw + retired_mw as retirable_mw
+from results_project_capacity
+left join results_project_capacity using (scenario_id, project, period)
 left join results_project_local_capacity using (scenario_id, project, period)
 left join scenarios using (scenario_id)
 ;
 
 -- Capacity by scenario, project, and period (new and specified projects)
 SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity_all
+FROM results_project_capacity
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ;
@@ -58,7 +58,7 @@ JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, project, technology, period) as energy_table
 JOIN
 (SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity_all
+FROM results_project_capacity
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ) as capacity_table
@@ -129,7 +129,7 @@ JOIN scenarios USING (scenario_id)
 GROUP BY scenario_id, project, technology, period) as energy_table
 JOIN
 (SELECT scenario_id, scenario_name, project, technology, period, capacity_mw
-FROM results_project_capacity_all
+FROM results_project_capacity
 LEFT JOIN scenarios USING (scenario_id)
 --WHERE load_zone = 'CAISO'
 ) as capacity_table
@@ -168,7 +168,7 @@ where project_operational_chars_scenario_id = 1
 using (project)
 join
 (select scenario_id, project, period, capacity_mw
-from results_project_capacity_all
+from results_project_capacity
 ) as capacity_tbl
 using (scenario_id, project, period)
 join scenarios using (scenario_id)
