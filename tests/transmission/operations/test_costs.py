@@ -86,7 +86,7 @@ class TestTxAggregateCosts(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        # Param: hurdle_rate_positive_direction_per_mwh
+        # Param: hurdle_rate_pos_dir_per_mwh
         expected_hurdle_rate_pos = OrderedDict(
             sorted([
                 (("Tx1", 2020), 1.0),
@@ -101,15 +101,15 @@ class TestTxAggregateCosts(unittest.TestCase):
         )
         actual_hurdle_rate_pos = OrderedDict(
             sorted([
-                ((tx, p), instance.hurdle_rate_positive_direction_per_mwh[
+                ((tx, p), instance.hurdle_rate_pos_dir_per_mwh[
                     tx, p])
-                for tx in instance.TRANSMISSION_LINES
+                for tx in instance.TX_LINES
                 for p in instance.PERIODS
             ])
         )
         self.assertDictEqual(expected_hurdle_rate_pos, actual_hurdle_rate_pos)
 
-        # Param: hurdle_rate_negative_direction_per_mwh
+        # Param: hurdle_rate_neg_dir_per_mwh
         expected_hurdle_rate_neg = OrderedDict(
             sorted([
                 (("Tx1", 2020), 1.0),
@@ -124,9 +124,9 @@ class TestTxAggregateCosts(unittest.TestCase):
         )
         actual_hurdle_rate_neg = OrderedDict(
             sorted([
-                ((tx, p), instance.hurdle_rate_negative_direction_per_mwh[
+                ((tx, p), instance.hurdle_rate_neg_dir_per_mwh[
                     tx, p])
-                for tx in instance.TRANSMISSION_LINES
+                for tx in instance.TX_LINES
                 for p in instance.PERIODS
             ])
         )

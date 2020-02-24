@@ -106,14 +106,18 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
 
     stages = read_csv(
-        os.path.join(scenario_directory, subproblem, "subproblems.csv")
+        os.path.join(scenario_directory, subproblem, "subproblems.csv"),
+        dtype={"subproblems": str}
     )['subproblems'].tolist()
 
     fixed_commitment_df = read_csv(
         os.path.join(scenario_directory, subproblem,
-                     "pass_through_inputs",
-                     "fixed_commitment.tab"),
-        sep='\t')
+                     "pass_through_inputs", "fixed_commitment.tab"),
+        sep='\t',
+        dtype={"stage": str}
+    )
+
+    # fixed_commitment_df["stage"] = fixed_commitment_df["stage"].astype(str)
 
     # FINAL_COMMITMENT_GENERATORS
     def determine_final_commitment_projects():
@@ -127,14 +131,15 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             os.path.join(scenario_directory, subproblem, stage,
                          "inputs", "projects.tab"),
             sep="\t",
-            usecols=["project", "last_commitment_stage"]
+            usecols=["project", "last_commitment_stage"],
+            dtype={"last_commitment_stage": str}
         )
-        for row in zip(df["project"],
-                       df["last_commitment_stage"]):
-            if row[1] == ".":
+        # df["last_commitment_stage"] = df["last_commitment_stage"].astype(str)
+        for prj, s in zip(df["project"], df["last_commitment_stage"]):
+            if s == ".":
                 pass
-            elif row[1] == stage or stages.index(row[1]) < stages.index(stage):
-                final_commitment_projects.append(row[0])
+            elif s == stage or stages.index(s) < stages.index(stage):
+                final_commitment_projects.append(prj)
             else:
                 pass
         return final_commitment_projects

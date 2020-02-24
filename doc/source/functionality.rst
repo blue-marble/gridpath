@@ -378,29 +378,15 @@ following *availability types* have been implemented.
 
 Exogenous
 ^^^^^^^^^
-For each project assigned this *availability type*, the user may specify an
-(un)availability schedule, i.e. a capacity derate of 0 to 1 for each
-timepoint in which the project may be operated. If fully derated in a given
-timepoint, the available project capacity will be 0 in that timepoint and all
-operational decision variables will therefore also be constrained to 0 in the
-optimization.
+.. automodule:: gridpath.project.availability.availability_types.exogenous
 
 Binary
 ^^^^^^
-*Projects* assigned this availability type have binary decision variables
-for their availability in each timepoint. This type can be useful in
-optimizing planned outage schedules. A *project* of this type is constrained
-to be unavailable for at least a pre-specified number of hours in each
-*period*. In addition, each unavailability event can be constrained to be
-within a minimum and maximum number of hours, and constraints can also be
-implemented on the minimum and maximum duration between unavailability events.
+.. automodule:: gridpath.project.availability.availability_types.binary
 
 Continuous
 ^^^^^^^^^^
-This *availability type* is formulated like the *binary* type except that
-all binary decision variables are relaxed to be continuous with bounds
-between 0 and 1. This can be useful to address computational difficulties
-when modeling endogenous *project* availabilities.
+.. automodule:: gridpath.project.availability.availability_types.continuous
 
 Project Operational Types
 -------------------------
@@ -570,28 +556,11 @@ capacity-associated costs. The currently implemented capacity types include:
 
 Specified Transmission (*tx_spec*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This capacity type describes transmission lines that are available to the
-optimization without having to incur an investment cost, e.g. existing
-lines or lines that will be built in the future and whose capital costs
-we want to ignore (in the objective function). A specified transmission line
-can be available in all periods, or in some periods only, with no
-restriction on the order and combination of periods. The two transmission
-line directions may have different specified capacites.
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_spec
 
 Linear New-Build Transmission (*tx_new_lin*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This capacity type describes transmission that can be built by the
-optimization at a cost. These investment decisions are linearized, i.e.
-the decision is not whether to build a specific transmission line, but how
-much capacity to build at a particular transmission corridor. Once built, the
-capacity remains available for the duration of the line's pre-specified
-lifetime. The cost input to the model is an annualized cost per unit capacity.
-If the optimization makes the decision to build new capacity, the total
-annualized cost is incurred in each period of the study (and multiplied by
-the number of years the period represents) for the duration of the project's
-lifetime. Annual fixed O&M costs are also incurred by linear new-build
-transmission lines.
+.. automodule:: gridpath.transmission.capacity.capacity_types.tx_new_lin
 
 Transmission Operational Types
 ------------------------------
@@ -602,39 +571,11 @@ implemented include:
 
 Linear Transport Transmission (*tx_simple*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Transmission line flows are simulated using a linear transport model,
-i.e. transmission flow is constrained to be less than or equal to the line
-capacity.
+.. automodule:: gridpath.transmission.operations.operational_types.tx_simple
 
 DC Power Flow (*tx_dcopf*)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-GridPath can also model DC power flow on the transmission network by
-assigning the *tx_dcopf* operational type to the transmission lines modeled.
-DC power flow is a linearized approach to the AC Power Flow problem, which
-is a non-linear, non-convex set of equations describing the energy flow
-through each transmission line. The three main assumptions for the DC power
-flow approximation are: 1) line resistances are negligible compared to line
-reactances, so reactive power flows can be neglected; 2) voltage magnitudes at
-each bus are kept at their nominal value; and 3) voltage angle differences
-across branches are small enough such that the sine of the difference can be
-approximated by the difference, i.e. :math:`\sin(\theta) \approx \theta`.
-
-Using these approximations, the power flow problem becomes linear and can be
-added to our capacity-expansion / unit commitment model using an additional
-set of constraints for flows on each *tx_dcopf* line.
-
-.. warning:: Transmission operational types can be optionally be mixed.
-    However, if there are any transmission lines that do not have the
-    *tx_dcopf* operational types, they will simply not be considered when
-    setting up the network constraints laid out in the *tx_dcopf* module, so
-    the network flows will be inaccurate.
-
-.. warning:: GridPath uses one user-specified reactance to characterize a
-    transmission line and this value doesn't change across time periods, even
-    when the planned transmission capacity changes or when the model selects to
-    build additional capacity (in the case of new build transmission). If
-    this is not a reasonable assumption for the transmission system of
-    interest, we recommended not to use the *tx_dcopf* operational type.
+.. automodule:: gridpath.transmission.operations.operational_types.tx_dcopf
 
 .. _operating-reserves-section-ref:
 

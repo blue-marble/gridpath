@@ -168,10 +168,10 @@ def load_module_specific_data(
                               "storage_specified_capacities.tab"),
         index=m.STOR_SPEC_OPR_PRDS,
         select=("project", "period",
-                "stor_spec_power_capacity_mw",
-                "stor_spec_energy_capacity_mwh",
-                "stor_spec_fixed_cost_per_mw_yr",
-                "stor_spec_fixed_cost_per_mwh_yr"),
+                "storage_specified_power_capacity_mw",
+                "storage_specified_energy_capacity_mwh",
+                "storage_specified_fixed_cost_per_mw_yr",
+                "storage_specified_fixed_cost_per_mwh_yr"),
         param=(m.stor_spec_power_capacity_mw,
                m.stor_spec_energy_capacity_mwh,
                m.stor_spec_fixed_cost_per_mw_yr,
@@ -253,10 +253,10 @@ def write_module_specific_model_inputs(
         # Write header
         writer.writerow(
             ["project", "period",
-             "stor_spec_power_capacity_mw",
-             "stor_spec_energy_capacity_mwh",
-             "stor_spec_fixed_cost_per_mw_yr",
-             "stor_spec_fixed_cost_per_mwh_yr"]
+             "storage_specified_power_capacity_mw",
+             "storage_specified_energy_capacity_mwh",
+             "storage_specified_fixed_cost_per_mw_yr",
+             "storage_specified_fixed_cost_per_mwh_yr"]
         )
 
         for row in stor_capacities:

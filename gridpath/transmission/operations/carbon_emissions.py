@@ -21,75 +21,207 @@ from gridpath.auxiliary.dynamic_components import \
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`CRB_TX_LINES`                                                  |
+    |                                                                         |
+    | The set of carbonaceous transmission lines, i.e. transmission lines     |
+    | whose imports or exports should be accounted for in the carbon cap      |
+    | calculations.                                                           |
+    +-------------------------------------------------------------------------+
+    | | :code:`CRB_TX_OPR_TMPS`                                               |
+    |                                                                         |
+    | Two-dimensional set of carbonaceous transmission lines and their        |
+    | operational timepoints.                                                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`tx_carbon_cap_zone`                                            |
+    | | *Defined over*: :code:`CRB_TX_LINES`                                  |
+    | | *Within*: :code:`CARBON_CAP_ZONES`                                    |
+    |                                                                         |
+    | The transmission line's carbon cap zone. The imports or exports for     |
+    | that transmission line will count towards that zone's carbon cap.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`carbon_cap_zone_import_direction`                              |
+    | | *Defined over*: :code:`CRB_TX_LINES`                                  |
+    | | *Within*: :code:`["positive", "negative"]`                            |
+    |                                                                         |
+    | The transmission line's import direction: "positive" ("negative")       |
+    | indicates positive (negative) line flows are flows into the carbon cap  |
+    | zone while negative (positive) line flows are flows out of the carbon   |
+    | zone.                                                                   |
+    +-------------------------------------------------------------------------+
+    | | :code:`tx_co2_intensity_tons_per_mwh`                                 |
+    | | *Defined over*: :code:`CRB_TX_LINES`                                  |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's CO2-intensity in metric tonnes per MWh. This    |
+    | param indicates how much emissions are added towards the carbon cap for |
+    | every MWh transmitted into the carbon cap zone.                         |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`CRB_TX_LINES_BY_CARBON_CAP_ZONE`                               |
+    | | *Defined over*: :code:`CARBON_CAP_ZONES`                              |
+    | | *Within*: :code:`CRB_TX_LINES`                                        |
+    |                                                                         |
+    | Indexed set that describes the carbonaceous transmission lines          |
+    | associated with each carbon cap zone.                                   |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`Import_Carbon_Emissions_Tons`                                  |
+    | | *Defined over*: :code:`CRB_TX_OPR_TMPS`                               |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Describes the amount of imported carbon emissions for each              |
+    | carbonaceous transmission in each operational timepoint.                |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Carbon_Emissions_Imports_Constraint`                           |
+    | | *Enforced over*: :code:`CRB_TX_OPR_TMPS`                              |
+    |                                                                         |
+    | Constrains the amount of imported carbon emissions for each             |
+    | carbonaceous transmission in each operational timepoint, based on the   |
+    | :code:`tx_co2_intensity_tons_per_mwh` param and the transmitted power.  |
+    +-------------------------------------------------------------------------+
+
     """
-    # First figure out which projects we need to track for the carbon cap
-    m.CARBONACEOUS_TRANSMISSION_LINES = Set(within=m.TRANSMISSION_LINES)
+
+    # Sets
+    ###########################################################################
+
+    m.CRB_TX_LINES = Set(
+        within=m.TX_LINES
+    )
+
+    m.CRB_TX_OPR_TMPS = Set(
+        within=m.TX_OPR_TMPS,
+        rule=lambda mod: [(tx, tmp) for (tx, tmp) in mod.TX_OPR_TMPS
+                          if tx in mod.CRB_TX_LINES]
+    )
+
+    # Required Input Params
+    ###########################################################################
+
     m.tx_carbon_cap_zone = Param(
-        m.CARBONACEOUS_TRANSMISSION_LINES,
+        m.CRB_TX_LINES,
         within=m.CARBON_CAP_ZONES
     )
+
     m.carbon_cap_zone_import_direction = Param(
-        m.CARBONACEOUS_TRANSMISSION_LINES
+        m.CRB_TX_LINES
     )
+
     m.tx_co2_intensity_tons_per_mwh = Param(
-        m.CARBONACEOUS_TRANSMISSION_LINES,
+        m.CRB_TX_LINES,
         within=NonNegativeReals
     )
 
-    m.CARBONACEOUS_TRANSMISSION_LINES_BY_CARBON_CAP_ZONE = \
-        Set(m.CARBON_CAP_ZONES, within=m.CARBONACEOUS_TRANSMISSION_LINES,
-            initialize=lambda mod, co2_z:
-            [tx for tx in mod.CARBONACEOUS_TRANSMISSION_LINES
-             if mod.tx_carbon_cap_zone[tx] == co2_z])
+    # Derived Sets
+    ###########################################################################
 
-    # Get operational carbon cap transmission line - timepoints combinations
-    m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS = Set(
-        within=m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
-        rule=lambda mod: [(tx, tmp) for (tx, tmp) in
-                          mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
-                          if tx in mod.CARBONACEOUS_TRANSMISSION_LINES]
+    m.CRB_TX_LINES_BY_CARBON_CAP_ZONE = Set(
+        m.CARBON_CAP_ZONES,
+        within=m.CRB_TX_LINES,
+        initialize=lambda mod, co2_z:
+        [tx for tx in mod.CRB_TX_LINES if mod.tx_carbon_cap_zone[tx] == co2_z]
     )
 
-    # Variable for imported emissions
+    # Variables
+    ###########################################################################
+
     m.Import_Carbon_Emissions_Tons = Var(
-        m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        m.CRB_TX_OPR_TMPS,
         within=NonNegativeReals
     )
 
-    # Get emissions brought in by each transmission line
-    def carbon_emissions_imports_rule(mod, tx, tmp):
-        """
+    # Constraints
+    ###########################################################################
 
-        :param mod:
-        :param tx:
-        :param tmp:
-        :return:
-        """
-        if mod.carbon_cap_zone_import_direction[tx] == "positive":
-            return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-                >= mod.Transmit_Power_MW[tx, tmp] * \
-                mod.tx_co2_intensity_tons_per_mwh[tx]
-        elif mod.carbon_cap_zone_import_direction[tx] == "negative":
-            return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-                >= -mod.Transmit_Power_MW[tx, tmp] * \
-                mod.tx_co2_intensity_tons_per_mwh[tx]
-        else:
-            raise ValueError("The parameter carbon_cap_zone_import_direction "
-                             "have a value of either 'positive' or "
-                             "'negative,' not {}.".format(
-                              mod.carbon_cap_zone_import_direction[tx]
-                                )
-                             )
-
-    m.Imported_Carbon_Emissions_Constraint = Constraint(
-        m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+    m.Carbon_Emissions_Imports_Constraint = Constraint(
+        m.CRB_TX_OPR_TMPS,
         rule=carbon_emissions_imports_rule
     )
 
+
+# Expression Rules
+###############################################################################
+
+def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
+    """
+    **Expression Name**: N/A
+    **Defined Over**: CRB_TX_OPR_TMPS
+
+    In case of degeneracy where the *Import_Carbon_Emissions_Tons* variable
+    can take a value larger than the actual import emissions (when the
+    carbon cap is non-binding), we can post-process to figure out what the
+    actual imported emissions are (e.g. instead of applying a tuning cost).
+    """
+    if mod.carbon_cap_zone_import_direction[tx_line] == "positive" \
+            and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return value(mod.Transmit_Power_MW[tx_line, timepoint]) \
+               * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+    elif mod.carbon_cap_zone_import_direction[tx_line] == "negative" \
+            and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) \
+               * mod.tx_co2_intensity_tons_per_mwh[tx_line]
+    else:
+        return 0
+
+
+# Constraint Formulation Rules
+###############################################################################
+
+def carbon_emissions_imports_rule(mod, tx, tmp):
+    """
+    **Constraint Name**: Carbon_Emissions_Imports_Constraint
+    **Defined Over**: CRB_TX_OPR_TMPS
+
+    Constrain the *Import_Carbon_Emissions_Tons* variable to be at least as
+    large as the calculated imported carbon emissions for each transmission
+    line, based on its CO2-intensity.
+    """
+    if mod.carbon_cap_zone_import_direction[tx] == "positive":
+        return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
+            >= mod.Transmit_Power_MW[tx, tmp] \
+            * mod.tx_co2_intensity_tons_per_mwh[tx]
+    elif mod.carbon_cap_zone_import_direction[tx] == "negative":
+        return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
+            >= -mod.Transmit_Power_MW[tx, tmp] \
+            * mod.tx_co2_intensity_tons_per_mwh[tx]
+    else:
+        raise ValueError("The parameter carbon_cap_zone_import_direction "
+                         "have a value of either 'positive' or "
+                         "'negative,' not {}.".format(
+                          mod.carbon_cap_zone_import_direction[tx]
+                            )
+                         )
+
+
+# Inputs-Outputs
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -103,43 +235,20 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :return:
     """
 
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage,
-                        "inputs", "transmission_lines.tab"),
-                     select=("TRANSMISSION_LINES", "carbon_cap_zone",
-                             "carbon_cap_zone_import_direction",
-                             "tx_co2_intensity_tons_per_mwh"),
-                     param=(m.tx_carbon_cap_zone,
-                            m.carbon_cap_zone_import_direction,
-                            m.tx_co2_intensity_tons_per_mwh)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "transmission_lines.tab"),
+        select=("TRANSMISSION_LINES", "carbon_cap_zone",
+                "carbon_cap_zone_import_direction",
+                "tx_co2_intensity_tons_per_mwh"),
+        param=(m.tx_carbon_cap_zone,
+               m.carbon_cap_zone_import_direction,
+               m.tx_co2_intensity_tons_per_mwh)
+    )
 
-    data_portal.data()['CARBONACEOUS_TRANSMISSION_LINES'] = {
+    data_portal.data()['CRB_TX_LINES'] = {
         None: list(data_portal.data()['tx_carbon_cap_zone'].keys())
     }
-
-
-def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
-    """
-    In case of degeneracy where the Import_Carbon_Emissions_Tons variable
-    can take a value larger than the actual import emissions (when the
-    carbon cap is non-binding), we can upost-process to figure out what the
-    actual imported emissions are (e.g. instead of applying a tuning cost)
-    :param mod:
-    :param tx_line:
-    :param timepoint:
-    :return:
-    """
-    if mod.carbon_cap_zone_import_direction[tx_line] == "positive" \
-            and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
-        return value(mod.Transmit_Power_MW[tx_line, timepoint]) * \
-               mod.tx_co2_intensity_tons_per_mwh[tx_line]
-    elif mod.carbon_cap_zone_import_direction[tx_line] == "negative" \
-            and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
-        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) * \
-               mod.tx_co2_intensity_tons_per_mwh[tx_line]
-    else:
-        return 0
 
 
 def export_results(scenario_directory, subproblem, stage, m, d):
@@ -153,15 +262,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     :return:
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "carbon_emission_imports_by_tx_line.csv"), "w", newline="") \
-            as carbon_emission_imports__results_file:
+                           "carbon_emission_imports_by_tx_line.csv"),
+              "w", newline="") as carbon_emission_imports__results_file:
         writer = csv.writer(carbon_emission_imports__results_file)
         writer.writerow(["tx_line", "period", "timepoint",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "carbon_emission_imports_tons",
                          "carbon_emission_imports_tons_degen"])
-        for (tx, tmp) in \
-                m.CARBONACEOUS_TRANSMISSION_OPERATIONAL_TIMEPOINTS:
+        for (tx, tmp) in m.CRB_TX_OPR_TMPS:
             writer.writerow([
                 tx,
                 m.period[tmp],
@@ -172,6 +280,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 calculate_carbon_emissions_imports(m, tx, tmp)
             ])
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -194,22 +305,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return transmission_zones
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # transmission_zones = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+    inputs_directory, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     transmission_lines.tab file.
@@ -231,8 +329,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             (".", ".", ".") if zone is None \
             else (str(zone), str(direction), intensity)
 
-    with open(os.path.join(inputs_directory, "transmission_lines.tab"), "r"
-              ) as tx_file_in:
+    with open(os.path.join(inputs_directory, "transmission_lines.tab"),
+              "r") as tx_file_in:
         reader = csv.reader(tx_file_in, delimiter="\t")
 
         new_rows = list()
@@ -266,10 +364,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory):
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id:
+    :param subproblem:
+    :param stage:
     :param c:
     :param db:
     :param results_directory:
@@ -288,8 +389,8 @@ def import_results_into_database(
     # Load results into the temporary table
     results = []
     with open(os.path.join(results_directory,
-                           "carbon_emission_imports_by_tx_line.csv"), "r") as \
-            emissions_file:
+                           "carbon_emission_imports_by_tx_line.csv"),
+              "r") as emissions_file:
         reader = csv.reader(emissions_file)
 
         next(reader)  # skip header
@@ -301,7 +402,7 @@ def import_results_into_database(
             number_of_hours_in_timepoint = row[4]
             carbon_emission_imports_tons = row[5]
             carbon_emission_imports_tons_degen = row[6]
-            
+
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
@@ -337,3 +438,22 @@ def import_results_into_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # transmission_zones = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+

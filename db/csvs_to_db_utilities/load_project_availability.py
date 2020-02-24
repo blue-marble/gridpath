@@ -49,13 +49,13 @@ def load_project_availability_types(io, c, subscenario_input, data_input):
                                                                   'endogenous_availability_scenario_id'][j])
 
 
-    project_availability.make_scenario_and_insert_types_and_ids(
-        io=io, c=c,
-        project_availability_scenario_id=sc_id,
-        scenario_name=sc_name,
-        scenario_description=sc_description,
-        project_types_and_char_ids=project_availability_types
-    )
+        project_availability.make_scenario_and_insert_types_and_ids(
+            io=io, c=c,
+            project_availability_scenario_id=sc_id,
+            scenario_name=sc_name,
+            scenario_description=sc_description,
+            project_types_and_char_ids=project_availability_types
+        )
 
 def load_project_availability_exogenous(io, c, subscenario_input, data_input):
     """

@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestNewShiftableLoadSupplyCurve(unittest.TestCase):
+class TestDRNew(unittest.TestCase):
     """
 
     """

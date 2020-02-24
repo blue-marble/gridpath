@@ -39,7 +39,7 @@ except ImportError:
           " to test.")
 
 
-class TestExistingGenLinearEconRet(unittest.TestCase):
+class TestGenRetLin(unittest.TestCase):
     """
 
     """

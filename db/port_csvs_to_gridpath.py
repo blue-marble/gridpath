@@ -392,6 +392,18 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_transmission_zones.load_transmission_zones(io, c2, csv_subscenario_input, csv_data_input)
 
+    ## LOAD TRANSMISSION CARBON_CAP_ZONES ##
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'transmission_carbon_cap_zones', 'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master[
+                'table'] == 'transmission_carbon_cap_zones', 'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(
+            data_folder_path)
+        load_transmission_zones.load_transmission_carbon_cap_zones(
+            io, c2, csv_subscenario_input, csv_data_input)
+
     ## LOAD TRANSMISSION OPERATIONAL CHARS ##
     if csv_data_master.loc[csv_data_master['table'] == 'transmission_operational_chars', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[

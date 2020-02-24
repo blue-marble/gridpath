@@ -3,8 +3,8 @@
 
 """
 This is a Tx-line-level module that adds to the formulation components that
-describe the operations-related costs of transmisison lines (e.g. hurdle
-rate costs).
+describe the operations-related costs of transmission lines, namely hurdle
+rate costs.
 """
 
 from __future__ import print_function
@@ -22,71 +22,155 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 
 def add_model_components(m, d):
     """
+    The following Pyomo model components are defined in this module:
 
-    :param m:
-    :param d:
-    :return:
+    +-------------------------------------------------------------------------+
+    | Optional Input Params                                                   |
+    +=========================================================================+
+    | | :code:`hurdle_rate_pos_dir_per_mwh`                                   |
+    | | *Defined over*: :code:`TX_OPR_PRDS`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defaults to*: :code:`0`                                              |
+    |                                                                         |
+    | The transmission line's hurdle rate in $ per MWh for its positive       |
+    | flows in each operational period.                                       |
+    +-------------------------------------------------------------------------+
+    | | :code:`hurdle_rate_neg_dir_per_mwh`                                   |
+    | | *Defined over*: :code:`TX_OPR_PRDS`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Defaults to*: :code:`0`                                              |
+    |                                                                         |
+    | The transmission line's hurdle rate in $ per MWh for its negative       |
+    | flows (i.e. against the line's defined direction) in each operational   |
+    | period.                                                                 |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Variables                                                               |
+    +=========================================================================+
+    | | :code:`Hurdle_Cost_Pos_Dir`                                           |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's hurdle costs in $ for its positive flows in     |
+    | in each operational period.                                             |
+    +-------------------------------------------------------------------------+
+    | | :code:`Hurdle_Cost_Neg_Dir`                                           |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The transmission line's hurdle costs in $ for its negative flows        |
+    | (i.e. against the line's defined direction) in each operational         |
+    | timepoint.                                                              |
+    +-------------------------------------------------------------------------+
+
+    |
+
+    +-------------------------------------------------------------------------+
+    | Constraints                                                             |
+    +=========================================================================+
+    | | :code:`Hurdle_Cost_Pos_Dir_Constraint`                                |
+    | | *Enforced over*: :code:`TX_OPR_TMPS`                                  |
+    |                                                                         |
+    | The transmission line's positive direction hurdle cost should be larger |
+    | than or equal to the line's hurdle rate multiplied by its transmission  |
+    | flow in each operational timepoint. When line flows are negative, this  |
+    | will set the the cost to zero.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`Hurdle_Cost_Neg_Dir_Constraint`                                |
+    | | *Enforced over*: :code:`TX_OPR_TMPS`                                  |
+    |                                                                         |
+    | The transmission line's negative direction hurdle cost should be larger |
+    | than or equal to the line's hurdle rate multiplied by its negative      |
+    | transmission flow in each operational timepoint. When line flows are    |
+    | positive, this will set the cost to zero.                               |
+    +-------------------------------------------------------------------------+
+
+
     """
 
-    m.hurdle_rate_positive_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, m.PERIODS,
-        within=NonNegativeReals, default=0
+    # Optional Input Params
+    ###########################################################################
+
+    m.hurdle_rate_pos_dir_per_mwh = Param(
+        m.TX_LINES, m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        within=NonNegativeReals,
+        default=0
     )
 
-    m.hurdle_rate_negative_direction_per_mwh = Param(
-        m.TRANSMISSION_LINES, m.PERIODS,
-        within=NonNegativeReals, default=0
+    m.hurdle_rate_neg_dir_per_mwh = Param(
+        m.TX_LINES, m.PERIODS,  # TODO: chanage to TX_OPR_PRDS?
+        within=NonNegativeReals,
+        default=0
     )
 
-    m.Hurdle_Cost_Positive_Direction = Var(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
+    # Variables
+    ###########################################################################
+
+    m.Hurdle_Cost_Pos_Dir = Var(
+        m.TX_OPR_TMPS,
+        within=NonNegativeReals
     )
-    m.Hurdle_Cost_Negative_Direction = Var(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
+    m.Hurdle_Cost_Neg_Dir = Var(
+        m.TX_OPR_TMPS,
+        within=NonNegativeReals
     )
 
-    def hurdle_cost_positive_direction_rule(mod, tx, tmp):
-        """
-        Hurdle_Cost_Positive_Direction must be non-negative, so will be 0
-        when Transmit_Power is negative (flow in the negative direction)
-        :param mod:
-        :param tx:
-        :param tmp:
-        :return:
-        """
-        if mod.hurdle_rate_positive_direction_per_mwh[tx, mod.period[tmp]] \
-                == 0:
-            return Constraint.Skip
-        else:
-            return mod.Hurdle_Cost_Positive_Direction[tx, tmp] \
-                >= mod.Transmit_Power_MW[tx, tmp] * \
-                mod.hurdle_rate_positive_direction_per_mwh[tx, mod.period[tmp]]
-    m.Hurdle_Cost_Positive_Direction_Constraint = Constraint(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
-        rule=hurdle_cost_positive_direction_rule
+    # Constraints
+    ###########################################################################
+
+    m.Hurdle_Cost_Pos_Dir_Constraint = Constraint(
+        m.TX_OPR_TMPS,
+        rule=hurdle_cost_pos_dir_rule
     )
 
-    def hurdle_cost_negative_direction_rule(mod, tx, tmp):
-        """
-        Hurdle_Cost_Negative_Direction must be non-negative, so will be 0
-        when Transmit_Power is positive (flow in the positive direction)
-        :param mod:
-        :param tx:
-        :param tmp:
-        :return:
-        """
-        if mod.hurdle_rate_negative_direction_per_mwh[tx, mod.period[tmp]] \
-                == 0:
-            return Constraint.Skip
-        else:
-            return mod.Hurdle_Cost_Negative_Direction[tx, tmp] \
-                >= -mod.Transmit_Power_MW[tx, tmp] * \
-                mod.hurdle_rate_negative_direction_per_mwh[tx, mod.period[tmp]]
-    m.Hurdle_Cost_Negative_Direction_Constraint = Constraint(
-        m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
-        rule=hurdle_cost_negative_direction_rule
+    m.Hurdle_Cost_Neg_Dir_Constraint = Constraint(
+        m.TX_OPR_TMPS,
+        rule=hurdle_cost_neg_dir_rule
     )
 
+
+# Constraint Formulation Rules
+###############################################################################
+
+def hurdle_cost_pos_dir_rule(mod, tx, tmp):
+    """
+    **Constraint Name**: Hurdle_Cost_Pos_Dir_Constraint
+    **Enforced Over**: TX_OPR_TMPS
+
+    Hurdle_Cost_Pos_Dir must be non-negative, so will be 0
+    when Transmit_Power is negative (flow in the negative direction).
+    """
+    if mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp]] \
+            == 0:
+        return Constraint.Skip
+    else:
+        return mod.Hurdle_Cost_Pos_Dir[tx, tmp] \
+            >= mod.Transmit_Power_MW[tx, tmp] \
+            * mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp]]
+
+
+def hurdle_cost_neg_dir_rule(mod, tx, tmp):
+    """
+    **Constraint Name**: Hurdle_Cost_Neg_Dir_Constraint
+    **Enforced Over**: TX_OPR_TMPS
+
+    Hurdle_Cost_Neg_Dir must be non-negative, so will be 0
+    when Transmit_Power is positive (flow in the positive direction).
+    """
+    if mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp]] \
+            == 0:
+        return Constraint.Skip
+    else:
+        return mod.Hurdle_Cost_Neg_Dir[tx, tmp] \
+            >= -mod.Transmit_Power_MW[tx, tmp] \
+            * mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp]]
+
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -99,16 +183,52 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     :param stage:
     :return:
     """
-    data_portal.load(filename=os.path.join(
-                        scenario_directory, subproblem, stage, "inputs",
-                        "transmission_hurdle_rates.tab"),
-                     select=("transmission_line", "period",
-                             "hurdle_rate_positive_direction_per_mwh",
-                             "hurdle_rate_negative_direction_per_mwh"),
-                     param=(m.hurdle_rate_positive_direction_per_mwh,
-                            m.hurdle_rate_negative_direction_per_mwh)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage, "inputs",
+                              "transmission_hurdle_rates.tab"),
+        select=("transmission_line", "period",
+                "hurdle_rate_positive_direction_per_mwh",
+                "hurdle_rate_negative_direction_per_mwh"),
+        param=(m.hurdle_rate_pos_dir_per_mwh,
+               m.hurdle_rate_neg_dir_per_mwh)
+    )
 
+
+def export_results(scenario_directory, subproblem, stage, m, d):
+    """
+    Export transmission operational cost results.
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :param m: The Pyomo abstract model
+    :param d: Dynamic components
+    :return: Nothing
+    """
+    with open(os.path.join(scenario_directory, subproblem, stage, "results",
+              "costs_transmission_hurdle.csv"), "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(
+            ["tx_line", "period", "timepoint", "timepoint_weight",
+             "number_of_hours_in_timepoint", "load_zone_from", "load_zone_to",
+             "hurdle_cost_positive_direction",
+             "hurdle_cost_negative_direction"]
+        )
+        for (tx, tmp) in m.TX_OPR_TMPS:
+            writer.writerow([
+                tx,
+                m.period[tmp],
+                tmp,
+                m.timepoint_weight[tmp],
+                m.number_of_hours_in_timepoint[tmp],
+                m.load_zone_from[tx],
+                m.load_zone_to[tx],
+                value(m.Hurdle_Cost_Pos_Dir[tx, tmp]),
+                value(m.Hurdle_Cost_Neg_Dir[tx, tmp])
+            ])
+
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -139,22 +259,9 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return hurdle_rates
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # hurdle_rates = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-
-def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
+def write_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
     """
     Get inputs from database and write out the model input
     transmission_hurdle_rates.tab file.
@@ -169,10 +276,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     hurdle_rates = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory,
-                           "transmission_hurdle_rates.tab"),
-              "w", newline="") as \
-            sim_flows_file:
+    with open(os.path.join(inputs_directory, "transmission_hurdle_rates.tab"),
+              "w", newline="") as sim_flows_file:
         writer = csv.writer(sim_flows_file, delimiter="\t")
 
         # Write header
@@ -186,44 +291,9 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
             writer.writerow(row)
 
 
-def export_results(scenario_directory, subproblem, stage, m, d):
-    """
-    Export transmission operational cost results.
-    :param scenario_directory:
-    :param subproblem:
-    :param stage:
-    :param m:
-    The Pyomo abstract model
-    :param d:
-    Dynamic components
-    :return:
-    Nothing
-    """
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-              "costs_transmission_hurdle.csv"), "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["tx_line", "period", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone_from", "load_zone_to",
-             "hurdle_cost_positive_direction",
-             "hurdle_cost_negative_direction"]
-        )
-        for (tx, tmp) in m.TRANSMISSION_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                tx,
-                m.period[tmp],
-                tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
-                m.load_zone_from[tx],
-                m.load_zone_to[tx],
-                value(m.Hurdle_Cost_Positive_Direction[tx, tmp]),
-                value(m.Hurdle_Cost_Negative_Direction[tx, tmp])
-            ])
-
-
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory):
+        scenario_id, subproblem, stage, c, db, results_directory
+):
     """
 
     :param scenario_id:
@@ -244,8 +314,7 @@ def import_results_into_database(
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "costs_transmission_hurdle.csv"),
+    with open(os.path.join(results_directory, "costs_transmission_hurdle.csv"),
               "r") as tx_op_file:
         reader = csv.reader(tx_op_file)
 
@@ -260,7 +329,7 @@ def import_results_into_database(
             lz_to = row[6]
             hurdle_cost_positve_direction = row[7]
             hurdle_cost_negative_direction = row[8]
-            
+
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
@@ -298,3 +367,21 @@ def import_results_into_database(
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # hurdle_rates = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)

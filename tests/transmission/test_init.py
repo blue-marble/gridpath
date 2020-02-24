@@ -81,9 +81,9 @@ class TestTransmissionInit(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: TRANSMISSION_LINES
+        # Set: TX_LINES
         expected_tx_lines = sorted(["Tx1", "Tx2", "Tx3", "Tx_New"])
-        actual_tx_lines = sorted([tx for tx in instance.TRANSMISSION_LINES])
+        actual_tx_lines = sorted([tx for tx in instance.TX_LINES])
         self.assertListEqual(expected_tx_lines, actual_tx_lines)
 
         # Param: tx_capacity_type
@@ -97,7 +97,7 @@ class TestTransmissionInit(unittest.TestCase):
                                               )
         actual_cap_type = OrderedDict(sorted(
             {tx: instance.tx_capacity_type[tx]
-             for tx in instance.TRANSMISSION_LINES}.items()
+             for tx in instance.TX_LINES}.items()
                                         )
                                               )
         self.assertDictEqual(expected_cap_type, actual_cap_type)
@@ -110,7 +110,7 @@ class TestTransmissionInit(unittest.TestCase):
                                               )
         actual_load_zone_from = OrderedDict(sorted(
             {tx: instance.load_zone_from[tx]
-             for tx in instance.TRANSMISSION_LINES}.items()
+             for tx in instance.TX_LINES}.items()
                                         )
                                               )
         self.assertDictEqual(expected_load_zone_from, actual_load_zone_from)
@@ -123,7 +123,7 @@ class TestTransmissionInit(unittest.TestCase):
                                               )
         actual_load_zone_to = OrderedDict(sorted(
             {tx: instance.load_zone_to[tx]
-             for tx in instance.TRANSMISSION_LINES}.items()
+             for tx in instance.TX_LINES}.items()
                                         )
                                               )
         self.assertDictEqual(expected_load_zone_to, actual_load_zone_to)

@@ -1833,6 +1833,7 @@ project_new_binary_build_size_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
+transmission_new_cost_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
@@ -1949,6 +1950,9 @@ FOREIGN KEY (transmission_load_zone_scenario_id)
 FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
     subscenarios_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id),
+FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
+    subscenarios_transmission_new_cost
+        (transmission_new_cost_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
     subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id),
@@ -2038,7 +2042,6 @@ retired_mw FLOAT,
 retired_binary INTEGER,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
-
 
 DROP TABLE IF EXISTS results_project_availability_exogenous;
 CREATE TABLE results_project_availability_exogenous (
@@ -2244,6 +2247,7 @@ committed_mw FLOAT,
 committed_units FLOAT,
 started_units FLOAT,
 stopped_units FLOAT,
+synced_units FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
@@ -2969,92 +2973,31 @@ local_capacity_marginal_cost_per_mw FLOAT,
 PRIMARY KEY (scenario_id, local_capacity_zone, period, subproblem_id, stage_id)
 );
 
+---------------
+--- OPTIONS ---
+---------------
+
+DROP TABLE IF EXISTS options_solver_descriptions;
+CREATE TABLE options_solver_descriptions (
+    solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(32),
+    description VARCHAR(128)
+);
+
+DROP TABLE IF EXISTS options_solver_values;
+CREATE TABLE options_solver_values (
+    solver_options_id INTEGER,
+    solver VARCHAR(32),
+    solver_option_name VARCHAR(32),
+    solver_option_value FLOAT,
+    PRIMARY KEY (solver_options_id, solver, solver_option_name),
+    FOREIGN KEY (solver_options_id)
+        REFERENCES options_solver_descriptions (solver_options_id)
+);
 
 -- Views
 DROP VIEW IF EXISTS scenarios_view;
-CREATE VIEW scenarios_view (
-scenario_id,
-scenario_name,
-scenario_description,
-validation_status,
-run_status,
-feature_fuels,
-feature_multi_stage,
-feature_transmission,
-feature_transmission_hurdle_rates,
-feature_simultaneous_flow_limits,
-feature_load_following_up,
-feature_load_following_down,
-feature_regulation_up,
-feature_regulation_down,
-feature_frequency_response,
-feature_spinning_reserves,
-feature_rps,
-feature_carbon_cap,
-feature_track_carbon_imports,
-feature_prm,
-feature_elcc_surface,
-feature_local_capacity,
-feature_tuning,
-temporal,
-geography_load_zones,
-geography_lf_up_bas,
-geography_lf_down_bas,
-geography_reg_up_bas,
-geography_reg_down_bas,
-geography_spin_bas,
-geography_freq_resp_bas,
-geography_rps_areas,
-carbon_cap_areas,
-prm_areas,
-local_capacity_areas,
-project_portfolio,
-project_operating_chars,
-project_availability,
-project_fuels,
-fuel_prices,
-project_load_zones,
-project_lf_up_bas,
-project_lf_down_bas,
-project_reg_up_bas,
-project_reg_down_bas,
-project_spin_bas,
-project_freq_resp_bas,
-project_rps_areas,
-project_carbon_cap_areas,
-project_prm_areas,
-project_elcc_chars,
-project_prm_energy_only,
-project_local_capacity_areas,
-project_local_capacity_chars,
-project_existing_capacity,
-project_existing_fixed_cost,
-project_new_cost,
-project_new_potential,
-project_new_binary_build_size,
-transmission_portfolio,
-transmission_load_zones,
-transmission_existing_capacity,
-transmission_operational_chars,
-transmission_hurdle_rates,
-transmission_carbon_cap_zones,
-transmission_simultaneous_flow_limits,
-transmission_simultaneous_flow_limit_line_groups,
-load_profile,
-load_following_reserves_up_profile,
-load_following_reserves_down_profile,
-regulation_up_profile,
-regulation_down_profile,
-spinning_reserves_profile,
-frequency_response_profile,
-rps_target,
-carbon_cap,
-prm_requirement,
-elcc_surface,
-local_capacity_requirement,
-tuning,
-solver
-)
+CREATE VIEW scenarios_view
 AS
 SELECT
 scenario_id,
@@ -3062,36 +3005,36 @@ scenario_name,
 scenario_description,
 mod_validation_status_types.validation_status_name as validation_status,
 mod_run_status_types.run_status_name as run_status,
-CASE WHEN (of_fuels=1) THEN 'yes' ELSE 'no' END AS feature_fuels,
-CASE WHEN (of_multi_stage=1) THEN 'yes' ELSE 'no' END AS feature_multi_stage,
-CASE WHEN (of_transmission=1) THEN 'yes' ELSE 'no' END AS feature_transmission,
-CASE WHEN (of_transmission_hurdle_rates=1) THEN 'yes' ELSE 'no' END
+CASE WHEN of_fuels THEN 'yes' ELSE 'no' END AS feature_fuels,
+CASE WHEN of_multi_stage THEN 'yes' ELSE 'no' END AS feature_multi_stage,
+CASE WHEN of_transmission THEN 'yes' ELSE 'no' END AS feature_transmission,
+CASE WHEN of_transmission_hurdle_rates=1 THEN 'yes' ELSE 'no' END
     AS feature_transmission_hurdle_rates,
-CASE WHEN (of_simultaneous_flow_limits) THEN 'yes' ELSE 'no' END
+CASE WHEN of_simultaneous_flow_limits THEN 'yes' ELSE 'no' END
     AS feature_simultaneous_flow_limits,
-CASE WHEN (of_lf_reserves_up) THEN 'yes' ELSE 'no' END
+CASE WHEN of_lf_reserves_up THEN 'yes' ELSE 'no' END
     AS feature_load_following_up,
-CASE WHEN (of_lf_reserves_down) THEN 'yes' ELSE 'no' END
+CASE WHEN of_lf_reserves_down THEN 'yes' ELSE 'no' END
     AS feature_load_following_down,
-CASE WHEN (of_regulation_up) THEN 'yes' ELSE 'no' END
+CASE WHEN of_regulation_up THEN 'yes' ELSE 'no' END
     AS feature_regulation_up,
-CASE WHEN (of_regulation_down) THEN 'yes' ELSE 'no' END
+CASE WHEN of_regulation_down THEN 'yes' ELSE 'no' END
     AS feature_regulation_down,
-CASE WHEN (of_frequency_response) THEN 'yes' ELSE 'no' END
+CASE WHEN of_frequency_response THEN 'yes' ELSE 'no' END
     AS feature_frequency_response,
-CASE WHEN (of_spinning_reserves) THEN 'yes' ELSE 'no' END
+CASE WHEN of_spinning_reserves THEN 'yes' ELSE 'no' END
     AS feature_spinning_reserves,
-CASE WHEN (of_rps) THEN 'yes' ELSE 'no' END AS feature_rps,
-CASE WHEN (of_carbon_cap) THEN 'yes' ELSE 'no' END
+CASE WHEN of_rps THEN 'yes' ELSE 'no' END AS feature_rps,
+CASE WHEN of_carbon_cap THEN 'yes' ELSE 'no' END
     AS feature_carbon_cap,
-CASE WHEN (of_track_carbon_imports) THEN 'yes' ELSE 'no' END
+CASE WHEN of_track_carbon_imports THEN 'yes' ELSE 'no' END
     AS feature_track_carbon_imports,
-CASE WHEN (of_prm) THEN 'yes' ELSE 'no' END AS feature_prm,
-CASE WHEN (of_elcc_surface) THEN 'yes' ELSE 'no' END
+CASE WHEN of_prm THEN 'yes' ELSE 'no' END AS feature_prm,
+CASE WHEN of_elcc_surface THEN 'yes' ELSE 'no' END
     AS feature_elcc_surface,
-CASE WHEN (of_local_capacity) THEN 'yes' ELSE 'no' END
+CASE WHEN of_local_capacity THEN 'yes' ELSE 'no' END
     AS feature_local_capacity,
-CASE WHEN (of_tuning) THEN 'yes' ELSE 'no' END
+CASE WHEN of_tuning THEN 'yes' ELSE 'no' END
     AS feature_tuning,
 subscenarios_temporal.name AS temporal,
 subscenarios_geography_load_zones.name AS geography_load_zones,
@@ -3133,6 +3076,8 @@ subscenarios_transmission_portfolios.name AS transmission_portfolio,
 subscenarios_transmission_load_zones.name AS transmission_load_zones,
 subscenarios_transmission_existing_capacity.name
     AS transmission_existing_capacity,
+subscenarios_transmission_new_cost.name
+    AS transmission_new_cost,
 subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
@@ -3231,6 +3176,8 @@ LEFT JOIN subscenarios_transmission_load_zones
     USING (transmission_load_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_existing_capacity
     USING (transmission_existing_capacity_scenario_id)
+LEFT JOIN subscenarios_transmission_new_cost
+    USING (transmission_new_cost_scenario_id)
 LEFT JOIN subscenarios_transmission_operational_chars
     USING (transmission_operational_chars_scenario_id)
 LEFT JOIN subscenarios_transmission_hurdle_rates
@@ -3331,26 +3278,4 @@ technology VARCHAR(32),
 color VARCHAR(32),
 plotting_order INTEGER UNIQUE,
 PRIMARY KEY (technology)
-);
-
----------------
---- OPTIONS ---
----------------
-
-DROP TABLE IF EXISTS options_solver_descriptions;
-CREATE TABLE options_solver_descriptions (
-    solver_options_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(32),
-    description VARCHAR(128)
-);
-
-DROP TABLE IF EXISTS options_solver_values;
-CREATE TABLE options_solver_values (
-    solver_options_id INTEGER,
-    solver VARCHAR(32),
-    solver_option_name VARCHAR(32),
-    solver_option_value FLOAT,
-    PRIMARY KEY (solver_options_id, solver, solver_option_name),
-    FOREIGN KEY (solver_options_id)
-        REFERENCES options_solver_descriptions (solver_options_id)
 );
