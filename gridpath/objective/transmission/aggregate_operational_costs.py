@@ -26,13 +26,13 @@ def add_model_components(m, d):
         :return:
         """
         return sum(
-            (mod.Hurdle_Cost_Positive_Direction[tx, tmp] +
-             mod.Hurdle_Cost_Negative_Direction[tx, tmp])
+            (mod.Hurdle_Cost_Pos_Dir[tx, tmp] +
+             mod.Hurdle_Cost_Neg_Dir[tx, tmp])
             * mod.number_of_hours_in_timepoint[tmp]
             * mod.timepoint_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
-            for (tx, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS)
+            for (tx, tmp) in mod.TX_OPR_TMPS)
 
     m.Total_Hurdle_Cost = Expression(rule=total_hurdle_cost_rule)
     getattr(d, total_cost_components).append("Total_Hurdle_Cost")

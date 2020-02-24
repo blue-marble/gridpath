@@ -390,22 +390,22 @@ class TestExamples(unittest.TestCase):
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
-            1: {"da": 866737242.3466433,
-                "ha": 866737242.3466433,
-                "rt": 866737242.3466433},
-            2: {"da": 866737242.3466433,
-                "ha": 866737242.3466433,
-                "rt": 866737242.3466433},
-            3: {"da": 866737242.3466433,
-                "ha": 866737242.3466433,
-                "rt": 866737242.3466433}
+            1: {1: 866737242.3466433,
+                2: 866737242.3466433,
+                3: 866737242.3466433},
+            2: {1: 866737242.3466433,
+                2: 866737242.3466433,
+                3: 866737242.3466433},
+            3: {1: 866737242.3466433,
+                2: 866737242.3466433,
+                3: 866737242.3466433}
         }
 
         for horizon in [1, 2, 3]:
-            for stage in {"da", "ha", "rt"}:
+            for stage in {1, 2, 3}:
                 self.assertAlmostEqual(
                     expected_objectives[horizon][stage],
-                    actual_objectives[str(horizon)][stage],
+                    actual_objectives[str(horizon)][str(stage)],
                     places=1
                 )
 
@@ -421,22 +421,22 @@ class TestExamples(unittest.TestCase):
                                "--quiet", "--mute_solver_output", "--testing"])
 
         expected_objectives = {
-            1: {"da": 966735555.35,
-                "ha": 966735555.35,
-                "rt": 966735555.35},
-            2: {"da": 966735555.35,
-                "ha": 966735555.35,
-                "rt": 966735555.35},
-            3: {"da": 966735555.35,
-                "ha": 966735555.35,
-                "rt": 966735555.35}
+            1: {1: 966735555.35,
+                2: 966735555.35,
+                3: 966735555.35},
+            2: {1: 966735555.35,
+                2: 966735555.35,
+                3: 966735555.35},
+            3: {1: 966735555.35,
+                2: 966735555.35,
+                3: 966735555.35}
         }
 
         for horizon in [1, 2, 3]:
-            for stage in {"da", "ha", "rt"}:
+            for stage in {1, 2, 3}:
                 self.assertAlmostEqual(
                     expected_objectives[horizon][stage],
-                    actual_objectives[str(horizon)][stage],
+                    actual_objectives[str(horizon)][str(stage)],
                     places=1
                 )
 

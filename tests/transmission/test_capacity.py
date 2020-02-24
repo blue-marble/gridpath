@@ -79,13 +79,13 @@ class TestTxCapacity(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: TRANSMISSION_OPERATIONAL_PERIODS
+        # Set: TX_OPR_PRDS
         expected_tx_periods = sorted([
             ("Tx1", 2020), ("Tx1", 2030), ("Tx_New", 2020), ("Tx_New", 2030),
             ("Tx2", 2020), ("Tx2", 2030), ("Tx3", 2020), ("Tx3", 2030)
         ])
         actual_tx_periods = sorted([
-            (tx, p) for (tx, p) in instance.TRANSMISSION_OPERATIONAL_PERIODS
+            (tx, p) for (tx, p) in instance.TX_OPR_PRDS
         ])
         self.assertListEqual(expected_tx_periods, actual_tx_periods)
 

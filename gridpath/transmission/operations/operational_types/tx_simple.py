@@ -71,16 +71,16 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     m.TX_SIMPLE = Set(
-        within=m.TRANSMISSION_LINES,
-        rule=lambda mod: set(l for l in mod.TRANSMISSION_LINES if
+        within=m.TX_LINES,
+        rule=lambda mod: set(l for l in mod.TX_LINES if
                              mod.tx_operational_type[l] == "tx_simple")
     )
 
     m.TX_SIMPLE_OPR_TMPS = Set(
-        dimen=2, within=m.TRANSMISSION_OPERATIONAL_TIMEPOINTS,
+        dimen=2, within=m.TX_OPR_TMPS,
         rule=lambda mod:
             set((l, tmp)
-                for (l, tmp) in mod.TRANSMISSION_OPERATIONAL_TIMEPOINTS
+                for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_SIMPLE)
     )
 
@@ -120,7 +120,7 @@ def min_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxSimple_Transmit_Power_MW[l, tmp] \
-        >= mod.Transmission_Min_Capacity_MW[l, mod.period[tmp]]
+        >= mod.Tx_Min_Capacity_MW[l, mod.period[tmp]]
 
 
 def max_transmit_rule(mod, l, tmp):
@@ -132,7 +132,7 @@ def max_transmit_rule(mod, l, tmp):
     each operational timepoint.
     """
     return mod.TxSimple_Transmit_Power_MW[l, tmp] \
-        <= mod.Transmission_Max_Capacity_MW[l, mod.period[tmp]]
+        <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
 
 
 # Transmission Operational Type Methods

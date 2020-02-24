@@ -361,7 +361,7 @@ class TestOperationsInit(unittest.TestCase):
             "Gas_CCGT", "Coal", "Gas_CT", "Gas_CCGT_New", "Gas_CCGT_New_Binary",
             "Gas_CT_New",
             "Gas_CCGT_z2", "Coal_z2", "Disp_Binary_Commit", "Disp_Cont_Commit",
-            "Disp_No_Commit", "Clunky_Old_Gen", "Clunky_Old_Gen2"
+            "Clunky_Old_Gen", "Clunky_Old_Gen2"
         ])
         actual_startup_fuel_projects = sorted([
             prj for prj in instance.STARTUP_FUEL_PROJECTS
@@ -375,7 +375,6 @@ class TestOperationsInit(unittest.TestCase):
             "Gas_CCGT_New_Binary": 6,
             "Gas_CT_New": 0.5, "Gas_CCGT_z2": 6, "Coal_z2": 6,
             "Disp_Binary_Commit": 10, "Disp_Cont_Commit": 10,
-            "Disp_No_Commit": 10,
             "Clunky_Old_Gen": 10, "Clunky_Old_Gen2": 10
             }.items()
                 )

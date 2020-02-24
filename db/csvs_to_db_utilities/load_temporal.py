@@ -116,17 +116,20 @@ def load_temporal(io, c, subscenario_input, data_input):
             for st_id in timepoints[sub_id].keys():
                 timepoint_horizons[sub_id][st_id] = dict()
                 for tmp in timepoints[sub_id][st_id].keys():
-                    horizon = timepoint_horizons_df.loc[(timepoint_horizons_df['subproblem_id'] == sub_id
-                                               ) & (timepoint_horizons_df['stage_id'] == st_id
-                                                    ) & (timepoint_horizons_df['timepoint'] == tmp),
-                                                        'horizon'].iloc[0]
+                    horizon = timepoint_horizons_df.loc[
+                        (timepoint_horizons_df['subproblem_id'] == sub_id)
+                        & (timepoint_horizons_df['stage_id'] == st_id)
+                        & (timepoint_horizons_df['timepoint'] == tmp),
+                        'horizon'].astype(int)
 
-                    balancing_type = timepoint_horizons_df.loc[(timepoint_horizons_df['subproblem_id'] == sub_id
-                                               ) & (timepoint_horizons_df['stage_id'] == st_id
-                                                    ) & (timepoint_horizons_df['timepoint'] == tmp),
-                                                               'balancing_type_horizon'].iloc[0]
-                    timepoint_horizons[sub_id][
-                        st_id][tmp] = [(int(horizon), balancing_type)]
+                    balancing_type = timepoint_horizons_df.loc[
+                        (timepoint_horizons_df['subproblem_id'] == sub_id)
+                        & (timepoint_horizons_df['stage_id'] == st_id)
+                        & (timepoint_horizons_df['timepoint'] == tmp),
+                        'balancing_type_horizon']
+
+                    timepoint_horizons[sub_id][st_id][tmp] = list(
+                        zip(horizon, balancing_type))
 
         # Load data into GridPath database
         temporal.temporal(

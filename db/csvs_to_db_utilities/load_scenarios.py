@@ -117,8 +117,8 @@ def load_scenarios(io, c, data_input):
             scenarios["transmission_operational_chars_scenario_id"],
             transmission_hurdle_rate_scenario_id=
             scenarios["transmission_hurdle_rate_scenario_id"],
-            #transmission_new_cost_scenario_id=
-            #scenarios["transmission_new_cost_scenario_id"],
+            transmission_new_cost_scenario_id=
+            scenarios["transmission_new_cost_scenario_id"],
             transmission_carbon_cap_zone_scenario_id=
             scenarios["transmission_carbon_cap_zone_scenario_id"],
             transmission_simultaneous_flow_limit_scenario_id=

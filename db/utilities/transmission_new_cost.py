@@ -17,16 +17,15 @@ def transmision_new_cost(
         tx_line_period_lifetimes_costs
 ):
     """
-
-    :param io: 
+    :param io:
     :param c: 
-    :param transmission_portfolio_scenario_id: 
+    :param transmission_new_cost_scenario_id:
     :param scenario_name: 
     :param scenario_description: 
     :param tx_line_period_lifetimes_costs:
-    Dictionary with the names of the transmission line as keys and tuples
-    containing the vintage, transmission line lifetime in years and
-    transmission line's annualized real cost per MW-y
+    Nested dictionary with the names of the transmission line and vintage as
+    nested keys and tuples containing the transmission line's lifetime in
+    years and annualized real cost per MW-y as values.
     :return: 
     """
     print("transmission new costs")
@@ -44,17 +43,19 @@ def transmision_new_cost(
     # Insert data
     inputs_data = []
     for tx_line in list(tx_line_period_lifetimes_costs.keys()):
-        inputs_data.append(
-            (transmission_new_cost_scenario_id,
-             tx_line,
-             tx_line_period_lifetimes_costs[tx_line][0],
-             tx_line_period_lifetimes_costs[tx_line][1],
-             tx_line_period_lifetimes_costs[tx_line][2])
-        )
+        for period in list(tx_line_period_lifetimes_costs[tx_line].keys()):
+            inputs_data.append(
+                (transmission_new_cost_scenario_id,
+                 tx_line,
+                 period,
+                 tx_line_period_lifetimes_costs[tx_line][period][0],
+                 tx_line_period_lifetimes_costs[tx_line][period][1])
+            )
     inputs_sql = """
         INSERT INTO inputs_transmission_new_cost
         (transmission_new_cost_scenario_id,
-        transmission_line, vintage, tx_lifetime_yrs, tx_annualized_real_cost_per_mw_yr)
+        transmission_line, vintage, tx_lifetime_yrs,
+        tx_annualized_real_cost_per_mw_yr)
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

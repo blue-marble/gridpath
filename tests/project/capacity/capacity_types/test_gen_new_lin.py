@@ -38,7 +38,7 @@ except ImportError:
           " to test.")
 
 
-class TestNewBuildGenerator(unittest.TestCase):
+class TestGenNewLin(unittest.TestCase):
     """
 
     """

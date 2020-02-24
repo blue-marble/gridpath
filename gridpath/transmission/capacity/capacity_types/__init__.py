@@ -48,7 +48,6 @@ def get_required_capacity_type_modules(subscenarios, conn):
             WHERE transmission_operational_chars_scenario_id = {})
             USING (transmission_line)
             WHERE transmission_portfolio_scenario_id = {};""".format(
-                subscenarios.LOAD_ZONE_SCENARIO_ID,
                 subscenarios.TRANSMISSION_LOAD_ZONE_SCENARIO_ID,
                 subscenarios.TRANSMISSION_OPERATIONAL_CHARS_SCENARIO_ID,
                 subscenarios.TRANSMISSION_PORTFOLIO_SCENARIO_ID

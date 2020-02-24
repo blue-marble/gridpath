@@ -1834,6 +1834,7 @@ project_new_binary_build_size_scenario_id INTEGER,
 transmission_portfolio_scenario_id INTEGER,
 transmission_load_zone_scenario_id INTEGER,
 transmission_existing_capacity_scenario_id INTEGER,
+transmission_new_cost_scenario_id INTEGER,
 transmission_operational_chars_scenario_id INTEGER,
 transmission_hurdle_rate_scenario_id INTEGER,
 transmission_carbon_cap_zone_scenario_id INTEGER,
@@ -1950,6 +1951,9 @@ FOREIGN KEY (transmission_load_zone_scenario_id)
 FOREIGN KEY (transmission_existing_capacity_scenario_id) REFERENCES
     subscenarios_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id),
+FOREIGN KEY (transmission_new_cost_scenario_id) REFERENCES
+    subscenarios_transmission_new_cost
+        (transmission_new_cost_scenario_id),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
     subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id),
@@ -2018,113 +2022,25 @@ FOREIGN KEY (solver_options_id)
 -- -- RESULTS -- --
 -------------------
 
-DROP TABLE IF EXISTS results_project_capacity_all;
-CREATE TABLE results_project_capacity_all (
+DROP TABLE IF EXISTS results_project_capacity;
+CREATE TABLE results_project_capacity (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+capacity_type VARCHAR(64),
 technology VARCHAR(32),
 load_zone VARCHAR(32),
 rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 capacity_mw FLOAT,
 energy_capacity_mwh FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_gen_new_lin;
-CREATE TABLE results_project_capacity_gen_new_lin (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-new_build_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_gen_new_bin;
-CREATE TABLE results_project_capacity_gen_new_bin (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-new_build_binary INTEGER,
-new_build_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_stor_new_lin;
-CREATE TABLE results_project_capacity_stor_new_lin (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
 new_build_mw FLOAT,
 new_build_mwh FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_stor_new_bin;
-CREATE TABLE results_project_capacity_stor_new_bin (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
 new_build_binary INTEGER,
-new_build_mw FLOAT,
-new_build_mwh FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_linear_economic_retirement;
-CREATE TABLE results_project_capacity_linear_economic_retirement (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
 retired_mw FLOAT,
-PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
-);
-
-DROP TABLE IF EXISTS results_project_capacity_binary_economic_retirement;
-CREATE TABLE results_project_capacity_binary_economic_retirement (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-technology VARCHAR(32),
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-retired_mw FLOAT,
+retired_binary INTEGER,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
@@ -2332,6 +2248,7 @@ committed_mw FLOAT,
 committed_units FLOAT,
 started_units FLOAT,
 stopped_units FLOAT,
+synced_units FLOAT,
 PRIMARY KEY (scenario_id, project, timepoint)
 );
 
@@ -3160,6 +3077,8 @@ subscenarios_transmission_portfolios.name AS transmission_portfolio,
 subscenarios_transmission_load_zones.name AS transmission_load_zones,
 subscenarios_transmission_existing_capacity.name
     AS transmission_existing_capacity,
+subscenarios_transmission_new_cost.name
+    AS transmission_new_cost,
 subscenarios_transmission_operational_chars.name
     AS transmission_operational_chars,
 subscenarios_transmission_hurdle_rates.name AS transmission_hurdle_rates,
@@ -3258,6 +3177,8 @@ LEFT JOIN subscenarios_transmission_load_zones
     USING (transmission_load_zone_scenario_id)
 LEFT JOIN subscenarios_transmission_existing_capacity
     USING (transmission_existing_capacity_scenario_id)
+LEFT JOIN subscenarios_transmission_new_cost
+    USING (transmission_new_cost_scenario_id)
 LEFT JOIN subscenarios_transmission_operational_chars
     USING (transmission_operational_chars_scenario_id)
 LEFT JOIN subscenarios_transmission_hurdle_rates

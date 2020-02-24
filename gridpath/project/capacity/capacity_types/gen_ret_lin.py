@@ -25,10 +25,10 @@ import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, Expression, \
     NonNegativeReals, value
 
-from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     capacity_type_operational_period_sets
+from gridpath.project.capacity.capacity_types.common_methods import \
+    update_capacity_results_table
 
 
 def add_module_specific_components(m, d):
@@ -338,7 +338,7 @@ def export_module_specific_results(
                            ".csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "technology", "load_zone",
-                         "retire_mw"])
+                         "retired_mw"])
         for (prj, p) in m.GEN_RET_LIN_OPR_PRDS:
             writer.writerow([
                 prj,
@@ -378,8 +378,8 @@ def summarize_module_specific_results(
     # Get all technologies with the new build capacity
     lin_retirement_df = pd.DataFrame(
         capacity_results_agg_df[
-            capacity_results_agg_df["retire_mw"] > 0
-        ]["retire_mw"]
+            capacity_results_agg_df["retired_mw"] > 0
+        ]["retired_mw"]
     )
 
     lin_retirement_df.columns = ["Retired Capacity (MW)"]
@@ -505,55 +505,11 @@ def import_module_specific_results_into_database(
     # New build capacity results
     print("project linear economic retirements")
 
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db, cursor=c,
-        table="results_project_capacity_linear_economic_retirement",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    update_capacity_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="capacity_gen_ret_lin.csv"
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(
-            results_directory,
-            "capacity_gen_ret_lin.csv"), "r") as \
-            capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            retired_mw = row[4]
-
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 technology, load_zone, retired_mw)
-            )
-
-    insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_capacity_linear_economic_retirement{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, retired_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_capacity_linear_economic_retirement
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, retired_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, retired_mw
-        FROM temp_results_project_capacity_linear_economic_retirement{}
-         ORDER BY scenario_id, project, period, subproblem_id, stage_id;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
 
 
 # Validation

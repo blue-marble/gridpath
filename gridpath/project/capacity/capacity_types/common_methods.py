@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
+import os.path
+
+from db.common_functions import spin_on_database_lock
 
 # TODO: if vintage is 2020 and lifetime is 30, is the project available in
 #  2050 or not -- maybe have options for how this should be treated?
@@ -65,3 +69,69 @@ def project_vintages_operational_in_period(
         else:
             pass
     return project_vintages
+
+
+def update_capacity_results_table(
+     db, c, results_directory, scenario_id, subproblem, stage, results_file
+):
+    results = []
+    with open(os.path.join(results_directory, results_file), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        header = next(reader)
+
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            new_build_mw = get_column_row_value(header, "new_build_mw", row)
+            new_build_mwh = get_column_row_value(header, "new_build_mwh", row)
+            new_build_binary = get_column_row_value(header,
+                                                    "new_build_binary", row)
+            retired_mw = get_column_row_value(header, "retired_mw", row)
+            retired_binary = get_column_row_value(header, "retired_binary",
+                                                  row)
+
+            results.append(
+                (new_build_mw, new_build_mwh, new_build_binary,
+                 retired_mw, retired_binary,
+                 scenario_id, project, period, subproblem, stage)
+            )
+
+    # Update the results table with the module-specific results
+    update_sql = """
+        UPDATE results_project_capacity
+        SET new_build_mw = ?,
+        new_build_mwh = ?,
+        new_build_binary = ?,
+        retired_mw = ?,
+        retired_binary = ?
+        WHERE scenario_id = ?
+        AND project = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?;
+        """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
+
+
+def get_column_row_value(header, column_name, row):
+    """
+    :param header: list; the CSV file header (list of column names)
+    :param column_name: string; the column name we're looking for
+    :param row: list; the values in the current row
+    :return:
+
+    Check if the header contains the column_name; if not, return None for
+    the value for this column_name in this row; if it does, get the right
+    value from the value based on the column_name index in the header.
+    """
+    try:
+        column_index = header.index(column_name)
+    except ValueError:
+        column_index = None
+
+    row_column_value = None if column_index is None else row[column_index]
+
+    return row_column_value

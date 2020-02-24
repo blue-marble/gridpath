@@ -222,9 +222,10 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             pass
 
 
+# TODO: move this to gridpath.project.capacity.__init__?
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
-    Export operations results.
+    Export capacity results.
     :param scenario_directory:
     :param subproblem:
     :param stage:
@@ -237,12 +238,14 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
                            "capacity_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["project", "period", "technology", "load_zone",
+        writer.writerow(["project", "period",
+                         "capacity_type", "technology", "load_zone",
                          "capacity_mw", "capacity_mwh"])
         for (prj, p) in m.PROJECT_OPERATIONAL_PERIODS:
             writer.writerow([
                 prj,
                 p,
+                m.capacity_type[prj],
                 m.technology[prj],
                 m.load_zone[prj],
                 value(m.Capacity_MW[prj, p]),
@@ -318,63 +321,15 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
 def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
     """
-
+    The capacity_all.csv file is imported by
+    gridpath.project.capacity.capacity_types.__init__.py
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
     :return:
     """
-    # Capacity results
-    print("project capacity")
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_capacity_all",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory, "capacity_all.csv"), "r") as \
-            capacity_file:
-        reader = csv.reader(capacity_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            technology = row[2]
-            load_zone = row[3]
-            capacity_mw = row[4]
-            energy_capacity_mwh = 'NULL' if row[5] == "" else row[5]
-
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 technology, load_zone, capacity_mw, energy_capacity_mwh)
-            )
-
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_capacity_all{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        technology, load_zone, capacity_mw, energy_capacity_mwh)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_capacity_all
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, capacity_mw, energy_capacity_mwh)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        technology, load_zone, capacity_mw, energy_capacity_mwh
-        FROM temp_results_project_capacity_all{}
-        ORDER BY scenario_id, project, period, subproblem_id, 
-        stage_id;""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+    pass
 
 
 def operational_periods_by_project(prj, project_operational_periods):

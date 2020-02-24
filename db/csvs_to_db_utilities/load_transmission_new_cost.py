@@ -7,10 +7,28 @@ Load transmission new cost data
 
 from db.utilities import transmission_new_cost
 
+
+def recur_dictify(frame):
+    """
+    Converts DataFrame to nested dictionary using recursion.
+
+    :param frame:
+    :return:
+    """
+    if len(frame.columns) == 1:
+        if frame.values.size == 1:
+            return frame.values[0][0]
+        return frame.values.squeeze()
+    grouped = frame.groupby(frame.columns[0])
+    d = {k: recur_dictify(g.iloc[:, 1:]) for k, g in grouped}
+    return d
+
+
 def load_transmission_new_cost(io, c, subscenario_input, data_input):
     """
     transmission new cost dictionary
-    {transmission_line: (vintage, tx_lifetime_yrs, tx_annualized_real_cost_per_mw_yr}
+    {transmission_line: {vintage:
+        (tx_lifetime_yrs, tx_annualized_real_cost_per_mw_yr)}}
     :param io:
     :param c:
     :param subscenario_input:
@@ -26,20 +44,12 @@ def load_transmission_new_cost(io, c, subscenario_input, data_input):
         data_input_subscenario = data_input.loc[
             data_input['transmission_new_cost_scenario_id'] == sc_id]
 
-        tx_line_period_lifetimes_costs = dict()
-        for tl in data_input_subscenario['transmission_line'].unique():
-            print(tl)
-            tx_line_period_lifetimes_costs[tl] = dict()
-            tx_line_period_lifetimes_costs[tl] = (int(data_input_subscenario.loc[
-                                                      data_input_subscenario[
-                                                          'transmission_line'] == tl, 'vintage'].iloc[0]),
-                                                  float(data_input_subscenario.loc[
-                                                      data_input_subscenario[
-                                                          'transmission_line'] == tl, 'tx_lifetime_yrs'].iloc[0]),
-                                                  float(data_input_subscenario.loc[
-                                                      data_input_subscenario[
-                                                          'transmission_line'] == tl, 'tx_annualized_real_cost_per_mw_yr'].iloc[0])
-                                                  )
+        key_cols = ["transmission_line", "vintage"]
+        value_cols = ["tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]
+
+        df = data_input_subscenario.groupby(key_cols)[value_cols].apply(
+            lambda x: x.values.tolist()[0]).to_frame().reset_index()
+        tx_line_period_lifetimes_costs = recur_dictify(df)
 
         transmission_new_cost.transmision_new_cost(
             io=io, c=c,

@@ -549,8 +549,7 @@ def write_module_specific_model_inputs(
     # Check if project_availability_endogenous.tab exists; only write header
     # if the file wasn't already created
     availability_file = os.path.join(
-        inputs_directory, subproblem, stage, "inputs",
-        "project_availability_endogenous.tab"
+        inputs_directory, "project_availability_endogenous.tab"
     )
 
     if not os.path.exists(availability_file):
@@ -558,8 +557,12 @@ def write_module_specific_model_inputs(
             writer = csv.writer(f, delimiter="\t")
             # Write header
             writer.writerow(
-                ["project", "unavailable_hours_per_period",
-                 "unavailable_hours_per_event"]
+                ["project",
+                 "unavailable_hours_per_period",
+                 "unavailable_hours_per_event_min",
+                 "unavailable_hours_per_event_max",
+                 "available_hours_between_events_min",
+                 "available_hours_between_events_max"]
             )
 
     with open(availability_file, "a", newline="") as f:

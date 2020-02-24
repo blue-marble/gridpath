@@ -69,6 +69,7 @@ def create_scenario_all_args(
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_existing_capacity_scenario_id,
+        transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,
         transmission_carbon_cap_zone_scenario_id,
@@ -153,6 +154,7 @@ def create_scenario_all_args(
     :param transmission_portfolio_scenario_id:
     :param transmission_load_zone_scenario_id:
     :param transmission_existing_capacity_scenario_id:
+    :param transmission_new_cost_scenario_id:
     :param transmission_operational_chars_scenario_id:
     :param transmission_hurdle_rate_scenario_id:
     :param transmission_carbon_cap_zone_scenario_id:
@@ -235,6 +237,7 @@ def create_scenario_all_args(
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_existing_capacity_scenario_id,
+        transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,
         transmission_carbon_cap_zone_scenario_id,
@@ -314,6 +317,7 @@ def create_scenario_all_args(
         transmission_portfolio_scenario_id,
         transmission_load_zone_scenario_id,
         transmission_existing_capacity_scenario_id,
+        transmission_new_cost_scenario_id,
         transmission_operational_chars_scenario_id,
         transmission_hurdle_rate_scenario_id,
         transmission_carbon_cap_zone_scenario_id,
@@ -334,6 +338,7 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id
         ) VALUES (
+        ?,
         ?,
         ?,
         ?,
