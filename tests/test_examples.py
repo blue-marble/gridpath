@@ -715,24 +715,6 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
-    def test_example_test_new_binary_storage(self):
-        """
-        Check objective function value of "test_new_binary_storage" example
-        :return:
-        """
-        actual_objective = \
-            run_end_to_end.main(
-                ["--database", "../tests/testing.db",
-                 "--scenario", "test_new_binary_storage",
-                 "--scenario_location", EXAMPLES_DIRECTORY,
-                 "--quiet", "--mute_solver_output", "--testing"]
-            )
-
-        expected_objective = 51243.96
-
-        self.assertAlmostEqual(expected_objective, actual_objective,
-                               places=1)
-
     def test_example_test_new_solar_carbon_cap(self):
         """
         Check objective function value of "test_new_solar_carbon_cap" example
