@@ -1,1 +1,1 @@
-load_scenario_id,name,description,filename1,base,"base profile, up to 2 zones",system_load_base2,high,"high load profile, up to 2 zones",system_load_high3,mid,"mid load profile, up to 2 zones",system_load_mid
+load_scenario_id,name,description,filename1,base,"base profile, up to 2 zones",system_load_base2,high,"high load profile, up to 2 zones",system_load_high3,mid,"mid load profile, up to 2 zones",system_load_mid4,peak,"peak profile, 1 zone",system_load_peak
