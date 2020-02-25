@@ -29,15 +29,18 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
-        create_database.main(["--db_location", "../tests",
-                              "--db_name", "testing"])
-        port_csvs_to_gridpath.main(["--db_location", "../tests/",
-                                    "--db_name", "testing",
-                                    "--csv_location",
-                                    "../examples/1_examples_to_db"])
+        try:
+            create_database.main(["--db_location", "../tests",
+                                  "--db_name", "testing"])
+            port_csvs_to_gridpath.main(["--db_location", "../tests/",
+                                        "--db_name", "testing",
+                                        "--csv_location",
+                                        "../examples/1_examples_to_db"])
+        except:
+            print("Error encountered during creation of testing database "
+                  "testing.db. Deleting database ...")
+            os.remove("../tests/testing.db")
 
-        # TODO: remove database if error happens. Now it doesn't and next time
-        #  you run it you get a "database already exists" error.
         # TODO: create in memory instead and pass around connection?
 
         # self.conn = sqlite3.connect(":memory:")
