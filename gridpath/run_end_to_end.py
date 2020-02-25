@@ -48,6 +48,7 @@ def parse_arguments(args):
     return parsed_arguments
 
 
+# TODO: change all these to use scenario_id, not scenario_name
 def update_run_status(db_path, scenario, status_id):
     """
     :param db_path:
@@ -125,6 +126,43 @@ def record_end_time(db_path, scenario, process_id, end_time):
     )
 
 
+def check_if_in_queue(db_path, scenario):
+    # Check if we're running from the queue
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    queue_order_id = c.execute(
+        """
+        SELECT queue_order_id
+        FROM scenarios
+        WHERE scenario_name = '{}'
+        """.format(scenario)
+    ).fetchone()[0]
+
+    return queue_order_id
+
+
+def remove_from_queue_if_in_queue(db_path, scenario, queue_order_id):
+    # If running from the queue, remove from the queue
+
+    conn = connect_to_database(db_path=db_path)
+    c = conn.cursor()
+
+    if queue_order_id is not None:
+        print("Removing scenario ID {} from queue".format(scenario))
+        sql = """
+            UPDATE scenarios SET queue_order_id = NULL WHERE scenario_name = ?
+        """
+        spin_on_database_lock(
+            conn=conn, cursor=c, sql=sql,
+            data=(scenario,),
+            many=False
+        )
+    else:
+        pass
+
+
+
 # TODO: add more run status types?
 # TODO: handle case where scenario_name is not specified but ID is (run_scenario
 #   will fail right now, as well as the update_run_status() calls (?)
@@ -182,6 +220,11 @@ def main(args=None):
 
     print("Running scenario {} end to end".format(parsed_args.scenario))
 
+    # Check if running from queue
+    queue_order_id = check_if_in_queue(
+        parsed_args.database, parsed_args.scenario
+    )
+
     # Update run status to 'running'
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
 
@@ -196,6 +239,9 @@ def main(args=None):
         get_scenario_inputs.main(args=args)
     except Exception as e:
         logging.exception(e)
+        remove_from_queue_if_in_queue(
+            parsed_args.database, parsed_args.scenario, queue_order_id
+        )
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when getting inputs from the database for "
               "scenario {}.".format(parsed_args.scenario))
@@ -204,6 +250,9 @@ def main(args=None):
         run_scenario.main(args=args)
     except Exception as e:
         logging.exception(e)
+        remove_from_queue_if_in_queue(
+            parsed_args.database, parsed_args.scenario, queue_order_id
+        )
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when running scenario {}.".format(
             parsed_args.scenario))
@@ -213,6 +262,9 @@ def main(args=None):
         import_scenario_results.main(args=args)
     except Exception as e:
         logging.exception(e)
+        remove_from_queue_if_in_queue(
+            parsed_args.database, parsed_args.scenario, queue_order_id
+        )
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print("Error encountered when importing results for "
               "scenario {}.".format(parsed_args.scenario))
@@ -222,6 +274,9 @@ def main(args=None):
         process_results.main(args=args)
     except Exception as e:
         logging.exception(e)
+        remove_from_queue_if_in_queue(
+            parsed_args.database, parsed_args.scenario, queue_order_id
+        )
         update_run_status(parsed_args.database, parsed_args.scenario, 3)
         print('Error encountered when importing results for '
               'scenario {}.'.format(parsed_args.scenario))
@@ -229,6 +284,9 @@ def main(args=None):
 
     # If we make it here, mark run as complete and update run end time
     end_time = datetime.datetime.now()
+    remove_from_queue_if_in_queue(
+        parsed_args.database, parsed_args.scenario, queue_order_id
+    )
     update_run_status(parsed_args.database, parsed_args.scenario, 2)
     record_end_time(
         db_path=parsed_args.database, scenario=parsed_args.scenario,
@@ -254,6 +312,13 @@ def exit_gracefully():
     print('Exiting gracefully')
     args = sys.argv[1:]
     parsed_args = parse_arguments(args)
+    # Check if running from queue
+    queue_order_id = check_if_in_queue(
+        parsed_args.database, parsed_args.scenario
+    )
+    remove_from_queue_if_in_queue(
+        parsed_args.database, parsed_args.scenario, queue_order_id
+    )
     update_run_status(parsed_args.database, parsed_args.scenario, 4)
 
 

@@ -8,22 +8,23 @@ import os
 from flask_socketio import emit
 import psutil
 import subprocess
-import sys
 
 from db.common_functions import connect_to_database
-from gridpath.run_end_to_end import update_run_status
+from gridpath.run_end_to_end import update_run_status, check_if_in_queue, \
+  remove_from_queue_if_in_queue
 from ui.server.db_ops.delete_scenario import clear as clear_scenario
+from ui.server.common_functions import get_executable_path
 
 
 def launch_scenario_process(
     db_path, scenarios_directory, scenario_id, solver, solver_executable
-    ):
+):
     """
     :param db_path:
     :param scenarios_directory:
     :param scenario_id: integer, the scenario_id from the database
     :param solver: string, the solver name
-    :param solver: string, the solver executable
+    :param solver_executable: string, the solver executable
     :return:
 
     Launch a process to run the scenario.
@@ -35,7 +36,6 @@ def launch_scenario_process(
 
     scenario_name = get_scenario_name_from_scenario_id(cursor=c,
                                                        scenario_id=scenario_id)
-
 
     # First, check if the scenario is already running
     run_status, process_id = check_scenario_run_status(
@@ -54,17 +54,10 @@ def launch_scenario_process(
     else:
         print("Starting process for scenario_id " + str(scenario_id))
         # Get the run_gridpath_e2e entry point script from the
-        # sys.executable (remove 'python' and add 'gridpath_run_e2e')
-        chars_to_remove = 11 if os.name == "nt" else 7
-
-        base_dir = os.path.basename(sys.executable[:-chars_to_remove])
-
-        run_gridpath_e2e_executable = \
-            os.path.join(
-              sys.executable[:-chars_to_remove],
-              "" if base_dir.lower() in ["scripts", "bin"] else "scripts",
-              "gridpath_run_e2e"
-            )
+        # sys.executable
+        run_gridpath_e2e_executable = get_executable_path(
+            script_name="gridpath_run_e2e"
+        )
 
         p = subprocess.Popen(
             [run_gridpath_e2e_executable,
@@ -157,11 +150,19 @@ def get_scenario_name_from_scenario_id(cursor, scenario_id):
     return scenario_name
 
 
+# TODO: need to test removing from queue works on Windows
 def connect_to_db_and_update_run_status(db_path, scenario_id, status_id):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
     scenario_name = get_scenario_name_from_scenario_id(
       cursor=c, scenario_id=scenario_id)
+    # Check if running from queue
+    queue_order_id = check_if_in_queue(
+        db_path, scenario_id
+    )
+    remove_from_queue_if_in_queue(
+        db_path, scenario_id, queue_order_id
+    )
     update_run_status(db_path=db_path, scenario=scenario_name,
                       status_id=status_id)
 

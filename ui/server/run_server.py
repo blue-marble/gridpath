@@ -6,10 +6,12 @@ from flask_restful import Api
 from flask_socketio import SocketIO, emit
 import os
 import signal
+import subprocess
 import sys
 
 # API
 from ui.server.create_api import add_api_resources
+from ui.server.common_functions import get_executable_path
 
 # Database operations functions (Socket IO)
 from ui.server.db_ops.add_scenario import add_or_update_scenario
@@ -17,6 +19,8 @@ from ui.server.db_ops.delete_scenario import clear as clear_scenario, \
   delete as delete_scenario
 from ui.server.validate_scenario import validate_scenario
 from ui.server.save_data import save_table_data_to_csv, save_plot_data_to_csv
+from ui.server.run_queue_manager import add_scenario_to_queue,\
+    remove_scenario_from_queue
 
 # Scenario process functions (Socket IO)
 from ui.server.scenario_process import launch_scenario_process, \
@@ -66,6 +70,7 @@ SOLVERS = {
   SOLVER2_NAME: SOLVER2_EXECUTABLE,
   SOLVER3_NAME: SOLVER3_EXECUTABLE
 }
+RUN_QUEUE_MANAGER_PID = None
 
 
 # TODO: not sure we'll need this
@@ -115,6 +120,9 @@ def socket_launch_scenario_process(client_message):
     print(client_message)
 
     scenario_id = client_message["scenario"]
+
+    # TODO: get this from the database instead of passing from the UI to
+    #  consolidate
     solver = client_message["solver"]
 
     # TODO: add error if solver is not in the keys of the SOLVERS
@@ -225,6 +233,60 @@ def socket_clear_scenario(client_message):
     emit("scenario_deleted")
 
 
+# Queue Manager
+@socketio.on("add_scenario_to_queue")
+def socket_add_scenario_to_queue(client_message):
+    """
+
+    :return:
+    """
+    add_scenario_to_queue(
+      db_path=DATABASE_PATH, scenario_id=client_message["scenario"]
+    )
+
+    # Start the run queue manager if we don't have a process currently
+    if RUN_QUEUE_MANAGER_PID is None:
+        start_run_queue_manager()
+
+
+@socketio.on("remove_scenario_from_queue")
+def socket_remove_scenario_from_queue(client_message):
+    """
+
+    :return:
+    """
+    remove_scenario_from_queue(
+      db_path=DATABASE_PATH, scenario_id=client_message["scenario"]
+    )
+
+
+@socketio.on("reset_queue_manager_pid")
+def socket_queue_manager_exit_alert():
+    global RUN_QUEUE_MANAGER_PID
+    RUN_QUEUE_MANAGER_PID = None
+
+
+def start_run_queue_manager():
+    # Start queue manager
+    print("Starting queue manager")
+    run_queue_manager_executable = get_executable_path(
+        script_name="gridpath_run_queue_manager"
+    )
+
+    p = subprocess.Popen(
+      [run_queue_manager_executable, "--database", DATABASE_PATH],
+      shell=False,
+    )
+    print("Queue manager PID: ,", p.pid)
+    global RUN_QUEUE_MANAGER_PID
+    RUN_QUEUE_MANAGER_PID = p.pid
+
+    # Needed to ensure child processes are terminated when server exits
+    # TODO: still needed now that the queue manager will exit when it does
+    #  not get a response from the server?
+    atexit.register(p.terminate)
+
+
 # ### SAVING DATA ### #
 
 @socketio.on("save_table_data")
@@ -273,6 +335,7 @@ def socket_save_plot_data(client_message):
 
 
 def main():
+    # Run server
     socketio.run(
         app,
         host='127.0.0.1',

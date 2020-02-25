@@ -280,4 +280,22 @@ export class ScenarioDetailComponent implements OnInit, OnDestroy {
     this.getScenarioDetailAPI(this.scenarioID);
   }
 
+
+  addScenarioToRunQueue(): void {
+      const socket = socketConnect();
+
+      socket.emit(
+        'add_scenario_to_queue',
+        {scenario: this.scenarioID}
+      );
+  }
+
+  removeScenarioFromRunQueue(): void {
+      const socket = socketConnect();
+
+      socket.emit(
+        'remove_scenario_from_queue',
+        {scenario: this.scenarioID}
+      );
+  }
 }

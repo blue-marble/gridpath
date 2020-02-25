@@ -83,11 +83,25 @@
             </button>
             <button
               class='button-secondary'
+              [disabled]="runScenarioClicked"
+              *ngIf="scenarioDetail.runStatus=='not_run'"
+              (click)="addScenarioToRunQueue(); runScenarioClicked = true">
+              Add to Queue
+            </button>
+            <button
+              class='button-secondary'
               *ngIf="scenarioDetail.runStatus=='complete' ||
               scenarioDetail.runStatus=='run_error' ||
               scenarioDetail.runStatus=='run_stopped'"
+              [disabled]="runScenarioClicked"
               (click)="clearScenario(); runScenarioClicked = false">
               Clear Scenario Results
+            </button>
+            <button
+              class='button-secondary'
+              *ngIf="scenarioDetail.runStatus=='in_queue'"
+              (click)="removeScenarioFromRunQueue(); runScenarioClicked = false">
+              Remove from Queue
             </button>
           </td>
           <td>
