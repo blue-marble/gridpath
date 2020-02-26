@@ -2044,8 +2044,8 @@ retired_binary INTEGER,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-DROP TABLE IF EXISTS results_project_availability_exogenous;
-CREATE TABLE results_project_availability_exogenous (
+DROP TABLE IF EXISTS results_project_availability_endogenous;
+CREATE TABLE results_project_availability_endogenous (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,

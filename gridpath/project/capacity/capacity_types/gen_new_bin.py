@@ -466,11 +466,11 @@ def get_module_specific_inputs_from_database(
 
     c2 = conn.cursor()
     new_gen_build_size = c2.execute(
-        """SELECT project, gen_new_bin_build_size_mw
+        """SELECT project, binary_build_size_mw
         FROM inputs_project_portfolios
         
         INNER JOIN
-        (SELECT project, gen_new_bin_build_size_mw
+        (SELECT project, binary_build_size_mw
         FROM inputs_project_new_binary_build_size
         WHERE project_new_binary_build_size_scenario_id = {})
         USING (project)
@@ -525,7 +525,7 @@ def write_module_specific_model_inputs(
 
         # Write header
         writer.writerow(
-            ["project", "gen_new_bin_build_size_mw"]
+            ["project", "binary_build_size_mw"]
         )
 
         for row in new_gen_build_size:
