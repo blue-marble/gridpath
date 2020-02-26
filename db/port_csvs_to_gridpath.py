@@ -279,6 +279,13 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_availability.load_project_availability_exogenous(io, c2, csv_subscenario_input, csv_data_input)
 
+    ## PROJECT AVAILABILITY ENDOGENOUS ##
+    if csv_data_master.loc[csv_data_master['table'] == 'project_availability_endogenous', 'include'].iloc[0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_availability_endogenous', 'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_project_availability.load_project_availability_endogenous(io,  c2, csv_subscenario_input, csv_data_input)
+
     #### LOAD PROJECT HEAT RATE DATA ####
 
     ## PROJCT HEAT RATES ##
