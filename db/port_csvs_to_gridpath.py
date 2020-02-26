@@ -51,6 +51,7 @@ from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, lo
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
     load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
+    load_project_prm,\
     load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
     load_fuels, load_system_carbon_cap, load_system_prm, load_system_rps, load_scenarios, load_solver_options
 
@@ -238,6 +239,17 @@ def load_csv_data(db_path, csv_path):
             csv_data_master['table'] == 'project_new_cost', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_new_costs.load_project_new_costs(io, c2, csv_subscenario_input, csv_data_input)
+
+    ## PROJECT ELCC CHARS ##
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'project_elcc_chars', 'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_elcc_chars',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_project_prm.load_project_prm(
+            io, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT AVAILABILITY DATA ####
 
