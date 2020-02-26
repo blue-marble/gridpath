@@ -232,6 +232,17 @@ def load_csv_data(db_path, csv_path):
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_new_potentials.load_project_new_potentials(io, c2, csv_subscenario_input, csv_data_input)
 
+    ## PROJECT NEW BINARY BUILD SIZE ##
+    if csv_data_master.loc[csv_data_master['table'] ==
+                           'project_new_binary_build_size', 'include'].iloc[
+        0] == 1:
+        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
+            csv_data_master['table'] == 'project_new_binary_build_size',
+            'path'].iloc[0])
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
+        load_project_new_potentials.load_project_new_binary_build_sizes(
+            io, c2, csv_subscenario_input, csv_data_input)
+
     ## PROJECT NEW COSTS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_new_cost', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[

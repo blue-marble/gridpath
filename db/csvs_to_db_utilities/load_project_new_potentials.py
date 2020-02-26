@@ -8,6 +8,23 @@ Load project new cost data
 from collections import OrderedDict
 from db.utilities import project_new_potentials
 
+
+# TODO: move to common_functions, also used in load_transmission_new_costs
+def recur_dictify(frame):
+    """
+    Converts DataFrame to nested dictionary using recursion.
+    :param frame:
+    :return:
+    """
+    if len(frame.columns) == 1:
+        if frame.values.size == 1:
+            return frame.values[0][0]
+        return frame.values.squeeze()
+    grouped = frame.groupby(frame.columns[0])
+    d = {k: recur_dictify(g.iloc[:, 1:]) for k, g in grouped}
+    return d
+
+
 def load_project_new_potentials(io, c, subscenario_input, data_input):
     """
     Data output dictionary is {project:{period: (minimum_cumulative_new_build_mw,
@@ -73,4 +90,39 @@ def load_project_new_potentials(io, c, subscenario_input, data_input):
             scenario_name=sc_name,
             scenario_description=sc_description,
             project_period_potentials=project_new_potential_capacities
+        )
+
+
+def load_project_new_binary_build_sizes(io, c, subscenario_input, data_input):
+    """
+    Data output dictionary is {project: (binary_build_size_mw,
+    binary_build_size_mwh)}
+    Convert values to floats else they show up as blobs in sql db
+    :param io:
+    :param c:
+    :param subscenario_input:
+    :param data_input:
+    :return:
+    """
+
+    for i in subscenario_input.index:
+        sc_id = int(subscenario_input['project_new_binary_build_size_scenario_id'][i])
+        sc_name = subscenario_input['name'][i]
+        sc_description = subscenario_input['description'][i]
+
+        data_input_subscenario = data_input.loc[(data_input['project_new_binary_build_size_scenario_id'] == sc_id)]
+
+        key_cols = ["project"]
+        value_cols = ["binary_build_size_mw", "binary_build_size_mwh"]
+
+        df = data_input_subscenario.groupby(key_cols)[value_cols].apply(
+            lambda x: x.values.tolist()[0]).to_frame().reset_index()
+        project_new_binary_build_sizes = recur_dictify(df)
+
+        project_new_potentials.update_project_binary_build_sizes(
+            io=io, c=c,
+            project_new_binary_build_size_scenario_id=sc_id,
+            scenario_name=sc_name,
+            scenario_description=sc_description,
+            project_new_binary_build_sizes=project_new_binary_build_sizes
         )
