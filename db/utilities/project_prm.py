@@ -122,6 +122,9 @@ def project_elcc_chars(
     for proj in list(proj_min_duration_for_full.keys()):
         # Check if proj is actually energy-limited, as it doesn't require
         # this param otherwise
+        # TODO: handle this differently because now we get redundant warnings
+        #  when there are no entries in the project_elcc_chars table for the
+        #  min_duration (column is there so best you can do is leave it empty)
         if proj not in energy_limited_projects:
             warnings.warn(
                 """Project {} is not of the 
