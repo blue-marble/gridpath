@@ -52,7 +52,6 @@ from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, lo
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
     load_project_local_capacity_chars, load_project_prm, \
     load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
-    load_project_prm,\
     load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
     load_fuels, load_system_carbon_cap, load_system_local_capacity, load_system_prm, load_system_rps, \
     load_scenarios, load_solver_options
