@@ -61,7 +61,8 @@ def parse_arguments(arguments):
                              "create_database.py).")
     parser.add_argument("--db_schema", default="db_schema.sql",
                         help="Name of the SQL file containing the database "
-                             "schema.")
+                             "schema. Assumed to be in same directory as"
+                             "create_database.py")
     parser.add_argument("--in_memory", default=False, action="store_true",
                         help="Create in-memory database. The db_name and "
                              "db_location argument will be inactive.")
@@ -82,7 +83,10 @@ def create_database_schema(db, parsed_arguments):
     :param parsed_arguments:
     :return:
     """
-    with open(parsed_arguments.db_schema, "r") as db_schema_script:
+    schema_path = os.path.join(os.path.dirname(__file__),
+                               parsed_arguments.db_schema)
+
+    with open(schema_path, "r") as db_schema_script:
         schema = db_schema_script.read()
         db.executescript(schema)
 
@@ -333,7 +337,9 @@ def load_aux_data(conn, cursor, filename, sql):
     
     """
     data = []
-    with open(os.path.join(os.getcwd(), "data", filename), "r") as f:
+
+    file_path = os.path.join(os.path.dirname(__file__), "data", filename)
+    with open(file_path, "r") as f:
         reader = csv.reader(f, delimiter=",")
         next(reader)
         for row in reader:
