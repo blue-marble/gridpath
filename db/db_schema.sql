@@ -713,6 +713,7 @@ min_down_time_hours INTEGER,
 charging_efficiency FLOAT,
 discharging_efficiency FLOAT,
 minimum_duration_hours FLOAT,
+last_commitment_stage INTEGER,
 variable_generator_profile_scenario_id INTEGER,  -- determines var profiles
 hydro_operational_chars_scenario_id INTEGER,  -- determines hydro MWa, min, max
 lf_reserves_up_derate FLOAT,
@@ -730,6 +731,8 @@ spinning_reserves_ramp_rate FLOAT,
 PRIMARY KEY (project_operational_chars_scenario_id, project),
 FOREIGN KEY (project_operational_chars_scenario_id) REFERENCES
 subscenarios_project_operational_chars (project_operational_chars_scenario_id),
+FOREIGN KEY (last_commitment_stage) REFERENCES
+inputs_temporal_subproblems_stages (stage_id),
 -- Ensure operational characteristics for variable, hydro and heat rates exist
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves
@@ -2224,7 +2227,7 @@ committed_units INTEGER,
 started_units INTEGER,
 stopped_units INTEGER,
 synced_units INTEGER,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_dispatch_continuous_commit;
@@ -2249,7 +2252,7 @@ committed_units FLOAT,
 started_units FLOAT,
 stopped_units FLOAT,
 synced_units FLOAT,
-PRIMARY KEY (scenario_id, project, timepoint)
+PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
