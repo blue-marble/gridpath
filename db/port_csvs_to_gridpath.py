@@ -262,7 +262,7 @@ def load_csv_data(conn, csv_path):
             'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path)
         load_project_prm.load_project_prm(
-            io, c2, csv_subscenario_input, csv_data_input)
+            conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT LOCAL CAPACITY CHARS ##
     if csv_data_master.loc[csv_data_master['table'] ==
