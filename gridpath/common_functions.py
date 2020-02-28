@@ -41,17 +41,19 @@ def create_directory_if_not_exists(directory):
         os.makedirs(directory)
 
 
-def get_scenario_location_parser():
+def get_required_e2e_arguments_parser():
     """
-    Create ArgumentParser object which has the common set of arguments for
-    accessing local scenario data.
+    :return: the common parser for all e2e arguments
 
-    We can then simply add 'parents=[get_scenario_location_parser()]' when we
-    create a parser for a script to inherit these common arguments.
+    Create ArgumentParser object which has the common set of arguments all
+    end-to-end scripts. This includes the information for accessing local
+    scenario data and whether to print run output.
+
+    We can then simply add 'parents=[get_required_e2e_arguments_parser()]'
+    when we create a parser for a script to inherit these common arguments.
 
     Note that 'add_help' is set to 'False' to avoid multiple `-h/--help` options
     (one for parent and one for each child), which will throw an error.
-    :return:
     """
 
     parser = ArgumentParser(add_help=False)
@@ -59,6 +61,8 @@ def get_scenario_location_parser():
                         help="The path to the directory in which to create "
                              "the scenario directory. Defaults to "
                              "'../scenarios' if not specified.")
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print run output.")
 
     return parser
 
@@ -130,8 +134,6 @@ def get_solve_parser():
     parser.add_argument("--log", default=False, action="store_true",
                         help="Log output to a file in the scenario's 'logs' "
                              "directory as well as the terminal.")
-    parser.add_argument("--quiet", default=False, action="store_true",
-                        help="Don't print run output.")
     # Solver options
     parser.add_argument("--solver", help="Name of the solver to use. "
                                          "GridPath will use Cbc if solver is "

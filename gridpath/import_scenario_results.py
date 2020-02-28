@@ -19,7 +19,7 @@ import sys
 
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
-    get_db_parser, get_scenario_location_parser
+    get_db_parser, get_required_e2e_arguments_parser
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
@@ -92,7 +92,7 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_scenario_location_parser()]
+        parents=[get_db_parser(), get_required_e2e_arguments_parser()]
     )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -117,7 +117,8 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    print("Importing results... (connected to database {})".format(db_path))
+    if not parsed_arguments.quiet:
+        print("Importing results... (connected to database {})".format(db_path))
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg, scenario_name_arg=scenario_name_arg,
