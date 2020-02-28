@@ -121,7 +121,6 @@ def main(args=None):
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
     quiet = parsed_arguments.quiet
-    print("Quiet: ", quiet)
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
