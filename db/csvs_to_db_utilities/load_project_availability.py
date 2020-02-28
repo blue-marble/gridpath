@@ -45,7 +45,6 @@ def load_project_availability_types(io, c, subscenario_input, data_input):
 
         data_input_subscenario = data_input.loc[(data_input['project_availability_scenario_id'] == sc_id)]
 
-        print("Loading project availability types")
         project_availability_types = dict()
 
         for j in data_input_subscenario.index:
@@ -61,7 +60,6 @@ def load_project_availability_types(io, c, subscenario_input, data_input):
             if np.isnan(data_input_subscenario['endogenous_availability_scenario_id'][j]):
                 project_availability_types[prj]["endogenous_availability_id"] = None
             else:
-                print("endo not None")
                 project_availability_types[prj]["endogenous_availability_id"] = int(data_input_subscenario[
                                                                   'endogenous_availability_scenario_id'][j])
 
