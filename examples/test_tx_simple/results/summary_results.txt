@@ -3,15 +3,19 @@
 ### CAPACITY RESULTS ###
 
 --> New Generation Capacity <--
-                              New Capacity (MW)
-load_zone technology  period                   
-Zone1     unspecified 2020                    2
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Solar      2020                    2
 
 ### OPERATIONAL RESULTS ###
 
 --> Energy Production <--
-                              Annual Energy (MWh)  % Total Power
-load_zone period technology                                     
-Zone1     2020   unspecified                   28            100
-Zone2     2020   unspecified                   12            100
-Zone3     2020   unspecified                   70            100
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                          1              4
+                 Gas                          10             36
+                 Nuclear                      12             43
+                 Solar                         2              7
+                 Wind                          3             10
+Zone2     2020   Gas                          12            100
+Zone3     2020   Gas                          70            100
