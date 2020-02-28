@@ -2,6 +2,7 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 from builtins import str
+import logging
 import os
 import unittest
 
@@ -37,9 +38,10 @@ class TestExamples(unittest.TestCase):
                                         "--csv_location",
                                         "../db/csvs_test_examples",
                                         "--quiet"])
-        except:
+        except Exception as e:
             print("Error encountered during creation of testing database "
                   "testing.db. Deleting database ...")
+            logging.exception(e)
             os.remove("../db/test_examples.db")
 
         # TODO: create in memory instead and pass around connection?
