@@ -84,6 +84,8 @@ def parse_arguments(args):
     parser.add_argument("--csv_location", default="csvs",
                         help="Path to the csvs folder including folder name (relative to "
                              "port_csvs_to_db.py).")
+    parser.add_argument("--quiet", default=False, action="store_true",
+                        help="Don't print output.")
     #TODO: Using this argument for using the get_database_file_path function in create_database
     # but not sure if we need it.
     parser.add_argument("--in_memory", default=False, action="store_true",
