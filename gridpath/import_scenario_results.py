@@ -25,8 +25,10 @@ from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import SubProblems
 
 
-def import_results_into_database(loaded_modules, scenario_id, subproblems,
-                                 cursor, db, scenario_directory):
+def import_results_into_database(
+        loaded_modules, scenario_id, subproblems, cursor, db,
+        scenario_directory, quiet
+):
     """
 
     :param loaded_modules:
@@ -35,6 +37,7 @@ def import_results_into_database(loaded_modules, scenario_id, subproblems,
     :param cursor:
     :param db:
     :param scenario_directory:
+    :param quiet: boolean
     :return:
     """
 
@@ -48,18 +51,21 @@ def import_results_into_database(loaded_modules, scenario_id, subproblems,
                                                  str(subproblem),
                                                  str(stage),
                                                  "results")
-                print("--- subproblem {}".format(str(subproblem)))
-                print("--- stage {}".format(str(stage)))
+                if not quiet:
+                    print("--- subproblem {}".format(str(subproblem)))
+                    print("--- stage {}".format(str(stage)))
             elif len(subproblems.SUBPROBLEMS) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(subproblem),
                                                  "results")
-                print("--- subproblem {}".format(str(subproblem)))
+                if not quiet:
+                    print("--- subproblem {}".format(str(subproblem)))
             elif len(stages) > 1:
                 results_directory = os.path.join(scenario_directory,
                                                  str(stage),
                                                  "results")
-                print("--- stage {}".format(str(stage)))
+                if not quiet:
+                    print("--- stage {}".format(str(stage)))
             else:
                 results_directory = os.path.join(scenario_directory,
                                                  "results")
@@ -74,7 +80,8 @@ def import_results_into_database(loaded_modules, scenario_id, subproblems,
                         stage=stage,
                         c=cursor,
                         db=db,
-                        results_directory=results_directory
+                        results_directory=results_directory,
+                        quiet=quiet
                     )
                 else:
                     pass
@@ -113,6 +120,8 @@ def main(args=None):
     scenario_id_arg = parsed_arguments.scenario_id
     scenario_name_arg = parsed_arguments.scenario
     scenario_location = parsed_arguments.scenario_location
+    quiet = parsed_arguments.quiet
+    print("Quiet: ", quiet)
 
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
@@ -150,7 +159,8 @@ def main(args=None):
         subproblems=subproblems,
         cursor=c,
         db=conn,
-        scenario_directory=scenario_directory
+        scenario_directory=scenario_directory,
+        quiet=quiet
     )
 
     # Close the database connection

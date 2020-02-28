@@ -590,7 +590,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -600,10 +600,12 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Capacity results
-    print("project new binary build storage")
+    if not quiet:
+        print("project new binary build storage")
 
     update_capacity_results_table(
         db=db, c=c, results_directory=results_directory,

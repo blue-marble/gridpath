@@ -1616,7 +1616,7 @@ def export_module_specific_results(mod, d,
 ###############################################################################
 
 def import_module_specific_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     :param scenario_id:
@@ -1625,9 +1625,11 @@ def import_module_specific_results_to_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("project dispatch continuous commit")
+    if not quiet:
+        print("project dispatch continuous commit")
     # dispatch_continuous_commit.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

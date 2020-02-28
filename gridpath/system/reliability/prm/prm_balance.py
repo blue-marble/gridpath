@@ -98,17 +98,20 @@ def save_duals(m):
         ["prm_zone", "period", "dual"]
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-
-    print("system prm total")
+    if not quiet:
+        print("system prm total")
 
     # PRM contribution from the ELCC surface
     # Prior results should have already been cleared by

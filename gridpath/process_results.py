@@ -25,20 +25,21 @@ from gridpath.auxiliary.scenario_chars import SubScenarios
 
 
 def process_results(
-        loaded_modules, db, cursor, subscenarios
+        loaded_modules, db, cursor, subscenarios, quiet
 ):
     """
     
     :param loaded_modules: 
     :param db: 
     :param cursor: 
-    :param subscenarios: 
+    :param subscenarios:
+    :param quiet:
     :return: 
     """
     for m in loaded_modules:
         if hasattr(m, "process_results"):
             m.process_results(
-                db, cursor, subscenarios)
+                db, cursor, subscenarios, quiet)
         else:
             pass
 
@@ -101,7 +102,7 @@ def main(args=None):
 
     process_results(
         loaded_modules=loaded_modules, db=conn, cursor=c,
-        subscenarios=subscenarios
+        subscenarios=subscenarios, quiet=parsed_arguments.quiet
     )
 
     # Close the database connection

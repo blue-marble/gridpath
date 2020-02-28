@@ -131,14 +131,16 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             pass
 
 
-def import_results_into_database(scenario_id, subproblem, stage,
-                                 c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
 
@@ -154,7 +156,7 @@ def import_results_into_database(scenario_id, subproblem, stage,
                    "import_module_specific_results_into_database"):
             imported_availability_modules[op_m]. \
                 import_module_specific_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass
