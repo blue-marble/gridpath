@@ -117,7 +117,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                            "rps_targets.tab"), "w", newline="") as \
             rps_targets_tab_file:
         writer = csv.writer(rps_targets_tab_file,
-                            delimiter="\t")
+                            delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

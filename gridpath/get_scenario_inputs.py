@@ -161,7 +161,9 @@ def write_subproblems_csv(scenario_directory, subproblems):
         os.makedirs(scenario_directory)
     with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
             subproblems_csv_file:
-        writer = csv.writer(subproblems_csv_file, delimiter=",")
+        writer = csv.writer(
+            subproblems_csv_file, delimiter=",", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(["subproblems"])
@@ -178,7 +180,9 @@ def write_features_csv(scenario_directory, feature_list):
     """
     with open(os.path.join(scenario_directory, "features.csv"), "w", newline="") as \
             features_csv_file:
-        writer = csv.writer(features_csv_file, delimiter=",")
+        writer = csv.writer(
+            features_csv_file, delimiter=",", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(["features"])

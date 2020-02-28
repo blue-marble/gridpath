@@ -456,7 +456,7 @@ def write_module_specific_model_inputs(
         with open(os.path.join(inputs_directory,
                                "variable_generator_profiles.tab"), "a") as \
                 variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")
             for row in variable_profiles:
                 writer.writerow(row)
     # If variable_generator_profiles.tab does not exist, write header first,
@@ -465,7 +465,7 @@ def write_module_specific_model_inputs(
         with open(os.path.join(inputs_directory,
                                "variable_generator_profiles.tab"), "w", newline="") as \
                 variable_profiles_tab_file:
-            writer = csv.writer(variable_profiles_tab_file, delimiter="\t")
+            writer = csv.writer(variable_profiles_tab_file, delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(

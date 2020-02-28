@@ -100,7 +100,7 @@ class ScenarioStructure(object):
                             ), "w", newline=""
                     ) as fixed_commitment_file:
                         fixed_commitment_writer = \
-                            writer(fixed_commitment_file, delimiter="\t")
+                            writer(fixed_commitment_file, delimiter="\t", lineterminator="\n")
                         fixed_commitment_writer.writerow(
                             ["project", "timepoint", "stage",
                              "final_commitment_stage", "commitment"])

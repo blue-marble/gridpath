@@ -466,7 +466,7 @@ def write_module_specific_model_inputs(
                                "existing_generation_period_params.tab"),
                   "a") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t")
+                                delimiter="\t", lineterminator="\n")
             for row in ep_capacities:
                 writer.writerow(row)
     # If existing_generation_period_params.tab file does not exist,
@@ -476,7 +476,7 @@ def write_module_specific_model_inputs(
                                "existing_generation_period_params.tab"),
                   "w", newline="") as existing_project_capacity_tab_file:
             writer = csv.writer(existing_project_capacity_tab_file,
-                                delimiter="\t")
+                                delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(

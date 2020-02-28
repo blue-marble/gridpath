@@ -114,7 +114,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                            "local_capacity_requirement.tab"), "w", newline="") as \
             local_capacity_requirement_tab_file:
         writer = csv.writer(local_capacity_requirement_tab_file,
-                            delimiter="\t")
+                            delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

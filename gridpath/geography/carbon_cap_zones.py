@@ -93,7 +93,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory,
                            "carbon_cap_zones.tab"), "w", newline="") as \
             carbon_cap_zones_file:
-        writer = csv.writer(carbon_cap_zones_file, delimiter="\t")
+        writer = csv.writer(carbon_cap_zones_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(["carbon_cap_zone", "allow_violation",

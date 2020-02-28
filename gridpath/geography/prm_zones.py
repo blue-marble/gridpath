@@ -102,7 +102,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory, "prm_zones.tab"),
               "w", newline="") as \
             prm_zones_tab_file:
-        writer = csv.writer(prm_zones_tab_file, delimiter="\t")
+        writer = csv.writer(prm_zones_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(["prm_zone", "allow_violation",

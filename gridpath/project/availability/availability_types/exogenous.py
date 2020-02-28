@@ -246,7 +246,7 @@ def write_module_specific_model_inputs(
         with open(os.path.join(inputs_directory,
                                "project_availability_exogenous.tab"),
                   "w", newline="") as availability_tab_file:
-            writer = csv.writer(availability_tab_file, delimiter="\t")
+            writer = csv.writer(availability_tab_file, delimiter="\t", lineterminator="\n")
 
             writer.writerow(["project", "timepoint", "availability_derate"])
 
