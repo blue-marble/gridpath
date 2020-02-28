@@ -11,7 +11,7 @@ both transmission flow directions.
 
 from __future__ import print_function
 
-from pyomo.environ import Set, Var, Constraint, Reals
+from pyomo.environ import Set, Param, Var, Constraint, Reals, PercentFraction
 
 
 def add_module_specific_components(m, d):
@@ -31,6 +31,18 @@ def add_module_specific_components(m, d):
     | Two-dimensional set with transmission lines of the :code:`tx_simple`    |
     | operational type and their operational timepoints.                      |
     +-------------------------------------------------------------------------+
+
+    +-------------------------------------------------------------------------+
+    | Params                                                                  |
+    +=========================================================================+
+    | | :code:`tx_simple_loss_factor`                                         |
+    | | *Defined over*: :code:`TX_SIMPLE`                                     |
+    | | *Within*: :code:`PercentFraction`                                     |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The fraction of power that is lost when transmitted over this line.     |
+    +-------------------------------------------------------------------------+
+
 
     |
 
@@ -82,6 +94,12 @@ def add_module_specific_components(m, d):
             set((l, tmp)
                 for (l, tmp) in mod.TX_OPR_TMPS
                 if l in mod.TX_SIMPLE)
+    )
+
+    # Params
+    ###########################################################################
+    m.tx_simple_loss_factor = Param(
+        m.TX_SIMPLE, within=PercentFraction, default=0
     )
 
     # Variables
@@ -138,5 +156,11 @@ def max_transmit_rule(mod, l, tmp):
 # Transmission Operational Type Methods
 ###############################################################################
 
-def transmit_power_rule(mod, l, tmp):
-    return mod.TxSimple_Transmit_Power_MW[l, tmp]
+def transmit_power_rule(mod, line, tmp):
+    """
+    For load-balance purposes, the power transmitted over the tx_simple line
+    in each operational timepoint is the power sent derated for losses via
+    the linear loss factor.
+    """
+    return mod.TxSimple_Transmit_Power_MW[line, tmp]\
+        * (1 - mod.tx_simple_loss_factor[line])
