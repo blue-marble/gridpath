@@ -27,7 +27,6 @@ def load_transmission_hurdle_rates(io, c, subscenario_input, data_input):
 
         tx_line_period_hurdle_rates = dict()
         for tl in data_input_subscenario['transmission_line'].unique():
-            print(tl)
             tx_line_period_hurdle_rates[tl] = dict()
             tx_line_period_hurdle_rates_by_tx_line = data_input_subscenario.loc[
                 data_input_subscenario['transmission_line'] == tl]

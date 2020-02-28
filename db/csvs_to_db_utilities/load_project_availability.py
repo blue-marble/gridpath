@@ -55,7 +55,6 @@ def load_project_availability_types(io, c, subscenario_input, data_input):
             if np.isnan(data_input_subscenario['exogenous_availability_scenario_id'][j]):
                 project_availability_types[prj]["exogenous_availability_id"] = None
             else:
-                print("exo not None")
                 project_availability_types[prj]["exogenous_availability_id"] = int(data_input_subscenario[
                                                                   'exogenous_availability_scenario_id'][j])
 

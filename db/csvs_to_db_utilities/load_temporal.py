@@ -35,7 +35,6 @@ def load_temporal(io, c, subscenario_input, data_input):
 
         data_input_subscenario = {}
         for tbl in temporal_tables:
-            print(tbl)
             data_input_subscenario[tbl] = data_input[tbl].loc[data_input[tbl]['temporal_scenario_id'] == sc_id]
 
         ## SUBPROBLEMS ##
