@@ -5,8 +5,6 @@
 Groups of transmission lines over which simultaneous flow constraints will 
 be applied
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 from db.common_functions import spin_on_database_lock
@@ -32,8 +30,6 @@ def insert_transmission_simultaneous_flow_groups(
     (1 or -1) as the second tuple element as dictionary values 
     :return: 
     """
-    print("transmission simultaneous flow groups")
-
     # Subscenarios
     subs_data = [(transmission_simultaneous_flow_limit_line_group_scenario_id,
                   scenario_name, scenario_description)]

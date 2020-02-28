@@ -4,7 +4,6 @@
 """
 ELCC characteristics of projects
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -38,7 +37,6 @@ def project_elcc_chars(
     :param proj_deliv_group:
     :return:
     """
-    print("project elcc characteristics")
     # Subscenarios
     subs_data = [
         (project_elcc_chars_scenario_id, scenario_name, scenario_description)
@@ -215,8 +213,6 @@ def deliverability_groups(
     deliv_cost, energy_only_limit)
     :return:
     """
-    print("deliverability group params")
-
     # Subscenarios
     subs_data = [(prm_energy_only_scenario_id, scenario_name,
                   scenario_description)]
@@ -267,8 +263,6 @@ def elcc_surface(
     :param proj_period_facet_coeff:
     :return:
     """
-    print("elcc surface")
-
     # Subscenarios
     subs_data = [(elcc_surface_scenario_id,
                   scenario_name, scenario_description)]

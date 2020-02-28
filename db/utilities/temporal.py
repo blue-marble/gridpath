@@ -4,8 +4,6 @@
 """
 Make temporal subscenarios
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 from db.common_functions import spin_on_database_lock
@@ -60,7 +58,6 @@ def temporal(
     spin_on_database_lock(conn=io, cursor=c, sql=subscenario_sql,
                           data=subscenario_data)
 
-    print("periods")
     periods_data = []
     for period in periods.keys():
         periods_data.append(
@@ -77,7 +74,6 @@ def temporal(
     spin_on_database_lock(conn=io, cursor=c, sql=periods_sql,
                           data=periods_data)
 
-    print("subproblems")
     # Subproblems
     subproblems_data = []
     for subproblem_id in subproblems:
@@ -90,8 +86,7 @@ def temporal(
         """
     spin_on_database_lock(conn=io, cursor=c, sql=subproblems_sql,
                           data=subproblems_data)
-    
-    print("stages")
+
     # Stages
     stages_data = []
     for subproblem_id in subproblem_stages.keys():
@@ -107,7 +102,6 @@ def temporal(
                           data=stages_data)
 
     # Timepoints
-    print("timepoints")
     timepoints_data = []
     for subproblem_id in subproblem_stage_timepoints.keys():
         for stage_id in subproblem_stage_timepoints[subproblem_id].keys():
@@ -144,7 +138,6 @@ def temporal(
     spin_on_database_lock(conn=io, cursor=c, sql=timepoints_sql,
                           data=timepoints_data)
 
-    print("horizons")
     horizons_data = []
     for subproblem_id in subproblem_horizons.keys():
         for horizon in subproblem_horizons[subproblem_id]:
@@ -167,7 +160,6 @@ def temporal(
     spin_on_database_lock(conn=io, cursor=c, sql=horizons_sql,
                           data=horizons_data)
 
-    print("horizon timepoints")
     horizon_timepoints_data = []
     for subproblem_id in subproblem_stage_timepoint_horizons.keys():
         for stage_id in subproblem_stage_timepoint_horizons[

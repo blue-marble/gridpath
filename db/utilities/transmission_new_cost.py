@@ -4,7 +4,6 @@
 """
 Transmission new costs
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -28,7 +27,6 @@ def transmision_new_cost(
     years and annualized real cost per MW-y as values.
     :return: 
     """
-    print("transmission new costs")
 
     # Subscenarios
     subs_data = [(transmission_new_cost_scenario_id,

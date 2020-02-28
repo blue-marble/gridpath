@@ -4,7 +4,6 @@
 """
 Create a list of all projects
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -23,8 +22,6 @@ def project_list(
     :param projects: 
     :return: 
     """
-
-    print("project list")
 
     data = [(p,) for p in projects]
     sql = """

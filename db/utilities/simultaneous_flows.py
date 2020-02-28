@@ -4,8 +4,6 @@
 """
 Simultaneous flow limits
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 from db.common_functions import spin_on_database_lock
@@ -30,8 +28,6 @@ def insert_transmission_simultaneous_flow_limits(
     top-level keys, the period as second key, and the flow limit
     :return: 
     """
-    print("transmission simultaneous flow limits")
-
     # Subscenarios
     subs_data = [(transmission_simultaneous_flow_limit_scenario_id,
             scenario_name, scenario_description)]

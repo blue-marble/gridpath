@@ -4,7 +4,6 @@
 """
 Existing/planned project capacities
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -28,7 +27,6 @@ def update_project_capacities(
     :param project_capacities: 
     :return: 
     """
-    print("project existing capacities")
 
     # Subscenario
     subs_data = [(project_existing_capacity_scenario_id, scenario_name,
@@ -76,7 +74,6 @@ def update_project_fixed_costs(
     :param project_fixed_costs:
     :return:
     """
-    print("project existing fixed costs")
 
     # Subscenario
     subs_data = [(project_existing_fixed_cost_scenario_id, scenario_name,

@@ -4,7 +4,6 @@
 """
 Transmission load zones
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -29,7 +28,6 @@ def insert_transmission_capacities(
     'min MW' and 'max MW' capacities as values
     :return: 
     """
-    print("transmission capacities")
 
     # Subscenarios
     subs_data = [(transmission_existing_capacity_scenario_id,

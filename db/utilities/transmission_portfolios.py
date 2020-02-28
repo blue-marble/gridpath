@@ -4,7 +4,6 @@
 """
 Transmission portfolios
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -30,7 +29,6 @@ def insert_transmission_portfolio(
     line's capacity type as value
     :return: 
     """
-    print("transmission portfolios")
 
     # Subscenarios
     subs_data = [(transmission_portfolio_scenario_id,

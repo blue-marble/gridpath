@@ -4,8 +4,6 @@
 """
 System load
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -25,9 +23,6 @@ def insert_system_static_loads(
     :param zone_stage_timepoint_static_loads:
     :return: 
     """
-
-    print("system static loads")
-
     # Subscenario
     subs_data = [(load_scenario_id, scenario_name, scenario_description)]
     subs_sql = """

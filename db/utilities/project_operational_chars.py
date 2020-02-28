@@ -4,8 +4,6 @@
 """
 Project operational characteristics
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -60,9 +58,6 @@ def update_project_opchar_column(
     :param projects:
     :return:
     """
-
-    print("project " + column)
-
     update_data = []
     for project in list(project_char.keys()):
         update_data.append(
@@ -93,7 +88,6 @@ def update_project_opchar_variable_gen_profile_scenario_id(
     :param variable_generator_profile_scenario_id:
     :return:
     """
-    print("project opchar variable profiles scenario id")
     update_data = [
         (variable_generator_profile_scenario_id,
          project_operational_chars_scenario_id)
@@ -123,7 +117,6 @@ def update_project_opchar_hydro_opchar_scenario_id(
     :param hydro_operational_chars_scenario_id:
     :return:
     """
-    print("project opchar hydro opchar scenario id")
     update_data = [
         (hydro_operational_chars_scenario_id,
          project_operational_chars_scenario_id)
@@ -157,7 +150,6 @@ def update_project_variable_profiles(
         project-timepoint.
     :return:
     """
-    print("project variable profiles")
     # Subscenarios
     subs_data = []
     for prj in proj_profile_names.keys():
@@ -176,7 +168,6 @@ def update_project_variable_profiles(
     # Insert data
     inputs_data = []
     for prj in list(proj_tmp_profiles.keys()):
-        print("..." + prj)
         for scenario in list(proj_tmp_profiles[prj].keys()):
             for stage in proj_tmp_profiles[prj][scenario].keys():
                 for tmp in list(
@@ -215,8 +206,6 @@ def update_project_hydro_opchar(
         (maximum as fraction of capacity), with a value for each
     :return:
     """
-    print("project hydro operating characteristics")
-
     # Subscenarios
     subs_data = []
     for prj in proj_opchar_names.keys():
@@ -273,8 +262,6 @@ def update_project_hr_curves(
     point and average heat rate at that load point
     :return:
     """
-    print("project heat rate curves")
-
     # Subscenarios
     subs_data = []
     for prj in proj_opchar_names.keys():
@@ -295,7 +282,6 @@ def update_project_hr_curves(
     for p in list(proj_hr_chars.keys()):
         for scenario in list(proj_hr_chars[p].keys()):
             for hr_curve_point in list(proj_hr_chars[p][scenario].keys()):
-                print(proj_hr_chars[p][scenario][hr_curve_point])
                 inputs_data.append(
                     (p, scenario,
                      proj_hr_chars[p][scenario][hr_curve_point][0],
