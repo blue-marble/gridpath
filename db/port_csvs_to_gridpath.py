@@ -124,7 +124,7 @@ def get_csv_folder_path(parsed_arguments, relative_path=".."):
     return csv_path
 
 
-def load_csv_data(conn, csv_path):
+def load_csv_data(conn, csv_path, quiet):
     """
     The 'main' method parses the database name along with path as
     script arguments, reads the data from csvs, and loads the data
@@ -488,7 +488,8 @@ def load_csv_data(conn, csv_path):
         f_number = 0
         for f in os.listdir(data_folder_path):
             if f.endswith(".csv") and 'template' not in f and 'scenario' in f and 'ignore' not in f:
-                print(f)
+                if not quiet:
+                    print(f)
                 f_number = f_number + 1
                 csv_data_input = pd.read_csv(os.path.join(data_folder_path, f))
                 if f_number > 1:
@@ -505,10 +506,12 @@ def load_csv_data(conn, csv_path):
 
         for f in os.listdir(data_folder_path):
             if f.endswith(".csv") and 'template' not in f and 'options' in f:
-                print(f)
+                if not quiet:
+                    print(f)
                 csv_solver_options = pd.read_csv(os.path.join(data_folder_path, f))
             if f.endswith(".csv") and 'template' not in f and 'descriptions' in f:
-                print(f)
+                if not quiet:
+                    print(f)
                 csv_solver_descriptions = pd.read_csv(os.path.join(data_folder_path, f))
 
         load_solver_options.load_solver_options(conn, c2, csv_solver_options, csv_solver_descriptions)
@@ -534,7 +537,7 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
 
     # Load data
-    load_csv_data(conn=conn, csv_path=csv_path)
+    load_csv_data(conn=conn, csv_path=csv_path, quiet=parsed_args.quiet)
 
     # Close connection
     conn.close()
