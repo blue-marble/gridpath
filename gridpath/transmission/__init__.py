@@ -161,7 +161,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, operational_type,
-        load_zone_from, load_zone_to, reactance_ohms
+        load_zone_from, load_zone_to, tx_simple_loss_factor, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
@@ -211,7 +211,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(
             ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to", "reactance_ohms"]
+             "load_zone_from", "load_zone_to", "tx_simple_loss_factor",
+             "reactance_ohms"]
         )
 
         for row in transmission_lines:

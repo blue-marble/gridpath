@@ -1385,6 +1385,7 @@ CREATE TABLE inputs_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 operational_type VARCHAR(32),
+tx_simple_loss_factor FLOAT,
 reactance_ohms FLOAT,
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES

@@ -9,8 +9,8 @@ both transmission flow directions.
 
 """
 
-from __future__ import print_function
-
+import os
+import pandas as pd
 from pyomo.environ import Set, Param, Var, Constraint, Reals, PercentFraction
 
 
@@ -164,3 +164,38 @@ def transmit_power_rule(mod, line, tmp):
     """
     return mod.TxSimple_Transmit_Power_MW[line, tmp]\
         * (1 - mod.tx_simple_loss_factor[line])
+
+
+# Input-Output
+###############################################################################
+
+def load_module_specific_data(m, data_portal, scenario_directory,
+                              subproblem, stage):
+    """
+
+    :param m:
+    :param data_portal:
+    :param scenario_directory:
+    :param subproblem:
+    :param stage:
+    :return:
+    """
+
+    # Get the simple transport model lines
+    df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage, "inputs",
+                     "transmission_lines.tab"),
+        sep="\t",
+        usecols=["TRANSMISSION_LINES", "tx_operational_type",
+                 "tx_simple_loss_factor"]
+    )
+    df = df[df["tx_operational_type"] == "tx_simple"]
+
+    # Dict of loss factor by tx_simple line
+    loss_factor = dict(zip(
+        df["TRANSMISSION_LINES"],
+        pd.to_numeric(df["tx_simple_loss_factor"])
+    ))
+
+    # Load data
+    data_portal.data()["tx_simple_loss_factor"] = loss_factor
