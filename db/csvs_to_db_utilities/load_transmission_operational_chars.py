@@ -30,10 +30,17 @@ def load_transmission_operational_chars(io, c, subscenario_input, data_input):
         for tl in data_input_subscenario['transmission_line'].unique():
             print(tl)
             tx_line_chars[tl] = dict()
-            tx_line_chars[tl] = (data_input_subscenario.loc[
-                                          data_input_subscenario['transmission_line'] == tl, 'operational_type'].iloc[0],
-                                      data_input_subscenario.loc[
-                                          data_input_subscenario['transmission_line'] == tl, 'reactance_ohms'].iloc[0])
+            tx_line_chars[tl] = (
+                data_input_subscenario.loc[
+                    data_input_subscenario['transmission_line'] == tl,
+                    'operational_type'].iloc[0],
+                data_input_subscenario.loc[
+                    data_input_subscenario['transmission_line'] == tl,
+                    'tx_simple_loss_factor'].iloc[0],
+                data_input_subscenario.loc[
+                    data_input_subscenario['transmission_line'] == tl,
+                    'reactance_ohms'].iloc[0]
+            )
 
         transmission_operational_chars.transmision_operational_chars(
             io=io, c=c,

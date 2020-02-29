@@ -191,11 +191,19 @@ def load_module_specific_data(m, data_portal, scenario_directory,
     )
     df = df[df["tx_operational_type"] == "tx_simple"]
 
-    # Dict of loss factor by tx_simple line
-    loss_factor = dict(zip(
+    # Dict of loss factor by tx_simple line based on raw data
+    loss_factor_raw = dict(zip(
         df["TRANSMISSION_LINES"],
-        pd.to_numeric(df["tx_simple_loss_factor"])
+        df["tx_simple_loss_factor"]
     ))
+
+    # Convert loss factors to float and remove any missing data (will
+    # default to 0 in the model)
+    loss_factor = {
+        line: float(loss_factor_raw[line])
+        for line in loss_factor_raw
+        if loss_factor_raw[line] != "."
+    }
 
     # Load data
     data_portal.data()["tx_simple_loss_factor"] = loss_factor

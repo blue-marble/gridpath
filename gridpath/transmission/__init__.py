@@ -171,7 +171,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (transmission_line)
         
         INNER JOIN
-            (SELECT transmission_line, operational_type, reactance_ohms
+            (SELECT transmission_line, operational_type, 
+            tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {})
         USING (transmission_line)
