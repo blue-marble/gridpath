@@ -4,7 +4,6 @@
 """
 ELCC characteristics of projects
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -38,7 +37,6 @@ def project_elcc_chars(
     :param proj_deliv_group:
     :return:
     """
-    print("project elcc characteristics")
     # Subscenarios
     subs_data = [
         (project_elcc_chars_scenario_id, scenario_name, scenario_description)
@@ -122,17 +120,19 @@ def project_elcc_chars(
     for proj in list(proj_min_duration_for_full.keys()):
         # Check if proj is actually energy-limited, as it doesn't require
         # this param otherwise
-        # TODO: handle this differently because now we get redundant warnings
-        #  when there are no entries in the project_elcc_chars table for the
-        #  min_duration (column is there so best you can do is leave it empty)
+        # TODO: handle this differently because now we woul get redundant
+        #  warnings when there are no entries in the project_elcc_chars
+        #  table for the min_duration (column is there so best you can do is
+        #  leave it empty)
         if proj not in energy_limited_projects:
-            warnings.warn(
-                """Project {} is not of the 
-                'fully_deliverable_energy_limited' PRM type in 
-                project_elcc_chars_scenario_id {}, so does not 
-                need the 'min_duration_for_full_capacity_credit_hours' 
-                parameter.""".format(proj, project_elcc_chars_scenario_id)
-            )
+            # warnings.warn(
+            #     """Project {} is not of the
+            #     'fully_deliverable_energy_limited' PRM type in
+            #     project_elcc_chars_scenario_id {}, so does not
+            #     need the 'min_duration_for_full_capacity_credit_hours'
+            #     parameter.""".format(proj, project_elcc_chars_scenario_id)
+            # )
+            pass
         min_dur_data.append(
             (proj_min_duration_for_full[proj], proj,
              project_elcc_chars_scenario_id)
@@ -175,14 +175,17 @@ def project_elcc_chars(
     for proj in list(proj_deliv_group.keys()):
         # Check if proj is actually energy-only, as it doesn't require
         # this param otherwise
+        # TODO: commenting out the warning for now, but figure out how to
+        #  handle this situation
         if proj not in energy_only_projects:
-            warnings.warn(
-                """Project {} is not of the 
-                'energy_only_allowed' PRM type in 
-                project_elcc_chars_scenario_id {}, so does not 
-                need the 'deliverability_group' 
-                parameter.""".format(proj, project_elcc_chars_scenario_id)
-            )
+            # warnings.warn(
+            #     """Project {} is not of the
+            #     'energy_only_allowed' PRM type in
+            #     project_elcc_chars_scenario_id {}, so does not
+            #     need the 'deliverability_group'
+            #     parameter.""".format(proj, project_elcc_chars_scenario_id)
+            # )
+            pass
 
         del_g_data.append(
             (proj_deliv_group[proj], proj, project_elcc_chars_scenario_id)
@@ -215,8 +218,6 @@ def deliverability_groups(
     deliv_cost, energy_only_limit)
     :return:
     """
-    print("deliverability group params")
-
     # Subscenarios
     subs_data = [(prm_energy_only_scenario_id, scenario_name,
                   scenario_description)]
@@ -267,8 +268,6 @@ def elcc_surface(
     :param proj_period_facet_coeff:
     :return:
     """
-    print("elcc surface")
-
     # Subscenarios
     subs_data = [(elcc_surface_scenario_id,
                   scenario_name, scenario_description)]

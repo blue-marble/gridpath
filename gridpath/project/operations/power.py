@@ -178,7 +178,7 @@ def summarize_results(d, scenario_directory, subproblem, stage):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -188,9 +188,11 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("project dispatch all")
+    if not quiet:
+        print("project dispatch all")
     # dispatch_all.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -251,16 +253,17 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios):
+def process_results(db, c, subscenarios, quiet):
     """
     Aggregate dispatch by technology
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
-
-    print("aggregate dispatch")
+    if not quiet:
+        print("aggregate dispatch")
 
     # Delete old dispatch by technology
     del_sql = """

@@ -574,7 +574,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -586,7 +586,8 @@ def import_module_specific_results_into_database(
     :param results_directory:
     :return:
     """
-    print("project availability")
+    if not quiet:
+        print("project availability")
     # dispatch_all.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

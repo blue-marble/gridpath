@@ -108,16 +108,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("system carbon emissions (imports)")
+    if not quiet:
+        print("system carbon emissions (imports)")
     # Carbon emissions from imports
     # Prior results should have already been cleared by
     # system.policy.carbon_cap.aggregate_project_carbon_emissions,

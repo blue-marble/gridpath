@@ -4,7 +4,6 @@
 """
 Carbon cap targets
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -25,8 +24,6 @@ def insert_carbon_cap_targets(
     :param zone_period_targets: 
     :return: 
     """
-
-    print("carbon cap targets")
 
     # Subscenario
     subs_data = [(carbon_cap_target_scenario_id, scenario_name,

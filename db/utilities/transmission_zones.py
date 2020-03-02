@@ -4,7 +4,6 @@
 """
 Transmission load zones
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -28,7 +27,6 @@ def insert_transmission_load_zones(
     containing the 'load zone from' and 'load zone to' as values
     :return: 
     """
-    print("transmission load_zones")
 
     # Subscenarios
     subs_data = [(transmission_load_zone_scenario_id,
@@ -78,7 +76,6 @@ def insert_transmission_carbon_cap_zones(
     values
     :return: 
     """
-    print("transmission carbon cap zones")
 
     # Subscenarios
     subs_data = [(transmission_carbon_cap_zone_scenario_id,

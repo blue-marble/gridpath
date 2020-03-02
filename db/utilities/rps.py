@@ -4,8 +4,6 @@
 """
 RPS targets
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -25,9 +23,6 @@ def insert_rps_targets(
     :param zone_period_targets: 
     :return: 
     """
-
-    print("rps targets")
-
     # Subscenario
     subs_data = [(rps_target_scenario_id,
                   scenario_name, scenario_description)]

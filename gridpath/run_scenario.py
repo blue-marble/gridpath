@@ -24,7 +24,7 @@ import sys
 import traceback
 
 from gridpath.common_functions import determine_scenario_directory, \
-    get_scenario_name_parser, get_scenario_location_parser, get_solve_parser, \
+    get_scenario_name_parser, get_required_e2e_arguments_parser, get_solve_parser, \
     create_logs_directory_if_not_exists, Logging
 from gridpath.auxiliary.dynamic_components import DynamicComponents
 from gridpath.auxiliary.module_list import determine_modules, load_modules
@@ -787,7 +787,7 @@ def parse_arguments(args):
     """
     parser = argparse.ArgumentParser(
         add_help=True,
-        parents=[get_scenario_name_parser(), get_scenario_location_parser(),
+        parents=[get_scenario_name_parser(), get_required_e2e_arguments_parser(),
                  get_solve_parser()]
     )
 

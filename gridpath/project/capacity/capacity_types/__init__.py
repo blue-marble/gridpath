@@ -119,14 +119,16 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 
 # TODO: move this to gridpath.project.capacity.__init__?
-def import_results_into_database(scenario_id, subproblem, stage,
-                                 c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # First import the capacity_all results; the capacity type modules will
@@ -134,7 +136,8 @@ def import_results_into_database(scenario_id, subproblem, stage,
     # should have been inserted here)
     # Delete prior results and create temporary import table for ordering
     # Capacity results
-    print("project capacity")
+    if not quiet:
+        print("project capacity")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(conn=db, cursor=c,
@@ -198,7 +201,7 @@ def import_results_into_database(scenario_id, subproblem, stage,
                    "import_module_specific_results_into_database"):
             imported_capacity_type_modules[op_m]. \
                 import_module_specific_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass

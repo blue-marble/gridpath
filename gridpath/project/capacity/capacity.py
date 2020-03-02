@@ -319,7 +319,9 @@ def summarize_results(d, scenario_directory, subproblem, stage):
             pass
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
     The capacity_all.csv file is imported by
     gridpath.project.capacity.capacity_types.__init__.py
@@ -327,6 +329,7 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db, results_
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     pass

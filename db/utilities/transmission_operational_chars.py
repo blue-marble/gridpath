@@ -4,7 +4,6 @@
 """
 Transmission operational chars
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -28,7 +27,6 @@ def transmision_operational_chars(
     containing the operational type and the reactance in ohms
     :return: 
     """
-    print("transmission operational chars")
 
     # Subscenarios
     subs_data = [(transmission_operational_chars_scenario_id,

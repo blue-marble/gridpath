@@ -116,8 +116,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db,
-                                 results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
@@ -126,9 +127,11 @@ def import_results_into_database(scenario_id, subproblem, stage, c, db,
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("transmission operations")
+    if not quiet:
+        print("transmission operations")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

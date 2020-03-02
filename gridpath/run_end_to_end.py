@@ -22,7 +22,7 @@ import sys
 # GridPath modules
 from db.common_functions import connect_to_database, spin_on_database_lock
 from gridpath.common_functions import get_db_parser, get_solve_parser, \
-    get_scenario_location_parser, create_logs_directory_if_not_exists,\
+    get_required_e2e_arguments_parser, create_logs_directory_if_not_exists,\
     Logging, determine_scenario_directory
 from gridpath import get_scenario_inputs, run_scenario, \
     import_scenario_results, process_results
@@ -39,7 +39,7 @@ def parse_arguments(args):
 
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_scenario_location_parser(),
+        parents=[get_db_parser(), get_required_e2e_arguments_parser(),
                  get_solve_parser()]
     )
 
@@ -217,8 +217,8 @@ def main(args=None):
         )
         sys.stdout = logger
         sys.stderr = logger
-
-    print("Running scenario {} end to end".format(parsed_args.scenario))
+    if not parsed_args.quiet:
+        print("Running scenario {} end to end".format(parsed_args.scenario))
 
     # Check if running from queue
     queue_order_id = check_if_in_queue(
@@ -229,8 +229,9 @@ def main(args=None):
     update_run_status(parsed_args.database, parsed_args.scenario, 1)
 
     # Record process ID and process start time in database
-    print("Process ID is {}".format(process_id))
-    print("End-to-end run started on {}".format(start_time))
+    if not parsed_args.quiet:
+        print("Process ID is {}".format(process_id))
+        print("End-to-end run started on {}".format(start_time))
     record_process_id_and_start_time(
         parsed_args.database, parsed_args.scenario, process_id, start_time
     )
@@ -293,8 +294,8 @@ def main(args=None):
         process_id=process_id, end_time=end_time
     )
     # TODO: should the process ID be set back to NULL?
-
-    print("Done. Run finished on {}.".format(end_time))
+    if not parsed_args.quiet:
+        print("Done. Run finished on {}.".format(end_time))
 
     # If logging, we need to return sys.stdout to original (i.e. stop writing
     # to log file)

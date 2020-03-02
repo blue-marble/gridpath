@@ -4,7 +4,6 @@
 """
 Candidate project potentials
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -28,7 +27,6 @@ def update_project_potentials(
     min MW, min MWh, max MW, and max MWH in a tuple as value
     :return: 
     """
-    print("project new potentials")
 
     # Subscenarios
     subs_data = [(project_new_potential_scenario_id, scenario_name,
@@ -82,9 +80,6 @@ def update_project_binary_build_sizes(
     the build size in MW and MWh in a tuple as value
     :return:
     """
-
-    print("project new binary build size")
-
     # Subscenarios
     subs_data = [(project_new_binary_build_size_scenario_id, scenario_name,
                   scenario_description)]

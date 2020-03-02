@@ -33,7 +33,6 @@ def load_system_reserves(io, c, subscenario_input, data_input, reserve_type_inpu
 
         ba_stage_timepoint_reserve_req_input = OrderedDict()
         for ba in bas:
-            print(ba)
             ba_reserve_req = data_input_subscenario.loc[data_input_subscenario[reserve_type_input + '_ba'] == ba]
             ba_stage_timepoint_reserve_req_input[ba] = OrderedDict()
             for st_id in ba_reserve_req['stage_id'].unique():

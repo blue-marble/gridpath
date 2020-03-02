@@ -673,7 +673,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     
@@ -682,11 +682,12 @@ def import_module_specific_results_to_database(
     :param stage:
     :param c: 
     :param db: 
-    :param results_directory: 
+    :param results_directory:
+    :param quiet:
     :return: 
     """
-
-    print("project dispatch variable")
+    if not quiet:
+        print("project dispatch variable")
     # dispatch_variable.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -758,16 +759,17 @@ def import_module_specific_results_to_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, subscenarios):
+def process_module_specific_results(db, c, subscenarios, quiet):
     """
     Aggregate scheduled curtailment
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
-
-    print("aggregate variable curtailment")
+    if not quiet:
+        print("aggregate variable curtailment")
 
     # Delete old aggregated variable curtailment results
     del_sql = """

@@ -4,8 +4,6 @@
 """
 
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -28,8 +26,6 @@ def local_capacity_requirement(
     """
     # TODO: could refactor this with the other system requirements inputs
     #  such as PRM, load, ...
-    print("local capacity requirement")
-
     # Subscenarios
     subs_data = [(local_capacity_requirement_scenario_id, scenario_name,
                   scenario_description)]

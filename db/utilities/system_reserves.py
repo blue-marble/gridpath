@@ -4,8 +4,6 @@
 """
 System reseves
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -28,9 +26,6 @@ def insert_system_reserves(
     :param reserve_type:
     :return: 
     """
-
-    print("system reserves {}".format(reserve_type))
-
     # Subscenario
     subs_data = [(reserve_scenario_id,
                   scenario_name,

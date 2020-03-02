@@ -28,7 +28,6 @@ def load_transmission_zones(io, c, subscenario_input, data_input):
 
         tx_line_load_zones = dict()
         for tl in data_input_subscenario['transmission_line'].unique():
-            print(tl)
             tx_line_load_zones[tl] = dict()
             tx_line_load_zones[tl] = (data_input_subscenario.loc[
                                           data_input_subscenario['transmission_line'] == tl, 'load_zone_from'].iloc[0],

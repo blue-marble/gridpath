@@ -477,7 +477,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -487,11 +487,13 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
 
     # Energy-only and deliverable capacity by project
-    print("project energy-only and deliverable capacities")
+    if not quiet:
+        print("project energy-only and deliverable capacities")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
@@ -549,7 +551,8 @@ def import_module_specific_results_into_database(
                           many=False)
 
     # Group capacity cost results
-    print("project prm group deliverability costs")
+    if not quiet:
+        print("project prm group deliverability costs")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -626,15 +629,17 @@ def import_module_specific_results_into_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, subscenarios):
+def process_module_specific_results(db, c, subscenarios, quiet):
     """
 
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
-    print("update energy-only capacities")
+    if not quiet:
+        print("update energy-only capacities")
 
     # Figure out RPS zone for each project
     project_period_eocap = c.execute(

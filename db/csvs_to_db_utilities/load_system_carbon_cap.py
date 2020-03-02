@@ -27,7 +27,6 @@ def load_system_carbon_cap_targets(io, c, subscenario_input, data_input):
 
         zone_period_targets = dict()
         for z in data_input_subscenario['carbon_cap_zone'].unique():
-            print(z)
             zone_period_targets[z] = dict()
             zone_period_targets_by_zone = data_input_subscenario.loc[data_input_subscenario['carbon_cap_zone'] == z]
             for p in zone_period_targets_by_zone['period'].unique():

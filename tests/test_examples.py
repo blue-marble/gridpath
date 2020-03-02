@@ -36,7 +36,8 @@ class TestExamples(unittest.TestCase):
             port_csvs_to_gridpath.main(["--db_location", "../db/",
                                         "--db_name", "test_examples",
                                         "--csv_location",
-                                        "../db/csvs_test_examples"])
+                                        "../db/csvs_test_examples",
+                                        "--quiet"])
         except Exception as e:
             print("Error encountered during creation of testing database "
                   "testing.db. Deleting database ...")

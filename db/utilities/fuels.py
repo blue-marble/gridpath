@@ -4,7 +4,6 @@
 """
 Fuels data
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -68,7 +67,7 @@ def update_fuel_prices(
     fuel/period/month as values
     :return: 
     """
-    print("fuel prices")
+
     # Subscenario
     subs_data = [(fuel_price_scenario_id, scenario_name, scenario_description)]
     subs_sql = """

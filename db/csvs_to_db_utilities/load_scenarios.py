@@ -20,7 +20,6 @@ def load_scenarios(io, c, data_input):
     """
 
     for sc in data_input.columns.to_list()[1:]:
-        print(sc)
         scenarios = dict()
 
         scenarios = data_input.set_index('optional_feature_or_subscenarios')[sc].to_dict()

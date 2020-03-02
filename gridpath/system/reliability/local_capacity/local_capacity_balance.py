@@ -104,17 +104,20 @@ def save_duals(m):
         ["local_capacity_zone", "period", "dual"]
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-
-    print("system local_capacity total")
+    if not quiet:
+        print("system local_capacity total")
 
     # Local capacity contribution
     nullify_sql = """

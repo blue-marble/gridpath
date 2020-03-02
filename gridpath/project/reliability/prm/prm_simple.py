@@ -190,7 +190,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -198,9 +198,11 @@ def import_results_into_database(
     :param c: 
     :param db: 
     :param results_directory:
+    :param quiet:
     :return: 
     """
-    print("project simple elcc")
+    if not quiet:
+        print("project simple elcc")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

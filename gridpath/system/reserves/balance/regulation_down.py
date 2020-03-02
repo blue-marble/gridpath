@@ -58,17 +58,20 @@ def save_duals(m):
     generic_save_duals(m, "Meet_Regulation_Down_Constraint")
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-
-    print("system regulation down balance")
+    if not quiet:
+        print("system regulation down balance")
 
     generic_import_results_to_database(
         scenario_id=scenario_id,

@@ -145,7 +145,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 # TODO: move this into operations.py?
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     Go through each relevant operational type and import the results into the
@@ -155,6 +155,7 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
 
@@ -169,13 +170,13 @@ def import_results_into_database(
                    "import_module_specific_results_to_database"):
             imported_tx_operational_modules[op_m]. \
                 import_module_specific_results_to_database(
-                scenario_id, subproblem, stage, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass
 
 
-def process_results(db, c, subscenarios):
+def process_results(db, c, subscenarios, quiet):
     """
     Go through each relevant operational type and process the results
     for that operational type.
@@ -183,6 +184,7 @@ def process_results(db, c, subscenarios):
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
 
@@ -198,7 +200,7 @@ def process_results(db, c, subscenarios):
                    "process_module_specific_results"):
             imported_tx_operational_modules[op_m]. \
                 process_module_specific_results(
-                    db, c, subscenarios)
+                    db, c, subscenarios, quiet)
         else:
             pass
 
