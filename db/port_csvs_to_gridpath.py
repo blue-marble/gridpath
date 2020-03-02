@@ -44,6 +44,7 @@ import sys
 from argparse import ArgumentParser
 
 # Data-import modules
+import db.utilities.temporal
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
@@ -151,7 +152,7 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master['table'] == 'temporal', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = \
             csvs_read.csv_read_temporal_data(data_folder_path, quiet)
-        load_temporal.load_temporal(conn, c2, csv_subscenario_input, csv_data_input)
+        db.utilities.temporal.load_temporal(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD LOAD (DEMAND) DATA ####
 
