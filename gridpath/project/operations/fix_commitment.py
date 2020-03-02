@@ -201,7 +201,7 @@ def export_pass_through_inputs(scenario_directory, subproblem, stage, m, d):
             scenario_directory, subproblem,
             "pass_through_inputs", "fixed_commitment.tab"), "a") \
             as fixed_commitment_file:
-        fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t")
+        fixed_commitment_writer = writer(fixed_commitment_file, delimiter="\t", lineterminator="\n")
         for (g, tmp) in m.FINAL_COMMITMENT_PROJECT_OPERATIONAL_TIMEPOINTS:
             fixed_commitment_writer.writerow(
                 [g, tmp, stage, final_commitment_stage_dict[g],

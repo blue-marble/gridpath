@@ -99,7 +99,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory,
                            "frequency_response_balancing_areas.tab"), "w", newline="") as \
             freq_resp_bas_tab_file:
-        writer = csv.writer(freq_resp_bas_tab_file, delimiter="\t")
+        writer = csv.writer(freq_resp_bas_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(["balancing_area", "allow_violation",

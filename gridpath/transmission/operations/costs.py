@@ -278,7 +278,7 @@ def write_model_inputs(
 
     with open(os.path.join(inputs_directory, "transmission_hurdle_rates.tab"),
               "w", newline="") as sim_flows_file:
-        writer = csv.writer(sim_flows_file, delimiter="\t")
+        writer = csv.writer(sim_flows_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

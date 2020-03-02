@@ -191,7 +191,7 @@ def write_module_specific_model_inputs(
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t")
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -212,5 +212,5 @@ def write_module_specific_model_inputs(
                 new_rows.append(row)
     with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)

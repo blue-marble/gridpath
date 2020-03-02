@@ -108,7 +108,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory,
                            "regulation_up_requirement.tab"), "w", newline="") as \
             regulation_up_tab_file:
-        writer = csv.writer(regulation_up_tab_file, delimiter="\t")
+        writer = csv.writer(regulation_up_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         # TODO: change these headers

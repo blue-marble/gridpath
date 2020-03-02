@@ -124,7 +124,7 @@ def generic_determine_dynamic_components(
     # project
     with open(os.path.join(scenario_directory, subproblem, stage, "inputs", "projects.tab"),
               "r") as projects_file:
-        projects_file_reader = csv.reader(projects_file, delimiter="\t")
+        projects_file_reader = csv.reader(projects_file, delimiter="\t", lineterminator="\n")
         headers = next(projects_file_reader)
         # Check that column names are not repeated
         check_list_items_are_unique(headers)

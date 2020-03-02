@@ -387,7 +387,7 @@ def write_module_specific_model_inputs(
                            "new_build_transmission_vintage_costs.tab"),
               "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,
-                            delimiter="\t")
+                            delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

@@ -648,7 +648,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_build_generator_vintage_costs.tab"), "w", newline="") as \
             new_gen_costs_tab_file:
-        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
+        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

@@ -229,7 +229,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t")
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -251,13 +251,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
     with open(os.path.join(inputs_directory,
                            "project_elcc_surface_coefficients.tab"), "w", newline="") as \
             coefficients_file:
-        writer = csv.writer(coefficients_file, delimiter="\t")
+        writer = csv.writer(coefficients_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
         writer.writerow(

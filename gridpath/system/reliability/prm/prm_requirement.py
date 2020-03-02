@@ -113,7 +113,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
                            "prm_requirement.tab"), "w", newline="") as \
             prm_requirement_tab_file:
         writer = csv.writer(prm_requirement_tab_file,
-                            delimiter="\t")
+                            delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

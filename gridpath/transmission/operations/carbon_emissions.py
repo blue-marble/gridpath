@@ -331,7 +331,7 @@ def write_model_inputs(
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
               "r") as tx_file_in:
-        reader = csv.reader(tx_file_in, delimiter="\t")
+        reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -359,7 +359,7 @@ def write_model_inputs(
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
               "w", newline="") as tx_file_out:
-        writer = csv.writer(tx_file_out, delimiter="\t")
+        writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 

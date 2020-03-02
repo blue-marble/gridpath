@@ -723,7 +723,7 @@ def write_module_specific_model_inputs(
         with open(os.path.join(inputs_directory,
                                "hydro_conventional_horizon_params.tab"),
                   "a") as hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
             for row in hydro_chars:
                 writer.writerow(row)
     # If hydro_conventional_horizon_params.tab does not exist, write header
@@ -732,7 +732,7 @@ def write_module_specific_model_inputs(
         with open(os.path.join(inputs_directory,
                                "hydro_conventional_horizon_params.tab"),
                   "w", newline="") as hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(

@@ -276,7 +276,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory,
                            "fuels.tab"), "w", newline="") as \
             fuels_tab_file:
-        writer = csv.writer(fuels_tab_file, delimiter="\t")
+        writer = csv.writer(fuels_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
@@ -289,7 +289,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory,
                            "fuel_prices.tab"), "w", newline="") as \
             fuel_prices_tab_file:
-        writer = csv.writer(fuel_prices_tab_file, delimiter="\t")
+        writer = csv.writer(fuel_prices_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

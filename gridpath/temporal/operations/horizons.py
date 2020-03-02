@@ -224,7 +224,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     with open(os.path.join(scenario_directory, subproblem, stage,
                            "inputs", "horizon_timepoints.tab")
               ) as f:
-        reader = csv.reader(f, delimiter="\t")
+        reader = csv.reader(f, delimiter="\t", lineterminator="\n")
         next(reader)
         tmps_on_horizon = dict()
         horizon_by_tmp = dict()
@@ -310,7 +310,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "horizons.tab"),
               "w", newline="") as horizons_tab_file:
-        hwriter = csv.writer(horizons_tab_file, delimiter="\t")
+        hwriter = csv.writer(horizons_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
@@ -320,7 +320,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
               newline="") as timepoint_horizons_tab_file:
-        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t")
+        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         thwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])

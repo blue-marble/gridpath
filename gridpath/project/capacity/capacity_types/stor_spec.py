@@ -248,7 +248,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "storage_specified_capacities.tab"),
               "w", newline="") as f:
-        writer = csv.writer(f, delimiter="\t")
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
