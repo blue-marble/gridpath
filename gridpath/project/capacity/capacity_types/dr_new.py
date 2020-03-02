@@ -561,7 +561,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_shiftable_load_supply_curve_potential.tab"),
               "w", newline="") as potentials_tab_file:
-        writer = csv.writer(potentials_tab_file, delimiter="\t")
+        writer = csv.writer(potentials_tab_file, delimiter="\t", lineterminator="\n")
 
         writer.writerow([
             "project", "period",
@@ -578,7 +578,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_shiftable_load_supply_curve.tab"),
               "w", newline="") as supply_curve_tab_file:
-        writer = csv.writer(supply_curve_tab_file, delimiter="\t")
+        writer = csv.writer(supply_curve_tab_file, delimiter="\t", lineterminator="\n")
 
         writer.writerow([
             "project", "point", "slope", "intercept"
@@ -599,7 +599,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -609,10 +609,12 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    # Capacity results
-    print("project new DR")
+    # Capacity
+    if not quiet:
+        print("project new DR")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,

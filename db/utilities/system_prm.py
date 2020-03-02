@@ -4,7 +4,6 @@
 """
 ELCC characteristics of projects
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -29,7 +28,6 @@ def prm_requirement(
     :param prm_zone_scenario_id:
     :return:
     """
-    print("prm requirement")
 
     # Subscenarios
     subs_data = [(prm_requirement_scenario_id, scenario_name, scenario_description)]

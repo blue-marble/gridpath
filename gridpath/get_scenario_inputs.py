@@ -21,7 +21,7 @@ import sys
 from db.common_functions import connect_to_database
 from gridpath.auxiliary.auxiliary import get_scenario_id_and_name
 from gridpath.common_functions import determine_scenario_directory, \
-    create_directory_if_not_exists, get_db_parser, get_scenario_location_parser
+    create_directory_if_not_exists, get_db_parser, get_required_e2e_arguments_parser
 from gridpath.auxiliary.module_list import determine_modules, load_modules
 from gridpath.auxiliary.scenario_chars import OptionalFeatures, SubScenarios, \
     SubProblems, SolverOptions
@@ -143,7 +143,7 @@ def parse_arguments(args):
     """
     parser = ArgumentParser(
         add_help=True,
-        parents=[get_db_parser(), get_scenario_location_parser()]
+        parents=[get_db_parser(), get_required_e2e_arguments_parser()]
     )
     parsed_arguments = parser.parse_known_args(args=args)[0]
 
@@ -161,7 +161,9 @@ def write_subproblems_csv(scenario_directory, subproblems):
         os.makedirs(scenario_directory)
     with open(os.path.join(scenario_directory, "subproblems.csv"), "w", newline="") as \
             subproblems_csv_file:
-        writer = csv.writer(subproblems_csv_file, delimiter=",")
+        writer = csv.writer(
+            subproblems_csv_file, delimiter=",", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(["subproblems"])
@@ -178,7 +180,9 @@ def write_features_csv(scenario_directory, feature_list):
     """
     with open(os.path.join(scenario_directory, "features.csv"), "w", newline="") as \
             features_csv_file:
-        writer = csv.writer(features_csv_file, delimiter=",")
+        writer = csv.writer(
+            features_csv_file, delimiter=",", lineterminator="\n"
+        )
 
         # Write header
         writer.writerow(["features"])
@@ -438,7 +442,8 @@ def main(args=None):
     conn = connect_to_database(db_path=db_path)
     c = conn.cursor()
 
-    print("Getting inputs... (connected to database {})".format(db_path))
+    if not parsed_arguments.quiet:
+        print("Getting inputs... (connected to database {})".format(db_path))
 
     scenario_id, scenario_name = get_scenario_id_and_name(
         scenario_id_arg=scenario_id_arg,

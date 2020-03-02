@@ -422,7 +422,7 @@ def load_module_specific_data(
     with open(os.path.join(scenario_directory, subproblem, stage,
                            "inputs", "project_availability_endogenous.tab"),
               "r") as f:
-        reader = csv.reader(f, delimiter="\t")
+        reader = csv.reader(f, delimiter="\t", lineterminator="\n")
         next(reader)
 
         for row in reader:
@@ -553,7 +553,7 @@ def write_module_specific_model_inputs(
 
     if not os.path.exists(availability_file):
         with open(availability_file, "w", newline="") as f:
-            writer = csv.writer(f, delimiter="\t")
+            writer = csv.writer(f, delimiter="\t", lineterminator="\n")
             # Write header
             writer.writerow(
                 ["project",
@@ -566,7 +566,7 @@ def write_module_specific_model_inputs(
             )
 
     with open(availability_file, "a", newline="") as f:
-        writer = csv.writer(f, delimiter="\t")
+        writer = csv.writer(f, delimiter="\t", lineterminator="\n")
         # Write rows
         for row in endogenous_availability_params:
             replace_nulls = ["." if i is None else i for i in row]
@@ -574,7 +574,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -586,7 +586,8 @@ def import_module_specific_results_into_database(
     :param results_directory:
     :return:
     """
-    print("project availability")
+    if not quiet:
+        print("project availability")
     # dispatch_all.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

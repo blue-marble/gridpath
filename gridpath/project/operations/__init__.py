@@ -111,7 +111,7 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     with open(os.path.join(scenario_directory, subproblem, stage, "inputs",
                            "projects.tab")
               ) as prj_file:
-        reader = csv.reader(prj_file, delimiter="\t")
+        reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
         headers = next(reader)
 
     # STARTUP_COST_PROJECTS
@@ -538,7 +538,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory, "heat_rate_curves.tab"),
               "w", newline="") as \
             heat_rate_tab_file:
-        writer = csv.writer(heat_rate_tab_file, delimiter="\t")
+        writer = csv.writer(heat_rate_tab_file, delimiter="\t", lineterminator="\n")
 
         writer.writerow(["project", "load_point_mw",
                          "average_heat_rate_mmbtu_per_mwh"])

@@ -561,7 +561,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_binary_build_storage_vintage_costs.tab"),
               "w", newline="") as new_storage_costs_tab_file:
-        writer = csv.writer(new_storage_costs_tab_file, delimiter="\t")
+        writer = csv.writer(new_storage_costs_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
@@ -577,7 +577,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_binary_build_storage_size.tab"),
               "w", newline="") as new_build_size_tab_file:
-        writer = csv.writer(new_build_size_tab_file, delimiter="\t")
+        writer = csv.writer(new_build_size_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
@@ -590,7 +590,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -600,10 +600,12 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Capacity results
-    print("project new binary build storage")
+    if not quiet:
+        print("project new binary build storage")
 
     update_capacity_results_table(
         db=db, c=c, results_directory=results_directory,

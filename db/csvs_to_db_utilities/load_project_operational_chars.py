@@ -42,7 +42,6 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
         # ### Operational chars integers ### #
         for op_chars in operational_chars_integers:
             if data_input_subscenario[op_chars].notnull().sum() != 0:
-                print("Loading " + op_chars)
                 operational_chars_dict = dict()
                 operational_chars_df = data_input_subscenario.loc[:, ['project', op_chars]].dropna()
                 operational_chars_df[[op_chars]] = operational_chars_df[
@@ -60,7 +59,6 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
         # ### Operational chars non-integers (strings and floats) ### #
         for op_chars in operational_chars_non_integers:
             if data_input_subscenario[op_chars].notnull().sum() != 0:
-                print("Loading " + op_chars)
                 operational_chars_dict = dict()
                 operational_chars_dict = data_input_subscenario.loc[:, ['project', op_chars]].dropna().set_index(
                     'project')[op_chars].to_dict()
@@ -189,7 +187,6 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
         data_input_subscenario = data_input.loc[(data_input['heat_rate_curves_scenario_id'] == sc_id)]
 
         for prj in data_input_subscenario['project'].unique():
-            print(prj)
             project_hr_scenarios[prj] = dict()
             project_hr_scenarios[prj][sc_id] = (sc_name, sc_description)
 

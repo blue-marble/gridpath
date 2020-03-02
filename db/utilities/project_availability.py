@@ -4,7 +4,6 @@
 """
 Project availability
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -26,7 +25,6 @@ def make_scenario_and_insert_types_and_ids(
     :param project_types_and_char_ids:
     :return:
     """
-    print("project availability")
     # Subscenarios
     subs_data = [(project_availability_scenario_id, scenario_name,
                   scenario_description)]
@@ -70,7 +68,6 @@ def insert_project_availability_exogenous(
     :param project_avail: four-level dictionary with availability derate by
         project, exogenous_availability_scenario_id, stage, and timepoint
     """
-    print("...exogenous")
 
     # "Subscenario"
     subs_data = []
@@ -125,7 +122,6 @@ def insert_project_availability_endogenous(
         available_hours_between_events_min,
         available_hours_between_events_max)}}
     """
-    print("...endogenous")
 
     # "Subscenario"
     subs_data = []

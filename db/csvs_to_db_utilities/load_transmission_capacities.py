@@ -27,7 +27,6 @@ def load_transmission_capacities(io, c, subscenario_input, data_input):
 
         tx_line_period_capacities = dict()
         for tl in data_input_subscenario['transmission_line'].unique():
-            print(tl)
             tx_line_period_capacities[tl] = dict()
             tx_line_period_capacities_by_zone = data_input_subscenario.loc[
                 data_input_subscenario['transmission_line'] == tl]

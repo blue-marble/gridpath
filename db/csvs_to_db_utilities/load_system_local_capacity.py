@@ -28,7 +28,6 @@ def load_system_local_capacity_requirement(io, c, subscenario_input, data_input)
 
         zone_period_requirement = dict()
         for z in data_input_subscenario['local_capacity_zone'].unique():
-            print(z)
             zone_period_requirement[z] = dict()
             zone_period_requirement_by_zone = data_input_subscenario.loc[data_input_subscenario['local_capacity_zone'] == z]
             for p in zone_period_requirement_by_zone['period'].unique():

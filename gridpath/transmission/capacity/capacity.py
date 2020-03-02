@@ -325,18 +325,21 @@ def export_results(scenario_directory, subproblem, stage, m, d):
 # Database
 ###############################################################################
 
-def import_results_into_database(scenario_id, subproblem, stage,
-                                 c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Tx capacity results
-    print("transmission capacity")
+    if not quiet:
+        print("transmission capacity")
     
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -390,7 +393,8 @@ def import_results_into_database(scenario_id, subproblem, stage,
                           many=False)
 
     # Capacity cost results
-    print("transmission capacity costs")
+    if not quiet:
+        print("transmission capacity costs")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

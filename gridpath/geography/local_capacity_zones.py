@@ -104,7 +104,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(inputs_directory, "local_capacity_zones.tab"),
               "w", newline="") as \
             local_capacity_zones_file:
-        writer = csv.writer(local_capacity_zones_file, delimiter="\t")
+        writer = csv.writer(local_capacity_zones_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

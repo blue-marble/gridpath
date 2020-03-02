@@ -4,7 +4,6 @@
 """
 Hurdle rates
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -31,7 +30,6 @@ def insert_transmission_hurdle_rates(
     negative direction hurdle rates as values in a tuple
     :return: 
     """
-    print("transmission hurdle rates")
 
     # Subscenarios
     subs_data = [(transmission_hurdle_rate_scenario_id,

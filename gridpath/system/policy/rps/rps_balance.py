@@ -204,13 +204,16 @@ def summarize_results(d, scenario_directory, subproblem, stage):
         outfile.write("\n")
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Delete prior results and create temporary import table for ordering

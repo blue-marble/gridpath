@@ -35,7 +35,6 @@ def load_temporal(io, c, subscenario_input, data_input):
 
         data_input_subscenario = {}
         for tbl in temporal_tables:
-            print(tbl)
             data_input_subscenario[tbl] = data_input[tbl].loc[data_input[tbl]['temporal_scenario_id'] == sc_id]
 
         ## SUBPROBLEMS ##
@@ -81,13 +80,16 @@ def load_temporal(io, c, subscenario_input, data_input):
         timepoints_df[['timepoint_weight']] = timepoints_df[['timepoint_weight']].astype(float)
         timepoints_df[['month']] = timepoints_df[['month']].astype(int)
         timepoints_df[['hour_of_day']] = timepoints_df[['hour_of_day']].astype(float)
+        # TODO: what should the validation behavior be here
         if timepoints_df[['previous_stage_timepoint_map']].isnull().values.any():
-            print('temporal scenario id ' + str(sc_id) + ' does not have previous stage timepoint map.')
+            # print('temporal scenario id ' + str(sc_id) + ' does not have previous stage timepoint map.')
+            pass
         else:
             timepoints_df[['previous_stage_timepoint_map']] = timepoints_df[['previous_stage_timepoint_map']].astype(
                 int)
         if timepoints_df[['spinup_or_lookahead']].isnull().values.any():
-            print('temporal scenario id ' + str(sc_id) + ' does not have spinup or lookahead.')
+            # print('temporal scenario id ' + str(sc_id) + ' does not have spinup or lookahead.')
+            pass
         else:
             timepoints_df[['spinup_or_lookahead']] = timepoints_df[['spinup_or_lookahead']].astype(
                 int)

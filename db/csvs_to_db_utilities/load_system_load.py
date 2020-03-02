@@ -32,7 +32,6 @@ def load_system_static_load(io, c, subscenario_input, data_input):
 
         load = OrderedDict()
         for z in data_input_subscenario['load_zone'].unique():
-            print(z)
             zone_load = data_input_subscenario.loc[data_input_subscenario['load_zone'] == z]
             load[z] = OrderedDict()
             for st_id in zone_load['stage_id'].unique():

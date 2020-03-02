@@ -58,7 +58,6 @@ def load_fuel_prices(io, c, subscenario_input, data_input):
 
         fuel_month_prices = dict()
         for f in data_input_subscenario['fuel'].unique():
-            print(f)
             fuel_month_prices[f] = dict()
             fuel_month_prices_by_fuel = data_input_subscenario.loc[data_input_subscenario['fuel'] == f]
             for p in fuel_month_prices_by_fuel['period'].unique():

@@ -781,7 +781,7 @@ def write_module_specific_model_inputs(
                                "hydro_conventional_horizon_params.tab"),
                   "a") as \
                 hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
             for row in hydro_chars:
                 writer.writerow(row)
     # If hydro_conventional_horizon_params.tab does not exist, write header
@@ -791,7 +791,7 @@ def write_module_specific_model_inputs(
                                "hydro_conventional_horizon_params.tab"),
                   "w", newline="") as \
                 hydro_chars_tab_file:
-            writer = csv.writer(hydro_chars_tab_file, delimiter="\t")
+            writer = csv.writer(hydro_chars_tab_file, delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(
@@ -805,7 +805,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_to_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -814,10 +814,12 @@ def import_module_specific_results_to_database(
     :param stage:
     :param c: 
     :param db: 
-    :param results_directory: 
+    :param results_directory:
+    :param quiet:
     :return: 
     """
-    print("project dispatch hydro curtailable")
+    if not quiet:
+        print("project dispatch hydro curtailable")
     # dispatch_gen_hydro.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -883,16 +885,17 @@ def import_module_specific_results_to_database(
                           many=False)
 
 
-def process_module_specific_results(db, c, subscenarios):
+def process_module_specific_results(db, c, subscenarios, quiet):
     """
     Aggregate scheduled curtailment.
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
-
-    print("aggregate hydro curtailment")
+    if not quiet:
+        print("aggregate hydro curtailment")
 
     # Delete old aggregated hydro curtailment results
     del_sql = """

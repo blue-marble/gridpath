@@ -648,7 +648,7 @@ def write_module_specific_model_inputs(
     with open(os.path.join(inputs_directory,
                            "new_build_generator_vintage_costs.tab"), "w", newline="") as \
             new_gen_costs_tab_file:
-        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t")
+        writer = csv.writer(new_gen_costs_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(
@@ -665,7 +665,7 @@ def write_module_specific_model_inputs(
 
 
 def import_module_specific_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -675,10 +675,12 @@ def import_module_specific_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # New build capacity results
-    print("project new build generator")
+    if not quiet:
+        print("project new build generator")
 
     update_capacity_results_table(
         db=db, c=c, results_directory=results_directory,

@@ -251,7 +251,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t")
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -273,12 +273,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
     
@@ -286,10 +286,12 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # REC provision by project and timepoint
-    print("project recs")
+    if not quiet:
+        print("project recs")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,
@@ -362,15 +364,17 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios):
+def process_results(db, c, subscenarios, quiet):
     """
     
     :param db: 
     :param c: 
-    :param subscenarios: 
+    :param subscenarios:
+    :param quiet:
     :return: 
     """
-    print("update rps zones")
+    if not quiet:
+        print("update rps zones")
     # Figure out RPS zone for each project
     project_zones = c.execute(
         """SELECT project, rps_zone

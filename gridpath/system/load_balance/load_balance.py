@@ -149,16 +149,20 @@ def save_duals(m):
         ["zone", "timepoint", "dual"]
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("system load balance")
+    if not quiet:
+        print("system load balance")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

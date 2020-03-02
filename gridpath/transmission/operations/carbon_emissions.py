@@ -331,7 +331,7 @@ def write_model_inputs(
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
               "r") as tx_file_in:
-        reader = csv.reader(tx_file_in, delimiter="\t")
+        reader = csv.reader(tx_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -359,12 +359,12 @@ def write_model_inputs(
 
     with open(os.path.join(inputs_directory, "transmission_lines.tab"),
               "w", newline="") as tx_file_out:
-        writer = csv.writer(tx_file_out, delimiter="\t")
+        writer = csv.writer(tx_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -374,10 +374,12 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Carbon emission imports by transmission line and timepoint
-    print("transmission carbon emissions")
+    if not quiet:
+        print("transmission carbon emissions")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(

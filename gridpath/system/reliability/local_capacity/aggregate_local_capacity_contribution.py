@@ -75,17 +75,20 @@ def export_results(scenario_directory, subproblem, stage, m, d):
             ])
 
 
-def import_results_into_database(scenario_id, subproblem, stage, c, db, results_directory):
+def import_results_into_database(
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
+):
     """
 
     :param scenario_id:
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-
-    print("system local capacity")
+    if not quiet:
+        print("system local capacity")
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
         conn=db, cursor=c,

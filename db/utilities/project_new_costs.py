@@ -4,7 +4,6 @@
 """
 Existing/planned project capacities
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -18,8 +17,6 @@ def update_project_new_costs(
         scenario_description,
         project_period_lifetimes_costs
 ):
-    print("project new costs")
-
     # Subscenarios
     subs_data = [(project_new_cost_scenario_id, scenario_name, scenario_description)]
     subs_sql = """

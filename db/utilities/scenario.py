@@ -176,8 +176,6 @@ def create_scenario_all_args(
     :param solver_options_id:
     :return:
     """
-
-    print("creating scenario {}".format(scenario_name))
     sc_data = (
         scenario_name,
         of_fuels,
@@ -446,7 +444,6 @@ def create_scenario(io, c, column_values_dict):
     # TODO: add a check that the column names are correct and values are
     #  integers
     for column_name in column_values_dict.keys():
-        print(column_name)
         if column_name == 'scenario_id':
             warnings.warn(
                 "The scenario_id is an AUTOINCREMENT column and should not be "

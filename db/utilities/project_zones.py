@@ -4,8 +4,6 @@
 """
 Create a list of all projects
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -26,9 +24,6 @@ def project_load_zones(
     :param project_load_zones: 
     :return: 
     """
-
-    print("project load zones")
-
     # Subscenarios
     subs_data = [(project_load_zone_scenario_id,
                   scenario_name, scenario_description)]
@@ -86,9 +81,6 @@ def project_reserve_bas(
         scenario_description,
         project_bas,
 ):
-
-    print("project " + reserve_type + " bas")
-
     # Subscenarios
     subs_data = [(project_reserve_scenario_id,
                   scenario_name, scenario_description)]
@@ -133,8 +125,6 @@ def project_policy_zones(
     :param policy_type: 
     :return: 
     """
-    print("project " + policy_type + " zones")
-    
     # Subscenarios
     subs_data = [(project_policy_zone_scenario_id,
                   scenario_name, scenario_description)]

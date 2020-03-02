@@ -4,7 +4,6 @@
 """
 Make load zones
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -35,7 +34,6 @@ def geography_load_zones(
 
     Load zones and associated params
     """
-    print("load zones")
 
     # Subscenarios
     subs_data = [(load_zone_scenario_id, scenario_name, scenario_description)]
@@ -87,7 +85,6 @@ def geography_lf_reserves_up_bas(
 
     Load-following up BAs and associated params
     """
-    print("lf reserves up bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -138,7 +135,6 @@ def geography_lf_reserves_down_bas(
 
     Load-following down BAs and associated params.
     """
-    print("lf reserves down bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -189,7 +185,6 @@ def geography_regulation_up_bas(
 
     Regulation up BAs and associated params.
     """
-    print("regulation up bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -240,7 +235,6 @@ def geography_regulation_down_bas(
 
     Regulation down BAs and associated params.
     """
-    print("regulation down bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -291,7 +285,6 @@ def geography_spinning_reserves_bas(
 
     Spinning reserves BAs and associated params.
     """
-    print("spinning reserves bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -342,7 +335,6 @@ def geography_frequency_response_bas(
 
     Frequency response BAs and associated params.
     """
-    print("frequency response bas")
 
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
@@ -392,7 +384,6 @@ def geography_rps_zones(
 
     RPS zones and associated params.
     """
-    print("rps zones")
 
     # Subscenarios
     subs_data = [(rps_zone_scenario_id, scenario_name, scenario_description)]
@@ -441,7 +432,6 @@ def geography_carbon_cap_zones(
 
     Carbon cap zones and associated params.
     """
-    print("carbon cap zones")
     # Subscenarios
     subs_data = [(carbon_cap_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
@@ -489,7 +479,6 @@ def geography_prm_zones(
 
     PRM zones and associated params.
     """
-    print("prm zones")
 
     # Subscenarios
     subs_data = [(prm_zone_scenario_id, scenario_name, scenario_description)]
@@ -538,7 +527,6 @@ def geography_local_capacity_zones(
 
     Local capacity zones and associated params.
     """
-    print("local capacity zones")
 
     # Subscenarios
     subs_data = [(local_capacity_zone_scenario_id, scenario_name,

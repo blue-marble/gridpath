@@ -130,7 +130,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     if os.path.isfile(os.path.join(inputs_directory, "tuning_params.tab")):
         with open(os.path.join(inputs_directory, "tuning_params.tab"), "r"
                   ) as tuning_params_file_in:
-            reader = csv.reader(tuning_params_file_in, delimiter="\t")
+            reader = csv.reader(tuning_params_file_in, delimiter="\t", lineterminator="\n")
 
             new_rows = list()
 
@@ -147,13 +147,13 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         with open(os.path.join(inputs_directory, "tuning_params.tab"),
                   "w", newline="") as \
                 tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t")
+            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
             writer.writerows(new_rows)
 
     else:
         with open(os.path.join(inputs_directory, "tuning_params.tab"),
                   "w", newline="") as \
                 tuning_params_file_out:
-            writer = csv.writer(tuning_params_file_out, delimiter="\t")
+            writer = csv.writer(tuning_params_file_out, delimiter="\t", lineterminator="\n")
             writer.writerows(["dynamic_elcc_tuning_cost_per_mw"])
             writer.writerows([dynamic_elcc_tuning_cost])

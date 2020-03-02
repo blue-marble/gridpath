@@ -130,7 +130,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "timepoints.tab"),
               "w", newline="") as timepoints_tab_file:
-        writer = csv.writer(timepoints_tab_file, delimiter="\t")
+        writer = csv.writer(timepoints_tab_file, delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(["TIMEPOINTS", "period", "timepoint_weight",

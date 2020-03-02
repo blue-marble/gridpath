@@ -176,7 +176,7 @@ def write_module_specific_model_inputs(
                            "specified_transmission_line_capacities.tab"),
               "w", newline="") as existing_tx_capacity_tab_file:
         writer = csv.writer(existing_tx_capacity_tab_file,
-                            delimiter="\t")
+                            delimiter="\t", lineterminator="\n")
 
         # Write header
         writer.writerow(

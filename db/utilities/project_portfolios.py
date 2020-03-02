@@ -4,8 +4,6 @@
 """
 Project portfolios
 """
-from __future__ import print_function
-
 from db.common_functions import spin_on_database_lock
 
 
@@ -16,7 +14,6 @@ def update_project_portfolios(
         scenario_description,
         project_cap_types
 ):
-    print("project portfolios")
 
     # Subscenario
     subs_data = [(project_portfolio_scenario_id, scenario_name,

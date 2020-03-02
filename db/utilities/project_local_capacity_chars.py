@@ -4,7 +4,6 @@
 """
 
 """
-from __future__ import print_function
 
 from db.common_functions import spin_on_database_lock
 
@@ -27,8 +26,6 @@ def insert_project_local_capacity_chars(
     capacity credit in hours in a tuple as values
     :return:
     """
-
-    print("project new binary build size")
 
     # Subscenarios
     subs_data = [(project_local_capacity_chars_scenario_id, scenario_name,

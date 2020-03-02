@@ -173,7 +173,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "r"
               ) as projects_file_in:
-        reader = csv.reader(projects_file_in, delimiter="\t")
+        reader = csv.reader(projects_file_in, delimiter="\t", lineterminator="\n")
 
         new_rows = list()
 
@@ -195,12 +195,12 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "projects.tab"), "w", newline="") as \
             projects_file_out:
-        writer = csv.writer(projects_file_out, delimiter="\t")
+        writer = csv.writer(projects_file_out, delimiter="\t", lineterminator="\n")
         writer.writerows(new_rows)
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -208,10 +208,12 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
     # Carbon emission imports by project and timepoint
-    print("project carbon emissions")
+    if not quiet:
+        print("project carbon emissions")
 
     # Delete prior results and create temporary import table for ordering
     setup_results_import(
@@ -273,15 +275,17 @@ def import_results_into_database(
                           many=False)
 
 
-def process_results(db, c, subscenarios):
+def process_results(db, c, subscenarios, quiet):
     """
 
     :param db: 
     :param c: 
-    :param subscenarios: 
+    :param subscenarios:
+    :param quiet:
     :return: 
     """
-    print("update carbon cap zones")
+    if not quiet:
+        print("update carbon cap zones")
     # Figure out carbon_cap zone for each project
     project_zones = c.execute(
         """SELECT project, carbon_cap_zone

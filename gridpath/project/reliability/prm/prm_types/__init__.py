@@ -209,7 +209,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -217,6 +217,7 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
 
@@ -259,18 +260,19 @@ def import_results_into_database(
                    "import_module_specific_results_into_database"):
             imported_prm_modules[prm_m]. \
                 import_module_specific_results_into_database(
-                scenario_id, subproblem, stage, c, db, results_directory
+                scenario_id, subproblem, stage, c, db, results_directory, quiet
             )
         else:
             pass
 
 
-def process_results(db, c, subscenarios):
+def process_results(db, c, subscenarios, quiet):
     """
 
     :param db:
     :param c:
     :param subscenarios:
+    :param quiet:
     :return:
     """
     # Required modules are the unique set of generator PRM types in
@@ -305,7 +307,7 @@ def process_results(db, c, subscenarios):
                    "process_module_specific_results"):
             imported_prm_modules[prm_m]. \
                 process_module_specific_results(
-                db=db, c=c, subscenarios=subscenarios
+                db=db, c=c, subscenarios=subscenarios, quiet=quiet
             )
         else:
             pass

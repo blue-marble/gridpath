@@ -182,7 +182,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     with open(os.path.join(
             inputs_directory, "prm_zone_surface_facets_and_intercept.tab"
     ), "w", newline="") as intercepts_file:
-        writer = csv.writer(intercepts_file, delimiter="\t")
+        writer = csv.writer(intercepts_file, delimiter="\t", lineterminator="\n")
 
         # Writer header
         writer.writerow(
@@ -194,7 +194,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
 
 def import_results_into_database(
-        scenario_id, subproblem, stage, c, db, results_directory
+        scenario_id, subproblem, stage, c, db, results_directory, quiet
 ):
     """
 
@@ -202,9 +202,11 @@ def import_results_into_database(
     :param c:
     :param db:
     :param results_directory:
+    :param quiet:
     :return:
     """
-    print("system prm elcc surface")
+    if not quiet:
+        print("system prm elcc surface")
     # PRM contribution from the ELCC surface
     # Prior results should have already been cleared by
     # system.prm.aggregate_project_simple_prm_contribution,
