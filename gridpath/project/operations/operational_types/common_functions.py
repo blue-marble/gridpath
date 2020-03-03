@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
@@ -46,10 +48,9 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     """
     relevant_tmps = [tmp]
 
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass  # no relevant timepoints, keep list limited to *t*
     else:
         # The first possible relevant timepoint is the previous timepoint,

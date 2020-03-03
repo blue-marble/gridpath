@@ -26,6 +26,8 @@ from gridpath.auxiliary.auxiliary import generator_subset_init,\
     check_constant_heat_rate
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -237,10 +239,9 @@ def ramp_up_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp up the full operable range between timepoints, constraint won't
@@ -280,10 +281,9 @@ def ramp_down_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp down the full operable range between timepoints, constraint
@@ -387,10 +387,9 @@ def startup_shutdown_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[
-        tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return mod.GenSimple_Provide_Power_MW[g, tmp] - \
