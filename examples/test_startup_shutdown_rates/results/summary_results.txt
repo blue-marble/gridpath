@@ -7,5 +7,5 @@
 --> Energy Production <--
                              Annual Energy (MWh)  % Total Power
 load_zone period technology                                    
-Zone1     2020   Gas                     27.1988      18.477596
-                 Nuclear                120.0000      81.522404
+Zone1     2020   Gas                          27             18
+                 Nuclear                     120             82
