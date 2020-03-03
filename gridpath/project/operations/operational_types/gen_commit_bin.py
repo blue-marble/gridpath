@@ -1758,7 +1758,6 @@ def load_module_specific_data(mod, data_portal,
     """
 
     min_stable_fraction = dict()
-    startup_plus_ramp_up_rate = dict()
     shutdown_plus_ramp_down_rate = dict()
     ramp_up_when_on_rate = dict()
     ramp_down_when_on_rate = dict()
@@ -1774,8 +1773,7 @@ def load_module_specific_data(mod, data_portal,
         sep="\t", header=None, nrows=1
     ).values[0]
 
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
+    optional_columns = ["shutdown_plus_ramp_down_rate",
                         "ramp_up_when_on_rate",
                         "ramp_down_when_on_rate",
                         "min_up_time_hours",
