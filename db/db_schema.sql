@@ -2070,52 +2070,17 @@ availability_derate FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_all;
-CREATE TABLE results_project_dispatch_all (
+DROP TABLE IF EXISTS results_project_dispatch;
+CREATE TABLE results_project_dispatch (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
+timepoint INTEGER,
+operational_type VARCHAR(64),
 balancing_type_project VARCHAR(64),
 horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-power_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_dispatch_by_technology;
-CREATE TABLE results_project_dispatch_by_technology (
-scenario_id INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-period INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-technology VARCHAR(32),
-power_mw FLOAT,
-PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone,
-technology)
-);
-
-DROP TABLE IF EXISTS results_project_dispatch_variable;
-CREATE TABLE results_project_dispatch_variable (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 load_zone VARCHAR(32),
@@ -2127,27 +2092,11 @@ scheduled_curtailment_mw FLOAT,
 subhourly_curtailment_mw FLOAT,
 subhourly_energy_delivered_mw FLOAT,
 total_curtailment_mw FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_dispatch_gen_hydro;
-CREATE TABLE results_project_dispatch_gen_hydro (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-power_mw FLOAT,
-scheduled_curtailment_mw FLOAT,
+committed_mw FLOAT,
+committed_units FLOAT,
+started_units INTEGER,
+stopped_units INTEGER,
+synced_units INTEGER,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
@@ -2183,77 +2132,22 @@ scheduled_curtailment_mw FLOAT,
 PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_capacity_commit;
-CREATE TABLE results_project_dispatch_capacity_commit (
+DROP TABLE IF EXISTS results_project_dispatch_by_technology;
+CREATE TABLE results_project_dispatch_by_technology (
 scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
+period INTEGER,
 timepoint INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 power_mw FLOAT,
-committed_mw FLOAT,
-committed_units FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
+PRIMARY KEY (scenario_id, subproblem_id, stage_id, timepoint, load_zone,
+technology)
 );
 
-DROP TABLE IF EXISTS results_project_dispatch_binary_commit;
-CREATE TABLE results_project_dispatch_binary_commit (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-power_mw FLOAT,
-committed_mw FLOAT,
-committed_units INTEGER,
-started_units INTEGER,
-stopped_units INTEGER,
-synced_units INTEGER,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_dispatch_continuous_commit;
-CREATE TABLE results_project_dispatch_continuous_commit (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
-power_mw FLOAT,
-committed_mw FLOAT,
-committed_units FLOAT,
-started_units FLOAT,
-stopped_units FLOAT,
-synced_units FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
 
 DROP TABLE IF EXISTS results_project_lf_reserves_up;
 CREATE TABLE results_project_lf_reserves_up (

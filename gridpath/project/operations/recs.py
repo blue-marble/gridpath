@@ -387,12 +387,7 @@ def process_results(db, c, subscenarios, quiet):
     # Update tables with RPS zone
     tables_to_update = [
         "results_project_capacity",
-        "results_project_dispatch_all",
-        "results_project_dispatch_variable",
-        "results_project_dispatch_capacity_commit",
-        "results_project_dispatch_binary_commit",
-        "results_project_dispatch_continuous_commit",
-        "results_project_dispatch_gen_hydro",
+        "results_project_dispatch",
         "results_project_fuel_burn",
         "results_project_frequency_response",
         "results_project_lf_reserves_up",
