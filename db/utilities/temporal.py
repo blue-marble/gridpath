@@ -2,9 +2,12 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Make temporal subscenarios
+Make temporal subscenarios.
 """
-from db.common_functions import spin_on_database_lock
+
+import os.path
+import pandas as pd
+import warnings
 
 from db.common_functions import spin_on_database_lock
 
@@ -15,8 +18,8 @@ def temporal(
         scenario_name,
         scenario_description,
         periods,
-        subproblems,
-        subproblem_stages,
+        subscenario_subproblems,
+        subscenario_subproblem_stages,
         subproblem_stage_timepoints,
         subproblem_horizons,
         subproblem_stage_timepoint_horizons
@@ -29,9 +32,10 @@ def temporal(
     :param scenario_name:
     :param scenario_description:
     :param periods:
-    :param subproblems: list of subproblems
-    :param subproblem_stages: dictionary with subproblems as keys and a list of
-        tuples containing (stage_id, stage_name) as values
+    :param subscenario_subproblems: list of tuples (subscenario_id,
+        subproblem_id)
+    :param subscenario_subproblem_stages: list of tuples (subscenario_id,
+        subproblem_id, stage_id)
     :param subproblem_stage_timepoints: dictionary with subproblems as first
         key, stage_id as second key, timepoint as third key, and the various
         timepoint params as a dictionary value for each timepoint (with the
@@ -58,13 +62,27 @@ def temporal(
     spin_on_database_lock(conn=io, cursor=c, sql=subscenario_sql,
                           data=subscenario_data)
 
-    periods_data = []
-    for period in periods.keys():
-        periods_data.append(
-            (temporal_scenario_id, period, periods[period]["discount_factor"],
-             periods[period][ "number_years_represented"])
-        )
-        
+    # Subproblems
+    subproblems_sql = """
+        INSERT INTO inputs_temporal_subproblems
+        (temporal_scenario_id, subproblem_id)
+        VALUES (?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=subproblems_sql,
+                          data=subscenario_subproblems)
+
+    # Stages
+    # TODO: stage_name not currently included; decide whether to keep this
+    #  column in the database and how to import data for it if we do want it
+    stages_sql = """
+        INSERT INTO inputs_temporal_subproblems_stages
+        (temporal_scenario_id, subproblem_id, stage_id)
+        VALUES (?, ?, ?);
+        """
+    spin_on_database_lock(conn=io, cursor=c, sql=stages_sql,
+                          data=subscenario_subproblem_stages)
+
+    # Periods
     periods_sql = """
         INSERT INTO inputs_temporal_periods
         (temporal_scenario_id, period, discount_factor, 
@@ -72,34 +90,7 @@ def temporal(
         VALUES (?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=periods_sql,
-                          data=periods_data)
-
-    # Subproblems
-    subproblems_data = []
-    for subproblem_id in subproblems:
-        subproblems_data.append((temporal_scenario_id, subproblem_id))
-        
-    subproblems_sql = """
-        INSERT INTO inputs_temporal_subproblems
-        (temporal_scenario_id, subproblem_id)
-        VALUES (?, ?);
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=subproblems_sql,
-                          data=subproblems_data)
-
-    # Stages
-    stages_data = []
-    for subproblem_id in subproblem_stages.keys():
-        for stage in subproblem_stages[subproblem_id]:
-            stages_data.append((temporal_scenario_id, subproblem_id, 
-                                stage[0], stage[1]))
-    stages_sql = """
-        INSERT INTO inputs_temporal_subproblems_stages
-        (temporal_scenario_id, subproblem_id, stage_id, stage_name)
-        VALUES (?, ?, ?, ?);
-        """
-    spin_on_database_lock(conn=io, cursor=c, sql=stages_sql,
-                          data=stages_data)
+                          data=periods)
 
     # Timepoints
     timepoints_data = []
@@ -186,7 +177,7 @@ def temporal(
                           data=horizon_timepoints_data)
 
 
-def load_temporal(io, c, subscenario_input, data_input):
+def load_temporal_deprecate(io, c, subscenario_input, data_input):
     """
     data_input is a dictionary with all temporal csv tables
     subproblems = [subproblems]
@@ -208,9 +199,11 @@ def load_temporal(io, c, subscenario_input, data_input):
 
     for sc_id in subscenario_input['temporal_scenario_id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['temporal_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['temporal_scenario_id']
+                                  == sc_id, 'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['temporal_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['temporal_scenario_id']
+                                  == sc_id, 'description'].iloc[0]
 
         data_input_subscenario = {}
         for tbl in temporal_tables:
@@ -319,7 +312,7 @@ def load_temporal(io, c, subscenario_input, data_input):
                 scenario_name=sc_name,
                 scenario_description=sc_description,
                 periods=periods,
-                subproblems=subproblems,
+                subscenario_subproblems=subproblems,
                 subproblem_stages=subproblem_stages,
                 subproblem_stage_timepoints=timepoints,
                 subproblem_horizons=subproblem_horizons,
@@ -327,5 +320,78 @@ def load_temporal(io, c, subscenario_input, data_input):
     )
 
 
+def load_from_csvs(conn, subscenario_directory):
+    """
+
+    :param conn:
+    :param subscenario_directory:
+    :return:
+    """
+    # Required input files
+    description_file = os.path.join(subscenario_directory, "description.txt")
+    raw_data_file = os.path.join(subscenario_directory, "raw_data.csv")
+    periods_file = os.path.join(subscenario_directory, "periods.csv")
+    horizons_file = os.path.join(subscenario_directory, "horizons.csv")
+
+    # Get subscenario ID, name, and description
+    # The subscenario directory must start with an integer for the
+    # subscenario_id followed by "_" and then the subscenario name
+    # The subscenario description must be in the description.txt file under
+    # the subscenario directory
+    directory_basename = os.path.basename(subscenario_directory)
+    subscenario_id = int(directory_basename.split("_")[0])
+    subscenario_name = directory_basename.split("_")[1]
+    with open(description_file, "r") as f:
+        subscenario_description = f.read()
+
+    # Load timepoints data into Pandas dataframe
+    # The subproblem, stage, and horizon information is also contained here
+    tmp_df = pd.read_csv(raw_data_file, delimiter=",")
+
+    # SUBPROBLEMS
+    # Get the data for the inputs_temporal_subproblems table
+    subproblems = set(tmp_df["subproblem_id"].to_list())
+    subscenario_subproblems = [
+        (subscenario_id, subproblem_id) for subproblem_id in subproblems
+    ]
+
+    # STAGES
+    # TODO: stage_name not currently included; decide whether to keep this
+    #  column in the database and how to import data for it if we do want it
+    # Get the data for the inputs_temporal_subproblems_stages table
+    subproblem_stages = set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
+    subscenario_subproblem_stages = [
+        (subscenario_id, ) + subpr_stage for subpr_stage in subproblem_stages
+    ]
+
+    # PERIODS
+    # Load periods data into Pandas dataframe
+    period_df = pd.read_csv(periods_file, delimiter=",")
+
+    # Check if the periods are unique
+    if period_df['period'].duplicated().any():
+        warnings.warn("Duplicate periods found in periods.csv. Periods must "
+                      "be unique.")
+
+    # Check if the set of periods in periods.csv is the same as the set of
+    # periods assigned to timepoints in timepoints.csv.
+    tmp_periods = set(tmp_df["period"].tolist())
+    period_set = set(period_df["period"].tolist())
+
+    if tmp_periods != period_set:
+        warnings.warn("The set of periods in timepoints.csv and periods.csv "
+                      "are not the same. Check your data.")
+
+    periods = [tuple(x) for x in period_df.to_records(index=False)]
+
+    # HORIZONS
+    # Load horizons data into Pandas dataframe
+    horizon_df = pd.read_csv(horizons_file, delimiter=",")
+
+
+
+
+
 if __name__ == "__main__":
-    pass
+    load_from_csvs(None, "/Users/ana/dev/gridpath_dev/db/csvs_test_examples"
+                         "/temporal/1_1horizon_1period")

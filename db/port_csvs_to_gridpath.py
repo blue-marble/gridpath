@@ -152,7 +152,7 @@ def load_csv_data(conn, csv_path, quiet):
             csv_data_master['table'] == 'temporal', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = \
             csvs_read.csv_read_temporal_data(data_folder_path, quiet)
-        db.utilities.temporal.load_temporal(conn, c2, csv_subscenario_input, csv_data_input)
+        db.utilities.temporal.load_temporal_deprecate(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD LOAD (DEMAND) DATA ####
 
