@@ -33,6 +33,8 @@ from gridpath.auxiliary.dynamic_components import \
 from gridpath.project.operations.reserves.subhourly_energy_adjustment import \
     footroom_subhourly_energy_adjustment_rule, \
     headroom_subhourly_energy_adjustment_rule
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -399,10 +401,9 @@ def power_delta_rule(mod, g, tmp):
     Curtailment is counted as part of the ramp here; excludes any ramping from
     reserve provision.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return \

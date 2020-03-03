@@ -18,6 +18,8 @@ from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.auxiliary.dynamic_components import \
     required_operational_modules
 from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_model_components(m, d):
@@ -88,8 +90,9 @@ def add_model_components(m, d):
         :param tmp:
         :return:
         """
-        if tmp == mod.first_horizon_timepoint[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-                and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear":
+        if check_if_linear_horizon_first_timepoint(
+                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+        ):
             return Constraint.Skip
         else:
             return mod.Startup_Fuel_Burn_MMBtu[g, tmp] \

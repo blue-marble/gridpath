@@ -18,7 +18,8 @@ from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import setup_results_import
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
-from gridpath.project.common_functions import determine_project_subset
+from gridpath.project.common_functions import determine_project_subset, \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -284,12 +285,9 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
     timepoint and was down in the previous timepoint, then the RHS is -1
     and AvlCont_Stop_Unavailability must be set to 1.
     """
-    # TODO: refactor skipping of constraint in first timepoint of linear
-    #  horizons, as we do it a lot
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.AvlCont_Start_Unavailability[g, tmp] \
