@@ -1287,7 +1287,8 @@ def active_startup_type_constraint_rule(mod, g, tmp, s):
     previously been down within the appropriate interval. The interval for
     startup type s is defined by the user specified boundary parameters
     mod.gen_commit_bin_down_time_cutoff_hours[s] and
-    mod.gen_commit_bin_down_time_cutoff_hours[s+1].
+    mod.gen_commit_bin_down_time_cutoff_hours[s+1]. Note that the down time
+    interval includes any timepoints during which the unit is starting up.
 
     For the coldest (last) startup type, there is no s+1 and the
     constraint is skipped. This is okay because the model will select a
@@ -1303,10 +1304,10 @@ def active_startup_type_constraint_rule(mod, g, tmp, s):
     the unit is actually starting in timepoint *tmp*).
 
     Example: we are in timepoint 7 (hourly resolution) and the down time
-    interval is 2-4 hours for a hot start and >4 hours for a cold start.
-    This means timepoints 4 and 5 will be the relevant timepoints. A
-    shutdown in any of those timepoints means that a start in timepoint 7
-    would be a hot start.
+    interval is 2-4 hours for a hot start and >=4 hours for a cold start.
+    This means timepoints 4 and 5 will be the relevant timepoints (resp. 2
+    and 3 hours from *tmp*). A shutdown in any of those timepoints means
+    that a start in timepoint 7 would be a hot start.
 
     See constraint (7) in Morales-Espana et al. (2017).
     """
@@ -2025,7 +2026,7 @@ def get_module_specific_inputs_from_database(
     startup_chars = c.execute(
         """
         SELECT project, 
-        startup_type_id, down_time_cutoff_hours, startup_plus_ramp_up_rate
+        down_time_cutoff_hours, startup_plus_ramp_up_rate
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, startup_chars_scenario_id
@@ -2044,6 +2045,46 @@ def get_module_specific_inputs_from_database(
     )
 
     return startup_chars
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    startup_chars.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    startup_chars = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    # If startup_chars.tab file already exists, append rows to it
+    if os.path.isfile(os.path.join(inputs_directory, "startup_chars.tab")):
+        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+                  "a") as startup_chars_file:
+            writer = csv.writer(startup_chars_file, delimiter="\t")
+            for row in startup_chars:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+    # If startup_chars.tab does not exist, write header first, then add data
+    else:
+        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+                  "w", newline="") as startup_chars_file:
+            writer = csv.writer(startup_chars_file, delimiter="\t")
+
+            # Write header
+            writer.writerow(["project",
+                             "down_time_cutoff_hours",
+                             "startup_plus_ramp_up_rate"])
+
+            for row in startup_chars:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
 
 
 # Validation
