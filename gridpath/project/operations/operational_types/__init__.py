@@ -230,26 +230,27 @@ def import_results_into_database(
             horizon = row[2]
             timepoint = row[3]
             operational_type = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load_zone = row[7]
-            technology = row[8]
-            power_mw = row[9]
+            balancing_type = row[5]
+            timepoint_weight = row[6]
+            number_of_hours_in_timepoint = row[7]
+            load_zone = row[8]
+            technology = row[9]
+            power_mw = row[10]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage, timepoint,
-                 operational_type,
+                 operational_type, balancing_type,
                  horizon, timepoint_weight, number_of_hours_in_timepoint,
                  load_zone, technology, power_mw)
             )
     insert_temp_sql = """
         INSERT INTO temp_results_project_dispatch{}
         (scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type,
+        operational_type, balancing_type,
         horizon, timepoint_weight,
         number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -257,12 +258,12 @@ def import_results_into_database(
     insert_sql = """
         INSERT INTO results_project_dispatch
         (scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type,
+        operational_type, balancing_type,
         horizon, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, timepoint,
-        operational_type,
+        operational_type, balancing_type,
         horizon, timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, power_mw
         FROM temp_results_project_dispatch{}

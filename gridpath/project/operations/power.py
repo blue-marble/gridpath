@@ -79,7 +79,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
-                         "operational_type",
+                         "operational_type", "balancing_type",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "load_zone", "technology", "power_mw"])
         for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
@@ -89,6 +89,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
                 m.operational_type[p],
+                m.balancing_type_project[p],
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
