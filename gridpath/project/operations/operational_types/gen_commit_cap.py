@@ -52,6 +52,8 @@ from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
     determine_relevant_timepoints
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -613,10 +615,9 @@ def ramp_up_off_to_on_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.Ramp_Up_Startup_MW[g, tmp] \
@@ -655,10 +656,9 @@ def ramp_up_on_to_on_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.Ramp_Up_When_On_MW[g, tmp] \
@@ -683,10 +683,9 @@ def ramp_up_on_to_on_headroom_constraint_rule(mod, g, tmp):
     downward reserves).
     """
     # TODO: check behavior more carefully (same for ramp down)
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.Ramp_Up_When_On_MW[g, tmp] \
@@ -720,10 +719,9 @@ def ramp_up_constraint_rule(mod, g, tmp):
     timepoint could have ramped up at a certain rate since the previous
     timepoint
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # start up the full capacity and ramp up the full operable range
@@ -767,10 +765,9 @@ def ramp_down_on_to_off_constraint_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.Ramp_Down_Shutdown_MW[g, tmp] \
@@ -793,11 +790,9 @@ def ramp_down_on_to_on_constraint_rule(mod, g, tmp):
     down at a rate at or below the online capacity times a pre-specified
     ramp rate fraction. Shutdowns are treated separately.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.Ramp_Down_When_On_MW[g, tmp] \
@@ -821,11 +816,9 @@ def ramp_down_on_to_on_headroom_constraint_rule(mod, g, tmp):
     Note: Ramp_Down_When_On_MW is negative when a unit is ramping down, so
     we add a negative sign before it the constraint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return -mod.Ramp_Down_When_On_MW[g, tmp] \
@@ -854,10 +847,9 @@ def ramp_down_constraint_rule(mod, g, tmp):
     Units still committed in the current timepoint could have ramped down
     at a certain rate since the previous timepoint
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # shut down the full capacity and ramp down the full operable range
@@ -896,11 +888,9 @@ def startup_constraint_rule(mod, g, tmp):
     When units are shut off, GenCommitCap_Startup_MW will be 0 (as it
     has to be non-negative)
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.GenCommitCap_Startup_MW[g, tmp] \
@@ -918,11 +908,9 @@ def shutdown_constraint_rule(mod, g, tmp):
     When units are turned on, GenCommitCap_Shutdown_MW will be 0 (as it
     has to be non-negative)
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.GenCommitCap_Shutdown_MW[g, tmp] \
@@ -1107,10 +1095,9 @@ def startup_shutdown_rule(mod, g, tmp):
     if the horizon is linear, no previous_timepoint is defined for the first
     timepoint of the horizon, so return 'None' here
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return None
     else:
         return mod.Commit_Capacity_MW[g, tmp] \
@@ -1121,10 +1108,9 @@ def startup_shutdown_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return mod.GenCommitCap_Provide_Power_MW[g, tmp] - \

@@ -31,6 +31,8 @@ from pyomo.environ import Var, Set, Constraint, Param, Expression, \
 from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -322,10 +324,9 @@ def energy_tracking_rule(mod, s, tmp):
     efficiency and timepoint duration) plus any charged power (adjusted for
     charging efficiency and timepoint duration).
     """
-    if tmp == mod.first_horizon_timepoint[mod.horizon[
-        tmp, mod.balancing_type_project[s]]] \
-            and mod.boundary[mod.horizon[
-            tmp, mod.balancing_type_project[s]]] == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[s]
+    ):
         return Constraint.Skip
     else:
         return \
@@ -537,10 +538,9 @@ def startup_shutdown_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return (mod.Stor_Discharge_MW[g, tmp] -
