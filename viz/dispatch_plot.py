@@ -75,7 +75,7 @@ def get_power_by_tech_results(conn, scenario_id, load_zone, horizon, stage):
         AND load_zone = '{}'
         AND timepoint IN (
         SELECT DISTINCT timepoint
-        FROM results_project_dispatch_all
+        FROM results_project_dispatch
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND horizon = {}
@@ -109,7 +109,7 @@ def get_variable_curtailment_results(
             AND load_zone = '{}'
             AND timepoint IN (
             SELECT DISTINCT timepoint
-            FROM results_project_dispatch_all
+            FROM results_project_dispatch
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND horizon = {}
@@ -140,7 +140,7 @@ def get_hydro_curtailment_results(c, scenario_id, load_zone, horizon, stage):
             AND load_zone = '{}'
             AND timepoint IN (
             SELECT DISTINCT timepoint
-            FROM results_project_dispatch_all
+            FROM results_project_dispatch
             WHERE scenario_id = {}
             AND load_zone = '{}'
             AND horizon = {}
@@ -172,7 +172,7 @@ def get_imports_exports_results(c, scenario_id, load_zone, horizon, stage):
         AND load_zone = '{}'
         AND timepoint IN (
         SELECT DISTINCT timepoint
-        FROM results_project_dispatch_all
+        FROM results_project_dispatch
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND horizon = {}
@@ -207,7 +207,7 @@ def get_load(c, scenario_id, load_zone, horizon, stage):
         AND load_zone = '{}'
         AND timepoint IN (
         SELECT DISTINCT timepoint
-        FROM results_project_dispatch_all
+        FROM results_project_dispatch
         WHERE scenario_id = {}
         AND load_zone = '{}'
         AND horizon = {}

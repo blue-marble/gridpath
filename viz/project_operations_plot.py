@@ -82,10 +82,8 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
     :return:
     """
 
-    # TODO: this seems a kludgy way to deal with this. It might make more sense
-    #    to harmonize the dispatch tables such that there is only one and just
-    #    NULL out results that don't apply (e.g. commitment decisions for
-    #    projects with no commitments
+    # TODO: this is probably not needed anymore, as commitment decisions for
+    #  projects with no commit decisions will simply be NULL
     # Get operational type to determine table
     c = conn.cursor()
     sql = """SELECT operational_type from inputs_project_operational_chars
@@ -96,13 +94,9 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         ;"""
     operational_type = c.execute(sql, (scenario_id, project)).fetchone()[0]
 
-    if operational_type == "gen_commit_cap":
-        table = "results_project_dispatch_capacity_commit"
-    elif operational_type == "gen_commit_bin":
-        table = "results_project_dispatch_binary_commit"
-    elif operational_type == "gen_commit_lin":
-        table = "results_project_dispatch_continuous_commit"
-    else:
+    if operational_type not in [
+        "gen_commit_cap","gen_commit_bin", "gen_commit_lin"
+    ]:
         raise ValueError(
             "Selected project does not have commitment decisions."
             "Please select a project of one of the operational types with "
@@ -138,8 +132,9 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         (SELECT scenario_id, project, period, stage_id, horizon, timepoint, 
         number_of_hours_in_timepoint,
         committed_mw, power_mw
-        FROM {}
-        WHERE scenario_id = ?
+        FROM results_project_dispatch
+        WHERE operational_type = '{}'
+        AND scenario_id = ?
         {} 
         {}
         AND project = ?
@@ -198,7 +193,7 @@ def get_plotting_data(conn, scenario_id, project, period, stage,
         USING (scenario_id, project)
         
         ORDER BY horizon, timepoint
-        ;""".format(table, horizon_start_slice, horizon_end_slice)
+        ;""".format(operational_type, horizon_start_slice, horizon_end_slice)
 
     df = pd.read_sql(
         sql,
