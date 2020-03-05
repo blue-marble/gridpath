@@ -1,0 +1,4 @@
+subproblem_id,horizon,balancing_type_horizon,boundary
+1,202001,day,circular
+2,202002,day,circular
+3,202003,day,circular

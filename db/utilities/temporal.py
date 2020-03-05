@@ -270,11 +270,12 @@ def load_from_csvs(conn, subscenario_directory):
     :param subscenario_directory:
     :return:
     """
+    print(subscenario_directory)
     # Required input files
     description_file = os.path.join(subscenario_directory, "description.txt")
-    timepoints_file = os.path.join(subscenario_directory, "timepoints.csv")
-    periods_file = os.path.join(subscenario_directory, "periods.csv")
-    horizons_file = os.path.join(subscenario_directory, "horizons.csv")
+    timepoints_file = os.path.join(subscenario_directory, "structure.csv")
+    periods_file = os.path.join(subscenario_directory, "period_params.csv")
+    horizons_file = os.path.join(subscenario_directory, "horizon_params.csv")
 
     # Get subscenario ID, name, and description
     # The subscenario directory must start with an integer for the
@@ -418,6 +419,7 @@ def load_from_csvs(conn, subscenario_directory):
     )
 
 
+# TODO: add argument parser so that this script can be used stand-alone easily
 if __name__ == "__main__":
     load_from_csvs(None, "/Users/ana/dev/gridpath_dev/db/csvs_test_examples"
                          "/temporal/1_1horizon_1period")

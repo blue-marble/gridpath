@@ -147,7 +147,7 @@ def load_csv_data(conn, csv_path, quiet):
     #### LOAD TEMPORAL DATA ####
     temporal_directory = os.path.join(folder_path, "temporal")
     # Get list of subdirectories (which are the names of our subscenarios)
-    temporal_subscenarios = next(os.walk(temporal_directory))[1]
+    temporal_subscenarios = sorted(next(os.walk(temporal_directory))[1])
     for temporal_subscenario in temporal_subscenarios:
         subscenario_directory = os.path.join(
             temporal_directory, temporal_subscenario)
