@@ -10,6 +10,9 @@ Table chapter describes the following:
   associated tables
 * :ref:`building-the-database-section-ref` : instructions on how to build the
   database
+* :ref:`database-testing-section-ref` : instructions on how to validate the
+  database inputs
+
 
 .. _database-structure-section-ref:
 
@@ -1258,3 +1261,54 @@ Relevant tables:
 +-------------------------------+---------------------------------------+
 |:code:`input_` tables          |:code:`inputs_system_carbon_cap`       |
 +-------------------------------+---------------------------------------+
+
+
+.. _database-testing-section-ref:
+
+*************************
+Database Input Validation
+*************************
+
+Once you have built the database with a set of scenarios and associated inputs,
+you can test the inputs for a given scenario by running the inputs validation
+suite. This suite will extract the inputs for the scenario of interest and
+check whether the inputs are valid. A few examples of invalid inputs are:
+ - required inputs are missing
+ - inputs are the wrong datatype or not in the expected range
+ - inputs are inconsistent with a related set of inputs
+ - inputs are provided but not used
+
+After the validation is finished, any encountered input validations are dumped
+into the :code:`status_validation` table. This table contains the following
+columns:
+
+ - :code:`scenario_id`: the scenario ID of the scenario that is validated.
+ - :code:`subproblem_id`: the subproblem ID of the subproblem that is
+   validated (the validation suite validates each subproblem separately).
+ - :code:`stage_id`: the stage ID of the stage that is validated (the
+   validation suite validates each stage separately).
+ - :code:`gridpath_module`: the GridPath module that returned the validation
+   error.
+ - :code:`related_subscenario`: the subscenario that is related to the
+   validation error.
+ - :code:`related_database_table`: the database table that likely contains
+   the validation error.
+ - :code:`issue_severity`: the severity of the validation error. "High"
+   means the model won't be able to run. "Mid" means the model might run, but
+   the results will likely be unexpected. "Low" means the model should run and
+   the results are likely as expected, but there are some inconsistencies
+   between the inputs.
+ - :code:`issue_type`: a short description of the type of validation error.
+ - :code:`issue_description`: a detailed description of the validation error.
+ - :code:`timestamp`: lists the exact time when the validation error
+   encountered.
+
+Note that the input validation suite is not exhaustive and does not catch
+every possible input error. As we continue to develop and use GridPath, we
+expect that the set of validation tests will expand and cover more and more
+of the common input errors.
+
+To run the validation suite from the command line, navigate to the
+:code:`gridpath/gridpath` folder and type::
+
+    validate_inputs.py --scenario SCENARIO_NAME --database PATH/TO/DATABASE
