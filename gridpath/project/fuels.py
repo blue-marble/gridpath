@@ -160,6 +160,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_FUELS",
              "inputs_project_fuels",
+             "High,"
              "Invalid data type",
              error
              )
@@ -174,6 +175,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_FUEL_PRICES",
              "inputs_project_fuel_prices",
+             "High",
              "Invalid data type",
              error
              )
@@ -189,6 +191,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High",
              "Non existent fuel",
              error)
         )
@@ -204,6 +207,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_FUEL_PRICES",
              "inputs_project_fuel_prices",
+             "High",
              "Missing fuel price",
              error
              )

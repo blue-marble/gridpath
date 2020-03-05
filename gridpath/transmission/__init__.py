@@ -260,6 +260,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "TRANSMISSION_OPERATIONAL_CHARS, TRANSMISSION_PORTFOLIOS",
              "inputs_transmission_operational_chars, inputs_tranmission_portfolios",
+             "High",
              "Invalid combination of capacity type and operational type",
              error
              )
@@ -275,6 +276,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "TRANSMISSION_OPERATIONAL_CHARS",
              "inputs_transmission_operational_chars",
+             "High",
              "Invalid reactance inputs",
              error
              )

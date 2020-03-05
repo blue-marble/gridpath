@@ -143,6 +143,7 @@ stage_id INTEGER,
 gridpath_module VARCHAR(64),
 related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
+issue_severity VARCHAR(32),
 issue_type VARCHAR(32),
 issue_description VARCHAR(64),
 timestamp TEXT,  -- ISO8601 String

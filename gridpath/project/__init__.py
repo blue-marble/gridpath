@@ -286,6 +286,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
              "inputs_project_operational_chars, inputs_project_portfolios",
+             "High",
              "Invalid data type",
              error
              )
@@ -303,6 +304,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High",
              "Invalid numeric sign",
              error
              )
@@ -319,6 +321,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
                  __name__,
                  "PROJECT_OPERATIONAL_CHARS",
                  "inputs_project_operational_chars",
+                 "High",
                  "Invalid min_stable_level",
                  error
                  )
@@ -338,6 +341,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS, PROJECT_PORTFOLIO",
              "inputs_project_operational_chars, inputs_project_portfolios",
+             "High",
              "Invalid combination of capacity type and operational type",
              error
              )
@@ -358,6 +362,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_PORTFOLIO",
              "inputs_project_portfolios",
+             "High",
              "Invalid capacity type",
              error
              )
@@ -378,6 +383,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High",
              "Invalid operational type",
              error
              )
