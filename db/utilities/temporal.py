@@ -89,8 +89,8 @@ def insert_into_database(
     # TODO: what to do with the period column
     horizons_sql = """
         INSERT INTO inputs_temporal_horizons
-        (temporal_scenario_id, subproblem_id, horizon, 
-        balancing_type_horizon, boundary)
+        (temporal_scenario_id, subproblem_id, balancing_type_horizon, horizon, 
+        boundary)
         VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=horizons_sql,
@@ -301,8 +301,8 @@ def load_from_csvs(conn, subscenario_directory):
     # STAGES
     # Get the data for the inputs_temporal_subproblems_stages table from the
     # timepoints CSV
-    subproblem_stages_set = set(zip(tmp_df["subproblem_id"], tmp_df[
-        "stage_id"]))
+    subproblem_stages_set = \
+        set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
     subproblem_stages = [(subscenario_id, ) + x for x in subproblem_stages_set]
 
     # PERIODS
@@ -333,7 +333,7 @@ def load_from_csvs(conn, subscenario_directory):
 
     # Check if balancing_type-horizons are unique
     if not hrz_df.set_index(["balancing_type_horizon",
-                                 "horizon"]).index.is_unique:
+                             "horizon"]).index.is_unique:
         warnings.warn("""Duplicate balancing_type-horizons found in 
         horizons.csv. Horizons must be unique within each balancing type.""")
 
@@ -393,6 +393,9 @@ def load_from_csvs(conn, subscenario_directory):
         bt_df["balancing_type_horizon"] = balancing_type
         # Rename the horizon_balancing-type column of the dataframe
         bt_df.rename(columns={hrz_col: "horizon"}, inplace=True)
+        # Change the order of the balancing_type_horizon and horizon columns
+        bt_df = bt_df[["subproblem_id", "stage_id", "timepoint",
+                      "balancing_type_horizon", "horizon"]]
         # Append to the list of DFs we'll concatenate
         hrz_tmp_dfs_list.append(bt_df)
 

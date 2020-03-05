@@ -38,8 +38,10 @@ path (db_location), and csvs folder path (csv_location. The defaults are the
 
 """
 
+import numpy as np
 import os
 import pandas as pd
+import sqlite3
 import sys
 from argparse import ArgumentParser
 
@@ -536,6 +538,11 @@ def main(args=None):
 
     db_path = get_database_file_path(parsed_arguments=parsed_args)
     csv_path = get_csv_folder_path(parsed_arguments=parsed_args)
+
+    # Register numpy types with sqlite, so that they are properly inserted
+    # https://stackoverflow.com/questions/38753737/inserting-numpy-integer-types-into-sqlite-with-python3
+    sqlite3.register_adapter(np.int64, lambda val: int(val))
+    sqlite3.register_adapter(np.float64, lambda val: float(val))
 
     # connect to database
     conn = connect_to_database(db_path=db_path)

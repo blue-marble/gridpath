@@ -261,14 +261,10 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c1 = conn.cursor()
     horizons = c1.execute(
         """SELECT horizon, balancing_type_horizon, boundary
-        FROM
-        (SELECT DISTINCT horizon, balancing_type_horizon
-        FROM inputs_temporal_horizon_timepoints
+        FROM inputs_temporal_horizons
         WHERE temporal_scenario_id = {}
         AND subproblem_id = {}
-        AND stage_id = {}) as distinct_horizons_tbl
-        LEFT OUTER JOIN inputs_temporal_horizons
-        USING (temporal_scenario_id, horizon, balancing_type_horizon);
+        ORDER BY balancing_type_horizon, horizon;
         """.format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
@@ -282,7 +278,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         FROM inputs_temporal_horizon_timepoints
         WHERE temporal_scenario_id = {}
        AND subproblem_id = {}
-       AND stage_id = {};""".format(
+       AND stage_id = {}
+       ORDER BY balancing_type_horizon, timepoint;""".format(
             subscenarios.TEMPORAL_SCENARIO_ID,
             subproblem,
             stage
