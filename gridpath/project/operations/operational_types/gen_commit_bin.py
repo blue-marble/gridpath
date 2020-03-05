@@ -2102,7 +2102,10 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     validation_results = []
 
-    # Get project inputs
+    # Get startup chars and project inputs
+    startup_chars = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
     c1 = conn.cursor()
     projects = c1.execute(
         """SELECT project, operational_type,
@@ -2136,9 +2139,14 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         )
     )
 
-    df = pd.DataFrame(
+    # Convert input data to DataFrame
+    prj_df = pd.DataFrame(
         data=projects.fetchall(),
         columns=[s[0] for s in projects.description]
+    )
+    su_df = pd.DataFrame(
+        data=startup_chars.fetchall(),
+        columns=[s[0] for s in startup_chars.description]
     )
 
     # Get the number of hours in the timepoint (take min if it varies)
@@ -2161,7 +2169,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     req_columns = [
         "min_stable_level",
     ]
-    validation_errors = check_req_prj_columns(df, req_columns, True,
+    validation_errors = check_req_prj_columns(prj_df, req_columns, True,
                                               "gen_commit_bin")
     for error in validation_errors:
         validation_results.append(
@@ -2182,7 +2190,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
+    validation_errors = check_req_prj_columns(prj_df, expected_na_columns,
+                                              False,
                                               "gen_commit_bin")
     for error in validation_errors:
         validation_results.append(
@@ -2198,17 +2207,18 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              )
         )
 
-    # TODO: adjust for multiple startup types
     # Check startup shutdown rate inputs
-    validation_errors = validate_startup_shutdown_rate_inputs(df, hrs_in_tmp)
+    validation_errors = validate_startup_shutdown_rate_inputs(prj_df,
+                                                              su_df,
+                                                              hrs_in_tmp)
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
              subproblem,
              stage,
              __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
+             "PROJECT_OPERATIONAL_CHARS, PROJECT_STARTUP_CHARS",
+             "inputs_project_operational_chars, inputs_project_startup_chars",
              "High",
              "Invalid startup/shutdown ramp inputs",
              error
@@ -2217,5 +2227,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-
-    # TODO: add input validation from #281
