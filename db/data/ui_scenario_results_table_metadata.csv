@@ -8,13 +8,8 @@ results_project_costs_operations_startup,1,Project Startup Costs
 results_project_costs_operations_variable_om,1,Project Variable O&M Costs
 results_project_curtailment_hydro,1,Hydro Project Curtailment
 results_project_curtailment_variable,1,Variable Project Curtailment
-results_project_dispatch_all,1,Project Dispatch
-results_project_dispatch_binary_commit,1,Binary Commit Project Dispatch
+results_project_dispatch,1,Project Dispatch
 results_project_dispatch_by_technology,1,Dispatch by Technology
-results_project_dispatch_capacity_commit,1,Capacity Commit Project Dispatch
-results_project_dispatch_continuous_commit,1,Continuous Commit Project Dispatch
-results_project_dispatch_gen_hydro,1,Curtailable Hydro Project Dispatch
-results_project_dispatch_variable,1,Variable Project Dispatch
 results_project_elcc_simple,1,Project Simple ELCC
 results_project_elcc_surface,1,Project ELCC Surface
 results_project_frequency_response,1,Project Frequency Response

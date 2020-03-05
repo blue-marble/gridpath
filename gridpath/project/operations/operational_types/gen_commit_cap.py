@@ -37,7 +37,6 @@ startup and shutdown costs.
 from __future__ import division
 from __future__ import print_function
 
-from builtins import next
 from builtins import zip
 import csv
 import os.path
@@ -45,13 +44,12 @@ import pandas as pd
 from pyomo.environ import Var, Set, Constraint, Param, NonNegativeReals, \
     NonPositiveReals, PercentFraction, Reals, value, Expression
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    write_validation_to_database, check_req_prj_columns, setup_results_import
+    write_validation_to_database, check_req_prj_columns
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints
+    determine_relevant_timepoints, update_dispatch_results_table
 from gridpath.project.common_functions import \
     check_if_linear_horizon_first_timepoint
 
@@ -1326,71 +1324,11 @@ def import_module_specific_results_to_database(
     if not quiet:
         print("project dispatch capacity commit")
 
-    # dispatch_capacity_commit.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db, cursor=c,
-        table="results_project_dispatch_capacity_commit",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    update_dispatch_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="dispatch_capacity_commit.csv"
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(
-            results_directory, "dispatch_capacity_commit.csv"), "r") \
-            as cc_dispatch_file:
-        reader = csv.reader(cc_dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            balancing_type_project = row[2]
-            horizon = row[3]
-            timepoint = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load_zone = row[8]
-            technology = row[7]
-            power_mw = row[9]
-            committed_mw = row[10]
-            committed_units = row[11]
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                    balancing_type_project, horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology,
-                    power_mw, committed_mw, committed_units)
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_dispatch_capacity_commit{}
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        balancing_type_project, horizon, timepoint,
-        timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_mw, committed_mw, 
-        committed_units)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch_capacity_commit
-        (scenario_id, project, period, subproblem_id, stage_id,
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units
-        FROM temp_results_project_dispatch_capacity_commit{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
-
 
 # Validation
 ###############################################################################
