@@ -44,11 +44,11 @@ import sys
 from argparse import ArgumentParser
 
 # Data-import modules
-import db.utilities.temporal
+from db.utilities import temporal
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
-from db.utilities.csvs_to_db_utilities import csvs_read, load_temporal, \
+from db.utilities.csvs_to_db_utilities import csvs_read, \
     load_geography, load_system_load, load_system_reserves, \
     load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
     load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
@@ -145,14 +145,15 @@ def load_csv_data(conn, csv_path, quiet):
     csv_data_master = pd.read_csv(os.path.join(folder_path, 'csv_data_master.csv'))
 
     #### LOAD TEMPORAL DATA ####
-    if csv_data_master.loc[csv_data_master['table'] == 'temporal', 'include'].iloc[0] != 1:
-        print("ERROR: temporal tables are required")
-    else:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-            csv_data_master['table'] == 'temporal', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_temporal_data(data_folder_path, quiet)
-        db.utilities.temporal.load_temporal_deprecate(conn, c2, csv_subscenario_input, csv_data_input)
+    temporal_directory = os.path.join(folder_path, "temporal")
+    # Get list of subdirectories (which are the names of our subscenarios)
+    temporal_subscenarios = next(os.walk(temporal_directory))[1]
+    for temporal_subscenario in temporal_subscenarios:
+        subscenario_directory = os.path.join(
+            temporal_directory, temporal_subscenario)
+        temporal.load_from_csvs(
+            conn=conn, subscenario_directory=subscenario_directory
+        )
 
     #### LOAD LOAD (DEMAND) DATA ####
 

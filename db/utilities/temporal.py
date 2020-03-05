@@ -13,8 +13,8 @@ import warnings
 from db.common_functions import spin_on_database_lock
 
 
-def temporal(
-        io, c,
+def insert_into_database(
+        conn,
         temporal_scenario_id,
         scenario_name,
         scenario_description,
@@ -27,8 +27,7 @@ def temporal(
 ):
     """
 
-    :param io:
-    :param c:
+    :param conn:
     :param temporal_scenario_id:
     :param scenario_name:
     :param scenario_description:
@@ -37,19 +36,12 @@ def temporal(
     :param subproblem_stages: list of tuples (subscenario_id,
         subproblem_id, stage_id)
     :param periods:
-    :param subproblem_horizons: dictionary with subproblems as the first
-        key, horizons as the second key, and a dictionary containing the
-        horizon params (balancing_type_horizon, period, and boundary) as the
-        value for each horizon
-    :param subproblem_stage_timepoints: dictionary with subproblems as first
-        key, stage_id as second key, timepoint as third key, and the various
-        timepoint params as a dictionary value for each timepoint (with the
-        name of the param as key and its value as value)
-    :param subproblem_stage_timepoint_horizons: dictionary with subproblem IDs
-        as the first key, stage IDs as the second key, the timepoint as the
-        third key, and list of tuple with the (horizon,
-        balancing_type_horizons) that the timepoint belongs to
+    :param subproblem_horizons: list of tuples
+    :param subproblem_stage_timepoints: list of tuples
+    :param subproblem_stage_timepoint_horizons: list of tuples
     """
+
+    c = conn.cursor()
 
     # Create subscenario
     subscenario_data = [
@@ -60,7 +52,7 @@ def temporal(
         (temporal_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subscenario_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=subscenario_sql,
                           data=subscenario_data)
 
     # Subproblems
@@ -69,7 +61,7 @@ def temporal(
         (temporal_scenario_id, subproblem_id)
         VALUES (?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=subproblems_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=subproblems_sql,
                           data=subproblems)
 
     # Stages
@@ -80,7 +72,7 @@ def temporal(
         (temporal_scenario_id, subproblem_id, stage_id)
         VALUES (?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=stages_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=stages_sql,
                           data=subproblem_stages)
 
     # Periods
@@ -90,7 +82,7 @@ def temporal(
         number_years_represented)
         VALUES (?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=periods_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=periods_sql,
                           data=periods)
 
     # Horizons
@@ -101,7 +93,7 @@ def temporal(
         balancing_type_horizon, boundary)
         VALUES (?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=horizons_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=horizons_sql,
                           data=subproblem_horizons)
 
     # Timepoints
@@ -114,33 +106,17 @@ def temporal(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
     
-    spin_on_database_lock(conn=io, cursor=c, sql=timepoints_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=timepoints_sql,
                           data=subproblem_stage_timepoints)
 
     # TIMEPOINT HORIZONS
-    horizon_timepoints_data = []
-    for subproblem_id in subproblem_stage_timepoint_horizons.keys():
-        for stage_id in subproblem_stage_timepoint_horizons[
-                subproblem_id].keys():
-            for timepoint in subproblem_stage_timepoint_horizons[
-                    subproblem_id][stage_id].keys():
-                for horizon_info in subproblem_stage_timepoint_horizons[
-                            subproblem_id][stage_id][timepoint]:
-                    horizon = horizon_info[0]
-                    balancing_type_horizon = horizon_info[1]
-
-                    horizon_timepoints_data.append(
-                        (temporal_scenario_id, subproblem_id, stage_id,
-                         timepoint, horizon, balancing_type_horizon)
-                    )
-
     horizon_timepoints_sql = """
         INSERT INTO inputs_temporal_horizon_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
         balancing_type_horizon, horizon)
         VALUES (?, ?, ?, ?, ?, ?);
         """
-    spin_on_database_lock(conn=io, cursor=c, sql=horizon_timepoints_sql,
+    spin_on_database_lock(conn=conn, cursor=c, sql=horizon_timepoints_sql,
                           data=subproblem_stage_timepoint_horizons)
 
 
@@ -273,8 +249,8 @@ def load_temporal_deprecate(io, c, subscenario_input, data_input):
                         zip(horizon, balancing_type))
 
         # Load data into GridPath database
-        temporal(
-                io=io, c=c,
+        insert_into_database(
+                conn=io, c=c,
                 temporal_scenario_id=sc_id,
                 scenario_name=sc_name,
                 scenario_description=sc_description,
@@ -318,18 +294,15 @@ def load_from_csvs(conn, subscenario_directory):
     # SUBPROBLEMS
     # Get the data for the inputs_temporal_subproblems table from the
     # timepoints CSV
-    subproblems = set(tmp_df["subproblem_id"].to_list())
-    subscenario_subproblems = [
-        (subscenario_id, subproblem_id) for subproblem_id in subproblems
-    ]
+    subproblems_set = set(tmp_df["subproblem_id"].to_list())
+    subproblems = [(subscenario_id, x) for x in subproblems_set]
 
     # STAGES
     # Get the data for the inputs_temporal_subproblems_stages table from the
     # timepoints CSV
-    subproblem_stages = set(zip(tmp_df["subproblem_id"], tmp_df["stage_id"]))
-    subscenario_subproblem_stages = [
-        (subscenario_id, ) + subpr_stage for subpr_stage in subproblem_stages
-    ]
+    subproblem_stages_set = set(zip(tmp_df["subproblem_id"], tmp_df[
+        "stage_id"]))
+    subproblem_stages = [(subscenario_id, ) + x for x in subproblem_stages_set]
 
     # PERIODS
     # Load periods data into Pandas dataframe
@@ -349,7 +322,9 @@ def load_from_csvs(conn, subscenario_directory):
         warnings.warn("The set of periods in timepoints.csv and periods.csv "
                       "are not the same. Check your data.")
 
-    periods = [tuple(x) for x in prd_df.to_records(index=False)]
+    periods = [
+        (subscenario_id, ) + tuple(x) for x in prd_df.to_records(index=False)
+    ]
 
     # HORIZONS
     # Load horizons data into Pandas dataframe
@@ -383,7 +358,9 @@ def load_from_csvs(conn, subscenario_directory):
                           horizons.csv for balancing type {} are not the
                           same. Check your data.""".format(bt))
 
-    horizons = [tuple(x) for x in hrz_df.to_records(index=False)]
+    subproblem_horizons = [
+        (subscenario_id,) + tuple(x) for x in hrz_df.to_records(index=False)
+    ]
 
     # TIMEPOINTS
     timepoints_tmp_df = tmp_df[
@@ -392,7 +369,10 @@ def load_from_csvs(conn, subscenario_directory):
          "previous_stage_timepoint_map", "spinup_or_lookahead", "month",
          "hour_of_day"]
     ]
-    timepoints = [tuple(x) for x in timepoints_tmp_df.to_records(index=False)]
+    subproblem_stage_timepoints = [
+        (subscenario_id,) + tuple(x)
+        for x in timepoints_tmp_df.to_records(index=False)
+    ]
 
     # TIMEPOINT HORIZONS
     horizon_columns = [
@@ -418,7 +398,24 @@ def load_from_csvs(conn, subscenario_directory):
     hrz_tmp_df = pd.concat(hrz_tmp_dfs_list)
 
     # Get the list of tuples to insert into the database
-    horizon_timepoints = [tuple(x) for x in hrz_tmp_df.to_records(index=False)]
+    subproblem_stage_timepoint_horizons = [
+        (subscenario_id,) + tuple(x)
+        for x in hrz_tmp_df.to_records(index=False)
+    ]
+
+    # INSERT INTO THE DATABASE
+    insert_into_database(
+        conn=conn,
+        temporal_scenario_id=subscenario_id,
+        scenario_name=subscenario_name,
+        scenario_description=subscenario_description,
+        subproblems=subproblems,
+        subproblem_stages=subproblem_stages,
+        periods=periods,
+        subproblem_stage_timepoints=subproblem_stage_timepoints,
+        subproblem_horizons=subproblem_horizons,
+        subproblem_stage_timepoint_horizons=subproblem_stage_timepoint_horizons
+    )
 
 
 if __name__ == "__main__":
