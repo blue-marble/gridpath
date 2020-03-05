@@ -1962,8 +1962,7 @@ def export_module_specific_results(mod, d,
                          "synced_units", "active_startup_type"
                          ])
 
-        # TODO: remove sorted
-        for (p, tmp) in sorted(mod.GEN_COMMIT_BIN_OPR_TMPS):
+        for (p, tmp) in mod.GEN_COMMIT_BIN_OPR_TMPS:
             writer.writerow([
                 p,
                 mod.period[tmp],
