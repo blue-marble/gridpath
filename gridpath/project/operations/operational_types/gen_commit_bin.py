@@ -207,7 +207,8 @@ def add_module_specific_components(m, d):
     | starts after a down time between 4-8 hours, and startup type 2 (the     |
     | cold start) will be activated if the unit starts after a down time of   |
     | over 8 hours. The cutoff for the hottest start must match the unit's    |
-    | minimum down time.                                                      |
+    | minimum down time. If the unit is fast-start without a minimum down     |
+    | time, the user should input zero (rather than NULL)                     |
     +-------------------------------------------------------------------------+
 
     |
@@ -1903,6 +1904,8 @@ def load_module_specific_data(mod, data_portal,
         sep="\t"
     )
 
+    # Note: the rank function requires at least one numeric input in the
+    # down_time_cutoff_hours column (can't be all NULL/None).
     if len(df) > 0:
         df["startup_type_id"] = df.groupby("project")[
             "down_time_cutoff_hours"].rank()
@@ -2019,8 +2022,8 @@ def get_module_specific_inputs_from_database(
     """
 
     c = conn.cursor()
-    # TODO: might have to add startup_chars_scenario_id back to table for
-    #  input validations
+    # TODO: should we align this better with heat rates (queries and input
+    #  validations are slightly different).
     startup_chars = c.execute(
         """
         SELECT project, 
@@ -2032,7 +2035,7 @@ def get_module_specific_inputs_from_database(
         WHERE project_operational_chars_scenario_id = {}
         AND operational_type = '{}') AS op_char
         USING(project)
-        LEFT OUTER JOIN
+        INNER JOIN
         inputs_project_startup_chars
         USING(project, startup_chars_scenario_id)
         WHERE project_portfolio_scenario_id = {}

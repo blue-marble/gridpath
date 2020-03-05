@@ -607,21 +607,24 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
 
     results = []
 
-    # TODO: get the startup rate time from the other table. Take the slowest
-    #  start and join it to the table, make sure slowest start is compatible
-    # Separately, also check that cutoff and startup ramp go down/up
-    # accordingly
+    if len(su_df) == 0:
+        return results
 
+    if pd.isna(su_df["down_time_cutoff_hours"]).any():
+        return (["Down_time_cutoff_hours should be specified for each "
+                 "project listed in the startup_chars table. If the unit is"
+                 "has no minimum down time and is quick-start, either remove "
+                 "the project from the table or set the cutoff to zero."])
     # 0. Prepare DataFrame
 
     # Split su_df in df with hottest starts and df with coldest starts
     su_df_hot = su_df.groupby("project").apply(
-        lambda grp: grp.nsmallest(1, columns=['down_time_cutoff_hours'])
+        lambda grp: grp.nsmallest(1, columns=["down_time_cutoff_hours"])
     ).reset_index(drop=True).rename(
         columns={"down_time_cutoff_hours": "down_time_cutoff_hours_hot",
                  "startup_plus_ramp_up_rate": "startup_plus_ramp_up_rate_hot"})
     su_df_cold = su_df.groupby("project").apply(
-        lambda grp: grp.nlargest(1, columns=['down_time_cutoff_hours'])
+        lambda grp: grp.nlargest(1, columns=["down_time_cutoff_hours"])
     ).reset_index(drop=True).rename(
         columns={"down_time_cutoff_hours": "down_time_cutoff_hours_cold",
                  "startup_plus_ramp_up_rate":
@@ -685,10 +688,11 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
     startup_fuel_mask = prj_df["startup_fuel_mmbtu_per_mw"] > 0
     startup_trajectory_mask = prj_df["startup_duration"] > hrs_in_tmp
     shutdown_trajectory_mask = prj_df["shutdown_duration"] > hrs_in_tmp
+    down_time_mismatch_mask = (prj_df["min_down_time_hours"]
+                               != prj_df["down_time_cutoff_hours_hot"])
     cutoff_na_mask = (cutoff_na_count > 0)
     ramp_na_mask = (ramp_na_count > 0)
     all_ramp_na_mask = (ramp_na_count == su_count_series)
-    some_ramp_na_mask = ramp_na_mask & ~all_ramp_na_mask
 
     # 2. Check startup and shutdown ramp duration fit within min down time
     # (to avoid overlap of startup and shutdown trajectory)
@@ -722,14 +726,14 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         )
 
     # 3. Check that down time cutoff is in line with min down time
-    invalids = (prj_df["min_down_time_hours"]
-                != prj_df["down_time_cutoff_hours_hot"])
+    invalids = down_time_mismatch_mask
     if invalids.any():
         bad_projects = prj_df[invalids]["project"]
         print_bad_projects = ", ".join(bad_projects)
         results.append(
             "Project(s) '{}': down_time_cutoff_hours of hottest start should "
-            "match project's minimum_down_time_hours."
+            "match project's minimum_down_time_hours. If there is no minimum "
+            "down time, set cutoff to zero."
                 .format(print_bad_projects)
         )
 
@@ -745,19 +749,10 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
                 .format(print_bad_projects)
         )
 
-    # 5. Check that cutoff is specified for each startup type
-    if cutoff_na_mask.any():
-        bad_projects = cutoff_na_count[cutoff_na_mask].index
-        print_bad_projects = ", ".join(bad_projects)
-        results.append(
-            "Project(s) '{}': down_time_cutoff_hours should be specified for "
-            "each startup type."
-                .format(print_bad_projects)
-        )
-
-    # 6. Check that ramp rate is specified for all or none
-    if some_ramp_na_mask.any():
-        bad_projects = ramp_na_count[some_ramp_na_mask].index
+    # 5. Check that ramp rate is specified for all or none
+    invalids = ramp_na_mask & ~all_ramp_na_mask
+    if invalids.any():
+        bad_projects = ramp_na_count[invalids].index
         print_bad_projects = ", ".join(bad_projects)
         results.append(
             "Project(s) '{}': startup_plus_ramp_up_rate should be specified "
@@ -770,11 +765,11 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
         results.append(
             "Project(s) '{}': startup_plus_ramp_up_rate is not specified in. "
             "project_startup_chars. Model will assume there are no startup "
-            "ramp limits."
+            "ramp rate limits."
                 .format(print_bad_projects)
         )
 
-    # 7. Check that cutoff and ramp rate are in right order
+    # 6. Check that cutoff and ramp rate are in right order
     if ~cutoff_na_mask.any() and ~ramp_na_mask.any():
         rank_cutoff = su_df.groupby("project")["down_time_cutoff_hours"].rank()
         rank_ramp = su_df.groupby("project")["startup_plus_ramp_up_rate"].rank(
@@ -789,6 +784,12 @@ def validate_startup_shutdown_rate_inputs(prj_df, su_df, hrs_in_tmp):
                 "increasing down time cutoff (colder starts are slower)."
                     .format(print_bad_projects)
             )
+
+    # TODO: test whether some startup types are quick-start and others are not
+    # TODO: should validation flag a down time mismatch when there is just one
+    #  cold start? (right now it always enforces a down time match and does
+    #  not accept no inputs for down time cutoff, even though a simple case
+    #  for a fast-start unit might not need this input).
 
     return results
 
