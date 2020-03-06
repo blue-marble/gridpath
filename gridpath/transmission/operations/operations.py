@@ -28,17 +28,24 @@ def add_model_components(m, d):
     +-------------------------------------------------------------------------+
     | Expressions                                                             |
     +=========================================================================+
-    | | :code:`Transmit_Power_MW`                                             |
+    | | :code:`Transmit_Power_Sent_MW`                                        |
     | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
     |                                                                         |
-    | The transmission line's transmitted power in MW (after losses).         |
+    | The power in MW sent on a transmission line (before losses).            |
+    | A positive number means the power flows in the line's defined direction,|
+    | while a negative number means it flows in the opposite direction.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`Transmit_Power_Received_MW`                                    |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
+    |                                                                         |
+    | The power in MW received via a transmission line (after losses).        |
     | A positive number means the power flows in the line's defined direction,|
     | while a negative number means it flows in the opposite direction.       |
     +-------------------------------------------------------------------------+
     | | :code:`Tx_Losses_MW`                                                  |
     | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
     |                                                                         |
-    | Losses on the transmission lines in MW. A positive number means the     |
+    | Losses on the transmission line in MW. A positive number means the      |
     | power flows in the line's defined direction when losses incurred,       |
     | while a negative number means it flows in the opposite direction.       |
     +-------------------------------------------------------------------------+
