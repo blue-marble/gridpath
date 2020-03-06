@@ -4,6 +4,7 @@
 from __future__ import print_function
 
 from builtins import str
+from collections import OrderedDict
 from importlib import import_module
 import os.path
 import sys
@@ -95,6 +96,49 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertListEqual(expected_disp_bin_commit_gen_set,
                              actual_disp_bin_commit_gen_set)
 
+        # Set: GEN_COMMIT_BIN_STR_RMP_PRJS
+        expected_gen_commit_bin_str_rmp_prjs = sorted([
+            "Disp_Binary_Commit"
+        ])
+        actual_gen_commit_bin_str_rmp_prjs = sorted([
+            prj for prj in instance.GEN_COMMIT_BIN
+            ])
+        self.assertListEqual(expected_gen_commit_bin_str_rmp_prjs,
+                             actual_gen_commit_bin_str_rmp_prjs)
+
+        # Set: GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+        expected_gen_commit_bin_str_rmp_prjs_types = sorted([
+            ("Disp_Binary_Commit", 1.0)
+        ])
+        actual_gen_commit_bin_str_rmp_prjs_types = sorted([
+            (prj, s) for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+            ])
+        self.assertListEqual(expected_gen_commit_bin_str_rmp_prjs_types,
+                             actual_gen_commit_bin_str_rmp_prjs_types)
+
+        # Set: GEN_COMMIT_BIN_STR_TYPES_BY_PRJ
+        str_types_by_prj_dict = dict()
+        for prj_type in expected_gen_commit_bin_str_rmp_prjs_types:
+            if prj_type[0] not in str_types_by_prj_dict.keys():
+                str_types_by_prj_dict[prj_type[0]] = [prj_type[1]]
+            else:
+                str_types_by_prj_dict[prj_type[0]].append(prj_type[1])
+
+        expected_str_types_by_prj = OrderedDict(
+            sorted(
+                str_types_by_prj_dict.items()
+            )
+        )
+        actual_str_types_by_prj = OrderedDict(
+            sorted(
+                {prj: [type for type in
+                       instance.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[prj]]
+                 for prj in instance.GEN_COMMIT_BIN_STR_RMP_PRJS}.items()
+            )
+        )
+        self.assertDictEqual(expected_str_types_by_prj,
+                             actual_str_types_by_prj)
+
         # Set: GEN_COMMIT_BIN_OPR_TMPS
         expected_operational_timepoints_by_project = sorted(
             get_project_operational_timepoints(
@@ -109,6 +153,18 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
+        # Set: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
+        expected_opr_tmps_str_types = sorted(
+            [(g, tmp, 1.0) for (g, tmp) in
+             expected_operational_timepoints_by_project]
+        )
+        actual_opr_tmps_str_types = sorted(
+            [(g, tmp, s) for (g, tmp, s) in
+             instance.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES]
+        )
+        self.assertListEqual(expected_opr_tmps_str_types,
+                             actual_opr_tmps_str_types)
+
         # Param: gen_commit_bin_min_stable_level_fraction
         expected_min_stable_fraction = {"Disp_Binary_Commit": 0.4}
         actual_min_stable_fraction = {
@@ -119,10 +175,10 @@ class TestGenCommitBin(unittest.TestCase):
                              actual_min_stable_fraction)
 
         # Param: gen_commit_bin_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {"Disp_Binary_Commit": 0.6}
+        expected_startup_plus_ramp_up_rate = {("Disp_Binary_Commit", 1.0): 0.6}
         actual_startup_plus_ramp_up_rate = {
-            prj: instance.gen_commit_bin_startup_plus_ramp_up_rate[prj]
-            for prj in instance.GEN_COMMIT_BIN
+            (prj, s): instance.gen_commit_bin_startup_plus_ramp_up_rate[prj, s]
+            for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
         }
         self.assertDictEqual(expected_startup_plus_ramp_up_rate,
                              actual_startup_plus_ramp_up_rate)
@@ -202,6 +258,15 @@ class TestGenCommitBin(unittest.TestCase):
         }
         self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
                              actual_startup_fuel_mmbtu_per_mw)
+
+        # Param: gen_commit_bin_down_time_cutoff_hours
+        expected_down_time_cutoff_hours = {("Disp_Binary_Commit", 1.0): 7}
+        actual_down_time_cutoff_hours = {
+            (prj, s): instance.gen_commit_bin_down_time_cutoff_hours[prj, s]
+            for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+        }
+        self.assertDictEqual(expected_down_time_cutoff_hours,
+                             actual_down_time_cutoff_hours)
 
 
 if __name__ == "__main__":
