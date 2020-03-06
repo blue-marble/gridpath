@@ -313,7 +313,6 @@ def update_project_startup_chars(
 
     :return:
     """
-    print("project startup chars")
 
     # Subscenarios
     subs_data = []

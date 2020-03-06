@@ -2067,7 +2067,8 @@ def write_module_specific_model_inputs(
     if os.path.isfile(os.path.join(inputs_directory, "startup_chars.tab")):
         with open(os.path.join(inputs_directory, "startup_chars.tab"),
                   "a") as startup_chars_file:
-            writer = csv.writer(startup_chars_file, delimiter="\t")
+            writer = csv.writer(startup_chars_file,
+                                delimiter="\t", lineterminator="\n")
             for row in startup_chars:
                 replace_nulls = ["." if i is None else i for i in row]
                 writer.writerow(replace_nulls)
@@ -2075,7 +2076,8 @@ def write_module_specific_model_inputs(
     else:
         with open(os.path.join(inputs_directory, "startup_chars.tab"),
                   "w", newline="") as startup_chars_file:
-            writer = csv.writer(startup_chars_file, delimiter="\t")
+            writer = csv.writer(startup_chars_file,
+                                delimiter="\t", lineterminator="\n")
 
             # Write header
             writer.writerow(["project",

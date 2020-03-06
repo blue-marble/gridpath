@@ -239,7 +239,6 @@ def load_project_startup_chars(io, c, subscenario_input, data_input):
                                                      'startup_chars_scenario_id'] == sc_id)]
 
         for prj in data_input_subscenario['project'].unique():
-            print(prj)
             project_su_scenarios[prj] = dict()
             project_su_scenarios[prj][sc_id] = (sc_name, sc_description)
 
