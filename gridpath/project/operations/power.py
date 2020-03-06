@@ -79,6 +79,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                            "dispatch_all.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["project", "period", "horizon", "timepoint",
+                         "operational_type", "balancing_type",
                          "timepoint_weight", "number_of_hours_in_timepoint",
                          "load_zone", "technology", "power_mw"])
         for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
@@ -87,6 +88,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
+                m.operational_type[p],
+                m.balancing_type_project[p],
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
@@ -191,66 +194,7 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
-    if not quiet:
-        print("project dispatch all")
-    # dispatch_all.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db, cursor=c,
-        table="results_project_dispatch_all",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
-    )
-    
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory, "dispatch_all.csv"), "r") as \
-            dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            power_mw = row[8]
-            
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, technology, power_mw)
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_dispatch_all{}
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch_all
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, power_mw
-        FROM temp_results_project_dispatch_all{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
+    pass
 
 
 def process_results(db, c, subscenarios, quiet):
@@ -284,7 +228,7 @@ def process_results(db, c, subscenarios, quiet):
         scenario_id, subproblem_id, stage_id, period, timepoint, 
         timepoint_weight, number_of_hours_in_timepoint,
         load_zone, technology, sum(power_mw) AS power_mw
-        FROM results_project_dispatch_all
+        FROM results_project_dispatch
         WHERE scenario_id = ?
         GROUP BY subproblem_id, stage_id, timepoint, 
         load_zone, technology

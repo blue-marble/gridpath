@@ -5,9 +5,13 @@ import csv
 import os.path
 
 from db.common_functions import spin_on_database_lock
+from gridpath.project.common_functions import get_column_row_value
+
 
 # TODO: if vintage is 2020 and lifetime is 30, is the project available in
 #  2050 or not -- maybe have options for how this should be treated?
+
+
 def operational_periods_by_project_vintage(periods, vintage, lifetime):
     """
     :param periods: the study periods
@@ -114,24 +118,3 @@ def update_capacity_results_table(
         """
 
     spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)
-
-
-def get_column_row_value(header, column_name, row):
-    """
-    :param header: list; the CSV file header (list of column names)
-    :param column_name: string; the column name we're looking for
-    :param row: list; the values in the current row
-    :return:
-
-    Check if the header contains the column_name; if not, return None for
-    the value for this column_name in this row; if it does, get the right
-    value from the value based on the column_name index in the header.
-    """
-    try:
-        column_index = header.index(column_name)
-    except ValueError:
-        column_index = None
-
-    row_column_value = None if column_index is None else row[column_index]
-
-    return row_column_value

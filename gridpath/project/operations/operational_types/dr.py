@@ -16,6 +16,8 @@ Efficiency losses are not currently implemented.
 from pyomo.environ import Var, Set, Constraint, NonNegativeReals
 
 from gridpath.auxiliary.auxiliary import generator_subset_init
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -243,10 +245,9 @@ def startup_shutdown_rule(mod, p, tmp):
 def power_delta_rule(mod, p, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[p]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[
-            p]]] == "linear":
+    if check_if_linear_horizon_first_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[p]
+    ):
         pass
     else:
         return (mod.DR_Shift_Up_MW[p, tmp]

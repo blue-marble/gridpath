@@ -7,10 +7,11 @@ Describe operational constraints on the generation infrastructure.
 
 import csv
 import os.path
-import pandas as pd
 
+from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.dynamic_components import required_operational_modules
-from gridpath.auxiliary.auxiliary import load_operational_type_modules
+from gridpath.auxiliary.auxiliary import load_operational_type_modules, \
+    setup_results_import
 
 
 def add_model_components(m, d):
@@ -206,6 +207,70 @@ def import_results_into_database(
     :param quiet:
     :return:
     """
+    if not quiet:
+        print("project dispatch all")
+    # dispatch_all.csv
+    # Delete prior results and create temporary import table for ordering
+    setup_results_import(
+        conn=db, cursor=c,
+        table="results_project_dispatch",
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+    )
+
+    # Load results into the temporary table
+    results = []
+    with open(os.path.join(results_directory, "dispatch_all.csv"), "r") as \
+            dispatch_file:
+        reader = csv.reader(dispatch_file)
+
+        next(reader)  # skip header
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            horizon = row[2]
+            timepoint = row[3]
+            operational_type = row[4]
+            balancing_type = row[5]
+            timepoint_weight = row[6]
+            number_of_hours_in_timepoint = row[7]
+            load_zone = row[8]
+            technology = row[9]
+            power_mw = row[10]
+
+            results.append(
+                (scenario_id, project, period, subproblem, stage, timepoint,
+                 operational_type, balancing_type,
+                 horizon, timepoint_weight, number_of_hours_in_timepoint,
+                 load_zone, technology, power_mw)
+            )
+    insert_temp_sql = """
+        INSERT INTO temp_results_project_dispatch{}
+        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        operational_type, balancing_type,
+        horizon, timepoint_weight,
+        number_of_hours_in_timepoint,
+        load_zone, technology, power_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
+
+    # Insert sorted results into permanent results table
+    insert_sql = """
+        INSERT INTO results_project_dispatch
+        (scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        operational_type, balancing_type,
+        horizon, timepoint_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw)
+        SELECT
+        scenario_id, project, period, subproblem_id, stage_id, timepoint,
+        operational_type, balancing_type,
+        horizon, timepoint_weight, number_of_hours_in_timepoint,
+        load_zone, technology, power_mw
+        FROM temp_results_project_dispatch{}
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        """.format(scenario_id)
+    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
+                          many=False)
 
     # Load in the required operational modules
     required_opchar_modules = get_required_opchar_modules(scenario_id, c)

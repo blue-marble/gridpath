@@ -15,9 +15,7 @@ Costs for this operational type include variable O&M costs.
 
 from __future__ import print_function
 
-from builtins import next
 from builtins import zip
-from builtins import str
 import csv
 import os.path
 import pandas as pd
@@ -25,10 +23,13 @@ from pyomo.environ import Var, Set, Param, Constraint, \
     Expression, NonNegativeReals, PercentFraction, value
 
 from db.common_functions import spin_on_database_lock
-from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    setup_results_import
+from gridpath.auxiliary.auxiliary import generator_subset_init
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint
+from gridpath.project.operations.operational_types.common_functions import \
+    update_dispatch_results_table
 
 
 def add_module_specific_components(m, d):
@@ -374,10 +375,9 @@ def ramp_up_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If you can ramp up the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
@@ -419,10 +419,9 @@ def ramp_down_rule(mod, g, tmp):
     take place during the duration of the first timepoint, and the
     ramp rate limit is adjusted for the duration of the first timepoint.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If you can ramp down the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
@@ -520,10 +519,9 @@ def startup_shutdown_rule(mod, g, tmp):
 def power_delta_rule(mod, g, tmp):
     """
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return (mod.GenHydro_Provide_Power_MW[g, tmp] +
@@ -820,69 +818,12 @@ def import_module_specific_results_to_database(
     """
     if not quiet:
         print("project dispatch hydro curtailable")
-    # dispatch_gen_hydro.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db, cursor=c,
-        table="results_project_dispatch_gen_hydro",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+
+    update_dispatch_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="dispatch_gen_hydro.csv"
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory,
-                           "dispatch_gen_hydro.csv"),
-              "r") as h_dispatch_file:
-        reader = csv.reader(h_dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            balancing_type_project = row[2]
-            horizon = row[3]
-            timepoint = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load_zone = row[8]
-            technology = row[7]
-            power_mw = row[9]
-            scheduled_curtailment_mw = row[10]
-            
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 balancing_type_project, horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, technology, power_mw, scheduled_curtailment_mw)
-            )
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_dispatch_gen_hydro{}
-            (scenario_id, project, period, subproblem_id, stage_id, 
-            balancing_type_project, horizon, timepoint,
-            timepoint_weight, number_of_hours_in_timepoint, 
-            load_zone, technology, power_mw, scheduled_curtailment_mw)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-            """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch_gen_hydro
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, scheduled_curtailment_mw)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint,
-        load_zone, technology, power_mw, scheduled_curtailment_mw
-        FROM temp_results_project_dispatch_gen_hydro{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
 
 
 def process_module_specific_results(db, c, subscenarios, quiet):
@@ -921,7 +862,8 @@ def process_module_specific_results(db, c, subscenarios, quiet):
             timepoint, timepoint_weight, number_of_hours_in_timepoint, 
             load_zone, 
             sum(scheduled_curtailment_mw) AS scheduled_curtailment_mw
-            FROM results_project_dispatch_gen_hydro
+            FROM results_project_dispatch
+            WHERE operational_type = 'gen_hydro'
             GROUP BY scenario_id, subproblem_id, stage_id, timepoint, load_zone
         ) as agg_curtailment_tbl
         JOIN (

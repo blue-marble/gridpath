@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
+import csv
+import os.path
+
+from db.common_functions import spin_on_database_lock
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint, get_column_row_value
+
 
 def determine_relevant_timepoints(mod, g, tmp, min_time):
     """
@@ -46,10 +53,9 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
     """
     relevant_tmps = [tmp]
 
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass  # no relevant timepoints, keep list limited to *t*
     else:
         # The first possible relevant timepoint is the previous timepoint,
@@ -96,3 +102,69 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
                     relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps
+
+
+def update_dispatch_results_table(
+     db, c, results_directory, scenario_id, subproblem, stage, results_file
+):
+    results = []
+    with open(os.path.join(results_directory, results_file), "r") as \
+            capacity_file:
+        reader = csv.reader(capacity_file)
+
+        header = next(reader)
+
+        for row in reader:
+            project = row[0]
+            period = row[1]
+            balancing_type = row[2]
+            horizon = row[3]
+            timepoint = row[4]
+            timepoint_weight = row[5]
+            n_hours_in_tmp = row[6]
+            technology = row[7]
+            load_zone = row[8]
+            power = row[9]
+            scheduled_curtailment_mw = get_column_row_value(
+                header, "scheduled_curtailment_mw", row)
+            subhourly_curtailment_mw = get_column_row_value(
+                header,"subhourly_curtailment_mw", row)
+            subhourly_energy_delivered_mw = get_column_row_value(
+                header, "subhourly_energy_delivered_mw", row)
+            total_curtailment_mw = get_column_row_value(
+                header, "total_curtailment_mw", row)
+            committed_mw = get_column_row_value(header, "committed_mw", row)
+            committed_units = get_column_row_value(header, "committed_units", row)
+            started_units = get_column_row_value(header, "started_units", row)
+            stopped_units = get_column_row_value(header, "stopped_units", row)
+            synced_units = get_column_row_value(header, "synced_units", row)
+
+            results.append(
+                (scheduled_curtailment_mw, subhourly_curtailment_mw,
+                 subhourly_energy_delivered_mw, total_curtailment_mw,
+                 committed_mw, committed_units, started_units,
+                 stopped_units, synced_units,
+                 scenario_id, project, period, subproblem, stage, timepoint)
+            )
+
+    # Update the results table with the module-specific results
+    update_sql = """
+        UPDATE results_project_dispatch
+        SET scheduled_curtailment_mw = ?,
+        subhourly_curtailment_mw = ?,
+        subhourly_energy_delivered_mw = ?,
+        total_curtailment_mw = ?,
+        committed_mw = ?,
+        committed_units = ?,
+        started_units = ?,
+        stopped_units = ?,
+        synced_units = ?
+        WHERE scenario_id = ?
+        AND project = ?
+        AND period = ?
+        AND subproblem_id = ?
+        AND stage_id = ?
+        AND timepoint = ?;
+        """
+
+    spin_on_database_lock(conn=db, cursor=c, sql=update_sql, data=results)

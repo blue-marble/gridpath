@@ -26,14 +26,16 @@ import pandas as pd
 from pyomo.environ import Var, Set, Param, Constraint, NonNegativeReals, \
     PercentFraction, Expression, value
 
-from db.common_functions import spin_on_database_lock
 from gridpath.auxiliary.auxiliary import generator_subset_init, \
-    setup_results_import, check_req_prj_columns, write_validation_to_database,\
+    check_req_prj_columns, write_validation_to_database,\
     validate_startup_shutdown_rate_inputs
 from gridpath.auxiliary.dynamic_components import headroom_variables, \
     footroom_variables
 from gridpath.project.operations.operational_types.common_functions import \
-    determine_relevant_timepoints
+    determine_relevant_timepoints, update_dispatch_results_table
+from gridpath.project.common_functions import \
+    check_if_linear_horizon_first_timepoint, \
+    check_if_linear_horizon_last_timepoint
 
 
 def add_module_specific_components(m, d):
@@ -768,10 +770,9 @@ def binary_logic_constraint_rule(mod, g, tmp):
 
     # TODO: if we can link horizons, input commit from previous horizon's
     #  last timepoint rather than skipping the constraint
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.GenCommitLin_Commit[g, tmp] \
@@ -987,10 +988,9 @@ def ramp_up_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     Constraint (12) in Morales-Espana et al. (2013)
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp up the full operable range between timepoints, constraint
@@ -1028,10 +1028,9 @@ def ramp_down_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     Constraint (13) in Morales-Espana et al. (2013)
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     # If ramp rate limits, adjusted for timepoint duration, allow you to
     # ramp down the full operable range between timepoints, constraint
@@ -1084,10 +1083,9 @@ def ramp_during_startup_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     """
 
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return \
@@ -1119,10 +1117,9 @@ def increasing_startup_power_constraint_rule(mod, g, tmp):
     model can abuse this by providing starting power in some timepoints and
     then reducing power back to 0 without ever committing the unit.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return \
@@ -1164,10 +1161,9 @@ def power_during_startup_constraint_rule(mod, g, tmp):
     :return:
     """
 
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return (mod.GenCommitLin_Commit[g, tmp]
@@ -1217,10 +1213,9 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
     ramp rate is adjusted for the duration of the first timepoint.
     """
 
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return mod.GenCommitLin_Provide_Power_Shutdown_MW[
@@ -1246,10 +1241,9 @@ def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
     model can abuse this by providing stopping power in some timepoints without
     previously having committed the unit.
     """
-    if tmp == mod.last_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_last_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return \
@@ -1287,10 +1281,9 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
     (1 - Stop[t+1]) x Pmax + Stop[t+1] x Shutdown_Ramp_Rate x Pmax
     """
 
-    if tmp == mod.last_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_last_timepoint(
+            mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return Constraint.Skip
     else:
         return (mod.GenCommitLin_Commit[g, tmp]
@@ -1410,10 +1403,9 @@ def startup_shutdown_rule(mod, g, tmp):
     if the horizon is linear, no previous_timepoint is defined for the first
     timepoint of the horizon, so return 'None' here.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         return None
     else:
         return (mod.GenCommitLin_Commit[g, tmp]
@@ -1428,10 +1420,9 @@ def power_delta_rule(mod, g, tmp):
     Ramp between this timepoint and the previous timepoint
     Actual ramp rate in MW/hr depends on the duration of the timepoints.
     """
-    if tmp == mod.first_horizon_timepoint[
-        mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            and mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
-            == "linear":
+    if check_if_linear_horizon_first_timepoint(
+        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
+    ):
         pass
     else:
         return mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp] \
@@ -1630,78 +1621,12 @@ def import_module_specific_results_to_database(
     """
     if not quiet:
         print("project dispatch continuous commit")
-    # dispatch_continuous_commit.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(
-        conn=db, cursor=c,
-        table="results_project_dispatch_continuous_commit",
-        scenario_id=scenario_id, subproblem=subproblem, stage=stage
+
+    update_dispatch_results_table(
+        db=db, c=c, results_directory=results_directory,
+        scenario_id=scenario_id, subproblem=subproblem, stage=stage,
+        results_file="dispatch_continuous_commit.csv"
     )
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(
-            results_directory, "dispatch_continuous_commit.csv"), "r") \
-            as cc_dispatch_file:
-        reader = csv.reader(cc_dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            balancing_type_project = row[2]
-            horizon = row[3]
-            timepoint = row[4]
-            timepoint_weight = row[5]
-            number_of_hours_in_timepoint = row[6]
-            load_zone = row[8]
-            technology = row[7]
-            power_mw = row[9]
-            committed_mw = row[10]
-            committed_units = row[11]
-            started_units = row[12]
-            stopped_units = row[13]
-            synced_units = row[14]
-
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 balancing_type_project, horizon, timepoint,
-                 timepoint_weight, number_of_hours_in_timepoint,
-                 load_zone, technology, power_mw, committed_mw,
-                 committed_units, started_units, stopped_units,
-                 synced_units)
-            )
-    insert_temp_sql = """
-        INSERT INTO temp_results_project_dispatch_continuous_commit{}
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        balancing_type_project, horizon, timepoint,
-        timepoint_weight, number_of_hours_in_timepoint, 
-        load_zone, technology, power_mw, committed_mw, 
-        committed_units, started_units, stopped_units, synced_units)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
-        ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_dispatch_continuous_commit
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units,
-        synced_units)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        balancing_type_project, horizon, timepoint, timepoint_weight, 
-        number_of_hours_in_timepoint, load_zone, technology, power_mw, 
-        committed_mw, committed_units, started_units, stopped_units,
-        synced_units
-        FROM temp_results_project_dispatch_continuous_commit{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
 
 
 # Validation
