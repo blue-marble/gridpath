@@ -101,7 +101,7 @@ class TestGenCommitBin(unittest.TestCase):
             "Disp_Binary_Commit"
         ])
         actual_gen_commit_bin_str_rmp_prjs = sorted([
-            prj for prj in instance.GEN_COMMIT_BIN
+            prj for prj in instance.GEN_COMMIT_BIN_STR_RMP_PRJS
             ])
         self.assertListEqual(expected_gen_commit_bin_str_rmp_prjs,
                              actual_gen_commit_bin_str_rmp_prjs)
@@ -156,7 +156,8 @@ class TestGenCommitBin(unittest.TestCase):
         # Set: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
         expected_opr_tmps_str_types = sorted(
             [(g, tmp, 1.0) for (g, tmp) in
-             expected_operational_timepoints_by_project]
+             expected_operational_timepoints_by_project
+             if g in expected_gen_commit_bin_str_rmp_prjs]
         )
         actual_opr_tmps_str_types = sorted(
             [(g, tmp, s) for (g, tmp, s) in

@@ -1802,6 +1802,7 @@ def load_module_specific_data(mod, data_portal,
             pass
     data_portal.data()["gen_commit_bin_min_stable_level_fraction"] = \
         min_stable_fraction
+    gen_commit_bin_projects = min_stable_fraction.keys()
 
     # Ramp rate limits are optional, will default to 1 if not specified
     # (startup plus ramp up rate is read in separately because different
@@ -1921,7 +1922,8 @@ def load_module_specific_data(mod, data_portal,
         down_time_cutoff_hours = row["down_time_cutoff_hours"]
         startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
 
-        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != ".":
+        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
+                and project in gen_commit_bin_projects:
             startup_ramp_projects.add(project)
             startup_ramp_projects_types.append((project, startup_type_id))
             down_time_cutoff_hours_dict[(project, startup_type_id)] = \
