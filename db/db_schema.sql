@@ -2123,6 +2123,7 @@ committed_units FLOAT,
 started_units INTEGER,
 stopped_units INTEGER,
 synced_units INTEGER,
+active_startup_type INTEGER,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 
