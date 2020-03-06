@@ -4,7 +4,8 @@
 """
 This is a Tx-line-level module that adds to the formulation components that
 describe the operations-related costs of transmission lines, namely hurdle
-rate costs.
+rate costs. Hurdle rate costs are currently applied on power sent across the
+transmission line.
 """
 
 from __future__ import print_function
@@ -148,7 +149,7 @@ def hurdle_cost_pos_dir_rule(mod, tx, tmp):
         return Constraint.Skip
     else:
         return mod.Hurdle_Cost_Pos_Dir[tx, tmp] \
-            >= mod.Transmit_Power_MW[tx, tmp] \
+            >= mod.Transmit_Power_Sent_MW[tx, tmp] \
             * mod.hurdle_rate_pos_dir_per_mwh[tx, mod.period[tmp]]
 
 
@@ -165,7 +166,7 @@ def hurdle_cost_neg_dir_rule(mod, tx, tmp):
         return Constraint.Skip
     else:
         return mod.Hurdle_Cost_Neg_Dir[tx, tmp] \
-            >= -mod.Transmit_Power_MW[tx, tmp] \
+            >= -mod.Transmit_Power_Sent_MW[tx, tmp] \
             * mod.hurdle_rate_neg_dir_per_mwh[tx, mod.period[tmp]]
 
 

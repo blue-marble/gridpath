@@ -31,10 +31,18 @@ def add_model_components(m, d):
     | | :code:`Transmit_Power_MW`                                             |
     | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
     |                                                                         |
-    | The transmission line's transmitted power in MW. A positive number      |
-    | means the power flows in the line's defined direction, while a negative |
-    | number means it flows in the opposite direction.                        |
+    | The transmission line's transmitted power in MW (after losses).         |
+    | A positive number means the power flows in the line's defined direction,|
+    | while a negative number means it flows in the opposite direction.       |
     +-------------------------------------------------------------------------+
+    | | :code:`Tx_Losses_MW`                                                  |
+    | | *Defined over*: :code:`TX_OPR_TMPS`                                   |
+    |                                                                         |
+    | Losses on the transmission lines in MW. A positive number means the     |
+    | power flows in the line's defined direction when losses incurred,       |
+    | while a negative number means it flows in the opposite direction.       |
+    +-------------------------------------------------------------------------+
+
     """
 
     # Dynamic Components
@@ -51,14 +59,34 @@ def add_model_components(m, d):
     # Expressions
     ###########################################################################
 
-    def transmit_power_rule(mod, tx, tmp):
+    def transmit_power_sent_rule(mod, tx, tmp):
         tx_op_type = mod.tx_operational_type[tx]
         return imported_tx_operational_modules[tx_op_type].\
-            transmit_power_rule(mod, tx, tmp)
+            transmit_power_sent_rule(mod, tx, tmp)
 
-    m.Transmit_Power_MW = Expression(
+    m.Transmit_Power_Sent_MW = Expression(
         m.TX_OPR_TMPS,
-        rule=transmit_power_rule
+        rule=transmit_power_sent_rule
+    )
+
+    def transmit_power_received_rule(mod, tx, tmp):
+        tx_op_type = mod.tx_operational_type[tx]
+        return imported_tx_operational_modules[tx_op_type].\
+            transmit_power_received_rule(mod, tx, tmp)
+
+    m.Transmit_Power_Received_MW = Expression(
+        m.TX_OPR_TMPS,
+        rule=transmit_power_received_rule
+    )
+
+    def transmit_power_losses_rule(mod, tx, tmp):
+        tx_op_type = mod.tx_operational_type[tx]
+        return imported_tx_operational_modules[tx_op_type].\
+            transmit_power_losses_rule(mod, tx, tmp)
+
+    m.Tx_Losses_MW = Expression(
+        m.TX_OPR_TMPS,
+        rule=transmit_power_losses_rule
     )
 
 
@@ -84,7 +112,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
         writer.writerow(["tx_line", "lz_from", "lz_to", "timepoint", "period",
                          "timepoint_weight",
                          "number_of_hours_in_timepoint",
-                         "transmission_flow_mw"])
+                         "transmission_power_sent_mw",
+                         "transmission_power_received_mw",
+                         "transmission_losses_mw",])
         for (l, tmp) in m.TX_OPR_TMPS:
             writer.writerow([
                 l,
@@ -94,7 +124,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.period[tmp],
                 m.timepoint_weight[tmp],
                 m.number_of_hours_in_timepoint[tmp],
-                value(m.Transmit_Power_MW[l, tmp])
+                value(m.Transmit_Power_Sent_MW[l, tmp]),
+                value(m.Transmit_Power_Received_MW[l, tmp]),
+                value(m.Tx_Losses_MW[l, tmp])
             ])
 
     # TODO: does this belong here or in operational_types/__init__.py?
@@ -155,13 +187,15 @@ def import_results_into_database(
             period = row[4]
             timepoint_weight = row[5]
             number_of_hours_in_timepoint = row[6]
-            tx_flow = row[7]
+            tx_sent = row[7]
+            tx_received = row[8]
+            tx_losses = row[9]
 
             results.append(
                 (scenario_id, tx_line, period, subproblem, stage,
                  timepoint, timepoint_weight,
                  number_of_hours_in_timepoint,
-                 lz_from, lz_to, tx_flow)
+                 lz_from, lz_to, tx_sent, tx_received, tx_losses)
             )
 
     insert_temp_sql = """
@@ -169,8 +203,9 @@ def import_results_into_database(
         (scenario_id, transmission_line, period, subproblem_id, 
         stage_id, timepoint, timepoint_weight, 
         number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, transmission_flow_mw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        load_zone_from, load_zone_to, transmission_sent_mw,
+        transmission_received_mw, transmission_losses_mw)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
@@ -179,11 +214,13 @@ def import_results_into_database(
         INSERT INTO results_transmission_operations
         (scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, transmission_flow_mw)
+        load_zone_from, load_zone_to, transmission_sent_mw,
+        transmission_received_mw, transmission_losses_mw)
         SELECT
         scenario_id, transmission_line, period, subproblem_id, stage_id,
         timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone_from, load_zone_to, transmission_flow_mw
+        load_zone_from, load_zone_to, transmission_sent_mw,
+        transmission_received_mw, transmission_losses_mw
         FROM temp_results_transmission_operations{}
          ORDER BY scenario_id, transmission_line, subproblem_id, stage_id, 
         timepoint;

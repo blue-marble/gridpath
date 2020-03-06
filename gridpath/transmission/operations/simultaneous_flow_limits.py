@@ -2,7 +2,14 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
+This module enforces limits on flows across groups of transmission lines.
+Right now, "flows" are defined as power sent on these lines. It is not
+recommended that this module be used if you are modeling line losses.
 
+TODO: what is the meaning of simultaneous flow limit if we have losses on
+    the lines, i.e. should we use power sent or power received? We should
+    probably have an extra input that defines whether to use power sent or
+    power received in determining flow on the line.
 """
 
 
@@ -161,7 +168,7 @@ def sim_flow_expression_rule(mod, g, tmp):
 
     Total flow on lines in each simultaneous flow group.
     """
-    return sum(mod.Transmit_Power_MW[tx_line, tmp]
+    return sum(mod.Transmit_Power_Sent_MW[tx_line, tmp]
                * mod.sim_flow_direction[g, tx_line]
                for tx_line in mod.TX_LINES_BY_SIM_FLOW_LMT[g]
                if (tx_line, tmp) in mod.TX_OPR_TMPS)

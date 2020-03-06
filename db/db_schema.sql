@@ -2710,7 +2710,9 @@ stage_id INTEGER,
 timepoint INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
-transmission_flow_mw FLOAT,
+transmission_sent_mw FLOAT,
+transmission_received_mw FLOAT,
+transmission_losses_mw FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 

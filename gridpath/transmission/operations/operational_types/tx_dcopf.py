@@ -486,10 +486,25 @@ def kirchhoff_voltage_law_rule(mod, c, tmp):
 # Operational Type Methods
 ###############################################################################
 
-def transmit_power_rule(mod, l, tmp):
+def transmit_power_sent_rule(mod, l, tmp):
     """
+    No losses in DC OPF module for now.
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp]
+
+
+def transmit_power_received_rule(mod, l, tmp):
+    """
+    No losses in DC OPF module for now.
+    """
+    return mod.TxDcopf_Transmit_Power_MW[l, tmp]
+
+
+def transmit_power_losses_rule(mod, l, tmp):
+    """
+    No losses in DC OPF module for now.
+    """
+    return 0
 
 
 # Input-Output

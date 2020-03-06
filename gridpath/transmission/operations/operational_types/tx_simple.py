@@ -156,7 +156,16 @@ def max_transmit_rule(mod, l, tmp):
 # Transmission Operational Type Methods
 ###############################################################################
 
-def transmit_power_rule(mod, line, tmp):
+def transmit_power_sent_rule(mod, line, tmp):
+    """
+    For load-balance purposes, the power transmitted over the tx_simple line
+    in each operational timepoint is the power sent derated for losses via
+    the linear loss factor.
+    """
+    return mod.TxSimple_Transmit_Power_MW[line, tmp]
+
+
+def transmit_power_received_rule(mod, line, tmp):
     """
     For load-balance purposes, the power transmitted over the tx_simple line
     in each operational timepoint is the power sent derated for losses via
@@ -164,6 +173,16 @@ def transmit_power_rule(mod, line, tmp):
     """
     return mod.TxSimple_Transmit_Power_MW[line, tmp]\
         * (1 - mod.tx_simple_loss_factor[line])
+
+
+def transmit_power_losses_rule(mod, line, tmp):
+    """
+    For load-balance purposes, the power transmitted over the tx_simple line
+    in each operational timepoint is the power sent derated for losses via
+    the linear loss factor.
+    """
+    return mod.TxSimple_Transmit_Power_MW[line, tmp] * \
+        mod.tx_simple_loss_factor[line]
 
 
 # Input-Output
