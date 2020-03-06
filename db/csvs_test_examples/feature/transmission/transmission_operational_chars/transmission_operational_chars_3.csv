@@ -1,0 +1,5 @@
+transmission_operational_chars_scenario_id,transmission_line,operational_type,tx_simple_loss_factor,reactance_ohms
+3,Tx1,tx_simple,0.1,
+3,Tx_new,tx_simple,0.1,
+3,Tx2,tx_simple,0.1,
+3,Tx3,tx_simple,0.1,
