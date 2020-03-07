@@ -168,7 +168,7 @@ def sim_flow_expression_rule(mod, g, tmp):
 
     Total flow on lines in each simultaneous flow group.
     """
-    return sum(mod.Transmit_Power_Sent_MW[tx_line, tmp]
+    return sum(mod.Transmit_Power_MW[tx_line, tmp]
                * mod.sim_flow_direction[g, tx_line]
                for tx_line in mod.TX_LINES_BY_SIM_FLOW_LMT[g]
                if (tx_line, tmp) in mod.TX_OPR_TMPS)

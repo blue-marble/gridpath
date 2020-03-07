@@ -182,12 +182,12 @@ def calculate_carbon_emissions_imports(mod, tx_line, timepoint):
     actual imported emissions are (e.g. instead of applying a tuning cost).
     """
     if mod.carbon_cap_zone_import_direction[tx_line] == "positive" \
-            and value(mod.Transmit_Power_Sent_MW[tx_line, timepoint]) > 0:
-        return value(mod.Transmit_Power_Sent_MW[tx_line, timepoint]) \
+            and value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return value(mod.Transmit_Power_MW[tx_line, timepoint]) \
                * mod.tx_co2_intensity_tons_per_mwh[tx_line]
     elif mod.carbon_cap_zone_import_direction[tx_line] == "negative" \
-            and -value(mod.Transmit_Power_Sent_MW[tx_line, timepoint]) > 0:
-        return -value(mod.Transmit_Power_Sent_MW[tx_line, timepoint]) \
+            and -value(mod.Transmit_Power_MW[tx_line, timepoint]) > 0:
+        return -value(mod.Transmit_Power_MW[tx_line, timepoint]) \
                * mod.tx_co2_intensity_tons_per_mwh[tx_line]
     else:
         return 0
@@ -207,11 +207,11 @@ def carbon_emissions_imports_rule(mod, tx, tmp):
     """
     if mod.carbon_cap_zone_import_direction[tx] == "positive":
         return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-            >= mod.Transmit_Power_Sent_MW[tx, tmp] \
+            >= mod.Transmit_Power_MW[tx, tmp] \
             * mod.tx_co2_intensity_tons_per_mwh[tx]
     elif mod.carbon_cap_zone_import_direction[tx] == "negative":
         return mod.Import_Carbon_Emissions_Tons[tx, tmp] \
-            >= -mod.Transmit_Power_Sent_MW[tx, tmp] \
+            >= -mod.Transmit_Power_MW[tx, tmp] \
             * mod.tx_co2_intensity_tons_per_mwh[tx]
     else:
         raise ValueError("The parameter carbon_cap_zone_import_direction "

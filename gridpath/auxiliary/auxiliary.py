@@ -137,8 +137,8 @@ def load_tx_operational_type_modules(required_tx_operational_modules):
         required_subtype_modules=required_tx_operational_modules,
         package="gridpath.transmission.operations.operational_types",
         required_attributes=[
-            "transmit_power_sent_rule", "transmit_power_received_rule",
-            "transmit_power_losses_rule"
+            "transmit_power_rule", "transmit_power_losses_lz_from_rule",
+            "transmit_power_losses_lz_to_rule"
         ]
     )
 

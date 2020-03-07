@@ -11,7 +11,8 @@ both transmission flow directions.
 
 import os
 import pandas as pd
-from pyomo.environ import Set, Param, Var, Constraint, Reals, PercentFraction
+from pyomo.environ import Set, Param, Var, Constraint, NonNegativeReals, \
+    Reals, PercentFraction
 
 
 def add_module_specific_components(m, d):
@@ -110,6 +111,16 @@ def add_module_specific_components(m, d):
         within=Reals
     )
 
+    m.TxSimple_Losses_LZ_From_MW = Var(
+        m.TX_SIMPLE_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
+    m.TxSimple_Losses_LZ_To_MW = Var(
+        m.TX_SIMPLE_OPR_TMPS,
+        within=NonNegativeReals
+    )
+
     # Constraints
     ###########################################################################
 
@@ -121,6 +132,16 @@ def add_module_specific_components(m, d):
     m.TxSimple_Max_Transmit_Constraint = Constraint(
         m.TX_SIMPLE_OPR_TMPS,
         rule=max_transmit_rule
+    )
+
+    m.TxSimple_Losses_LZ_From_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS,
+        rule=losses_lz_from_rule
+    )
+
+    m.TxSimple_Losses_LZ_To_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS,
+        rule=losses_lz_to_rule
     )
 
 
@@ -153,10 +174,51 @@ def max_transmit_rule(mod, l, tmp):
         <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]]
 
 
+def losses_lz_from_rule(mod, l, tmp):
+    """
+    Losses for the 'from' load zone of this transmission line (non-negative
+    variable) must be greater than or equal to the negative of the flow times
+    the loss factor. When the flow on the line is negative, power is flowing
+    to the 'from', so losses are positive. When the flow on the line is
+    negative (i.e. power flowing from the 'from' load zone), losses can be set
+    to zero.
+    If the tx_simple_loss_factor is 0, losses are set to 0.
+    WARNING: since we have a greater than or equal constraint here, whenever
+    tx_simple_loss_factor is not 0, the model can incur line losses than are
+    not actually real.
+    """
+    if mod.tx_simple_loss_factor[l] == 0:
+        return mod.TxSimple_Losses_LZ_From_MW[l, tmp] == 0
+    else:
+        return mod.TxSimple_Losses_LZ_From_MW[l, tmp] >= \
+            - mod.TxSimple_Transmit_Power_MW[l, tmp] * \
+            mod.tx_simple_loss_factor[l]
+
+
+def losses_lz_to_rule(mod, l, tmp):
+    """
+    Losses for the 'to' load zone of this transmission line (non-negative
+    variable) must be greater than or equal to the the flow times the loss
+    factor. When the flow on the line is positive, power is flowing to the
+    'to' LZ, so losses are positive. When the flow on the line is negative
+    (i.e. power flowing from the 'to' load zone), losses can be set to zero.
+    If the tx_simple_loss_factor is 0, losses are set to 0.
+    WARNING: since we have a greater than or equal constraint here, whenever
+    tx_simple_loss_factor is not 0, the model can incur line losses than are
+    not actually real.
+    """
+    if mod.tx_simple_loss_factor[l] == 0:
+        return mod.TxSimple_Losses_LZ_To_MW[l, tmp] == 0
+    else:
+        return mod.TxSimple_Losses_LZ_To_MW[l, tmp] >= \
+            mod.TxSimple_Transmit_Power_MW[l, tmp] * \
+            mod.tx_simple_loss_factor[l]
+
+
 # Transmission Operational Type Methods
 ###############################################################################
 
-def transmit_power_sent_rule(mod, line, tmp):
+def transmit_power_rule(mod, line, tmp):
     """
     For load-balance purposes, the power transmitted over the tx_simple line
     in each operational timepoint is the power sent derated for losses via
@@ -165,24 +227,20 @@ def transmit_power_sent_rule(mod, line, tmp):
     return mod.TxSimple_Transmit_Power_MW[line, tmp]
 
 
-def transmit_power_received_rule(mod, line, tmp):
+def transmit_power_losses_lz_from_rule(mod, line, tmp):
     """
-    For load-balance purposes, the power transmitted over the tx_simple line
-    in each operational timepoint is the power sent derated for losses via
-    the linear loss factor.
+    Transmission losses that we'll account for in the origin 
+    load zone (load_zone_from) of this transmission line.
     """
-    return mod.TxSimple_Transmit_Power_MW[line, tmp]\
-        * (1 - mod.tx_simple_loss_factor[line])
+    return mod.TxSimple_Losses_LZ_From_MW[line, tmp]
 
 
-def transmit_power_losses_rule(mod, line, tmp):
+def transmit_power_losses_lz_to_rule(mod, line, tmp):
     """
-    For load-balance purposes, the power transmitted over the tx_simple line
-    in each operational timepoint is the power sent derated for losses via
-    the linear loss factor.
+    Transmission losses that we'll account for in the destination 
+    load zone (load_zone_to) of this transmission line.
     """
-    return mod.TxSimple_Transmit_Power_MW[line, tmp] * \
-        mod.tx_simple_loss_factor[line]
+    return mod.TxSimple_Losses_LZ_To_MW[line, tmp]
 
 
 # Input-Output
