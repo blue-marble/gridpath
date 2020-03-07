@@ -213,7 +213,8 @@ horizon VARCHAR(32),
 balancing_type_horizon VARCHAR(32),
 period INTEGER,
 boundary VARCHAR(16),
-PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon),
+PRIMARY KEY (temporal_scenario_id, subproblem_id, horizon,
+             balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
 -- Make sure boundary type is correct
@@ -264,7 +265,7 @@ timepoint INTEGER,
 horizon VARCHAR(32),
 balancing_type_horizon VARCHAR(32),
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id, timepoint,
-             horizon),
+             horizon, balancing_type_horizon),
 FOREIGN KEY (temporal_scenario_id)
     REFERENCES subscenarios_temporal (temporal_scenario_id),
 -- Make sure these are the same timepoints as in the main timepoints table

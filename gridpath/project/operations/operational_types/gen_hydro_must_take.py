@@ -339,12 +339,14 @@ def energy_budget_rule(mod, g, h):
     """
     return sum(mod.GenHydroMustTake_Provide_Power_MW[g, tmp]
                * mod.number_of_hours_in_timepoint[tmp]
-               for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
+               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                   mod.balancing_type_project[g], h]) \
         == sum(mod.gen_hydro_must_take_average_power_fraction[g, h]
                * mod.Capacity_MW[g, mod.period[tmp]]
                * mod.Availability_Derate[g, tmp]
                * mod.number_of_hours_in_timepoint[tmp]
-               for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
+               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                   mod.balancing_type_project[g], h])
 
 
 def ramp_up_rule(mod, g, tmp):
