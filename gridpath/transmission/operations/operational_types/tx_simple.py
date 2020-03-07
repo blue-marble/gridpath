@@ -220,9 +220,7 @@ def losses_lz_to_rule(mod, l, tmp):
 
 def transmit_power_rule(mod, line, tmp):
     """
-    For load-balance purposes, the power transmitted over the tx_simple line
-    in each operational timepoint is the power sent derated for losses via
-    the linear loss factor.
+    The power flow on this transmission line before accounting for losses.
     """
     return mod.TxSimple_Transmit_Power_MW[line, tmp]
 
@@ -230,15 +228,21 @@ def transmit_power_rule(mod, line, tmp):
 def transmit_power_losses_lz_from_rule(mod, line, tmp):
     """
     Transmission losses that we'll account for in the origin 
-    load zone (load_zone_from) of this transmission line.
+    load zone (load_zone_from) of this transmission line. These are zero
+    when the flow is positive (power flowing from the origin load zone) and
+    can be more than 0 when the flow is negative (power flowing to the
+    origin load zone).
     """
     return mod.TxSimple_Losses_LZ_From_MW[line, tmp]
 
 
 def transmit_power_losses_lz_to_rule(mod, line, tmp):
     """
-    Transmission losses that we'll account for in the destination 
-    load zone (load_zone_to) of this transmission line.
+    Transmission losses that we'll account for in the destination
+    load zone (load_zone_to) of this transmission line. These are zero
+    when the flow is negative (power flowing from the destination load zone)
+    and can be more than 0 when the flow is positive (power flowing to the
+    destination load zone).
     """
     return mod.TxSimple_Losses_LZ_To_MW[line, tmp]
 
