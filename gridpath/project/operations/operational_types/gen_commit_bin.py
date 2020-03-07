@@ -906,17 +906,24 @@ def min_up_time_constraint_rule(mod, g, tmp):
     # timepoint's constraint will already cover these same timepoints.
     # Don't skip if this timepoint is the last timepoint of the horizon
     # (since there will be no next timepoint).
-    if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
+    if (mod.boundary[
+        mod.balancing_type_project[g],
+        mod.horizon[tmp, mod.balancing_type_project[g]]
+    ] == "linear"
             and
             relevant_tmps[-1]
             == mod.first_horizon_timepoint[
-                mod.horizon[tmp, mod.balancing_type_project[g]]]
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ]
             and
             sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
             < mod.gen_commit_bin_min_up_time_hrs[g]
             and
             tmp != mod.last_horizon_timepoint[
-                mod.horizon[tmp, mod.balancing_type_project[g]]]):
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ]):
         return Constraint.Skip
     # Otherwise, if there was a start min_up_time or less ago, the unit has
     # to remain committed.
@@ -965,17 +972,24 @@ def min_down_time_constraint_rule(mod, g, tmp):
     # next timepoint's constraint will already cover these same timepoints.
     # Don't skip if this timepoint is the last timepoint of the horizon
     # (since there will be no next timepoint).
-    if (mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] == "linear"
+    if (mod.boundary[
+        mod.balancing_type_project[g],
+        mod.horizon[tmp, mod.balancing_type_project[g]]
+    ] == "linear"
             and
             relevant_tmps[-1]
             == mod.first_horizon_timepoint[
-                mod.horizon[tmp, mod.balancing_type_project[g]]]
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ]
             and
             sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
             < mod.gen_commit_bin_min_down_time_hrs[g]
             and
             tmp != mod.last_horizon_timepoint[
-                mod.horizon[tmp, mod.balancing_type_project[g]]]):
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ]):
         return Constraint.Skip
     # Otherwise, if there was a shutdown min_down_time or less ago, the unit
     # has to remain shut down.

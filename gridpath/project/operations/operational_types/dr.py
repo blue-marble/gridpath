@@ -183,9 +183,11 @@ def energy_balance_rule(mod, p, h):
     down within an horizon, i.e. there are no energy losses or gains.
     """
     return sum(mod.DR_Shift_Up_MW[p, tmp]
-               for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
+               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                   mod.balancing_type_project[p], h]) \
         == sum(mod.DR_Shift_Down_MW[p, tmp]
-               for tmp in mod.TIMEPOINTS_ON_HORIZON[h])
+               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                   mod.balancing_type_project[p], h])
 
 
 def energy_budget_rule(mod, p, h):
@@ -201,9 +203,10 @@ def energy_budget_rule(mod, p, h):
     """
     return sum(mod.DR_Shift_Up_MW[p, tmp]
                * mod.number_of_hours_in_timepoint[tmp]
-               for tmp in mod.TIMEPOINTS_ON_HORIZON[h]) \
+               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+                   mod.balancing_type_project[p], h]) \
         <= mod.Energy_Capacity_MWh[p, mod.period[
-            mod.first_horizon_timepoint[h]]]
+            mod.first_horizon_timepoint[mod.balancing_type_project[p], h]]]
 
 
 # Operational Type Methods

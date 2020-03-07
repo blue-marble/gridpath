@@ -74,17 +74,25 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # In a 'linear' horizon setting, once we reach the first timepoint
             # of the horizon, we break out of the loop since there are no more
             # timepoints to consider
-            if mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            if mod.boundary[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ] \
                     == "linear" \
                     and relevant_tmp == \
                     mod.first_horizon_timepoint[
-                        mod.horizon[tmp, mod.balancing_type_project[g]]]:
+                        mod.balancing_type_project[g],
+                        mod.horizon[tmp, mod.balancing_type_project[g]]
+                    ]:
                 break
             # In a 'circular' horizon setting, once we reach timepoint *t*,
             # we break out of the loop since there are no more timepoints to
             # consider (we have already added all horizon timepoints as
             # relevant)
-            elif mod.boundary[mod.horizon[tmp, mod.balancing_type_project[g]]] \
+            elif mod.boundary[
+                mod.balancing_type_project[g],
+                mod.horizon[tmp, mod.balancing_type_project[g]]
+            ] \
                     == "circular" \
                     and relevant_tmp == tmp:
                 break
