@@ -405,6 +405,29 @@ class TestExamples(unittest.TestCase):
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)
 
+    def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(
+            self):
+        """
+        Check objective function value of
+        "2periods_new_build_2zones_transmission_w_losses_opp_dir" example
+        :return:
+        """
+        actual_objective = \
+            run_end_to_end.main(
+                ["--database", "../db/test_examples.db",
+                 "--scenario",
+                 "2periods_new_build_2zones_transmission_w_losses_opp_dir",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        # Note: this should be the same as the objective function for
+        # 2periods_new_build_2zones_transmission_w_losses
+        expected_objective = 54553647726.524
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
     def test_example_2periods_new_build_rps(self):
         """
         Check objective function value of "2periods_new_build_rps" example

@@ -1,0 +1,5 @@
+TIMEPOINTS	period	timepoint_weight	number_of_hours_in_timepoint	previous_stage_timepoint_map	month
+20200101	2020	1.0	1	.	1
+20200102	2020	1.0	1	.	1
+20300101	2030	1.0	1	.	1
+20300102	2030	1.0	1	.	1
