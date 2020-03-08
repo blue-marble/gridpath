@@ -5,7 +5,8 @@
 This operational type describes transmission lines whose flows are simulated
 using a linear transport model, i.e. transmission flow is constrained to be
 less than or equal to the line capacity. Line capacity can be defined for
-both transmission flow directions.
+both transmission flow directions. The user can define losses as a fraction
+of line flow.
 
 """
 
@@ -58,6 +59,22 @@ def add_module_specific_components(m, d):
     | is operational. Negative power means the power flow goes in the         |
     | opposite direction of the line's defined direction.                     |
     +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Losses_LZ_From_MW`                                    |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Losses on the transmission line in each timepoint, which we'll account  |
+    | for in the "from" origin load zone's load balance, i.e. losses incurred |
+    | when power is flowing to the "from" zone.                               |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Losses_LZ_To_MW`                                      |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Losses on the transmission line in each timepoint, which we'll account  |
+    | for in the "to" origin load zone's load balance, i.e. losses incurred   |
+    | when power is flowing to the "to" zone.                                 |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -70,12 +87,41 @@ def add_module_specific_components(m, d):
     | Transmitted power should exceed the transmission line's minimum power   |
     | flow for in every operational timepoint.                                |
     +-------------------------------------------------------------------------+
-    +-------------------------------------------------------------------------+
     | | :code:`TxSimple_Max_Transmit_Constraint`                              |
     | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
     |                                                                         |
     | Transmitted power cannot exceed the transmission line's maximum power   |
     | flow in every operational timepoint.                                    |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Losses_LZ_From_Constraint`                            |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    |                                                                         |
+    | Losses to be accounted for in the "from" load zone's load balance are 0 |
+    | when power flow on the line is positive (power flowing from the "from"  |
+    | to the "to" load zone) and must be greater than or equal to  the flow   |
+    | times the loss factor otherwise (power flowing to the "from" load zone).|
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Losses_LZ_To_Constraint`                              |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    |                                                                         |
+    | Losses to be accounted for in the "to" load zone's load balance are 0   |
+    | when power flow on the line is negative (power flowing from the "to"    |
+    | to the "from" load zone) and must be greater than or equal to the flow  |
+    | times the loss factor otherwise (power flowing to the "to" load zone).  |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Max_Losses_From_Constraint`                           |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    |                                                                         |
+    | Losses cannot exceed the maximum transmission flow capacity times the   |
+    | loss factor in each operational timepoint. Provides upper bound on      |
+    | losses.                                                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`TxSimple_Max_Losses_To_Constraint`                             |
+    | | *Defined over*: :code:`TX_SIMPLE_OPR_TMPS`                            |
+    |                                                                         |
+    | Losses cannot exceed the maximum transmission flow capacity times the   |
+    | loss factor in each operational timepoint. Provides upper bound on      |
+    | losses.                                                                 |
     +-------------------------------------------------------------------------+
 
     """
@@ -144,6 +190,16 @@ def add_module_specific_components(m, d):
         rule=losses_lz_to_rule
     )
 
+    m.TxSimple_Max_Losses_From_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS,
+        rule=max_losses_from_rule
+    )
+
+    m.TxSimple_Max_Losses_To_Constraint = Constraint(
+        m.TX_SIMPLE_OPR_TMPS,
+        rule=max_losses_to_rule
+    )
+
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -176,6 +232,9 @@ def max_transmit_rule(mod, l, tmp):
 
 def losses_lz_from_rule(mod, l, tmp):
     """
+    **Constraint Name**: TxSimple_Losses_LZ_From_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS
+
     Losses for the 'from' load zone of this transmission line (non-negative
     variable) must be greater than or equal to the negative of the flow times
     the loss factor. When the flow on the line is negative, power is flowing
@@ -197,6 +256,9 @@ def losses_lz_from_rule(mod, l, tmp):
 
 def losses_lz_to_rule(mod, l, tmp):
     """
+    **Constraint Name**: TxSimple_Losses_LZ_To_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS
+
     Losses for the 'to' load zone of this transmission line (non-negative
     variable) must be greater than or equal to the the flow times the loss
     factor. When the flow on the line is positive, power is flowing to the
@@ -214,6 +276,37 @@ def losses_lz_to_rule(mod, l, tmp):
             mod.TxSimple_Transmit_Power_MW[l, tmp] * \
             mod.tx_simple_loss_factor[l]
 
+
+def max_losses_from_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxSimple_Max_Losses_From_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS
+
+    Losses cannot exceed the maximum transmission flow capacity times the
+    loss factor in each operational timepoint. Provides upper bound on losses.
+    """
+    if mod.tx_simple_loss_factor[l] == 0:
+        return mod.TxSimple_Losses_LZ_From_MW[l, tmp] == 0
+    else:
+        return mod.TxSimple_Losses_LZ_From_MW[l, tmp] \
+            <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+            * mod.tx_simple_loss_factor[l]
+
+
+def max_losses_to_rule(mod, l, tmp):
+    """
+    **Constraint Name**: TxSimple_Max_Losses_To_Constraint
+    **Enforced Over**: TX_SIMPLE_OPR_TMPS
+
+    Losses cannot exceed the maximum transmission flow capacity times the
+    loss factor in each operational timepoint. Provides upper bound on losses.
+    """
+    if mod.tx_simple_loss_factor[l] == 0:
+        return mod.TxSimple_Losses_LZ_To_MW[l, tmp] == 0
+    else:
+        return mod.TxSimple_Losses_LZ_To_MW[l, tmp] \
+            <= mod.Tx_Max_Capacity_MW[l, mod.period[tmp]] \
+            * mod.tx_simple_loss_factor[l]
 
 # Transmission Operational Type Methods
 ###############################################################################
