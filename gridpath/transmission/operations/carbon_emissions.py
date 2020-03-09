@@ -3,6 +3,8 @@
 
 """
 Get carbon emissions on each 'carbonaceous' transmission line.
+
+Carbon emissions are based on power sent on the transmission line.
 """
 from __future__ import print_function
 

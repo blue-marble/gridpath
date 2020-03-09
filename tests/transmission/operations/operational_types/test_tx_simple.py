@@ -149,6 +149,16 @@ class TestTxOperations(unittest.TestCase):
         )
         self.assertListEqual(expect_tx_op_tmp, actual_tx_op_tmp)
 
+        # Param: tx_simple_loss_factor
+        expected_lf = OrderedDict(sorted({"Tx_New": 0.1}.items()))
+        actual_lf = OrderedDict(
+            sorted(
+                {tx: instance.tx_simple_loss_factor[tx]
+                 for tx in instance.TX_SIMPLE}.items()
+            )
+        )
+        self.assertDictEqual(expected_lf, actual_lf)
+
 
 if __name__ == "__main__":
     unittest.main()

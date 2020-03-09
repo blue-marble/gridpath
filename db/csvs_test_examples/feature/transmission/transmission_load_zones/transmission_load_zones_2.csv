@@ -1,0 +1,5 @@
+transmission_load_zone_scenario_id,transmission_line,load_zone_from,load_zone_to
+2,Tx1,Zone2,Zone1
+2,Tx_new,Zone2,Zone1
+2,Tx2,Zone3,Zone2
+2,Tx3,Zone3,Zone1

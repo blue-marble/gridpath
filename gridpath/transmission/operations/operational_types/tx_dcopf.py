@@ -488,8 +488,23 @@ def kirchhoff_voltage_law_rule(mod, c, tmp):
 
 def transmit_power_rule(mod, l, tmp):
     """
+
     """
     return mod.TxDcopf_Transmit_Power_MW[l, tmp]
+
+
+def transmit_power_losses_lz_from_rule(mod, line, tmp):
+    """
+    No losses in DC OPF module for now.
+    """
+    return 0
+
+
+def transmit_power_losses_lz_to_rule(mod, line, tmp):
+    """
+    No losses in DC OPF module for now.
+    """
+    return 0
 
 
 # Input-Output

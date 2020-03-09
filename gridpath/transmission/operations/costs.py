@@ -4,7 +4,8 @@
 """
 This is a Tx-line-level module that adds to the formulation components that
 describe the operations-related costs of transmission lines, namely hurdle
-rate costs.
+rate costs. Hurdle rate costs are currently applied on power sent across the
+transmission line.
 """
 
 from __future__ import print_function

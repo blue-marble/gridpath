@@ -30,10 +30,19 @@ def add_model_components(m, d):
     """
 
     def total_transmission_to_rule(mod, z, tmp):
-        return sum(mod.Transmit_Power_MW[tx, tmp]
-                   for tx in
-                   mod.TX_LINES_OPR_IN_TMP[tmp]
-                   if mod.load_zone_to[tx] == z)
+        """
+        For each load zone, iterate over the transmission lines with the
+        load zone as destination to determine net imports into the load zone
+        minus any losses incurred. Tx_Losses_LZ_To_MW is positive when
+        Transmit_Power_MW is positive (losses are accounted for when the
+        transmission flow is to the destination load zone) and 0 otherwise.
+        """
+        return sum(
+            (mod.Transmit_Power_MW[tx, tmp]
+             - mod.Tx_Losses_LZ_To_MW[tx, tmp])
+            for tx in mod.TX_LINES_OPR_IN_TMP[tmp]
+            if mod.load_zone_to[tx] == z
+        )
     m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                            rule=total_transmission_to_rule)
     getattr(d, load_balance_production_components).append(
@@ -41,10 +50,19 @@ def add_model_components(m, d):
     )
 
     def total_transmission_from_rule(mod, z, tmp):
-        return sum(mod.Transmit_Power_MW[tx, tmp]
-                   for tx in
-                   mod.TX_LINES_OPR_IN_TMP[tmp]
-                   if mod.load_zone_from[tx] == z)
+        """
+        For each load zone, iterate over the transmission lines with the
+        load zone as origin to determine net exports from the load zone
+        minus any losses incurred. Tx_Losses_LZ_From_MW is positive when
+        Transmit_Power_MW is negative (losses are accounted for when the
+        transmission flow is to the origin load zone) and 0 otherwise.
+        """
+        return sum(
+            (mod.Transmit_Power_MW[tx, tmp]
+             + mod.Tx_Losses_LZ_From_MW[tx, tmp])
+            for tx in mod.TX_LINES_OPR_IN_TMP[tmp]
+            if mod.load_zone_from[tx] == z
+        )
     m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
                                              rule=total_transmission_from_rule)
     getattr(d, load_balance_consumption_components).append(
