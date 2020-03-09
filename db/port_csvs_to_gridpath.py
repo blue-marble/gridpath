@@ -50,16 +50,16 @@ from db.utilities import temporal
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
-from db.utilities.csvs_to_db_utilities import csvs_read, \
-    load_geography, load_system_load, load_system_reserves, \
-    load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
-    load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
-    load_project_local_capacity_chars, load_project_prm, \
-    load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
-    load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
-    load_fuels, load_system_carbon_cap, load_system_local_capacity, load_system_prm, load_system_rps, \
-    load_scenarios, load_solver_options
-
+from db.csvs_to_db_utilities import csvs_read, \
+    load_geography, load_project_existing_params, load_project_new_costs, \
+    load_project_new_potentials, load_project_local_capacity_chars, \
+    load_project_prm, load_transmission_zones, load_transmission_portfolios, \
+    load_transmission_hurdle_rates, load_transmission_operational_chars, \
+    load_system_rps, load_scenarios, load_fuels, load_project_availability, \
+    load_system_reserves, load_project_zones, load_solver_options, \
+    load_system_carbon_cap, load_transmission_new_cost, load_project_list, \
+    load_project_operational_chars, load_system_prm, load_project_portfolios, \
+    load_transmission_capacities, load_system_load, load_system_local_capacity
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -303,7 +303,7 @@ def load_csv_data(conn, csv_path, quiet):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_endogenous', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
-        load_project_availability.load_project_availability_endogenous(conn,  c2, csv_subscenario_input, csv_data_input)
+        load_project_availability.load_project_availability_endogenous(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT HEAT RATE DATA ####
 
