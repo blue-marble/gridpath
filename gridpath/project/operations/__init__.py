@@ -18,7 +18,7 @@ from pyomo.environ import Set, Param, PositiveReals, Reals
 
 from gridpath.auxiliary.auxiliary import is_number, check_dtypes, \
     get_expected_dtypes, check_column_sign_positive, \
-    write_validation_to_database
+    write_validation_to_database, load_operational_type_modules
 
 
 # TODO: should we take this out of __init__.py
@@ -30,27 +30,6 @@ def add_model_components(m, d):
     :param d:
     :return:
     """
-
-    # Generators that incur startup/shutdown costs
-    m.STARTUP_COST_PROJECTS = Set(within=m.PROJECTS)
-    m.startup_cost_per_mw = Param(m.STARTUP_COST_PROJECTS,
-                                  within=PositiveReals)
-
-    m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.STARTUP_COST_PROJECTS))
-
-    m.SHUTDOWN_COST_PROJECTS = Set(within=m.PROJECTS)
-    m.shutdown_cost_per_mw = Param(m.SHUTDOWN_COST_PROJECTS,
-                                   within=PositiveReals)
-
-    m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.SHUTDOWN_COST_PROJECTS))
 
     # TODO: implement check for which generator types can have fuels
     # TODO: re-think how to deal with fuel projects; it's awkward to import
@@ -81,18 +60,6 @@ def add_model_components(m, d):
             set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.FUEL_PROJECTS))
 
-    # Startup fuel burn
-    m.STARTUP_FUEL_PROJECTS = Set(within=m.FUEL_PROJECTS)
-    m.startup_fuel_mmbtu_per_mw = Param(
-        m.STARTUP_FUEL_PROJECTS, within=PositiveReals
-    )
-
-    m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS = \
-        Set(dimen=2,
-            rule=lambda mod:
-            set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
-                if g in mod.STARTUP_FUEL_PROJECTS))
-
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
@@ -113,83 +80,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
               ) as prj_file:
         reader = csv.reader(prj_file, delimiter="\t", lineterminator="\n")
         headers = next(reader)
-
-    # STARTUP_COST_PROJECTS
-    def determine_startup_cost_projects():
-        """
-        If numeric values greater than 0 for startup costs are specified
-        for some generators, add those generators to the
-        STARTUP_COST_PROJECTS subset and initialize the respective startup
-        cost param value
-        :param mod:
-        :return:
-        """
-        startup_cost_projects = list()
-        startup_cost_per_mw = dict()
-
-        dynamic_components = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "startup_cost_per_mw"]
-        )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["startup_cost_per_mw"]):
-            if is_number(row[1]) and float(row[1]) > 0:
-                startup_cost_projects.append(row[0])
-                startup_cost_per_mw[row[0]] = float(row[1])
-            else:
-                pass
-
-        return startup_cost_projects, startup_cost_per_mw
-
-    if "startup_cost_per_mw" in headers:
-        data_portal.data()["STARTUP_COST_PROJECTS"] = {
-            None: determine_startup_cost_projects()[0]
-        }
-
-        data_portal.data()["startup_cost_per_mw"] = \
-            determine_startup_cost_projects()[1]
-    else:
-        pass
-
-    # SHUTDOWN_COST_PROJECTS
-    def determine_shutdown_cost_projects():
-        """
-        If numeric values greater than 0 for shutdown costs are specified
-        for some generators, add those generators to the
-        SHUTDOWN_COST_PROJECTS subset and initialize the respective shutdown
-        cost param value
-        :param mod:
-        :return:
-        """
-
-        shutdown_cost_projects = list()
-        shutdown_cost_per_mw = dict()
-
-        dynamic_components = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs","projects.tab"),
-            sep="\t",
-            usecols=["project", "shutdown_cost_per_mw"]
-        )
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["shutdown_cost_per_mw"]):
-            if is_number(row[1]) and float(row[1]) > 0:
-                shutdown_cost_projects.append(row[0])
-                shutdown_cost_per_mw[row[0]] = float(row[1])
-            else:
-                pass
-
-        return shutdown_cost_projects, shutdown_cost_per_mw
-
-    if "shutdown_cost_per_mw" in headers:
-        data_portal.data()["SHUTDOWN_COST_PROJECTS"] = {
-            None: determine_shutdown_cost_projects()[0]
-        }
-
-        data_portal.data()["shutdown_cost_per_mw"] = \
-            determine_shutdown_cost_projects()[1]
 
     def determine_fuel_project_segments():
         # TODO: read_csv seems to fail silently if file not found; check and
@@ -242,40 +132,6 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
             slope_dict
         data_portal.data()["fuel_burn_intercept_mmbtu_per_hr"] = \
             intercept_dict
-
-    # STARTUP FUEL_PROJECTS
-    def determine_startup_fuel_projects():
-        """
-        E.g. generators that incur fuel burn when starting up
-        :param mod:
-        :return:
-        """
-        startup_fuel_projects = list()
-        startup_fuel_mmbtu_per_mw = dict()
-
-        dynamic_components = read_csv(
-            os.path.join(scenario_directory, subproblem, stage,
-                         "inputs", "projects.tab"),
-            sep="\t",
-            usecols=["project", "startup_fuel_mmbtu_per_mw"]
-        )
-
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["startup_fuel_mmbtu_per_mw"]):
-            if row[1] != ".":
-                startup_fuel_projects.append(row[0])
-                startup_fuel_mmbtu_per_mw[row[0]] = float(row[1])
-            else:
-                pass
-
-        return startup_fuel_projects, startup_fuel_mmbtu_per_mw
-
-    if "startup_fuel_mmbtu_per_mw" in headers:
-        data_portal.data()["STARTUP_FUEL_PROJECTS"] = {
-            None: determine_startup_fuel_projects()[0]
-        }
-        data_portal.data()["startup_fuel_mmbtu_per_mw"] = \
-            determine_startup_fuel_projects()[1]
 
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):

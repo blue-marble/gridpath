@@ -241,8 +241,59 @@ class TestGenCommitCap(unittest.TestCase):
                              actual_min_down_time
                              )
 
-        # for tmp in instance.TIMEPOINTS:
-        #     print(tmp)
+        # Param: gen_commit_cap_startup_cost_per_mw
+        expected_startup_costs = {
+            "Gas_CCGT": 1,
+            "Coal": 1,
+            "Gas_CT": 0,
+            "Gas_CCGT_New": 1,
+            "Gas_CCGT_New_Binary": 1,
+            "Gas_CT_New": 0,
+            "Gas_CCGT_z2": 1,
+            "Coal_z2": 1,
+            "Gas_CT_z2": 0}
+        actual_startup_costs = {
+            prj: instance.gen_commit_cap_startup_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_CAP
+        }
+        self.assertDictEqual(expected_startup_costs,
+                             actual_startup_costs)
+
+        # Param: gen_commit_cap_shutdown_cost_per_mw
+        expected_shutdown_costs = {
+            "Gas_CCGT": 2,
+            "Coal": 0,
+            "Gas_CT": 1,
+            "Gas_CCGT_New": 2,
+            "Gas_CCGT_New_Binary": 2,
+            "Gas_CT_New": 1,
+            "Gas_CCGT_z2": 2,
+            "Coal_z2": 0,
+            "Gas_CT_z2": 1}
+        actual_shutdown_costs = {
+            prj: instance.gen_commit_cap_shutdown_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_CAP
+        }
+        self.assertDictEqual(expected_shutdown_costs,
+                             actual_shutdown_costs)
+
+        # Param: gen_commit_cap_startup_fuel_mmbtu_per_mw
+        expected_startup_fuel_mmbtu_per_mw = {
+            "Gas_CCGT": 6,
+            "Coal": 6,
+            "Gas_CT": 0.5,
+            "Gas_CCGT_New": 6,
+            "Gas_CCGT_New_Binary": 6,
+            "Gas_CT_New": 0.5,
+            "Gas_CCGT_z2": 6,
+            "Coal_z2": 6,
+            "Gas_CT_z2": 0}
+        actual_startup_fuel_mmbtu_per_mw = {
+            prj: instance.gen_commit_cap_startup_fuel_mmbtu_per_mw[prj]
+            for prj in instance.GEN_COMMIT_CAP
+        }
+        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
+                             actual_startup_fuel_mmbtu_per_mw)
 
 
 if __name__ == "__main__":

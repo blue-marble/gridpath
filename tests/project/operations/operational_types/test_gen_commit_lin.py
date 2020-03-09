@@ -185,6 +185,42 @@ class TestGenCommitLin(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
 
+        # Param: gen_commit_lin_startup_cost_per_mw
+        expected_startup_costs = {
+            "Disp_Cont_Commit": 1,
+            "Clunky_Old_Gen": 1,
+            "Clunky_Old_Gen2": 1}
+        actual_startup_costs = {
+            prj: instance.gen_commit_lin_startup_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_startup_costs,
+                             actual_startup_costs)
+
+        # Param: gen_commit_lin_shutdown_cost_per_mw
+        expected_shutdown_costs = {
+            "Disp_Cont_Commit": 1,
+            "Clunky_Old_Gen": 1,
+            "Clunky_Old_Gen2": 1}
+        actual_shutdown_costs = {
+            prj: instance.gen_commit_lin_shutdown_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_shutdown_costs,
+                             actual_shutdown_costs)
+
+        # Param: gen_commit_lin_startup_fuel_mmbtu_per_mw
+        expected_startup_fuel_mmbtu_per_mw = {
+            "Disp_Cont_Commit": 10,
+            "Clunky_Old_Gen": 10,
+            "Clunky_Old_Gen2": 10}
+        actual_startup_fuel_mmbtu_per_mw = {
+            prj: instance.gen_commit_lin_startup_fuel_mmbtu_per_mw[prj]
+            for prj in instance.GEN_COMMIT_LIN
+        }
+        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
+                             actual_startup_fuel_mmbtu_per_mw)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -173,6 +173,36 @@ class TestGenCommitBin(unittest.TestCase):
         self.assertDictEqual(expected_min_down_time,
                              actual_min_down_time)
 
+        # Param: gen_commit_bin_startup_cost_per_mw
+        expected_startup_costs = {
+            "Disp_Binary_Commit": 1}
+        actual_startup_costs = {
+            prj: instance.gen_commit_bin_startup_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+        self.assertDictEqual(expected_startup_costs,
+                             actual_startup_costs)
+
+        # Param: gen_commit_bin_shutdown_cost_per_mw
+        expected_shutdown_costs = {
+            "Disp_Binary_Commit": 1}
+        actual_shutdown_costs = {
+            prj: instance.gen_commit_bin_shutdown_cost_per_mw[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+        self.assertDictEqual(expected_shutdown_costs,
+                             actual_shutdown_costs)
+
+        # Param: gen_commit_bin_startup_fuel_mmbtu_per_mw
+        expected_startup_fuel_mmbtu_per_mw = {
+            "Disp_Binary_Commit": 10}
+        actual_startup_fuel_mmbtu_per_mw = {
+            prj: instance.gen_commit_bin_startup_fuel_mmbtu_per_mw[prj]
+            for prj in instance.GEN_COMMIT_BIN
+        }
+        self.assertDictEqual(expected_startup_fuel_mmbtu_per_mw,
+                             actual_startup_fuel_mmbtu_per_mw)
+
 
 if __name__ == "__main__":
     unittest.main()
