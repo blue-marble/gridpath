@@ -30,19 +30,26 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        test_db_path = os.path.join(os.getcwd(),
+                                    "..", "db", "test_examples.db")
+
+        if os.path.exists(test_db_path):
+            os.remove(test_db_path)
+
+        create_database.main(["--db_location", "../db",
+                              "--db_name", "test_examples"])
+
         try:
-            create_database.main(["--db_location", "../db",
-                                  "--db_name", "test_examples"])
             port_csvs_to_gridpath.main(["--db_location", "../db/",
                                         "--db_name", "test_examples",
                                         "--csv_location",
                                         "../db/csvs_test_examples",
                                         "--quiet"])
         except Exception as e:
-            print("Error encountered during creation of testing database "
-                  "testing.db. Deleting database ...")
+            print("Error encountered during population of testing database "
+                  "test_examples.db. Deleting database ...")
             logging.exception(e)
-            os.remove("../db/test_examples.db")
+            os.remove(test_db_path)
 
         # TODO: create in memory instead and pass around connection?
 
