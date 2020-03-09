@@ -237,9 +237,9 @@ def losses_lz_from_rule(mod, l, tmp):
 
     Losses for the 'from' load zone of this transmission line (non-negative
     variable) must be greater than or equal to the negative of the flow times
-    the loss factor. When the flow on the line is positive, power is flowing
+    the loss factor. When the flow on the line is negative, power is flowing
     to the 'from', so losses are positive. When the flow on the line is
-    negative (i.e. power flowing from the 'from' load zone), losses can be set
+    positive (i.e. power flowing from the 'from' load zone), losses can be set
     to zero.
     If the tx_simple_loss_factor is 0, losses are set to 0.
     WARNING: since we have a greater than or equal constraint here, whenever
@@ -260,7 +260,7 @@ def losses_lz_to_rule(mod, l, tmp):
     **Enforced Over**: TX_SIMPLE_OPR_TMPS
 
     Losses for the 'to' load zone of this transmission line (non-negative
-    variable) must be greater than or equal to the the flow times the loss
+    variable) must be greater than or equal to the flow times the loss
     factor. When the flow on the line is positive, power is flowing to the
     'to' LZ, so losses are positive. When the flow on the line is negative
     (i.e. power flowing from the 'to' load zone), losses can be set to zero.
