@@ -1727,6 +1727,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High",
              "Missing inputs",
              error
              )
@@ -1748,6 +1749,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "Low",
              "Unexpected inputs",
              error
              )
@@ -1763,6 +1765,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High",
              "Invalid startup/shutdown ramp inputs",
              error
              )

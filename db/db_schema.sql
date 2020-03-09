@@ -143,6 +143,7 @@ stage_id INTEGER,
 gridpath_module VARCHAR(64),
 related_subscenario VARCHAR(64),
 related_database_table VARCHAR(64),
+issue_severity VARCHAR(32),
 issue_type VARCHAR(32),
 issue_description VARCHAR(64),
 timestamp TEXT,  -- ISO8601 String
@@ -1391,6 +1392,7 @@ CREATE TABLE inputs_transmission_operational_chars (
 transmission_operational_chars_scenario_id INTEGER,
 transmission_line VARCHAR(64),
 operational_type VARCHAR(32),
+tx_simple_loss_factor FLOAT,
 reactance_ohms FLOAT,
 PRIMARY KEY (transmission_operational_chars_scenario_id, transmission_line),
 FOREIGN KEY (transmission_operational_chars_scenario_id) REFERENCES
@@ -2610,6 +2612,8 @@ timepoint INTEGER,
 timepoint_weight FLOAT,
 number_of_hours_in_timepoint FLOAT,
 transmission_flow_mw FLOAT,
+transmission_losses_lz_from FLOAT,
+transmission_losses_lz_to FLOAT,
 PRIMARY KEY (scenario_id, transmission_line, subproblem_id, stage_id, timepoint)
 );
 

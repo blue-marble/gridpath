@@ -1,0 +1,31 @@
+##### SUMMARY RESULTS FOR SCENARIO *2periods_new_build_2zones_transmission_w_losses* #####
+
+### CAPACITY RESULTS ###
+
+--> New Generation Capacity <--
+                             New Capacity (MW)
+load_zone technology period                   
+Zone1     Gas        2020                   36
+                     2030                    3
+
+### OPERATIONAL RESULTS ###
+
+--> Energy Production <--
+                             Annual Energy (MWh)  % Total Power
+load_zone period technology                                    
+Zone1     2020   Coal                          5              5
+                 Gas                          90             82
+                 Nuclear                      12             11
+                 Wind                          3              3
+          2030   Coal                          4              4
+                 Gas                          91             83
+                 Nuclear                      12             11
+                 Wind                          3              3
+Zone2     2020   Coal                          9             20
+                 Gas                          22             48
+                 Nuclear                      12             26
+                 Wind                          3              6
+          2030   Coal                          9             20
+                 Gas                          22             48
+                 Nuclear                      12             26
+                 Wind                          3              6

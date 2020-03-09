@@ -161,7 +161,7 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     c = conn.cursor()
     transmission_lines = c.execute(
         """SELECT transmission_line, capacity_type, operational_type,
-        load_zone_from, load_zone_to, reactance_ohms
+        load_zone_from, load_zone_to, tx_simple_loss_factor, reactance_ohms
         FROM inputs_transmission_portfolios
         
         LEFT OUTER JOIN
@@ -171,7 +171,8 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
         USING (transmission_line)
         
         INNER JOIN
-            (SELECT transmission_line, operational_type, reactance_ohms
+            (SELECT transmission_line, operational_type, 
+            tx_simple_loss_factor, reactance_ohms
             FROM inputs_transmission_operational_chars
             WHERE transmission_operational_chars_scenario_id = {})
         USING (transmission_line)
@@ -211,7 +212,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         writer.writerow(
             ["TRANSMISSION_LINES", "tx_capacity_type", "tx_operational_type",
-             "load_zone_from", "load_zone_to", "reactance_ohms"]
+             "load_zone_from", "load_zone_to", "tx_simple_loss_factor",
+             "reactance_ohms"]
         )
 
         for row in transmission_lines:
@@ -260,6 +262,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "TRANSMISSION_OPERATIONAL_CHARS, TRANSMISSION_PORTFOLIOS",
              "inputs_transmission_operational_chars, inputs_tranmission_portfolios",
+             "High",
              "Invalid combination of capacity type and operational type",
              error
              )
@@ -275,6 +278,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "TRANSMISSION_OPERATIONAL_CHARS",
              "inputs_transmission_operational_chars",
+             "High",
              "Invalid reactance inputs",
              error
              )

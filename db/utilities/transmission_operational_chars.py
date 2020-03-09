@@ -23,8 +23,9 @@ def transmision_operational_chars(
     :param scenario_name: 
     :param scenario_description: 
     :param tx_line_chars:
-    Dictionary with the names of the transmission line as keys and tuples
-    containing the operational type and the reactance in ohms
+        Dictionary with the names of the transmission line as keys and tuples
+        containing the operational type, simple loss factor, and the reactance in
+        ohms
     :return: 
     """
 
@@ -45,12 +46,14 @@ def transmision_operational_chars(
             (transmission_operational_chars_scenario_id,
              tx_line,
              tx_line_chars[tx_line][0],
-             tx_line_chars[tx_line][1])
+             tx_line_chars[tx_line][1],
+             tx_line_chars[tx_line][2])
         )
     inputs_sql = """
         INSERT INTO inputs_transmission_operational_chars
         (transmission_operational_chars_scenario_id,
-        transmission_line, operational_type, reactance_ohms)
-        VALUES (?, ?, ?, ?);
+        transmission_line, operational_type, 
+        tx_simple_loss_factor, reactance_ohms)
+        VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)

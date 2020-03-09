@@ -136,7 +136,10 @@ def load_tx_operational_type_modules(required_tx_operational_modules):
     return load_subtype_modules(
         required_subtype_modules=required_tx_operational_modules,
         package="gridpath.transmission.operations.operational_types",
-        required_attributes=["transmit_power_rule"]
+        required_attributes=[
+            "transmit_power_rule", "transmit_power_losses_lz_from_rule",
+            "transmit_power_losses_lz_to_rule"
+        ]
     )
 
 
@@ -288,7 +291,7 @@ def write_validation_to_database(validation_results, conn):
         INSERT INTO status_validation
         (scenario_id, subproblem_id, stage_id, 
         gridpath_module, related_subscenario, related_database_table, 
-        issue_type, issue_description, timestamp)
+        issue_severity, issue_type, issue_description, timestamp)
         VALUES ({});
         """.format(','.join(['?' for item in row]))
 

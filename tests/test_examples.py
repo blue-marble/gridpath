@@ -30,19 +30,26 @@ class TestExamples(unittest.TestCase):
         :return:
         """
 
+        test_db_path = os.path.join(os.getcwd(),
+                                    "..", "db", "test_examples.db")
+
+        if os.path.exists(test_db_path):
+            os.remove(test_db_path)
+
+        create_database.main(["--db_location", "../db",
+                              "--db_name", "test_examples"])
+
         try:
-            create_database.main(["--db_location", "../db",
-                                  "--db_name", "test_examples"])
             port_csvs_to_gridpath.main(["--db_location", "../db/",
                                         "--db_name", "test_examples",
                                         "--csv_location",
                                         "../db/csvs_test_examples",
                                         "--quiet"])
         except Exception as e:
-            print("Error encountered during creation of testing database "
-                  "testing.db. Deleting database ...")
+            print("Error encountered during population of testing database "
+                  "test_examples.db. Deleting database ...")
             logging.exception(e)
-            os.remove("../db/test_examples.db")
+            os.remove(test_db_path)
 
         # TODO: create in memory instead and pass around connection?
 
@@ -381,6 +388,49 @@ class TestExamples(unittest.TestCase):
             )
 
         expected_objective = 50553647766.524
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
+    def test_example_2periods_new_build_2zones_transmission_w_losses(self):
+        """
+        Check objective function value of
+        "2periods_new_build_2zones_transmission_w_losses" example
+        :return:
+        """
+        actual_objective = \
+            run_end_to_end.main(
+                ["--database", "../db/test_examples.db",
+                 "--scenario",
+                 "2periods_new_build_2zones_transmission_w_losses",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        expected_objective = 54553647726.524
+
+        self.assertAlmostEqual(expected_objective, actual_objective,
+                               places=1)
+
+    def test_example_2periods_new_build_2zones_transmission_w_losses_opp_dir(
+            self):
+        """
+        Check objective function value of
+        "2periods_new_build_2zones_transmission_w_losses_opp_dir" example
+        :return:
+        """
+        actual_objective = \
+            run_end_to_end.main(
+                ["--database", "../db/test_examples.db",
+                 "--scenario",
+                 "2periods_new_build_2zones_transmission_w_losses_opp_dir",
+                 "--scenario_location", EXAMPLES_DIRECTORY,
+                 "--quiet", "--mute_solver_output", "--testing"]
+            )
+
+        # Note: this should be the same as the objective function for
+        # 2periods_new_build_2zones_transmission_w_losses
+        expected_objective = 54553647726.524
 
         self.assertAlmostEqual(expected_objective, actual_objective,
                                places=1)

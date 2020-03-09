@@ -690,6 +690,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
              "inputs_project_new_cost",
+             "High"
              "Invalid data type",
              error
              )
@@ -712,6 +713,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
              "inputs_project_new_cost",
+             "High"
              "Invalid numeric sign",
              error)
         )
@@ -726,6 +728,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_NEW_BINARY_BUILD_SIZE_SCENARIO_ID",
              "inputs_project_new_binary_build_size",
+             "High"
              "Missing Project",
              error)
         )
@@ -741,6 +744,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_NEW_COST_SCENARIO_ID",
              "inputs_project_new_cost",
+             "High"
              "Missing Costs",
              error)
         )
