@@ -536,6 +536,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                  __name__,
                  project_ba_id.upper(),
                  table,
+                 "Mid",
                  "Invalid {} BA inputs".format(reserve),
                  error
                  )

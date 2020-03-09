@@ -128,6 +128,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                          "N/A",
                          sc_id,
                          "scenarios",
+                         "High",
                          "Missing subscenario ID",
                          "Requested feature '{}' requires an input for '{}'"
                          .format(feature, sc_id)
@@ -144,6 +145,7 @@ def validate_feature_subscenario_ids(subscenarios, optional_features, conn):
                          "N/A",
                          sc_id,
                          "scenarios",
+                         "Low",
                          "Unnecessary subscenario ID",
                          "Detected inputs for '{}' while related feature '{}' "
                          "is not requested".format(sc_id, feature)
@@ -177,6 +179,7 @@ def validate_required_subscenario_ids(subscenarios, conn):
                  "N/A",
                  sc_id,
                  "scenarios",
+                 "High",
                  "Missing required subscenario ID",
                  "'{}' is a required input in the 'scenarios' table".format(
                      sc_id
@@ -245,6 +248,7 @@ def validate_data_dependent_subscenario_ids(subscenarios, conn):
                  "N/A",
                  sc_id,
                  "scenarios",
+                 "High",
                  "Missing data dependent subscenario ID",
                  "'{}' is a required input in the 'scenarios' table if there "
                  "are '{}' resources in the portfolio"
@@ -283,6 +287,7 @@ def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
             "N/A",
             "temporal_scenario_id",
             "scenarios and inputs_temporal_subproblems_stages",
+            "Low",
             "Invalid multi-stage settings",
             "The inputs contain multiple dispatch stages while the multi-stage "
             "optional feature is not selected. Please select the multi-stage "
@@ -296,6 +301,7 @@ def validate_multi_stage_settings(optional_features, subscenarios, subproblems,
             "N/A",
             "temporal_scenario_id",
             "scenarios and inputs_temporal_subproblems_stages",
+            "Low",
             "Invalid multi-stage settings",
             "The inputs contain only a single dispatch stage so the multi-stage"
             " optional feature should not be selected. Please turn off the "

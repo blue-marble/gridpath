@@ -352,6 +352,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
              "Invalid data type",
              error
              )
@@ -370,6 +371,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
              "Invalid numeric sign",
              error
              )
@@ -387,6 +389,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "High"
              "Missing/Unnecessary heat rate scenario inputs",
              error
              )
@@ -403,6 +406,7 @@ def validate_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "High",
              "Invalid/Missing heat rate curves inputs",
              error
              )

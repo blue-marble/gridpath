@@ -332,6 +332,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_OPERATIONAL_CHARS",
              "inputs_project_operational_chars",
+             "Low",
              "Unexpected inputs",
              error
              )
@@ -347,6 +348,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
              __name__,
              "PROJECT_HEAT_RATE_CURVES",
              "inputs_project_heat_rate_curves",
+             "Mid",
              "Too many load points",
              error
              )
@@ -373,6 +375,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
                  __name__,
                  project_ba_id.upper(),
                  table,
+                 "Mid",
                  "Invalid {} BA inputs".format(reserve),
                  error
                  )
