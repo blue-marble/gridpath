@@ -53,7 +53,7 @@ def add_model_components(m, d):
         """
         For each load zone, iterate over the transmission lines with the
         load zone as origin to determine net exports from the load zone
-        minus any losses incurred. Tx_Losses_LZ_To_MW is positive when
+        minus any losses incurred. Tx_Losses_LZ_From_MW is positive when
         Transmit_Power_MW is negative (losses are accounted for when the
         transmission flow is to the origin load zone) and 0 otherwise.
         """
