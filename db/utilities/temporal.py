@@ -127,7 +127,6 @@ def load_from_csvs(conn, subscenario_directory):
     :param subscenario_directory:
     :return:
     """
-    print(subscenario_directory)
     # Required input files
     description_file = os.path.join(subscenario_directory, "description.txt")
     timepoints_file = os.path.join(subscenario_directory, "structure.csv")
