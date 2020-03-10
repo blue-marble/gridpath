@@ -46,10 +46,10 @@ import sys
 from argparse import ArgumentParser
 
 # Data-import modules
-from db.utilities import temporal
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
+from db.utilities import temporal
 from db.csvs_to_db_utilities import csvs_read, \
     load_geography, load_project_existing_params, load_project_new_costs, \
     load_project_new_potentials, load_project_local_capacity_chars, \
