@@ -122,11 +122,43 @@ def insert_into_database(
 
 def load_from_csvs(conn, subscenario_directory):
     """
-
     :param conn:
-    :param subscenario_directory:
-    :return:
+    :param subscenario_directory: string, path to the directory containing
+        the data for this temporal_scenario_id
+
+    Load temporal subscenario data into the datbase. The data structure for
+    loading  temporal data from CSVs is as follows:
+
+    Each temporal subscenario is a directory, with the scenario ID,
+    underscore, and the scenario name as the name of the directory (already
+    passed here), so we get this to import from the subscenario_directory path.
+
+    Within each subscenario directory there are four required files:
+    description.txt, structure.csv, period_params.csv, and horizon_params.csv.
+
+    1. *description.txt*: contains the description of the subscenario.
+
+    2. *structure.csv*: contains all timepoint-level information for the
+    temporal subscenario, including
+    subproblem_id, stage_id, timepoint, period, number_of_hours_in_timepoint,
+    timepoint_weight, previous_stage_timepoint_map, spinup_or_lookahead,
+    month, hour_of_day. Columns must be specified in this order. The horizon
+    information for each timepoint must be included as the ending columns of
+    this file and must conform to the following structure: the header must
+    start with `horizon_` and then included the balancing type, e.g. day
+    balancing types will be `horizon_day`. The temporal script will populate
+    the subscenarios, stages, timepoints, and horizon_timepoints tables based
+    on the information in structure.csv.
+
+    3. *horizon_params.csv*: contains the balancing_type-horizon-level
+    information for the temporal subscenario, including subproblem_id,
+    balancing_type_horizon, horizon, boundary (must be in this order).
+    
+    4. *period_params.csv*: contains the period-level information for the
+    temporal subscenario, including period, discount_factor,
+    number_years_represented (must be in this order).
     """
+
     # Required input files
     description_file = os.path.join(subscenario_directory, "description.txt")
     timepoints_file = os.path.join(subscenario_directory, "structure.csv")
