@@ -543,6 +543,7 @@ def main(args=None):
     csv_path = get_csv_folder_path(parsed_arguments=parsed_args)
 
     # Register numpy types with sqlite, so that they are properly inserted
+    # from pandas dataframes
     # https://stackoverflow.com/questions/38753737/inserting-numpy-integer-types-into-sqlite-with-python3
     sqlite3.register_adapter(np.int64, lambda val: int(val))
     sqlite3.register_adapter(np.float64, lambda val: float(val))
