@@ -301,9 +301,3 @@ def load_from_csvs(conn, subscenario_directory):
         subproblem_horizons=subproblem_horizons,
         subproblem_stage_timepoint_horizons=subproblem_stage_timepoint_horizons
     )
-
-
-# TODO: add argument parser so that this script can be used stand-alone easily
-if __name__ == "__main__":
-    load_from_csvs(None, "/Users/ana/dev/gridpath_dev/db/csvs_test_examples"
-                         "/temporal/1_1horizon_1period")
