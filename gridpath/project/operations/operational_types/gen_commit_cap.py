@@ -150,6 +150,28 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The project's minimum down time in hours.                               |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_cap_startup_cost_per_mw`                            |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's startup cost per MW of capacity that is started up.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_cap_shutdown_cost_per_mw`                           |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's shutdown cost per MW of capacity that is shut down.       |
+    +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_cap_startup_fuel_mmbtu_per_mw`                      |
+    | | *Defined over*: :code:`GEN_COMMIT_CAP`                                |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    | | *Default*: :code:`0`                                                  |
+    |                                                                         |
+    | The project's startup fuel burn in MMBtu per MW of capacity that is     |
+    | started up.                                                             |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -204,13 +226,13 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
     |                                                                         |
-    | The amount of capacity started up.                                      |
+    | The amount of capacity started up (in MW).                              |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitCap_Shutdown_MW`                                      |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Defined over*: :code:`GEN_COMMIT_CAP_OPR_TMPS`                       |
     |                                                                         |
-    | The amount of capacity shut down.                                       |
+    | The amount of capacity shut down (in MW).                               |
     +-------------------------------------------------------------------------+
 
     |
@@ -388,6 +410,21 @@ def add_module_specific_components(m, d):
         m.GEN_COMMIT_CAP,
         within=NonNegativeReals,
         default=1
+    )
+    m.gen_commit_cap_startup_cost_per_mw = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals,
+        default=0
+    )
+    m.gen_commit_cap_shutdown_cost_per_mw = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals,
+        default=0
+    )
+    m.gen_commit_cap_startup_fuel_mmbtu_per_mw = Param(
+        m.GEN_COMMIT_CAP,
+        within=NonNegativeReals,
+        default=0
     )
 
     # Variables
@@ -1084,23 +1121,34 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_cost_rule(mod, g, tmp):
     """
-    Will be positive when there are more generators committed in the current
-    timepoint that there were in the previous timepoint.
-    If horizon is circular, the last timepoint of the horizon is the
-    previous_timepoint for the first timepoint if the horizon;
-    if the horizon is linear, no previous_timepoint is defined for the first
-    timepoint of the horizon, so return 'None' here
+    Startup costs are applied in each timepoint based on the amount of capacity
+    (in MW) that is started up in that timepoint and the startup cost
+    parameter.
     """
-    if check_if_linear_horizon_first_timepoint(
-        mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-    ):
-        return None
-    else:
-        return mod.Commit_Capacity_MW[g, tmp] \
-         - mod.Commit_Capacity_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+    return mod.GenCommitCap_Startup_MW[g, tmp] \
+        * mod.gen_commit_cap_startup_cost_per_mw[g]
+
+
+def shutdown_cost_rule(mod, g, tmp):
+    """
+    Shutdown costs are applied in each timepoint based on the amount of
+    capacity (in Mw) that is shut down in that timepoint and the shutdown
+    cost parameter.
+    """
+    return mod.GenCommitCap_Shutdown_MW[g, tmp] \
+        * mod.gen_commit_cap_shutdown_cost_per_mw[g]
+
+
+def startup_fuel_burn_rule(mod, g, tmp):
+    """
+    Startup fuel burn is applied in each timepoint based on the amount of
+    capacity (in MW) that is started up in that timepoint and the startup
+    fuel parameter.
+    """
+    return mod.GenCommitCap_Startup_MW[g, tmp] \
+        * mod.gen_commit_cap_startup_fuel_mmbtu_per_mw[g]
 
 
 def power_delta_rule(mod, g, tmp):
@@ -1148,6 +1196,9 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
     ramp_down_when_on_rate = dict()
     min_up_time = dict()
     min_down_time = dict()
+    startup_cost = dict()
+    shutdown_cost = dict()
+    startup_fuel = dict()
 
     header = pd.read_csv(os.path.join(scenario_directory, subproblem, stage,
                                       "inputs", "projects.tab"),
@@ -1157,7 +1208,9 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
                         "shutdown_plus_ramp_down_rate",
                         "ramp_up_when_on_rate",
                         "ramp_down_when_on_rate",
-                        "min_up_time_hours", "min_down_time_hours"]
+                        "min_up_time_hours", "min_down_time_hours",
+                        "startup_cost_per_mw", "shutdown_cost_per_mw",
+                        "startup_fuel_mmbtu_per_mw"]
     used_columns = [c for c in optional_columns if c in header]
 
     dynamic_components = \
@@ -1263,6 +1316,43 @@ def load_module_specific_data(mod, data_portal, scenario_directory,
         data_portal.data()[
             "gen_commit_cap_min_down_time_hours"] = \
             min_down_time
+
+    # Startup/shutdown costs are optional, will default to 0 if not specified
+    if "startup_cost_per_mw" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components["startup_cost_per_mw"]
+                       ):
+            if row[1] == "gen_commit_cap" and row[2] != ".":
+                startup_cost[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()["gen_commit_cap_startup_cost_per_mw"] = startup_cost
+
+    if "shutdown_cost_per_mw" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components["shutdown_cost_per_mw"]
+                       ):
+            if row[1] == "gen_commit_cap" and row[2] != ".":
+                shutdown_cost[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()["gen_commit_cap_shutdown_cost_per_mw"] = \
+            shutdown_cost
+
+    # Startup fuel is optional, will default to 0 if not specified
+    if "startup_fuel_mmbtu_per_mw" in used_columns:
+        for row in zip(dynamic_components["project"],
+                       dynamic_components["operational_type"],
+                       dynamic_components["startup_fuel_mmbtu_per_mw"]
+                       ):
+            if row[1] == "gen_commit_cap" and row[2] != ".":
+                startup_fuel[row[0]] = float(row[2])
+            else:
+                pass
+        data_portal.data()["gen_commit_cap_startup_fuel_mmbtu_per_mw"] = \
+            startup_fuel
 
 
 def export_module_specific_results(mod, d, scenario_directory, subproblem, stage):

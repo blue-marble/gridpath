@@ -102,89 +102,38 @@ def add_model_components(m, d):
                              rule=fuel_cost_rule)
 
     # ### Startup and shutdown costs ### #
-    def startup_shutdown_rule(mod, g, tmp):
-        """
-        Track units started up from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            startup_shutdown_rule(mod, g, tmp)
-
-    m.Startup_Shutdown_Expression = Expression(
-        m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS
-        | m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=startup_shutdown_rule)
-
-    m.Startup_Cost = Var(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-                         within=NonNegativeReals)
-    m.Shutdown_Cost = Var(m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-                          within=NonNegativeReals)
-
     def startup_cost_rule(mod, g, tmp):
         """
-        Startup expression is positive when more units are on in the current
-        timepoint that were on in the previous timepoint. Startup_Cost is
-        defined to be non-negative, so if Startup_Expression is 0 or negative
-        (i.e. no units started or units shut down since the previous timepoint),
-        Startup_Cost will be 0.
-        If horizon is circular, the last timepoint of the horizon is the
-        previous_timepoint for the first timepoint if the horizon;
-        if the horizon is linear, no previous_timepoint is defined for the first
-        timepoint of the horizon, so skip constraint.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Startup costs are defined for some operational types while they are
+        zero for others. Get the appropriate expression for each generator
+        based on its operational type.
         """
-        if check_if_linear_horizon_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ):
-            return Constraint.Skip
-        else:
-            return mod.Startup_Cost[g, tmp] \
-                   >= mod.Startup_Shutdown_Expression[g, tmp] \
-                   * mod.startup_cost_per_mw[g]
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].\
+            startup_cost_rule(mod, g, tmp)
 
-    m.Startup_Cost_Constraint = \
-        Constraint(m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-                   rule=startup_cost_rule)
+    m.Startup_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+                                rule=startup_cost_rule)
 
     def shutdown_cost_rule(mod, g, tmp):
         """
-        Shutdown expression is positive when more units were on in the previous
-        timepoint that are on in the current timepoint. Shutdown_Cost is
-        defined to be non-negative, so if Shutdown_Expression is 0 or negative
-        (i.e. no units shut down or units started since the previous 
-        timepoint),
-        Shutdown_Cost will be 0.
-        If horizon is circular, the last timepoint of the horizon is the
-        previous_timepoint for the first timepoint if the horizon;
-        if the horizon is linear, no previous_timepoint is defined for the 
-        first timepoint of the horizon, so skip constraint.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Shutdown costs are defined for some operational types while they are
+        zero for others. Get the appropriate expression for each generator
+        based on its operational type.
         """
-        if check_if_linear_horizon_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ):
-            return Constraint.Skip
-        else:
-            return mod.Shutdown_Cost[g, tmp] \
-                   >= - mod.Startup_Shutdown_Expression[g, tmp] \
-                   * mod.shutdown_cost_per_mw[g]
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].\
+            shutdown_cost_rule(mod, g, tmp)
 
-    m.Shutdown_Cost_Constraint = Constraint(
-        m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=shutdown_cost_rule)
+    m.Shutdown_Cost = Expression(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+                                 rule=shutdown_cost_rule)
 
 
+# TODO: consolidate all these into one table? (VOM, fuel_cost, startup_cost,
+#  shutdown_cost). With new update, startup/shutdown cost table will be very
+#  sparse (output for every project rather than just startup/shutdown projs).
+# TODO: might want to clarify that fuel burn includes startup fuel burn (or
+#  keep them separate).
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
     Export operations results.
@@ -248,7 +197,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "startup_cost"]
         )
-        for (p, tmp) in m.STARTUP_COST_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 m.period[tmp],
@@ -269,7 +218,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "number_of_hours_in_timepoint", "load_zone",
              "technology", "shutdown_cost"]
         )
-        for (p, tmp) in m.SHUTDOWN_COST_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
                 p,
                 m.period[tmp],

@@ -234,15 +234,25 @@ def fuel_burn_rule(mod, p, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, p, tmp):
+def startup_cost_rule(mod, g, tmp):
     """
+    Since there is no commitment, there is no concept of starting up.
     """
-    raise ValueError(
-        "ERROR! Shiftable load projects should not incur "
-        "startup/shutdown costs." + "\n" +
-        "Check input data for project '{}'".format(p) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value)."
-    )
+    return 0
+
+
+def shutdown_cost_rule(mod, g, tmp):
+    """
+    Since there is no commitment, there is no concept of shutting down.
+    """
+    return 0
+
+
+def startup_fuel_burn_rule(mod, g, tmp):
+    """
+    Since there is no commitment, there is no concept of starting up.
+    """
+    return 0
 
 
 def power_delta_rule(mod, p, tmp):
