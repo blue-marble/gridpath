@@ -120,7 +120,7 @@ def load_from_csvs(conn, subscenario_directory):
     :param subscenario_directory: string, path to the directory containing
         the data for this temporal_scenario_id
 
-    Load temporal subscenario data into the datbase. The data structure for
+    Load temporal subscenario data into the database. The data structure for
     loading  temporal data from CSVs is as follows:
 
     Each temporal subscenario is a directory, with the scenario ID,
@@ -177,7 +177,7 @@ def load_from_csvs(conn, subscenario_directory):
     # SUBPROBLEMS
     # Get the data for the inputs_temporal_subproblems table from the
     # timepoints CSV
-    subproblems_set = set(tmp_df["subproblem_id"].to_list())
+    subproblems_set = set(tmp_df["subproblem_id"])
     subproblems = [(subscenario_id, x) for x in subproblems_set]
 
     # STAGES
@@ -193,17 +193,17 @@ def load_from_csvs(conn, subscenario_directory):
 
     # Check if the periods are unique
     if prd_df["period"].duplicated().any():
-        warnings.warn("Duplicate periods found in periods.csv. Periods must "
-                      "be unique.")
+        warnings.warn("Duplicate periods found in period_params.csv. Periods "
+                      "must be unique.")
 
-    # Check if the set of periods in periods.csv is the same as the set of
-    # periods assigned to timepoints in timepoints.csv.
-    tmp_periods = set(tmp_df["period"].tolist())
-    period_set = set(prd_df["period"].tolist())
+    # Check if the set of periods in period_params.csv is the same as the set of
+    # periods assigned to timepoints in structure.csv.
+    tmp_periods = set(tmp_df["period"])
+    period_set = set(prd_df["period"])
 
     if tmp_periods != period_set:
-        warnings.warn("The set of periods in timepoints.csv and periods.csv "
-                      "are not the same. Check your data.")
+        warnings.warn("The set of periods in structure.csv and "
+                      "period_params.csv are not the same. Check your data.")
 
     periods = [
         (subscenario_id, ) + tuple(x) for x in prd_df.to_records(index=False)
@@ -214,31 +214,31 @@ def load_from_csvs(conn, subscenario_directory):
     hrz_df = pd.read_csv(horizons_file, delimiter=",")
 
     # Check if balancing_type-horizons are unique
-    if not hrz_df.set_index(["balancing_type_horizon",
-                             "horizon"]).index.is_unique:
+    if hrz_df.duplicated(["balancing_type_horizon", "horizon"]).any():
         warnings.warn("""Duplicate balancing_type-horizons found in 
-        horizons.csv. Horizons must be unique within each balancing type.""")
+        horizon_params.csv. Horizons must be unique within each balancing 
+        type.""")
 
-    # Check if the set of balancing_type-horizons in horizons.csv is the same
+    # Check if the set of balancing_type-horizons in horizon_params.csv is the same
     # as the set of balancing_type-horizon assigned to timepoints in
-    # timepoints.csv.
+    # structure.csv.
     # Get unique balancing types (which we'll use to find the right columns
-    # in timepoints.csv)
+    # in structure.csv)
     balancing_types = hrz_df["balancing_type_horizon"].unique()
 
     for bt in balancing_types:
-        timeponts_csv_column = "horizon_{}".format(bt)
-        tmp_horizons = set(tmp_df[timeponts_csv_column].tolist())
+        timepoints_csv_column = "horizon_{}".format(bt)
+        tmp_horizons = set(tmp_df[timepoints_csv_column])
         horizon_set = set(
             hrz_df.loc[
                 hrz_df["balancing_type_horizon"] == bt,
                 "horizon"
-            ].tolist()
+            ]
         )
 
         if tmp_horizons != horizon_set:
-            warnings.warn("""The set of horizons in timepoints.csv and
-                          horizons.csv for balancing type {} are not the
+            warnings.warn("""The set of horizons in structure.csv and
+                          horizon_params.csv for balancing type {} are not the
                           same. Check your data.""".format(bt))
 
     subproblem_horizons = [
@@ -259,7 +259,7 @@ def load_from_csvs(conn, subscenario_directory):
 
     # TIMEPOINT HORIZONS
     horizon_columns = [
-        i for i in list(tmp_df.columns.values) if i.startswith("horizon")
+        i for i in tmp_df.columns if i.startswith("horizon")
     ]
 
     hrz_tmp_dfs_list = list()
