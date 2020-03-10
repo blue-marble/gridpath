@@ -66,6 +66,20 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | The set of generators of the :code:`gen_commit_bin` operational type.   |
     +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`                                   |
+    | | *within*: :code:`GEN_COMMIT_BIN`                                      |
+    |                                                                         |
+    | The set of generators of the :code:`gen_commit_bin` operational type    |
+    | that also have startup ramp rates specified.                            |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`                             |
+    |                                                                         |
+    | Two-dimensional set of generators of the the :code:`gen_commit_bin`     |
+    | and their startup types (if the project is in                           |
+    | :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`). Startup types are ordered from    |
+    | hottest to coldest, e.g. if there are 3 startup types the hottest start |
+    | is indicated by 1, and the coldest start is indicated by 3.             |
+    +-------------------------------------------------------------------------+
     | | :code:`GEN_COMMIT_BIN_OPR_TMPS`                                       |
     |                                                                         |
     | Two-dimensional set with generators of the :code:`gen_commit_bin`       |
@@ -76,6 +90,19 @@ def add_module_specific_components(m, d):
     | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
     | operational type, their operational timepoints, and their fuel          |
     | segments (if the project is in :code:`FUEL_PROJECTS`).                  |
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`                             |
+    |                                                                         |
+    | Three-dimensional set with generators of the :code:`gen_commit_bin`     |
+    | operational type, their operational timepoints, and their startup       |
+    | types (if the project is in :code:`GEN_COMMIT_BIN_STR_RMP_PRJS`).       |
+    +-------------------------------------------------------------------------+
+    +-------------------------------------------------------------------------+
+    | | :code:`GEN_COMMIT_BIN_STR_TYPES_BY_PRJ  `                             |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    |                                                                         |
+    | Indexed set that describes the startup types for each project of the    |
+    | :code:`gen_commit_bin`operational type.                                 |
     +-------------------------------------------------------------------------+
 
     |
@@ -112,14 +139,15 @@ def add_module_specific_components(m, d):
     | fraction of its capacity per minute.                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_startup_plus_ramp_up_rate`                      |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`PercentFraction`                                     |
     | | *Default*: :code:`1`                                                  |
     |                                                                         |
-    | The project's upward ramp rate limit during startup, defined as a       |
-    | fraction of its capacity per minute. If, after adjusting for timepoint  |
-    | duration, this is smaller than the minimum stable level, the project    |
-    | will have a startup trajectory across multiple timepoitns.              |
+    | The project's upward ramp rate limit during startup for a given         |
+    | startup type, defined as a fraction of its capacity per minute. If,     |
+    | after adjusting for timepoint duration, this is smaller than the        |
+    | minimum stable level, the project will have a startup trajectory across |
+    | multiple timepoints.                                                    |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_shutdown_plus_ramp_down_rate`                   |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
@@ -167,6 +195,21 @@ def add_module_specific_components(m, d):
     | The project's startup fuel burn in MMBtu per MW of capacity that is     |
     | started up.                                                             |
     +-------------------------------------------------------------------------+
+    | | :code:`gen_commit_bin_down_time_cutoff_hours`                         |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | The project's minimum down time cutoff to activate a given startup      |
+    | type. If the unit has been down for more hours than this cutoff, the    |
+    | relevant startup type will be activated. E.g. if a unit has 2 startup   |
+    | types (hot and cold) with respective cutoffs of 4 hours and 8 hours, it |
+    | means that startup type 1 (the hot start) will be activated if the unit |
+    | starts after a down time between 4-8 hours, and startup type 2 (the     |
+    | cold start) will be activated if the unit starts after a down time of   |
+    | over 8 hours. The cutoff for the hottest start must match the unit's    |
+    | minimum down time. If the unit is fast-start without a minimum down     |
+    | time, the user should input zero (rather than NULL)                     |
+    +-------------------------------------------------------------------------+
 
     |
 
@@ -185,15 +228,25 @@ def add_module_specific_components(m, d):
     | | *Within*: :code:`Binary`                                              |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
-    | Binary variable which is one of the unit starts up and zero otherwise.  |
+    | Binary variable which is one if the unit starts up and zero otherwise.  |
     | A startup is defined as changing commitment from zero to one.           |
     | Note: this variable is zero throughout a startup trajectory!            |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Startup_Type`                                     |
+    | | *Within*: :code:`Binary`                                              |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
+    |                                                                         |
+    | Binary variable which is one if the unit starts up for the given        |
+    | startup type and zero otherwise. A startup is defined as changing       |
+    | commitment from zero to one, whereas the startup type indicates the     |
+    | hotness/coldness of the start. Note: this variable is zero throughout   |
+    | a startup trajectory!                                                   |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Shutdown`                                         |
     | | *Within*: :code:`Binary`                                              |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
-    | Binary variable which is one of the unit shuts down and zero otherwise. |
+    | Binary variable which is one if the unit shuts down and zero otherwise. |
     | A shutdown is defined as changing commitment from one to zero.          |
     | Note: this variable is zero throughout a shutdown trajectory!           |
     +-------------------------------------------------------------------------+
@@ -214,10 +267,11 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Provide_Power_Startup_MW`                         |
     | | *Within*: :code:`NonNegativeReals`                                    |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Power provision during startup in each timepoint in which the project   |
-    | is starting up (zero if project is committed or not starting up).       |
+    | is starting up, for each startup type (zero if project is committed or  |
+    | not starting up).                                                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Provide_Power_Shutdown_MW`                        |
     | | *Within*: :code:`NonNegativeReals`                                    |
@@ -274,7 +328,7 @@ def add_module_specific_components(m, d):
     | duration.                                                               |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp`                     |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | The project's upward ramp-able capacity (in MW) during startup in each  |
     | operational timepoint. Depends on the                                   |
@@ -288,6 +342,13 @@ def add_module_specific_components(m, d):
     | each operational timepoint. Depends on the                              |
     | :code:`gen_commit_bin_shutdown_plus_ramp_down_rate`, the availability   |
     | and capacity in the timepoint, and the timepoint's duration.            |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Active_Startup_Type          `                    |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | The project's active startup type in each operational timepoint,        |
+    | described as an integer. If no startup type is active (the project is   |
+    | not starting up in this timepoint), this expression returns zero.       |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Upwards_Reserves_MW`                              |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
@@ -365,6 +426,17 @@ def add_module_specific_components(m, d):
     +-------------------------------------------------------------------------+
     | Startup Power                                                           |
     +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Unique_Startup_Type_Constraint`                   |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    |                                                                         |
+    | Ensures that only one startup type can be active at the same time.      |
+    +-------------------------------------------------------------------------+
+    | | :code:`GenCommitBin_Active_Startup_Type_Constraint`                   |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
+    |                                                                         |
+    | Ensures that a startup type can only be active if the unit has been     |
+    | down for the appropriate interval.                                      |
+    +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Max_Startup_Power_Constraint`                     |
     | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
     |                                                                         |
@@ -372,19 +444,19 @@ def add_module_specific_components(m, d):
     | minimum stable level when it is not committed.                          |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Ramp_During_Startup_Constraint`                   |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Limits the allowed project upward startup power ramp based on the       |
     | :code:`gen_commit_bin_startup_plus_ramp_up_rate`.                       |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Increasing_Startup_Power_Constraint`              |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Requires that the startup power always increases, except for the        |
     | startup timepoint (when :code:`GenCommitBin_Startup` is one).           |
     +-------------------------------------------------------------------------+
     | | :code:`GenCommitBin_Power_During_Startup_Constraint`                  |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS`                       |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES`             |
     |                                                                         |
     | Limits the difference between the power provision in the startup        |
     | timepoint and the startup power in the previous timepoint based on the  |
@@ -451,6 +523,29 @@ def add_module_specific_components(m, d):
             if g in mod.GEN_COMMIT_BIN)
     )
 
+    m.GEN_COMMIT_BIN_STR_RMP_PRJS = Set(
+        within=m.GEN_COMMIT_BIN
+    )
+
+    m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES = Set(
+        dimen=2,
+        ordered=True
+    )
+
+    m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES = Set(
+        dimen=3,
+        rule=lambda mod:
+        set((g, tmp, s) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            for _g, s in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+            if g == _g)
+    )
+
+    m.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ = Set(
+        m.GEN_COMMIT_BIN,
+        initialize=get_startup_types_by_project,
+        ordered=True
+    )
+
     # Required Params
     ###########################################################################
     m.gen_commit_bin_min_stable_level_fraction = Param(
@@ -470,7 +565,7 @@ def add_module_specific_components(m, d):
         within=PercentFraction, default=1
     )
     m.gen_commit_bin_startup_plus_ramp_up_rate = Param(
-        m.GEN_COMMIT_BIN,
+        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
         within=PercentFraction, default=1
     )
     m.gen_commit_bin_shutdown_plus_ramp_down_rate = Param(
@@ -503,6 +598,11 @@ def add_module_specific_components(m, d):
         default=0
     )
 
+    m.gen_commit_bin_down_time_cutoff_hours = Param(
+        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
+        within=NonNegativeReals
+    )
+
     # Variables
     ###########################################################################
 
@@ -513,6 +613,11 @@ def add_module_specific_components(m, d):
 
     m.GenCommitBin_Startup = Var(
         m.GEN_COMMIT_BIN_OPR_TMPS,
+        within=Binary
+    )
+
+    m.GenCommitBin_Startup_Type = Var(
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         within=Binary
     )
 
@@ -532,7 +637,7 @@ def add_module_specific_components(m, d):
     )
 
     m.GenCommitBin_Provide_Power_Startup_MW = Var(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         within=NonNegativeReals
     )
 
@@ -575,13 +680,18 @@ def add_module_specific_components(m, d):
     )
 
     m.GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp = Expression(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         rule=startup_ramp_rate_rule
     )
 
     m.GenCommitBin_Shutdown_Ramp_Rate_MW_Per_Tmp = Expression(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         rule=shutdown_ramp_rate_rule
+    )
+
+    m.GenCommitBin_Active_Startup_Type = Expression(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        rule=active_startup_rule
     )
 
     def upwards_reserve_rule(mod, g, tmp):
@@ -648,23 +758,33 @@ def add_module_specific_components(m, d):
     )
 
     # Startup Power
+    m.GenCommitBin_Unique_Startup_Type_Constraint = Constraint(
+        m.GEN_COMMIT_BIN_OPR_TMPS,
+        rule=unique_startup_type_constraint_rule
+    )
+
+    m.GenCommitBin_Active_Startup_Type_Constraint = Constraint(
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
+        rule=active_startup_type_constraint_rule
+    )
+
     m.GenCommitBin_Max_Startup_Power_Constraint = Constraint(
         m.GEN_COMMIT_BIN_OPR_TMPS,
         rule=max_startup_power_constraint_rule
     )
 
     m.GenCommitBin_Ramp_During_Startup_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         rule=ramp_during_startup_constraint_rule
     )
 
     m.GenCommitBin_Increasing_Startup_Power_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         rule=increasing_startup_power_constraint_rule
     )
 
     m.GenCommitBin_Power_During_Startup_Constraint = Constraint(
-        m.GEN_COMMIT_BIN_OPR_TMPS,
+        m.GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES,
         rule=power_during_startup_constraint_rule
     )
 
@@ -696,8 +816,21 @@ def add_module_specific_components(m, d):
     )
 
 
+# Set Rules
+###############################################################################
+
+def get_startup_types_by_project(mod, g):
+    """
+    Get indexed set of startup types by project, ordered from hottest to
+    coldest.
+    """
+    types = [s for (_g, s) in mod.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
+             if g == _g]
+    return types
+
+
 # Expression Rules
-###########################################################################
+###############################################################################
 
 def pmax_rule(mod, g, tmp):
     """
@@ -726,7 +859,8 @@ def provide_power_rule(mod, g, tmp):
     return mod.GenCommitBin_Provide_Power_Above_Pmin_MW[g, tmp] \
         + mod.GenCommitBin_Pmin_MW[g, tmp] \
         * mod.GenCommitBin_Commit[g, tmp] \
-        + mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] \
+        + sum(mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s]
+              for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]) \
         + mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp]
 
 
@@ -778,14 +912,14 @@ def ramp_down_rate_rule(mod, g, tmp):
         * 60  # convert min to hours
 
 
-def startup_ramp_rate_rule(mod, g, tmp):
+def startup_ramp_rate_rule(mod, g, tmp, s):
     """
     **Expression Name**: GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp
-    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
     """
     return mod.Capacity_MW[g, mod.period[tmp]] \
         * mod.Availability_Derate[g, tmp] \
-        * min(mod.gen_commit_bin_startup_plus_ramp_up_rate[g]
+        * min(mod.gen_commit_bin_startup_plus_ramp_up_rate[g, s]
               * mod.number_of_hours_in_timepoint[tmp]
               * 60, 1)
 
@@ -801,6 +935,15 @@ def shutdown_ramp_rate_rule(mod, g, tmp):
               * mod.number_of_hours_in_timepoint[tmp]
               * 60, 1)
 
+
+def active_startup_rule(mod, g, tmp):
+    """
+    **Expression Name**: GenCommitBin_Active_Startup_Type
+    **Defined Over**: GEN_COMMIT_BIN_OPR_TMPS
+    """
+    return (sum(mod.GenCommitBin_Startup_Type[g, tmp, s] * s
+                for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g])
+            if g in mod.GEN_COMMIT_BIN_STR_RMP_PRJS else 0)
 
 # Constraint Formulation Rules
 ###############################################################################
@@ -844,7 +987,8 @@ def synced_constraint_rule(mod, g, tmp):
     """
     return mod.GenCommitBin_Synced[g, tmp] \
         >= mod.GenCommitBin_Commit[g, tmp] \
-        + (mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp]
+        + (sum(mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s]
+               for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g])
            + mod.GenCommitBin_Provide_Power_Shutdown_MW[g, tmp]) \
         / mod.GenCommitBin_Pmin_MW[g, tmp]
 
@@ -1116,6 +1260,86 @@ def ramp_down_constraint_rule(mod, g, tmp):
 
 
 # Startup Power
+def unique_startup_type_constraint_rule(mod, g, tmp):
+    """
+    **Constraint Name**: GenCommitBin_Unique_Startup_Type_Constraint
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+
+    Only one startup type can be active (>= 1) at the same time.
+    """
+
+    if g not in mod.GEN_COMMIT_BIN_STR_RMP_PRJS:
+        return Constraint.Skip
+
+    sum_startup_types = sum(
+        mod.GenCommitBin_Startup_Type[g, tmp, s]
+        for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
+    )
+
+    return sum_startup_types == mod.GenCommitBin_Startup[g, tmp]
+
+
+def active_startup_type_constraint_rule(mod, g, tmp, s):
+    """
+    **Constraint Name**: GenCommitBin_Active_Startup_Type_Constraint
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
+
+    Startup_type s can only be activated (startup_type >= 1) if the unit has
+    previously been down within the appropriate interval. The interval for
+    startup type s is defined by the user specified boundary parameters
+    mod.gen_commit_bin_down_time_cutoff_hours[s] and
+    mod.gen_commit_bin_down_time_cutoff_hours[s+1]. Note that the down time
+    interval includes any timepoints during which the unit is starting up.
+
+    For the coldest (last) startup type, there is no s+1 and the
+    constraint is skipped. This is okay because the model will select a
+    hotter, cheaper startup type if it can and there can only be one
+    startup_type active at once (see unique_startup_type_constraint_rule).
+    This also means the constraint will be skipped if there is only one
+    startup type.
+
+    The constraint works by first determining the relevant timepoints, i.e.
+    the timepoints within [TSU,s ; TSU,s+1) hours from *tmp*. If the unit
+    has been down in any of these timepoints, we can activate the startup
+    variable of the associated startup type for timepoint *tmp* (but only if
+    the unit is actually starting in timepoint *tmp*).
+
+    Example: we are in timepoint 7 (hourly resolution) and the down time
+    interval is 2-4 hours for a hot start and >=4 hours for a cold start.
+    This means timepoints 4 and 5 will be the relevant timepoints (resp. 2
+    and 3 hours from *tmp*). A shutdown in any of those timepoints means
+    that a start in timepoint 7 would be a hot start.
+
+    See constraint (7) in Morales-Espana et al. (2017).
+    """
+
+    # Coldest startup type is un-constrained
+    if s == mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g][-1]:
+        return Constraint.Skip
+
+    # Get the timepoints within [TSU,s; TSU,s+1) hours from *tmp*
+    relevant_tmps1 = determine_relevant_timepoints(
+        mod, g, tmp, mod.gen_commit_bin_down_time_cutoff_hours[g, s])
+    relevant_tmps2 = determine_relevant_timepoints(
+        mod, g, tmp, mod.gen_commit_bin_down_time_cutoff_hours[g, s+1])
+    relevant_tmps = set(relevant_tmps2) - set(relevant_tmps1)
+
+    # Skip constraint if we are within TSU,s hours from the start of the
+    # horizon (linear horizon boundary) or from the current tmp (circular
+    # horizon boundary). We have no way to know whether unit was down
+    # [TSU,s; TSU,s+1) hours ago so we can't know if this start type could
+    # be active.
+    if len(relevant_tmps) == 0:
+        return Constraint.Skip
+
+    # Equal to 1 if unit has been down within interval [TSU,s; TSU,s+1)
+    # before hour t. This "activates" this particular startup type
+    shutdown_within_interval = \
+        sum(mod.GenCommitBin_Shutdown[g, tp] for tp in relevant_tmps)
+
+    return mod.GenCommitBin_Startup_Type[g, tmp, s] <= shutdown_within_interval
+
+
 def max_startup_power_constraint_rule(mod, g, tmp):
     """
     **Constraint Name**: GenCommitBin_Max_Startup_Power_Constraint
@@ -1125,15 +1349,21 @@ def max_startup_power_constraint_rule(mod, g, tmp):
     equal to the minimum stable level when not committed.
     """
 
-    return mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] \
+    # TODO: make this expression since used in many places?
+    total_startup_power = sum(
+        mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s]
+        for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
+    )
+
+    return total_startup_power \
         <= (1 - mod.GenCommitBin_Commit[g, tmp]) \
         * mod.GenCommitBin_Pmin_MW[g, tmp]
 
 
-def ramp_during_startup_constraint_rule(mod, g, tmp):
+def ramp_during_startup_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitBin_Ramp_During_Startup_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
 
     The difference between startup power of consecutive timepoints has to
     obey startup ramp up rates.
@@ -1150,23 +1380,23 @@ def ramp_during_startup_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] - \
+            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] - \
             mod.GenCommitBin_Provide_Power_Startup_MW[g,
                           mod.previous_timepoint[tmp,
                                                  mod
                                                  .balancing_type_project[g]
-                                                 ]
+                                                 ], s
                           ] \
             <= mod.GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp[
                 g, mod.previous_timepoint[tmp,
-                                          mod.balancing_type_project[g]]
+                                          mod.balancing_type_project[g]], s
             ]
 
 
-def increasing_startup_power_constraint_rule(mod, g, tmp):
+def increasing_startup_power_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitBin_Increasing_Startup_Power_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
 
     GenCommitBin_Provide_Power_Startup_MW[t] can only be less than
     GenCommitBin_Provide_Power_Startup_MW[t-1] in the starting timepoint (when
@@ -1182,21 +1412,21 @@ def increasing_startup_power_constraint_rule(mod, g, tmp):
         return Constraint.Skip
     else:
         return \
-            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp] - \
+            mod.GenCommitBin_Provide_Power_Startup_MW[g, tmp, s] - \
             mod.GenCommitBin_Provide_Power_Startup_MW[g,
                           mod.previous_timepoint[tmp,
                                                  mod
                                                  .balancing_type_project[g]
-                                                 ]
+                                                 ], s
                           ] \
-            >= - mod.GenCommitBin_Startup[g, tmp] \
+            >= - mod.GenCommitBin_Startup_Type[g, tmp, s] \
             * mod.GenCommitBin_Pmin_MW[g, tmp]
 
 
-def power_during_startup_constraint_rule(mod, g, tmp):
+def power_during_startup_constraint_rule(mod, g, tmp, s):
     """
     **Constraint Name**: GenCommitBin_Power_During_Startup_Constraint
-    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS
+    **Enforced Over**: GEN_COMMIT_BIN_OPR_TMPS_STR_TYPES
 
     Power provision in the start timepoint (i.e. the timepoint when the unit
     is first committed) is constrained by the startup ramp rate (adjusted
@@ -1218,10 +1448,6 @@ def power_during_startup_constraint_rule(mod, g, tmp):
     (Commit[t] x Pmin + P_above_Pmin[t]) - Pstarting[t-1]
     <=
     (1 - Start[t]) x Pmax + Start[t] x Startup_Ramp_Rate x Pmax
-    :param mod:
-    :param g:
-    :param tmp:
-    :return:
     """
 
     if check_if_linear_horizon_first_timepoint(
@@ -1235,14 +1461,14 @@ def power_during_startup_constraint_rule(mod, g, tmp):
                 ) \
             + mod.GenCommitBin_Upwards_Reserves_MW[g, tmp] \
             - mod.GenCommitBin_Provide_Power_Startup_MW[g, mod.previous_timepoint[
-                tmp, mod.balancing_type_project[g]]] \
+                tmp, mod.balancing_type_project[g]], s] \
             <= \
-            (1 - mod.GenCommitBin_Startup[g, tmp]) \
+            (1 - mod.GenCommitBin_Startup_Type[g, tmp, s]) \
             * mod.GenCommitBin_Pmax_MW[g, tmp] \
             + mod.GenCommitBin_Startup[g, tmp] \
             * mod.GenCommitBin_Startup_Ramp_Rate_MW_Per_Tmp[
                 g, mod.previous_timepoint[tmp,
-                                          mod.balancing_type_project[g]]
+                                          mod.balancing_type_project[g]], s
             ]
 
 
@@ -1533,7 +1759,6 @@ def load_module_specific_data(mod, data_portal,
     """
 
     min_stable_fraction = dict()
-    startup_plus_ramp_up_rate = dict()
     shutdown_plus_ramp_down_rate = dict()
     ramp_up_when_on_rate = dict()
     ramp_down_when_on_rate = dict()
@@ -1549,8 +1774,7 @@ def load_module_specific_data(mod, data_portal,
         sep="\t", header=None, nrows=1
     ).values[0]
 
-    optional_columns = ["startup_plus_ramp_up_rate",
-                        "shutdown_plus_ramp_down_rate",
+    optional_columns = ["shutdown_plus_ramp_down_rate",
                         "ramp_up_when_on_rate",
                         "ramp_down_when_on_rate",
                         "min_up_time_hours",
@@ -1578,19 +1802,11 @@ def load_module_specific_data(mod, data_portal,
             pass
     data_portal.data()["gen_commit_bin_min_stable_level_fraction"] = \
         min_stable_fraction
+    gen_commit_bin_projects = min_stable_fraction.keys()
 
     # Ramp rate limits are optional, will default to 1 if not specified
-    if "startup_plus_ramp_up_rate" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_plus_ramp_up_rate"]):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
-                startup_plus_ramp_up_rate[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_bin_startup_plus_ramp_up_rate"] = \
-            startup_plus_ramp_up_rate
-
+    # (startup plus ramp up rate is read in separately because different
+    #  startup types, e.g. hot/cold).
     if "shutdown_plus_ramp_down_rate" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
@@ -1682,6 +1898,49 @@ def load_module_specific_data(mod, data_portal,
         data_portal.data()["gen_commit_bin_startup_fuel_mmbtu_per_mw"] = \
             startup_fuel
 
+    # Startup characteristics
+    df = pd.read_csv(
+        os.path.join(scenario_directory, subproblem, stage,
+                     "inputs", "startup_chars.tab"),
+        sep="\t"
+    )
+
+    # Note: the rank function requires at least one numeric input in the
+    # down_time_cutoff_hours column (can't be all NULL/None).
+    if len(df) > 0:
+        df["startup_type_id"] = df.groupby("project")[
+            "down_time_cutoff_hours"].rank()
+
+    startup_ramp_projects = set()
+    startup_ramp_projects_types = list()
+    down_time_cutoff_hours_dict = dict()
+    startup_plus_ramp_up_rate_dict = dict()
+
+    for i, row in df.iterrows():
+        project = row["project"]
+        startup_type_id = row["startup_type_id"]
+        down_time_cutoff_hours = row["down_time_cutoff_hours"]
+        startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+
+        if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
+                and project in gen_commit_bin_projects:
+            startup_ramp_projects.add(project)
+            startup_ramp_projects_types.append((project, startup_type_id))
+            down_time_cutoff_hours_dict[(project, startup_type_id)] = \
+                float(down_time_cutoff_hours)
+            startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
+                float(startup_plus_ramp_up_rate)
+
+    if startup_ramp_projects:
+        data_portal.data()["GEN_COMMIT_BIN_STR_RMP_PRJS"] = \
+            {None: startup_ramp_projects}
+        data_portal.data()["GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES"] = \
+            {None: startup_ramp_projects_types}
+        data_portal.data()["gen_commit_bin_down_time_cutoff_hours"] = \
+            down_time_cutoff_hours_dict
+        data_portal.data()["gen_commit_bin_startup_plus_ramp_up_rate"] = \
+            startup_plus_ramp_up_rate_dict
+
 
 def export_module_specific_results(mod, d,
                                    scenario_directory, subproblem, stage):
@@ -1702,7 +1961,7 @@ def export_module_specific_results(mod, d,
                          "number_of_hours_in_timepoint", "technology",
                          "load_zone", "power_mw", "committed_mw",
                          "committed_units", "started_units", "stopped_units",
-                         "synced_units"
+                         "synced_units", "active_startup_type"
                          ])
 
         for (p, tmp) in mod.GEN_COMMIT_BIN_OPR_TMPS:
@@ -1722,7 +1981,8 @@ def export_module_specific_results(mod, d,
                 value(mod.GenCommitBin_Commit[p, tmp]),
                 value(mod.GenCommitBin_Startup[p, tmp]),
                 value(mod.GenCommitBin_Shutdown[p, tmp]),
-                value(mod.GenCommitBin_Synced[p, tmp])
+                value(mod.GenCommitBin_Synced[p, tmp]),
+                value(mod.GenCommitBin_Active_Startup_Type[p, tmp])
             ])
 
 
@@ -1752,6 +2012,85 @@ def import_module_specific_results_to_database(
     )
 
 
+def get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn):
+    """
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+
+    c = conn.cursor()
+    # TODO: should we align this better with heat rates (queries and input
+    #  validations are slightly different).
+    startup_chars = c.execute(
+        """
+        SELECT project, 
+        down_time_cutoff_hours, startup_plus_ramp_up_rate
+        FROM inputs_project_portfolios
+        INNER JOIN
+        (SELECT project, startup_chars_scenario_id
+        FROM inputs_project_operational_chars
+        WHERE project_operational_chars_scenario_id = {}
+        AND operational_type = '{}') AS op_char
+        USING(project)
+        INNER JOIN
+        inputs_project_startup_chars
+        USING(project, startup_chars_scenario_id)
+        WHERE project_portfolio_scenario_id = {}
+        AND startup_chars_scenario_id is not Null
+        """.format(subscenarios.PROJECT_OPERATIONAL_CHARS_SCENARIO_ID,
+                   "gen_commit_bin",
+                   subscenarios.PROJECT_PORTFOLIO_SCENARIO_ID)
+    )
+
+    return startup_chars
+
+
+def write_module_specific_model_inputs(
+        inputs_directory, subscenarios, subproblem, stage, conn
+):
+    """
+    Get inputs from database and write out the model input
+    startup_chars.tab file.
+    :param inputs_directory: local directory where .tab files will be saved
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    startup_chars = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
+    # If startup_chars.tab file already exists, append rows to it
+    if os.path.isfile(os.path.join(inputs_directory, "startup_chars.tab")):
+        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+                  "a") as startup_chars_file:
+            writer = csv.writer(startup_chars_file,
+                                delimiter="\t", lineterminator="\n")
+            for row in startup_chars:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+    # If startup_chars.tab does not exist, write header first, then add data
+    else:
+        with open(os.path.join(inputs_directory, "startup_chars.tab"),
+                  "w", newline="") as startup_chars_file:
+            writer = csv.writer(startup_chars_file,
+                                delimiter="\t", lineterminator="\n")
+
+            # Write header
+            writer.writerow(["project",
+                             "down_time_cutoff_hours",
+                             "startup_plus_ramp_up_rate"])
+
+            for row in startup_chars:
+                replace_nulls = ["." if i is None else i for i in row]
+                writer.writerow(replace_nulls)
+
+
 # Validation
 ###############################################################################
 
@@ -1769,7 +2108,10 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     validation_results = []
 
-    # Get project inputs
+    # Get startup chars and project inputs
+    startup_chars = get_module_specific_inputs_from_database(
+        subscenarios, subproblem, stage, conn)
+
     c1 = conn.cursor()
     projects = c1.execute(
         """SELECT project, operational_type,
@@ -1803,9 +2145,14 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         )
     )
 
-    df = pd.DataFrame(
+    # Convert input data to DataFrame
+    prj_df = pd.DataFrame(
         data=projects.fetchall(),
         columns=[s[0] for s in projects.description]
+    )
+    su_df = pd.DataFrame(
+        data=startup_chars.fetchall(),
+        columns=[s[0] for s in startup_chars.description]
     )
 
     # Get the number of hours in the timepoint (take min if it varies)
@@ -1828,7 +2175,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     req_columns = [
         "min_stable_level",
     ]
-    validation_errors = check_req_prj_columns(df, req_columns, True,
+    validation_errors = check_req_prj_columns(prj_df, req_columns, True,
                                               "gen_commit_bin")
     for error in validation_errors:
         validation_results.append(
@@ -1849,7 +2196,8 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         "charging_efficiency", "discharging_efficiency",
         "minimum_duration_hours"
     ]
-    validation_errors = check_req_prj_columns(df, expected_na_columns, False,
+    validation_errors = check_req_prj_columns(prj_df, expected_na_columns,
+                                              False,
                                               "gen_commit_bin")
     for error in validation_errors:
         validation_results.append(
@@ -1866,15 +2214,17 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         )
 
     # Check startup shutdown rate inputs
-    validation_errors = validate_startup_shutdown_rate_inputs(df, hrs_in_tmp)
+    validation_errors = validate_startup_shutdown_rate_inputs(prj_df,
+                                                              su_df,
+                                                              hrs_in_tmp)
     for error in validation_errors:
         validation_results.append(
             (subscenarios.SCENARIO_ID,
              subproblem,
              stage,
              __name__,
-             "PROJECT_OPERATIONAL_CHARS",
-             "inputs_project_operational_chars",
+             "PROJECT_OPERATIONAL_CHARS, PROJECT_STARTUP_CHARS",
+             "inputs_project_operational_chars, inputs_project_startup_chars",
              "High",
              "Invalid startup/shutdown ramp inputs",
              error
@@ -1883,4 +2233,3 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
 
     # Write all input validation errors to database
     write_validation_to_database(validation_results, conn)
-

@@ -701,12 +701,13 @@ balancing_type_project VARCHAR(32),
 variable_cost_per_mwh FLOAT,
 fuel VARCHAR(32),
 heat_rate_curves_scenario_id INTEGER,  -- determined heat rate curve
+startup_chars_scenario_id INTEGER,  -- determines startup ramp chars
 min_stable_level FLOAT,
 unit_size_mw FLOAT,
 startup_cost_per_mw FLOAT,
 shutdown_cost_per_mw FLOAT,
 startup_fuel_mmbtu_per_mw FLOAT,
-startup_plus_ramp_up_rate FLOAT,
+startup_plus_ramp_up_rate FLOAT,  -- Not used for gen_commit_lin/bin!
 shutdown_plus_ramp_down_rate FLOAT,
 ramp_up_when_on_rate FLOAT,
 ramp_down_when_on_rate FLOAT,
@@ -769,6 +770,28 @@ average_heat_rate_mmbtu_per_mwh FLOAT,
 PRIMARY KEY (project, heat_rate_curves_scenario_id, load_point_mw),
 FOREIGN KEY (project, heat_rate_curves_scenario_id) REFERENCES
 subscenarios_project_heat_rate_curves (project, heat_rate_curves_scenario_id)
+);
+
+-- Startup characteristics
+-- TODO: see comments variable profiles
+DROP TABLE IF EXISTS subscenarios_project_startup_chars;
+CREATE TABLE subscenarios_project_startup_chars (
+project VARCHAR(32),
+startup_chars_scenario_id INTEGER,
+name VARCHAR(32),
+description VARCHAR(128),
+PRIMARY KEY (project, startup_chars_scenario_id)
+);
+
+DROP TABLE IF EXISTS inputs_project_startup_chars;
+CREATE TABLE inputs_project_startup_chars (
+project VARCHAR(64),
+startup_chars_scenario_id INTEGER,
+down_time_cutoff_hours FLOAT,
+startup_plus_ramp_up_rate FLOAT,
+PRIMARY KEY (project, startup_chars_scenario_id, down_time_cutoff_hours),
+FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
+subscenarios_project_startup_chars (project, startup_chars_scenario_id)
 );
 
 -- Variable generator profiles
@@ -2100,6 +2123,7 @@ committed_units FLOAT,
 started_units INTEGER,
 stopped_units INTEGER,
 synced_units INTEGER,
+active_startup_type INTEGER,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
 

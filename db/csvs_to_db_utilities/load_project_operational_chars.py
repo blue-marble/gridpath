@@ -17,8 +17,11 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
     :return:
     """
 
-    operational_chars_integers = ['heat_rate_curves_scenario_id', 'min_up_time_hours', 'min_down_time_hours',
-                                  'variable_generator_profile_scenario_id', 'hydro_operational_chars_scenario_id']
+    operational_chars_integers = ['heat_rate_curves_scenario_id',
+                                  'startup_chars_scenario_id',
+                                  'min_up_time_hours', 'min_down_time_hours',
+                                  'variable_generator_profile_scenario_id',
+                                  'hydro_operational_chars_scenario_id']
     operational_chars_non_integers = data_input.columns.difference(
         operational_chars_integers + ['project_operational_chars_scenario_id', 'project']).tolist()
 
@@ -28,7 +31,6 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[(data_input['project_operational_chars_scenario_id'] == sc_id)]
-
         # Make subscenario and insert all projects into operational
         # characteristics table; we'll then update that table with the
         # operational characteristics each project needs
@@ -212,3 +214,49 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
         proj_hr_chars=project_hr_chars
     )
 
+
+def load_project_startup_chars(io, c, subscenario_input, data_input):
+    """
+    Data output dictionary is {project:{startup_chars_scenario_id:{
+    down_time_cutoff_hours:
+    startup_plus_ramp_up_rate}}}
+    :param io:
+    :param c:
+    :param subscenario_input:
+    :param data_input:
+    :return:
+    """
+
+    project_su_chars = OrderedDict()
+    project_su_scenarios = OrderedDict()
+
+    for i in subscenario_input.index:
+        sc_id = int(subscenario_input['startup_chars_scenario_id'][i])
+        sc_name = subscenario_input['name'][i]
+        sc_description = subscenario_input['description'][i]
+
+        data_input_subscenario = data_input.loc[(data_input[
+                                                     'startup_chars_scenario_id'] == sc_id)]
+
+        for prj in data_input_subscenario['project'].unique():
+            project_su_scenarios[prj] = dict()
+            project_su_scenarios[prj][sc_id] = (sc_name, sc_description)
+
+            project_su_chars[prj] = dict()
+            project_su_chars[prj][sc_id] = dict()
+            project_su_chars_by_project = data_input_subscenario.loc[
+                data_input_subscenario['project'] == prj]
+
+            for dt_cutoff in project_su_chars_by_project[
+                'down_time_cutoff_hours'].to_list():
+                project_su_chars[prj][sc_id][dt_cutoff] = float(
+                    project_su_chars_by_project.loc[
+                        project_su_chars_by_project[
+                            'down_time_cutoff_hours'] == dt_cutoff,
+                        'startup_plus_ramp_up_rate'].iloc[0])
+
+    project_operational_chars.update_project_startup_chars(
+        io=io, c=c,
+        proj_opchar_names=project_su_scenarios,
+        proj_startup_chars=project_su_chars
+    )
