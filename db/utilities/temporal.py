@@ -15,9 +15,7 @@ from db.common_functions import spin_on_database_lock
 
 def insert_into_database(
         conn,
-        temporal_scenario_id,
-        scenario_name,
-        scenario_description,
+        subscenario_data,
         subproblems,
         subproblem_stages,
         periods,
@@ -28,9 +26,8 @@ def insert_into_database(
     """
 
     :param conn:
-    :param temporal_scenario_id:
-    :param scenario_name:
-    :param scenario_description:
+    :param subscenario_data: tuple, (temporal_scenario_id, scenario_name,
+        scenario_description)
     :param subproblems: list of tuples (subscenario_id,
         subproblem_id)
     :param subproblem_stages: list of tuples (subscenario_id,
@@ -44,16 +41,13 @@ def insert_into_database(
     c = conn.cursor()
 
     # Create subscenario
-    subscenario_data = [
-        (temporal_scenario_id, scenario_name, scenario_description)
-    ]
     subscenario_sql = """
         INSERT INTO subscenarios_temporal
         (temporal_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
     spin_on_database_lock(conn=conn, cursor=c, sql=subscenario_sql,
-                          data=subscenario_data)
+                          data=subscenario_data, many=False)
 
     # Subproblems
     subproblems_sql = """
@@ -298,9 +292,8 @@ def load_from_csvs(conn, subscenario_directory):
     # INSERT INTO THE DATABASE
     insert_into_database(
         conn=conn,
-        temporal_scenario_id=subscenario_id,
-        scenario_name=subscenario_name,
-        scenario_description=subscenario_description,
+        subscenario_data=(subscenario_id, subscenario_name,
+                          subscenario_description),
         subproblems=subproblems,
         subproblem_stages=subproblem_stages,
         periods=periods,
