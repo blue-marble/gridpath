@@ -32,7 +32,7 @@ def transmision_new_cost(
     subs_data = [(transmission_new_cost_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_transmission_new_cost
+        INSERT OR IGNORE INTO subscenarios_transmission_new_cost
         (transmission_new_cost_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -50,7 +50,7 @@ def transmision_new_cost(
                  tx_line_period_lifetimes_costs[tx_line][period][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_transmission_new_cost
+        INSERT OR IGNORE INTO inputs_transmission_new_cost
         (transmission_new_cost_scenario_id,
         transmission_line, vintage, tx_lifetime_yrs,
         tx_annualized_real_cost_per_mw_yr)

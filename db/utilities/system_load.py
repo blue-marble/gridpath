@@ -26,7 +26,7 @@ def insert_system_static_loads(
     # Subscenario
     subs_data = [(load_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_load
+        INSERT OR IGNORE INTO subscenarios_system_load
         (load_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -44,7 +44,7 @@ def insert_system_static_loads(
                         zone_stage_timepoint_static_loads[z][stage][tmp])
                 )
     inputs_sql = """
-        INSERT INTO inputs_system_load
+        INSERT OR IGNORE INTO inputs_system_load
         (load_scenario_id, load_zone, stage_id, timepoint, load_mw)
         VALUES (?, ?, ?, ?, ?);
         """

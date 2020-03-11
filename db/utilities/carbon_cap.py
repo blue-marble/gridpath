@@ -29,7 +29,7 @@ def insert_carbon_cap_targets(
     subs_data = [(carbon_cap_target_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_carbon_cap_targets
+        INSERT OR IGNORE INTO subscenarios_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -48,7 +48,7 @@ def insert_carbon_cap_targets(
                          zone_period_targets[zone][period][subproblem][stage])
                     )
     inputs_sql = """
-        INSERT INTO inputs_system_carbon_cap_targets
+        INSERT OR IGNORE INTO inputs_system_carbon_cap_targets
         (carbon_cap_target_scenario_id, carbon_cap_zone, period,
         subproblem_id, stage_id,
         carbon_cap_mmt)

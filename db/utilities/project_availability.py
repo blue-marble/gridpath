@@ -29,7 +29,7 @@ def make_scenario_and_insert_types_and_ids(
     subs_data = [(project_availability_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_availability (
+        INSERT OR IGNORE INTO subscenarios_project_availability (
         project_availability_scenario_id, name,
         description) VALUES (?, ?, ?);
         """
@@ -47,7 +47,7 @@ def make_scenario_and_insert_types_and_ids(
         )
 
     inputs_sql = """
-        INSERT INTO inputs_project_availability_types
+        INSERT OR IGNORE INTO inputs_project_availability_types
         (project_availability_scenario_id, project, availability_type,
         exogenous_availability_scenario_id, 
         endogenous_availability_scenario_id)
@@ -79,7 +79,7 @@ def insert_project_availability_exogenous(
                  project_avail_scenarios[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_availability_exogenous
+        INSERT OR IGNORE INTO subscenarios_project_availability_exogenous
         (project, exogenous_availability_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -98,7 +98,7 @@ def insert_project_availability_exogenous(
                          )
                     )
     inputs_sql = """
-        INSERT INTO inputs_project_availability_exogenous
+        INSERT OR IGNORE INTO inputs_project_availability_exogenous
         (project, exogenous_availability_scenario_id, stage_id, timepoint, 
         availability_derate)
         VALUES (?, ?, ?, ?, ?);
@@ -133,7 +133,7 @@ def insert_project_availability_endogenous(
                  project_avail_scenarios[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_availability_endogenous
+        INSERT OR IGNORE INTO subscenarios_project_availability_endogenous
         (project, endogenous_availability_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -153,7 +153,7 @@ def insert_project_availability_endogenous(
                  project_avail[prj][subscenario_id][4])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_availability_endogenous
+        INSERT OR IGNORE INTO inputs_project_availability_endogenous
         (project, 
         endogenous_availability_scenario_id, 
         unavailable_hours_per_period,

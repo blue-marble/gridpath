@@ -25,7 +25,7 @@ def project_list(
 
     data = [(p,) for p in projects]
     sql = """
-        INSERT INTO inputs_project_all (project) VALUES (?);
+        INSERT OR IGNORE INTO inputs_project_all (project) VALUES (?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=sql, data=data)
 

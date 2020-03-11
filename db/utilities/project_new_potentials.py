@@ -32,7 +32,7 @@ def update_project_potentials(
     subs_data = [(project_new_potential_scenario_id, scenario_name,
             scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_new_potential
+        INSERT OR IGNORE INTO subscenarios_project_new_potential
          (project_new_potential_scenario_id, name, description)
          VALUES (?, ?, ?);
         """
@@ -50,7 +50,7 @@ def update_project_potentials(
                  project_period_potentials[prj][period][3])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_new_potential
+        INSERT OR IGNORE INTO inputs_project_new_potential
         (project_new_potential_scenario_id, project, period,
         minimum_cumulative_new_build_mw,
         minimum_cumulative_new_build_mwh,
@@ -84,7 +84,7 @@ def update_project_binary_build_sizes(
     subs_data = [(project_new_binary_build_size_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_new_binary_build_size
+        INSERT OR IGNORE INTO subscenarios_project_new_binary_build_size
          (project_new_binary_build_size_scenario_id, name, description)
          VALUES (?, ?, ?);
         """
@@ -100,7 +100,7 @@ def update_project_binary_build_sizes(
              project_new_binary_build_sizes[prj][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_new_binary_build_size
+        INSERT OR IGNORE INTO inputs_project_new_binary_build_size
         (project_new_binary_build_size_scenario_id, 
         project,
         binary_build_size_mw,

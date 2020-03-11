@@ -33,7 +33,7 @@ def transmision_operational_chars(
     subs_data = [(transmission_operational_chars_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_transmission_operational_chars
+        INSERT OR IGNORE INTO subscenarios_transmission_operational_chars
         (transmission_operational_chars_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -50,7 +50,7 @@ def transmision_operational_chars(
              tx_line_chars[tx_line][2])
         )
     inputs_sql = """
-        INSERT INTO inputs_transmission_operational_chars
+        INSERT OR IGNORE INTO inputs_transmission_operational_chars
         (transmission_operational_chars_scenario_id,
         transmission_line, operational_type, 
         tx_simple_loss_factor, reactance_ohms)

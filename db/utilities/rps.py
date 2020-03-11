@@ -27,7 +27,7 @@ def insert_rps_targets(
     subs_data = [(rps_target_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_rps_targets
+        INSERT OR IGNORE INTO subscenarios_system_rps_targets
         (rps_target_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -46,7 +46,7 @@ def insert_rps_targets(
                          zone_period_targets[zone][period][subproblem][stage])
                     )
     inputs_sql = """
-        INSERT INTO inputs_system_rps_targets
+        INSERT OR IGNORE INTO inputs_system_rps_targets
         (rps_target_scenario_id, rps_zone, period, subproblem_id, stage_id,
         rps_target_mwh)
         VALUES (?, ?, ?, ?, ?, ?);

@@ -256,7 +256,7 @@ def create_scenario_all_args(
         tuning_scenario_id,
         solver_options_id)
     sc_sql = """
-        INSERT INTO scenarios (
+        INSERT OR IGNORE INTO scenarios (
         scenario_name,
         of_fuels,
         of_multi_stage,
@@ -469,7 +469,7 @@ def create_scenario(io, c, column_values_dict):
                     column_values_data + (column_values_dict[column_name],)
 
     sql = """
-        INSERT INTO scenarios ({}) VALUES ({});
+        INSERT OR IGNORE INTO scenarios ({}) VALUES ({});
         """.format(column_names_sql_string, column_values_sql_string)
 
     spin_on_database_lock(conn=io, cursor=c, sql=sql, data=column_values_data,

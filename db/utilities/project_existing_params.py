@@ -32,7 +32,7 @@ def update_project_capacities(
     subs_data = [(project_existing_capacity_scenario_id, scenario_name,
             scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_existing_capacity
+        INSERT OR IGNORE INTO subscenarios_project_existing_capacity
          (project_existing_capacity_scenario_id, name, description)
          VALUES (?, ?, ?);
         """
@@ -49,7 +49,7 @@ def update_project_capacities(
                  else project_capacities[project][period][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_existing_capacity
+        INSERT OR IGNORE INTO inputs_project_existing_capacity
         (project_existing_capacity_scenario_id, project, period,
         existing_capacity_mw, existing_capacity_mwh)
         VALUES (?, ?, ?, ?, ?);
@@ -79,7 +79,7 @@ def update_project_fixed_costs(
     subs_data = [(project_existing_fixed_cost_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_existing_fixed_cost
+        INSERT OR IGNORE INTO subscenarios_project_existing_fixed_cost
          (project_existing_fixed_cost_scenario_id, name, description)
          VALUES (?, ?, ?);
         """
@@ -96,7 +96,7 @@ def update_project_fixed_costs(
                  else project_fixed_costs[project][period][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_existing_fixed_cost
+        INSERT OR IGNORE INTO inputs_project_existing_fixed_cost
         (project_existing_fixed_cost_scenario_id, project, period,
         annual_fixed_cost_per_kw_year, annual_fixed_cost_per_kwh_year)
         VALUES (?, ?, ?, ?, ?);

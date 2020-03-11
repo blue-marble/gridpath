@@ -33,7 +33,7 @@ def insert_transmission_capacities(
     subs_data = [(transmission_existing_capacity_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_transmission_existing_capacity
+        INSERT OR IGNORE INTO subscenarios_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id, name,
         description)
         VALUES (?, ?, ?);
@@ -51,7 +51,7 @@ def insert_transmission_capacities(
                  tx_line_period_capacities[tx_line][period][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_transmission_existing_capacity
+        INSERT OR IGNORE INTO inputs_transmission_existing_capacity
         (transmission_existing_capacity_scenario_id,
         transmission_line, period, min_mw, max_mw)
         VALUES (?, ?, ?, ?, ?);

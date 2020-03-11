@@ -38,7 +38,7 @@ def geography_load_zones(
     # Subscenarios
     subs_data = [(load_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_load_zones
+        INSERT OR IGNORE INTO subscenarios_geography_load_zones
            (load_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -52,7 +52,7 @@ def geography_load_zones(
                             zone_unserved_energy_penalties[lz][0],
                             zone_unserved_energy_penalties[lz][1]))
     inputs_sql = """
-        INSERT INTO inputs_geography_load_zones
+        INSERT OR IGNORE INTO inputs_geography_load_zones
         (load_zone_scenario_id, load_zone,
         allow_overgeneration, overgeneration_penalty_per_mw, 
         allow_unserved_energy, unserved_energy_penalty_per_mw)
@@ -89,7 +89,7 @@ def geography_lf_reserves_up_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_lf_reserves_up_bas
+        INSERT OR IGNORE INTO subscenarios_geography_lf_reserves_up_bas
            (lf_reserves_up_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -103,7 +103,7 @@ def geography_lf_reserves_up_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_lf_reserves_up_bas
+        INSERT OR IGNORE INTO inputs_geography_lf_reserves_up_bas
             (lf_reserves_up_ba_scenario_id, lf_reserves_up_ba, allow_violation,
             violation_penalty_per_mw, reserve_to_energy_adjustment)
             VALUES (?, ?, ?, ?, ?);
@@ -139,7 +139,7 @@ def geography_lf_reserves_down_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_lf_reserves_down_bas
+        INSERT OR IGNORE INTO subscenarios_geography_lf_reserves_down_bas
            (lf_reserves_down_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -153,7 +153,7 @@ def geography_lf_reserves_down_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_lf_reserves_down_bas
+        INSERT OR IGNORE INTO inputs_geography_lf_reserves_down_bas
         (lf_reserves_down_ba_scenario_id, lf_reserves_down_ba, allow_violation,
         violation_penalty_per_mw, reserve_to_energy_adjustment)
         VALUES (?, ?, ?, ?, ?);
@@ -189,7 +189,7 @@ def geography_regulation_up_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_regulation_up_bas
+        INSERT OR IGNORE INTO subscenarios_geography_regulation_up_bas
            (regulation_up_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -203,7 +203,7 @@ def geography_regulation_up_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_regulation_up_bas
+        INSERT OR IGNORE INTO inputs_geography_regulation_up_bas
         (regulation_up_ba_scenario_id, regulation_up_ba, allow_violation,
         violation_penalty_per_mw, reserve_to_energy_adjustment)
         VALUES (?, ?, ?, ?, ?);
@@ -239,7 +239,7 @@ def geography_regulation_down_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_regulation_down_bas
+        INSERT OR IGNORE INTO subscenarios_geography_regulation_down_bas
            (regulation_down_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -253,7 +253,7 @@ def geography_regulation_down_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_regulation_down_bas
+        INSERT OR IGNORE INTO inputs_geography_regulation_down_bas
         (regulation_down_ba_scenario_id, regulation_down_ba, allow_violation,
         violation_penalty_per_mw, reserve_to_energy_adjustment)
         VALUES (?, ?, ?, ?, ?);
@@ -289,7 +289,7 @@ def geography_spinning_reserves_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_spinning_reserves_bas
+        INSERT OR IGNORE INTO subscenarios_geography_spinning_reserves_bas
            (spinning_reserves_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -303,7 +303,7 @@ def geography_spinning_reserves_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_spinning_reserves_bas
+        INSERT OR IGNORE INTO inputs_geography_spinning_reserves_bas
         (spinning_reserves_ba_scenario_id, spinning_reserves_ba, allow_violation,
         violation_penalty_per_mw, reserve_to_energy_adjustment)
         VALUES (?, ?, ?, ?, ?);
@@ -339,7 +339,7 @@ def geography_frequency_response_bas(
     # Subscenarios
     subs_data = [(reserve_ba_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_frequency_response_bas
+        INSERT OR IGNORE INTO subscenarios_geography_frequency_response_bas
            (frequency_response_ba_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -353,7 +353,7 @@ def geography_frequency_response_bas(
              reserve_to_energy_adjustments[ba])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_frequency_response_bas
+        INSERT OR IGNORE INTO inputs_geography_frequency_response_bas
         (frequency_response_ba_scenario_id, frequency_response_ba,
         allow_violation, violation_penalty_per_mw, 
         reserve_to_energy_adjustment)
@@ -388,7 +388,7 @@ def geography_rps_zones(
     # Subscenarios
     subs_data = [(rps_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_rps_zones
+        INSERT OR IGNORE INTO subscenarios_geography_rps_zones
            (rps_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -402,7 +402,7 @@ def geography_rps_zones(
              zone_penalties[zone][0], zone_penalties[zone][1])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_rps_zones
+        INSERT OR IGNORE INTO inputs_geography_rps_zones
         (rps_zone_scenario_id, rps_zone, allow_violation, 
         violation_penalty_per_mwh)
         VALUES (?, ?, ?, ?);
@@ -435,7 +435,7 @@ def geography_carbon_cap_zones(
     # Subscenarios
     subs_data = [(carbon_cap_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_carbon_cap_zones
+        INSERT OR IGNORE INTO subscenarios_geography_carbon_cap_zones
            (carbon_cap_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -449,7 +449,7 @@ def geography_carbon_cap_zones(
              zone_penalties[zone][0], zone_penalties[zone][1])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_carbon_cap_zones
+        INSERT OR IGNORE INTO inputs_geography_carbon_cap_zones
         (carbon_cap_zone_scenario_id, carbon_cap_zone, allow_violation, 
         violation_penalty_per_mmt)
         VALUES (?, ?, ?, ?);
@@ -483,7 +483,7 @@ def geography_prm_zones(
     # Subscenarios
     subs_data = [(prm_zone_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_prm_zones
+        INSERT OR IGNORE INTO subscenarios_geography_prm_zones
            (prm_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -497,7 +497,7 @@ def geography_prm_zones(
              zone_penalties[zone][0], zone_penalties[zone][1])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_prm_zones
+        INSERT OR IGNORE INTO inputs_geography_prm_zones
         (prm_zone_scenario_id, prm_zone, allow_violation, 
         violation_penalty_per_mw)
         VALUES (?, ?, ?, ?);
@@ -532,7 +532,7 @@ def geography_local_capacity_zones(
     subs_data = [(local_capacity_zone_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_geography_local_capacity_zones
+        INSERT OR IGNORE INTO subscenarios_geography_local_capacity_zones
            (local_capacity_zone_scenario_id, name, description)
            VALUES (?, ?, ?);
         """
@@ -546,7 +546,7 @@ def geography_local_capacity_zones(
              zone_penalties[zone][0], zone_penalties[zone][1])
         )
     inputs_sql = """
-        INSERT INTO inputs_geography_local_capacity_zones
+        INSERT OR IGNORE INTO inputs_geography_local_capacity_zones
         (local_capacity_zone_scenario_id, local_capacity_zone, 
         allow_violation, violation_penalty_per_mw)
         VALUES (?, ?, ?, ?);

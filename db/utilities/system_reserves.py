@@ -31,7 +31,7 @@ def insert_system_reserves(
                   scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_{}
+        INSERT OR IGNORE INTO subscenarios_system_{}
         ({}_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type)
@@ -47,7 +47,7 @@ def insert_system_reserves(
                      ba_stage_timepoint_reserve_req[ba][stage][tmp])
                 )
     inputs_sql = """
-        INSERT INTO inputs_system_{}
+        INSERT OR IGNORE INTO inputs_system_{}
         ({}_scenario_id, {}_ba, stage_id, timepoint, {}_mw)
         VALUES (?, ?, ?, ?, ?);
         """.format(reserve_type, reserve_type, reserve_type, reserve_type)

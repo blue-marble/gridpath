@@ -20,7 +20,7 @@ def update_project_new_costs(
     # Subscenarios
     subs_data = [(project_new_cost_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_new_cost
+        INSERT OR IGNORE INTO subscenarios_project_new_cost
          (project_new_cost_scenario_id, name, description)
          VALUES (?, ?, ?);
         """
@@ -41,7 +41,7 @@ def update_project_new_costs(
                  else project_period_lifetimes_costs[project][period][2])
             )
     inputs_sql = """
-        INSERT INTO inputs_project_new_cost
+        INSERT OR IGNORE INTO inputs_project_new_cost
         (project_new_cost_scenario_id, project, period, lifetime_yrs,
         annualized_real_cost_per_kw_yr,
         annualized_real_cost_per_kwh_yr)

@@ -42,7 +42,7 @@ def project_elcc_chars(
         (project_elcc_chars_scenario_id, scenario_name, scenario_description)
     ]
     subs_sql = """
-        INSERT INTO subscenarios_project_elcc_chars
+        INSERT OR IGNORE INTO subscenarios_project_elcc_chars
         (project_elcc_chars_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -55,7 +55,7 @@ def project_elcc_chars(
             (project_elcc_chars_scenario_id, proj, proj_prm_type[proj])
         )
     inputs_sql = """
-        INSERT INTO inputs_project_elcc_chars 
+        INSERT OR IGNORE INTO inputs_project_elcc_chars 
         (project_elcc_chars_scenario_id, project, prm_type)
         VALUES (?, ?, ?);
         """
@@ -222,7 +222,7 @@ def deliverability_groups(
     subs_data = [(prm_energy_only_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_prm_energy_only
+        INSERT OR IGNORE INTO subscenarios_project_prm_energy_only
         (prm_energy_only_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -238,7 +238,7 @@ def deliverability_groups(
              deliv_group_params[group][2])
         )
     inputs_sql = """
-        INSERT INTO inputs_project_prm_energy_only
+        INSERT OR IGNORE INTO inputs_project_prm_energy_only
         (prm_energy_only_scenario_id,
         deliverability_group, 
         deliverability_group_no_cost_deliverable_capacity_mw,
@@ -272,7 +272,7 @@ def elcc_surface(
     subs_data = [(elcc_surface_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_elcc_surface
+        INSERT OR IGNORE INTO subscenarios_system_elcc_surface
         (elcc_surface_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -291,7 +291,7 @@ def elcc_surface(
                      zone_period_facet_intercepts[zone][period][facet])
                 )
     inputs_sql = """
-        INSERT INTO inputs_system_prm_zone_elcc_surface
+        INSERT OR IGNORE INTO inputs_system_prm_zone_elcc_surface
         (elcc_surface_scenario_id, prm_zone,
          period, facet, elcc_surface_intercept)
         VALUES (?, ?, ?, ?, ?);
@@ -308,7 +308,7 @@ def elcc_surface(
                      proj_period_facet_coeff[proj][period][facet])
                 )
     coef_sql = """
-        INSERT INTO inputs_project_elcc_surface 
+        INSERT OR IGNORE INTO inputs_project_elcc_surface 
         (elcc_surface_scenario_id, 
         project, period, facet, elcc_surface_coefficient)
         VALUES (?, ?, ?, ?, ?);
