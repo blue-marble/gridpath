@@ -1,5 +1,5 @@
 rps_target_scenario_id,rps_zone,period,subproblem_id,stage_id,rps_target_mwh,rps_zone_scenario_id
-_1,Zone_rps_1,2020,1,1,7000,
+1,Zone_rps_1,2020,1,1,7000,
 1,Zone_rps_1,2025,1,1,10000,
 1,Zone_rps_2,2020,1,1,1050,
 1,Zone_rps_2,2025,1,1,1050,

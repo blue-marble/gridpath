@@ -1,2 +1,2 @@
 rps_target_scenario_id,name,description,filename
-1,_base_rps_target,Base RPS target,system_rps_targets_1
+1,base_rps_target,Base RPS target,system_rps_targets_1
