@@ -38,8 +38,10 @@ path (db_location), and csvs folder path (csv_location. The defaults are the
 
 """
 
+import numpy as np
 import os
 import pandas as pd
+import sqlite3
 import sys
 from argparse import ArgumentParser
 
@@ -47,15 +49,17 @@ from argparse import ArgumentParser
 from db.common_functions import connect_to_database
 from db.create_database import get_database_file_path
 
-from db.csvs_to_db_utilities import csvs_read, load_temporal, load_geography, load_system_load, load_system_reserves, \
-    load_project_zones, load_project_list, load_project_operational_chars, load_project_availability, \
-    load_project_portfolios, load_project_existing_params, load_project_new_costs, load_project_new_potentials,\
-    load_project_local_capacity_chars, load_project_prm, \
-    load_transmission_capacities, load_transmission_zones, load_transmission_portfolios,\
-    load_transmission_hurdle_rates, load_transmission_operational_chars, load_transmission_new_cost,\
-    load_fuels, load_system_carbon_cap, load_system_local_capacity, load_system_prm, load_system_rps, \
-    load_scenarios, load_solver_options
-
+from db.utilities import temporal
+from db.csvs_to_db_utilities import csvs_read, \
+    load_geography, load_project_existing_params, load_project_new_costs, \
+    load_project_new_potentials, load_project_local_capacity_chars, \
+    load_project_prm, load_transmission_zones, load_transmission_portfolios, \
+    load_transmission_hurdle_rates, load_transmission_operational_chars, \
+    load_system_rps, load_scenarios, load_fuels, load_project_availability, \
+    load_system_reserves, load_project_zones, load_solver_options, \
+    load_system_carbon_cap, load_transmission_new_cost, load_project_list, \
+    load_project_operational_chars, load_system_prm, load_project_portfolios, \
+    load_transmission_capacities, load_system_load, load_system_local_capacity
 
 # Policy and reserves list
 policy_list = ['carbon_cap', 'prm', 'rps', 'local_capacity']
@@ -143,14 +147,18 @@ def load_csv_data(conn, csv_path, quiet):
     csv_data_master = pd.read_csv(os.path.join(folder_path, 'csv_data_master.csv'))
 
     #### LOAD TEMPORAL DATA ####
-    if csv_data_master.loc[csv_data_master['table'] == 'temporal', 'include'].iloc[0] != 1:
-        print("ERROR: temporal tables are required")
-    else:
-        data_folder_path = os.path.join(folder_path, csv_data_master.loc[
-            csv_data_master['table'] == 'temporal', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = \
-            csvs_read.csv_read_temporal_data(data_folder_path, quiet)
-        load_temporal.load_temporal(conn, c2, csv_subscenario_input, csv_data_input)
+    temporal_directory = os.path.join(folder_path, "temporal")
+    # Get list of subdirectories (which are the names of our subscenarios)
+    # Each temporal subscenario is a directory, with the scenario ID,
+    # underscore, and the scenario name as the name of the directory (already
+    # passed here).
+    temporal_subscenarios = sorted(next(os.walk(temporal_directory))[1])
+    for temporal_subscenario in temporal_subscenarios:
+        subscenario_directory = os.path.join(
+            temporal_directory, temporal_subscenario)
+        temporal.load_from_csvs(
+            conn=conn, subscenario_directory=subscenario_directory
+        )
 
     #### LOAD LOAD (DEMAND) DATA ####
 
@@ -298,7 +306,7 @@ def load_csv_data(conn, csv_path, quiet):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_endogenous', 'path'].iloc[0])
         (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
-        load_project_availability.load_project_availability_endogenous(conn,  c2, csv_subscenario_input, csv_data_input)
+        load_project_availability.load_project_availability_endogenous(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT HEAT RATE DATA ####
 
@@ -547,6 +555,12 @@ def main(args=None):
 
     db_path = get_database_file_path(parsed_arguments=parsed_args)
     csv_path = get_csv_folder_path(parsed_arguments=parsed_args)
+
+    # Register numpy types with sqlite, so that they are properly inserted
+    # from pandas dataframes
+    # https://stackoverflow.com/questions/38753737/inserting-numpy-integer-types-into-sqlite-with-python3
+    sqlite3.register_adapter(np.int64, lambda val: int(val))
+    sqlite3.register_adapter(np.float64, lambda val: float(val))
 
     # connect to database
     conn = connect_to_database(db_path=db_path)
