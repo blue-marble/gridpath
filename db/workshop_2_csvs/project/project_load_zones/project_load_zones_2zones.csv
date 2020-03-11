@@ -1,0 +1,13 @@
+project_load_zone_scenario_id,project,load_zone
+1,Coal_z1,Zone1
+1,Gas_CCGT_z1,Zone1
+1,Gas_CT_z1,Zone1
+1,Wind_z1,Zone1
+1,Hydro_z1,Zone1
+1,Gas_CCGT_new_z1,Zone1
+1,Solar_new_z1,Zone1
+1,Gas_CCGT_z2,Zone2
+1,Nuclear_z2,Zone2
+1,Battery_z2,Zone2
+1,Gas_CT_new_z2,Zone2
+1,Solar_new_z2,Zone2

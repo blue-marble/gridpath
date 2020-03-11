@@ -1,0 +1,2 @@
+frequency_response_ba_scenario_id,frequency_response_ba,allow_violation,violation_penalty_per_mw,reserve_to_energy_adjustment
+1,BA_frequency_response_1,0,50000,0.2

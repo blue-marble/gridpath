@@ -1,0 +1,9 @@
+project_portfolio_scenario_id,project,existing,new_build,capacity_type
+3,Coal_z1,,,gen_spec
+3,Gas_CCGT_z1,,,gen_spec
+3,Gas_CT_z1,,,gen_spec
+3,Wind_z1,,,gen_spec
+3,Hydro_z1,,,gen_spec
+3,Gas_CCGT_z2,,,gen_spec
+3,Nuclear_z2,,,gen_spec
+3,Battery_z2,,,stor_spec

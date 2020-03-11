@@ -1,0 +1,2 @@
+project_availability_scenario_id,name,description,filename
+1,default_project_availability,Base availability for PC and CE temporal setup; Coal_z1 is derated,project_availability_types_2periods
