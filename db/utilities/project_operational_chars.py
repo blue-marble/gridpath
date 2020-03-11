@@ -309,7 +309,8 @@ def update_project_startup_chars(
     tuple with the name and description of startup_char scenario
     :param proj_startup_chars: nested dictionary; top level key is the project,
     second-level key is the startup_chars_scenario_id, the third-level
-    key is the down time cutoff and the value is the startup ramp rate.
+    key is the down time cutoff and the value is a tuple with the startup ramp
+    rate and the startup cost.
 
     :return:
     """
@@ -336,14 +337,15 @@ def update_project_startup_chars(
             for dt_cutoff in list(proj_startup_chars[p][scenario].keys()):
                 inputs_data.append(
                     (p, scenario, dt_cutoff,
-                     proj_startup_chars[p][scenario][dt_cutoff]
+                     proj_startup_chars[p][scenario][dt_cutoff][0],
+                     proj_startup_chars[p][scenario][dt_cutoff][1]
                      )
                 )
     inputs_sql = """
         INSERT INTO inputs_project_startup_chars
         (project, startup_chars_scenario_id, 
-        down_time_cutoff_hours, startup_plus_ramp_up_rate)
-        VALUES (?, ?, ?, ?);
+        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw)
+        VALUES (?, ?, ?, ?, ?);
         """
     spin_on_database_lock(conn=io, cursor=c, sql=inputs_sql, data=inputs_data)
 

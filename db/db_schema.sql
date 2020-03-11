@@ -794,6 +794,7 @@ project VARCHAR(64),
 startup_chars_scenario_id INTEGER,
 down_time_cutoff_hours FLOAT,
 startup_plus_ramp_up_rate FLOAT,
+startup_cost_per_mw FLOAT,
 PRIMARY KEY (project, startup_chars_scenario_id, down_time_cutoff_hours),
 FOREIGN KEY (project, startup_chars_scenario_id) REFERENCES
 subscenarios_project_startup_chars (project, startup_chars_scenario_id)

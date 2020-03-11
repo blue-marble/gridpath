@@ -249,11 +249,15 @@ def load_project_startup_chars(io, c, subscenario_input, data_input):
 
             for dt_cutoff in project_su_chars_by_project[
                 'down_time_cutoff_hours'].to_list():
-                project_su_chars[prj][sc_id][dt_cutoff] = float(
-                    project_su_chars_by_project.loc[
-                        project_su_chars_by_project[
-                            'down_time_cutoff_hours'] == dt_cutoff,
-                        'startup_plus_ramp_up_rate'].iloc[0])
+                project_su_chars[prj][sc_id][dt_cutoff] = (
+                    float(project_su_chars_by_project.loc[
+                        project_su_chars_by_project['down_time_cutoff_hours']
+                        == dt_cutoff, 'startup_plus_ramp_up_rate'].iloc[0]),
+                    float(project_su_chars_by_project.loc[
+                        project_su_chars_by_project['down_time_cutoff_hours']
+                        == dt_cutoff, 'startup_cost_per_mw'].iloc[0])
+                )
+
 
     project_operational_chars.update_project_startup_chars(
         io=io, c=c,

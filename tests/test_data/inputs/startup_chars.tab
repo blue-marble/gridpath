@@ -1,3 +1,5 @@
-project	down_time_cutoff_hours	startup_plus_ramp_up_rate
-Disp_Binary_Commit	7	0.6
-Disp_Cont_Commit	7	0.6
+project	down_time_cutoff_hours	startup_plus_ramp_up_rate	startup_cost_per_mw
+Disp_Binary_Commit	7	0.6	1
+Disp_Cont_Commit	7	0.6	1
+Clunky_Old_Gen	0	1	1
+Clunky_Old_Gen2	0	1	1

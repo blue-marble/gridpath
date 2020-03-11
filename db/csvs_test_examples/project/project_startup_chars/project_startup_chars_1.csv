@@ -1,1 +1,1 @@
-project,startup_chars_scenario_id,down_time_cutoff_hours,startup_plus_ramp_up_rateGas_CCGT,1,4,0.002Gas_CCGT,1,8,0.001667
+project,startup_chars_scenario_id,down_time_cutoff_hours,startup_plus_ramp_up_rate,startup_cost_per_mwGas_CCGT,1,4,0.002,1Gas_CCGT,1,8,0.001667,2Gas_CCGT,2,0,1,2Coal,1,0,1,1Gas_CCGT_z2,1,0,1,2Coal_z2,1,0,1,1Gas_CCGT_enw_z2,1,0,1,2
