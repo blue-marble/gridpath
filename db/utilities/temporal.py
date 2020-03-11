@@ -139,7 +139,7 @@ def load_from_csvs(conn, subscenario_directory):
     month, hour_of_day. Columns must be specified in this order. The horizon
     information for each timepoint must be included as the ending columns of
     this file and must conform to the following structure: the header must
-    start with `horizon_` and then included the balancing type, e.g. day
+    start with `horizon_` and then include the balancing type, e.g. day
     balancing types will be `horizon_day`. The temporal script will populate
     the subscenarios, stages, timepoints, and horizon_timepoints tables based
     on the information in structure.csv.
