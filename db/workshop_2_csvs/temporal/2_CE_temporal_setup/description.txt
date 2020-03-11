@@ -1,1 +1,0 @@
-2 periods; 1 subproblem; 2 day-long horizons per period; 24 hours per horizon
