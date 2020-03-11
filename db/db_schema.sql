@@ -183,7 +183,6 @@ CREATE TABLE inputs_temporal_subproblems_stages (
 temporal_scenario_id INTEGER,
 subproblem_id INTEGER,
 stage_id INTEGER,
-stage_name VARCHAR(32),
 PRIMARY KEY (temporal_scenario_id, subproblem_id, stage_id),
 FOREIGN KEY (temporal_scenario_id) REFERENCES subscenarios_temporal
 (temporal_scenario_id),
