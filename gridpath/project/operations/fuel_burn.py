@@ -51,61 +51,25 @@ def add_model_components(m, d):
                                         "replace its carbon_cap_zone with "
                                         "'.' in projects.tab.".format(g))
 
-    # Get startup fuel burn if it applies
-    def startup_shutdown_rule(mod, g, tmp):
-        """
-        Track units started up from timepoint to timepoint; get appropriate
-        expression from the generator's operational module.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
-        """
-        gen_op_type = mod.operational_type[g]
-        return imported_operational_modules[gen_op_type]. \
-            startup_shutdown_rule(mod, g, tmp)
-
-    m.Startup_Shutdown_Expression_for_Fuel_Burn = Expression(
-        m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
-        rule=startup_shutdown_rule
-    )
-
-    m.Startup_Fuel_Burn_MMBtu = Var(
-        m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS, within=NonNegativeReals
-    )
-
     def startup_fuel_burn_rule(mod, g, tmp):
         """
-        Startup expression is positive when more units are on in the current
-        timepoint that were on in the previous timepoint. Startup_Fuel_Burn_MMBtu is
-        defined to be non-negative, so if Startup_Expression is 0 or negative
-        (i.e. no units started or units shut down since the previous timepoint),
-        Startup_Cost will be 0.
-        If horizon is circular, the last timepoint of the horizon is the
-        previous_timepoint for the first timepoint if the horizon;
-        if the horizon is linear, no previous_timepoint is defined for the first
-        timepoint of the horizon, so skip constraint.
-        :param mod:
-        :param g:
-        :param tmp:
-        :return:
+        Startup fuel burn is defined for some operational types while
+        they are zero for others. Get the appropriate expression for each
+        generator based on its operational type.
         """
-        if check_if_linear_horizon_first_timepoint(
-                mod=mod, tmp=tmp, balancing_type=mod.balancing_type_project[g]
-        ):
-            return Constraint.Skip
-        else:
-            return mod.Startup_Fuel_Burn_MMBtu[g, tmp] \
-                   >= mod.Startup_Shutdown_Expression_for_Fuel_Burn[g, tmp] \
-                   * mod.startup_fuel_mmbtu_per_mw[g]
+        gen_op_type = mod.operational_type[g]
+        return imported_operational_modules[gen_op_type].\
+            startup_fuel_burn_rule(mod, g, tmp)
 
-    m.Startup_Fuel_Burn_Constraint = \
-        Constraint(m.STARTUP_FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
-                   rule=startup_fuel_burn_rule)
-
+    # TODO: remove lambda mod, seems redundant (see e.g. startup fuel burn)?
     m.Operations_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
         rule=lambda mod, g, tmp: fuel_burn_rule(mod, g, tmp)
+    )
+
+    m.Startup_Fuel_Burn_MMBtu = Expression(
+        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        rule=startup_fuel_burn_rule
     )
 
     def total_fuel_burn_rule(mod, g, tmp):
@@ -117,8 +81,7 @@ def add_model_components(m, d):
         :return:
         """
         return mod.Operations_Fuel_Burn_MMBtu[g, tmp] \
-            + (mod.Startup_Fuel_Burn_MMBtu[g, tmp]
-               if g in mod.STARTUP_FUEL_PROJECTS else 0)
+            + mod.Startup_Fuel_Burn_MMBtu[g, tmp]
 
     m.Total_Fuel_Burn_MMBtu = Expression(
         m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS,
@@ -160,9 +123,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.technology[p],
                 m.fuel[p],
                 value(m.Operations_Fuel_Burn_MMBtu[p, tmp]),
-                value(m.Startup_Fuel_Burn_MMBtu[p, tmp])
-                if p in m.STARTUP_FUEL_PROJECTS
-                else None,
+                value(m.Startup_Fuel_Burn_MMBtu[p, tmp]),
                 value(m.Total_Fuel_Burn_MMBtu[p, tmp])
             ])
 

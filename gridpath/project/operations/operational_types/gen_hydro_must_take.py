@@ -490,15 +490,25 @@ def fuel_burn_rule(mod, g, tmp, error_message):
         raise ValueError(error_message)
 
 
-def startup_shutdown_rule(mod, g, tmp):
+def startup_cost_rule(mod, g, tmp):
     """
+    Since there is no commitment, there is no concept of starting up.
     """
-    raise ValueError(
-        "ERROR! gen_hydro_must_take projects should not incur startup/shutdown"
-        " costs." + "\n" +
-        "Check input data for generator '{}'".format(g) + "\n" +
-        "and change its startup/shutdown costs to '.' (no value)."
-    )
+    return 0
+
+
+def shutdown_cost_rule(mod, g, tmp):
+    """
+    Since there is no commitment, there is no concept of shutting down.
+    """
+    return 0
+
+
+def startup_fuel_burn_rule(mod, g, tmp):
+    """
+    Since there is no commitment, there is no concept of starting up.
+    """
+    return 0
 
 
 def power_delta_rule(mod, g, tmp):
