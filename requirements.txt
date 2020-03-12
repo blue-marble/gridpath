@@ -30,7 +30,7 @@ pandas==0.25.1
 Pillow==6.2.1
 ply==3.11
 pscript==0.7.1
-psutil==5.6.3
+psutil==5.6.6
 Pygments==2.4.2
 Pyomo==5.6.6
 pyparsing==2.4.2
