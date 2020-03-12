@@ -32,7 +32,7 @@ def prm_requirement(
     # Subscenarios
     subs_data = [(prm_requirement_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_prm_requirement
+        INSERT OR IGNORE INTO subscenarios_system_prm_requirement
         (prm_requirement_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -47,7 +47,7 @@ def prm_requirement(
                     zone_period_requirement[zone][period])
             )
     inputs_sql = """
-        INSERT INTO inputs_system_prm_requirement
+        INSERT OR IGNORE INTO inputs_system_prm_requirement
         (prm_requirement_scenario_id, 
         prm_zone, period, prm_requirement_mw)
         VALUES (?, ?, ?, ?);

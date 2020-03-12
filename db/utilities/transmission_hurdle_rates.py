@@ -35,7 +35,7 @@ def insert_transmission_hurdle_rates(
     subs_data = [(transmission_hurdle_rate_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_transmission_hurdle_rates
+        INSERT OR IGNORE INTO subscenarios_transmission_hurdle_rates
             (transmission_hurdle_rate_scenario_id, name, description)
             VALUES (?, ?, ?);
         """
@@ -52,7 +52,7 @@ def insert_transmission_hurdle_rates(
                  tx_line_period_hurdle_rates[tx_line][period][1])
             )
     inputs_sql = """
-        INSERT INTO inputs_transmission_hurdle_rates
+        INSERT OR IGNORE INTO inputs_transmission_hurdle_rates
         (transmission_hurdle_rate_scenario_id,
         transmission_line, period,
         hurdle_rate_positive_direction_per_mwh,

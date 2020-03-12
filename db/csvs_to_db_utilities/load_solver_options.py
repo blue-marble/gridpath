@@ -27,7 +27,7 @@ def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
         )
 
         inputs_sql = """
-            INSERT INTO options_solver_values 
+            INSERT OR IGNORE INTO options_solver_values 
             (solver_options_id, solver, solver_option_name, solver_option_value) 
             VALUES (?, ?, ?, ?)
             """
@@ -42,7 +42,7 @@ def load_solver_options(io, c, solver_options_input, solver_descriptions_input):
         )
 
         inputs_sql = """
-            INSERT INTO options_solver_descriptions 
+            INSERT OR IGNORE INTO options_solver_descriptions 
             (solver_options_id, name, description) 
             VALUES (?, ?, ?)
             """

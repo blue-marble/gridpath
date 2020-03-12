@@ -42,7 +42,7 @@ def insert_into_database(
 
     # Create subscenario
     subscenario_sql = """
-        INSERT INTO subscenarios_temporal
+        INSERT OR IGNORE INTO subscenarios_temporal
         (temporal_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -51,7 +51,7 @@ def insert_into_database(
 
     # Subproblems
     subproblems_sql = """
-        INSERT INTO inputs_temporal_subproblems
+        INSERT OR IGNORE INTO inputs_temporal_subproblems
         (temporal_scenario_id, subproblem_id)
         VALUES (?, ?);
         """
@@ -62,7 +62,7 @@ def insert_into_database(
     # TODO: stage_name not currently included; decide whether to keep this
     #  column in the database and how to import data for it if we do want it
     stages_sql = """
-        INSERT INTO inputs_temporal_subproblems_stages
+        INSERT OR IGNORE INTO inputs_temporal_subproblems_stages
         (temporal_scenario_id, subproblem_id, stage_id)
         VALUES (?, ?, ?);
         """
@@ -71,7 +71,7 @@ def insert_into_database(
 
     # Periods
     periods_sql = """
-        INSERT INTO inputs_temporal_periods
+        INSERT OR IGNORE INTO inputs_temporal_periods
         (temporal_scenario_id, period, discount_factor, 
         number_years_represented)
         VALUES (?, ?, ?, ?);
@@ -82,7 +82,7 @@ def insert_into_database(
     # Horizons
     # TODO: what to do with the period column
     horizons_sql = """
-        INSERT INTO inputs_temporal_horizons
+        INSERT OR IGNORE INTO inputs_temporal_horizons
         (temporal_scenario_id, subproblem_id, balancing_type_horizon, horizon, 
         boundary)
         VALUES (?, ?, ?, ?, ?);
@@ -92,7 +92,7 @@ def insert_into_database(
 
     # Timepoints
     timepoints_sql = """
-        INSERT INTO inputs_temporal_timepoints
+        INSERT OR IGNORE INTO inputs_temporal_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint,
         period, number_of_hours_in_timepoint, timepoint_weight, 
         previous_stage_timepoint_map, 
@@ -105,7 +105,7 @@ def insert_into_database(
 
     # TIMEPOINT HORIZONS
     horizon_timepoints_sql = """
-        INSERT INTO inputs_temporal_horizon_timepoints
+        INSERT OR IGNORE INTO inputs_temporal_horizon_timepoints
         (temporal_scenario_id, subproblem_id, stage_id, timepoint, 
         balancing_type_horizon, horizon)
         VALUES (?, ?, ?, ?, ?, ?);
@@ -289,7 +289,7 @@ def load_from_csvs(conn, subscenario_directory):
         for x in hrz_tmp_df.to_records(index=False)
     ]
 
-    # INSERT INTO THE DATABASE
+    # INSERT OR IGNORE INTO THE DATABASE
     insert_into_database(
         conn=conn,
         subscenario_data=(subscenario_id, subscenario_name,

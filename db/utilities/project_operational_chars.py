@@ -26,7 +26,7 @@ def make_scenario_and_insert_all_projects(
     subs_data = [(project_operational_chars_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_operational_chars (
+        INSERT OR IGNORE INTO subscenarios_project_operational_chars (
         project_operational_chars_scenario_id, name,
         description) VALUES (?, ?, ?);
         """
@@ -38,7 +38,7 @@ def make_scenario_and_insert_all_projects(
     inputs_data = [(project_operational_chars_scenario_id, p[0])
                    for p in all_projects]
     inputs_sql = """
-        INSERT INTO inputs_project_operational_chars
+        INSERT OR IGNORE INTO inputs_project_operational_chars
         (project_operational_chars_scenario_id, project)
         VALUES (?, ?);
         """
@@ -159,7 +159,7 @@ def update_project_variable_profiles(
                  proj_profile_names[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_variable_generator_profiles
+        INSERT OR IGNORE INTO subscenarios_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -178,7 +178,7 @@ def update_project_variable_profiles(
                             proj_tmp_profiles[prj][scenario][stage][tmp])
                     )
     inputs_sql = """
-        INSERT INTO inputs_project_variable_generator_profiles
+        INSERT OR IGNORE INTO inputs_project_variable_generator_profiles
         (project, variable_generator_profile_scenario_id, stage_id,
         timepoint, cap_factor)
         VALUES (?, ?, ?, ?, ?);
@@ -215,7 +215,7 @@ def update_project_hydro_opchar(
                  proj_opchar_names[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_hydro_operational_chars
+        INSERT OR IGNORE INTO subscenarios_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -235,7 +235,7 @@ def update_project_hydro_opchar(
                          proj_horizon_chars[p][scenario][bt][h]["max"])
                     )
     inputs_sql = """
-        INSERT INTO inputs_project_hydro_operational_chars
+        INSERT OR IGNORE INTO inputs_project_hydro_operational_chars
         (project, hydro_operational_chars_scenario_id, 
         balancing_type_project, horizon, period, 
         average_power_fraction, min_power_fraction, max_power_fraction)
@@ -271,7 +271,7 @@ def update_project_hr_curves(
                  proj_opchar_names[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_heat_rate_curves
+        INSERT OR IGNORE INTO subscenarios_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -288,7 +288,7 @@ def update_project_hr_curves(
                      proj_hr_chars[p][scenario][hr_curve_point][1])
                 )
     inputs_sql = """
-        INSERT INTO inputs_project_heat_rate_curves
+        INSERT OR IGNORE INTO inputs_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, load_point_mw, 
         average_heat_rate_mmbtu_per_mwh)
         VALUES (?, ?, ?, ?);
@@ -323,7 +323,7 @@ def update_project_startup_chars(
                  proj_opchar_names[prj][scenario_id][1])
             )
     subs_sql = """
-        INSERT INTO subscenarios_project_startup_chars
+        INSERT OR IGNORE INTO subscenarios_project_startup_chars
         (project, startup_chars_scenario_id, name, description)
         VALUES (?, ?, ?, ?);
         """
@@ -340,7 +340,7 @@ def update_project_startup_chars(
                      )
                 )
     inputs_sql = """
-        INSERT INTO inputs_project_startup_chars
+        INSERT OR IGNORE INTO inputs_project_startup_chars
         (project, startup_chars_scenario_id, 
         down_time_cutoff_hours, startup_plus_ramp_up_rate)
         VALUES (?, ?, ?, ?);

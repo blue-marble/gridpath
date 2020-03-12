@@ -28,7 +28,7 @@ def project_load_zones(
     subs_data = [(project_load_zone_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_load_zones
+        INSERT OR IGNORE INTO subscenarios_project_load_zones
         (project_load_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(
@@ -45,7 +45,7 @@ def project_load_zones(
         )
 
     inputs_sql = """
-        INSERT INTO inputs_project_load_zones
+        INSERT OR IGNORE INTO inputs_project_load_zones
         (project_load_zone_scenario_id, project, load_zone)
         VALUES (?, ?, ?);
         """
@@ -85,7 +85,7 @@ def project_reserve_bas(
     subs_data = [(project_reserve_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_{}_bas
+        INSERT OR IGNORE INTO subscenarios_project_{}_bas
         (project_{}_ba_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type)
@@ -98,7 +98,7 @@ def project_reserve_bas(
             (project_reserve_scenario_id, project, project_bas[project])
         )
     inputs_sql = """
-        INSERT INTO inputs_project_{}_bas
+        INSERT OR IGNORE INTO inputs_project_{}_bas
         (project_{}_ba_scenario_id, project, {}_ba)
         VALUES (?, ?, ?);
         """.format(reserve_type, reserve_type, reserve_type)
@@ -129,7 +129,7 @@ def project_policy_zones(
     subs_data = [(project_policy_zone_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_{}_zones
+        INSERT OR IGNORE INTO subscenarios_project_{}_zones
         (project_{}_zone_scenario_id, name, description)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type)
@@ -142,7 +142,7 @@ def project_policy_zones(
             (project_policy_zone_scenario_id, project, project_zones[project])
         )
     inputs_sql = """
-        INSERT INTO inputs_project_{}_zones
+        INSERT OR IGNORE INTO inputs_project_{}_zones
         (project_{}_zone_scenario_id, project, {}_zone)
         VALUES (?, ?, ?);
         """.format(policy_type, policy_type, policy_type)

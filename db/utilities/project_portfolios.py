@@ -19,7 +19,7 @@ def update_project_portfolios(
     subs_data = [(project_portfolio_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_portfolios
+        INSERT OR IGNORE INTO subscenarios_project_portfolios
         (project_portfolio_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -33,7 +33,7 @@ def update_project_portfolios(
              project_cap_types[project])
         )
     inputs_sql = """
-        INSERT INTO inputs_project_portfolios
+        INSERT OR IGNORE INTO inputs_project_portfolios
          (project_portfolio_scenario_id, project, capacity_type)
          VALUES (?, ?, ?);
         """

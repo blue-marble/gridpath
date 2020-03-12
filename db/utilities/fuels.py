@@ -30,7 +30,7 @@ def update_fuels(
     # Subscenarios
     subs_data = [(fuel_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_fuels (fuel_scenario_id, name,
+        INSERT OR IGNORE INTO subscenarios_project_fuels (fuel_scenario_id, name,
         description)
         VALUES (?, ?, ?);
         """
@@ -41,7 +41,7 @@ def update_fuels(
     for f in list(fuel_chars.keys()):
         data.append((fuel_scenario_id, f, fuel_chars[f]))
     sql = """
-        INSERT INTO inputs_project_fuels
+        INSERT OR IGNORE INTO inputs_project_fuels
         (fuel_scenario_id, fuel, co2_intensity_tons_per_mmbtu)
         VALUES (?, ?, ?);
         """
@@ -71,7 +71,7 @@ def update_fuel_prices(
     # Subscenario
     subs_data = [(fuel_price_scenario_id, scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_project_fuel_prices (
+        INSERT OR IGNORE INTO subscenarios_project_fuel_prices (
         fuel_price_scenario_id, 
         name,
         description)
@@ -87,7 +87,7 @@ def update_fuel_prices(
                 inputs_data.append((fuel_price_scenario_id, f, p, m,
                              fuel_month_prices[f][p][m]))
     inputs_sql = """
-        INSERT INTO inputs_project_fuel_prices
+        INSERT OR IGNORE INTO inputs_project_fuel_prices
         (fuel_price_scenario_id, fuel, period, month, 
         fuel_price_per_mmbtu)
         VALUES (?, ?, ?, ?, ?);

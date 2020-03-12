@@ -31,7 +31,7 @@ def insert_project_local_capacity_chars(
     subs_data = [(project_local_capacity_chars_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-          INSERT INTO subscenarios_project_local_capacity_chars
+          INSERT OR IGNORE INTO subscenarios_project_local_capacity_chars
            (project_local_capacity_chars_scenario_id, name, description)
            VALUES (?, ?, ?);
           """
@@ -47,7 +47,7 @@ def insert_project_local_capacity_chars(
              project_local_capacity_chars[prj][1])
         )
     inputs_sql = """
-          INSERT INTO inputs_project_local_capacity_chars
+          INSERT OR IGNORE INTO inputs_project_local_capacity_chars
           (project_local_capacity_chars_scenario_id, 
           project,
           local_capacity_fraction,

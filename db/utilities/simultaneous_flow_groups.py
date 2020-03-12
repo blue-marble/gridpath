@@ -34,7 +34,7 @@ def insert_transmission_simultaneous_flow_groups(
     subs_data = [(transmission_simultaneous_flow_limit_line_group_scenario_id,
                   scenario_name, scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_transmission_simultaneous_flow_limit_line_groups
+        INSERT OR IGNORE INTO subscenarios_transmission_simultaneous_flow_limit_line_groups
         (transmission_simultaneous_flow_limit_line_group_scenario_id, name,
         description)
         VALUES (?, ?, ?);
@@ -50,7 +50,7 @@ def insert_transmission_simultaneous_flow_groups(
                     group, tx_line[0], tx_line[1])
             )
     inputs_sql = """
-        INSERT INTO 
+        INSERT OR IGNORE INTO 
         inputs_transmission_simultaneous_flow_limit_line_groups
         (transmission_simultaneous_flow_limit_line_group_scenario_id,
         transmission_simultaneous_flow_limit,

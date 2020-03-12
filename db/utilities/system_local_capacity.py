@@ -30,7 +30,7 @@ def local_capacity_requirement(
     subs_data = [(local_capacity_requirement_scenario_id, scenario_name,
                   scenario_description)]
     subs_sql = """
-        INSERT INTO subscenarios_system_local_capacity_requirement
+        INSERT OR IGNORE INTO subscenarios_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id, name, description)
         VALUES (?, ?, ?);
         """
@@ -45,7 +45,7 @@ def local_capacity_requirement(
                     zone_period_requirement[zone][period])
             )
     inputs_sql = """
-        INSERT INTO inputs_system_local_capacity_requirement
+        INSERT OR IGNORE INTO inputs_system_local_capacity_requirement
         (local_capacity_requirement_scenario_id, 
         local_capacity_zone, period, local_capacity_requirement_mw)
         VALUES (?, ?, ?, ?);
