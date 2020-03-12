@@ -189,24 +189,21 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
         data_input_subscenario = data_input.loc[(data_input['heat_rate_curves_scenario_id'] == sc_id)]
 
         for prj in data_input_subscenario['project'].unique():
-            project_hr_scenarios[prj] = dict()
-            project_hr_scenarios[prj][sc_id] = (sc_name, sc_description)
+            project_hr_scenarios[(prj, sc_id)] = (sc_name, sc_description)
 
-            project_hr_chars[prj] = dict()
-            project_hr_chars[prj][sc_id] = dict()
+            project_hr_chars[(prj, sc_id)] = dict()
             project_hr_chars_by_project = data_input_subscenario.loc[data_input_subscenario['project'] == prj]
 
             for hr_curve_point in project_hr_chars_by_project['hr_curve_point'].to_list():
-                project_hr_chars[prj][sc_id][hr_curve_point] = dict()
-
-                project_hr_chars[prj][sc_id][hr_curve_point] = (float(project_hr_chars_by_project.loc[
-                                                                    project_hr_chars_by_project[
-                                                                        'hr_curve_point'] == hr_curve_point,
-                                                                    'load_point_mw'].iloc[0]),
-                                                                float(project_hr_chars_by_project.loc[
-                                                                    project_hr_chars_by_project[
-                                                                        'hr_curve_point'] == hr_curve_point,
-                                                                    'average_heat_rate_mmbtu_per_mwh'].iloc[0]))
+                project_hr_chars[(prj, sc_id)][hr_curve_point] = (float(
+                    project_hr_chars_by_project.loc[
+                        project_hr_chars_by_project[
+                            'hr_curve_point'] == hr_curve_point,
+                        'load_point_mw'].iloc[0]),
+                    float(project_hr_chars_by_project.loc[
+                        project_hr_chars_by_project[
+                            'hr_curve_point'] == hr_curve_point,
+                        'average_heat_rate_mmbtu_per_mwh'].iloc[0]))
 
     project_operational_chars.update_project_hr_curves(
         io=io, c=c,

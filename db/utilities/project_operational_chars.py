@@ -264,12 +264,11 @@ def update_project_hr_curves(
     """
     # Subscenarios
     subs_data = []
-    for prj in proj_opchar_names.keys():
-        for scenario_id in proj_opchar_names[prj].keys():
-            subs_data.append(
-                (prj, scenario_id, proj_opchar_names[prj][scenario_id][0],
-                 proj_opchar_names[prj][scenario_id][1])
-            )
+    for prj, scenario_id in proj_opchar_names.keys():
+        subs_data.append(
+            (prj, scenario_id, proj_opchar_names[(prj, scenario_id)][0],
+             proj_opchar_names[(prj, scenario_id)][1])
+        )
     subs_sql = """
         INSERT INTO subscenarios_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, name, description)
@@ -279,14 +278,13 @@ def update_project_hr_curves(
 
     # Insert data
     inputs_data = []
-    for p in list(proj_hr_chars.keys()):
-        for scenario in list(proj_hr_chars[p].keys()):
-            for hr_curve_point in list(proj_hr_chars[p][scenario].keys()):
-                inputs_data.append(
-                    (p, scenario,
-                     proj_hr_chars[p][scenario][hr_curve_point][0],
-                     proj_hr_chars[p][scenario][hr_curve_point][1])
-                )
+    for prj, scenario_id in list(proj_hr_chars.keys()):
+        for hr_curve_point in list(proj_hr_chars[(prj, scenario_id)].keys()):
+            inputs_data.append(
+                (prj, scenario_id,
+                 proj_hr_chars[(prj, scenario_id)][hr_curve_point][0],
+                 proj_hr_chars[(prj, scenario_id)][hr_curve_point][1])
+            )
     inputs_sql = """
         INSERT INTO inputs_project_heat_rate_curves
         (project, heat_rate_curves_scenario_id, load_point_mw, 
