@@ -71,6 +71,10 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
     # TODO: what hurdle rates should we include? load_zone_to, load_zone_from
     #   or both?
 
+    # Note: fuel cost and variable O&M cost are actually cost *rates* in $/hr
+    #  and should be multiplied by the timepoint duration to get the actual
+    #  cost.
+
     # System costs by scenario and period -- by source and total
     sql = """SELECT period,
         capacity_cost/1000000 as Capacity,
@@ -94,46 +98,16 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
 
         (SELECT scenario_id, period, 
         sum(fuel_cost * timepoint_weight * number_of_hours_in_timepoint) 
-        AS fuel_cost
-        FROM results_project_costs_operations_fuel
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone = ?
-        GROUP BY scenario_id, period) AS fuel_costs
-        USING (scenario_id, period)
-
-        LEFT JOIN
-
-        (SELECT scenario_id, period, 
+        AS fuel_cost,
         sum(variable_om_cost * timepoint_weight * number_of_hours_in_timepoint) 
-        AS variable_om_cost
-        FROM results_project_costs_operations_variable_om
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone = ?
-        GROUP BY scenario_id, period) AS variable_om_costs
-        USING (scenario_id, period)
-
-        LEFT JOIN
-
-        (SELECT scenario_id, period, 
-        sum(startup_cost * timepoint_weight) AS startup_cost
-        FROM results_project_costs_operations_startup
-        WHERE scenario_id = ?
-        AND stage_id = ?
-        AND load_zone = ?
-        GROUP BY scenario_id, period) AS startup_costs
-        USING (scenario_id, period)
-
-        LEFT JOIN
-
-        (SELECT scenario_id, period, 
+        AS variable_om_cost,
+        sum(startup_cost * timepoint_weight) AS startup_cost,
         sum(shutdown_cost * timepoint_weight) AS shutdown_cost
-        FROM results_project_costs_operations_shutdown
+        FROM results_project_costs_operations
         WHERE scenario_id = ?
         AND stage_id = ?
         AND load_zone = ?
-        GROUP BY scenario_id, period) AS shutdown_costs
+        GROUP BY scenario_id, period) AS operational_costs
         USING (scenario_id, period)
 
         LEFT JOIN
@@ -154,9 +128,6 @@ def get_plotting_data(conn, scenario_id, load_zone, stage, **kwargs):
         sql,
         con=conn,
         params=(scenario_id, stage, load_zone,
-                scenario_id, stage, load_zone,
-                scenario_id, stage, load_zone,
-                scenario_id, stage, load_zone,
                 scenario_id, stage, load_zone,
                 scenario_id, stage, load_zone)
     )

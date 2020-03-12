@@ -306,10 +306,7 @@ def process_results(db, c, subscenarios, quiet):
         "results_project_regulation_up",
         "results_project_regulation_down",
         "results_project_costs_capacity",
-        "results_project_costs_operations_variable_om",
-        "results_project_costs_operations_fuel",
-        "results_project_costs_operations_startup",
-        "results_project_costs_operations_shutdown",
+        "results_project_costs_operations",
         "results_project_carbon_emissions",
         "results_project_elcc_simple",
         "results_project_elcc_surface"

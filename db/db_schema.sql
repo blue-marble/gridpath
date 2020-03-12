@@ -2420,9 +2420,8 @@ annualized_capacity_cost FLOAT,
 PRIMARY KEY (scenario_id, project, period, subproblem_id, stage_id)
 );
 
-
-DROP TABLE IF EXISTS results_project_costs_operations_variable_om;
-CREATE TABLE results_project_costs_operations_variable_om (
+DROP TABLE IF EXISTS results_project_costs_operations;
+CREATE TABLE results_project_costs_operations (
 scenario_id INTEGER,
 project VARCHAR(64),
 period INTEGER,
@@ -2438,65 +2437,8 @@ rps_zone VARCHAR(32),
 carbon_cap_zone VARCHAR(32),
 technology VARCHAR(32),
 variable_om_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_costs_operations_fuel;
-CREATE TABLE results_project_costs_operations_fuel (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
 fuel_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_costs_operations_startup;
-CREATE TABLE results_project_costs_operations_startup (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
 startup_cost FLOAT,
-PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
-);
-
-DROP TABLE IF EXISTS results_project_costs_operations_shutdown;
-CREATE TABLE results_project_costs_operations_shutdown (
-scenario_id INTEGER,
-project VARCHAR(64),
-period INTEGER,
-subproblem_id INTEGER,
-stage_id INTEGER,
-balancing_type_project VARCHAR(64),
-horizon INTEGER,
-timepoint INTEGER,
-timepoint_weight FLOAT,
-number_of_hours_in_timepoint FLOAT,
-load_zone VARCHAR(32),
-rps_zone VARCHAR(32),
-carbon_cap_zone VARCHAR(32),
-technology VARCHAR(32),
 shutdown_cost FLOAT,
 PRIMARY KEY (scenario_id, project, subproblem_id, stage_id, timepoint)
 );
