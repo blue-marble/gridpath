@@ -98,7 +98,9 @@ class TestGenCommitLin(unittest.TestCase):
 
         # Set: GEN_COMMIT_LIN_STR_RMP_PRJS
         expected_gen_commit_lin_str_rmp_prjs = sorted([
-            "Disp_Cont_Commit"
+            "Disp_Cont_Commit",
+            "Clunky_Old_Gen",
+            "Clunky_Old_Gen2"
         ])
         actual_gen_commit_lin_str_rmp_prjs = sorted([
             prj for prj in instance.GEN_COMMIT_LIN_STR_RMP_PRJS
@@ -108,7 +110,9 @@ class TestGenCommitLin(unittest.TestCase):
 
         # Set: GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
         expected_gen_commit_lin_str_rmp_prjs_types = sorted([
-            ("Disp_Cont_Commit", 1.0)
+            ("Disp_Cont_Commit", 1.0),
+            ("Clunky_Old_Gen", 1.0),
+            ("Clunky_Old_Gen2", 1.0)
         ])
         actual_gen_commit_lin_str_rmp_prjs_types = sorted([
             (prj, s) for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
@@ -176,7 +180,10 @@ class TestGenCommitLin(unittest.TestCase):
                              actual_min_stable_fraction)
 
         # Param: gen_commit_lin_startup_plus_ramp_up_rate
-        expected_startup_plus_ramp_up_rate = {("Disp_Cont_Commit", 1.0): 0.6}
+        expected_startup_plus_ramp_up_rate = {("Disp_Cont_Commit", 1.0): 0.6,
+                                              ("Clunky_Old_Gen", 1.0): 1,
+                                              ("Clunky_Old_Gen2", 1.0): 1
+                                              }
         actual_startup_plus_ramp_up_rate = {
             (prj, s): instance.gen_commit_lin_startup_plus_ramp_up_rate[prj, s]
             for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
@@ -242,12 +249,13 @@ class TestGenCommitLin(unittest.TestCase):
 
         # Param: gen_commit_lin_startup_cost_per_mw
         expected_startup_costs = {
-            "Disp_Cont_Commit": 1,
-            "Clunky_Old_Gen": 1,
-            "Clunky_Old_Gen2": 1}
+            ("Disp_Cont_Commit", 1.0): 1,
+            ("Clunky_Old_Gen", 1.0): 1,
+            ("Clunky_Old_Gen2", 1.0): 1
+        }
         actual_startup_costs = {
-            prj: instance.gen_commit_lin_startup_cost_per_mw[prj]
-            for prj in instance.GEN_COMMIT_LIN
+            (prj, s): instance.gen_commit_lin_startup_cost_per_mw[prj, s]
+            for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES
         }
         self.assertDictEqual(expected_startup_costs,
                              actual_startup_costs)
@@ -256,7 +264,8 @@ class TestGenCommitLin(unittest.TestCase):
         expected_shutdown_costs = {
             "Disp_Cont_Commit": 1,
             "Clunky_Old_Gen": 1,
-            "Clunky_Old_Gen2": 1}
+            "Clunky_Old_Gen2": 1
+        }
         actual_shutdown_costs = {
             prj: instance.gen_commit_lin_shutdown_cost_per_mw[prj]
             for prj in instance.GEN_COMMIT_LIN
@@ -277,7 +286,9 @@ class TestGenCommitLin(unittest.TestCase):
                              actual_startup_fuel_mmbtu_per_mw)
 
         # Param: gen_commit_lin_down_time_cutoff_hours
-        expected_down_time_cutoff_hours = {("Disp_Cont_Commit", 1.0): 7}
+        expected_down_time_cutoff_hours = {("Disp_Cont_Commit", 1.0): 7,
+                                           ("Clunky_Old_Gen", 1.0): 0,
+                                           ("Clunky_Old_Gen2", 1.0): 0}
         actual_down_time_cutoff_hours = {
             (prj, s): instance.gen_commit_lin_down_time_cutoff_hours[prj, s]
             for prj, s in instance.GEN_COMMIT_LIN_STR_RMP_PRJS_TYPES

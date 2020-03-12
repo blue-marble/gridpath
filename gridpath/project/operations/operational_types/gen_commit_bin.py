@@ -174,11 +174,12 @@ def add_module_specific_components(m, d):
     | The project's minimum down time in hours.                               |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_startup_cost_per_mw`                            |
-    | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
+    | | *Defined over*: :code:`GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES`             |
     | | *Within*: :code:`NonNegativeReals`                                    |
     | | *Default*: :code:`0`                                                  |
     |                                                                         |
-    | The project's startup cost per MW of capacity that is started up.       |
+    | The project's startup cost per MW of capacity that is started up for a  |
+    | for a given startup type.                                               |
     +-------------------------------------------------------------------------+
     | | :code:`gen_commit_bin_shutdown_cost_per_mw`                           |
     | | *Defined over*: :code:`GEN_COMMIT_BIN`                                |
@@ -583,7 +584,7 @@ def add_module_specific_components(m, d):
     )
 
     m.gen_commit_bin_startup_cost_per_mw = Param(
-        m.GEN_COMMIT_BIN,
+        m.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES,
         within=NonNegativeReals,
         default=0
     )
@@ -1691,12 +1692,15 @@ def fuel_burn_rule(mod, g, tmp, error_message):
 def startup_cost_rule(mod, g, tmp):
     """
     Startup costs are applied in each timepoint based on the amount of capacity
-    (in MW) that is started up in that timepoint and the startup cost
-    parameter.
+    (in MW) that is started up in that timepoint for a given startup type and
+    the startup cost parameter for that startup type. We take the sum across
+    all startup types since only one startup type is active at the same time.
     """
-    return mod.GenCommitBin_Startup[g, tmp] \
-        * mod.GenCommitBin_Pmax_MW[g, tmp] \
-        * mod.gen_commit_bin_startup_cost_per_mw[g]
+    return sum(
+        mod.gen_commit_bin_startup_cost_per_mw[g, s]
+        * mod.GenCommitBin_Startup_Type[g, tmp, s]
+        for s in mod.GEN_COMMIT_BIN_STR_TYPES_BY_PRJ[g]
+    ) * mod.GenCommitBin_Pmax_MW[g, tmp]
 
 
 def shutdown_cost_rule(mod, g, tmp):
@@ -1764,7 +1768,6 @@ def load_module_specific_data(mod, data_portal,
     ramp_down_when_on_rate = dict()
     min_up_time = dict()
     min_down_time = dict()
-    startup_cost = dict()
     shutdown_cost = dict()
     startup_fuel = dict()
 
@@ -1779,7 +1782,6 @@ def load_module_specific_data(mod, data_portal,
                         "ramp_down_when_on_rate",
                         "min_up_time_hours",
                         "min_down_time_hours",
-                        "startup_cost_per_mw",
                         "shutdown_cost_per_mw",
                         "startup_fuel_mmbtu_per_mw"
                         ]
@@ -1861,18 +1863,7 @@ def load_module_specific_data(mod, data_portal,
                 pass
         data_portal.data()["gen_commit_bin_min_down_time_hrs"] = min_down_time
 
-    # Startup/shutdown costs are optional, will default to 0 if not specified
-    if "startup_cost_per_mw" in used_columns:
-        for row in zip(dynamic_components["project"],
-                       dynamic_components["operational_type"],
-                       dynamic_components["startup_cost_per_mw"]
-                       ):
-            if row[1] == "gen_commit_bin" and row[2] != ".":
-                startup_cost[row[0]] = float(row[2])
-            else:
-                pass
-        data_portal.data()["gen_commit_bin_startup_cost_per_mw"] = startup_cost
-
+    # Shutdown costs are optional, will default to 0 if not specified
     if "shutdown_cost_per_mw" in used_columns:
         for row in zip(dynamic_components["project"],
                        dynamic_components["operational_type"],
@@ -1915,12 +1906,14 @@ def load_module_specific_data(mod, data_portal,
     startup_ramp_projects_types = list()
     down_time_cutoff_hours_dict = dict()
     startup_plus_ramp_up_rate_dict = dict()
+    startup_cost_dict = dict()
 
     for i, row in df.iterrows():
         project = row["project"]
         startup_type_id = row["startup_type_id"]
         down_time_cutoff_hours = row["down_time_cutoff_hours"]
         startup_plus_ramp_up_rate = row["startup_plus_ramp_up_rate"]
+        startup_cost = row["startup_cost_per_mw"]
 
         if down_time_cutoff_hours != "." and startup_plus_ramp_up_rate != "." \
                 and project in gen_commit_bin_projects:
@@ -1930,6 +1923,8 @@ def load_module_specific_data(mod, data_portal,
                 float(down_time_cutoff_hours)
             startup_plus_ramp_up_rate_dict[(project, startup_type_id)] = \
                 float(startup_plus_ramp_up_rate)
+            startup_cost_dict[(project, startup_type_id)] = \
+                float(startup_cost)
 
     if startup_ramp_projects:
         data_portal.data()["GEN_COMMIT_BIN_STR_RMP_PRJS"] = \
@@ -1940,6 +1935,8 @@ def load_module_specific_data(mod, data_portal,
             down_time_cutoff_hours_dict
         data_portal.data()["gen_commit_bin_startup_plus_ramp_up_rate"] = \
             startup_plus_ramp_up_rate_dict
+        data_portal.data()["gen_commit_bin_startup_cost_per_mw"] = \
+            startup_cost_dict
 
 
 def export_module_specific_results(mod, d,
@@ -2028,7 +2025,7 @@ def get_module_specific_inputs_from_database(
     startup_chars = c.execute(
         """
         SELECT project, 
-        down_time_cutoff_hours, startup_plus_ramp_up_rate
+        down_time_cutoff_hours, startup_plus_ramp_up_rate, startup_cost_per_mw
         FROM inputs_project_portfolios
         INNER JOIN
         (SELECT project, startup_chars_scenario_id
@@ -2084,7 +2081,8 @@ def write_module_specific_model_inputs(
             # Write header
             writer.writerow(["project",
                              "down_time_cutoff_hours",
-                             "startup_plus_ramp_up_rate"])
+                             "startup_plus_ramp_up_rate",
+                             "startup_cost_per_mw"])
 
             for row in startup_chars:
                 replace_nulls = ["." if i is None else i for i in row]
@@ -2116,7 +2114,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
     projects = c1.execute(
         """SELECT project, operational_type,
         min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
+        shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
         shutdown_plus_ramp_down_rate,
@@ -2127,7 +2125,7 @@ def validate_module_specific_inputs(subscenarios, subproblem, stage, conn):
         INNER JOIN
         (SELECT project, operational_type,
         min_stable_level, unit_size_mw,
-        startup_cost_per_mw, shutdown_cost_per_mw,
+        shutdown_cost_per_mw,
         startup_fuel_mmbtu_per_mw,
         startup_plus_ramp_up_rate,
         shutdown_plus_ramp_down_rate,

@@ -232,10 +232,10 @@ class TestGenCommitBin(unittest.TestCase):
 
         # Param: gen_commit_bin_startup_cost_per_mw
         expected_startup_costs = {
-            "Disp_Binary_Commit": 1}
+            ("Disp_Binary_Commit", 1.0): 1}
         actual_startup_costs = {
-            prj: instance.gen_commit_bin_startup_cost_per_mw[prj]
-            for prj in instance.GEN_COMMIT_BIN
+            (prj, s): instance.gen_commit_bin_startup_cost_per_mw[prj, s]
+            for prj, s in instance.GEN_COMMIT_BIN_STR_RMP_PRJS_TYPES
         }
         self.assertDictEqual(expected_startup_costs,
                              actual_startup_costs)
