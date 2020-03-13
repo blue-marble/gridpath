@@ -293,7 +293,7 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
         return mod.AvlCont_Start_Unavailability[g, tmp] \
             - mod.AvlCont_Stop_Unavailability[g, tmp] \
             == mod.AvlCont_Unavailable[g, tmp] \
-            - mod.AvlCont_Unavailable[g, mod.previous_timepoint[
+            - mod.AvlCont_Unavailable[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
 
 

@@ -352,7 +352,7 @@ def energy_budget_rule(mod, g, h):
     return sum((mod.GenHydro_Provide_Power_MW[g, tmp] +
                 mod.GenHydro_Curtail_MW[g, tmp])
                * mod.number_of_hours_in_timepoint[tmp]
-               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[g], h]
                ) \
         == \
@@ -360,7 +360,7 @@ def energy_budget_rule(mod, g, h):
             * mod.Capacity_MW[g, mod.period[tmp]]
             * mod.Availability_Derate[g, tmp]
             * mod.number_of_hours_in_timepoint[tmp]
-            for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+            for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                 mod.balancing_type_project[g], h])
 
 
@@ -386,7 +386,7 @@ def ramp_up_rule(mod, g, tmp):
     # previous timepoint, skip the constraint (it won't bind)
     elif mod.gen_hydro_ramp_up_rate[g] * 60 \
             * mod.number_of_hours_in_timepoint[
-                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
         return Constraint.Skip
     else:
@@ -394,16 +394,16 @@ def ramp_up_rule(mod, g, tmp):
                 + mod.GenHydro_Curtail_MW[g, tmp]
                 + mod.GenHydro_Upwards_Reserves_MW[g, tmp]) \
             - (mod.GenHydro_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                + mod.GenHydro_Curtail_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                - mod.GenHydro_Downwards_Reserves_MW[
-                    g, mod.previous_timepoint[
+                    g, mod.prev_tmp[
                         tmp, mod.balancing_type_project[g]]]) \
             <= \
             mod.gen_hydro_ramp_up_rate[g] * 60 \
             * mod.number_of_hours_in_timepoint[
-                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
 
@@ -430,7 +430,7 @@ def ramp_down_rule(mod, g, tmp):
     # previous timepoint, skip the constraint (it won't bind)
     elif mod.gen_hydro_ramp_down_rate[g] * 60 \
         * mod.number_of_hours_in_timepoint[
-        mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+        mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
         return Constraint.Skip
     else:
@@ -438,15 +438,15 @@ def ramp_down_rule(mod, g, tmp):
                 + mod.GenHydro_Curtail_MW[g, tmp]
                 - mod.GenHydro_Downwards_Reserves_MW[g, tmp]) \
             - (mod.GenHydro_Provide_Power_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                + mod.GenHydro_Curtail_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                + mod.GenHydro_Upwards_Reserves_MW[
-                    g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+                    g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
             >= \
             - mod.gen_hydro_ramp_down_rate[g] * 60 \
             * mod.number_of_hours_in_timepoint[
-                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
 
@@ -539,9 +539,9 @@ def power_delta_rule(mod, g, tmp):
     else:
         return (mod.GenHydro_Provide_Power_MW[g, tmp] +
                 mod.GenHydro_Curtail_MW[g, tmp]) \
-               - (mod.GenHydro_Provide_Power_MW[g, mod.previous_timepoint[
+               - (mod.GenHydro_Provide_Power_MW[g, mod.prev_tmp[
                     tmp, mod.balancing_type_project[g]]]
-                  + mod.GenHydro_Curtail_MW[g, mod.previous_timepoint[
+                  + mod.GenHydro_Curtail_MW[g, mod.prev_tmp[
                     tmp, mod.balancing_type_project[g]]])
 
 

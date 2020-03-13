@@ -61,10 +61,10 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
         # The first possible relevant timepoint is the previous timepoint,
         # so we'll check its duration (if it's longer than or equal to the
         # minimum up/down time, we'll break out of the loop immediately)
-        relevant_tmp = mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+        relevant_tmp = mod.prev_tmp[tmp, mod.balancing_type_project[g]]
         hours_from_tmp = \
             mod.number_of_hours_in_timepoint[
-                mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
         while hours_from_tmp < min_time:
             # If we haven't exceed the minimum up/down time yet, this timepoint
@@ -80,7 +80,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             ] \
                     == "linear" \
                     and relevant_tmp == \
-                    mod.first_horizon_timepoint[
+                    mod.first_hrz_tmp[
                         mod.balancing_type_project[g],
                         mod.horizon[tmp, mod.balancing_type_project[g]]
                     ]:
@@ -102,11 +102,11 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             else:
                 hours_from_tmp += \
                     mod.number_of_hours_in_timepoint[
-                        mod.previous_timepoint[
+                        mod.prev_tmp[
                             relevant_tmp, mod.balancing_type_project[g]
                         ]
                     ]
-                relevant_tmp = mod.previous_timepoint[
+                relevant_tmp = mod.prev_tmp[
                     relevant_tmp, mod.balancing_type_project[g]]
 
     return relevant_tmps

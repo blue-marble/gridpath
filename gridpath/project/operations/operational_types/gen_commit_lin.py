@@ -956,7 +956,7 @@ def binary_logic_constraint_rule(mod, g, tmp):
     else:
        return mod.GenCommitLin_Commit[g, tmp] \
               - mod.GenCommitLin_Commit[
-                  g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+                  g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
               == mod.GenCommitLin_Startup[g, tmp] - mod.GenCommitLin_Shutdown[g, tmp]
 
 
@@ -1077,7 +1077,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
     ] == "linear"
             and
             relevant_tmps[-1]
-            == mod.first_horizon_timepoint[
+            == mod.first_hrz_tmp[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
             ]
@@ -1085,7 +1085,7 @@ def min_up_time_constraint_rule(mod, g, tmp):
             sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
             < mod.gen_commit_lin_min_up_time_hrs[g]
             and
-            tmp != mod.last_horizon_timepoint[
+            tmp != mod.last_hrz_tmp[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
             ]):
@@ -1143,7 +1143,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
     ] == "linear"
             and
             relevant_tmps[-1]
-            == mod.first_horizon_timepoint[
+            == mod.first_hrz_tmp[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
             ]
@@ -1151,7 +1151,7 @@ def min_down_time_constraint_rule(mod, g, tmp):
             sum(mod.number_of_hours_in_timepoint[t] for t in relevant_tmps)
             < mod.gen_commit_lin_min_down_time_hrs[g]
             and
-            tmp != mod.last_horizon_timepoint[
+            tmp != mod.last_hrz_tmp[
                 mod.balancing_type_project[g],
                 mod.horizon[tmp, mod.balancing_type_project[g]]
             ]):
@@ -1187,7 +1187,7 @@ def ramp_up_constraint_rule(mod, g, tmp):
     # won't bind, so skip
     elif (mod.gen_commit_lin_ramp_up_when_on_rate[g] * 60
           * mod.number_of_hours_in_timepoint[
-              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
         return Constraint.Skip
     else:
@@ -1196,12 +1196,12 @@ def ramp_up_constraint_rule(mod, g, tmp):
              + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp]) \
             - \
             (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
              - mod.GenCommitLin_Downwards_Reserves_MW[
-                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
             <= \
             mod.GenCommitLin_Ramp_Up_Rate_MW_Per_Tmp[
-                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def ramp_down_constraint_rule(mod, g, tmp):
@@ -1226,20 +1226,20 @@ def ramp_down_constraint_rule(mod, g, tmp):
     # won't bind, so skip
     elif (mod.gen_commit_lin_ramp_down_when_on_rate[g] * 60
           * mod.number_of_hours_in_timepoint[
-              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_commit_lin_min_stable_level_fraction[g])):
         return Constraint.Skip
     else:
         return \
             (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
              + mod.GenCommitLin_Upwards_Reserves_MW[
-                 g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]) \
+                 g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
             - \
             (mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
              - mod.GenCommitLin_Downwards_Reserves_MW[g, tmp]) \
             <= mod.GenCommitLin_Ramp_Down_Rate_MW_Per_Tmp[
-                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 # Startup Power
@@ -1365,13 +1365,13 @@ def ramp_during_startup_constraint_rule(mod, g, tmp, s):
         return \
             mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] - \
             mod.GenCommitLin_Provide_Power_Startup_MW[g,
-                          mod.previous_timepoint[tmp,
+                          mod.prev_tmp[tmp,
                                                  mod
                                                  .balancing_type_project[g]
                                                  ], s
                           ] \
             <= mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.previous_timepoint[tmp,
+                g, mod.prev_tmp[tmp,
                                           mod.balancing_type_project[g]], s
             ]
 
@@ -1397,7 +1397,7 @@ def increasing_startup_power_constraint_rule(mod, g, tmp, s):
         return \
             mod.GenCommitLin_Provide_Power_Startup_MW[g, tmp, s] - \
             mod.GenCommitLin_Provide_Power_Startup_MW[g,
-                          mod.previous_timepoint[tmp,
+                          mod.prev_tmp[tmp,
                                                  mod
                                                  .balancing_type_project[g]
                                                  ], s
@@ -1443,14 +1443,14 @@ def power_during_startup_constraint_rule(mod, g, tmp, s):
                 + mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp]
                 ) \
             + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp] \
-            - mod.GenCommitLin_Provide_Power_Startup_MW[g, mod.previous_timepoint[
+            - mod.GenCommitLin_Provide_Power_Startup_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]], s] \
             <= \
             (1 - mod.GenCommitLin_Startup_Type[g, tmp, s]) \
             * mod.GenCommitLin_Pmax_MW[g, tmp] \
             + mod.GenCommitLin_Startup[g, tmp] \
             * mod.GenCommitLin_Startup_Ramp_Rate_MW_Per_Tmp[
-                g, mod.previous_timepoint[tmp,
+                g, mod.prev_tmp[tmp,
                                           mod.balancing_type_project[g]], s
             ]
 
@@ -1489,11 +1489,11 @@ def ramp_during_shutdown_constraint_rule(mod, g, tmp):
     ):
         return Constraint.Skip
     else:
-        return mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.previous_timepoint[
+        return mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.prev_tmp[
             tmp, mod.balancing_type_project[g]]] \
             - mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp] \
             <= mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[
-                g, mod.previous_timepoint[tmp,
+                g, mod.prev_tmp[tmp,
                                           mod.balancing_type_project[g]]
             ]
 
@@ -1519,14 +1519,14 @@ def decreasing_shutdown_power_constraint_rule(mod, g, tmp):
         return \
             mod.GenCommitLin_Provide_Power_Shutdown_MW[g, tmp] - \
             mod.GenCommitLin_Provide_Power_Shutdown_MW[g,
-                          mod.next_timepoint[tmp,
+                          mod.next_tmp[tmp,
                                              mod
                                              .balancing_type_project[g]
                                              ]
                           ] \
             >= \
             - mod.GenCommitLin_Shutdown[g,
-                              mod.next_timepoint[tmp,
+                              mod.next_tmp[tmp,
                                                  mod
                                                  .balancing_type_project[g]
                                                  ]
@@ -1570,15 +1570,15 @@ def power_during_shutdown_constraint_rule(mod, g, tmp):
                 + mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g,
                                                                    tmp]) \
             + mod.GenCommitLin_Upwards_Reserves_MW[g, tmp] \
-            - mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.next_timepoint[
+            - mod.GenCommitLin_Provide_Power_Shutdown_MW[g, mod.next_tmp[
                 tmp, mod.balancing_type_project[g]]] \
             <= \
-            (1 - mod.GenCommitLin_Shutdown[g, mod.next_timepoint[
+            (1 - mod.GenCommitLin_Shutdown[g, mod.next_tmp[
                 tmp, mod.balancing_type_project[g]]]) \
             * mod.GenCommitLin_Pmax_MW[
-                g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
             + mod.GenCommitLin_Shutdown[
-                g, mod.next_timepoint[tmp, mod.balancing_type_project[g]]] \
+                g, mod.next_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.GenCommitLin_Shutdown_Ramp_Rate_MW_Per_Tmp[g, tmp]
 
 
@@ -1719,7 +1719,7 @@ def power_delta_rule(mod, g, tmp):
     else:
         return mod.GenCommitLin_Provide_Power_Above_Pmin_MW[g, tmp] \
             - mod.GenCommitLin_Provide_Power_Above_Pmin_MW[
-                g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
 
 def fix_commitment(mod, g, tmp):

@@ -294,7 +294,7 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
         return mod.AvlBin_Start_Unavailability[g, tmp] \
             - mod.AvlBin_Stop_Unavailability[g, tmp] \
             == mod.AvlBin_Unavailable[g, tmp] \
-            - mod.AvlBin_Unavailable[g, mod.previous_timepoint[
+            - mod.AvlBin_Unavailable[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
 
 

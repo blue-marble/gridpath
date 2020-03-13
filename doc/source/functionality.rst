@@ -166,29 +166,7 @@ annual emissions, energy, or cost. See :ref:`subproblems-sub-section-ref` and
 Balancing Types and Horizons
 ----------------------------
 
-GridPath organizes timepoints into *balancing types* and *horizons* that
-describe how *timepoints* are grouped together when making operational
-decisions, with some operational constraints enforced over the *horizon* for
-each *balancing type*, e.g. hydro budgets or storage energy balance. As a
-simple example, in the case of modeling a full year with 8760 timepoints, we
-could have three *balancing types*: a day, a month, and a year; there would
-then be 365 *horizons* of the *balancing type* 'day,' 12 *horizons* of the
-*balancing type* 'month,' and 1 *horizon* of the *balancing type* 'year.'
-Within each balancing types, horizons are modeled as independent from each
-other for operational purposes (i.e operational decisions made on one
-horizon do not affect those made on another horizon). Generator and storage
-resources in GridPath are also assigned *balancing types*: a hydro plant
-of the *balancing type* 'day' would have to meet an energy budget constraint
-on each of the 365 'day' *horizons* whereas one of the *balancing type*
-'year' would only have a single energy budget constraint grouping all 8760
-timepoints.
-
-Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
-the 'circular' approach, the last timepoint of the horizon is considered the
-previous timepoint for the first timepoint of the horizon (for the purposes
-of functionality such as ramp constraints or tracking storage state of
-charge). If the boundary is 'linear,' then we ignore constraints relating to
-the previous timepoint in the first timepoint of a horizon.
+.. automodule:: gridpath.temporal.operations.horizons
 
 Periods
 -------

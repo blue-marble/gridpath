@@ -2,10 +2,29 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.temporal.operations.horizons** module describes the
-operational grouping of timepoints in the optimization (i.e. which
-operational decisions are linked together and which are independent). Some
-operational constraints are enforced at the horizon level.
+GridPath organizes timepoints into *balancing types* and *horizons* that
+describe how *timepoints* are grouped together when making operational
+decisions, with some operational constraints enforced over the *horizon* for
+each *balancing type*, e.g. hydro budgets or storage energy balance. As a
+simple example, in the case of modeling a full year with 8760 timepoints, we
+could have three *balancing types*: a day, a month, and a year; there would
+then be 365 *horizons* of the *balancing type* 'day,' 12 *horizons* of the
+*balancing type* 'month,' and 1 *horizon* of the *balancing type* 'year.'
+Within each balancing types, horizons are modeled as independent from each
+other for operational purposes (i.e operational decisions made on one
+horizon do not affect those made on another horizon). Generator and storage
+resources in GridPath are also assigned *balancing types*: a hydro plant
+of the *balancing type* 'day' would have to meet an energy budget constraint
+on each of the 365 'day' *horizons* whereas one of the *balancing type*
+'year' would only have a single energy budget constraint grouping all 8760
+timepoints.
+
+Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
+the 'circular' approach, the last timepoint of the horizon is considered the
+previous timepoint for the first timepoint of the horizon (for the purposes
+of functionality such as ramp constraints or tracking storage state of
+charge). If the boundary is 'linear,' then we ignore constraints relating to
+the previous timepoint in the first timepoint of a horizon.
 """
 
 import csv
@@ -16,121 +35,211 @@ from pyomo.environ import Set, Param, PositiveIntegers
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding components to
-    :param d: the dynamic inputs class object; not used here
+    The following Pyomo model components are defined in this module:
 
-    The module adds the *BALANCING_TYPES* and *HORIZONS_BY_BALANCING_TYPE*
-    sets to the model formulation.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`BLN_TYPE_HRZS`                                                 |
+    |                                                                         |
+    | Two dimensional set of balancing types and their associated horizons.   |
+    | Balancing types are strings, e.g. year, month, week, day, whereas       |
+    | horizons must be non-negative integers.                                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`TMPS_BY_BLN_TYPE_HRZ`                                          |
+    | | *Defined over*: :code:`BLN_TYPE_HRZS`                                 |
+    |                                                                         |
+    | Ordered, indexed set that describes the the horizons associated with    |
+    | each balancing type. The timepoins within a horizon-balancing type      |
+    | are ordered.                                                            |
+    +-------------------------------------------------------------------------+
 
-    Balancing types are strings, e.g. year, month, week, day.
+    |
 
-    Horizons must be non-negative integers and each value of the
-    HORIZONS_BY_BALANCING_TYPE indexed set is ordered (i.e. the horizons
-    within a balancing type are ordered).
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`BLN_TYPES`                                                     |
+    |                                                                         |
+    | The list of all balancing types.                                        |
+    +-------------------------------------------------------------------------+
+    | | :code:`HRZS_BY_BLN_TYPE`                                              |
+    | | *Defined over*: :code:`BLN_TYPES`                                     |
+    |                                                                         |
+    | Ordered, indexed set that describes the horizons associated with        |
+    | each balancing type. The horizons within a balancing type are ordered.  |
+    +-------------------------------------------------------------------------+
 
-    We will designate the *BALANCING_TYPES* set with :math:`B` and
-    balancing type index with :math:`b`.
+    |
 
-    The *HORIZONS_BY_BALANCING_TYPE* set is designated with :math:`H_b` and
-    the horizons index will be :math:`h_b`.
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`horizon`                                                       |
+    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    |                                                                         |
+    | Describes the horizon that each timeoint belongs to for a given         |
+    | balancing type. Depending on the balancing type, timepoints can be      |
+    | grouped in different horizons.                                          |
+    +-------------------------------------------------------------------------+
+    | | :code:`boundary`                                                      |
+    | | *Defined over*: :code:`BLN_TYPE_HRZS`                                 |
+    | | *Within*: :code:`['circular', 'linear']`                              |
+    |                                                                         |
+    | The boundary for each horizon. If the boundary is 'circular,' then the  |
+    | last timepoint of the horizon is treated as the 'previous' timepoint    |
+    | for the first timepoint of the horizon (e.g. for ramping constraints    |
+    | or tracking storage state of charge).                                   |
+    +-------------------------------------------------------------------------+
 
-    Each horizon is associated with a *boundary* parameter.
+    |
 
-    The *boundary*\ :sub:`h`\ parameter can take one of two values:
-    'circular' or 'linear.' If the boundary is 'circular,' then the last
-    timepoint of the horizon is treated as the 'previous' timepoint for the
-    first timepoint of the horizon (e.g. for ramping constraints or tracking
-    storage state of charge).
+    +-------------------------------------------------------------------------+
+    | Derived Input Params                                                    |
+    +=========================================================================+
+    | | :code:`first_hrz_tmp`                                                 |
+    | | *Defined over*: :code:`BLN_TYPE_HRZS`                                 |
+    |                                                                         |
+    | Derived parameter describing the first timepoint in each horizon for a  |
+    | given balancing type. Note: this relies on :code:`TMPS_BY_BLN_TYPE_HRZ` |
+    | being an ordered (indexed) set.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`last_hrz_tmp`                                                  |
+    | | *Defined over*: :code:`BLN_TYPE_HRZS`                                 |
+    |                                                                         |
+    | Derived parameter describing the last timepoint in each horizon for a   |
+    | given balancing type. Note: this relies on :code:`TMPS_BY_BLN_TYPE_HRZ` |
+    | being an ordered (indexed) set.                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`prev_tmp`                                                      |
+    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    |                                                                         |
+    | Derived parameter describing the previous timepoint for each timepoint  |
+    | in each balancing type; depends on whether horizon is circular or       |
+    | linear and relies on having ordered :code:`TIMEPOINTS`.                 |
+    +-------------------------------------------------------------------------+
+    | | :code:`next_tmp`                                                      |
+    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    |                                                                         |
+    | Derived parameter describing the next timepoint for each timepoint in   |
+    | each balancing type; depends on whether horizon is circular or linear   |
+    | and relies on having ordered :code:`TIMEPOINTS`.                        |
+    +-------------------------------------------------------------------------+
 
-    This module organizes timepoints into balancing types and horizons. Each
-    timepoint is assigned a *horizon* parameter for each balancing type where
-    :math:`horizon_{t,b}\in H`, i.e. each timepoint occurs within a
-    specific horizon for each balancing type.
+
 
     """
-    m.BALANCING_TYPE_HORIZONS = Set(dimen=2, ordered=True)
-    # m.balancing_type_horizon = Param(m.HORIZONS)
-    m.boundary = Param(
-        m.BALANCING_TYPE_HORIZONS, within=['circular', 'linear']
+
+    # Sets
+    ###########################################################################
+
+    m.BLN_TYPE_HRZS = Set(
+        dimen=2, ordered=True
     )
 
-    def balancing_types_init(mod):
-        """
-        :param mod:
-        :return:
-        """
-        balancing_types = list()
-        for (b, h) in mod.BALANCING_TYPE_HORIZONS:
-            if b in balancing_types:
-                pass
-            else:
-                balancing_types.append(b)
-
-        return balancing_types
-
-    m.BALANCING_TYPES = Set(initialize=balancing_types_init)
-
-    def horizons_by_balancing_type_horizon_init(mod, bt):
-        """
-        :param mod:
-        :param bt:
-        :return:
-        """
-        horizons_of_balancing_type_horizon = []
-        for (b, h) in mod.BALANCING_TYPE_HORIZONS:
-            if b == bt:
-                horizons_of_balancing_type_horizon.append(h)
-
-        return horizons_of_balancing_type_horizon
-
-    m.HORIZONS_BY_BALANCING_TYPE = Set(
-        m.BALANCING_TYPES, within=PositiveIntegers,
-        initialize=horizons_by_balancing_type_horizon_init
+    m.TMPS_BY_BLN_TYPE_HRZ = Set(
+        m.BLN_TYPE_HRZS,
+        within=PositiveIntegers, ordered=True
     )
 
-    m.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON = Set(
-        m.BALANCING_TYPE_HORIZONS, within=PositiveIntegers, ordered=True
+    # Derived Sets
+    ###########################################################################
+
+    m.BLN_TYPES = Set(
+        initialize=balancing_types_init
     )
+
+    m.HRZS_BY_BLN_TYPE = Set(
+        m.BLN_TYPES,
+        within=PositiveIntegers,
+        initialize=horizons_by_balancing_type_init
+    )
+
+    # Required Params
+    ###########################################################################
 
     # TODO: can create here instead of upstream in data (i.e. we can get the
     #  balancing type index from the horizon of the timepoint)
-    m.horizon = Param(m.TIMEPOINTS, m.BALANCING_TYPES)
+    m.horizon = Param(
+        m.TIMEPOINTS, m.BLN_TYPES
+    )
 
-    # Determine the first and last timepoint of the balancing_type-horizon
-    # NOTE: it's an ordered set, so we get the first and last element
-    m.first_horizon_timepoint = Param(
-        m.BALANCING_TYPE_HORIZONS, within=PositiveIntegers,
+    m.boundary = Param(
+        m.BLN_TYPE_HRZS,
+        within=['circular', 'linear']
+    )
+
+    # Derived Params
+    ###########################################################################
+
+    m.first_hrz_tmp = Param(
+        m.BLN_TYPE_HRZS,
+        within=PositiveIntegers,
         initialize=lambda mod, b, h:
-        list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[b, h])[0]
+        list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[0]
     )
 
-    m.last_horizon_timepoint = Param(
-        m.BALANCING_TYPE_HORIZONS, within=PositiveIntegers,
+    m.last_hrz_tmp = Param(
+        m.BLN_TYPE_HRZS,
+        within=PositiveIntegers,
         initialize=lambda mod, b, h:
-        list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[b, h])[-1]
+        list(mod.TMPS_BY_BLN_TYPE_HRZ[b, h])[-1]
     )
 
-    # Determine the previous timepoint for each timepoint; depends on
-    # whether horizon is circular or linear and relies on having ordered
-    # TIMEPOINTS
-    m.previous_timepoint = Param(
-        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=previous_timepoint_init
+    m.prev_tmp = Param(
+        m.TIMEPOINTS, m.BLN_TYPES,
+        initialize=prev_tmp_init
     )
 
-    # Determine the next timepoint for each timepoint; depends on
-    # whether horizon is circular or linear and relies on having ordered
-    # TIMEPOINTS
-    m.next_timepoint = Param(
-        m.TIMEPOINTS, m.BALANCING_TYPES, initialize=next_timepoint_init
+    m.next_tmp = Param(
+        m.TIMEPOINTS, m.BLN_TYPES,
+        initialize=next_tmp_init
     )
 
 
-def previous_timepoint_init(mod, tmp, balancing_type_horizon):
+# Set Rules
+###############################################################################
+
+def balancing_types_init(mod):
     """
-    :param mod:
-    :param tmp:
-    :param balancing_type_horizon:
-    :return:
+    **Set Name**: BLN_TYPES
+
+    Derives the unique set of balancing types from the 2-dimensional
+    BLN_TYPE_HRZS set.
+    """
+    balancing_types = list()
+    for (b, h) in mod.BLN_TYPE_HRZS:
+        if b in balancing_types:
+            pass
+        else:
+            balancing_types.append(b)
+
+    return balancing_types
+
+
+def horizons_by_balancing_type_init(mod, bt):
+    """
+    **Set Name**: HRZS_BY_BLN_TYPE
+    **Defined Over**: BLN_TYPES
+
+    Re-arranges the 2-dimensional BLN_TYPE_HRZS set into a 1-dimensional set of
+    horizons by balancing type.
+    """
+    horizons_of_balancing_type = []
+    for (b, h) in mod.BLN_TYPE_HRZS:
+        if b == bt:
+            horizons_of_balancing_type.append(h)
+
+    return horizons_of_balancing_type
+
+
+# Param Rules
+###############################################################################
+
+def prev_tmp_init(mod, tmp, balancing_type_horizon):
+    """
+    **Param Name**: prev_tmp
+    **Defined Over**: TIMEPOINTS x BLN_TYPES
 
     Determine the previous timepoint for each timepoint. If the timepoint is
     the first timepoint of a horizon and the horizon boundary is circular,
@@ -141,45 +250,35 @@ def previous_timepoint_init(mod, tmp, balancing_type_horizon):
     one with an index of tmp-1.
     """
     prev_tmp_dict = {}
-    for (balancing_type, horizon) in mod.BALANCING_TYPE_HORIZONS:
-        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
-            balancing_type, horizon]:
-            if tmp == mod.first_horizon_timepoint[balancing_type, horizon]:
-                if mod.boundary[balancing_type, horizon] == "circular":
-                    prev_tmp_dict[tmp, balancing_type] = \
-                        mod.last_horizon_timepoint[
-                            balancing_type, horizon]
-                elif mod.boundary[balancing_type, horizon] == "linear":
-                    prev_tmp_dict[tmp, balancing_type] = None
+    for (bt, hrz) in mod.BLN_TYPE_HRZS:
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+            if tmp == mod.first_hrz_tmp[bt, hrz]:
+                if mod.boundary[bt, hrz] == "circular":
+                    prev_tmp_dict[tmp, bt] = mod.last_hrz_tmp[bt, hrz]
+                elif mod.boundary[bt, hrz] == "linear":
+                    prev_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for balancing type "
                         "horizon '{} {}'".
-                        format(
-                            mod.boundary[balancing_type, horizon],
-                            balancing_type, horizon)
+                        format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
                         "Horizon boundary must be either 'circular' or "
                         "'linear'"
                     )
             else:
-                prev_tmp_dict[tmp, balancing_type] = \
-                    list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
-                             balancing_type, horizon])[
-                        list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
-                                 balancing_type, horizon])
-                        .index(tmp) - 1
-                        ]
+                prev_tmp_dict[tmp, bt] = list(
+                    mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                )[list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) - 1]
 
     return prev_tmp_dict
 
 
-def next_timepoint_init(mod, tmp, balancing_type_horizon):
+def next_tmp_init(mod, tmp, balancing_type_horizon):
     """
-    :param mod:
-    :param tmp:
-    :param balancing_type_horizon:
-    :return:
+    **Param Name**: next_tmp
+    **Defined Over**: TIMEPOINTS x BLN_TYPES
+
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,
     then the next timepoint is the first timepoint of the respective
@@ -188,45 +287,43 @@ def next_timepoint_init(mod, tmp, balancing_type_horizon):
     other cases, the next timepoint is the one with an index of tmp+1.
     """
     next_tmp_dict = {}
-    for (balancing_type, horizon) in mod.BALANCING_TYPE_HORIZONS:
-        for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[balancing_type,
-                                                       horizon]:
-            if tmp == mod.last_horizon_timepoint[balancing_type, horizon]:
-                if mod.boundary[balancing_type, horizon] == "circular":
-                    next_tmp_dict[tmp, balancing_type] = \
-                        mod.first_horizon_timepoint[balancing_type, horizon]
-                elif mod.boundary[balancing_type, horizon] == "linear":
-                    next_tmp_dict[tmp, balancing_type] = None
+    for (bt, hrz) in mod.BLN_TYPE_HRZS:
+        for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]:
+            if tmp == mod.last_hrz_tmp[bt, hrz]:
+                if mod.boundary[bt, hrz] == "circular":
+                    next_tmp_dict[tmp, bt] = mod.first_hrz_tmp[bt, hrz]
+                elif mod.boundary[bt, hrz] == "linear":
+                    next_tmp_dict[tmp, bt] = None
                 else:
                     raise ValueError(
                         "Invalid boundary value '{}' for balancing "
                         "type horizon '{} {}'".
-                        format(mod.boundary[balancing_type, horizon], balancing_type, horizon)
+                        format(mod.boundary[bt, hrz], bt, hrz)
                         + "\n" +
                         "Horizon boundary must be either 'circular' or "
                         "'linear'"
                     )
             else:
-                next_tmp_dict[tmp, balancing_type] = \
-                    list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
-                             balancing_type, horizon])[
-                        list(mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
-                                 balancing_type, horizon])
-                        .index(tmp) + 1
-                        ]
+                next_tmp_dict[tmp, bt] = list(
+                    mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]
+                )[list(mod.TMPS_BY_BLN_TYPE_HRZ[bt, hrz]).index(tmp) + 1]
 
     return next_tmp_dict
 
 
+# Input-Output
+###############################################################################
+
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "horizons.tab"),
-                     select=("balancing_type_horizon", "horizon", "boundary"),
-                     index=m.BALANCING_TYPE_HORIZONS,
-                     param=m.boundary
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "horizons.tab"),
+        select=("balancing_type_horizon", "horizon", "boundary"),
+        index=m.BLN_TYPE_HRZS,
+        param=m.boundary
+    )
 
     with open(os.path.join(scenario_directory, subproblem, stage,
                            "inputs", "horizon_timepoints.tab")
@@ -243,12 +340,12 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
             horizon_by_tmp[int(row[2]), row[1]] = int(row[0])
 
-    data_portal.data()[
-        "TIMEPOINTS_ON_BALANCING_TYPE_HORIZON"
-    ] = tmps_on_horizon
-
+    data_portal.data()["TMPS_BY_BLN_TYPE_HRZ"] = tmps_on_horizon
     data_portal.data()["horizon"] = horizon_by_tmp
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -289,21 +386,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return horizons, timepoint_horizons
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # horizons = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
@@ -321,7 +403,8 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "horizons.tab"),
               "w", newline="") as horizons_tab_file:
-        hwriter = csv.writer(horizons_tab_file, delimiter="\t", lineterminator="\n")
+        hwriter = csv.writer(horizons_tab_file, delimiter="\t",
+                             lineterminator="\n")
 
         # Write header
         hwriter.writerow(["horizon", "balancing_type_horizon", "boundary"])
@@ -331,11 +414,30 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
     with open(os.path.join(inputs_directory, "horizon_timepoints.tab"), "w",
               newline="") as timepoint_horizons_tab_file:
-        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t", lineterminator="\n")
+        thwriter = csv.writer(timepoint_horizons_tab_file, delimiter="\t",
+                              lineterminator="\n")
 
         # Write header
         thwriter.writerow(["horizon", "balancing_type_horizon", "timepoint"])
 
         for row in timepoint_horizons:
             thwriter.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # horizons = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
 

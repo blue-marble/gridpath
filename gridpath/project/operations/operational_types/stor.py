@@ -332,16 +332,16 @@ def energy_tracking_rule(mod, s, tmp):
         return \
             mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
             == mod.Stor_Starting_Energy_in_Storage_MWh[
-                s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             + mod.Stor_Charge_MW[
-                  s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             * mod.stor_charging_efficiency[s] \
             - mod.Stor_Discharge_MW[
-                  s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             / mod.stor_discharging_efficiency[s]
 
 
@@ -555,9 +555,9 @@ def power_delta_rule(mod, g, tmp):
     else:
         return (mod.Stor_Discharge_MW[g, tmp] -
                 mod.Stor_Charge_MW[g, tmp]) \
-            - (mod.Stor_Discharge_MW[g, mod.previous_timepoint[
+            - (mod.Stor_Discharge_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
-               - mod.Stor_Charge_MW[g, mod.previous_timepoint[
+               - mod.Stor_Charge_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]])
 
 
