@@ -49,15 +49,15 @@ def add_model_components(m, d):
             power_delta_rule(mod, g, tmp)
 
     m.Ramp_Expression = Expression(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.PRJ_OPR_TMPS,
         rule=ramp_rule)
 
     # Apply costs
     m.Ramp_Up_Tuning_Cost = Var(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.PRJ_OPR_TMPS,
         within=NonNegativeReals)
     m.Ramp_Down_Tuning_Cost = Var(
-        m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.PRJ_OPR_TMPS,
         within=NonNegativeReals)
 
     def ramp_up_rule(mod, g, tmp):
@@ -84,7 +84,7 @@ def add_model_components(m, d):
                    * tuning_cost
 
     m.Ramp_Up_Tuning_Cost_Constraint = \
-        Constraint(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        Constraint(m.PRJ_OPR_TMPS,
                    rule=ramp_up_rule)
 
     def ramp_down_rule(mod, g, tmp):
@@ -111,7 +111,7 @@ def add_model_components(m, d):
                    * - tuning_cost
 
     m.Ramp_Down_Tuning_Cost_Constraint = \
-        Constraint(m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        Constraint(m.PRJ_OPR_TMPS,
                    rule=ramp_down_rule)
 
 

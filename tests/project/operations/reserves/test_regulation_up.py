@@ -114,13 +114,13 @@ class TestRegulationUpProvision(unittest.TestCase):
         )
         self.assertDictEqual(expected_reserves_zone, actual_reserves_zone)
 
-        # Set: REGULATION_UP_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: REGULATION_UP_PRJ_OPR_TMPS
         expected_prj_op_tmps = sorted(
             get_project_operational_timepoints(expected_projects)
         )
         actual_prj_op_tmps = sorted([
             (prj, tmp) for (prj, tmp) in
-            instance.REGULATION_UP_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.REGULATION_UP_PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_prj_op_tmps, actual_prj_op_tmps)
 

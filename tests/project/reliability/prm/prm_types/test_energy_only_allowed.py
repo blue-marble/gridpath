@@ -96,14 +96,14 @@ class TestProjPRMTypeFullyDeliverable(unittest.TestCase):
 
         self.assertListEqual(expected_projects, actual_projects)
 
-        # Set: EOA_PRM_PROJECT_OPERATIONAL_PERIODS
+        # Set: EOA_PRM_PRJ_OPR_PRDS
         expected_proj_period_set = sorted([
             ("Wind", 2020), ("Wind_z2", 2020),
             ("Wind", 2030), ("Wind_z2", 2030)
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
-            in instance.EOA_PRM_PROJECT_OPERATIONAL_PERIODS
+            in instance.EOA_PRM_PRJ_OPR_PRDS
         ])
 
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)

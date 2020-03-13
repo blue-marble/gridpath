@@ -147,13 +147,13 @@ class TestOperationsInit(unittest.TestCase):
         )
         self.assertDictEqual(expected_fuel, actual_fuel)
 
-        # Set: FUEL_PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: FUEL_PRJ_OPR_TMPS
         expected_tmps_by_fuel_project = sorted(
             get_project_operational_timepoints(expected_fuel_projects)
         )
         actual_tmps_by_fuel_project = sorted([
             (prj, tmp) for (prj, tmp) in
-            instance.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS
+            instance.FUEL_PRJ_OPR_TMPS
                                                  ])
         self.assertListEqual(expected_tmps_by_fuel_project,
                              actual_tmps_by_fuel_project)

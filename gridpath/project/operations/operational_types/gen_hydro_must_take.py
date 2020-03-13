@@ -169,9 +169,9 @@ def add_module_specific_components(m, d):
     m.GEN_HYDRO_MUST_TAKE_OPR_HRZS = Set(dimen=2)
 
     m.GEN_HYDRO_MUST_TAKE_OPR_TMPS = Set(
-        dimen=2, within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+        dimen=2, within=m.PRJ_OPR_TMPS,
         rule=lambda mod:
-        set((g, tmp) for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+        set((g, tmp) for (g, tmp) in mod.PRJ_OPR_TMPS
             if g in mod.GEN_HYDRO_MUST_TAKE)
     )
 

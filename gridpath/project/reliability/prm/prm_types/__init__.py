@@ -64,7 +64,7 @@ def add_model_components(m, d):
             elcc_eligible_capacity_rule(mod, g, p)
 
     m.ELCC_Eligible_Capacity_MW = Expression(
-        m.PRM_PROJECT_OPERATIONAL_PERIODS,
+        m.PRM_PRJ_OPR_PRDS,
         rule=elcc_eligible_capacity_rule
     )
 

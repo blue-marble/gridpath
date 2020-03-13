@@ -39,7 +39,7 @@ def add_module_specific_components(m, d):
     | Two-dimensional set of project-period combinations that helps describe  |
     | the project capacity available in a given period. This set is added to  |
     | the list of sets to join to get the final                               |
-    | :code:`PROJECT_OPERATIONAL_PERIODS` set defined in                      |
+    | :code:`PRJ_OPR_PRDS` set defined in                      |
     | **gridpath.project.capacity.capacity**.                                 |
     +-------------------------------------------------------------------------+
 
@@ -113,13 +113,13 @@ def add_module_specific_components(m, d):
     ###########################################################################
 
     # Add to list of sets we'll join to get the final
-    # PROJECT_OPERATIONAL_PERIODS set
+    # PRJ_OPR_PRDS set
     getattr(d, capacity_type_operational_period_sets).append(
         "STOR_SPEC_OPR_PRDS",
     )
 
     # Add to list of sets we'll join to get the final
-    # STORAGE_OPERATIONAL_PERIODS set
+    # STOR_OPR_PRDS set
     getattr(d, storage_only_capacity_type_operational_period_sets).append(
         "STOR_SPEC_OPR_PRDS",
     )

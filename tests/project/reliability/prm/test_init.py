@@ -185,7 +185,7 @@ class TestProjPRMInit(unittest.TestCase):
         self.assertDictEqual(expected_projects_by_zone,
                              actual_projects_by_zone)
 
-        # Set: PRM_PROJECT_OPERATIONAL_PERIODS
+        # Set: PRM_PRJ_OPR_PRDS
         expected_proj_period_set = sorted([
             ("Nuclear", 2020), ("Gas_CCGT", 2020), ("Coal", 2020),
             ("Gas_CT", 2020), ("Wind", 2020), ("Nuclear", 2030),
@@ -210,7 +210,7 @@ class TestProjPRMInit(unittest.TestCase):
         ])
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
-            in instance.PRM_PROJECT_OPERATIONAL_PERIODS
+            in instance.PRM_PRJ_OPR_PRDS
             ])
 
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)

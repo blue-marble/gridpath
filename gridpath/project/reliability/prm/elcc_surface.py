@@ -67,7 +67,7 @@ def add_model_components(m, d):
         :param f: 
         :return: 
         """
-        if (prj, p) in mod.PROJECT_OPERATIONAL_PERIODS:
+        if (prj, p) in mod.PRJ_OPR_PRDS:
             return mod.elcc_surface_coefficient[prj, p, f] \
                 * mod.ELCC_Eligible_Capacity_MW[prj, p]
         else:

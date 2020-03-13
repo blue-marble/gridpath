@@ -58,7 +58,7 @@ def add_model_components(m, d):
                 # This is redundant since since ELCC_Surface_Contribution_MW
                 # is 0 for non-operational periods, but keep here for
                 # extra safety
-                if period in mod.OPERATIONAL_PERIODS_BY_PROJECT[prj]
+                if period in mod.OPR_PRDS_BY_PRJ[prj]
                 ) \
             + mod.elcc_surface_intercept[prm_zone, period, facet]
 

@@ -40,7 +40,7 @@ def add_model_components(m, d):
                    * mod.hrs_in_tmp[tmp]
                    * mod.tmp_weight[tmp]
                    for (g, tmp) in
-                   mod.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS
+                   mod.CARBONACEOUS_PRJ_OPR_TMPS
                    if g in mod.CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE[z]
                    and tmp in mod.TMPS_IN_PRD[p]
                    )

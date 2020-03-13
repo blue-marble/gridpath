@@ -30,7 +30,7 @@ def add_model_components(m, d):
         Set(m.TMPS,
             initialize=lambda mod, tmp:
             mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS &
-                mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp])
+                mod.OPR_PRJS_IN_TMP[tmp])
 
     # Reserve provision
     def total_partial_frequency_response_rule(mod, ba, tmp):

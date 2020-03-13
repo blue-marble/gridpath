@@ -38,7 +38,7 @@ def add_model_components(m, d):
         return sum(
             mod.Local_Capacity_Contribution_MW[g, p]
             for g in mod.LOCAL_CAPACITY_PROJECTS_BY_LOCAL_CAPACITY_ZONE[z]
-            if (g, p) in mod.LOCAL_CAPACITY_PROJECT_OPERATIONAL_PERIODS
+            if (g, p) in mod.LOCAL_CAPACITY_PRJ_OPR_PRDS
         )
 
     m.Total_Local_Capacity_Contribution_MW = Expression(

@@ -36,7 +36,7 @@ def add_model_components(m, d):
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
             for (g, tmp)
-            in mod.PROJECT_OPERATIONAL_TIMEPOINTS
+            in mod.PRJ_OPR_TMPS
         )
 
     m.Total_Ramp_Tuning_Cost = Expression(

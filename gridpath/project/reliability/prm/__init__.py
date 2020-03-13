@@ -32,10 +32,10 @@ def add_model_components(m, d):
              if mod.prm_zone[p] == prm_z])
 
     # Get operational carbon cap projects - timepoints combinations
-    m.PRM_PROJECT_OPERATIONAL_PERIODS = Set(
-        within=m.PROJECT_OPERATIONAL_PERIODS,
+    m.PRM_PRJ_OPR_PRDS = Set(
+        within=m.PRJ_OPR_PRDS,
         rule=lambda mod: [(prj, p) for (prj, p) in
-                          mod.PROJECT_OPERATIONAL_PERIODS
+                          mod.PRJ_OPR_PRDS
                           if prj in mod.PRM_PROJECTS]
     )
 

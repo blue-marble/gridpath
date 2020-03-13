@@ -82,9 +82,9 @@ class TestCapacity(unittest.TestCase):
         )
         instance = m.create_instance(data)
 
-        # Set: PROJECT_OPERATIONAL_PERIODS
+        # Set: PRJ_OPR_PRDS
         # We're expecting the capacity_type modules to have added sets to be
-        # joined for the final PROJECT_OPERATIONAL_PERIODS
+        # joined for the final PRJ_OPR_PRDS
         # The capacity_type modules use the
         # existing_generation_period_params.tab,
         # new_build_generator_vintage_costs.tab,
@@ -167,20 +167,20 @@ class TestCapacity(unittest.TestCase):
         expected_proj_period_set = sorted(eg + ng + ngb + es + ns + nsb + dr)
         actual_proj_period_set = sorted([
             (prj, period) for (prj, period)
-            in instance.PROJECT_OPERATIONAL_PERIODS
+            in instance.PRJ_OPR_PRDS
         ])
         self.assertListEqual(expected_proj_period_set, actual_proj_period_set)
 
-        # Set: STORAGE_OPERATIONAL_PERIODS
+        # Set: STOR_OPR_PRDS
         expected_storage_proj_period_set = sorted(es + ns + nsb + dr)
         actual_storage_proj_period_set = sorted([
             (prj, period) for (prj, period)
-            in instance.STORAGE_OPERATIONAL_PERIODS
+            in instance.STOR_OPR_PRDS
         ])
         self.assertListEqual(expected_storage_proj_period_set,
                              actual_storage_proj_period_set)
 
-        # Set: OPERATIONAL_PERIODS_BY_PROJECT
+        # Set: OPR_PRDS_BY_PRJ
         op_per_by_proj_dict = dict()
         for proj_per in expected_proj_period_set:
             if proj_per[0] not in op_per_by_proj_dict.keys():
@@ -196,14 +196,14 @@ class TestCapacity(unittest.TestCase):
         actual_operational_periods_by_project = OrderedDict(
             sorted(
                 {prj: [period for period in
-                       instance.OPERATIONAL_PERIODS_BY_PROJECT[prj]
+                       instance.OPR_PRDS_BY_PRJ[prj]
                        ] for prj in instance.PROJECTS}.items()
             )
         )
         self.assertDictEqual(expected_operational_periods_by_project,
                              actual_operational_periods_by_project)
 
-        # Set: PROJECT_OPERATIONAL_TIMEPOINTS
+        # Set: PRJ_OPR_TMPS
         expected_operational_timepoints_by_project = list()
         timepoints_df = \
             pd.read_csv(
@@ -228,12 +228,12 @@ class TestCapacity(unittest.TestCase):
             expected_operational_timepoints_by_project
         )
         actual_operational_timepoints_by_project = sorted([
-            (g, tmp) for (g, tmp) in instance.PROJECT_OPERATIONAL_TIMEPOINTS
+            (g, tmp) for (g, tmp) in instance.PRJ_OPR_TMPS
         ])
         self.assertListEqual(expected_operational_timepoints_by_project,
                              actual_operational_timepoints_by_project)
 
-        # Set: OPERATIONAL_PROJECTS_IN_TIMEPOINT
+        # Set: OPR_PRJS_IN_TMP
         op_projects_by_period = dict()
         for proj in expected_operational_periods_by_project.keys():
             for period in expected_operational_periods_by_project[proj]:
@@ -256,7 +256,7 @@ class TestCapacity(unittest.TestCase):
 
         actual_operational_projects_in_tmp = OrderedDict(sorted({
             tmp: sorted([prj for prj
-                         in instance.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]])
+                         in instance.OPR_PRJS_IN_TMP[tmp]])
             for tmp in instance.TMPS
         }.items()
                                                                 )

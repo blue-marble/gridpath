@@ -36,10 +36,10 @@ def add_model_components(m, d):
              if mod.carbon_cap_zone[p] == co2_z])
 
     # Get operational carbon cap projects - timepoints combinations
-    m.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS = Set(
-        within=m.PROJECT_OPERATIONAL_TIMEPOINTS,
+    m.CARBONACEOUS_PRJ_OPR_TMPS = Set(
+        within=m.PRJ_OPR_TMPS,
         rule=lambda mod: [(p, tmp) for (p, tmp) in
-                          mod.PROJECT_OPERATIONAL_TIMEPOINTS
+                          mod.PRJ_OPR_TMPS
                           if p in mod.CARBONACEOUS_PROJECTS]
     )
 
@@ -57,7 +57,7 @@ def add_model_components(m, d):
             * mod.co2_intensity_tons_per_mmbtu[mod.fuel[g]]
 
     m.Carbon_Emissions_Tons = Expression(
-        m.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS,
+        m.CARBONACEOUS_PRJ_OPR_TMPS,
         rule=carbon_emissions_rule
     )
 
@@ -103,7 +103,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "timepoint_weight",
                          "number_of_hours_in_timepoint", "load_zone",
                          "carbon_emissions_tons"])
-        for (p, tmp) in m.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS:
+        for (p, tmp) in m.CARBONACEOUS_PRJ_OPR_TMPS:
             writer.writerow([
                 p,
                 m.period[tmp],

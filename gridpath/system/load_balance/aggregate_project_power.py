@@ -33,7 +33,7 @@ def add_model_components(m, d):
     #  zone intersected with all operational project sin the timepoint)
     def total_power_production_rule(mod, z, tmp):
         return sum(mod.Power_Provision_MW[g, tmp]
-                   for g in mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]
+                   for g in mod.OPR_PRJS_IN_TMP[tmp]
                    if mod.load_zone[g] == z)
     m.Power_Production_in_Zone_MW = \
         Expression(m.LOAD_ZONES, m.TMPS,
