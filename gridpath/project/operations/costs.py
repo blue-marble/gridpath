@@ -129,14 +129,11 @@ def add_model_components(m, d):
                                  rule=shutdown_cost_rule)
 
 
-# TODO: consolidate all these into one table? (VOM, fuel_cost, startup_cost,
-#  shutdown_cost). With new update, startup/shutdown cost table will be very
-#  sparse (output for every project rather than just startup/shutdown projs).
-# TODO: might want to clarify that fuel burn includes startup fuel burn (or
-#  keep them separate).
 def export_results(scenario_directory, subproblem, stage, m, d):
     """
-    Export operations results.
+    Export operations results. Note: fuel cost includes startup fuel as well
+    if applicable, in which case this is startup fuel cost is additional to
+    the startup costs reported here.
     :param scenario_directory:
     :param subproblem:
     :param stage:
@@ -148,12 +145,12 @@ def export_results(scenario_directory, subproblem, stage, m, d):
     Nothing
     """
     with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_variable_om.csv"), "w", newline="") as f:
+                           "costs_operations.csv"), "w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(
             ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone",
-             "technology", "variable_om_cost"]
+             "number_of_hours_in_timepoint", "load_zone", "technology",
+             "variable_om_cost", "fuel_cost", "startup_cost", "shutdown_cost"]
         )
         for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
             writer.writerow([
@@ -165,69 +162,9 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.number_of_hours_in_timepoint[tmp],
                 m.load_zone[p],
                 m.technology[p],
-                value(m.Variable_OM_Cost[p, tmp])
-            ])
-
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_fuel.csv"), "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone",
-             "technology", "fuel_cost"]
-        )
-        for (p, tmp) in m.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.Fuel_Cost[p, tmp])
-            ])
-
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_startup.csv"), "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone",
-             "technology", "startup_cost"]
-        )
-        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
-                m.load_zone[p],
-                m.technology[p],
-                value(m.Startup_Cost[p, tmp])
-            ])
-
-    with open(os.path.join(scenario_directory, subproblem, stage, "results",
-                           "costs_operations_shutdown.csv"), "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["project", "period", "horizon", "timepoint", "timepoint_weight",
-             "number_of_hours_in_timepoint", "load_zone",
-             "technology", "shutdown_cost"]
-        )
-        for (p, tmp) in m.PROJECT_OPERATIONAL_TIMEPOINTS:
-            writer.writerow([
-                p,
-                m.period[tmp],
-                m.horizon[tmp, m.balancing_type_project[p]],
-                tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
-                m.load_zone[p],
-                m.technology[p],
+                value(m.Variable_OM_Cost[p, tmp]),
+                value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PROJECTS else 0,
+                value(m.Startup_Cost[p, tmp]),
                 value(m.Shutdown_Cost[p, tmp])
             ])
 
@@ -247,18 +184,17 @@ def import_results_into_database(
     if not quiet:
         print("project costs operations")
 
-    # costs_operations_variable_om.csv
+    # costs_operations.csv
     # Delete prior results and create temporary import table for ordering
     setup_results_import(conn=db, cursor=c,
-                         table="results_project_costs_operations_variable_om",
+                         table="results_project_costs_operations",
                          scenario_id=scenario_id, subproblem=subproblem,
                          stage=stage)
 
     # Load results into the temporary table
     results = []
-    with open(os.path.join(results_directory,
-                           "costs_operations_variable_om.csv"), "r") as \
-            dispatch_file:
+    with open(os.path.join(results_directory, "costs_operations.csv"),
+              "r") as dispatch_file:
         reader = csv.reader(dispatch_file)
 
         next(reader)  # skip header
@@ -272,215 +208,43 @@ def import_results_into_database(
             load_zone = row[6]
             technology = row[7]
             variable_om_cost = row[8]
-
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, technology, variable_om_cost)
-            )
-
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_costs_operations_variable_om{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, variable_om_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_costs_operations_variable_om
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, variable_om_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, variable_om_cost
-        FROM temp_results_project_costs_operations_variable_om{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
-
-    # costs_operations_fuel.csv
-
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_costs_operations_fuel",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory,
-                           "costs_operations_fuel.csv"), "r") as \
-            dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            fuel_cost = row[8]
-            
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                    horizon, timepoint, timepoint_weight,
-                    number_of_hours_in_timepoint,
-                    load_zone, technology, fuel_cost)
-            )
-            
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_costs_operations_fuel{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, fuel_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_costs_operations_fuel
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, fuel_cost
-        FROM temp_results_project_costs_operations_fuel{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
-
-    # costs_operations_startup.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_costs_operations_startup",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory,
-                           "costs_operations_startup.csv"), "r") as \
-            dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            startup_cost = row[8]
-            
-            results.append(
-                (scenario_id, project, period, subproblem, stage,
-                 horizon, timepoint, timepoint_weight,
-                 number_of_hours_in_timepoint,
-                 load_zone, technology, startup_cost)
-            )
-    insert_temp_sql = """
-        INSERT INTO
-        temp_results_project_costs_operations_startup{}
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, startup_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
-
-    # Insert sorted results into permanent results table
-    insert_sql = """
-        INSERT INTO results_project_costs_operations_startup
-        (scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, startup_cost)
-        SELECT
-        scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, startup_cost
-        FROM temp_results_project_costs_operations_startup{}
-        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
-        """.format(scenario_id)
-    spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
-                          many=False)
-
-    # costs_operations_shutdown.csv
-    # Delete prior results and create temporary import table for ordering
-    setup_results_import(conn=db, cursor=c,
-                         table="results_project_costs_operations_shutdown",
-                         scenario_id=scenario_id, subproblem=subproblem,
-                         stage=stage)
-
-    # Load results into the temporary table
-    results = []
-    with open(os.path.join(results_directory,
-                           "costs_operations_shutdown.csv"), "r") as \
-            dispatch_file:
-        reader = csv.reader(dispatch_file)
-
-        next(reader)  # skip header
-        for row in reader:
-            project = row[0]
-            period = row[1]
-            horizon = row[2]
-            timepoint = row[3]
-            timepoint_weight = row[4]
-            number_of_hours_in_timepoint = row[5]
-            load_zone = row[6]
-            technology = row[7]
-            shutdown_cost = row[8]
+            fuel_cost = row[9]
+            startup_cost = row[10]
+            shutdown_cost = row[11]
 
             results.append(
                 (scenario_id, project, period, subproblem, stage,
                  horizon, timepoint, timepoint_weight,
                  number_of_hours_in_timepoint, load_zone, technology,
-                 shutdown_cost)
+                 variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
             )
+
     insert_temp_sql = """
-        INSERT INTO 
-        temp_results_project_costs_operations_shutdown{}
+        INSERT INTO
+        temp_results_project_costs_operations{}
         (scenario_id, project, period, subproblem_id, stage_id,
         horizon, timepoint, timepoint_weight,
-        number_of_hours_in_timepoint,
-        load_zone, technology, shutdown_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """.format(scenario_id)
+        number_of_hours_in_timepoint, load_zone, technology, 
+        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""".format(
+        scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_temp_sql, data=results)
 
     # Insert sorted results into permanent results table
     insert_sql = """
-        INSERT INTO results_project_costs_operations_shutdown
-        (scenario_id, project, period, subproblem_id, stage_id,
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, shutdown_cost)
+        INSERT INTO 
+        results_project_costs_operations
+        (scenario_id, project, period, subproblem_id, stage_id, 
+        horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, 
+        variable_om_cost, fuel_cost, startup_cost, shutdown_cost)
         SELECT
         scenario_id, project, period, subproblem_id, stage_id, 
-        horizon, timepoint, timepoint_weight, number_of_hours_in_timepoint,
-        load_zone, technology, shutdown_cost
-        FROM temp_results_project_costs_operations_shutdown{}
-         ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
+        horizon, timepoint, timepoint_weight, 
+        number_of_hours_in_timepoint, load_zone, technology, 
+        variable_om_cost, fuel_cost, startup_cost, shutdown_cost
+        FROM temp_results_project_costs_operations{}
+        ORDER BY scenario_id, project, subproblem_id, stage_id, timepoint;
         """.format(scenario_id)
     spin_on_database_lock(conn=db, cursor=c, sql=insert_sql, data=(),
                           many=False)
