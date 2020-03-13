@@ -2,9 +2,20 @@
 # Copyright 2017 Blue Marble Analytics LLC. All rights reserved.
 
 """
-The **gridpath.temporal.investment.periods** module describes the temporal
-unit over which investment and retirement variables are defined. The period
-setup determines what infrastructure is available in each timepoint.
+Each *timepoint* in a GridPath model also belongs to a *period* (e.g. a year),
+which describes when decisions to build or retire infrastructure are made. A
+*period* must be specified in both capacity-expansion and production-cost
+model. In a production-cost simulation context, we can use the period to
+exogenously change the amount of available capacity, but the *period*
+temporal unit is mostly used in the capacity-expansion approach, as it
+defines when capacity decisions are made and new infrastructure becomes
+available (or is retired). That information in turn feeds into the horizon-
+and timepoint-level operational constraints, i.e. once a generator is build,
+the optimization is allowed to operate it in subsequent periods (usually for
+the duration of the generators's lifetime). The *period* duration is
+flexible: e.g. capacity decisions can be made every month, every year, every
+10 years, etc. A discount factor can also be applied to weight costs
+differently depending on when they are incurred.
 """
 
 import csv
@@ -15,93 +26,168 @@ from pyomo.environ import Set, Param, NonNegativeReals, NonNegativeIntegers
 
 def add_model_components(m, d):
     """
-    :param m: the Pyomo abstract model object we are adding components to
-    :param d: the dynamic inputs class object; not used here
+    The following Pyomo model components are defined in this module:
 
-    The module adds the *PERIODS* set to the model formulation.
+    +-------------------------------------------------------------------------+
+    | Sets                                                                    |
+    +=========================================================================+
+    | | :code:`PERIODS`                                                       |
+    | | *Within*: :code:`NonNegativeIntegers`                                 |
+    |                                                                         |
+    | The list of all periods being modeled. Periods must be non-negative     |
+    | integers and the set is ordered.                                        |
+    +-------------------------------------------------------------------------+
 
-    Periods must be non-negative integers and the set is ordered.
+    |
 
-    We will designate the *PERIODS* set with :math:`P` and the timepoints
-    index will be :math:`p`.
+    +-------------------------------------------------------------------------+
+    | Derived Sets                                                            |
+    +=========================================================================+
+    | | :code:`TMPS_IN_PRD`                                                   |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    |                                                                         |
+    | Indexed set that describes the timepoints that occur in each period.    |
+    +-------------------------------------------------------------------------+
+    | | :code:`NOT_FIRST_PRDS`                                                |
+    | | *Within*: :code:`PERIODS`                                             |
+    |                                                                         |
+    | The list of periods excluding the first period. Relies on periods being |
+    | ordered.                                                                |
+    +-------------------------------------------------------------------------+
 
-    Each period is associated with a *discount_factor* parameter and a
-    *number_years_represented* parameter.
+    |
 
-    The *discount_factor* parameter determines the relative objective
-    function weight of investment and operational decisions made in each
-    period (i.e. future costs can be weighted less).
+    +-------------------------------------------------------------------------+
+    | Required Input Params                                                   |
+    +=========================================================================+
+    | | :code:`discount_factor`                                               |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Determines the relative objective function weight of investment and     |
+    | operational decisions made in each period (i.e. future costs can be     |
+    | weighted less).                                                         |
+    +-------------------------------------------------------------------------+
+    | | :code:`number_years_represented`                                      |
+    | | *Defined over*: :code:`PERIODS`                                       |
+    | | *Within*: :code:`NonNegativeReals`                                    |
+    |                                                                         |
+    | Accounts for the number of years that the periods is meant to           |
+    | represent. Investment cost inputs in GridPath are annualized, so they   |
+    | are multiplied by this parameter in the objective function.             |
+    +-------------------------------------------------------------------------+
+    | | :code:`period`                                                        |
+    | | *Defined over*: :code:`TMPS`                                          |
+    | | *Within*: :code:`PERIODS`                                             |
+    |                                                                         |
+    | Specifies the associated period for each timepoint.                     |
+    +-------------------------------------------------------------------------+
 
-    The *number_years_represented* parameter accounts for the number of
-    years that the periods is meant to represent. Investment cost inputs in
-    GridPath are annualized, so they are multiplied by this parameter in the
-    objective function.
+    |
 
-    This module organizes timepoints into periods. Each timepoint is
-    assigned a *period* parameter where :math:`period_t\in H`, i.e. each
-    timepoint occurs within a specific period.
-
-    We also derive the following set and parameters:
-
-    We use :math:`period_t` to create the indexed set
-    *TIMEPOINTS_IN_PERIOD* (:math:`\{T_p\}_{p\in P}`; :math:`T_p\subset T`)
-    that allows us to determine the subsets of timepoints :math:`T_p` that
-    occur in each period :math:`p`.
-
-    Finally, we determine which period is the first period
-    (:math:`first\_period\in P`), which periods are in the set
-    NOT_FIRST_PERIODS, i.e. the period(s) (if any) that is/are not the first
-    (:math:`N\_F\_P\subset P`), and which is the previous period for each
-    period (:math:`previous\_period_{n\_f\_p}\in P`).
+    +-------------------------------------------------------------------------+
+    | Derived Input Params                                                    |
+    +=========================================================================+
+    | | :code:`first_period`                                                  |
+    | | *Within*: :code:`PERIODS`                                             |
+    |                                                                         |
+    | The first period in the model. Relies on the PERIODS set being ordered. |
+    +-------------------------------------------------------------------------+
+    | | :code:`prev_period`                                                   |
+    | | *Defined over*: :code:`NOT_FIRST_PRDS`                                |
+    | | *Within*: :code:`PERIODS`                                             |
+    |                                                                         |
+    | Determines the previous period for each period other than the first     |
+    | period, which doesn't have a previous period.                           |
+    +-------------------------------------------------------------------------+
 
     """
-    m.PERIODS = Set(within=NonNegativeIntegers, ordered=True)
-    m.discount_factor = Param(m.PERIODS, within=NonNegativeReals)
 
-    # TODO: think this through and figure out appropriate documentation
-    #  wording; can we have periods that are smaller than an year,
-    #  considering how costs are defined ($/kW-yr)?
-    m.number_years_represented = Param(m.PERIODS, within=NonNegativeReals)
+    # Sets
+    ###########################################################################
 
-    m.period = Param(m.TMPS, within=m.PERIODS)
+    m.PERIODS = Set(
+        within=NonNegativeIntegers,
+        ordered=True
+    )
 
-    m.TMPS_IN_PERIOD = \
-        Set(m.PERIODS,
-            initialize=lambda mod, p:
-            set(tmp for tmp in mod.TMPS if mod.period[tmp] == p))
+    # Required Input Params
+    ###########################################################################
 
-    # Figure out which one is the first period; the PERIODS set is ordered
-    # so we can just use the list index
-    m.first_period = Param(within=m.PERIODS,
-                           initialize=lambda mod: list(mod.PERIODS)[0])
-    m.NOT_FIRST_PERIODS = Set(within=m.PERIODS,
-                              initialize=lambda mod: list(mod.PERIODS)[1:])
-    # Figure out the previous period for each period other than the first
-    # period, which doesn't have a previous period
-    m.previous_period = Param(m.NOT_FIRST_PERIODS,
-                              initialize=lambda mod, p:
-                              list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
-                              )
+    m.discount_factor = Param(
+        m.PERIODS,
+        within=NonNegativeReals
+    )
 
+    m.number_years_represented = Param(
+        m.PERIODS,
+        within=NonNegativeReals
+    )
+
+    # TODO: think numbers_years_represent through and figure out appropriate
+    #  documentation wording; can we have periods that are smaller than an
+    #  year, considering how costs are defined ($/kW-yr)?
+
+    m.period = Param(
+        m.TMPS,
+        within=m.PERIODS
+    )
+
+    # Derived Sets
+    ###########################################################################
+
+    m.TMPS_IN_PRD = Set(
+        m.PERIODS,
+        initialize=lambda mod, p:
+        set(tmp for tmp in mod.TMPS if mod.period[tmp] == p)
+    )
+
+    m.NOT_FIRST_PRDS = Set(
+        within=m.PERIODS,
+        initialize=lambda mod: list(mod.PERIODS)[1:]
+    )
+
+    # Derived Input Params
+    ###########################################################################
+
+    m.first_period = Param(
+        within=m.PERIODS,
+        initialize=lambda mod: list(mod.PERIODS)[0]
+    )
+
+    m.prev_period = Param(
+        m.NOT_FIRST_PRDS,
+        within=m.PERIODS,
+        initialize=lambda mod, p:
+        list(mod.PERIODS)[list(mod.PERIODS).index(p)-1]
+    )
+
+
+# Input-Output
+###############################################################################
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
     """
     """
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "periods.tab"),
-                     select=("PERIODS", "discount_factor",
-                             "number_years_represented"),
-                     index=m.PERIODS,
-                     param=(m.discount_factor, m.number_years_represented)
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "periods.tab"),
+        select=("period", "discount_factor", "number_years_represented"),
+        index=m.PERIODS,
+        param=(m.discount_factor, m.number_years_represented)
+    )
 
-    data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
-                                           "inputs", "timepoints.tab"),
-                     select=("timepoint", "period"),
-                     index=m.TMPS,
-                     param=m.period
-                     )
+    data_portal.load(
+        filename=os.path.join(scenario_directory, subproblem, stage,
+                              "inputs", "timepoints.tab"),
+        select=("timepoint", "period"),
+        index=m.TMPS,
+        param=m.period
+    )
 
+
+# Database
+###############################################################################
 
 def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     """
@@ -123,21 +209,6 @@ def get_inputs_from_database(subscenarios, subproblem, stage, conn):
     return periods
 
 
-def validate_inputs(subscenarios, subproblem, stage, conn):
-    """
-    Get inputs from database and validate the inputs
-    :param subscenarios: SubScenarios object with all subscenario info
-    :param subproblem:
-    :param stage:
-    :param conn: database connection
-    :return:
-    """
-    pass
-    # Validation to be added
-    # periods = get_inputs_from_database(
-    #     subscenarios, subproblem, stage, conn)
-
-
 def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     """
     Get inputs from database and write out the model input
@@ -153,13 +224,33 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
     periods = get_inputs_from_database(
         subscenarios, subproblem, stage, conn)
 
-    with open(os.path.join(inputs_directory, "periods.tab"), "w", newline="") as \
-            periods_tab_file:
-        writer = csv.writer(periods_tab_file, delimiter="\t", lineterminator="\n")
+    with open(os.path.join(inputs_directory, "periods.tab"),
+              "w", newline="") as periods_tab_file:
+        writer = csv.writer(periods_tab_file, delimiter="\t",
+                            lineterminator="\n")
 
         # Write header
         writer.writerow(
-            ["PERIODS", "discount_factor", "number_years_represented"])
+            ["period", "discount_factor", "number_years_represented"])
 
         for row in periods:
             writer.writerow(row)
+
+
+# Validation
+###############################################################################
+
+def validate_inputs(subscenarios, subproblem, stage, conn):
+    """
+    Get inputs from database and validate the inputs
+    :param subscenarios: SubScenarios object with all subscenario info
+    :param subproblem:
+    :param stage:
+    :param conn: database connection
+    :return:
+    """
+    pass
+    # Validation to be added
+    # periods = get_inputs_from_database(
+    #     subscenarios, subproblem, stage, conn)
+

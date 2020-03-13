@@ -173,7 +173,7 @@ def add_model_components(m, d):
             rule=lambda mod: [
                 (g, tmp) for g in mod.PROJECTS
                 for p in mod.OPERATIONAL_PERIODS_BY_PROJECT[g]
-                for tmp in mod.TMPS_IN_PERIOD[p]
+                for tmp in mod.TMPS_IN_PRD[p]
                 ]
             )
 

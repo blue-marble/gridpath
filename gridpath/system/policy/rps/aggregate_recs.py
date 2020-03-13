@@ -36,7 +36,7 @@ def add_model_components(m, d):
                 * mod.tmp_weight[tmp]
                 for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
                 if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                and tmp in mod.TMPS_IN_PERIOD[p]
+                and tmp in mod.TMPS_IN_PRD[p]
                 )
 
     m.Total_Delivered_RPS_Energy_MWh = \
@@ -59,7 +59,7 @@ def add_model_components(m, d):
                    * mod.tmp_weight[tmp]
                    for (g, tmp) in mod.RPS_PROJECT_OPERATIONAL_TIMEPOINTS
                    if g in mod.RPS_PROJECTS_BY_RPS_ZONE[z]
-                   and tmp in mod.TMPS_IN_PERIOD[p]
+                   and tmp in mod.TMPS_IN_PRD[p]
                    )
     # TODO: is this only needed for export and, if so, should it be created on
     # export?

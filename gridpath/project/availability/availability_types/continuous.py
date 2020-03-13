@@ -268,7 +268,7 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     return sum(
         mod.AvlCont_Unavailable[g, tmp]
         * mod.hrs_in_tmp[tmp]
-        for tmp in mod.TMPS_IN_PERIOD[p]
+        for tmp in mod.TMPS_IN_PRD[p]
     ) == mod.avl_cont_unavl_hrs_per_prd[g]
 
 

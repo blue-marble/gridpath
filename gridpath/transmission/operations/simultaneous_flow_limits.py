@@ -107,7 +107,7 @@ def add_model_components(m, d):
         rule=lambda mod:
         set((g, tmp)
             for (g, p) in mod.SIM_FLOW_LMT_PRDS
-            for tmp in mod.TMPS_IN_PERIOD[p])
+            for tmp in mod.TMPS_IN_PRD[p])
     )
 
     m.SIM_FLOW_LMTS = Set(

@@ -44,7 +44,7 @@ def add_model_components(m, d):
                    mod.CRB_TX_OPR_TMPS
                    if tx in
                    mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-                   and tmp in mod.TMPS_IN_PERIOD[p]
+                   and tmp in mod.TMPS_IN_PRD[p]
                    )
 
     m.Total_Carbon_Emission_Imports_Tons = Expression(
@@ -76,7 +76,7 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
                mod.CRB_TX_OPR_TMPS
                if tx in
                mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-               and tmp in mod.TMPS_IN_PERIOD[p]
+               and tmp in mod.TMPS_IN_PRD[p]
                )
 
 

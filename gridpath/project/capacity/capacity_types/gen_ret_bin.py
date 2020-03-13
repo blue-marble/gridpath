@@ -186,7 +186,7 @@ def retire_forever_rule(mod, g, p):
         return Constraint.Skip
     else:
         return mod.GenRetBin_Retire[g, p] \
-            >= mod.GenRetBin_Retire[g, mod.previous_period[p]]
+            >= mod.GenRetBin_Retire[g, mod.prev_period[p]]
 
 
 # Capacity Type Methods

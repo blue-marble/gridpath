@@ -90,14 +90,14 @@ class TestPeriods(unittest.TestCase):
             )
 
         # PERIODS set
-        expected_periods = periods_df['PERIODS'].tolist()
+        expected_periods = periods_df['period'].tolist()
         actual_periods = [p for p in instance.PERIODS]
         self.assertListEqual(expected_periods, actual_periods,
                              msg="PERIODS set data does not load correctly."
                              )
         # Param: discount_factor
         expected_discount_factor_param = \
-            periods_df.set_index('PERIODS').to_dict()['discount_factor']
+            periods_df.set_index('period').to_dict()['discount_factor']
         actual_discount_factor_param = \
             {p: instance.discount_factor[p] for p in instance.PERIODS}
         self.assertDictEqual(expected_discount_factor_param,
@@ -107,7 +107,7 @@ class TestPeriods(unittest.TestCase):
                              )
         # Param: number_years_represented
         expected_num_years_param = \
-            periods_df.set_index('PERIODS').to_dict()[
+            periods_df.set_index('period').to_dict()[
                 'number_years_represented'
             ]
         actual_num_years_param = \
@@ -130,7 +130,7 @@ class TestPeriods(unittest.TestCase):
                              msg="Data for param 'period' not loaded correctly"
                              )
 
-        # Set TIMEPOINTS_IN_PERIODS
+        # Set TMPS_IN_PRD
         expected_tmp_in_p = dict()
         for tmp in timepoints_df['timepoint'].tolist():
             if expected_period_param[tmp] not in expected_tmp_in_p.keys():
@@ -139,11 +139,11 @@ class TestPeriods(unittest.TestCase):
                 expected_tmp_in_p[expected_period_param[tmp]].append(tmp)
 
         actual_tmps_in_p = {
-            p: sorted([tmp for tmp in instance.TMPS_IN_PERIOD[p]])
-            for p in list(instance.TMPS_IN_PERIOD.keys())
+            p: sorted([tmp for tmp in instance.TMPS_IN_PRD[p]])
+            for p in list(instance.TMPS_IN_PRD.keys())
             }
         self.assertDictEqual(expected_tmp_in_p, actual_tmps_in_p,
-                             msg="TIMEPOINTS_IN_PERIOD data do not match "
+                             msg="TMPS_IN_PRD data do not match "
                                  "expected."
                              )
 
@@ -152,20 +152,20 @@ class TestPeriods(unittest.TestCase):
         actual_first_period = instance.first_period
         self.assertEqual(expected_first_period, actual_first_period)
 
-        # Set: NOT_FIRST_PERIODS
+        # Set: NOT_FIRST_PRDS
         expected_not_first_periods = expected_periods[1:]
-        actual_not_first_periods = [p for p in instance.NOT_FIRST_PERIODS]
+        actual_not_first_periods = [p for p in instance.NOT_FIRST_PRDS]
         self.assertListEqual(
             expected_not_first_periods, actual_not_first_periods
         )
 
-        # Param: previous_period
+        # Param: prev_period
         expected_prev_periods = {
             p: expected_periods[expected_periods.index(p)-1]
             for p in expected_not_first_periods
         }
-        actual_prev_periods = {p: instance.previous_period[p] for p in
-                               instance.NOT_FIRST_PERIODS}
+        actual_prev_periods = {p: instance.prev_period[p] for p in
+                               instance.NOT_FIRST_PRDS}
         self.assertDictEqual(expected_prev_periods, actual_prev_periods)
 
 

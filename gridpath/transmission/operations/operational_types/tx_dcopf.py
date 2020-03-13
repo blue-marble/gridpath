@@ -202,7 +202,7 @@ def add_module_specific_components(m, d):
         dimen=2,
         rule=lambda mod: set((c, tmp)
                              for (p, c) in mod.PRDS_CYCLES
-                             for tmp in mod.TMPS_IN_PERIOD[p])
+                             for tmp in mod.TMPS_IN_PRD[p])
     )
 
     m.ZONES_IN_PRD_CYCLE = Set(

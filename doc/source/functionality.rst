@@ -154,20 +154,7 @@ Balancing Types and Horizons
 Periods
 -------
 
-Each *timepoint* in a GridPath model also belongs to a *period* (e.g. a year),
-which describes when decisions to build or retire infrastructure are made. A
-*period* must be specified in both capacity-expansion and production-cost
-model. In a production-cost simulation context, we can use the period to
-exogenously change the amount of available capacity, but the *period*
-temporal unit is mostly used in the capacity-expansion approach, as it
-defines when capacity decisions are made and new infrastructure becomes
-available (or is retired). That information in turn feeds into the horizon-
-and timepoint-level operational constraints, i.e. once a generator is build,
-the optimization is allowed to operate it in subsequent periods (usually for
-the duration of the generators's lifetime). The *period* duration is
-flexible: e.g. capacity decisions can be made every month, every year, every
-10 years, etc. A discount factor can also be applied to weight costs
-differently depending on when they are incurred.
+.. automodule:: gridpath.temporal.investment.periods
 
 .. _subproblems-sub-section-ref:
 

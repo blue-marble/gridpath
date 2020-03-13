@@ -228,13 +228,13 @@ def tx_opr_prds_init(mod):
 
 def tx_opr_tmps_init(mod):
     """
-    Get the TX_OPR_TMPS from the OPR_PRDS_BY_TX_LINE and TIMEPOINTS_IN_PERIOD
+    Get the TX_OPR_TMPS from the OPR_PRDS_BY_TX_LINE and TMPS_IN_PRD
     sets.
     """
     tx_tmps = set()
     for tx in mod.TX_LINES:
         for p in mod.OPR_PRDS_BY_TX_LINE[tx]:
-            for tmp in mod.TMPS_IN_PERIOD[p]:
+            for tmp in mod.TMPS_IN_PRD[p]:
                 tx_tmps.add((tx, tmp))
     return tx_tmps
 
