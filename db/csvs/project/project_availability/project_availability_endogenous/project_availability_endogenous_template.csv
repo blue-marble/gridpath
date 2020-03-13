@@ -1,2 +1,0 @@
-project,endogenous_availability_scenario_id,unavailable_hours_per_period,unavailable_hours_per_event_min,unavailable_hours_per_event_max,available_hours_between_events_min,available_hours_between_events_max
-project_name,1,100,12,36,24,5000
