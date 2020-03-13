@@ -27,7 +27,7 @@ def add_model_components(m, d):
     """
 
     # Static load
-    m.static_load_mw = Param(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.static_load_mw = Param(m.LOAD_ZONES, m.TMPS,
                              within=NonNegativeReals)
     getattr(d, load_balance_consumption_components).append("static_load_mw")
 
@@ -132,7 +132,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
 
         # Write header
         writer.writerow(
-            ["LOAD_ZONES", "TIMEPOINTS", "load_mw"]
+            ["LOAD_ZONES", "timepoint", "load_mw"]
         )
 
         for row in loads:

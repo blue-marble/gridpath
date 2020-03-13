@@ -208,7 +208,7 @@ class TestCapacity(unittest.TestCase):
         timepoints_df = \
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
-                sep="\t", usecols=['TIMEPOINTS', 'period']
+                sep="\t", usecols=['timepoint', 'period']
             )
         expected_tmp_in_p = dict()
         for tmp in timepoints_df.values:
@@ -257,7 +257,7 @@ class TestCapacity(unittest.TestCase):
         actual_operational_projects_in_tmp = OrderedDict(sorted({
             tmp: sorted([prj for prj
                          in instance.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]])
-            for tmp in instance.TIMEPOINTS
+            for tmp in instance.TMPS
         }.items()
                                                                 )
                                                          )

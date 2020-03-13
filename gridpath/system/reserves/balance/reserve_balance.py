@@ -102,8 +102,8 @@ def generic_export_results(scenario_directory, subproblem, stage, m, d,
                 tmp,
                 m.discount_factor[m.period[tmp]],
                 m.number_years_represented[m.period[tmp]],
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
                 value(getattr(m, reserve_violation_expression)[ba, tmp])
             ]
             )

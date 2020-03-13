@@ -86,7 +86,7 @@ class TestPeriods(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
-                usecols=['TIMEPOINTS', 'period']
+                usecols=['timepoint', 'period']
             )
 
         # PERIODS set
@@ -120,10 +120,10 @@ class TestPeriods(unittest.TestCase):
 
         # Params: period
         expected_period_param = \
-            timepoints_df.set_index('TIMEPOINTS').to_dict()['period']
+            timepoints_df.set_index('timepoint').to_dict()['period']
         actual_period_param = \
             {tmp: instance.period[tmp]
-             for tmp in instance.TIMEPOINTS
+             for tmp in instance.TMPS
              }
 
         self.assertDictEqual(expected_period_param, actual_period_param,
@@ -132,15 +132,15 @@ class TestPeriods(unittest.TestCase):
 
         # Set TIMEPOINTS_IN_PERIODS
         expected_tmp_in_p = dict()
-        for tmp in timepoints_df['TIMEPOINTS'].tolist():
+        for tmp in timepoints_df['timepoint'].tolist():
             if expected_period_param[tmp] not in expected_tmp_in_p.keys():
                 expected_tmp_in_p[expected_period_param[tmp]] = [tmp]
             else:
                 expected_tmp_in_p[expected_period_param[tmp]].append(tmp)
 
         actual_tmps_in_p = {
-            p: sorted([tmp for tmp in instance.TIMEPOINTS_IN_PERIOD[p]])
-            for p in list(instance.TIMEPOINTS_IN_PERIOD.keys())
+            p: sorted([tmp for tmp in instance.TMPS_IN_PERIOD[p]])
+            for p in list(instance.TMPS_IN_PERIOD.keys())
             }
         self.assertDictEqual(expected_tmp_in_p, actual_tmps_in_p,
                              msg="TIMEPOINTS_IN_PERIOD data do not match "

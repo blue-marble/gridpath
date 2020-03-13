@@ -202,7 +202,7 @@ class TestRegulationUpAgg(unittest.TestCase):
             {tmp: sorted(
                 [prj for prj in
                  instance.REGULATION_UP_PROJECTS_OPERATIONAL_IN_TIMEPOINT[tmp]
-                 ]) for tmp in instance.TIMEPOINTS
+                 ]) for tmp in instance.TMPS
                                                  }.items()
                                              )
                                       )

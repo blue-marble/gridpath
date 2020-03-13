@@ -35,8 +35,8 @@ def add_model_components(m, d):
     def partial_frequency_response_penalty_costs_rule(mod):
         return sum(mod.Frequency_Response_Partial_Violation_MW[ba, tmp]
                    * mod.frequency_response_violation_penalty_per_mw[ba]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (ba, tmp)

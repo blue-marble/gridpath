@@ -141,26 +141,9 @@ The temporal units include:
 Timepoints
 ----------
 
-*Timepoints* are the finest resolution over which operational decisions are
-made (e.g. an hour). Generator commitment and dispatch decisions are made for
-each timepoint, with some constraints applied across timepoints (e.g. ramp
-constraints.) Most commonly, a timepoint is an hour, but the resolution is
-flexible: a timepoint could also be a 15-minute, 5-minute, 1-minute, or 4-hour
-segment. Different timepoint durations can also be mixed, e.g. some can be
-5-minute segments and some can be hours.
+.. automodule:: gridpath.temporal.operations.timepoints
 
-Timepoints can also be assigned weights in order to represent other
-timepoints that are not modeled explicitly (e.g. use a 24-hour period per month
-to represent the whole month using the number of days in that month for the
-weight of each of the 24 timepoints).
-
-To support multi-stage production simulation timepoints can also be assigned a
-mapping to the previous stage (e.g. timepoints 1-12 in the 5-minute real-time
-stage map to timepoint 1 in the hour-ahead stage) and a flag whether the
-timepoint is part of a spinup or lookahead segment.
-Timepoints that are part of a spinup or lookahead segment are included in the
-optimization but are generally discarded when calculating result metrics such as
-annual emissions, energy, or cost. See :ref:`subproblems-sub-section-ref` and
+See :ref:`subproblems-sub-section-ref` and
 :ref:`stages-sub-section-ref` for more information.
 
 Balancing Types and Horizons

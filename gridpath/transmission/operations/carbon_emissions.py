@@ -276,8 +276,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tx,
                 m.period[tmp],
                 tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
                 value(m.Import_Carbon_Emissions_Tons[tx, tmp]),
                 calculate_carbon_emissions_imports(m, tx, tmp)
             ])

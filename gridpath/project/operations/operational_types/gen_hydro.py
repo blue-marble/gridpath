@@ -351,7 +351,7 @@ def energy_budget_rule(mod, g, h):
     """
     return sum((mod.GenHydro_Provide_Power_MW[g, tmp] +
                 mod.GenHydro_Curtail_MW[g, tmp])
-               * mod.number_of_hours_in_timepoint[tmp]
+               * mod.hrs_in_tmp[tmp]
                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[g], h]
                ) \
@@ -359,7 +359,7 @@ def energy_budget_rule(mod, g, h):
         sum(mod.gen_hydro_average_power_fraction[g, h]
             * mod.Capacity_MW[g, mod.period[tmp]]
             * mod.Availability_Derate[g, tmp]
-            * mod.number_of_hours_in_timepoint[tmp]
+            * mod.hrs_in_tmp[tmp]
             for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                 mod.balancing_type_project[g], h])
 
@@ -385,7 +385,7 @@ def ramp_up_rule(mod, g, tmp):
     # If you can ramp up the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
     elif mod.gen_hydro_ramp_up_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
+            * mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
         return Constraint.Skip
@@ -402,7 +402,7 @@ def ramp_up_rule(mod, g, tmp):
                         tmp, mod.balancing_type_project[g]]]) \
             <= \
             mod.gen_hydro_ramp_up_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
+            * mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
@@ -429,7 +429,7 @@ def ramp_down_rule(mod, g, tmp):
     # If you can ramp down the the total project's capacity within the
     # previous timepoint, skip the constraint (it won't bind)
     elif mod.gen_hydro_ramp_down_rate[g] * 60 \
-        * mod.number_of_hours_in_timepoint[
+        * mod.hrs_in_tmp[
         mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             >= 1:
         return Constraint.Skip
@@ -445,7 +445,7 @@ def ramp_down_rule(mod, g, tmp):
                     g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]) \
             >= \
             - mod.gen_hydro_ramp_down_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
+            * mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
@@ -679,8 +679,8 @@ def export_module_specific_results(mod, d,
                 mod.balancing_type_project[p],
                 mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.timepoint_weight[tmp],
-                mod.number_of_hours_in_timepoint[tmp],
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenHydro_Provide_Power_MW[p, tmp]),

@@ -415,7 +415,7 @@ class TestTxOperations(unittest.TestCase):
                 [prj for prj
                  in instance.TX_LINES_OPR_IN_TMP[tmp]]
             )
-            for tmp in instance.TIMEPOINTS
+            for tmp in instance.TMPS
         }.items()
                                                                 )
                                                          )

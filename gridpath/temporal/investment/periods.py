@@ -63,12 +63,12 @@ def add_model_components(m, d):
     #  considering how costs are defined ($/kW-yr)?
     m.number_years_represented = Param(m.PERIODS, within=NonNegativeReals)
 
-    m.period = Param(m.TIMEPOINTS, within=m.PERIODS)
+    m.period = Param(m.TMPS, within=m.PERIODS)
 
-    m.TIMEPOINTS_IN_PERIOD = \
+    m.TMPS_IN_PERIOD = \
         Set(m.PERIODS,
             initialize=lambda mod, p:
-            set(tmp for tmp in mod.TIMEPOINTS if mod.period[tmp] == p))
+            set(tmp for tmp in mod.TMPS if mod.period[tmp] == p))
 
     # Figure out which one is the first period; the PERIODS set is ordered
     # so we can just use the list index
@@ -97,8 +97,8 @@ def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):
 
     data_portal.load(filename=os.path.join(scenario_directory, subproblem, stage,
                                            "inputs", "timepoints.tab"),
-                     select=("TIMEPOINTS","period"),
-                     index=m.TIMEPOINTS,
+                     select=("timepoint", "period"),
+                     index=m.TMPS,
                      param=m.period
                      )
 

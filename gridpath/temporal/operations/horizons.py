@@ -76,7 +76,7 @@ def add_model_components(m, d):
     | Required Input Params                                                   |
     +=========================================================================+
     | | :code:`horizon`                                                       |
-    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
     |                                                                         |
     | Describes the horizon that each timeoint belongs to for a given         |
     | balancing type. Depending on the balancing type, timepoints can be      |
@@ -112,14 +112,14 @@ def add_model_components(m, d):
     | being an ordered (indexed) set.                                         |
     +-------------------------------------------------------------------------+
     | | :code:`prev_tmp`                                                      |
-    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
     |                                                                         |
     | Derived parameter describing the previous timepoint for each timepoint  |
     | in each balancing type; depends on whether horizon is circular or       |
     | linear and relies on having ordered :code:`TIMEPOINTS`.                 |
     +-------------------------------------------------------------------------+
     | | :code:`next_tmp`                                                      |
-    | | *Defined over*: :code:`TIMEPOINTS x BLN_TYPES`                        |
+    | | *Defined over*: :code:`TMPS x BLN_TYPES`                              |
     |                                                                         |
     | Derived parameter describing the next timepoint for each timepoint in   |
     | each balancing type; depends on whether horizon is circular or linear   |
@@ -161,7 +161,7 @@ def add_model_components(m, d):
     # TODO: can create here instead of upstream in data (i.e. we can get the
     #  balancing type index from the horizon of the timepoint)
     m.horizon = Param(
-        m.TIMEPOINTS, m.BLN_TYPES
+        m.TMPS, m.BLN_TYPES
     )
 
     m.boundary = Param(
@@ -187,12 +187,12 @@ def add_model_components(m, d):
     )
 
     m.prev_tmp = Param(
-        m.TIMEPOINTS, m.BLN_TYPES,
+        m.TMPS, m.BLN_TYPES,
         initialize=prev_tmp_init
     )
 
     m.next_tmp = Param(
-        m.TIMEPOINTS, m.BLN_TYPES,
+        m.TMPS, m.BLN_TYPES,
         initialize=next_tmp_init
     )
 
@@ -239,7 +239,7 @@ def horizons_by_balancing_type_init(mod, bt):
 def prev_tmp_init(mod, tmp, balancing_type_horizon):
     """
     **Param Name**: prev_tmp
-    **Defined Over**: TIMEPOINTS x BLN_TYPES
+    **Defined Over**: TMPS x BLN_TYPES
 
     Determine the previous timepoint for each timepoint. If the timepoint is
     the first timepoint of a horizon and the horizon boundary is circular,
@@ -277,7 +277,7 @@ def prev_tmp_init(mod, tmp, balancing_type_horizon):
 def next_tmp_init(mod, tmp, balancing_type_horizon):
     """
     **Param Name**: next_tmp
-    **Defined Over**: TIMEPOINTS x BLN_TYPES
+    **Defined Over**: TMPS x BLN_TYPES
 
     Determine the next timepoint for each timepoint. If the timepoint is
     the last timepoint of a horizon and the horizon boundary is circular,

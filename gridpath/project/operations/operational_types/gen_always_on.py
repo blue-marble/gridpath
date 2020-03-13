@@ -337,7 +337,7 @@ def ramp_up_rule(mod, g, tmp):
     # ramp up the full operable range between timepoints, constraint won't
     # bind, so skip
     elif (mod.gen_always_on_ramp_up_rate[g] * 60
-          * mod.number_of_hours_in_timepoint[mod.prev_tmp[
+          * mod.hrs_in_tmp[mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
         return Constraint.Skip
@@ -351,7 +351,7 @@ def ramp_up_rule(mod, g, tmp):
                        g]]]) \
             <= \
             mod.gen_always_on_ramp_up_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
+            * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
@@ -379,7 +379,7 @@ def ramp_down_rule(mod, g, tmp):
     # ramp down the full operable range between timepoints, constraint
     # won't bind, so skip
     elif (mod.gen_always_on_ramp_down_rate[g] * 60
-          * mod.number_of_hours_in_timepoint[
+          * mod.hrs_in_tmp[
               mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
         return Constraint.Skip
@@ -393,7 +393,7 @@ def ramp_down_rule(mod, g, tmp):
                ) \
             >= \
             - mod.gen_always_on_ramp_down_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
+            * mod.hrs_in_tmp[
                    mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]

@@ -39,8 +39,8 @@ def add_model_components(m, d):
         return sum(
             mod.Import_Carbon_Emissions_Tons[tx, tmp]
             * mod.import_carbon_tuning_cost_per_ton
-            * mod.number_of_hours_in_timepoint[tmp]
-            * mod.timepoint_weight[tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
             for (tx, tmp)

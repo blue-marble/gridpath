@@ -31,8 +31,8 @@ def add_model_components(m, d):
         return sum(
             (mod.Ramp_Up_Tuning_Cost[g, tmp] +
              mod.Ramp_Down_Tuning_Cost[g, tmp])
-            * mod.number_of_hours_in_timepoint[tmp]
-            * mod.timepoint_weight[tmp]
+            * mod.hrs_in_tmp[tmp]
+            * mod.tmp_weight[tmp]
             * mod.number_years_represented[mod.period[tmp]]
             * mod.discount_factor[mod.period[tmp]]
             for (g, tmp)

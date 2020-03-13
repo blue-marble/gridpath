@@ -201,7 +201,7 @@ class TestSpinningReservesAgg(unittest.TestCase):
                 [prj for prj in
                  instance.
                     SPINNING_RESERVES_PROJECTS_OPERATIONAL_IN_TIMEPOINT[tmp]
-                 ]) for tmp in instance.TIMEPOINTS
+                 ]) for tmp in instance.TMPS
                                                  }.items()
                                              )
                                       )

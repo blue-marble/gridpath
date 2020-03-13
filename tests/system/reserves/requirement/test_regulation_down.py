@@ -97,7 +97,7 @@ class TestCosts(unittest.TestCase):
             )
 
         expected_ba_tmps = sorted(
-            list(zip(req_df.LOAD_ZONES, req_df.TIMEPOINTS))
+            list(zip(req_df.LOAD_ZONES, req_df.timepoint))
         )
         actual_ba_tmps = sorted([
             (z, tmp) for (z, tmp) in instance.REGULATION_DOWN_ZONE_TIMEPOINTS
@@ -108,7 +108,7 @@ class TestCosts(unittest.TestCase):
         expected_req = OrderedDict(
             sorted(
                 req_df.set_index(
-                    ['LOAD_ZONES', 'TIMEPOINTS']
+                    ['LOAD_ZONES', 'timepoint']
                 ).to_dict()['load_mw'].items()
             )
         )

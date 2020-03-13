@@ -202,7 +202,7 @@ def energy_budget_rule(mod, p, h):
     horizon.
     """
     return sum(mod.DR_Shift_Up_MW[p, tmp]
-               * mod.number_of_hours_in_timepoint[tmp]
+               * mod.hrs_in_tmp[tmp]
                for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[p], h]) \
         <= mod.Energy_Capacity_MWh[p, mod.period[

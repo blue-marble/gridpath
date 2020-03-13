@@ -37,11 +37,11 @@ def add_model_components(m, d):
                     * mod.unserved_energy_penalty_per_mw[z] +
                     mod.Overgeneration_MW_Expression[z, tmp]
                     * mod.overgeneration_penalty_per_mw[z])
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
-                   for z in mod.LOAD_ZONES for tmp in mod.TIMEPOINTS)
+                   for z in mod.LOAD_ZONES for tmp in mod.TMPS)
     m.Total_Load_Balance_Penalty_Costs = Expression(
         rule=total_penalty_costs_rule)
     getattr(d, total_cost_components).append(

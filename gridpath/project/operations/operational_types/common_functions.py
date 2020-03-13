@@ -63,7 +63,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
         # minimum up/down time, we'll break out of the loop immediately)
         relevant_tmp = mod.prev_tmp[tmp, mod.balancing_type_project[g]]
         hours_from_tmp = \
-            mod.number_of_hours_in_timepoint[
+            mod.hrs_in_tmp[
                 mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
 
         while hours_from_tmp < min_time:
@@ -101,7 +101,7 @@ def determine_relevant_timepoints(mod, g, tmp, min_time):
             # hours_from_tmp
             else:
                 hours_from_tmp += \
-                    mod.number_of_hours_in_timepoint[
+                    mod.hrs_in_tmp[
                         mod.prev_tmp[
                             relevant_tmp, mod.balancing_type_project[g]
                         ]

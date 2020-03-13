@@ -107,7 +107,7 @@ def add_model_components(m, d):
         rule=lambda mod:
         set((g, tmp)
             for (g, p) in mod.SIM_FLOW_LMT_PRDS
-            for tmp in mod.TIMEPOINTS_IN_PERIOD[p])
+            for tmp in mod.TMPS_IN_PERIOD[p])
     )
 
     m.SIM_FLOW_LMTS = Set(
@@ -242,7 +242,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 g,
                 tmp,
                 m.period[tmp],
-                m.timepoint_weight[tmp],
+                m.tmp_weight[tmp],
                 value(m.Sim_Flow_MW[g, tmp])
             ])
 

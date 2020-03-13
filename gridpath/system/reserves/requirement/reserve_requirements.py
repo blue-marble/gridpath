@@ -29,7 +29,7 @@ def generic_add_model_components(
     # BA-timepoint combinations with requirement
     setattr(m, reserve_zone_timepoint_set,
             Set(dimen=2,
-                within=getattr(m, reserve_zone_set) * m.TIMEPOINTS
+                within=getattr(m, reserve_zone_set) * m.TMPS
                 )
             )
 

@@ -167,7 +167,7 @@ class TestHorizons(unittest.TestCase):
         }
         actual_horizon_by_tmp_type = {
             (tmp, _type): instance.horizon[tmp, _type]
-            for tmp in instance.TIMEPOINTS for _type in instance.BLN_TYPES
+            for tmp in instance.TMPS for _type in instance.BLN_TYPES
         }
         self.assertDictEqual(expected_horizon_by_tmp_type,
                              actual_horizon_by_tmp_type)
@@ -233,7 +233,7 @@ class TestHorizons(unittest.TestCase):
         actual_prev_tmp = {
             (tmp, balancing_type_horizon):
                 instance.prev_tmp[tmp, balancing_type_horizon]
-            for tmp in instance.TIMEPOINTS
+            for tmp in instance.TMPS
             for balancing_type_horizon in instance.BLN_TYPES
         }
 
@@ -284,7 +284,7 @@ class TestHorizons(unittest.TestCase):
 
         actual_next_tmp = {
             (tmp, balancing_type_horizon): instance.next_tmp[tmp, balancing_type_horizon]
-            for tmp in instance.TIMEPOINTS
+            for tmp in instance.TMPS
             for balancing_type_horizon in instance.BLN_TYPES
         }
         actual_next_tmp_ordered = OrderedDict(sorted(

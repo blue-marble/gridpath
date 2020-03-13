@@ -27,7 +27,7 @@ def add_model_components(m, d):
         )
 
     m.FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT = \
-        Set(m.TIMEPOINTS,
+        Set(m.TMPS,
             initialize=lambda mod, tmp:
             mod.FREQUENCY_RESPONSE_PARTIAL_PROJECTS &
                 mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp])

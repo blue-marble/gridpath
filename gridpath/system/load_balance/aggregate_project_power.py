@@ -36,7 +36,7 @@ def add_model_components(m, d):
                    for g in mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]
                    if mod.load_zone[g] == z)
     m.Power_Production_in_Zone_MW = \
-        Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+        Expression(m.LOAD_ZONES, m.TMPS,
                    rule=total_power_production_rule)
     getattr(d, load_balance_production_components).append(
         "Power_Production_in_Zone_MW")

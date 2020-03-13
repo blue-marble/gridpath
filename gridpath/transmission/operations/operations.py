@@ -129,8 +129,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.load_zone_to[l],
                 tmp,
                 m.period[tmp],
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
                 value(m.Transmit_Power_MW[l, tmp]),
                 value(m.Tx_Losses_LZ_From_MW[l, tmp]),
                 value(m.Tx_Losses_LZ_To_MW[l, tmp])

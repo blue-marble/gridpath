@@ -90,8 +90,8 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 tmp,
                 m.operational_type[p],
                 m.balancing_type_project[p],
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Power_Provision_MW[p, tmp])

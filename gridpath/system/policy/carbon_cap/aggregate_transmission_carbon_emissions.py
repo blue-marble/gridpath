@@ -38,13 +38,13 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Import_Carbon_Emissions_Tons[tx, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    for (tx, tmp) in
                    mod.CRB_TX_OPR_TMPS
                    if tx in
                    mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-                   and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                   and tmp in mod.TMPS_IN_PERIOD[p]
                    )
 
     m.Total_Carbon_Emission_Imports_Tons = Expression(
@@ -70,13 +70,13 @@ def total_carbon_emissions_imports_degen_expr_rule(mod, z, p):
     :return:
     """
     return sum(calculate_carbon_emissions_imports(mod, tx, tmp)
-               * mod.number_of_hours_in_timepoint[tmp]
-               * mod.timepoint_weight[tmp]
+               * mod.hrs_in_tmp[tmp]
+               * mod.tmp_weight[tmp]
                for (tx, tmp) in
                mod.CRB_TX_OPR_TMPS
                if tx in
                mod.CRB_TX_LINES_BY_CARBON_CAP_ZONE[z]
-               and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+               and tmp in mod.TMPS_IN_PERIOD[p]
                )
 
 

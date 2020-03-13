@@ -111,7 +111,7 @@ def get_project_operational_timepoints(project_list):
     timepoints_df = \
         pd.read_csv(
             os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
-            sep="\t", usecols=['TIMEPOINTS', 'period']
+            sep="\t", usecols=['timepoint', 'period']
         )
     expected_tmp_in_p = dict()
     for tmp in timepoints_df.values:
