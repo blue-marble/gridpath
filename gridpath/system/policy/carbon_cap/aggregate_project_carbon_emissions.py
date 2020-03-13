@@ -37,12 +37,12 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Carbon_Emissions_Tons[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    for (g, tmp) in
                    mod.CARBONACEOUS_PROJECT_OPERATIONAL_TIMEPOINTS
                    if g in mod.CARBONACEOUS_PROJECTS_BY_CARBON_CAP_ZONE[z]
-                   and tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                   and tmp in mod.TMPS_IN_PRD[p]
                    )
 
     m.Total_Carbon_Emissions_Tons = Expression(

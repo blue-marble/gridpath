@@ -337,7 +337,7 @@ def ramp_up_rule(mod, g, tmp):
     # ramp up the full operable range between timepoints, constraint won't
     # bind, so skip
     elif (mod.gen_always_on_ramp_up_rate[g] * 60
-          * mod.number_of_hours_in_timepoint[mod.previous_timepoint[
+          * mod.hrs_in_tmp[mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
         return Constraint.Skip
@@ -345,14 +345,14 @@ def ramp_up_rule(mod, g, tmp):
         return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
             + mod.GenAlwaysOn_Upwards_Reserves_MW[g, tmp] \
             - (mod.GenAlwaysOn_Provide_Power_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                - mod.GenAlwaysOn_Downwards_Reserves_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[
+                   g, mod.prev_tmp[tmp, mod.balancing_type_project[
                        g]]]) \
             <= \
             mod.gen_always_on_ramp_up_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
-                   mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.hrs_in_tmp[
+                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
 
@@ -379,22 +379,22 @@ def ramp_down_rule(mod, g, tmp):
     # ramp down the full operable range between timepoints, constraint
     # won't bind, so skip
     elif (mod.gen_always_on_ramp_down_rate[g] * 60
-          * mod.number_of_hours_in_timepoint[
-              mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+          * mod.hrs_in_tmp[
+              mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
           >= (1 - mod.gen_always_on_min_stable_level_fraction[g])):
         return Constraint.Skip
     else:
         return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] \
             - mod.GenAlwaysOn_Downwards_Reserves_MW[g, tmp] \
             - (mod.GenAlwaysOn_Provide_Power_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                + mod.GenAlwaysOn_Upwards_Reserves_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]]
+                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]]
                ) \
             >= \
             - mod.gen_always_on_ramp_down_rate[g] * 60 \
-            * mod.number_of_hours_in_timepoint[
-                   mod.previous_timepoint[tmp, mod.balancing_type_project[g]]] \
+            * mod.hrs_in_tmp[
+                   mod.prev_tmp[tmp, mod.balancing_type_project[g]]] \
             * mod.Capacity_MW[g, mod.period[tmp]] \
             * mod.Availability_Derate[g, tmp]
 
@@ -510,7 +510,7 @@ def power_delta_rule(mod, g, tmp):
     else:
         return mod.GenAlwaysOn_Provide_Power_MW[g, tmp] - \
                mod.GenAlwaysOn_Provide_Power_MW[
-                   g, mod.previous_timepoint[tmp, mod.balancing_type_project[g]]
+                   g, mod.prev_tmp[tmp, mod.balancing_type_project[g]]
                ]
 
 

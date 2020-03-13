@@ -113,7 +113,7 @@ def write_model_inputs(inputs_directory, subscenarios, subproblem, stage, conn):
         # Write header
         # TODO: change these headers
         writer.writerow(
-            ["LOAD_ZONES", "TIMEPOINTS", "upward_reserve_requirement"]
+            ["LOAD_ZONES", "timepoint", "upward_reserve_requirement"]
         )
 
         for row in lf_reserves_up:

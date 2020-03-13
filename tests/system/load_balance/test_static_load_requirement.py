@@ -89,13 +89,13 @@ class TestLoadRequirement(unittest.TestCase):
         expected_static_load = OrderedDict(
             sorted(
                 load_df.set_index(
-                    ['LOAD_ZONES', 'TIMEPOINTS']
+                    ['LOAD_ZONES', 'timepoint']
                 ).to_dict()['load_mw'].items()
             )
         )
         actual_static_load = OrderedDict(sorted({
             (z, tmp): instance.static_load_mw[z, tmp]
-            for z in instance.LOAD_ZONES for tmp in instance.TIMEPOINTS
+            for z in instance.LOAD_ZONES for tmp in instance.TMPS
                                                 }.items()
                                                 )
                                          )

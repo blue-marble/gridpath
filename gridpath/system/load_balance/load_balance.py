@@ -42,9 +42,9 @@ def add_model_components(m, d):
     """
 
     # Penalty variables
-    m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.Overgeneration_MW = Var(m.LOAD_ZONES, m.TMPS,
                               within=NonNegativeReals)
-    m.Unserved_Energy_MW = Var(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.Unserved_Energy_MW = Var(m.LOAD_ZONES, m.TMPS,
                                within=NonNegativeReals)
 
     # Penalty expressions (will be zero if violations not allowed)
@@ -59,7 +59,7 @@ def add_model_components(m, d):
         return mod.allow_overgeneration[z] * mod.Overgeneration_MW[z, tmp]
 
     m.Overgeneration_MW_Expression = Expression(
-        m.LOAD_ZONES, m.TIMEPOINTS,
+        m.LOAD_ZONES, m.TMPS,
         rule=overgeneration_expression_rule
     )
 
@@ -73,7 +73,7 @@ def add_model_components(m, d):
         """
         return mod.allow_unserved_energy[z] * mod.Unserved_Energy_MW[z, tmp]
     m.Unserved_Energy_MW_Expression = Expression(
-        m.LOAD_ZONES, m.TIMEPOINTS,
+        m.LOAD_ZONES, m.TMPS,
         rule=unserved_energy_expression_rule
     )
 
@@ -105,7 +105,7 @@ def add_model_components(m, d):
                                          load_balance_consumption_components)
                 )
 
-    m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.Meet_Load_Constraint = Constraint(m.LOAD_ZONES, m.TMPS,
                                         rule=meet_load_rule)
 
 
@@ -128,15 +128,15 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                          "load_mw", "overgeneration_mw", "unserved_energy_mw"]
                         )
         for z in getattr(m, "LOAD_ZONES"):
-            for tmp in getattr(m, "TIMEPOINTS"):
+            for tmp in getattr(m, "TMPS"):
                 writer.writerow([
                     z,
                     m.period[tmp],
                     tmp,
                     m.discount_factor[m.period[tmp]],
                     m.number_years_represented[m.period[tmp]],
-                    m.timepoint_weight[tmp],
-                    m.number_of_hours_in_timepoint[tmp],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
                     m.static_load_mw[z, tmp],
                     value(m.Overgeneration_MW_Expression[z, tmp]),
                     value(m.Unserved_Energy_MW_Expression[z, tmp])

@@ -121,7 +121,7 @@ def add_model_components(m, d):
     m.capacity_type = Param(m.PROJECTS)
     m.availability_type = Param(m.PROJECTS)
     m.operational_type = Param(m.PROJECTS)
-    m.balancing_type_project = Param(m.PROJECTS, within=m.BALANCING_TYPES)
+    m.balancing_type_project = Param(m.PROJECTS, within=m.BLN_TYPES)
 
     # Variable O&M cost
     # TODO: all projects have this for now; is that what makes the most sense?

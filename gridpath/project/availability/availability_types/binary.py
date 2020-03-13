@@ -268,8 +268,8 @@ def total_scheduled_availability_per_period_rule(mod, g, p):
     """
     return sum(
         mod.AvlBin_Unavailable[g, tmp]
-        * mod.number_of_hours_in_timepoint[tmp]
-        for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+        * mod.hrs_in_tmp[tmp]
+        for tmp in mod.TMPS_IN_PRD[p]
     ) == mod.avl_bin_unavl_hrs_per_prd[g]
 
 
@@ -294,7 +294,7 @@ def unavailability_start_and_stop_rule(mod, g, tmp):
         return mod.AvlBin_Start_Unavailability[g, tmp] \
             - mod.AvlBin_Stop_Unavailability[g, tmp] \
             == mod.AvlBin_Unavailable[g, tmp] \
-            - mod.AvlBin_Unavailable[g, mod.previous_timepoint[
+            - mod.AvlBin_Unavailable[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
 
 
@@ -471,8 +471,8 @@ def export_module_specific_results(
                 m.period[tmp],
                 m.horizon[tmp, m.balancing_type_project[p]],
                 tmp,
-                m.timepoint_weight[tmp],
-                m.number_of_hours_in_timepoint[tmp],
+                m.tmp_weight[tmp],
+                m.hrs_in_tmp[tmp],
                 m.load_zone[p],
                 m.technology[p],
                 value(m.AvlBin_Unavailable[p, tmp]),

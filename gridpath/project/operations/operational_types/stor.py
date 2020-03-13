@@ -332,16 +332,16 @@ def energy_tracking_rule(mod, s, tmp):
         return \
             mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
             == mod.Stor_Starting_Energy_in_Storage_MWh[
-                s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             + mod.Stor_Charge_MW[
-                  s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
-            * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
+            * mod.hrs_in_tmp[
+                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             * mod.stor_charging_efficiency[s] \
             - mod.Stor_Discharge_MW[
-                  s, mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
-            * mod.number_of_hours_in_timepoint[
-                  mod.previous_timepoint[tmp, mod.balancing_type_project[s]]] \
+                  s, mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
+            * mod.hrs_in_tmp[
+                  mod.prev_tmp[tmp, mod.balancing_type_project[s]]] \
             / mod.stor_discharging_efficiency[s]
 
 
@@ -414,14 +414,14 @@ def max_headroom_energy_rule(mod, s, tmp):
     the full duration of the timepoint).
     """
     return mod.Stor_Upward_Reserves_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         / mod.stor_discharging_efficiency[s] \
         <= mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
         + mod.Stor_Charge_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         * mod.stor_charging_efficiency[s] \
         - mod.Stor_Discharge_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         / mod.stor_discharging_efficiency[s]
 
 
@@ -436,16 +436,16 @@ def max_footroom_energy_rule(mod, s, tmp):
     to be at the new set point (for the full duration of the timepoint).
     """
     return mod.Stor_Downward_Reserves_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         * mod.stor_charging_efficiency[s] \
         <= mod.Energy_Capacity_MWh[s, mod.period[tmp]] \
         * mod.Availability_Derate[s, tmp] - \
         mod.Stor_Starting_Energy_in_Storage_MWh[s, tmp] \
         - mod.Stor_Charge_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         * mod.stor_charging_efficiency[s] \
         + mod.Stor_Discharge_MW[s, tmp] \
-        * mod.number_of_hours_in_timepoint[tmp] \
+        * mod.hrs_in_tmp[tmp] \
         / mod.stor_discharging_efficiency[s]
 
 
@@ -555,9 +555,9 @@ def power_delta_rule(mod, g, tmp):
     else:
         return (mod.Stor_Discharge_MW[g, tmp] -
                 mod.Stor_Charge_MW[g, tmp]) \
-            - (mod.Stor_Discharge_MW[g, mod.previous_timepoint[
+            - (mod.Stor_Discharge_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
-               - mod.Stor_Charge_MW[g, mod.previous_timepoint[
+               - mod.Stor_Charge_MW[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]])
 
 
@@ -633,8 +633,8 @@ def export_module_specific_results(mod, d,
                 mod.balancing_type_project[p],
                 mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.timepoint_weight[tmp],
-                mod.number_of_hours_in_timepoint[tmp],
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.Stor_Starting_Energy_in_Storage_MWh[p, tmp]),

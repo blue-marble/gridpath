@@ -89,7 +89,7 @@ def fix_variables(m, d):
         op_m = m.operational_type[g]
         imp_op_m = imported_operational_modules[op_m]
         if hasattr(imp_op_m, "fix_commitment"):
-            for tmp in m.TIMEPOINTS:
+            for tmp in m.TMPS:
                 imp_op_m.fix_commitment(m, g, tmp)
 
 

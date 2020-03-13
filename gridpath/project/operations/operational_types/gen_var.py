@@ -419,11 +419,11 @@ def power_delta_rule(mod, g, tmp):
             (mod.Capacity_MW[g, mod.period[tmp]]
              * mod.Availability_Derate[g, tmp]
              * mod.gen_var_cap_factor[g, tmp]) \
-            - (mod.Capacity_MW[g, mod.period[mod.previous_timepoint[
+            - (mod.Capacity_MW[g, mod.period[mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]]
-               * mod.Availability_Derate[g, mod.previous_timepoint[
+               * mod.Availability_Derate[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]]
-               * mod.gen_var_cap_factor[g, mod.previous_timepoint[
+               * mod.gen_var_cap_factor[g, mod.prev_tmp[
                 tmp, mod.balancing_type_project[g]]])
 
 
@@ -529,8 +529,8 @@ def export_module_specific_results(mod, d,
                 mod.balancing_type_project[p],
                 mod.horizon[tmp, mod.balancing_type_project[p]],
                 tmp,
-                mod.timepoint_weight[tmp],
-                mod.number_of_hours_in_timepoint[tmp],
+                mod.tmp_weight[tmp],
+                mod.hrs_in_tmp[tmp],
                 mod.technology[p],
                 mod.load_zone[p],
                 value(mod.GenVar_Provide_Power_MW[p, tmp]),

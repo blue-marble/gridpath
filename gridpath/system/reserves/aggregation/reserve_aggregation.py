@@ -33,7 +33,7 @@ def generic_add_model_components(
     # generators operational in the timepoint
     op_set = str(reserve_generator_set)+"_OPERATIONAL_IN_TIMEPOINT"
     setattr(m, op_set,
-            Set(m.TIMEPOINTS,
+            Set(m.TMPS,
                 initialize=lambda mod, tmp:
                 getattr(mod, reserve_generator_set) &
                     mod.OPERATIONAL_PROJECTS_IN_TIMEPOINT[tmp]))

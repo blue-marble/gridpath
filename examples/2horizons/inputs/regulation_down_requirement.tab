@@ -1,4 +1,4 @@
-LOAD_ZONES	TIMEPOINTS	downward_reserve_requirement
+LOAD_ZONES	timepoint	downward_reserve_requirement
 Zone1	20200101	1.0
 Zone1	20200102	2.0
 Zone1	20200201	1.0

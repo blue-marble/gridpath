@@ -63,7 +63,7 @@ class TestTimepoints(unittest.TestCase):
             pd.read_csv(
                 os.path.join(TEST_DATA_DIRECTORY, "inputs", "timepoints.tab"),
                 sep="\t",
-                usecols=["TIMEPOINTS", "number_of_hours_in_timepoint",
+                usecols=["timepoint", "number_of_hours_in_timepoint",
                          "timepoint_weight", "previous_stage_timepoint_map",
                          "month"]
             )
@@ -76,19 +76,19 @@ class TestTimepoints(unittest.TestCase):
                                          stage="")
         instance = m.create_instance(data)
 
-        expected_tmp = timepoints_df["TIMEPOINTS"].tolist()
-        actual_tmp = [tmp for tmp in instance.TIMEPOINTS]
+        expected_tmp = timepoints_df["timepoint"].tolist()
+        actual_tmp = [tmp for tmp in instance.TMPS]
         self.assertListEqual(expected_tmp, actual_tmp,
                              msg="TIMEPOINTS set data does not load correctly."
                              )
 
         expected_num_hrs_param = \
-            timepoints_df.set_index("TIMEPOINTS").to_dict()[
+            timepoints_df.set_index("timepoint").to_dict()[
                 "number_of_hours_in_timepoint"
             ]
         actual_num_hrs_param = \
-            {tmp: instance.number_of_hours_in_timepoint[tmp]
-             for tmp in instance.TIMEPOINTS
+            {tmp: instance.hrs_in_tmp[tmp]
+             for tmp in instance.TMPS
              }
         self.assertDictEqual(expected_num_hrs_param, actual_num_hrs_param,
                              msg="Data for param "
@@ -98,10 +98,10 @@ class TestTimepoints(unittest.TestCase):
 
         # Params: timepoint_weight
         expected_timepoint_weight = \
-            timepoints_df.set_index("TIMEPOINTS").to_dict()["timepoint_weight"]
+            timepoints_df.set_index("timepoint").to_dict()["timepoint_weight"]
         actual_timepoint_weight = \
-            {tmp: instance.timepoint_weight[tmp]
-             for tmp in instance.TIMEPOINTS
+            {tmp: instance.tmp_weight[tmp]
+             for tmp in instance.TMPS
              }
         self.assertDictEqual(expected_timepoint_weight, actual_timepoint_weight,
                              msg="Data for param timepoint_weight not loaded "
@@ -113,21 +113,21 @@ class TestTimepoints(unittest.TestCase):
 
         # Params: month
         expected_month = \
-            timepoints_df.set_index("TIMEPOINTS").to_dict()["month"]
+            timepoints_df.set_index("timepoint").to_dict()["month"]
         actual_month = \
             {tmp: instance.month[tmp]
-             for tmp in instance.TIMEPOINTS
+             for tmp in instance.TMPS
              }
         self.assertDictEqual(expected_month, actual_month,
                              msg="Data for param month not loaded correctly")
         # Param: month
         expected_month_param = \
-            timepoints_df.set_index('TIMEPOINTS').to_dict()[
+            timepoints_df.set_index('timepoint').to_dict()[
                 'month'
             ]
         actual_month_param = \
             {tmp: instance.month[tmp]
-             for tmp in instance.TIMEPOINTS
+             for tmp in instance.TMPS
              }
         self.assertDictEqual(expected_month_param, actual_month_param,
                              msg="Data for param 'month' not loaded correctly")

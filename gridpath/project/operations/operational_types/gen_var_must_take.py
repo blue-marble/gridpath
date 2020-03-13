@@ -262,11 +262,11 @@ def power_delta_rule(mod, g, tmp):
             (mod.Capacity_MW[g, mod.period[tmp]]
              * mod.Availability_Derate[g, tmp]
              * mod.gen_var_must_take_cap_factor[g, tmp]) \
-            - (mod.Capacity_MW[g, mod.period[mod.previous_timepoint[
+            - (mod.Capacity_MW[g, mod.period[mod.prev_tmp[
                     tmp, mod.balancing_type_project[g]]]]
-               * mod.Availability_Derate[g, mod.previous_timepoint[
+               * mod.Availability_Derate[g, mod.prev_tmp[
                     tmp, mod.balancing_type_project[g]]]
-               * mod.gen_var_must_take_cap_factor[g, mod.previous_timepoint[
+               * mod.gen_var_must_take_cap_factor[g, mod.prev_tmp[
                     tmp, mod.balancing_type_project[g]]])
 
 

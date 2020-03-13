@@ -43,7 +43,7 @@ def add_model_components(m, d):
             for tx in mod.TX_LINES_OPR_IN_TMP[tmp]
             if mod.load_zone_to[tx] == z
         )
-    m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.Transmission_to_Zone_MW = Expression(m.LOAD_ZONES, m.TMPS,
                                            rule=total_transmission_to_rule)
     getattr(d, load_balance_production_components).append(
         "Transmission_to_Zone_MW"
@@ -63,7 +63,7 @@ def add_model_components(m, d):
             for tx in mod.TX_LINES_OPR_IN_TMP[tmp]
             if mod.load_zone_from[tx] == z
         )
-    m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TIMEPOINTS,
+    m.Transmission_from_Zone_MW = Expression(m.LOAD_ZONES, m.TMPS,
                                              rule=total_transmission_from_rule)
     getattr(d, load_balance_consumption_components).append(
         "Transmission_from_Zone_MW"
@@ -90,13 +90,13 @@ def export_results(scenario_directory, subproblem, stage, m, d):
              "imports_mw", "exports_mw", "net_imports_mw"]
         )
         for z in m.LOAD_ZONES:
-            for tmp in m.TIMEPOINTS:
+            for tmp in m.TMPS:
                 writer.writerow([
                     z,
                     tmp,
                     m.period[tmp],
-                    m.timepoint_weight[tmp],
-                    m.number_of_hours_in_timepoint[tmp],
+                    m.tmp_weight[tmp],
+                    m.hrs_in_tmp[tmp],
                     value(m.Transmission_to_Zone_MW[z, tmp]),
                     value(m.Transmission_from_Zone_MW[z, tmp]),
                     (value(m.Transmission_to_Zone_MW[z, tmp]) -

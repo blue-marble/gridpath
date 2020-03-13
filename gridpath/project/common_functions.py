@@ -44,7 +44,7 @@ def determine_project_subset(
 
 
 def check_if_linear_horizon_first_timepoint(mod, tmp, balancing_type):
-    return tmp == mod.first_horizon_timepoint[
+    return tmp == mod.first_hrz_tmp[
         balancing_type, mod.horizon[tmp, balancing_type]] \
             and mod.boundary[
                balancing_type, mod.horizon[tmp, balancing_type]] \
@@ -52,7 +52,7 @@ def check_if_linear_horizon_first_timepoint(mod, tmp, balancing_type):
 
 
 def check_if_linear_horizon_last_timepoint(mod, tmp, balancing_type):
-    return tmp == mod.last_horizon_timepoint[
+    return tmp == mod.last_hrz_tmp[
         balancing_type, mod.horizon[tmp, balancing_type]] \
             and mod.boundary[
                balancing_type, mod.horizon[tmp, balancing_type]] \

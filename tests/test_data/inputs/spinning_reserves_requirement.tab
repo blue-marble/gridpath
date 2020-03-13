@@ -1,4 +1,4 @@
-LOAD_ZONES	TIMEPOINTS	load_mw
+LOAD_ZONES	timepoint	load_mw
 Zone1	20200101	5
 Zone1	20200102	4
 Zone1	20200103	4

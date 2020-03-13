@@ -44,8 +44,8 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Variable_OM_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp) in mod.PROJECT_OPERATIONAL_TIMEPOINTS)
@@ -61,8 +61,8 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Fuel_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp) in mod.FUEL_PROJECT_OPERATIONAL_TIMEPOINTS)
@@ -78,8 +78,8 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Startup_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)
@@ -94,8 +94,8 @@ def add_model_components(m, d):
         :return:
         """
         return sum(mod.Shutdown_Cost[g, tmp]
-                   * mod.number_of_hours_in_timepoint[tmp]
-                   * mod.timepoint_weight[tmp]
+                   * mod.hrs_in_tmp[tmp]
+                   * mod.tmp_weight[tmp]
                    * mod.number_years_represented[mod.period[tmp]]
                    * mod.discount_factor[mod.period[tmp]]
                    for (g, tmp)

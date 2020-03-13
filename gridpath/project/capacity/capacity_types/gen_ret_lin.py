@@ -225,7 +225,7 @@ def retire_forever_rule(mod, g, p):
     else:
         return mod.GenRetLin_Capacity_MW[g, p] \
             <= mod.GenRetLin_Capacity_MW[
-                g, mod.previous_period[p]]
+                g, mod.prev_period[p]]
 
 
 # Capacity Type Methods

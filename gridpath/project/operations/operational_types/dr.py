@@ -183,10 +183,10 @@ def energy_balance_rule(mod, p, h):
     down within an horizon, i.e. there are no energy losses or gains.
     """
     return sum(mod.DR_Shift_Up_MW[p, tmp]
-               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[p], h]) \
         == sum(mod.DR_Shift_Down_MW[p, tmp]
-               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[p], h])
 
 
@@ -202,11 +202,11 @@ def energy_budget_rule(mod, p, h):
     horizon.
     """
     return sum(mod.DR_Shift_Up_MW[p, tmp]
-               * mod.number_of_hours_in_timepoint[tmp]
-               for tmp in mod.TIMEPOINTS_ON_BALANCING_TYPE_HORIZON[
+               * mod.hrs_in_tmp[tmp]
+               for tmp in mod.TMPS_BY_BLN_TYPE_HRZ[
                    mod.balancing_type_project[p], h]) \
         <= mod.Energy_Capacity_MWh[p, mod.period[
-            mod.first_horizon_timepoint[mod.balancing_type_project[p], h]]]
+            mod.first_hrz_tmp[mod.balancing_type_project[p], h]]]
 
 
 # Operational Type Methods
@@ -266,8 +266,8 @@ def power_delta_rule(mod, p, tmp):
         return (mod.DR_Shift_Up_MW[p, tmp]
                 - mod.DR_Shift_Down_MW[p, tmp]) - \
             (mod.DR_Shift_Up_MW[
-                 p, mod.previous_timepoint[tmp, mod.balancing_type_project[p]]
+                 p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
              ]
                 - mod.DR_Shift_Down_MW[
-                 p, mod.previous_timepoint[tmp, mod.balancing_type_project[p]]
+                 p, mod.prev_tmp[tmp, mod.balancing_type_project[p]]
              ])

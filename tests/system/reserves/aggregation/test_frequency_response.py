@@ -200,7 +200,7 @@ class TestFreqRespAgg(unittest.TestCase):
             {tmp: sorted(
                 [prj for prj in
                  instance.FREQUENCY_RESPONSE_PROJECTS_OPERATIONAL_IN_TIMEPOINT[tmp]
-                 ]) for tmp in instance.TIMEPOINTS
+                 ]) for tmp in instance.TMPS
                                                  }.items()
                                              )
                                       )
@@ -318,7 +318,7 @@ class TestFreqRespAgg(unittest.TestCase):
                  instance.
                  FREQUENCY_RESPONSE_PARTIAL_PROJECTS_OPERATIONAL_IN_TIMEPOINT[
                      tmp]
-                 ]) for tmp in instance.TIMEPOINTS
+                 ]) for tmp in instance.TMPS
             }.items()
         )
         )

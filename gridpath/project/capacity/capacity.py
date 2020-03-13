@@ -173,7 +173,7 @@ def add_model_components(m, d):
             rule=lambda mod: [
                 (g, tmp) for g in mod.PROJECTS
                 for p in mod.OPERATIONAL_PERIODS_BY_PROJECT[g]
-                for tmp in mod.TIMEPOINTS_IN_PERIOD[p]
+                for tmp in mod.TMPS_IN_PRD[p]
                 ]
             )
 
@@ -195,7 +195,7 @@ def add_model_components(m, d):
         return gens
 
     m.OPERATIONAL_PROJECTS_IN_TIMEPOINT = \
-        Set(m.TIMEPOINTS, initialize=op_gens_by_tmp)
+        Set(m.TMPS, initialize=op_gens_by_tmp)
 
 
 def load_model_data(m, d, data_portal, scenario_directory, subproblem, stage):

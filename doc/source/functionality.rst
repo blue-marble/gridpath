@@ -141,72 +141,20 @@ The temporal units include:
 Timepoints
 ----------
 
-*Timepoints* are the finest resolution over which operational decisions are
-made (e.g. an hour). Generator commitment and dispatch decisions are made for
-each timepoint, with some constraints applied across timepoints (e.g. ramp
-constraints.) Most commonly, a timepoint is an hour, but the resolution is
-flexible: a timepoint could also be a 15-minute, 5-minute, 1-minute, or 4-hour
-segment. Different timepoint durations can also be mixed, e.g. some can be
-5-minute segments and some can be hours.
+.. automodule:: gridpath.temporal.operations.timepoints
 
-Timepoints can also be assigned weights in order to represent other
-timepoints that are not modeled explicitly (e.g. use a 24-hour period per month
-to represent the whole month using the number of days in that month for the
-weight of each of the 24 timepoints).
-
-To support multi-stage production simulation timepoints can also be assigned a
-mapping to the previous stage (e.g. timepoints 1-12 in the 5-minute real-time
-stage map to timepoint 1 in the hour-ahead stage) and a flag whether the
-timepoint is part of a spinup or lookahead segment.
-Timepoints that are part of a spinup or lookahead segment are included in the
-optimization but are generally discarded when calculating result metrics such as
-annual emissions, energy, or cost. See :ref:`subproblems-sub-section-ref` and
+See :ref:`subproblems-sub-section-ref` and
 :ref:`stages-sub-section-ref` for more information.
 
 Balancing Types and Horizons
 ----------------------------
 
-GridPath organizes timepoints into *balancing types* and *horizons* that
-describe how *timepoints* are grouped together when making operational
-decisions, with some operational constraints enforced over the *horizon* for
-each *balancing type*, e.g. hydro budgets or storage energy balance. As a
-simple example, in the case of modeling a full year with 8760 timepoints, we
-could have three *balancing types*: a day, a month, and a year; there would
-then be 365 *horizons* of the *balancing type* 'day,' 12 *horizons* of the
-*balancing type* 'month,' and 1 *horizon* of the *balancing type* 'year.'
-Within each balancing types, horizons are modeled as independent from each
-other for operational purposes (i.e operational decisions made on one
-horizon do not affect those made on another horizon). Generator and storage
-resources in GridPath are also assigned *balancing types*: a hydro plant
-of the *balancing type* 'day' would have to meet an energy budget constraint
-on each of the 365 'day' *horizons* whereas one of the *balancing type*
-'year' would only have a single energy budget constraint grouping all 8760
-timepoints.
-
-Each *horizon* has boundary condition that can be 'circular' or 'linear.' With
-the 'circular' approach, the last timepoint of the horizon is considered the
-previous timepoint for the first timepoint of the horizon (for the purposes
-of functionality such as ramp constraints or tracking storage state of
-charge). If the boundary is 'linear,' then we ignore constraints relating to
-the previous timepoint in the first timepoint of a horizon.
+.. automodule:: gridpath.temporal.operations.horizons
 
 Periods
 -------
 
-Each *timepoint* in a GridPath model also belongs to a *period* (e.g. a year),
-which describes when decisions to build or retire infrastructure are made. A
-*period* must be specified in both capacity-expansion and production-cost
-model. In a production-cost simulation context, we can use the period to
-exogenously change the amount of available capacity, but the *period*
-temporal unit is mostly used in the capacity-expansion approach, as it
-defines when capacity decisions are made and new infrastructure becomes
-available (or is retired). That information in turn feeds into the horizon-
-and timepoint-level operational constraints, i.e. once a generator is build,
-the optimization is allowed to operate it in subsequent periods (usually for
-the duration of the generators's lifetime). The *period* duration is
-flexible: e.g. capacity decisions can be made every month, every year, every
-10 years, etc. A discount factor can also be applied to weight costs
-differently depending on when they are incurred.
+.. automodule:: gridpath.temporal.investment.periods
 
 .. _subproblems-sub-section-ref:
 
