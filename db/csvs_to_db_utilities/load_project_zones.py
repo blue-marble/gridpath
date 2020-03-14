@@ -88,12 +88,12 @@ def load_project_policy_zones(io, c, subscenario_input, data_input, policy_type_
     """
 
     for i in subscenario_input.index:
-        prj_sc_id = int(subscenario_input['project_' + policy_type_input + '_zone_scenario_id'][i])
+        prj_sc_id = int(subscenario_input["id"][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            (data_input['project_' + policy_type_input + '_zone_scenario_id'] == prj_sc_id)]
+            (data_input["id"] == prj_sc_id)]
 
         # Get projects and zones from input data and convert to dictionary with projects as key
         project_policy_zones_input = dict()
