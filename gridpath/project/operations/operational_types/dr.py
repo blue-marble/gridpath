@@ -223,7 +223,7 @@ def power_provision_rule(mod, p, tmp):
 def fuel_burn_rule(mod, p, tmp, error_message):
     """
     """
-    if p in mod.FUEL_PROJECTS:
+    if p in mod.FUEL_PRJS:
         raise ValueError(
 
             "ERROR! Shiftable load projects should not use fuel." + "\n" +

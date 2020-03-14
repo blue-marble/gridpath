@@ -218,7 +218,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     """
     Variable generators should not have fuel use.
     """
-    if g in mod.FUEL_PROJECTS:
+    if g in mod.FUEL_PRJS:
         raise ValueError(
             "ERROR! Variable projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +

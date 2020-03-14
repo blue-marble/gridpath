@@ -364,7 +364,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     heat_rate_curves.tab, so the fuel burn slope is equal to the specified
     heat rate and the intercept is zero.
     """
-    if g in mod.FUEL_PROJECTS:
+    if g in mod.FUEL_PRJS:
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
             * mod.GenSimple_Provide_Power_MW[g, tmp]
     else:

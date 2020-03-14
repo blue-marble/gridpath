@@ -498,7 +498,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
     """
-    if g in mod.FUEL_PROJECTS:
+    if g in mod.FUEL_PRJS:
         raise ValueError(
             "ERROR! gen_hydro projects should not use fuel." + "\n" +
             "Check input data for project '{}'".format(g) + "\n" +

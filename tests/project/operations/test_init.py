@@ -114,7 +114,7 @@ class TestOperationsInit(unittest.TestCase):
             "Clunky_Old_Gen", "Clunky_Old_Gen2", "Nuclear_Flexible"
         ])
         actual_fuel_projects = sorted([
-            prj for prj in instance.FUEL_PROJECTS
+            prj for prj in instance.FUEL_PRJS
             ])
         self.assertListEqual(expected_fuel_projects,
                              actual_fuel_projects)
@@ -142,7 +142,7 @@ class TestOperationsInit(unittest.TestCase):
                                            )
                                     )
         actual_fuel = OrderedDict(sorted(
-            {prj: instance.fuel[prj] for prj in instance.FUEL_PROJECTS}.items()
+            {prj: instance.fuel[prj] for prj in instance.FUEL_PRJS}.items()
         )
         )
         self.assertDictEqual(expected_fuel, actual_fuel)
@@ -158,7 +158,7 @@ class TestOperationsInit(unittest.TestCase):
         self.assertListEqual(expected_tmps_by_fuel_project,
                              actual_tmps_by_fuel_project)
 
-        # Set: FUEL_PROJECT_SEGMENTS
+        # Set: FUEL_PRJ_SGMS
 
         expected_fuel_project_segments = sorted([
             ("Nuclear", 0),
@@ -180,12 +180,12 @@ class TestOperationsInit(unittest.TestCase):
             ("Nuclear_Flexible", 0)
         ])
         actual_fuel_project_segments = sorted([
-            (prj, s) for (prj, s) in instance.FUEL_PROJECT_SEGMENTS
+            (prj, s) for (prj, s) in instance.FUEL_PRJ_SGMS
             ])
         self.assertListEqual(expected_fuel_project_segments,
                              actual_fuel_project_segments)
 
-        # Set: FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+        # Set: FUEL_PRJ_SGMS_OPR_TMPS
         expected_fuel_project_segments_operational_timepoints = sorted([
             (g, tmp, s) for (g, tmp) in expected_tmps_by_fuel_project
             for _g, s in expected_fuel_project_segments
@@ -193,7 +193,7 @@ class TestOperationsInit(unittest.TestCase):
         ])
         actual_fuel_project_segments_operational_timepoints = sorted([
             (prj, tmp, s) for (prj, tmp, s) in
-            instance.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+            instance.FUEL_PRJ_SGMS_OPR_TMPS
         ])
 
         self.assertListEqual(
@@ -223,7 +223,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_fuel_burn_slope = OrderedDict(sorted(
             {(prj, s): instance.fuel_burn_slope_mmbtu_per_mwh[(prj, s)]
-             for (prj, s) in instance.FUEL_PROJECT_SEGMENTS}.items()
+             for (prj, s) in instance.FUEL_PRJ_SGMS}.items()
             )
         )
 
@@ -253,7 +253,7 @@ class TestOperationsInit(unittest.TestCase):
         }.items()))
         actual_fuel_burn_intercept = OrderedDict(sorted(
             {(prj, s): instance.fuel_burn_intercept_mmbtu_per_hr[(prj, s)]
-             for (prj, s) in instance.FUEL_PROJECT_SEGMENTS}.items()
+             for (prj, s) in instance.FUEL_PRJ_SGMS}.items()
             )
         )
 
