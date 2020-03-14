@@ -224,7 +224,7 @@ def load_project_startup_chars(io, c, subscenario_input, data_input):
     :return:
     """
 
-    subscenario_input.drop(["filename"], axis=1, inplace=True)
+    # subscenario_input.drop(["filename"], axis=1, inplace=True)
     project_su_scenarios = [
         tuple(x) for x in subscenario_input.to_records(index=False)
     ]

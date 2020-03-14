@@ -342,7 +342,8 @@ def load_csv_data(conn, csv_path, quiet):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_startup_chars',
             'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(
             data_folder_path, quiet)
         load_project_operational_chars.load_project_startup_chars(conn, c2,
                                                        csv_subscenario_input, csv_data_input)
