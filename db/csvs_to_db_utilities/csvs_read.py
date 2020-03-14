@@ -51,12 +51,50 @@ def csv_read_data(folder_path, quiet):
         if f.endswith(".csv"):
             if not quiet:
                 print(f)
-            subscenario_id = int(f.split("_")[0])
-            subscenario_name = f.split("_")[1].split(".csv")[0]
+            subscenario_id = int(f.split("_", 1)[0])
+            subscenario_name = f.split("_", 1)[1].split(".csv")[0]
             print(subscenario_id, subscenario_name)
             csv_subscenario.loc[row_number] = [subscenario_id,
                                                subscenario_name, ""]
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
+            subscenario_data_df["id"] = subscenario_id
+            csv_data = csv_data.append(subscenario_data_df)
+    #
+    # print(csv_subscenario, csv_data)
+
+    return (csv_subscenario, csv_data)
+
+
+def csv_read_project_data(folder_path, quiet):
+    '''
+    :param folder_path: Path to folder with input csv files
+    :param quiet: boolean
+    :return csv_subscenario: A pandas dataframe with subscenario id, name, description
+    :return csv_data: Data for all subscenarios in a dataframe
+    '''
+    # The specific function will call a generic file scanner function, which will scan the folder and note the
+    # subscenario file. The file only needs the string 'subscenario' in its name. The function will then read
+    # each subscenario data using the filename in the subscenario file. All other files will be ignored.
+
+    csv_data = pd.DataFrame()
+    # Look for CSV files
+
+    csv_subscenario = pd.DataFrame(
+        columns=["project", "id", "name", "description"]
+    )
+    row_number = 0
+    for f in os.listdir(folder_path):
+        if f.endswith(".csv"):
+            if not quiet:
+                print(f)
+            project = f.split("_", 1)[0]
+            subscenario_id = int(f.split("_", 2)[1])
+            subscenario_name = f.split("_", 2)[2].split(".csv")[0]
+            print(project, subscenario_id, subscenario_name)
+            csv_subscenario.loc[row_number] = [project, subscenario_id,
+                                               subscenario_name, ""]
+            subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
+            subscenario_data_df["project"] = project
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
 

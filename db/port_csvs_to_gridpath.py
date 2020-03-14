@@ -81,12 +81,14 @@ def parse_arguments(args):
     # Database name and location options
     # Adding defaults here even though the connect_to_database function has its own defaults
     # because parser passes a text string of None and not a python None
-    parser.add_argument("--db_name", default="io",
+    parser.add_argument("--db_name", default="test_db",
                         help="Name of the database without the db extension.")
     parser.add_argument("--db_location", default=".",
                         help="Path to the database (relative to "
                              "port_csvs_to_db.py).")
-    parser.add_argument("--csv_location", default="csvs",
+    parser.add_argument("--csv_location",
+                        default="/Users/ana/dev/gridpath_dev/db"
+                                "/csvs_test_examples",
                         help="Path to the csvs folder including folder name (relative to "
                              "port_csvs_to_db.py).")
     parser.add_argument("--quiet", default=False, action="store_true",
@@ -216,7 +218,7 @@ def load_csv_data(conn, csv_path, quiet):
     if csv_data_master.loc[csv_data_master['table'] == 'project_hydro_operational_chars', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_hydro_operational_chars', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_project_data(data_folder_path, quiet)
         load_project_operational_chars.load_project_hydro_opchar(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT VARIABLE GENERATOR PROFILES ##
