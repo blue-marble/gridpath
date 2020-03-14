@@ -182,11 +182,11 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
     project_hr_scenarios = OrderedDict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['heat_rate_curves_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['heat_rate_curves_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         for prj in data_input_subscenario['project'].unique():
             project_hr_scenarios[(prj, sc_id)] = (sc_name, sc_description)
