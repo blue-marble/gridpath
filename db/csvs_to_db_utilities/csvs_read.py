@@ -59,8 +59,8 @@ def csv_read_data(folder_path, quiet):
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
-    #
-    # print(csv_subscenario, csv_data)
+
+    print(csv_subscenario, csv_data)
 
     return (csv_subscenario, csv_data)
 
