@@ -87,9 +87,13 @@ def csv_read_project_data(folder_path, quiet):
         if f.endswith(".csv"):
             if not quiet:
                 print(f)
-            project = f.split("_", 1)[0]
-            subscenario_id = int(f.split("_", 2)[1])
-            subscenario_name = f.split("_", 2)[2].split(".csv")[0]
+            # TODO: need a robust method for splitting the filename in case
+            #  the same characters exist in say the project name
+            #  Split on dash instead of underscore for now to allow for
+            #  underscores in project name
+            project = f.split("-", 1)[0]
+            subscenario_id = int(f.split("-", 2)[1])
+            subscenario_name = f.split("-", 2)[2].split(".csv")[0]
             print(project, subscenario_id, subscenario_name)
             csv_subscenario.loc[row_number] = [project, subscenario_id,
                                                subscenario_name, ""]
@@ -98,7 +102,7 @@ def csv_read_project_data(folder_path, quiet):
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
 
-    print(csv_subscenario, csv_data)
+    # print(csv_subscenario, csv_data)
 
     return (csv_subscenario, csv_data)
 

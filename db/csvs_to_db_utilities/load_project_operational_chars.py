@@ -86,7 +86,7 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
     project_tmp_profiles_scenarios = dict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['variable_generator_profile_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
@@ -102,7 +102,7 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
         project_tmp_profiles[prj][sc_id] = dict()
 
         project_tmp_profiles_by_project = data_input.loc[
-                (data_input['variable_generator_profile_scenario_id'] == sc_id) & (data_input['project'] == prj)]
+                (data_input['id'] == sc_id) & (data_input['project'] == prj)]
 
         for st_id in project_tmp_profiles_by_project['stage_id'].unique():
             project_tmp_profiles_by_project_stage = project_tmp_profiles_by_project.loc[
