@@ -38,11 +38,11 @@ def load_project_local_capacity_chars(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['project_local_capacity_chars_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['project_local_capacity_chars_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         key_cols = ["project"]
         value_cols = ["local_capacity_fraction",
