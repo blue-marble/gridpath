@@ -69,13 +69,15 @@ def load_geography_carbon_cap_zones(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sc_id in subscenario_input['carbon_cap_zone_scenario_id'].to_list():
+    for sc_id in subscenario_input['id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['carbon_cap_zone_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['carbon_cap_zone_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['carbon_cap_zone_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input['id'] == sc_id]
         zones = data_input_subscenario['carbon_cap_zone'].to_list()
 
         zone_violation_penalties = {}
@@ -107,13 +109,15 @@ def load_geography_local_capacity_zones(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sc_id in subscenario_input['local_capacity_zone_scenario_id'].to_list():
+    for sc_id in subscenario_input['id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['local_capacity_zone_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['local_capacity_zone_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['local_capacity_zone_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input['id'] == sc_id]
         zones = data_input_subscenario['local_capacity_zone'].to_list()
 
         zone_violation_penalties = {}
@@ -145,13 +149,15 @@ def load_geography_prm_zones(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sc_id in subscenario_input['prm_zone_scenario_id'].to_list():
+    for sc_id in subscenario_input['id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['prm_zone_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['prm_zone_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['prm_zone_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input['id'] == sc_id]
         zones = data_input_subscenario['prm_zone'].to_list()
 
         zone_violation_penalties = {}
@@ -183,13 +189,15 @@ def load_geography_rps_zones(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sc_id in subscenario_input['rps_zone_scenario_id'].to_list():
+    for sc_id in subscenario_input['id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['rps_zone_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['rps_zone_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['rps_zone_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input['id'] == sc_id]
         zones = data_input_subscenario['rps_zone'].to_list()
 
         zone_violation_penalties = {}
