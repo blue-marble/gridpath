@@ -20,11 +20,11 @@ def load_fuels(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['fuel_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['fuel_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         fuel_chars = dict()
         fuel_chars = data_input_subscenario[['fuel', 'co2_intensity_tons_per_mmbtu']].set_index(
@@ -50,11 +50,11 @@ def load_fuel_prices(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['fuel_price_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['fuel_price_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         fuel_month_prices = dict()
         for f in data_input_subscenario['fuel'].unique():
