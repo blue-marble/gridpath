@@ -24,11 +24,11 @@ def load_system_reserves(io, c, subscenario_input, data_input, reserve_type_inpu
     #TODO: Include "frequency_response_partial_mw" column for inputs_system_frequency_response table
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input[reserve_type_input + '_scenario_id'][i])
+        sc_id = int(subscenario_input["id"][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input[reserve_type_input + '_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input["id"] == sc_id)]
         bas = data_input_subscenario[reserve_type_input + '_ba'].unique()
 
         ba_stage_timepoint_reserve_req_input = OrderedDict()
