@@ -53,14 +53,14 @@ def csv_read_data(folder_path, quiet):
                 print(f)
             subscenario_id = int(f.split("_", 1)[0])
             subscenario_name = f.split("_", 1)[1].split(".csv")[0]
-            print(subscenario_id, subscenario_name)
+            # print(subscenario_id, subscenario_name)
             csv_subscenario.loc[row_number] = [subscenario_id,
                                                subscenario_name, ""]
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
 
-    print(csv_subscenario, csv_data)
+    # print(csv_subscenario, csv_data)
 
     return (csv_subscenario, csv_data)
 

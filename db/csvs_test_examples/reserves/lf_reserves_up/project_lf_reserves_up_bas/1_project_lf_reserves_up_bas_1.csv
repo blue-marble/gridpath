@@ -1,0 +1,8 @@
+project,lf_reserves_up_ba
+Gas_CCGT,Zone1
+Hydro,Zone1
+Gas_CCGT_new,Zone1
+Battery,Zone1
+Gas_CCGT_z2,Zone2
+Gas_CCGT_new_z2,Zone2
+Battery_z2,Zone2

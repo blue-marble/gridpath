@@ -52,15 +52,16 @@ def load_project_reserve_bas(io, c, subscenario_input, data_input, reserve_type_
     :param reserve_type_input:
     :return:
     """
+    print(data_input)
     #TODO: Include "contribute_to_partial" column for inputs_project_frequency_response_bas table
 
     for i in subscenario_input.index:
-        prj_sc_id = int(subscenario_input['project_' + reserve_type_input + '_ba_scenario_id'][i])
+        prj_sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            (data_input['project_' + reserve_type_input + '_ba_scenario_id'] == prj_sc_id)]
+            (data_input['id'] == prj_sc_id)]
 
         # Get projects and bas from input data and convert to dictionary with projects as key
         project_bas_input = dict()

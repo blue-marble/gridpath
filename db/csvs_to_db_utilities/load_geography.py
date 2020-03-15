@@ -232,13 +232,15 @@ def load_geography_reserves_bas(io, c, subscenario_input, data_input, reserve_ty
     :return:
     """
 
-    for sc_id in subscenario_input[reserve_type_input + '_ba_scenario_id'].to_list():
+    for sc_id in subscenario_input["id"].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input[reserve_type_input + '_ba_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input["id"] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input[reserve_type_input + '_ba_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input["id"] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input[reserve_type_input + '_ba_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input["id"] == sc_id]
         bas = data_input_subscenario[reserve_type_input + '_ba'].to_list()
 
         ba_violation_penalties = {}

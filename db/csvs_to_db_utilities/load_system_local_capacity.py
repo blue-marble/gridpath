@@ -20,11 +20,11 @@ def load_system_local_capacity_requirement(io, c, subscenario_input, data_input)
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['local_capacity_requirement_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['local_capacity_requirement_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         zone_period_requirement = dict()
         for z in data_input_subscenario['local_capacity_zone'].unique():
