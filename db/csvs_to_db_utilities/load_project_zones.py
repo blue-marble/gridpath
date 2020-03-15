@@ -52,7 +52,6 @@ def load_project_reserve_bas(io, c, subscenario_input, data_input, reserve_type_
     :param reserve_type_input:
     :return:
     """
-    print(data_input)
     #TODO: Include "contribute_to_partial" column for inputs_project_frequency_response_bas table
 
     for i in subscenario_input.index:
