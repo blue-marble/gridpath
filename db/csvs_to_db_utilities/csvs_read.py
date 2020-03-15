@@ -2,114 +2,162 @@
 # Copyright 2019 Blue Marble Analytics LLC. All rights reserved.
 
 """
-Read input data
+Read subscenario data from CSV files.
 """
 
-from collections import OrderedDict
-import pandas as pd
 import os
+import pandas as pd
 
+
+# TODO: can we consolidate the csv_read_data and csv_read_project_data
+#  functions, as they are very similar?
+
+# TODO: add a check that subscenario IDs are unique
 
 def csv_read_data(folder_path, quiet):
-    '''
+    """
     :param folder_path: Path to folder with input csv files
     :param quiet: boolean
-    :return csv_subscenario: A pandas dataframe with subscenario id, name, description
-    :return csv_data: Data for all subscenarios in a dataframe
-    '''
-    # The specific function will call a generic file scanner function, which will scan the folder and note the
-    # subscenario file. The file only needs the string 'subscenario' in its name. The function will then read
-    # each subscenario data using the filename in the subscenario file. All other files will be ignored.
+    :return subscenario_df: Pandas dataframe with subscenario id, name,
+        description
+    :return data_df: Pandas dataframe with data for the subscenario
 
-    csv_subscenario = pd.DataFrame(columns=["id", "name", "description"])
-    csv_data = pd.DataFrame()
+    A generic file scanner function for subscenarios, which will scan the
+    folder_path and look for CSVs. The file name should start with an
+    integer (the subscenario ID), followed by an underscore, and then the
+    subscenario name. Subscenario description can be provided in a .txt file
+    with the same name as the subscenario CSV file; if such a .txt file does
+    not exist, the description of the subscenario is an empty string.
 
-    # Look for CSV files
+    """
+
+    # Create the dataframes with the subscenario info and data
+    subscenario_df = pd.DataFrame(columns=["id", "name", "description"])
+    data_df = pd.DataFrame()
+
+    # We'll increment this in the loop below to insert the next subscenario
+    # in the csv_subscenario_dataframe
     row_number = 0
+
+    # List all files in the directory
     for f in os.listdir(folder_path):
+        # Look for CSV files
         if f.endswith(".csv"):
             if not quiet:
                 print(f)
+
+            # Get the subscenario ID and subscenario name from the file name
+            # We're expecting the file name to start with an integer (the
+            # subscenario ID), followed by an underscore, and then the
+            # subscenario name
             subscenario_id = int(f.split("_", 1)[0])
             subscenario_name = f.split("_", 1)[1].split(".csv")[0]
 
-            # Description should be provided in file with same name as the
-            # CSV subscenario file but extension .txt
-            description_filename = f.split(".csv")[0] + ".txt"
-            description_file = os.path.join(folder_path, description_filename)
-            if os.path.isfile(description_file):
-                with open(description_file, "r") as desc_f:
-                    subscenario_description = desc_f.read()
-            else:
-                subscenario_description = ""
+            # Description of the subscenario can be provided in file with same
+            # name as the CSV subscenario file but extension .txt
+            subscenario_description = get_subscenario_description(
+                folder_path=folder_path, csv_filename=f
+            )
 
-            # print(subscenario_id, subscenario_name)
-            csv_subscenario.loc[row_number] = [
+            # Insert the subscenario ID, name, and description into the
+            # subscenario dataframe
+            subscenario_df.loc[row_number] = [
                 subscenario_id, subscenario_name, subscenario_description
             ]
+
+            # Insert the subscenario data into the data dataframe
+            # Read in the data for the current subscenario from the CSV
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
+            # Add the subscenario ID to the dataframe
             subscenario_data_df["id"] = subscenario_id
-            csv_data = csv_data.append(subscenario_data_df)
+
+            # Append data to the all-scenarios dataframe
+            data_df = data_df.append(subscenario_data_df)
+
+            # Increment the row for the subscenario_df
             row_number += 1
 
-    # print(csv_subscenario, csv_data)
-
-    return (csv_subscenario, csv_data)
+    return subscenario_df, data_df
 
 
 def csv_read_project_data(folder_path, quiet):
-    '''
+    """
     :param folder_path: Path to folder with input csv files
     :param quiet: boolean
-    :return csv_subscenario: A pandas dataframe with subscenario id, name, description
-    :return csv_data: Data for all subscenarios in a dataframe
-    '''
-    # The specific function will call a generic file scanner function, which will scan the folder and note the
-    # subscenario file. The file only needs the string 'subscenario' in its name. The function will then read
-    # each subscenario data using the filename in the subscenario file. All other files will be ignored.
+    :return subscenario_df: Pandas dataframe with subscenario id, name,
+        description
+    :return data_df: Pandas dataframe with data for the subscenario
 
-    csv_data = pd.DataFrame()
-    # Look for CSV files
+    A generic file scanner function for project-level subscenarios (e.g.
+    operating characteristics such as heat rates, startup characteristics,
+    variable profiles, and hydro characteristics), which will scan the
+    folder_path and look for CSVs. The file name should start with the
+    project name, followed by a dash, and integer (the subscenario ID), a dash,
+    and then the subscenario name. Underscores are allowed in the
+    project name but dashes are not -- this needs to be made more
+    robust. Subscenario description can be provided in a .txt file with the
+    same name as the subscenario CSV file; if such a .txt file does not
+    exist, the description of the subscenario is an empty string.
 
-    csv_subscenario = pd.DataFrame(
+    """
+
+    # Create the dataframes with the subscenario info and data
+    subscenario_df = pd.DataFrame(
         columns=["project", "id", "name", "description"]
     )
+    data_df = pd.DataFrame()
+
+    # We'll increment this in the loop below to insert the next subscenario
+    # in the csv_subscenario_dataframe
     row_number = 0
+
+    # List all files in the directory
     for f in os.listdir(folder_path):
+        # Look for CSV files
         if f.endswith(".csv"):
             if not quiet:
                 print(f)
+
+            # Get the subscenario ID and subscenario name from the file name
+            # We're expecting the file name to start with the project name,
+            # followed by a dash, an integer (the subscenario ID), followed
+            # by a dash, and then the subscenario name
             # TODO: need a robust method for splitting the filename in case
-            #  the same characters exist in say the project name
+            #  the same character as used to delineate (currently a dash)
+            #  exists in the project name
             #  Split on dash instead of underscore for now to allow for
             #  underscores in project name
             project = f.split("-", 1)[0]
             subscenario_id = int(f.split("-", 2)[1])
             subscenario_name = f.split("-", 2)[2].split(".csv")[0]
 
-            # Description should be provided in file with same name as the
-            # CSV subscenario file but extension .txt
-            description_filename = f.split(".csv")[0] + ".txt"
-            description_file = os.path.join(folder_path, description_filename)
+            # Description of the subscenario can be provided in file with same
+            # name as the CSV subscenario file but extension .txt
+            subscenario_description = get_subscenario_description(
+                folder_path=folder_path, csv_filename=f
+            )
 
-            if os.path.isfile(description_file):
-                with open(description_file, "r") as desc_f:
-                    subscenario_description = desc_f.read()
-            else:
-                subscenario_description = ""
+            # Insert the project name, subscenario ID, subscenario name,
+            # and description into the subscenario dataframe
+            subscenario_df.loc[row_number] = [
+                project, subscenario_id, subscenario_name,
+                subscenario_description
+            ]
 
-            csv_subscenario.loc[row_number] = [project, subscenario_id,
-                                               subscenario_name,
-                                               subscenario_description]
+            # Insert the subscenario data into the data dataframe
+            # Read in the data for the current subscenario from the CSV
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
+            #  Add the subscenario ID to the dataframe
             subscenario_data_df["project"] = project
             subscenario_data_df["id"] = subscenario_id
-            csv_data = csv_data.append(subscenario_data_df)
+
+            # Append dat to the all-scenarios dataframe
+            data_df = data_df.append(subscenario_data_df)
+
+            # Increment the row for the subscenario_df
             row_number += 1
 
-    # print(csv_subscenario, csv_data)
-
-    return (csv_subscenario, csv_data)
+    return subscenario_df, data_df
 
 
 def csv_read_temporal_data(folder_path, quiet):
@@ -155,3 +203,25 @@ def csv_read_temporal_data(folder_path, quiet):
 
     return (csv_subscenario, csv_data)
 
+
+def get_subscenario_description(folder_path, csv_filename):
+    """
+    :param folder_path:
+    :param csv_filename:
+    :return:
+
+    Get the description for the subscenario from a .txt file with the same
+    name as the CSV file for the subscenario if the .txt file exists.
+
+    """
+    # Description of the subscenario can be provided in file with same
+    # name as the CSV subscenario file but extension .txt
+    description_filename = csv_filename.split(".csv")[0] + ".txt"
+    description_file = os.path.join(folder_path, description_filename)
+    if os.path.isfile(description_file):
+        with open(description_file, "r") as desc_f:
+            subscenario_description = desc_f.read()
+    else:
+        subscenario_description = ""
+
+    return subscenario_description
