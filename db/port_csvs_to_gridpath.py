@@ -81,14 +81,12 @@ def parse_arguments(args):
     # Database name and location options
     # Adding defaults here even though the connect_to_database function has its own defaults
     # because parser passes a text string of None and not a python None
-    parser.add_argument("--db_name", default="test_db",
+    parser.add_argument("--db_name", default="io",
                         help="Name of the database without the db extension.")
     parser.add_argument("--db_location", default=".",
                         help="Path to the database (relative to "
                              "port_csvs_to_db.py).")
-    parser.add_argument("--csv_location",
-                        default="/Users/ana/dev/gridpath_dev/db"
-                                "/csvs_test_examples",
+    parser.add_argument("--csv_location", default="csvs",
                         help="Path to the csvs folder including folder name (relative to "
                              "port_csvs_to_db.py).")
     parser.add_argument("--quiet", default=False, action="store_true",
