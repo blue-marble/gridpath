@@ -96,13 +96,14 @@ def csv_read_project_data(folder_path, quiet):
             project = f.split("-", 1)[0]
             subscenario_id = int(f.split("-", 2)[1])
             subscenario_name = f.split("-", 2)[2].split(".csv")[0]
-            print(project, subscenario_id, subscenario_name)
+
             csv_subscenario.loc[row_number] = [project, subscenario_id,
                                                subscenario_name, ""]
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
             subscenario_data_df["project"] = project
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
+            row_number += 1
 
     # print(csv_subscenario, csv_data)
 

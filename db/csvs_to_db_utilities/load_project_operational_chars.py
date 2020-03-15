@@ -229,6 +229,10 @@ def load_project_startup_chars(io, c, subscenario_input, data_input):
         tuple(x) for x in subscenario_input.to_records(index=False)
     ]
 
+    # Change the order of the columns before creating the list of tuples
+    cols = data_input.columns.tolist()
+    cols = cols[-2:] + cols[:3]
+    data_input = data_input[cols]
     project_su_chars = [
         tuple(x) for x in data_input.to_records(index=False)
     ]
