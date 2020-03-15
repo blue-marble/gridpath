@@ -15,16 +15,11 @@ in this master csv.
 Input csvs for tables required for optional features are under the
 'features' subfolder
 
-Each table's subfolder has one "subscenario_xxx.csv", which has
- details of all the subscenarios including subscenario_id, name,
-description and the file name of the subscenario data csv. Each subscenario
-should have one separate csv that holds the input data. The port script will
-only input data for subscenarios included in the subscenario_xxx.csv. The
-script will ignore csvs that have "template" or "ignore" in their filenames.
-The csv filenames can be specified with or without the .csv extension.
-Only for the variable generator profiles, the subscenario input data for
-each project is provided in separate csvs even if multiple projects belong
-to the same subscenario.
+The script will look for CSV files in each table's subfolder. It is
+expecting that the CSV filenames will conform to a certain structure
+indicating the ID and name for the subscenarios, and contain the data for
+the subscenarios. See csvs_to_db_utilities.csvs_read for the  specific
+requirements depending on the function called from that module.
 
 The scenario.csv under the scenario folder holds the input data for the
 scenario table, which indicates which subscenarios should be included in a
