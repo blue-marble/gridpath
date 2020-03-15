@@ -37,12 +37,12 @@ def load_transmission_new_cost(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['transmission_new_cost_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            data_input['transmission_new_cost_scenario_id'] == sc_id]
+            data_input['id'] == sc_id]
 
         key_cols = ["transmission_line", "vintage"]
         value_cols = ["tx_lifetime_yrs", "tx_annualized_real_cost_per_mw_yr"]

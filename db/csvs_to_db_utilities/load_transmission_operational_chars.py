@@ -19,12 +19,12 @@ def load_transmission_operational_chars(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['transmission_operational_chars_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
         data_input_subscenario = data_input.loc[
-            data_input['transmission_operational_chars_scenario_id'] == sc_id]
+            data_input['id'] == sc_id]
 
         tx_line_chars = dict()
         for tl in data_input_subscenario['transmission_line'].unique():

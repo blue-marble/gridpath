@@ -1,3 +1,0 @@
-load_zone_scenario_id,transmission_load_zone_scenario_id,name,description,filename
-2,1,transmission_load_zones_1,transmission_load_zones_1,transmission_load_zones_1
-2,2,transmission_load_zones_2,same lines transmission_load_zones_1 but defined in opposite direction,transmission_load_zones_2

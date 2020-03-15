@@ -20,11 +20,11 @@ def load_transmission_zones(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        tl_sc_id = int(subscenario_input['transmission_load_zone_scenario_id'][i])
+        tl_sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['transmission_load_zone_scenario_id'] == tl_sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == tl_sc_id)]
 
         tx_line_load_zones = dict()
         for tl in data_input_subscenario['transmission_line'].unique():
@@ -55,11 +55,11 @@ def load_transmission_carbon_cap_zones(io, c, subscenario_input, data_input):
 
     for i in subscenario_input.index:
         tl_sc_id = int(subscenario_input[
-                           'transmission_carbon_cap_zone_scenario_id'][i])
+                           'id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['transmission_carbon_cap_zone_scenario_id'] == tl_sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == tl_sc_id)]
 
         tx_line_carbon_cap_zones = dict()
         # TODO: should flag if there are non-unique inputs
