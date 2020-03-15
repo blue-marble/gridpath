@@ -23,30 +23,8 @@ def csv_read_data(folder_path, quiet):
 
     csv_subscenario = pd.DataFrame(columns=["id", "name", "description"])
     csv_data = pd.DataFrame()
-    data_starting_from_row = 1  # Notes rows start from 0. So this is the 6th row in the csv.
-
-    ### WILL NEED TO REMOVE FROM HERE ###
-    for f in os.listdir(folder_path):
-        if f.endswith(".csv") and 'template' not in f and 'subscenario' in f and 'ignore' not in f:
-            if not quiet:
-                print(f)
-            csv_subscenario = pd.read_csv(os.path.join(folder_path, f))
-            print(csv_subscenario)
-
-    for row in range(0, len(csv_subscenario.index)):
-        subscenario_filename = csv_subscenario.iloc[row]['filename']
-        if '.csv' not in subscenario_filename:
-            subscenario_filename = subscenario_filename + '.csv'
-        if not quiet:
-            print(subscenario_filename)
-        csv_data = csv_data.append(
-            pd.read_csv(os.path.join(folder_path, subscenario_filename)))
-    ### TO HERE ###
 
     # Look for CSV files
-    # TODO: this does not allow for underscores in the scenario name,
-    # so pass count https://stackoverflow.com/questions/30636248/split-a-string-only-by-first-space-in-python
-
     row_number = 0
     for f in os.listdir(folder_path):
         if f.endswith(".csv"):
@@ -54,9 +32,21 @@ def csv_read_data(folder_path, quiet):
                 print(f)
             subscenario_id = int(f.split("_", 1)[0])
             subscenario_name = f.split("_", 1)[1].split(".csv")[0]
+
+            # Description should be provided in file with same name as the
+            # CSV subscenario file but extension .txt
+            description_filename = f.split(".csv")[0] + ".txt"
+            description_file = os.path.join(folder_path, description_filename)
+            if os.path.isfile(description_file):
+                with open(description_file, "r") as desc_f:
+                    subscenario_description = desc_f.read()
+            else:
+                subscenario_description = ""
+
             # print(subscenario_id, subscenario_name)
-            csv_subscenario.loc[row_number] = [subscenario_id,
-                                               subscenario_name, ""]
+            csv_subscenario.loc[row_number] = [
+                subscenario_id, subscenario_name, subscenario_description
+            ]
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
             subscenario_data_df["id"] = subscenario_id
             csv_data = csv_data.append(subscenario_data_df)
@@ -97,8 +87,20 @@ def csv_read_project_data(folder_path, quiet):
             subscenario_id = int(f.split("-", 2)[1])
             subscenario_name = f.split("-", 2)[2].split(".csv")[0]
 
+            # Description should be provided in file with same name as the
+            # CSV subscenario file but extension .txt
+            description_filename = f.split(".csv")[0] + ".txt"
+            description_file = os.path.join(folder_path, description_filename)
+
+            if os.path.isfile(description_file):
+                with open(description_file, "r") as desc_f:
+                    subscenario_description = desc_f.read()
+            else:
+                subscenario_description = ""
+
             csv_subscenario.loc[row_number] = [project, subscenario_id,
-                                               subscenario_name, ""]
+                                               subscenario_name,
+                                               subscenario_description]
             subscenario_data_df = pd.read_csv(os.path.join(folder_path, f))
             subscenario_data_df["project"] = project
             subscenario_data_df["id"] = subscenario_id
