@@ -198,7 +198,7 @@ def fuel_burn_rule(mod, g, tmp, error_message):
     should not have been given a fuel or labeled carbonaceous in the first
     place.
     """
-    if g in mod.FUEL_PROJECTS:
+    if g in mod.FUEL_PRJS:
         return mod.fuel_burn_slope_mmbtu_per_mwh[g, 0] \
             * mod.Power_Provision_MW[g, tmp]
     else:

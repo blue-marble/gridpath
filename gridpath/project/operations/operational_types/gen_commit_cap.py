@@ -74,7 +74,7 @@ def add_module_specific_components(m, d):
     |                                                                         |
     | Three-dimensional set with generators of the :code:`gen_commit_cap`     |
     | operational type, their operational timepoints, and their fuel          |
-    | segments (if the project is in :code:`FUEL_PROJECTS`).                  |
+    | segments (if the project is in :code:`FUEL_PRJS`).                  |
     +-------------------------------------------------------------------------+
 
     |
@@ -361,10 +361,10 @@ def add_module_specific_components(m, d):
 
     m.GEN_COMMIT_CAP_OPR_TMPS_FUEL_SEG = Set(
         dimen=3,
-        within=m.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS,
+        within=m.FUEL_PRJ_SGMS_OPR_TMPS,
         rule=lambda mod:
         set((g, tmp, s) for (g, tmp, s)
-            in mod.FUEL_PROJECT_SEGMENTS_OPERATIONAL_TIMEPOINTS
+            in mod.FUEL_PRJ_SGMS_OPR_TMPS
             if g in mod.GEN_COMMIT_CAP)
     )
 
@@ -1115,7 +1115,7 @@ def subhourly_energy_delivered_rule(mod, g, tmp):
 def fuel_burn_rule(mod, g, tmp, error_message):
     """
     """
-    if g in mod.FUEL_PROJECTS:
+    if g in mod.FUEL_PRJS:
         return mod.GenCommitCap_Fuel_Burn_MMBTU[g, tmp]
     else:
         raise ValueError(error_message)

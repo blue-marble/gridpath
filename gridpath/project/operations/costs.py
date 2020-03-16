@@ -163,7 +163,7 @@ def export_results(scenario_directory, subproblem, stage, m, d):
                 m.load_zone[p],
                 m.technology[p],
                 value(m.Variable_OM_Cost[p, tmp]),
-                value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PROJECTS else 0,
+                value(m.Fuel_Cost[p, tmp]) if p in m.FUEL_PRJS else 0,
                 value(m.Startup_Cost[p, tmp]),
                 value(m.Shutdown_Cost[p, tmp])
             ])
