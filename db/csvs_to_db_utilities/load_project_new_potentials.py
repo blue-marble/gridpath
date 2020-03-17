@@ -38,11 +38,11 @@ def load_project_new_potentials(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['project_new_potential_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['project_new_potential_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         project_new_potential_capacities = OrderedDict()
 
@@ -106,11 +106,11 @@ def load_project_new_binary_build_sizes(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['project_new_binary_build_size_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['project_new_binary_build_size_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         key_cols = ["project"]
         value_cols = ["binary_build_size_mw", "binary_build_size_mwh"]

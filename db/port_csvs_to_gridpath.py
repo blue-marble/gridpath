@@ -15,16 +15,11 @@ in this master csv.
 Input csvs for tables required for optional features are under the
 'features' subfolder
 
-Each table's subfolder has one "subscenario_xxx.csv", which has
- details of all the subscenarios including subscenario_id, name,
-description and the file name of the subscenario data csv. Each subscenario
-should have one separate csv that holds the input data. The port script will
-only input data for subscenarios included in the subscenario_xxx.csv. The
-script will ignore csvs that have "template" or "ignore" in their filenames.
-The csv filenames can be specified with or without the .csv extension.
-Only for the variable generator profiles, the subscenario input data for
-each project is provided in separate csvs even if multiple projects belong
-to the same subscenario.
+The script will look for CSV files in each table's subfolder. It is
+expecting that the CSV filenames will conform to a certain structure
+indicating the ID and name for the subscenarios, and contain the data for
+the subscenarios. See csvs_to_db_utilities.csvs_read for the  specific
+requirements depending on the function called from that module.
 
 The scenario.csv under the scenario folder holds the input data for the
 scenario table, which indicates which subscenarios should be included in a
@@ -216,14 +211,15 @@ def load_csv_data(conn, csv_path, quiet):
     if csv_data_master.loc[csv_data_master['table'] == 'project_hydro_operational_chars', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_hydro_operational_chars', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
+        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_project_data(data_folder_path, quiet)
         load_project_operational_chars.load_project_hydro_opchar(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT VARIABLE GENERATOR PROFILES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_variable_generator_profiles', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_variable_generator_profiles', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(data_folder_path, quiet)
         load_project_operational_chars.load_project_variable_profiles(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT PORTFOLIOS ##
@@ -307,18 +303,22 @@ def load_csv_data(conn, csv_path, quiet):
     if csv_data_master.loc[csv_data_master['table'] == 'project_availability_exogenous', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_exogenous', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(data_folder_path, quiet)
         load_project_availability.load_project_availability_exogenous(conn, c2, csv_subscenario_input, csv_data_input)
 
     ## PROJECT AVAILABILITY ENDOGENOUS ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_availability_endogenous', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_availability_endogenous', 'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(data_folder_path, quiet)
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(data_folder_path, quiet)
         load_project_availability.load_project_availability_endogenous(conn, c2, csv_subscenario_input, csv_data_input)
 
     #### LOAD PROJECT HEAT RATE DATA ####
 
+    # TODO: this should be done in the same way we do variable chars,
+    #  hydro chars, etc.
     ## PROJECT HEAT RATES ##
     if csv_data_master.loc[csv_data_master['table'] == 'project_heat_rate_curves', 'include'].iloc[0] == 1:
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
@@ -335,7 +335,8 @@ def load_csv_data(conn, csv_path, quiet):
         data_folder_path = os.path.join(folder_path, csv_data_master.loc[
             csv_data_master['table'] == 'project_startup_chars',
             'path'].iloc[0])
-        (csv_subscenario_input, csv_data_input) = csvs_read.csv_read_data(
+        (csv_subscenario_input, csv_data_input) = \
+            csvs_read.csv_read_project_data(
             data_folder_path, quiet)
         load_project_operational_chars.load_project_startup_chars(conn, c2,
                                                        csv_subscenario_input, csv_data_input)

@@ -1,3 +1,0 @@
-load_zone_scenario_id,load_zone,allow_overgeneration,overgeneration_penalty_per_mw,allow_unserved_energy,unserved_energy_penalty_per_mw
-2,Zone1,1,99999999,1,99999999
-2,Zone2,1,99999999,1,99999999

@@ -39,11 +39,11 @@ def load_project_availability_types(io, c, subscenario_input, data_input):
     """
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['project_availability_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['project_availability_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         project_availability_types = dict()
 
@@ -86,7 +86,7 @@ def load_project_availability_exogenous(io, c, subscenario_input, data_input):
     project_availability_exogenous_scenarios = dict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['exogenous_availability_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
@@ -98,7 +98,7 @@ def load_project_availability_exogenous(io, c, subscenario_input, data_input):
         project_availability_exogenous[prj][sc_id] = OrderedDict()
 
         project_availability_by_project = data_input.loc[
-                (data_input['exogenous_availability_scenario_id'] == sc_id) & (data_input['project'] == prj)]
+                (data_input['id'] == sc_id) & (data_input['project'] == prj)]
 
         for st_id in project_availability_by_project['stage_id'].unique():
             project_stage_availability_by_project = project_availability_by_project.loc[
@@ -129,7 +129,7 @@ def load_project_availability_endogenous(io, c, subscenario_input, data_input):
     project_availability_endogenous_scenarios = dict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['endogenous_availability_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
@@ -138,11 +138,11 @@ def load_project_availability_endogenous(io, c, subscenario_input, data_input):
         project_availability_endogenous_scenarios[prj][sc_id] = (sc_name, sc_description)
 
         data_input_subscenario = data_input.loc[
-            (data_input['endogenous_availability_scenario_id'] == sc_id)
+            (data_input['id'] == sc_id)
             & (data_input['project'] == prj)
         ]
 
-        key_cols = ["project", "endogenous_availability_scenario_id"]
+        key_cols = ["project", "id"]
         value_cols = ["unavailable_hours_per_period",
                       "unavailable_hours_per_event_min",
                       "unavailable_hours_per_event_max",

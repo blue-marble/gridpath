@@ -22,13 +22,15 @@ def load_system_static_load(io, c, subscenario_input, data_input):
     :return:
     """
 
-    for sc_id in subscenario_input['load_scenario_id'].to_list():
+    for sc_id in subscenario_input['id'].to_list():
         sc_name = \
-            subscenario_input.loc[subscenario_input['load_scenario_id'] == sc_id, 'name'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'name'].iloc[0]
         sc_description = \
-            subscenario_input.loc[subscenario_input['load_scenario_id'] == sc_id, 'description'].iloc[0]
+            subscenario_input.loc[subscenario_input['id'] == sc_id,
+                                  'description'].iloc[0]
 
-        data_input_subscenario = data_input.loc[data_input['load_scenario_id'] == sc_id]
+        data_input_subscenario = data_input.loc[data_input['id'] == sc_id]
 
         load = OrderedDict()
         for z in data_input_subscenario['load_zone'].unique():

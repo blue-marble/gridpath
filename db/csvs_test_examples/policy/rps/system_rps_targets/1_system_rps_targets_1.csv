@@ -1,0 +1,5 @@
+rps_zone,period,subproblem_id,stage_id,rps_target_mwh,rps_zone_scenario_id
+RPSZone1,2020,1,1,50,1
+RPSZone1,2030,1,1,50,1
+RPSZone2,2020,1,1,50,1
+RPSZone2,2030,1,1,50,1

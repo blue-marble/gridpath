@@ -23,14 +23,14 @@ def load_project_operational_chars(io, c, subscenario_input, data_input):
                                   'variable_generator_profile_scenario_id',
                                   'hydro_operational_chars_scenario_id']
     operational_chars_non_integers = data_input.columns.difference(
-        operational_chars_integers + ['project_operational_chars_scenario_id', 'project']).tolist()
+        operational_chars_integers + ['id', 'project']).tolist()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['project_operational_chars_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['project_operational_chars_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
         # Make subscenario and insert all projects into operational
         # characteristics table; we'll then update that table with the
         # operational characteristics each project needs
@@ -86,7 +86,7 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
     project_tmp_profiles_scenarios = dict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['variable_generator_profile_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
@@ -102,7 +102,7 @@ def load_project_variable_profiles(io, c, subscenario_input, data_input):
         project_tmp_profiles[prj][sc_id] = dict()
 
         project_tmp_profiles_by_project = data_input.loc[
-                (data_input['variable_generator_profile_scenario_id'] == sc_id) & (data_input['project'] == prj)]
+                (data_input['id'] == sc_id) & (data_input['project'] == prj)]
 
         for st_id in project_tmp_profiles_by_project['stage_id'].unique():
             project_tmp_profiles_by_project_stage = project_tmp_profiles_by_project.loc[
@@ -132,7 +132,7 @@ def load_project_hydro_opchar(io, c, subscenario_input, data_input):
     project_horizon_chars_scenarios = dict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['hydro_operational_chars_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
         prj = subscenario_input['project'][i]
@@ -148,7 +148,7 @@ def load_project_hydro_opchar(io, c, subscenario_input, data_input):
         project_horizon_chars[prj][sc_id] = dict()
 
         project_horizon_chars_by_project = data_input.loc[
-            (data_input['hydro_operational_chars_scenario_id'] == sc_id) & (data_input['project'] == prj)]
+            (data_input['id'] == sc_id) & (data_input['project'] == prj)]
 
         for b_type in project_horizon_chars_by_project['balancing_type_project'].unique():
             project_horizon_chars_by_project_balancing_type = project_horizon_chars_by_project.loc[
@@ -182,11 +182,11 @@ def load_project_hr_curves(io, c, subscenario_input, data_input):
     project_hr_scenarios = OrderedDict()
 
     for i in subscenario_input.index:
-        sc_id = int(subscenario_input['heat_rate_curves_scenario_id'][i])
+        sc_id = int(subscenario_input['id'][i])
         sc_name = subscenario_input['name'][i]
         sc_description = subscenario_input['description'][i]
 
-        data_input_subscenario = data_input.loc[(data_input['heat_rate_curves_scenario_id'] == sc_id)]
+        data_input_subscenario = data_input.loc[(data_input['id'] == sc_id)]
 
         for prj in data_input_subscenario['project'].unique():
             project_hr_scenarios[(prj, sc_id)] = (sc_name, sc_description)
@@ -224,11 +224,15 @@ def load_project_startup_chars(io, c, subscenario_input, data_input):
     :return:
     """
 
-    subscenario_input.drop(["filename"], axis=1, inplace=True)
+    # subscenario_input.drop(["filename"], axis=1, inplace=True)
     project_su_scenarios = [
         tuple(x) for x in subscenario_input.to_records(index=False)
     ]
 
+    # Change the order of the columns before creating the list of tuples
+    cols = data_input.columns.tolist()
+    cols = cols[-2:] + cols[:3]
+    data_input = data_input[cols]
     project_su_chars = [
         tuple(x) for x in data_input.to_records(index=False)
     ]
