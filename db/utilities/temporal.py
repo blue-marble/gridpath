@@ -193,8 +193,9 @@ def load_from_csvs(conn, subscenario_directory):
 
     # Check if the periods are unique
     if prd_df["period"].duplicated().any():
-        warnings.warn("Duplicate periods found in period_params.csv. Periods "
-                      "must be unique.")
+        warnings.warn("""Duplicate periods found in period_params.csv in {}.
+                          Periods must be unique.""".format(
+            subscenario_directory))
 
     # Check if the set of periods in period_params.csv is the same as the set of
     # periods assigned to timepoints in structure.csv.
@@ -202,11 +203,12 @@ def load_from_csvs(conn, subscenario_directory):
     period_set = set(prd_df["period"])
 
     if tmp_periods != period_set:
-        warnings.warn("The set of periods in structure.csv and "
-                      "period_params.csv are not the same. Check your data.")
+        warnings.warn("""The set of periods in structure.csv and
+                          period_params.csv are not the same in {}. Check your
+                          data.""".format(subscenario_directory))
 
     periods = [
-        (subscenario_id, ) + tuple(x) for x in prd_df.to_records(index=False)
+        (subscenario_id,) + tuple(x) for x in prd_df.to_records(index=False)
     ]
 
     # HORIZONS
@@ -215,9 +217,9 @@ def load_from_csvs(conn, subscenario_directory):
 
     # Check if balancing_type-horizons are unique
     if hrz_df.duplicated(["balancing_type_horizon", "horizon"]).any():
-        warnings.warn("""Duplicate balancing_type-horizons found in 
-        horizon_params.csv. Horizons must be unique within each balancing 
-        type.""")
+        warnings.warn("""Duplicate balancing_type-horizons found in
+            horizon_params.csv in {}. Horizons must be unique within each
+            balancing type.""".format(subscenario_directory))
 
     # Check if the set of balancing_type-horizons in horizon_params.csv is the same
     # as the set of balancing_type-horizon assigned to timepoints in
@@ -237,9 +239,11 @@ def load_from_csvs(conn, subscenario_directory):
         )
 
         if tmp_horizons != horizon_set:
-            warnings.warn("""The set of horizons in structure.csv and
-                          horizon_params.csv for balancing type {} are not the
-                          same. Check your data.""".format(bt))
+            warnings.warn(
+                """The set of horizons in structure.csv and
+                horizon_params.csv for balancing type {} are not the same in
+                {}. Check your data.""".format(bt, subscenario_directory)
+            )
 
     subproblem_horizons = [
         (subscenario_id,) + tuple(x) for x in hrz_df.to_records(index=False)
