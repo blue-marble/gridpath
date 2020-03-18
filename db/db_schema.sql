@@ -534,7 +534,7 @@ project VARCHAR(64) PRIMARY KEY
 -- -- Capacity -- --
 
 -- Project portfolios
--- Subsets of projects allowed in a scenario: includes both existing and
+-- Subsets of projects allowed in a scenario: includes both specified and
 -- potential projects
 DROP TABLE IF EXISTS subscenarios_project_portfolios;
 CREATE TABLE subscenarios_project_portfolios (

@@ -192,7 +192,7 @@ def get_inputs_from_database(
         INNER JOIN
             (SELECT project, period
             FROM (
-                -- Get the operational periods for each 'existing' and 
+                -- Get the operational periods for each 'specified' and 
                 -- 'new' project
                 SELECT project, period
                 FROM inputs_project_specified_capacity
