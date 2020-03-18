@@ -37,14 +37,14 @@ def load_project_existing_capacities(io, c, subscenario_input, data_input):
                 project_existing_capacity_mw = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'existing_capacity_mw'].iloc[0]
+                                                                       'period'] == p), 'specified_capacity_mw'].iloc[0]
                 if project_existing_capacity_mw != None:
                     project_existing_capacity_mw = float(project_existing_capacity_mw)
 
                 project_existing_capacity_mwh = data_input_subscenario.loc[
                                                            (data_input_subscenario['project'] == prj) & (
                                                                    data_input_subscenario[
-                                                                       'period'] == p), 'existing_capacity_mwh'].iloc[0]
+                                                                       'period'] == p), 'specified_capacity_mwh'].iloc[0]
                 if project_existing_capacity_mwh != None:
                     project_existing_capacity_mwh = float(project_existing_capacity_mwh)
 
